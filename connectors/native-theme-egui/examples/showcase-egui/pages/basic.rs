@@ -491,9 +491,23 @@ fn field<'a>(
         .frame(input_frame(ui, id, t))
 }
 
+/// A `TextEdit` of `ui` lays each row out `row_height + extra_text_line_spacing` tall
+/// (`egui/src/widgets/text_edit/builder.rs:488-490`, `:512-514`); the connector writes the
+/// spacing only where the line box, the font's size times `defaults.line_height`, is taller
+/// than the font's own row (§6.15). Where the row is taller — a face whose row exceeds the
+/// theme's line box, Noto Sans (fontconfig's substitute for Inter) under catppuccin-mocha's 1.2
+/// — the spacing is the negative difference, written per field, so each row is one line box
+/// tall, as a label's is (`demo::lined`).
+fn line_box_rows(ui: &mut egui::Ui, t: &native_theme_egui::ResolvedTheme) {
+    let font = egui::FontSelection::Default.resolve(ui.style());
+    let row = ui.fonts_mut(|f| f.row_height(&font));
+    ui.spacing_mut().extra_text_line_spacing = font.size * t.defaults.line_height - row;
+}
+
 /// Where a `TextEdit` of `ui` laid `text` out: at the start of its frame's content, on the
 /// row's centre line for a single-line field, at its top for a multi-line one
-/// (`egui/src/widgets/text_edit/builder.rs`), in the field's font.
+/// (`egui/src/widgets/text_edit/builder.rs`), in the field's font, each row one line box tall
+/// (`line_box_rows`).
 fn field_text(
     ui: &egui::Ui,
     field: &egui::Response,
@@ -502,7 +516,11 @@ fn field_text(
     centred: bool,
 ) -> egui::Rect {
     let inner = field.rect - frame.total_margin();
-    let size = text_size(ui, text, egui::FontSelection::Default);
+    let size = text_size(
+        ui,
+        demo::lined(ui, text, egui::TextStyle::Body),
+        egui::FontSelection::Default,
+    );
     let top = if centred {
         inner.center().y - 0.5 * size.y
     } else {
@@ -524,6 +542,7 @@ fn text_field(
     let edit_id = ui.make_persistent_id(id);
     let mut text = None;
     let response = demo::scoped(reg, ui, Role::Input, variant, kind, |ui| {
+        line_box_rows(ui, t);
         let r = add(ui, edit_id);
         text = Some(field_text(
             ui,
@@ -553,7 +572,8 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     heading(reg, ui, "basic.text_inputs.heading", "Text inputs");
     let kind = ("basic.text_inputs.placeholder", "TextEdit (hint)", normal);
     text_field(reg, ui, kind, t, "Placeholder", |ui, id| {
-        ui.add(field(&mut state.basic_hint, id, ui, t).hint_text("Placeholder"))
+        let hint = demo::lined(ui, "Placeholder", egui::TextStyle::Body);
+        ui.add(field(&mut state.basic_hint, id, ui, t).hint_text(hint))
     });
     reg.amend_last(|i| i.notes.push(("hint text", "\"Placeholder\"".to_string())));
     let kind = ("basic.text_inputs.filled", "TextEdit (single line)", normal);
@@ -585,6 +605,7 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
     let area = demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
+        line_box_rows(ui, t);
         let frame = text_area_frame(ui, id, t);
         let r = ui.add(
             egui::TextEdit::multiline(&mut state.basic_area)
@@ -1175,6 +1196,12 @@ fn list(
             frame
                 .show(ui, |ui| {
                     ui.set_width(inner);
+                    // No fade over the rows at the list's edges: egui fades a scroll area's
+                    // content toward an edge with more beyond it (`ScrollFadeStyle`, strength
+                    // 0.5 over 20 points, `egui/src/style.rs:779-802`,
+                    // `egui/src/containers/scroll_area.rs:1562-1568`), which repaints the rows'
+                    // `list.item_font.color`; the theme states no such effect.
+                    ui.spacing_mut().scroll.fade.strength = 0.0;
                     let room = ui.max_rect();
                     let area = egui::ScrollArea::vertical()
                         .id_salt("basic/list")

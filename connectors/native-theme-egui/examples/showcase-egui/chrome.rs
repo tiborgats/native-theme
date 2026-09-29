@@ -257,11 +257,16 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                                     }
                                 }
                                 Some(action) => {
-                                    let mut button = egui::Button::new(action.label());
-                                    let shortcut =
-                                        action.shortcut().map(|s| shortcut_text(ui.ctx(), &s));
+                                    // Label and shortcut each one line box tall, as the menu
+                                    // bar's titles are.
+                                    let lined =
+                                        |text: &str| demo::lined(ui, text, egui::TextStyle::Button);
+                                    let mut button = egui::Button::new(lined(action.label()));
+                                    let shortcut = action
+                                        .shortcut()
+                                        .map(|s| lined(&shortcut_text(ui.ctx(), &s)));
                                     if let Some(shortcut) = &shortcut {
-                                        button = button.shortcut_text(shortcut.as_str());
+                                        button = button.shortcut_text(shortcut.clone());
                                     }
                                     let r =
                                         open.add(registry, ui, "Menu item", |ui| ui.add(button));
@@ -270,15 +275,15 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                                         if let Some(shortcut) = &shortcut {
                                             // egui lays the shortcut out flush right in the
                                             // button's padding, in the button's font.
-                                            let font = egui::TextStyle::Button.resolve(ui.style());
-                                            let size = ui
-                                                .fonts_mut(|f| {
-                                                    f.layout_no_wrap(
-                                                        shortcut.clone(),
-                                                        font,
-                                                        egui::Color32::PLACEHOLDER,
-                                                    )
-                                                })
+                                            let size = egui::WidgetText::from(shortcut.clone())
+                                                .into_galley(
+                                                    ui,
+                                                    Some(egui::TextWrapMode::Extend),
+                                                    f32::INFINITY,
+                                                    egui::FontSelection::Style(
+                                                        egui::TextStyle::Button,
+                                                    ),
+                                                )
                                                 .size();
                                             let pad = ui.spacing().button_padding;
                                             let rect = egui::Rect::from_min_size(
