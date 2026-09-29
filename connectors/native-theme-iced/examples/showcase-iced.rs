@@ -4748,13 +4748,15 @@ fn element_info_view<'a>(
         let how = info_text(state, row.how, regular, muted);
         let (leaf, how): (Element<'a, Message>, Element<'a, Message>) = if first {
             (
-                tagged("chrome.info.row_1.text", leaf).into(),
-                tagged("chrome.info.row_1.how", how).into(),
+                // At the lines' own width, past the panel's edge, which
+                // clips them.
+                tagged("chrome.info.row_1.text", leaf).loose().into(),
+                tagged("chrome.info.row_1.how", how).loose().into(),
             )
         } else {
             (leaf.into(), how.into())
         };
-        let lines = column![leaf, how];
+        let lines = column![leaf, how].width(Fill);
         let content: Element<'a, Message> = match row.colour {
             Some(colour) => {
                 let swatch = container(space())
@@ -4770,7 +4772,7 @@ fn element_info_view<'a>(
                 } else {
                     swatch.into()
                 };
-                row![swatch, lines].spacing(widget_gap).into()
+                row![swatch, lines].spacing(widget_gap).width(Fill).into()
             }
             None => lines.into(),
         };
