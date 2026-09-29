@@ -4,6 +4,8 @@ use native_theme_egui::convert::u8_from_f32_saturating;
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
 
+use crate::parts::Parts;
+
 /// One control of joined segments, one of them selected: `segmented_control.*`.
 ///
 /// **Tier C.** One horizontal row of `Button::new(label).selected(i == *selected)`
@@ -101,16 +103,31 @@ impl egui::Widget for SegmentedControl<'_> {
 }
 
 /// The response of a row whose `inner` says whether a click moved the selection, marked
-/// changed when it did.
+/// changed when it did, with the row's segments as its `Parts`.
 trait MapChanged {
     fn map_changed(self) -> egui::Response;
 }
 
-impl MapChanged for egui::InnerResponse<bool> {
+impl MapChanged for egui::InnerResponse<(bool, Vec<egui::Rect>)> {
     fn map_changed(mut self) -> egui::Response {
-        if self.inner {
+        let (changed, segments) = self.inner;
+        if changed {
             self.response.mark_changed();
         }
+        let mut parts = Parts::default();
+        let mut later = segments.iter();
+        later.next();
+        for (i, segment) in segments.iter().enumerate() {
+            parts.push(format!("segment_{i}"), *segment);
+            if let Some(next) = later.next() {
+                // The outline's colour shows between two segments: the gap the row leaves.
+                parts.push(
+                    format!("divider_{i}"),
+                    egui::Rect::from_x_y_ranges(segment.right()..=next.left(), segment.y_range()),
+                );
+            }
+        }
+        parts.store(&self.response.ctx, self.response.id);
         self.response
     }
 }
@@ -196,8 +213,9 @@ fn row(
     selected: &mut usize,
     segments: Vec<egui::WidgetText>,
     outline: Option<&Outline>,
-) -> bool {
+) -> (bool, Vec<egui::Rect>) {
     let mut changed = false;
+    let mut rects = Vec::new();
     ui.ctx().accesskit_node_builder(ui.unique_id(), |node| {
         node.set_role(accesskit::Role::RadioGroup);
     });
@@ -218,6 +236,7 @@ fn row(
             *selected = i;
             changed = true;
         }
+        rects.push(response.rect);
     }
-    changed
+    (changed, rects)
 }

@@ -3,6 +3,7 @@
 use native_theme_egui::egui;
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// egui's default combo-box arrow is a downward triangle `0.7` of its box wide and `0.45` of it
@@ -34,9 +35,18 @@ const ARROW_HEIGHT: f32 = 0.45;
 /// column, WinUI's a 38px column (`docs/platform-facts.md` §2.24). So where `icon_width` is
 /// taller than the selected text's line, this scope's `icon_width` is that line's height and
 /// its `icon_spacing` grows by the difference, which keeps the arrow's column as wide as the
-/// theme states, and the chevron is painted in a box of the stated `icon_width`,
-/// right-aligned in its column and centred on its height, so it is the size the theme
-/// states. Where the text is as tall as the arrow's box or taller, egui's own layout stands.
+/// theme states, and the chevron is painted in a box of the stated `icon_width`, centred on
+/// its height, so it is the size the theme states. Where the text is as tall as the arrow's box
+/// or taller, egui's own layout stands.
+///
+/// **The sides are the theme's.** egui pads its button by one `button_padding.x` on both sides
+/// (`combo_box_dyn`), where a platform pads the text and places the arrow's column apart:
+/// Breeze pads the text 6 and puts its 20px column flush at the frame, the arrow centred in it
+/// (`docs/platform-facts.md` §2.24). So where the theme states `border.padding.left`, the
+/// scope's `button_padding.x` is that side plus the border's width, which starts the text
+/// there; and where it states `border.padding.right` and `arrow_area_width`, the chevron is
+/// centred in a column that wide ending that padding and the border inside the frame's right
+/// edge.
 ///
 /// Everything else is egui's: layout, interaction, the popup, keyboard and accessibility
 /// (`WidgetType::ComboBox`). `Ui::add` takes an `egui::Widget`, and a drop-down's contents are
@@ -131,8 +141,22 @@ impl ComboBox {
         };
         let popup_style =
             popup_style.unwrap_or_else(|| atlas.role_modifier(theme, Role::ComboBox, variant));
+        let c = &atlas.resolved_for(theme).combo_box;
+        // Where the border's width is not finite, egui's own padding and arrow place stand.
+        let sides = scope::length(c.border.line_width).map(|border| Sides {
+            left: c.border.padding.left.and_then(scope::length),
+            right: c.border.padding.right.and_then(scope::length),
+            border,
+            column: c.arrow_area_width.and_then(scope::length),
+        });
         scope::open(ui, Role::ComboBox, enabled, |ui| {
-            let line = selected_text
+            // The text `combo_box.border.padding.left` inside the border: egui pads its button by
+            // one `button_padding.x` on both sides (`combo_box_dyn`), which the scope holds as
+            // the pair's single value.
+            if let Some((left, sides)) = sides.and_then(|s| Some((s.left?, s))) {
+                ui.spacing_mut().button_padding.x = left + sides.border;
+            }
+            let text_size = selected_text
                 .clone()
                 .into_galley(
                     ui,
@@ -140,8 +164,9 @@ impl ComboBox {
                     f32::INFINITY,
                     egui::TextStyle::Button,
                 )
-                .size()
-                .y;
+                .size();
+            let line = text_size.y;
+            let padding = ui.spacing().button_padding;
             let arrow = ui.spacing().icon_width;
             let mut combo = egui::ComboBox::from_id_salt(id_salt)
                 .selected_text(selected_text)
@@ -157,11 +182,57 @@ impl ComboBox {
             } else {
                 0.0
             };
+            let arrow_box = std::rc::Rc::new(std::cell::Cell::new(None));
+            let painted = std::rc::Rc::clone(&arrow_box);
+            let margin = padding.x;
             combo = combo.icon(move |ui, rect, visuals, _open| {
-                paint_chevron(ui, rect, visuals, grow);
+                let centre = sides.and_then(|s| s.column_centre(rect, margin));
+                painted.set(Some(paint_chevron(ui, rect, visuals, grow, centre)));
             });
-            combo.show_ui(ui, contents)
+            let out = combo.show_ui(ui, contents);
+            // egui lays the selected text out flush left in the button's padding, centred on
+            // the row (`egui/src/containers/combo_box.rs`, `combo_box_dyn`).
+            let button = out.response.rect;
+            let mut parts = Parts::default();
+            parts.push(
+                "text",
+                egui::Rect::from_min_size(
+                    egui::pos2(
+                        button.left() + padding.x,
+                        button.center().y - 0.5 * text_size.y,
+                    ),
+                    text_size,
+                ),
+            );
+            if let Some(arrow) = arrow_box.get() {
+                parts.push("arrow", arrow);
+            }
+            parts.store(ui.ctx(), out.response.id);
+            out
         })
+    }
+}
+
+/// The drop-down's stated sides, from `combo_box`: its `border.padding` left and right, its
+/// border's width, and its arrow column's width (`arrow_area_width`).
+#[derive(Clone, Copy)]
+struct Sides {
+    left: Option<f32>,
+    right: Option<f32>,
+    border: f32,
+    column: Option<f32>,
+}
+
+impl Sides {
+    /// Where the arrow's column is centred: the column `arrow_area_width` wide, at the button's
+    /// right edge inside its border and `border.padding.right` — Breeze centres its arrow in
+    /// its `MenuButton_IndicatorWidth` column (`docs/platform-facts.md` §2.24). `icon` is the
+    /// box egui hands the icon, flush right in the content, which ends `margin`
+    /// (`button_padding.x`) inside the button's edge (`combo_box_dyn`). `None` where the theme
+    /// states no right padding or column: egui's own place stands.
+    fn column_centre(self, icon: egui::Rect, margin: f32) -> Option<f32> {
+        let (right, column) = (self.right?, self.column?);
+        Some(icon.right() + margin - self.border - right - 0.5 * column)
     }
 }
 
@@ -170,10 +241,20 @@ impl ComboBox {
 /// the glyph KDE, GNOME and Windows draw (`docs/platform-facts.md` §2.24, `arrow_icon_size`),
 /// where egui fills a triangle. `rect` is the box egui hands the icon, `grow` shorter than
 /// that size, so the box it stood for is `grow` wider and taller, sharing its right edge and
-/// centre line.
-fn paint_chevron(ui: &egui::Ui, rect: egui::Rect, visuals: &egui::style::WidgetVisuals, grow: f32) {
+/// centre line — or, where the theme places the arrow's column (`Sides::column_centre`), centred
+/// in that column. Returns that box, the arrow's `Parts` rectangle.
+fn paint_chevron(
+    ui: &egui::Ui,
+    rect: egui::Rect,
+    visuals: &egui::style::WidgetVisuals,
+    grow: f32,
+    column_centre: Option<f32>,
+) -> egui::Rect {
     let side = egui::vec2(rect.width() + grow, rect.height() + grow);
-    let centre = egui::pos2(rect.right() - 0.5 * side.x, rect.center().y);
+    let centre = egui::pos2(
+        column_centre.unwrap_or(rect.right() - 0.5 * side.x),
+        rect.center().y,
+    );
     let arrow = egui::Rect::from_center_size(
         centre,
         egui::vec2(side.x * ARROW_WIDTH, side.y * ARROW_HEIGHT),
@@ -182,4 +263,5 @@ fn paint_chevron(ui: &egui::Ui, rect: egui::Rect, visuals: &egui::style::WidgetV
         vec![arrow.left_top(), arrow.center_bottom(), arrow.right_top()],
         visuals.fg_stroke,
     ));
+    egui::Rect::from_center_size(centre, side)
 }

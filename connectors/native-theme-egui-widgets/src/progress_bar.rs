@@ -4,6 +4,7 @@ use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui;
 use native_theme_egui::{Role, ThemeAtlas};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// A determinate progress bar: egui's own, in the `Role::ProgressBar` scope, rounded
@@ -68,6 +69,17 @@ impl egui::Widget for ProgressBar {
         let radius = to_corner_radius(egui::CornerRadius::default(), radius);
         scope::open(ui, Role::ProgressBar, true, |ui| {
             let response = ui.add(bar.corner_radius(radius));
+            // egui's fill: from the bar's start, `progress` of its width, at least as wide as
+            // its rounded ends (`egui/src/widgets/progress_bar.rs`).
+            let outer = response.rect;
+            let rounded = f32::from(radius.sw.max(radius.nw)).min(0.5 * outer.height());
+            let filled = (outer.width() * progress).max(rounded + rounded);
+            let mut parts = Parts::default();
+            parts.push(
+                "fill",
+                egui::Rect::from_min_size(outer.min, egui::vec2(filled, outer.height())),
+            );
+            parts.store(ui.ctx(), response.id);
             if width > 0.0 && ui.is_rect_visible(response.rect) {
                 ui.painter().rect_stroke(
                     response.rect,

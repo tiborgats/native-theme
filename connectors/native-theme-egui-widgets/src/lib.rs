@@ -78,6 +78,7 @@
 
 pub mod combo_box;
 pub mod expander;
+pub mod parts;
 pub mod progress_bar;
 pub mod radio_button;
 pub mod segmented_control;

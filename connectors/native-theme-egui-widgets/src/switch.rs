@@ -7,6 +7,7 @@ use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{Role, ThemeAtlas, register_focus_shape};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// A two-state switch: `switch.*`'s track and thumb, the label after it.
@@ -151,6 +152,17 @@ fn switch_ui(
     let mut min_size = egui::Vec2::splat(ui.spacing().interact_size.y);
     min_size.y = min_size.y.max(atom.y);
     let text = label.as_ref().map(|l| l.text().to_string());
+    // The label as the layout sizes it (`egui/src/atomics/atom_kind.rs:134-135`), for `Parts`.
+    let label_size = label.as_ref().map(|l| {
+        l.clone()
+            .into_galley(
+                ui,
+                Some(egui::TextWrapMode::Extend),
+                f32::INFINITY,
+                egui::FontSelection::Default,
+            )
+            .size()
+    });
     let mut atoms = match label {
         Some(label) => egui::Atoms::new(label),
         None => egui::Atoms::new(()),
@@ -240,5 +252,18 @@ fn switch_ui(
     let painter = ui.painter();
     painter.rect_filled(track, radius, fill);
     painter.circle_filled(centre, 0.5 * g.thumb, to_color32(thumb));
+    let mut parts = Parts::default();
+    parts.push("track", track);
+    parts.push(
+        "thumb",
+        egui::Rect::from_center_size(centre, egui::Vec2::splat(g.thumb)),
+    );
+    if let Some(size) = label_size {
+        parts.push(
+            "label",
+            crate::parts::text_after(atom_rect, ui.spacing().icon_spacing, size),
+        );
+    }
+    parts.store(ui.ctx(), laid.response.id);
     laid.response
 }

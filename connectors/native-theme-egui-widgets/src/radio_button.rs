@@ -4,6 +4,7 @@ use native_theme_egui::convert::clamp_length;
 use native_theme_egui::egui;
 use native_theme_egui::{Role, ThemeAtlas};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// egui's radio dot is a circle of radius `small_icon_rect.width() / 3.0`
@@ -55,6 +56,38 @@ impl RadioButton {
     }
 }
 
+/// Where egui's `RadioButton` painted its circle, its dot and its label
+/// (`egui/src/widgets/radio_button.rs`): its icon atom `Spacing::icon_width` wide at the start
+/// of its row, the circle and the dot `Spacing::icon_rectangles` of that atom, the dot a third
+/// of the inner one in radius, the label `Spacing::icon_spacing` after the atom.
+fn radio_parts(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    checked: bool,
+    label: egui::Vec2,
+) -> Parts {
+    let rect = response.rect;
+    let atom = egui::Rect::from_x_y_ranges(
+        rect.left()..=rect.left() + ui.spacing().icon_width,
+        rect.y_range(),
+    );
+    let (small, big) = ui.spacing().icon_rectangles(atom);
+    let mut parts = Parts::default();
+    parts.push("indicator", big);
+    if checked {
+        let radius = small.width() / EGUI_DOT_DIVISOR;
+        parts.push(
+            "dot",
+            egui::Rect::from_center_size(small.center(), egui::Vec2::splat(radius + radius)),
+        );
+    }
+    parts.push(
+        "label",
+        crate::parts::text_after(atom, ui.spacing().icon_spacing, label),
+    );
+    parts
+}
+
 impl egui::Widget for RadioButton {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let RadioButton {
@@ -74,7 +107,18 @@ impl egui::Widget for RadioButton {
             if let Some(dot) = dot {
                 ui.spacing_mut().icon_width_inner = clamp_length(EGUI_DOT_DIVISOR * 0.5 * dot);
             }
-            ui.add(egui::RadioButton::new(checked, text))
+            let label = text
+                .clone()
+                .into_galley(
+                    ui,
+                    Some(egui::TextWrapMode::Extend),
+                    f32::INFINITY,
+                    egui::FontSelection::Default,
+                )
+                .size();
+            let response = ui.add(egui::RadioButton::new(checked, text));
+            radio_parts(ui, &response, checked, label).store(ui.ctx(), response.id);
+            response
         })
     }
 }

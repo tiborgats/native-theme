@@ -8,6 +8,7 @@ use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::theme::ResolvedSliderTheme;
 use native_theme_egui::{Role, ThemeAtlas};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// How far, in points, one arrow-key press or AccessKit increment moves the knob: egui's own
@@ -254,6 +255,18 @@ fn slider_ui(
         }
     });
 
+    let rail = egui::Rect::from_center_size(rect.center(), egui::vec2(rect.width(), g.rail));
+    let centre = egui::pos2(position_of(current), rail.center().y);
+    let mut trailing = rail;
+    trailing.max.x = centre.x;
+    let mut parts = Parts::default();
+    parts.push("track", rail);
+    parts.push("fill", trailing);
+    parts.push(
+        "thumb",
+        egui::Rect::from_center_size(centre, egui::Vec2::splat(g.thumb)),
+    );
+    parts.store(ui.ctx(), response.id);
     if ui.is_rect_visible(rect) {
         let (track, fill, thumb) = if enabled {
             let thumb = match sl.thumb_hover_color {
@@ -268,11 +281,7 @@ fn slider_ui(
                 to_color32(sl.disabled_thumb_color.unwrap_or(sl.thumb_color)),
             )
         };
-        let rail = egui::Rect::from_center_size(rect.center(), egui::vec2(rect.width(), g.rail));
         let radius = ui.visuals().widgets.inactive.corner_radius;
-        let centre = egui::pos2(position_of(current), rail.center().y);
-        let mut trailing = rail;
-        trailing.max.x = centre.x;
         let outline = ui.style().interact(&response).fg_stroke;
         let painter = ui.painter();
         painter.rect_filled(rail, radius, to_color32(track));

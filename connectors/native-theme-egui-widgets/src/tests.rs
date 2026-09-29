@@ -1254,10 +1254,32 @@ fn the_drop_down_is_as_tall_as_its_text() {
     let a = chevron(&out);
     assert!((a.width() - 0.7 * arrow).abs() < 1e-3, "{a:?}");
     assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
-    // The arrow's box ends at the column's right edge, the padding in from the frame's.
-    let right = combo.rect.right() - padding.x;
-    assert!((a.center().x - (right - 0.5 * arrow)).abs() < 1e-3, "{a:?}");
+    // The arrow is centred in its `arrow_area_width` column, which ends the border's width and
+    // `border.padding.right` in from the frame's right edge (Breeze's
+    // `MenuButton_IndicatorWidth` column, docs/platform-facts.md §2.24); the text starts
+    // `border.padding.left` inside the border.
+    let c = &t.combo_box;
+    let (right, column, left) = (
+        c.border.padding.right,
+        c.arrow_area_width,
+        c.border.padding.left,
+    );
+    assert!(
+        right.is_some() && column.is_some() && left.is_some(),
+        "kde states the drop-down's side paddings and arrow column"
+    );
+    if let (Some(right), Some(column)) = (right, column) {
+        let centre = combo.rect.right() - c.border.line_width - right - 0.5 * column;
+        assert!((a.center().x - centre).abs() < 1e-3, "{a:?} {centre}");
+    }
     assert!((a.center().y - combo.rect.center().y).abs() < 0.5, "{a:?}");
+    let text = crate::parts::Parts::of(&combo).and_then(|parts| parts.get("text"));
+    assert!(
+        text.zip(left).is_some_and(|(text, left)| {
+            (text.left() - (combo.rect.left() + c.border.line_width + left)).abs() < 1e-3
+        }),
+        "{text:?}"
+    );
 }
 
 /// The one open chevron a drop-down paints (`docs/platform-facts.md` §2.24): a three-point

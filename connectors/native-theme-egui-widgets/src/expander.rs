@@ -7,6 +7,7 @@ use native_theme_egui::native_theme::theme::{
 };
 use native_theme_egui::{Role, ThemeAtlas, expander_icon};
 
+use crate::parts::Parts;
 use crate::scope;
 
 /// egui's own arrow is a triangle three quarters of its icon box
@@ -120,6 +121,20 @@ fn own<R>(
         id_salt,
         default_open,
     } = expander;
+    // Where egui lays the header out (`egui/src/containers/collapsing_header.rs:512-590`): the
+    // title `indent` in, in the button font, centred on the row; the arrow's box
+    // `icon_width_inner` square, centred half an indent in.
+    let indent = ui.spacing().indent;
+    let arrow = ui.spacing().icon_width_inner;
+    let title_size = title
+        .clone()
+        .into_galley(
+            ui,
+            Some(egui::TextWrapMode::Extend),
+            f32::INFINITY,
+            egui::TextStyle::Button,
+        )
+        .size();
     let header = egui::CollapsingHeader::new(title)
         .id_salt(id_salt)
         .default_open(default_open);
@@ -128,6 +143,27 @@ fn own<R>(
         None => header,
     };
     let out = header.show(ui, add_body);
+    let rect = out.header_response.rect;
+    let mut parts = Parts::default();
+    parts.push("header", rect);
+    parts.push(
+        "arrow",
+        egui::Rect::from_center_size(
+            egui::pos2(rect.left() + 0.5 * indent, rect.center().y),
+            egui::Vec2::splat(arrow),
+        ),
+    );
+    parts.push(
+        "title",
+        egui::Rect::from_min_size(
+            egui::pos2(rect.left() + indent, rect.center().y - 0.5 * title_size.y),
+            title_size,
+        ),
+    );
+    if let Some(body) = &out.body_response {
+        parts.push("body", body.rect);
+    }
+    parts.store(ui.ctx(), out.header_response.id);
     ExpanderResponse {
         header_response: out.header_response,
         body_returned: out.body_returned,
@@ -166,7 +202,7 @@ fn painted<R>(
         egui::Frame::NONE
     };
     let out = frame.show(ui, |ui| {
-        let header = header(ui, &mut state, id, title, e);
+        let (header, mut parts) = header(ui, &mut state, id, title, e);
         let own_indent = ui.spacing().indent;
         let indent = stated_or(e.content_indent, own_indent);
         let body = state.show_body_unindented(ui, |ui| {
@@ -181,6 +217,10 @@ fn painted<R>(
                 .show(ui, add_body)
                 .inner
         });
+        if let Some(body) = &body {
+            parts.push("body", body.response.rect);
+        }
+        parts.store(ui.ctx(), header.id);
         (header, body.map(|b| b.inner))
     });
     let (header_response, body_returned) = out.inner;
@@ -190,14 +230,15 @@ fn painted<R>(
     }
 }
 
-/// The header row: allocated, sensed and painted, toggling `state` on a click.
+/// The header row: allocated, sensed and painted, toggling `state` on a click; with the
+/// `header`, `arrow` and `title` [`Parts`] it painted.
 fn header(
     ui: &mut egui::Ui,
     state: &mut egui::collapsing_header::CollapsingState,
     id: egui::Id,
     title: egui::WidgetText,
     e: &ResolvedExpanderTheme,
-) -> egui::Response {
+) -> (egui::Response, Parts) {
     let own_pad = ui.spacing().button_padding;
     let pad = &e.border.padding;
     let (left, right) = (
@@ -232,35 +273,39 @@ fn header(
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::CollapsingHeader, enabled, &text)
     });
-    if !ui.is_rect_visible(rect) {
-        return response;
-    }
-    let visuals = ui.style().interact(&response);
-    let painter = ui.painter();
-    painter.rect_filled(rect, visuals.corner_radius, visuals.weak_bg_fill);
     let (arrow_x, text_x) = if trailing {
         (rect.right() - right - arrow, rect.left() + left)
     } else {
         (rect.left() + left, rect.left() + left + arrow + gap)
     };
     let centre_y = rect.center().y;
-    let colour = e.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
     let arrow_box = egui::Rect::from_min_size(
         egui::pos2(arrow_x, centre_y - 0.5 * arrow),
         egui::Vec2::splat(arrow),
     );
+    let title_rect = egui::Rect::from_min_size(
+        egui::pos2(text_x, centre_y - 0.5 * galley.size().y),
+        galley.size(),
+    );
+    let mut parts = Parts::default();
+    parts.push("header", rect);
+    parts.push("arrow", arrow_box);
+    parts.push("title", title_rect);
+    if !ui.is_rect_visible(rect) {
+        return (response, parts);
+    }
+    let visuals = ui.style().interact(&response);
+    let painter = ui.painter();
+    painter.rect_filled(rect, visuals.corner_radius, visuals.weak_bg_fill);
+    let colour = e.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
     painter.add(egui::Shape::convex_polygon(
         triangle(arrow_box, state.openness(ui.ctx()), trailing),
         colour,
         egui::Stroke::NONE,
     ));
     let text_colour = visuals.text_color();
-    painter.galley(
-        egui::pos2(text_x, centre_y - 0.5 * galley.size().y),
-        galley,
-        text_colour,
-    );
-    response
+    painter.galley(title_rect.min, galley, text_colour);
+    (response, parts)
 }
 
 /// egui's arrow in `rect` (`egui/src/containers/collapsing_header.rs:336-357`): a triangle
