@@ -1140,6 +1140,9 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     if padding.left.is_none() && padding.right.is_none() {
                         ui.spacing_mut().button_padding.x = idle.bg_stroke.width;
                     }
+                    // The tabs `tab.item_gap` apart, and side by side where the theme states no
+                    // gap, as the other two showcases' tabs are.
+                    ui.spacing_mut().item_spacing.x = t.tab.item_gap.unwrap_or_default();
                     for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
                         let mut button =
@@ -1208,10 +1211,12 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
             ),
         ]);
-        i.notes.push((
-            "the gap between tabs",
-            "not stated by the theme: the base style's item spacing".to_string(),
-        ));
+        if t.tab.item_gap.is_none() {
+            i.notes.push((
+                "the gap between tabs",
+                "not stated by the theme: none, the tabs side by side".to_string(),
+            ));
+        }
     });
     reg.tag(bar.element, &strip);
     picked
