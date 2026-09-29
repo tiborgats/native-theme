@@ -95,6 +95,18 @@ impl Action {
     }
 }
 
+/// The Theme menu's rows in `docs/showcase-elements.toml`, in `Action::MENUS`'s order.
+#[cfg(not(all(target_os = "macos", not(test))))]
+const THEME_MENU_ROWS: [&str; 7] = [
+    "chrome.menu.theme.reload",
+    "chrome.menu.theme.separator_1",
+    "chrome.menu.theme.system",
+    "chrome.menu.theme.light",
+    "chrome.menu.theme.dark",
+    "chrome.menu.theme.separator_2",
+    "chrome.menu.theme.preferences",
+];
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct PaletteState {
     pub query: String,
@@ -110,6 +122,9 @@ pub(crate) enum InspectorTab {
 /// shown, and again inside it (§4.4's recipe, §6.18); the panel's frame is the
 /// top panel surface fed from `theme.toolbar`.
 pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
+    // On macOS outside `cfg(test)` the menus are the system menu bar's.
+    #[cfg(not(all(target_os = "macos", not(test))))]
+    menu_panel(app, ui);
     let toolbar_role = Some((Role::Toolbar, RoleVariant::Normal));
     let seams = PanelSeams::apply(
         ui,
@@ -124,12 +139,44 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         .frame(seams.frame)
         .show(ui, |ui| {
             seams.enter(ui);
-            // On macOS outside `cfg(test)` the menus are the system menu bar's.
-            #[cfg(not(all(target_os = "macos", not(test))))]
-            menu_bar(app, ui);
             toolbar(app, ui);
         });
-    seams.record(&mut app.registry, &out.response, "Chrome bar");
+    seams.record(&mut app.registry, &out.response, "Toolbar");
+    app.registry.tag("chrome.toolbar", &out.response);
+}
+
+/// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
+/// window's background (`window.background_color`, the menu bar's in
+/// `docs/showcase-elements.toml`), its menus `layout.container_margin` in from the window's
+/// sides where the theme states that margin, no line under it.
+#[cfg(not(all(target_os = "macos", not(test))))]
+fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
+    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let margin = app.atlas.layout().container_margin;
+    let sides = native_theme::theme::ResolvedPadding {
+        left: margin,
+        right: margin,
+        top: None,
+        bottom: None,
+    };
+    let frame = egui::Frame::NONE
+        .fill(native_theme_egui::convert::to_color32(
+            t.window.background_color,
+        ))
+        .inner_margin(native_theme_egui::convert::to_margin(
+            egui::Margin::ZERO,
+            &sides,
+        ));
+    let out = egui::Panel::top("menu-bar")
+        .frame(frame)
+        .show_separator_line(false)
+        .show(ui, |ui| {
+            // The bar is as tall as its titles (`demo::menu_bar`).
+            ui.spacing_mut().interact_size.y = 0.0;
+            menu_bar(app, ui)
+        });
+    app.registry.name("chrome.menu_bar", &out.inner);
+    app.registry.place(ui, "chrome.menu_bar", out.response.rect);
 }
 
 /// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
@@ -137,7 +184,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
 /// `MenuConfig::style` (§4.2); each open menu's own `Ui` is styled and recorded as `Role::Menu`
 /// too.
 #[cfg(not(all(target_os = "macos", not(test))))]
-fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
+fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
     let App {
         registry, pending, ..
     } = app;
@@ -151,23 +198,61 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
         |ui, bar, menu_seam, registry| {
             bar.ui(ui, |ui| {
                 for (menu, items) in Action::MENUS {
+                    let key = menu.to_lowercase();
                     let response = ui.menu_button(*menu, |ui| {
                         let open = demo::styled(registry, ui, Role::Menu, normal, "Menu");
-                        for item in *items {
+                        // The Theme menu's rows, the one menu the three showcases share.
+                        let ids: &[&str] = if key == "theme" {
+                            &THEME_MENU_ROWS
+                        } else {
+                            &[]
+                        };
+                        for (index, item) in items.iter().enumerate() {
+                            let id = ids.get(index).copied();
                             match item {
                                 None => {
-                                    open.add(registry, ui, "Separator · menu", |ui| {
+                                    let r = open.add(registry, ui, "Separator · menu", |ui| {
                                         ui.separator()
                                     });
+                                    if let Some(id) = id {
+                                        registry.tag(id, &r);
+                                    }
                                 }
                                 Some(action) => {
                                     let mut button = egui::Button::new(action.label());
-                                    if let Some(shortcut) = action.shortcut() {
-                                        button = button
-                                            .shortcut_text(ui.ctx().format_shortcut(&shortcut));
+                                    let shortcut =
+                                        action.shortcut().map(|s| ui.ctx().format_shortcut(&s));
+                                    if let Some(shortcut) = &shortcut {
+                                        button = button.shortcut_text(shortcut.as_str());
                                     }
                                     let r =
                                         open.add(registry, ui, "Menu item", |ui| ui.add(button));
+                                    if let Some(id) = id {
+                                        registry.tag(id, &r);
+                                        if let Some(shortcut) = &shortcut {
+                                            // egui lays the shortcut out flush right in the
+                                            // button's padding, in the button's font.
+                                            let font = egui::TextStyle::Button.resolve(ui.style());
+                                            let size = ui
+                                                .fonts_mut(|f| {
+                                                    f.layout_no_wrap(
+                                                        shortcut.clone(),
+                                                        font,
+                                                        egui::Color32::PLACEHOLDER,
+                                                    )
+                                                })
+                                                .size();
+                                            let pad = ui.spacing().button_padding;
+                                            let rect = egui::Rect::from_min_size(
+                                                egui::pos2(
+                                                    r.rect.right() - pad.x - size.x,
+                                                    r.rect.center().y - 0.5 * size.y,
+                                                ),
+                                                size,
+                                            );
+                                            registry.place(ui, &format!("{id}.shortcut"), rect);
+                                        }
+                                    }
                                     if r.clicked() {
                                         pending.push(*action);
                                         ui.close();
@@ -175,13 +260,22 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
                                 }
                             }
                         }
+                        if key == "theme" {
+                            // The popup's frame around its rows: the menu scope's margin and
+                            // the popup's stroke.
+                            let margin = ui.spacing().menu_margin;
+                            let stroke = ui.visuals().window_stroke.width;
+                            let rect = (ui.min_rect() + margin).expand(stroke);
+                            registry.place(ui, "chrome.menu.theme", rect);
+                        }
                     });
                     menu_seam.record(registry, &response.response, "Menu button");
+                    registry.tag(&format!("chrome.menu_bar.{key}"), &response.response);
                 }
             })
             .response
         },
-    );
+    )
 }
 
 /// What a chrome button shows: gpui-component's `IconName` by its name in the chosen set, or
@@ -269,28 +363,32 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     let icon_size = t.toolbar.icon_size;
     let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
         ui.horizontal(|ui| {
-            for (icon, label, action) in [
+            for (icon, label, action, id) in [
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
                     "Command Palette",
                     Action::OpenCommandPalette,
+                    "chrome.toolbar.command_palette",
                 ),
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::RotateCw),
                     "Reload System Theme",
                     Action::ReloadTheme,
+                    "chrome.toolbar.reload_theme",
                 ),
                 (
                     ChromeButtonIcon::Role(IconRole::ActionSettings),
                     "Preferences",
                     Action::OpenPreferences,
+                    "chrome.toolbar.preferences",
                 ),
             ] {
                 let image = chrome_button_image(ui, icon, &chosen, icon_size);
-                let kind = ghost_kind(image.is_some(), false);
+                let drawn = image.is_some();
+                let kind = ghost_kind(drawn, false);
                 let response = ui
                     .scope(|ui| {
-                        demo::ghost(ui);
+                        demo::tool_button(ui, &t.button.border.padding);
                         bar.add(registry, ui, kind, |ui| {
                             let r = ui.add(ghost_button(ui, image, label, false));
                             r.widget_info(|| {
@@ -302,6 +400,10 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                     .inner;
                 registry.ghost_last();
                 registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
+                registry.tag(id, &response);
+                if drawn {
+                    place_icon(registry, ui, id, &response, icon_size);
+                }
                 tooltip(registry, ui, &response, label, action.shortcut());
                 if response.clicked() {
                     pending.push(action);
@@ -312,7 +414,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
         })
         .response
     };
-    demo::scoped_container(
+    let row = demo::scoped_container(
         registry,
         ui,
         Role::Toolbar,
@@ -320,6 +422,20 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
         "Toolbar",
         toolbar_row,
     );
+    registry.name("chrome.toolbar", &row);
+}
+
+/// The icon part `<id>.icon` of an icon-only button: egui centres a `Button::image`'s image,
+/// `size` square, in the button's padding.
+pub(crate) fn place_icon(
+    registry: &mut Registry,
+    ui: &egui::Ui,
+    id: &str,
+    button: &egui::Response,
+    size: f32,
+) {
+    let rect = egui::Rect::from_center_size(button.rect.center(), egui::Vec2::splat(size));
+    registry.place(ui, &format!("{id}.icon"), rect);
 }
 
 /// `Tooltip::for_enabled`, its `popup` given the tooltip surface's frame and the `Role::Tooltip`
@@ -391,17 +507,17 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             let bar = seams.enter(ui);
             let environment = environment(app, ui.ctx()).join(" · ");
             let title = app.status_title();
-            let icon_size = app
-                .atlas
-                .resolved_for(ui.ctx().theme())
-                .defaults
-                .icon_sizes
-                .small;
+            let t = app.atlas.resolved_for(ui.ctx().theme());
+            let icon_size = t.defaults.icon_sizes.small;
+            let padding = t.button.border.padding;
             // The model states no status-bar height: the bar sizes to its content, one line of
-            // `status_bar.font` (`Body` in the bar's scope), and its padding. `ui.horizontal`
-            // makes its row `interact_size.y` tall (`egui/src/ui.rs:2376-2379`), which the scope
-            // inherits from the base style's `button.min_height`, so the row is set to the line.
-            ui.spacing_mut().interact_size.y = ui.text_style_height(&egui::TextStyle::Body);
+            // `status_bar.font` (`Body` in the bar's scope) and the side-panel toggle, a tool
+            // button (`demo::tool_button`), and its padding. `ui.horizontal` makes its row
+            // `interact_size.y` tall and centres what it holds on that height
+            // (`egui/src/ui.rs:2376-2379`), so the row is set to the taller of the two.
+            let line = ui.text_style_height(&egui::TextStyle::Body);
+            let toggle = icon_size + 2.0 * padding.top.unwrap_or(ui.spacing().button_padding.y);
+            ui.spacing_mut().interact_size.y = line.max(toggle);
             ui.horizontal(|ui| {
                 let App {
                     registry,
@@ -416,7 +532,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     &chosen,
                     icon_size,
                 );
-                let kind = ghost_kind(image.is_some(), open);
+                let drawn = image.is_some();
+                let kind = ghost_kind(drawn, open);
                 let toggle = demo::scoped(
                     registry,
                     ui,
@@ -424,8 +541,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
-                        demo::ghost(ui);
-                        let r = ui.add(ghost_button(ui, image, label, open).small());
+                        demo::tool_button(ui, &padding);
+                        let r = ui.add(ghost_button(ui, image, label, open));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::WidgetType::Button, true, open, label)
                         });
@@ -442,6 +559,10 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                             .to_string(),
                     ));
                 });
+                registry.tag("chrome.status_bar.toggle", &toggle);
+                if drawn {
+                    place_icon(registry, ui, "chrome.status_bar.toggle", &toggle, icon_size);
+                }
                 tooltip(
                     registry,
                     ui,
@@ -455,18 +576,22 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 // The bar's own role, not the base style: its separator line and its text are
                 // `status_bar`'s (§10.4).
                 let Some(bar) = bar else { return };
-                bar.add(registry, ui, "Label · environment", |ui| {
+                let label = bar.add(registry, ui, "Label · environment", |ui| {
                     ui.label(environment)
                 });
+                registry.tag("chrome.status_bar.environment", &label);
                 // The shown Widget Info's title, flush right (§10.4).
                 if !title.is_empty() {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        bar.add(registry, ui, "Label · shown info", |ui| ui.label(title));
+                        let label =
+                            bar.add(registry, ui, "Label · shown info", |ui| ui.label(title));
+                        registry.tag("chrome.status_bar.shown", &label);
                     });
                 }
             });
         });
     seams.record(&mut app.registry, &out.response, "Status bar");
+    app.registry.tag("chrome.status_bar", &out.response);
 }
 
 /// Desktop, preset and mode, the font in its defined unit (§8.7), the
@@ -557,22 +682,46 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     };
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
+    // The splitter's line lies after the panel, in room the panel's frame reserves for it in its
+    // outer margin (`egui/src/containers/panel.rs:917-925`), which the panel's size holds.
+    let splitter = ui.visuals().widgets.noninteractive.bg_stroke.width;
     let out = egui::Panel::left("side-panel")
         .resizable(true)
-        .default_size(LEFT_PANEL_WIDTH)
+        .default_size(LEFT_PANEL_WIDTH + splitter)
         .frame(seams.frame)
         .show_collapsible(ui, &mut visible, |ui| {
             let Some(body) = seams.enter(ui) else {
                 return;
             };
-            padded(ui, margin, |ui| settings_rows(app, ui, body));
-            demo::scoped(
+            // The settings, the separator, the tabs and the inspector follow one another with
+            // no room between them: the separator is its line, the settings and the inspector
+            // pad themselves; the settings keep the panel's spacing between their rows.
+            let spacing = ui.spacing().item_spacing;
+            ui.spacing_mut().item_spacing.y = 0.0;
+            let settings = padded(ui, margin, |ui| {
+                ui.spacing_mut().item_spacing = spacing;
+                settings_rows(app, ui, body);
+                ui.min_rect()
+            });
+            app.registry
+                .place(ui, "chrome.side_panel.settings", settings);
+            let mut line = 0.0;
+            let separator = demo::scoped(
                 &mut app.registry,
                 ui,
                 Role::Separator,
                 RoleVariant::Normal,
                 "Separator · side panel",
-                |ui| ui.separator(),
+                |ui| {
+                    line = ui.visuals().widgets.noninteractive.bg_stroke.width;
+                    ui.add(egui::Separator::default().horizontal().spacing(line))
+                },
+            );
+            app.registry.name("chrome.side_panel.separator", &separator);
+            app.registry.place(
+                ui,
+                "chrome.side_panel.separator",
+                separator_line(&separator, line),
             );
             inspector_tabs(app, ui, margin);
             // The inspector takes the rest of the panel and never sizes it. A resizable panel
@@ -593,6 +742,8 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                     padded(ui, margin, |ui| inspector_content(app, ui))
                 });
             ui.advance_cursor_after_rect(room);
+            app.registry
+                .place(ui, "chrome.side_panel.inspector", area.inner_rect);
             // The content records nothing and is Widget Info's hold zone (§10.4).
             app.hold_zone = Some(area.inner_rect);
             #[cfg(test)]
@@ -603,7 +754,31 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     app.side_panel_visible = visible;
     if let Some(out) = out {
         seams.record(&mut app.registry, &out.response, "Side panel");
+        app.registry.name("chrome.side_panel", &out.response);
+        // egui paints the panel's line in its outer margin, at its outer edge, in the
+        // splitter scope's `noninteractive.bg_stroke` (`egui/src/containers/panel.rs:909-931`).
+        let rect = out.response.rect;
+        let edge = rect.right();
+        app.registry.place(
+            ui,
+            "chrome.side_panel",
+            egui::Rect::from_x_y_ranges(rect.left()..=edge - splitter, rect.y_range()),
+        );
+        app.registry.place(
+            ui,
+            "chrome.splitter",
+            egui::Rect::from_x_y_ranges(edge - splitter..=edge, rect.y_range()),
+        );
     }
+}
+
+/// The line a `Separator` paints across its response: `width` tall, centred in the room the
+/// separator allocates (`egui/src/widgets/separator.rs`).
+pub(crate) fn separator_line(separator: &egui::Response, width: f32) -> egui::Rect {
+    egui::Rect::from_center_size(
+        separator.rect.center(),
+        egui::vec2(separator.rect.width(), width),
+    )
 }
 
 /// `add` padded by `margin`, `layout.container_margin`, where the theme states one, and not at
@@ -624,9 +799,8 @@ fn setting_label(
     ui: &mut egui::Ui,
     body: demo::Applied,
     text: &'static str,
-) -> egui::Id {
+) -> egui::Response {
     body.add(reg, ui, "Label · theme setting", |ui| ui.label(text))
-        .id
 }
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
@@ -680,6 +854,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
+            element: "chrome.side_panel.settings.theme",
             kind: "ComboBox · Theme",
             row_kind: "Theme row",
             rows: &theme_rows,
@@ -693,6 +868,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Mode",
+            element: "chrome.side_panel.settings.mode",
             kind: "ComboBox · Mode",
             row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
@@ -706,6 +882,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
+            element: "chrome.side_panel.settings.icon_theme",
             kind: "ComboBox · Icon theme",
             row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
@@ -730,6 +907,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
 /// One theme setting, as `setting` draws it.
 struct Setting<'a, T> {
     label: &'static str,
+    /// The drop-down's element in `docs/showcase-elements.toml`; its label's is `<element>_label`.
+    element: &'static str,
     kind: &'static str,
     row_kind: &'static str,
     rows: &'a [(T, String)],
@@ -748,8 +927,11 @@ fn setting<T: Clone + PartialEq>(
     setting: Setting<'_, T>,
 ) -> Option<T> {
     let label = setting_label(registry, ui, body, setting.label);
+    registry.tag(&format!("{}_label", setting.element), &label);
+    let label = label.id;
     let mut picked = None;
-    demo::scoped_popup(
+    let element = setting.element;
+    let combo = demo::scoped_popup(
         registry,
         ui,
         Role::ComboBox,
@@ -780,6 +962,7 @@ fn setting<T: Clone + PartialEq>(
                 .labelled_by(label)
         },
     );
+    registry.tag(element, &combo);
     picked
 }
 
@@ -803,6 +986,11 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
             margin,
             scroll: false,
             full_width: true,
+            element: "chrome.side_panel.inspector_tabs",
+            tab_elements: &[
+                "chrome.side_panel.inspector_tabs.widget",
+                "chrome.side_panel.inspector_tabs.theme",
+            ],
         },
         |_, _, _| {},
     );
@@ -816,13 +1004,29 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
     match app.inspector_tab {
         InspectorTab::Widget => {
+            let view = app.registry.shown().map(|shown| {
+                match (
+                    &app.elements,
+                    &app.manifest,
+                    app.json.get(&app.atlas, theme),
+                ) {
+                    (Ok(elements), Ok(manifest), Ok(json)) => Ok(crate::info::InfoView::of(
+                        shown,
+                        elements,
+                        manifest,
+                        (json, app.preset_key()),
+                    )),
+                    (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
+                        Err(error.clone())
+                    }
+                }
+            });
             crate::info::widget_tab(
                 ui,
                 app.atlas.resolved_for(theme),
-                app.registry.shown(),
-                &app.manifest,
-                app.json.get(&app.atlas, theme),
-                app.preset_key(),
+                app.atlas.layout(),
+                view,
+                &mut app.registry,
             );
         }
         InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.manifest),
@@ -864,6 +1068,8 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
             margin,
             scroll: true,
             full_width: true,
+            element: "chrome.page_tabs",
+            tab_elements: &["chrome.page_tabs.basic", "chrome.page_tabs.buttons"],
         },
         |ui, tab, registry| {
             let caret = demo::role_image(
@@ -873,11 +1079,12 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 icon_theme.as_deref(),
                 caret_size,
             );
+            let drawn = caret.is_some();
+            demo::tool_button(ui, &t.button.border.padding);
             let button = match caret {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Pages"),
-            }
-            .small();
+            };
             let response = demo::menu_button(
                 registry,
                 ui,
@@ -899,6 +1106,10 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 },
             );
             registry.ghost_last();
+            registry.tag("chrome.page_tabs.menu", &response);
+            if drawn {
+                place_icon(registry, ui, "chrome.page_tabs.menu", &response, caret_size);
+            }
             response
                 .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Pages"));
         },
@@ -906,6 +1117,24 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     if let Some(page) = picked.or(from_menu) {
         pending.push(Action::ShowPage(page));
     }
+}
+
+/// The rule under the page tabs, across the content: a separator line, `separator.line_width`
+/// tall in `separator.line_color`, between the tab row and the page.
+fn page_rule(app: &mut App, ui: &mut egui::Ui) {
+    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let width = t.separator.line_width;
+    let (rect, response) = ui.allocate_exact_size(
+        egui::vec2(ui.available_width(), width),
+        egui::Sense::hover(),
+    );
+    ui.painter().rect_filled(
+        rect,
+        egui::CornerRadius::ZERO,
+        native_theme_egui::convert::to_color32(t.separator.line_color),
+    );
+    app.registry
+        .place_on(ui.ctx(), response.layer_id, "chrome.page_tabs.rule", rect);
 }
 
 /// The content: the central panel surface fed from `theme.defaults`; the page tabs flush at its
@@ -920,8 +1149,14 @@ pub(crate) fn central_panel(
     let out = egui::CentralPanel::default()
         .frame(seams.frame)
         .show(ui, |ui| {
+            // The tabs, the rule under them and the page follow one another with no room
+            // between them; the page keeps the panel's spacing.
+            let spacing = ui.spacing().item_spacing;
+            ui.spacing_mut().item_spacing.y = 0.0;
             page_tabs(app, ui);
+            page_rule(app, ui);
             egui::Frame::NONE.inner_margin(page_margin).show(ui, |ui| {
+                ui.spacing_mut().item_spacing = spacing;
                 if let Some(error) = app.theme_error.clone() {
                     // As the gpui showcase's error banner (`showcase-gpui/demo.rs:1342-1357`):
                     // across the content, the chosen icon theme's error icon first, where it
@@ -964,6 +1199,8 @@ pub(crate) fn central_panel(
             });
         });
     seams.record(&mut app.registry, &out.response, "Central panel");
+    app.registry.tag("chrome.content", &out.response);
+    app.registry.untarget(&out.response);
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,

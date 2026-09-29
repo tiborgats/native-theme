@@ -227,6 +227,44 @@ struct Screenshot {
     written: bool,
 }
 
+/// `--dump-layout`: where the dump goes, whether the showcase keeps running after it, the layout
+/// of the last pass and the input time it was first seen at, and whether it was written.
+struct LayoutDump {
+    path: String,
+    keep_running: bool,
+    last: Option<(std::collections::BTreeMap<String, egui::Rect>, f64)>,
+    written: bool,
+}
+
+/// The layout dump's JSON (`docs/showcase-elements.toml`, "The layout dump"): each placed
+/// element's rectangle in logical pixels, window-content coordinates.
+pub(crate) fn layout_json(
+    places: &std::collections::BTreeMap<String, egui::Rect>,
+    preset: &str,
+    theme: egui::Theme,
+    scale: f32,
+) -> serde_json::Value {
+    let elements: serde_json::Map<String, serde_json::Value> = places
+        .iter()
+        .map(|(id, r)| {
+            (
+                id.clone(),
+                serde_json::json!({"x": r.min.x, "y": r.min.y, "w": r.width(), "h": r.height()}),
+            )
+        })
+        .collect();
+    serde_json::json!({
+        "kind": "egui",
+        "preset": preset,
+        "variant": match theme {
+            egui::Theme::Light => "light",
+            egui::Theme::Dark => "dark",
+        },
+        "scale": scale,
+        "elements": elements,
+    })
+}
+
 /// The pointer `--pointer` holds at a point of the window, and whether `--press` holds the
 /// primary button down there: for a capture of a control hovered or pressed where nothing can
 /// move the real pointer, as in a nested compositor. egui reads the pointer from the input it is
@@ -287,6 +325,8 @@ pub(crate) struct App {
     pub(crate) pending: Vec<Action>,
     /// The embedded `mapping.toml`, parsed once; an error is shown in the inspector (§10.4).
     pub(crate) manifest: Result<info::Manifest, String>,
+    /// `docs/showcase-elements.toml`, parsed once; an error is shown in the inspector.
+    pub(crate) elements: Result<Vec<crate::elements::ShowcaseElement>, String>,
     /// The installed atlas's JSON per scheme, emptied on each install.
     pub(crate) json: info::JsonCache,
     /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
@@ -300,6 +340,8 @@ pub(crate) struct App {
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
+    /// `--dump-layout`, until the dump is written.
+    dump: Option<LayoutDump>,
     /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
     held_pointer: Option<HeldPointer>,
     /// `--capture` or `--screenshot`: the window is captured, so the real pointer draws nothing
@@ -372,6 +414,7 @@ impl App {
             quit_requested: false,
             pending: Vec::new(),
             manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
+            elements: crate::elements::showcase_elements(),
             json: info::JsonCache::default(),
             hold_zone: None,
             #[cfg(test)]
@@ -380,6 +423,12 @@ impl App {
             page_scrolls: false,
             last_scheme: None,
             screenshot,
+            dump: cli.dump_layout.clone().map(|path| LayoutDump {
+                path,
+                keep_running: cli.capturing(),
+                last: None,
+                written: false,
+            }),
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
                 at: egui::pos2(f32::from(x), f32::from(y)),
                 press: cli.press,
@@ -520,12 +569,24 @@ impl App {
         }
     }
 
-    /// The status bar's title: the shown Widget Info's kind, or nothing.
+    /// The status bar's title: the shown Widget Info's title, or nothing.
     pub(crate) fn status_title(&self) -> String {
-        self.registry
-            .shown()
-            .map(|s| s.info.kind.to_string())
-            .unwrap_or_default()
+        let Some(shown) = self.registry.shown() else {
+            return String::new();
+        };
+        let element = shown.info.element.as_deref().and_then(|id| {
+            self.elements
+                .as_ref()
+                .ok()
+                .and_then(|all| all.iter().find(|e| e.id == id))
+        });
+        match element {
+            Some(element) => match element.states.first() {
+                Some(state) => format!("{} · {state}", element.name),
+                None => element.name.clone(),
+            },
+            None => shown.info.kind.to_string(),
+        }
     }
 
     /// The icon set and freedesktop theme the pages load from (§10.4's icon rule).
@@ -577,6 +638,42 @@ impl App {
     #[cfg(not(all(target_os = "macos", not(test))))]
     pub(crate) fn menu_installed(&self) -> Option<bool> {
         None
+    }
+
+    /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it,
+    /// then close the window unless it is being captured. A failed write is reported and ends
+    /// the run with 1, as a failed `--screenshot` does.
+    fn dump_layout(&mut self, ctx: &egui::Context) {
+        let preset = self.preset_key().to_string();
+        let Some(dump) = self.dump.as_mut().filter(|d| !d.written) else {
+            return;
+        };
+        let now = ctx.input(|i| i.time);
+        let places = self.registry.places();
+        let since = match &dump.last {
+            Some((last, since)) if last == places => *since,
+            _ => {
+                dump.last = Some((places.clone(), now));
+                now
+            }
+        };
+        ctx.request_repaint();
+        if now - since < crate::DUMP_SETTLE_S {
+            return;
+        }
+        let json = layout_json(places, &preset, ctx.theme(), ctx.pixels_per_point());
+        let written = serde_json::to_string_pretty(&json)
+            .map_err(|e| e.to_string())
+            .and_then(|text| std::fs::write(&dump.path, text).map_err(|e| e.to_string()));
+        if let Err(error) = written {
+            eprintln!("ERROR: --dump-layout {}: {error}", dump.path);
+            std::process::exit(1);
+        }
+        eprintln!("Layout dumped to {}", dump.path);
+        dump.written = true;
+        if !dump.keep_running {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
     }
 
     pub(crate) fn run_action(&mut self, action: Action, ctx: &egui::Context) {
@@ -732,6 +829,7 @@ impl eframe::App for App {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.registry.begin_pass();
+        self.registry.place(ui, "chrome.window", ui.max_rect());
         chrome::chrome_bar(self, ui);
         chrome::status_bar(self, ui);
         chrome::side_panel(self, ui);
@@ -753,6 +851,7 @@ impl eframe::App for App {
             self.run_action(action, &ctx);
         }
         self.registry.end_pass(&ctx, self.hold_zone);
+        self.dump_layout(&ctx);
     }
 
     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {

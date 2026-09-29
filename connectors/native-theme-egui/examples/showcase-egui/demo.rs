@@ -22,6 +22,8 @@ pub(crate) struct InstanceInfo {
     /// *This instance* notes from the helper's own arguments, never a claim about the theme: what
     /// each is about, and the note.
     pub notes: Vec<(&'static str, String)>,
+    /// The element of `docs/showcase-elements.toml` the instance is, which Widget Info shows.
+    pub element: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -35,6 +37,8 @@ pub(crate) struct Record {
     pub container: bool,
     /// `Response::contains_pointer` (`egui/src/response.rs:333`) when recorded.
     pub contains_pointer: bool,
+    /// Whether Widget Info may show it: every instance but a layout box (`Registry::untarget`).
+    pub target: bool,
 }
 
 /// The instance Widget Info shows.
@@ -48,6 +52,9 @@ pub(crate) struct Shown {
 #[derive(Default)]
 pub(crate) struct Registry {
     records: Vec<Record>,
+    /// The rectangle of each element of `docs/showcase-elements.toml` this pass draws, by id, in
+    /// window-content coordinates (logical pixels): what `--dump-layout` writes.
+    places: std::collections::BTreeMap<String, egui::Rect>,
     /// What Widget Info shows.
     shown: Option<Shown>,
     /// The candidate and the `InputState::time` it was first chosen at.
@@ -66,6 +73,55 @@ pub(crate) struct Registry {
 impl Registry {
     pub(crate) fn begin_pass(&mut self) {
         self.records.clear();
+        self.places.clear();
+    }
+
+    /// Where the element `id` of `docs/showcase-elements.toml` is this pass: `rect` in the
+    /// coordinates of `ui`'s layer, taken to the window's.
+    pub(crate) fn place(&mut self, ui: &egui::Ui, id: &str, rect: egui::Rect) {
+        self.place_on(ui.ctx(), ui.layer_id(), id, rect);
+    }
+
+    /// `place` for a rectangle of `layer`.
+    pub(crate) fn place_on(
+        &mut self,
+        ctx: &egui::Context,
+        layer: egui::LayerId,
+        id: &str,
+        rect: egui::Rect,
+    ) {
+        let rect = ctx
+            .layer_transform_to_global(layer)
+            .map_or(rect, |t| t.mul_rect(rect));
+        self.places.insert(id.to_string(), rect);
+    }
+
+    /// The elements placed this pass.
+    pub(crate) fn places(&self) -> &std::collections::BTreeMap<String, egui::Rect> {
+        &self.places
+    }
+
+    /// The instance `response` answers for is the element `id`: Widget Info shows the element's
+    /// rows when it is hovered, and the element is placed where the instance is drawn.
+    pub(crate) fn tag(&mut self, id: &str, response: &egui::Response) {
+        self.name(id, response);
+        self.place_on(&response.ctx, response.layer_id, id, response.rect);
+    }
+
+    /// The instance `response` answers for is the element `id`, placed elsewhere: Widget Info
+    /// shows the element's rows when it is hovered.
+    pub(crate) fn name(&mut self, id: &str, response: &egui::Response) {
+        if let Some(record) = self.records.iter_mut().rev().find(|r| r.id == response.id) {
+            record.info.element = Some(id.to_string());
+        }
+    }
+
+    /// The instance `response` answers for is a layout box, not a Widget Info target: hovering
+    /// the empty room it holds keeps what Widget Info shows, as the other two showcases do.
+    pub(crate) fn untarget(&mut self, response: &egui::Response) {
+        if let Some(record) = self.records.iter_mut().rev().find(|r| r.id == response.id) {
+            record.target = false;
+        }
     }
     pub(crate) fn record(
         &mut self,
@@ -85,6 +141,7 @@ impl Registry {
             #[cfg(test)]
             container: _container,
             contains_pointer: response.contains_pointer(),
+            target: true,
         });
     }
     #[cfg(test)]
@@ -121,7 +178,7 @@ impl Registry {
         let choice = self
             .records
             .iter()
-            .filter(|r| r.contains_pointer)
+            .filter(|r| r.contains_pointer && r.target)
             .map(|r| {
                 let rect = ctx
                     .layer_transform_to_global(r.layer)
@@ -193,12 +250,40 @@ pub(crate) fn ghost(ui: &mut egui::Ui) {
     rest.bg_stroke.color = egui::Color32::TRANSPARENT;
 }
 
+/// Make the rest of `ui` a tool button's, the icon-only button of a toolbar, the status bar and
+/// the tab row's page menu: Ghost ([`ghost`]), padded by `button.border.padding` and with no
+/// border and no minimum height, so it is its icon and that padding — the tool buttons of
+/// `docs/showcase-elements.toml` name the four padding sides and no border width or minimum
+/// size. egui pads a button by one pair (`Spacing::button_padding`), so the left side pads
+/// left and right and the top side top and bottom; a side the theme leaves unstated keeps the
+/// scope's own.
+pub(crate) fn tool_button(ui: &mut egui::Ui, padding: &native_theme::theme::ResolvedPadding) {
+    ghost(ui);
+    let own = ui.spacing().button_padding;
+    let spacing = ui.spacing_mut();
+    spacing.button_padding =
+        egui::vec2(padding.left.unwrap_or(own.x), padding.top.unwrap_or(own.y));
+    spacing.interact_size.y = 0.0;
+    let widgets = &mut ui.style_mut().visuals.widgets;
+    for state in [
+        &mut widgets.noninteractive,
+        &mut widgets.inactive,
+        &mut widgets.hovered,
+        &mut widgets.active,
+        &mut widgets.open,
+    ] {
+        state.bg_stroke.width = 0.0;
+        state.expansion = 0.0;
+    }
+}
+
 pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
     InstanceInfo {
         kind,
         seams,
         read: Vec::new(),
         notes: Vec::new(),
+        element: None,
     }
 }
 
@@ -464,8 +549,17 @@ pub(crate) fn menu_bar(
 ) -> egui::Response {
     let mut bar = egui::MenuBar::new();
     if let Some(modifier) = role_modifier(ui, role, variant) {
+        // The bar's titles edge to edge, each as tall as its text and `menu.border.padding`: the
+        // theme states no gap between two titles and no bar height, and a title is no button
+        // `interact_size.y` would make taller.
+        let titles = modifier.clone();
+        let bar_style = egui::style::StyleModifier::new(move |style: &mut egui::Style| {
+            titles.apply(style);
+            style.spacing.item_spacing.x = 0.0;
+            style.spacing.interact_size.y = 0.0;
+        });
         bar = bar
-            .style(modifier.clone())
+            .style(bar_style)
             .config(egui::containers::menu::MenuConfig::new().style(modifier));
     }
     let seam = Seam::Role(role, variant);
@@ -756,8 +850,9 @@ pub(crate) fn weight_family(weight: u16) -> egui::FontFamily {
 
 /// The OS's faces of the theme's family at the weights the showcase draws besides the body's:
 /// its semibold face, for the inspector's headings gpui draws `font_semibold()` (parity decision
-/// 3), and the face at each variant's `text_scale.section_heading.weight`, for the page's
-/// section headings. Each is `native_theme::fonts::system_face` at its weight, added with
+/// 3), and the face at each weight of each variant's text-scale roles (`text_scale.*.weight`)
+/// and table header (`list.header_font.weight`), for the page's section headings, its
+/// Typography group and its table. Each is `native_theme::fonts::system_face` at its weight, added with
 /// `Context::add_font` after every `ThemeAtlas::install`, whose `set_fonts` replaces the
 /// definitions: the semibold one under `SEMIBOLD_FAMILY`, the others under [`weight_family`].
 /// `add_font` skips a name the loaded fonts already hold (`egui/src/context.rs:2133-2143`), and
@@ -784,10 +879,20 @@ impl Semibold {
             )];
             for scheme in [egui::Theme::Light, egui::Theme::Dark] {
                 let t = atlas.resolved_for(scheme);
-                let weight = t.text_scale.section_heading.weight;
-                let family = weight_family(weight);
-                if weight != t.defaults.font.weight && !families.iter().any(|(_, f)| *f == family) {
-                    families.push((weight, family));
+                let s = &t.text_scale;
+                for weight in [
+                    s.caption.weight,
+                    s.section_heading.weight,
+                    s.dialog_title.weight,
+                    s.display.weight,
+                    t.list.header_font.weight,
+                ] {
+                    let family = weight_family(weight);
+                    if weight != t.defaults.font.weight
+                        && !families.iter().any(|(_, f)| *f == family)
+                    {
+                        families.push((weight, family));
+                    }
                 }
             }
             for (weight, family) in families {
@@ -859,16 +964,29 @@ pub(crate) fn weighted_family(ui: &egui::Ui, weight: u16, body_weight: u16) -> e
 /// through [`weighted_family`], in the text colour — as the iced showcase's section titles
 /// are. Without an installed atlas, egui's `Body` size, semibold.
 pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
-    let colour = ui.visuals().text_color();
-    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+    if ThemeAtlas::from_ctx(ui.ctx()).is_none() {
         let size = egui::TextStyle::Body.resolve(ui.style()).size;
         return egui::RichText::new(text)
             .font(semibold_font(ui, size))
-            .color(colour);
+            .color(ui.visuals().text_color());
+    }
+    role_text(ui, native_theme_egui::TextRole::SectionHeading, text)
+}
+
+/// Text in one of the theme's text-scale roles (`text_scale.*`): its size and line height
+/// through `text_role_font` and `text_role_line_height`, its weight through
+/// [`weighted_family`], in the text colour. Without an installed atlas, egui's `Body` text.
+pub(crate) fn role_text(
+    ui: &egui::Ui,
+    role: native_theme_egui::TextRole,
+    text: impl Into<String>,
+) -> egui::RichText {
+    let colour = ui.visuals().text_color();
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return egui::RichText::new(text).color(colour);
     };
     let t = atlas.resolved_for(ui.ctx().theme());
     let prefs = atlas.accessibility();
-    let role = native_theme_egui::TextRole::SectionHeading;
     let size = native_theme_egui::text_role_font(t, role, prefs).size;
     let weight = native_theme_egui::text_role_weight(t, role);
     egui::RichText::new(text)
@@ -899,6 +1017,10 @@ pub(crate) struct TabBar<'a, T> {
     /// Whether the strip spans the width it is given (the page and inspector tab rows), or is
     /// as wide as its tabs (the Basic page's).
     pub full_width: bool,
+    /// The row's element in `docs/showcase-elements.toml`, and its tabs', in order: a tab past
+    /// the end of `tab_elements` is not one of the list's.
+    pub element: &'static str,
+    pub tab_elements: &'a [&'static str],
 }
 
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
@@ -924,7 +1046,7 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
 ) -> Option<T> {
     let min_width = t.tab.min_width;
     let mut picked = None;
-    scoped_container(
+    let strip = scoped_container(
         reg,
         ui,
         Role::Tab,
@@ -950,7 +1072,7 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     };
                     let no_pen =
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
-                    for (value, label) in bar.tabs {
+                    for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
                         let mut button = egui::Button::new(*label)
                             .selected(selected)
@@ -960,6 +1082,9 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                             button = button.stroke(no_pen);
                         }
                         let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
+                        if let Some(id) = bar.tab_elements.get(index) {
+                            reg.tag(id, &r);
+                        }
                         if r.clicked() {
                             picked = Some(*value);
                         }
@@ -1019,5 +1144,6 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             "not stated by the theme: the base style's item spacing".to_string(),
         ));
     });
+    reg.tag(bar.element, &strip);
     picked
 }

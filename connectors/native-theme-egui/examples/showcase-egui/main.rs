@@ -13,6 +13,7 @@ mod app;
 mod capture;
 mod chrome;
 mod demo;
+mod elements;
 mod info;
 mod pages;
 #[cfg(test)]
@@ -87,6 +88,11 @@ pub(crate) fn native_options(capturing: bool) -> eframe::NativeOptions {
             viewport
         },
         persist_window: !capturing,
+        // Off: egui-wgpu's dithering adds noise to a vertex colour that falls between two 8-bit
+        // values after its sRGB conversion (`eframe/src/epi.rs:384-392`), so a flat fill of a
+        // theme colour would be painted a unit off here and there; a toolkit paints the colour
+        // the theme states.
+        dithering: false,
         #[cfg(all(target_os = "macos", not(test)))]
         event_loop_builder: Some(Box::new(|builder| {
             use winit::platform::macos::EventLoopBuilderExtMacOS as _;
@@ -158,6 +164,11 @@ pub(crate) fn check_frame_capture(
     }
 }
 
+/// How long, in seconds of `InputState::time`, the layout must stay the same from pass to pass
+/// before `--dump-layout` writes it: the first settled frame, after the fonts, the icons and a
+/// held pointer's Widget Info (`INFO_SETTLE`) have landed. Not a style value.
+pub(crate) const DUMP_SETTLE_S: f64 = 1.0;
+
 /// The flags the capture pipeline passes (`.github/workflows/screenshots.yml`,
 /// `scripts/generate_screenshots_egui.sh`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -180,6 +191,10 @@ pub(crate) struct CliArgs {
     /// `--press`: with `--pointer`, the primary button is held down there, so a capture shows
     /// the control pressed.
     pub press: bool,
+    /// `--dump-layout <file.json>`: after the first settled frame the rectangle of every element
+    /// of `docs/showcase-elements.toml` the showcase draws is written there; the showcase then
+    /// closes, or with `--capture` keeps running for the capture.
+    pub dump_layout: Option<String>,
 }
 
 impl CliArgs {
@@ -224,6 +239,7 @@ impl CliArgs {
                 "--tab" => &mut cli.tab,
                 "--icon-set" => &mut cli.icon_set,
                 "--screenshot" => &mut cli.screenshot,
+                "--dump-layout" => &mut cli.dump_layout,
                 _ => continue,
             };
             *slot = argv

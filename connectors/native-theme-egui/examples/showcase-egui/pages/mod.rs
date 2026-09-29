@@ -77,6 +77,11 @@ pub(crate) struct DemoState {
     pub basic_tab: usize,
     pub basic_segment: usize,
     pub basic_list: usize,
+    /// The Basic page's number input, its focused field, and whether that field was given the
+    /// keyboard focus yet (once, at the start).
+    pub basic_number: f64,
+    pub basic_focused: String,
+    pub basic_focus_given: bool,
 }
 
 impl Default for DemoState {
@@ -129,6 +134,9 @@ impl Default for DemoState {
             basic_tab: 0,
             basic_segment: 1,
             basic_list: 1,
+            basic_number: basic::NUMBER,
+            basic_focused: "Focused".to_string(),
+            basic_focus_given: false,
         }
     }
 }
@@ -144,7 +152,7 @@ fn demo_colour() -> egui::Color32 {
 /// (`egui/src/style.rs:1147-1149`); a `Label` in the base style, recorded like any other. Every
 /// heading but a page's first is `layout.section_gap` below the section before it, where the
 /// theme states that gap: the theme's space between sections (parity item 11).
-pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
+pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui::Response {
     let atlas = ThemeAtlas::from_ctx(ui.ctx());
     let section_gap = atlas.as_ref().and_then(|atlas| atlas.layout().section_gap);
     let first = ui.min_rect().height() <= 0.0;
@@ -155,7 +163,7 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
             ui.add_space(space);
         }
     }
-    demo::base(reg, ui, "heading", |ui| {
+    let response = demo::base(reg, ui, "heading", |ui| {
         let heading = demo::heading_text(ui, text);
         ui.label(heading)
     });
@@ -188,6 +196,7 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
             i.notes.push(("weight drawn in", drawn.to_string()));
         }
     });
+    response
 }
 
 /// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's
@@ -211,7 +220,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         ..
     } = app;
     match settings.page {
-        Page::Basic => basic::show(registry, demo_state, atlas, ui),
+        Page::Basic => basic::show(registry, demo_state, atlas, ui, &chosen),
         Page::Buttons => buttons::show(registry, demo_state, atlas, ui, &chosen),
         Page::Selection => selection::show(registry, demo_state, atlas, ui),
         Page::Inputs => inputs::show(registry, demo_state, atlas, ui),
