@@ -143,6 +143,17 @@ R-snap -- geometry is compared on edges rounded to the pixel grid.
     the report, a geometry value R-snap moved shows the rounded value with
     the dump's in parentheses, `223 (222.25)`: the rounded one is what was
     compared.
+    Since both edges round, a fractional size or offset paints as one whole
+    number or the next depending on where the box sits: a 0.6 px offset
+    from a parent edge at 20.0 puts the child's edge at 20.6, a pixel in
+    (21); from a parent edge at 19.7 it puts it at 20.3, on the parent's
+    pixel (20). That is what the renderer paints, not an error of the rule,
+    and the same fractional layout can therefore show as 0 under one
+    preset and 1 under another.
+    Every sample is taken on the same rounded edges: a point's fractions and
+    offsets, and a glyph box's fractions, are of the rectangle between them,
+    so a glyph box of a row at y = 39.6, h = 16 covers the painted rows 40
+    to 55, not the neighbouring row 39 a floor of 39.6 would add.
 
 R-shape -- a text run's width may differ by up to max(1 px, 2 %).
     Each toolkit shapes text with its own shaper -- gpui with cosmic-text
@@ -673,14 +684,18 @@ def hex_colour(rgb):
 
 
 def sample_colour(capture, scale, rect, spec):
-    """The colour a sample point shows, or a note saying why there is none."""
+    """The colour a sample point shows, or a note saying why there is none.
+    Fractions are taken of the rectangle's R-snap edges, where it is
+    painted, not of the dump's fractional ones."""
     image, pixels, (ox, oy) = capture["image"], capture["pixels"], capture["offset"]
     content_w = round(WINDOW_SIZE[0] * scale)
     content_h = round(WINDOW_SIZE[1] * scale)
+    left, top, right, bottom = snapped_edges(rect, scale)
+    w, h = right - left, bottom - top
     if spec[0] == "point":
         _, fx, fy, dx, dy = spec
-        px = math.floor((rect["x"] + fx * rect["w"] + dx) * scale)
-        py = math.floor((rect["y"] + fy * rect["h"] + dy) * scale)
+        px = math.floor((left + fx * w + dx) * scale)
+        py = math.floor((top + fy * h + dy) * scale)
         if not (0 <= px < content_w and 0 <= py < content_h):
             return "outside"
         return hex_colour(pixels[ox + px, oy + py])
@@ -688,10 +703,12 @@ def sample_colour(capture, scale, rect, spec):
     # most frequent colour (the ground the text is drawn on); the first such
     # pixel in raster order.
     _, x0, y0, x1, y1 = spec
-    left = max(0, math.floor((rect["x"] + x0 * rect["w"]) * scale))
-    top = max(0, math.floor((rect["y"] + y0 * rect["h"]) * scale))
-    right = min(content_w, math.ceil((rect["x"] + x1 * rect["w"]) * scale))
-    bottom = min(content_h, math.ceil((rect["y"] + y1 * rect["h"]) * scale))
+    left, top, right, bottom = (
+        max(0, math.floor((left + x0 * w) * scale)),
+        max(0, math.floor((top + y0 * h) * scale)),
+        min(content_w, math.ceil((left + x1 * w) * scale)),
+        min(content_h, math.ceil((top + y1 * h) * scale)),
+    )
     if right <= left or bottom <= top:
         return "outside"
     box = image.crop((ox + left, oy + top, ox + right, oy + bottom))
@@ -719,17 +736,27 @@ def snap(value, scale):
     return math.floor(value * scale + 0.5) / scale
 
 
+def snapped_edges(rect, scale):
+    """R-snap: the rectangle's left, top, right and bottom edges, each rounded
+    to the pixel grid on its own. So a size is not rounded but follows from
+    where both its edges land: a 0.6 px wide box from x = 10.2 paints no
+    column (10.2 and 10.8 both round to 10), from x = 10.3 one (10.3 rounds
+    to 10, 10.9 to 11), as each toolkit that snaps an edge paints it."""
+    left, top = rect["x"], rect["y"]
+    right, bottom = left + rect["w"], top + rect["h"]
+    return tuple(snap(v, scale) for v in (left, top, right, bottom))
+
+
 def geometry(element, rects, scale, snapped):
     """The element's w and h and, where its parent is drawn, its x and y
     relative to the parent; with `snapped`, from its edges rounded to the
     pixel grid (R-snap)."""
 
     def edges(rect):
-        left, top = rect["x"], rect["y"]
-        right, bottom = left + rect["w"], top + rect["h"]
         if snapped:
-            left, top, right, bottom = (snap(v, scale) for v in (left, top, right, bottom))
-        return left, top, right, bottom
+            return snapped_edges(rect, scale)
+        left, top = rect["x"], rect["y"]
+        return left, top, left + rect["w"], top + rect["h"]
 
     left, top, right, bottom = edges(rects[element["id"]])
     values = {"w": right - left, "h": bottom - top}
@@ -1142,6 +1169,20 @@ def self_test():
         )
         report(name, ok, rows)
 
+    def sampled(name, rect, spec, ground, boxes, expect):
+        """`spec` sampled on `rect` in a capture of `ground` with each
+        (x0, y0, x1, y1, colour) of `boxes` painted over it, inclusive device
+        pixels at scale 1, must show `expect`."""
+        image = Image.new("RGB", WINDOW_SIZE, ground)
+        draw = ImageDraw.Draw(image)
+        for *box, colour in boxes:
+            draw.rectangle(box, fill=colour)
+        capture = {"image": image, "pixels": image.load(), "offset": (0, 0)}
+        got = sample_colour(capture, 1.0, rect, parse_sample(name, "sample", spec))
+        report(name, got == expect)
+        if got != expect:
+            print(f"    expected {expect}\n    got      {got}")
+
     def rejected(name, exceptions):
         """An exceptions table `--check-list` must refuse."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -1312,6 +1353,45 @@ def self_test():
     scenario("R-glyph: a glyph sample 9 per channel off fails", True, ("t.panel.label.text",), ink_off(9))
     scenario("R-glyph: a fill 1 per channel off passes", False, change=fill_off(1))
     scenario("R-glyph: a fill 2 per channel off fails", True, ("t.panel.fill",), fill_off(2))
+    # A row highlight painted on rows 40 to 55 (y = 39.6, h = 16 rounded)
+    # over a darker ground, a glyph stem in it: a floor of 39.6 would take in
+    # row 39, the ground, farther from the highlight than the glyph is.
+    sampled(
+        "R-snap: a fractional text box samples the glyph, not the row beside its rounded edge",
+        {"x": 32.0, "y": 39.6, "w": 60.0, "h": 16.0},
+        "glyph",
+        INK,
+        ((32, 40, 91, 55, LINE), (40, 43, 40, 52, FILL)),
+        hex_colour(FILL),
+    )
+    # A framed panel painted from (20, 30) to (219, 89), its edges 19.6,
+    # 29.6, 220 and 89.6 rounded: a floor would sample the ground outside.
+    framed_panel = ((20, 30, 219, 89, LINE), (21, 31, 218, 88, FILL))
+    fractional_panel = {"x": 19.6, "y": 29.6, "w": 200.4, "h": 60.0}
+    sampled(
+        "R-snap: a border sample on a fractional top edge hits the rounded border row",
+        fractional_panel,
+        [0.5, 0.0],
+        BACKGROUND,
+        framed_panel,
+        hex_colour(LINE),
+    )
+    sampled(
+        "R-snap: a border sample on a fractional left edge hits the rounded border column",
+        fractional_panel,
+        [0.0, 0.5],
+        BACKGROUND,
+        framed_panel,
+        hex_colour(LINE),
+    )
+    sampled(
+        "R-snap: a border sample inside a fractional bottom edge hits the rounded border row",
+        fractional_panel,
+        [0.5, 1.0, 0.0, -0.5],
+        BACKGROUND,
+        framed_panel,
+        hex_colour(LINE),
+    )
 
     scenario(
         "a preset-scoped exception passes under its preset",
