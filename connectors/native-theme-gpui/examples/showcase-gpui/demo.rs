@@ -449,6 +449,33 @@ impl MenuBar {
         self.open
     }
 
+    /// Opens the menu titled `name`, compared without case (`--open-menu`);
+    /// an error naming the menus where none is titled so.
+    pub(crate) fn open_named(
+        &mut self,
+        name: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        let menus = app_menu_rows();
+        match menus
+            .iter()
+            .position(|(title, _)| title.eq_ignore_ascii_case(name))
+        {
+            Some(ix) => {
+                self.open(ix, window, cx);
+                Ok(())
+            }
+            None => {
+                let names: Vec<String> = menus.iter().map(|(t, _)| t.to_lowercase()).collect();
+                Err(format!(
+                    "--open-menu {name}: no such menu; the menus are: {}",
+                    names.join(", ")
+                ))
+            }
+        }
+    }
+
     fn open(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
         if self.open.is_none() {
             self.restore = window.focused(cx);

@@ -695,6 +695,10 @@ struct CliArgs {
     /// written there (`dump_layout`); with `--capture` the window stays
     /// open for the capture, without it the showcase quits.
     dump_layout: Option<String>,
+    /// `--open-menu <title>`: the menu of that title (`theme` for the Theme
+    /// menu) is open from the first frame, so a capture and a layout dump
+    /// show its popup and rows.
+    open_menu: Option<String>,
 }
 
 /// `X,Y` as two whole logical pixels, or `None`.
@@ -890,6 +894,12 @@ impl CliArgs {
                     i += 1;
                     if i < argv.len() {
                         args.dump_layout = Some(argv[i].clone());
+                    }
+                }
+                "--open-menu" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.open_menu = Some(argv[i].clone());
                     }
                 }
                 "--press" => args.press = true,
@@ -1402,6 +1412,13 @@ fn apply_cli_args(
         s.choose_icon_row(&row);
         s.show_icon_choice(window, cx);
         s.reload_icons(window, cx);
+    }
+
+    if let Some(name) = cli_args.open_menu.as_deref() {
+        let opened = s
+            .menus
+            .update(cx, |menus, cx| menus.open_named(name, window, cx));
+        reported(opened);
     }
 }
 

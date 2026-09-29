@@ -15,12 +15,12 @@
 pub const HOW: &[(&str, &str, &str)] = &[
     // --- button: the toggle button that is on --------------------------------
     (
-        "basic.toggle_buttons.on",
+        "basic.buttons.toggle_on",
         "button.active_background",
         "gpui: the selected Button's own bg, replayed over its selected style (demo::toggle_button)",
     ),
     (
-        "basic.toggle_buttons.on",
+        "basic.buttons.toggle_on",
         "button.active_text_color",
         "gpui: the selected Button's own text colour, over its selected style (demo::toggle_button)",
     ),
@@ -143,7 +143,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: variants::ghost_button's foreground, ThemeColor secondary_foreground",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.font.color",
         "gpui: variants::ghost_button's foreground, ThemeColor secondary_foreground",
     ),
@@ -158,7 +158,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: variants::ghost_button's hover, ThemeColor secondary_hover (colors.rs)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.hover_background",
         "gpui: variants::ghost_button's hover, ThemeColor secondary_hover (colors.rs)",
     ),
@@ -173,7 +173,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.hover_text_color",
         "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
     ),
@@ -188,7 +188,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: variants::ghost_button's active, ThemeColor secondary_active (colors.rs)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.active_background",
         "gpui: variants::ghost_button's active, ThemeColor secondary_active (colors.rs)",
     ),
@@ -198,7 +198,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: rounds the tool button's box (demo::tool_button_box)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.border.corner_radius_px",
         "gpui: rounds the tool button's box (demo::tool_button_box)",
     ),
@@ -228,22 +228,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.border.padding_top_px",
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.border.padding_right_px",
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.border.padding_bottom_px",
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
-        "basic.icon_buttons",
+        "basic.icons.",
         "button.border.padding_left_px",
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
@@ -740,11 +740,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: geometry::button's line height (control-height rule)",
     ),
     (
-        "basic.toggle_buttons",
-        "defaults.line_height",
-        "gpui: geometry::button's line height (control-height rule)",
-    ),
-    (
         "basic.checkboxes",
         "defaults.line_height",
         "gpui: the label's line height (widgets::Checkbox)",
@@ -766,11 +761,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "basic.number_input",
-        "defaults.line_height",
-        "gpui: geometry::input's line height (control-height rule)",
-    ),
-    (
-        "basic.focused_input",
         "defaults.line_height",
         "gpui: geometry::input's line height (control-height rule)",
     ),
@@ -840,6 +830,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: each row's line box, the font's size by it (demo::files_table)",
     ),
     (
+        "basic.typography.link",
+        "defaults.line_height",
+        "gpui: the Link's line height, link.font's size by it (demo::link)",
+    ),
+    (
         "basic.typography",
         "defaults.line_height",
         "gpui: the line box, the font's size by it (demo::type_line)",
@@ -851,11 +846,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "basic.card",
-        "defaults.line_height",
-        "gpui: the Label's line height (demo::body_label)",
-    ),
-    (
-        "basic.text",
         "defaults.line_height",
         "gpui: the Label's line height (demo::body_label)",
     ),

@@ -3,7 +3,7 @@
 //! so the gpui, iced and egui captures compare control by control. Each
 //! control is built by the helper its own page builds it with.
 //!
-//! Four equal columns, each a stack of groups; a group is its heading over
+//! Five equal columns, each a stack of groups; a group is its heading over
 //! its rows of controls. The groups and their elements are
 //! docs/showcase-elements.toml's; the page, its columns and every element
 //! record where they were laid out (`crate::elements`).
@@ -25,15 +25,15 @@ use crate::elements;
 use crate::support::{native_value, with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
-/// slider and progress bar. The model states no such width; it is the Basic
-/// page's own, the iced and egui showcases' `BASIC_WIDTH` too, so the three
-/// pages lay the same controls out alike.
+/// number input, slider and progress bar. The model states no such width;
+/// it is the Basic page's own, the iced and egui showcases' `BASIC_WIDTH`
+/// too, so the three pages lay the same controls out alike.
 const BASIC_WIDTH: f32 = 140.0;
 
 /// The width, in logical pixels, of the Basic page's text area, list,
 /// expander, card, separator and table: the Basic page's own, as
 /// `BASIC_WIDTH` is, and the iced and egui showcases' `BASIC_WIDE` too.
-const BASIC_WIDE: f32 = 200.0;
+const BASIC_WIDE: f32 = 170.0;
 
 /// The progress bar's value, in percent: the datum on display.
 const BASIC_PROGRESS: f32 = 40.0;
@@ -84,26 +84,29 @@ const ICON_BUTTONS: [(&str, IconRole, &str, &str); 3] = [
         "basic-icon-copy",
         IconRole::ActionCopy,
         "Copy",
-        "basic.icon_buttons.copy.icon",
+        "basic.icons.copy.icon",
     ),
     (
         "basic-icon-paste",
         IconRole::ActionPaste,
         "Paste",
-        "basic.icon_buttons.paste.icon",
+        "basic.icons.paste.icon",
     ),
     (
         "basic-icon-delete",
         IconRole::ActionDelete,
         "Delete",
-        "basic.icon_buttons.delete.icon",
+        "basic.icons.delete.icon",
     ),
 ];
 
-/// The Typography group's lines, as (id, role, text).
-const TYPE_LINES: [(&str, TypeRole, &str); 6] = [
+/// The Typography group's lines above its Link, and those below it, as (id,
+/// role, text).
+const TYPE_LINES_ABOVE_LINK: [(&str, TypeRole, &str); 2] = [
     ("basic-type-caption", TypeRole::Caption, "Caption"),
     ("basic-type-body", TypeRole::Body, "Body"),
+];
+const TYPE_LINES_BELOW_LINK: [(&str, TypeRole, &str); 4] = [
     (
         "basic-type-section-heading",
         TypeRole::SectionHeading,
@@ -145,47 +148,46 @@ const ICONS: [SizedIcon; 3] = [
 pub(crate) type BasicGroup = (&'static str, &'static str);
 
 /// The groups of each column, top to bottom.
-pub(crate) const BASIC_COLUMN_1: [BasicGroup; 6] = [
+pub(crate) const BASIC_COLUMN_1: [BasicGroup; 4] = [
     ("basic-heading-buttons", "Buttons"),
     ("basic-heading-checkboxes", "Checkboxes"),
     ("basic-heading-radio", "Radio buttons"),
     ("basic-heading-switches", "Switches"),
-    ("basic-heading-toggle", "Toggle button"),
-    ("basic-heading-icon-buttons", "Icon buttons"),
 ];
-pub(crate) const BASIC_COLUMN_2: [BasicGroup; 6] = [
+pub(crate) const BASIC_COLUMN_2: [BasicGroup; 3] = [
     ("basic-heading-inputs", "Text inputs"),
     ("basic-heading-textarea", "Text area"),
     ("basic-heading-select", "Drop-down"),
-    ("basic-heading-text", "Text"),
-    ("basic-heading-number", "Number input"),
-    ("basic-heading-focused", "Focused input"),
 ];
 pub(crate) const BASIC_COLUMN_3: [BasicGroup; 6] = [
+    ("basic-heading-number", "Number input"),
     ("basic-heading-slider", "Slider"),
     ("basic-heading-progress", "Progress bar"),
     ("basic-heading-spinner", "Spinner"),
     ("basic-heading-tabs", "Tabs"),
     ("basic-heading-segmented", "Segmented control"),
-    ("basic-heading-typography", "Typography"),
 ];
-pub(crate) const BASIC_COLUMN_4: [BasicGroup; 6] = [
-    ("basic-heading-list", "List"),
-    ("basic-heading-expander", "Expander"),
+pub(crate) const BASIC_COLUMN_4: [BasicGroup; 4] = [
+    ("basic-heading-typography", "Typography"),
+    ("basic-heading-icons", "Icons"),
     ("basic-heading-card", "Card"),
     ("basic-heading-separator", "Separator"),
+];
+pub(crate) const BASIC_COLUMN_5: [BasicGroup; 3] = [
+    ("basic-heading-list", "List"),
+    ("basic-heading-expander", "Expander"),
     ("basic-heading-table", "Table"),
-    ("basic-heading-icons", "Icons"),
 ];
 
-/// The elements of docs/showcase-elements.toml the page and its four
+/// The elements of docs/showcase-elements.toml the page and its five
 /// columns are.
 const PAGE: &str = "basic.page";
-const COLUMNS: [&str; 4] = [
+const COLUMNS: [&str; 5] = [
     "basic.column_1",
     "basic.column_2",
     "basic.column_3",
     "basic.column_4",
+    "basic.column_5",
 ];
 
 /// A control held in the one state it shows: a click changes nothing.
@@ -252,10 +254,11 @@ impl Showcase {
                 },
             )
         };
-        let [buttons, checkboxes, radios, switches, toggle, icon_buttons] = BASIC_COLUMN_1;
-        let [inputs, textarea, select, text, number, focused] = BASIC_COLUMN_2;
-        let [slider, progress, spinner, tabs, segmented, typography] = BASIC_COLUMN_3;
-        let [list, expander, card, separator, table, icons] = BASIC_COLUMN_4;
+        let [buttons, checkboxes, radios, switches] = BASIC_COLUMN_1;
+        let [inputs, textarea, select] = BASIC_COLUMN_2;
+        let [number, slider, progress, spinner, tabs, segmented] = BASIC_COLUMN_3;
+        let [typography, icons, card, separator] = BASIC_COLUMN_4;
+        let [list, expander, table] = BASIC_COLUMN_5;
         let no_click = None::<fn(&bool, &mut Window, &mut gpui::App)>;
 
         let column1 = vec![
@@ -276,6 +279,10 @@ impl Showcase {
                             "Tooltip",
                             "A tooltip",
                         ))
+                        .into_any_element(),
+                    row()
+                        .child(button(TOGGLE_OFF))
+                        .child(demo::toggle_button(ui, cx, "basic-toggle-on", "On"))
                         .into_any_element(),
                 ],
             ),
@@ -337,35 +344,6 @@ impl Showcase {
                         .into_any_element(),
                 ],
             ),
-            group(
-                toggle,
-                vec![
-                    row()
-                        .child(button(TOGGLE_OFF))
-                        .child(demo::toggle_button(ui, cx, "basic-toggle-on", "On"))
-                        .into_any_element(),
-                ],
-            ),
-            group(
-                icon_buttons,
-                vec![
-                    // As the toolbar's buttons are spaced: `toolbar.item_gap`,
-                    // `layout.widget_gap` where the theme states none.
-                    with_gap(h_flex(), tool_gap.or(widget_gap))
-                        .items_center()
-                        .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
-                            demo::icon_button(
-                                ui,
-                                cx,
-                                id,
-                                name,
-                                &self.role_chrome_icon(role),
-                                listed,
-                            )
-                        }))
-                        .into_any_element(),
-                ],
-            ),
         ];
 
         let column2 = vec![
@@ -402,6 +380,16 @@ impl Showcase {
                         width,
                     )
                     .into_any_element(),
+                    demo::text_input(
+                        ui,
+                        cx,
+                        "basic-input-focused",
+                        &self.basic_focused_state,
+                        InputField::Refined,
+                        false,
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
             group(
@@ -425,20 +413,9 @@ impl Showcase {
                     .into_any_element(),
                 ],
             ),
-            group(
-                text,
-                vec![
-                    demo::body_label(ui, cx, "basic-body-text", "Body text").into_any_element(),
-                    demo::link(
-                        ui,
-                        cx,
-                        "basic-link",
-                        "Link",
-                        "https://github.com/tiborgats/native-theme",
-                    )
-                    .into_any_element(),
-                ],
-            ),
+        ];
+
+        let column3 = vec![
             group(
                 number,
                 vec![
@@ -446,24 +423,6 @@ impl Showcase {
                         .into_any_element(),
                 ],
             ),
-            group(
-                focused,
-                vec![
-                    demo::text_input(
-                        ui,
-                        cx,
-                        "basic-input-focused",
-                        &self.basic_focused_state,
-                        InputField::Refined,
-                        false,
-                        width,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-        ];
-
-        let column3 = vec![
             group(
                 slider,
                 vec![
@@ -506,7 +465,7 @@ impl Showcase {
                         ui,
                         cx,
                         "basic-tabs",
-                        &["One", "Two", "Three"],
+                        &["One", "Two"],
                         self.basic_tab,
                         on_tab,
                     )
@@ -527,18 +486,85 @@ impl Showcase {
                     .into_any_element(),
                 ],
             ),
+        ];
+
+        let type_line =
+            |(id, role, text)| demo::type_line(ui, cx, id, role, text).into_any_element();
+        let folder = self.role_chrome_icon(IconRole::FolderOpen);
+        let column4 = vec![
             group(
                 typography,
-                TYPE_LINES
-                    .map(|(id, role, text)| {
-                        demo::type_line(ui, cx, id, role, text).into_any_element()
-                    })
-                    .into(),
+                TYPE_LINES_ABOVE_LINK
+                    .map(type_line)
+                    .into_iter()
+                    .chain([demo::link(
+                        ui,
+                        cx,
+                        "basic-link",
+                        "Link",
+                        "https://github.com/tiborgats/native-theme",
+                    )
+                    .into_any_element()])
+                    .chain(TYPE_LINES_BELOW_LINK.map(type_line))
+                    .collect(),
+            ),
+            group(
+                icons,
+                vec![
+                    // As the toolbar's buttons are spaced: `toolbar.item_gap`,
+                    // `layout.widget_gap` where the theme states none.
+                    with_gap(h_flex(), tool_gap.or(widget_gap))
+                        .items_center()
+                        .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
+                            demo::icon_button(
+                                ui,
+                                cx,
+                                id,
+                                name,
+                                &self.role_chrome_icon(role),
+                                listed,
+                            )
+                        }))
+                        .into_any_element(),
+                    row()
+                        .children(ICONS.map(|(id, size, what)| {
+                            demo::sized_icon(ui, cx, id, &folder, size, what)
+                        }))
+                        .into_any_element(),
+                ],
+            ),
+            group(
+                card,
+                vec![
+                    demo::card(
+                        ui,
+                        cx,
+                        "basic-card",
+                        "basic-card-text",
+                        "Card content",
+                        wide,
+                        geometry::container_margin(&self.layout),
+                    )
+                    .into_any_element(),
+                ],
+            ),
+            group(
+                separator,
+                vec![
+                    div()
+                        .w(wide)
+                        .child(demo::separator(
+                            ui,
+                            cx,
+                            "basic-separator",
+                            SeparatorKind::Horizontal,
+                        ))
+                        .into_any_element(),
+                ],
             ),
         ];
 
-        let folder = self.role_chrome_icon(IconRole::FolderOpen);
-        let column4 = vec![
+        let column5 = vec![
             group(
                 list,
                 vec![
@@ -574,35 +600,6 @@ impl Showcase {
                 ],
             ),
             group(
-                card,
-                vec![
-                    demo::card(
-                        ui,
-                        cx,
-                        "basic-card",
-                        "basic-card-text",
-                        "Card content",
-                        wide,
-                        geometry::container_margin(&self.layout),
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
-                separator,
-                vec![
-                    div()
-                        .w(wide)
-                        .child(demo::separator(
-                            ui,
-                            cx,
-                            "basic-separator",
-                            SeparatorKind::Horizontal,
-                        ))
-                        .into_any_element(),
-                ],
-            ),
-            group(
                 table,
                 vec![
                     demo::files_table(
@@ -617,16 +614,6 @@ impl Showcase {
                     .into_any_element(),
                 ],
             ),
-            group(
-                icons,
-                vec![
-                    row()
-                        .children(ICONS.map(|(id, size, what)| {
-                            demo::sized_icon(ui, cx, id, &folder, size, what)
-                        }))
-                        .into_any_element(),
-                ],
-            ),
         ];
 
         let column = |listed: &'static str, groups: Vec<gpui::Div>| {
@@ -638,7 +625,7 @@ impl Showcase {
                 .child(elements::record(ui, listed))
                 .children(groups)
         };
-        let [c1, c2, c3, c4] = COLUMNS;
+        let [c1, c2, c3, c4, c5] = COLUMNS;
         // The page is the columns' row, inside the window margin.
         with_padding(div(), window_margin).flex_1().child(
             with_gap(h_flex(), section_gap)
@@ -649,7 +636,8 @@ impl Showcase {
                 .child(column(c1, column1))
                 .child(column(c2, column2))
                 .child(column(c3, column3))
-                .child(column(c4, column4)),
+                .child(column(c4, column4))
+                .child(column(c5, column5)),
         )
     }
 

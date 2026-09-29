@@ -738,7 +738,7 @@ impl Showcase {
                 "basic.text_inputs.disabled.text",
                 &self.basic_disabled_state,
             ),
-            ("basic.focused_input.field.text", &self.basic_focused_state),
+            ("basic.text_inputs.focused.text", &self.basic_focused_state),
             ("basic.number_input.field.text", &self.basic_number_state),
         ];
         let mut found: Vec<(&'static str, gpui::Bounds<Pixels>)> = fields

@@ -3963,7 +3963,7 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
             .and_then(|nt| nt.native(cx))
             .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
     });
-    let body = bounds_of(&mut cx, "basic-body-text").size.height.as_f32();
+    let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
     // gpui lays a text line out on whole pixels; upstream's own would be
     // 16.67px, a pixel less.
     assert!(
@@ -4010,27 +4010,30 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
         "the heading's info names no text_scale.section_heading: {info:?}"
     );
     let heading = bounds_of(&mut cx, "basic-heading-buttons");
-    let body = bounds_of(&mut cx, "basic-body-text");
+    let body = bounds_of(&mut cx, "basic-type-body");
     assert!(
         heading.size.height > body.size.height,
         "the heading ({heading:?}) is no taller than body text ({body:?})"
     );
 }
 
-/// The Basic page lays its groups out as the three showcases do: four
+/// The Basic page lays its groups out as the three showcases do: five
 /// columns, left to right, each a stack of its groups in order, every group
 /// its heading over its controls, and every control the page shows drawn.
 #[gpui::test]
 fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
-    use crate::pages::basic::{BASIC_COLUMN_1, BASIC_COLUMN_2, BASIC_COLUMN_3, BASIC_COLUMN_4};
+    use crate::pages::basic::{
+        BASIC_COLUMN_1, BASIC_COLUMN_2, BASIC_COLUMN_3, BASIC_COLUMN_4, BASIC_COLUMN_5,
+    };
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let columns: [&[(&'static str, &'static str)]; 4] = [
+    let columns: [&[(&'static str, &'static str)]; 5] = [
         &BASIC_COLUMN_1,
         &BASIC_COLUMN_2,
         &BASIC_COLUMN_3,
         &BASIC_COLUMN_4,
+        &BASIC_COLUMN_5,
     ];
     let mut previous_left = None;
     for column in columns {
@@ -4069,26 +4072,22 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
             "Checkboxes",
             "Radio buttons",
             "Switches",
-            "Toggle button",
-            "Icon buttons",
             "Text inputs",
             "Text area",
             "Drop-down",
-            "Text",
             "Number input",
-            "Focused input",
             "Slider",
             "Progress bar",
             "Spinner",
             "Tabs",
             "Segmented control",
             "Typography",
-            "List",
-            "Expander",
+            "Icons",
             "Card",
             "Separator",
+            "List",
+            "Expander",
             "Table",
-            "Icons",
         ],
         "the Basic page's groups are not the three showcases' groups"
     );
@@ -4108,18 +4107,23 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
         "basic-input-filled",
         crate::BASIC_INPUT_DISABLED,
         "basic-textarea",
+        "basic-toggle-off",
+        "basic-toggle-on",
+        "basic-input-focused",
         "basic-select",
-        "basic-body-text",
+        "basic-type-body",
         "basic-link",
         "basic-slider",
         "basic-progress",
         "basic-spinner",
         "basic-tabs",
         "basic-segmented",
+        "basic-icon-copy",
         "basic-list",
         "basic-expander",
         "basic-card",
         "basic-separator",
+        "basic-table",
     ] {
         let bounds = bounds_of(&mut cx, control);
         assert!(
@@ -4240,7 +4244,7 @@ fn the_basic_list_shows_four_rows(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_basic_page_fits_the_window(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material", "catppuccin-mocha"] {
+    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         for mode in ["Light", "Dark"] {
             run_menu_item(&mut cx, "Theme", mode);
@@ -8289,7 +8293,7 @@ const NOT_RECORDED: &[(&str, &str)] = &[
         "Showcase::field_text_bounds",
     ),
     (
-        "basic.focused_input.field.text",
+        "basic.text_inputs.focused.text",
         "Showcase::field_text_bounds",
     ),
     (
@@ -8353,6 +8357,43 @@ fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
             "NOT_RECORDED names {id}, no element of the list"
         );
     }
+}
+
+/// `--open-menu theme` opens the Theme menu, so the layout dump holds its
+/// popup and every row the list shows while it is open; a menu of another
+/// name is refused, naming the menus.
+#[gpui::test]
+fn the_open_theme_menu_is_dumped_with_its_rows(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let refused = cx.update(|window, cx| {
+        let menus = showcase.read(cx).menus.clone();
+        menus.update(cx, |m, cx| m.open_named("nonesuch", window, cx))
+    });
+    assert!(
+        refused.as_ref().is_err_and(|e| e.contains("theme")),
+        "an unknown menu is not refused with the menus named: {refused:?}"
+    );
+    let opened = cx.update(|window, cx| {
+        let menus = showcase.read(cx).menus.clone();
+        menus.update(cx, |m, cx| m.open_named("theme", window, cx))
+    });
+    assert!(opened.is_ok(), "the Theme menu does not open: {opened:?}");
+    cx.run_until_parked();
+    draw(&mut cx);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let missing: Vec<&str> = crate::elements::elements()
+        .iter()
+        .filter(|e| e.id.starts_with("chrome.menu.theme"))
+        .map(|e| e.id.as_str())
+        .filter(|id| !drawn.contains_key(id))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "the open Theme menu's dump lacks {missing:?}"
+    );
 }
 
 /// Every leaf of every element of the list has the line saying how gpui
