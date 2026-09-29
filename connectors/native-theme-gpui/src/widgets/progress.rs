@@ -3,8 +3,8 @@
 
 use gpui::{
     AnyElement, App, ElementId, Hsla, InteractiveElement as _, IntoElement, ParentElement, Pixels,
-    RenderOnce, SharedString, StyleRefinement, Styled, Window, prelude::FluentBuilder as _,
-    relative,
+    RenderOnce, SharedString, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
+    px, relative,
 };
 use gpui_base::{
     Progress as BaseProgress, ProgressIndicator, ProgressTrack, Transition, transition,
@@ -12,7 +12,7 @@ use gpui_base::{
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native};
+use super::{Part, PartBounds, color, length, native, part_bounds};
 
 /// What a progress bar paints, from `ProgressBarTheme` (spec §2.5).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -64,6 +64,7 @@ pub struct ProgressBar {
     value: f32,
     label: Option<SharedString>,
     style: StyleRefinement,
+    observer: Option<PartBounds>,
 }
 
 impl ProgressBar {
@@ -75,7 +76,16 @@ impl ProgressBar {
             value: 0.,
             label: None,
             style: StyleRefinement::default(),
+            observer: None,
         }
+    }
+
+    /// Hands `observer` the bounds of the fill as each frame lays it out
+    /// ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.observer = Some(observer);
+        self
     }
 
     /// The value, in percent, clamped to 0–100.
@@ -136,21 +146,37 @@ impl RenderOnce for ProgressBar {
             .h(look.height)
             .refine_style(&self.style)
             .debug_selector(|| "native-progress".into())
+            // The track, the fill `track_height` tall across it from its start,
+            // and the frame drawn over both: `progress_bar.border` edges the
+            // bar, not a box the fill sits inside.
             .child(
                 ProgressTrack::new()
                     .absolute()
                     .size_full()
                     .rounded(look.radius)
-                    .border(look.border_width)
-                    .border_color(look.border)
+                    .overflow_hidden()
                     .bg(look.track)
                     .child(
                         ProgressIndicator::new()
+                            .relative()
                             .h_full()
                             .w(relative((shown / 100.).clamp(0., 1.)))
                             .rounded(look.radius)
-                            .bg(look.fill),
+                            .bg(look.fill)
+                            .children(
+                                self.observer
+                                    .as_ref()
+                                    .map(|o| part_bounds(Part::Fill, o, px(0.))),
+                            ),
                     ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .size_full()
+                    .rounded(look.radius)
+                    .border(look.border_width)
+                    .border_color(look.border),
             )
             .into_any_element()
     }

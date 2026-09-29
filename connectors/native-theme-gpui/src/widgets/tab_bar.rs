@@ -12,7 +12,7 @@ use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native, over, text_size};
+use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
@@ -164,6 +164,7 @@ pub struct TabBar {
     on_click: Option<TabClick>,
     suffix: Option<AnyElement>,
     style: StyleRefinement,
+    observer: Option<PartBounds>,
 }
 
 impl TabBar {
@@ -177,7 +178,16 @@ impl TabBar {
             on_click: None,
             suffix: None,
             style: StyleRefinement::default(),
+            observer: None,
         }
+    }
+
+    /// Hands `observer` the bounds of each tab, as [`Part::Tab`] with its
+    /// index, as each frame lays them out ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.observer = Some(observer);
+        self
     }
 
     /// Adds a tab.
@@ -251,8 +261,10 @@ impl RenderOnce for TabBar {
         };
         let font = &n.resolved.tab.font;
         let (size, weight) = (text_size(font.size, n), FontWeight(f32::from(font.weight)));
+        let line_height = n.resolved.defaults.line_height;
         let total = self.tabs.len();
         let selected = self.selected;
+        let observer = self.observer.clone();
         let tabs = self.tabs.into_iter().enumerate().map(|(ix, tab)| {
             let on_click = self.on_click.clone();
             let is_selected = ix == selected;
@@ -285,7 +297,20 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                .child(div().text_size(size).font_weight(weight).child(tab.label))
+                // One line of `tab.font` tall: its size by
+                // `defaults.line_height`, the line box the model states.
+                .child(
+                    div()
+                        .text_size(size)
+                        .line_height(gpui::relative(line_height))
+                        .font_weight(weight)
+                        .child(tab.label),
+                )
+                .children(
+                    observer
+                        .as_ref()
+                        .map(|o| part_bounds(Part::Tab(ix), o, look.border_width)),
+                )
                 .when_some(on_click, |tab, on_click| {
                     tab.on_click(move |_, window, cx| on_click(&ix, window, cx))
                 })

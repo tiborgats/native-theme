@@ -16,7 +16,7 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native, over, text_size};
+use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -134,6 +134,7 @@ struct Parts {
     checked: bool,
     disabled: bool,
     on_change: Option<ChangeHandler>,
+    observer: Option<PartBounds>,
 }
 
 impl Parts {
@@ -144,6 +145,7 @@ impl Parts {
             checked: false,
             disabled: false,
             on_change: None,
+            observer: None,
         }
     }
 }
@@ -214,6 +216,28 @@ fn stroked_check(size: Pixels, stroke: Pixels, colour: Hsla, opacity: f32) -> An
         .into_any_element()
 }
 
+/// The box `stroked_check` paints in a `size` square with a line `stroke`
+/// wide, as (left, top, width, height) in that square: its points scaled
+/// to the square, and half the line round them, where its round caps and
+/// join reach.
+fn stroked_check_bounds(size: f32, stroke: f32) -> (f32, f32, f32, f32) {
+    let scale = size / CHECK_VIEW_BOX;
+    let (mut left, mut top, mut right, mut bottom) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+    for (x, y) in CHECK_POINTS {
+        left = left.min(x);
+        top = top.min(y);
+        right = right.max(x);
+        bottom = bottom.max(y);
+    }
+    let r = stroke / 2.;
+    (
+        left * scale - r,
+        top * scale - r,
+        (right - left) * scale + stroke,
+        (bottom - top) * scale + stroke,
+    )
+}
+
 /// The indicator box, its mark and the label of a checkbox or radio in
 /// `look`, round when `round`.
 fn indicator_and_label(
@@ -234,6 +258,7 @@ fn indicator_and_label(
         window,
         cx,
     );
+    let observer = parts.observer.as_ref();
     let mark = match look.dot.filter(|_| round) {
         // A radio's dot, `radio_dot_diameter` across, centred in the circle
         // (docs/platform-facts.md:1220, §2.5).
@@ -263,6 +288,40 @@ fn indicator_and_label(
             }
         }
     };
+    // Where its bounds are asked for, the mark in a box of its own size
+    // that reports them: the stroked check's the box its line paints, the
+    // polyline's points and its round ends half the line out from them;
+    // the dot's and the icon's their whole box.
+    let mark = match observer {
+        Some(observer) => {
+            let stroked = look
+                .mark_stroke
+                .filter(|_| !(round && look.dot.is_some()))
+                .map(|stroke| {
+                    let inner = f32::from(look.indicator) - f32::from(look.border_width) * 2.;
+                    stroked_check_bounds(inner, f32::from(stroke))
+                });
+            let reported = part_bounds(Part::Mark, observer, px(0.)).into_any_element();
+            let reported = match stroked {
+                Some((left, top, width, height)) => div()
+                    .absolute()
+                    .left(px(left))
+                    .top(px(top))
+                    .w(px(width))
+                    .h(px(height))
+                    .child(reported)
+                    .into_any_element(),
+                None => reported,
+            };
+            div()
+                .flex_none()
+                .relative()
+                .child(mark)
+                .child(reported)
+                .into_any_element()
+        }
+        None => mark,
+    };
     let indicator = div()
         .flex()
         .flex_none()
@@ -284,16 +343,19 @@ fn indicator_and_label(
         })
         .debug_selector(|| "native-checkbox-indicator".into())
         .child(mark)
+        .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
         .into_any_element();
     let (size, weight, line_height) = font;
     let label = parts.label.clone().map(|label| {
         div()
+            .relative()
             .text_size(size)
             .font_weight(weight)
             .line_height(relative(line_height))
             .text_color(look.label)
             .debug_selector(|| "native-checkbox-label".into())
             .child(label)
+            .children(observer.map(|o| part_bounds(Part::Label, o, px(0.))))
             .into_any_element()
     });
     (indicator, label)
@@ -349,6 +411,14 @@ impl Checkbox {
         self
     }
 
+    /// Hands `observer` the bounds of the box, the check mark and the label
+    /// as each frame lays them out ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.parts.observer = Some(observer);
+        self
+    }
+
     fn fallback(self) -> AnyElement {
         let parts = self.parts;
         gpui_component::checkbox::Checkbox::new(parts.id)
@@ -384,6 +454,7 @@ impl RenderOnce for Checkbox {
             checked,
             disabled,
             on_change,
+            observer: _,
         } = self.parts;
         let focus_handle = window
             .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
@@ -475,6 +546,14 @@ impl Radio {
         self
     }
 
+    /// Hands `observer` the bounds of the circle, the dot and the label as
+    /// each frame lays them out ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.parts.observer = Some(observer);
+        self
+    }
+
     fn fallback(self) -> AnyElement {
         let parts = self.parts;
         gpui_component::radio::Radio::new(parts.id)
@@ -510,6 +589,7 @@ impl RenderOnce for Radio {
             checked,
             disabled,
             on_change,
+            observer: _,
         } = self.parts;
         let focus_handle = window
             .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())

@@ -12,7 +12,7 @@ use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native, over};
+use super::{Part, PartBounds, color, length, native, over, part_bounds};
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
 /// gpui-component's own, its fill colour at half alpha round the thumb
@@ -108,6 +108,7 @@ pub struct Slider {
     state: Entity<SliderState>,
     disabled: bool,
     style: StyleRefinement,
+    observer: Option<PartBounds>,
 }
 
 impl Slider {
@@ -118,6 +119,7 @@ impl Slider {
             state: state.clone(),
             disabled: false,
             style: StyleRefinement::default(),
+            observer: None,
         }
     }
 
@@ -125,6 +127,14 @@ impl Slider {
     #[must_use]
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    /// Hands `observer` the bounds of the rail, its fill and the thumb as
+    /// each frame lays them out ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.observer = Some(observer);
         self
     }
 
@@ -186,6 +196,7 @@ impl RenderOnce for Slider {
             return self.fallback();
         };
         let disabled = self.disabled;
+        let observer = self.observer.as_ref();
         let state = self.state.clone();
         let entity_id = state.entity_id();
         let (value, min, max, step, percentage) = {
@@ -232,7 +243,8 @@ impl RenderOnce for Slider {
                     .when_some(look.hover_thumb, |inner, hover| {
                         inner.group_hover(THUMB_GROUP, move |style| style.bg(hover))
                     }),
-            );
+            )
+            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))));
         // The travel the thumb's centre covers, and the pointer maps onto
         // (gpui-base records its bounds, slider.rs `SliderIndicator`): the
         // rail and the fill reach one thumb radius past it at each end.
@@ -249,7 +261,8 @@ impl RenderOnce for Slider {
                     .right(px(-f32::from(radius)))
                     .rounded(pill)
                     .bg(look.track)
-                    .debug_selector(|| "native-slider-rail".into()),
+                    .debug_selector(|| "native-slider-rail".into())
+                    .children(observer.map(|o| part_bounds(Part::Track, o, px(0.)))),
             )
             .child(
                 div()
@@ -260,7 +273,8 @@ impl RenderOnce for Slider {
                     .right(relative(1. - percentage))
                     .rounded(pill)
                     .bg(look.fill)
-                    .debug_selector(|| "native-slider-fill".into()),
+                    .debug_selector(|| "native-slider-fill".into())
+                    .children(observer.map(|o| part_bounds(Part::Fill, o, px(0.)))),
             )
             .child(thumb);
         let track = SliderTrack::new(&state)

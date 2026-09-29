@@ -11,7 +11,7 @@ use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native, over, text_size};
+use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:197).
@@ -129,6 +129,7 @@ pub struct Switch {
     checked: bool,
     disabled: bool,
     on_change: Option<ChangeHandler>,
+    observer: Option<PartBounds>,
 }
 
 impl Switch {
@@ -141,7 +142,16 @@ impl Switch {
             checked: false,
             disabled: false,
             on_change: None,
+            observer: None,
         }
+    }
+
+    /// Hands `observer` the bounds of the track, the thumb and the label as
+    /// each frame lays them out ([`PartBounds`]).
+    #[must_use]
+    pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
+        self.observer = Some(observer);
+        self
     }
 
     /// The label drawn beside the track, and the name a screen reader
@@ -194,7 +204,9 @@ impl RenderOnce for Switch {
             return self.fallback();
         };
         let checked = self.checked;
+        let observer = self.observer.as_ref();
         let label_size = text_size(n.resolved.defaults.font.size, n);
+        let label_line = n.resolved.defaults.line_height;
         let label_weight = FontWeight(f32::from(n.resolved.defaults.font.weight));
         let thumb_left = spring(
             (self.id.clone(), "thumb"),
@@ -228,9 +240,11 @@ impl RenderOnce for Switch {
                     .child(
                         div()
                             .size_full()
-                            .debug_selector(|| "native-switch-thumb".into()),
+                            .debug_selector(|| "native-switch-thumb".into())
+                            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
                     ),
-            );
+            )
+            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))));
         BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
@@ -250,14 +264,18 @@ impl RenderOnce for Switch {
             .when_some(self.label, |switch, label| {
                 switch.child(
                     div()
-                        // The label's line box is the track's height, as
-                        // gpui-component lays it out (switch.rs:237).
-                        .line_height(look.track_height)
+                        // One line of the label's font, its size by
+                        // `defaults.line_height`, the line box the model
+                        // states, centred on the track -- where
+                        // gpui-component makes the line box the track's
+                        // height (switch.rs:237).
+                        .line_height(gpui::relative(label_line))
                         .text_size(label_size)
                         .font_weight(label_weight)
                         .text_color(look.label)
                         .debug_selector(|| "native-switch-label".into())
-                        .child(label),
+                        .child(label)
+                        .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
                 )
             })
             .into_any_element()

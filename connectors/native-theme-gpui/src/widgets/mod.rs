@@ -92,10 +92,58 @@ into_element!(
     Separator
 );
 
-use gpui::{App, Hsla, Pixels, px};
+use std::rc::Rc;
+
+use gpui::{App, Bounds, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, px};
 use native_theme::color::Rgba;
 
 use crate::{ActiveNativeTheme, Native};
+
+/// A part of a theme-drawn control, as [`PartBounds`] names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Part {
+    /// A checkbox's box or a radio button's circle.
+    Indicator,
+    /// A checkbox's check mark or a radio button's dot, laid out whether it
+    /// shows or not.
+    Mark,
+    /// The text beside a checkbox, a radio button or a switch.
+    Label,
+    /// A switch's track, or the rail a slider's thumb travels along.
+    Track,
+    /// The filled stretch of a slider's rail or a progress bar's track.
+    Fill,
+    /// A switch's or a slider's thumb.
+    Thumb,
+    /// The tab at this index of a [`TabBar`].
+    Tab(usize),
+}
+
+/// Where a theme-drawn control reports the bounds each of its parts was
+/// laid out at, in window coordinates, outer edge of its border included --
+/// for an application that measures its own layout, as the showcase's
+/// layout dump does. Called while the frame is laid out (gpui's prepaint),
+/// each frame, for the parts the control draws; a control drawn as
+/// gpui-component's own, with no native theme installed, reports nothing.
+pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut App)>;
+
+/// An absolute, invisible box laid over a part whose border is `border`
+/// wide, reaching out to the border's outer edge: an absolute child is laid
+/// out inside its parent's border, so its insets go out by the border's
+/// width. It hands `observer` its bounds, the part's.
+fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoElement + use<> {
+    let observer = observer.clone();
+    canvas(
+        move |bounds, _: &mut Window, cx: &mut App| observer(part, bounds, cx),
+        |_, (), _, _| {},
+    )
+    .absolute()
+    .top(px(-f32::from(border)))
+    .left(px(-f32::from(border)))
+    .right(px(-f32::from(border)))
+    .bottom(px(-f32::from(border)))
+}
 
 /// The installed native view for the current mode, if any.
 fn native(cx: &App) -> Option<Native<'_>> {
