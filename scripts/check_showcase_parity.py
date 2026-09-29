@@ -7,7 +7,9 @@ element out alike and paint it in the same colours, because all three follow
 the theme data. This script is the mechanical gate for that: it reads what the
 showcases report about their own layout, and what their captures show, and
 fails on every difference not recorded, with its reason, in the `[parity]`
-table of docs/showcase-exceptions.toml. There is no silent tolerance.
+table of docs/showcase-exceptions.toml. The only tolerances are the three
+rules below, each documented with its sources, and the run counts what they
+cover.
 
 Run from the repository root:
 
@@ -73,9 +75,83 @@ For each preset and variant, across the three kinds:
   the element, sampled in each capture (see docs/showcase-elements.toml for
   the point syntax). A colour is `#rrggbb`.
 
-Numbers are compared after rounding to 1/100 of a logical pixel: the dumps are
-f32 layout results, and a difference below that is float arithmetic, not
-layout. Colours are compared exactly.
+Numbers are compared under the rules below, colours too; what no rule covers
+is compared exactly (numbers at 1/100 of a logical pixel: the dumps are f32
+layout results, and a difference below that is float arithmetic, not layout).
+
+Rules
+-----
+Three toolkits draw the same theme through three renderers, and three kinds
+of difference come from the renderers, not from the theme data. Each rule
+below covers one of them for every element, so no element needs an exception
+for it; a difference a rule covers is not reported (the summary line counts
+them per rule). Everything else is an exception with its reason, or a
+failure.
+
+R-snap -- geometry is compared on edges rounded to the pixel grid.
+    What each toolkit paints lands on whole device pixels, but the dumps
+    report the layout before that rounding in iced and egui:
+    - gpui snaps every element's outer box after layout, rounding its
+      absolute edges in device pixels, ties toward zero (gpui-pre 0.3.6
+      src/taffy.rs:270-345, the design; :371-374, the rounding;
+      src/util.rs:128-132, `round_half_toward_zero`), and rounds a measured
+      text size up to whole device pixels (src/taffy.rs:412-414); its glyphs
+      sit on whole device pixels vertically (`SUBPIXEL_VARIANTS_Y` = 1,
+      src/text_system.rs:52, applied in src/window.rs:4661-4666). Its dump
+      therefore holds whole pixels.
+    - egui lays out in steps of 1/32 point (emath 0.36.2
+      src/gui_rounding.rs:18) and rounds rectangles, right-angled line
+      segments and text positions to physical pixels when it paints; all
+      three are on by default (epaint 0.36.2 src/tessellator.rs:685-700,
+      :734-736; rectangles :1830-1861, text :2024-2025; the rounding,
+      `(x * pixels_per_point).round()`, emath src/gui_rounding.rs:68-70).
+      Its dump holds the unrounded layout.
+    - iced keeps fractions: iced_core 0.14.0's layout (src/layout.rs,
+      src/layout/) rounds nothing, and its dump reports them. Its wgpu
+      renderer rounds a quad's edges only as it paints, when `Quad::snap` is
+      set (iced_core src/renderer.rs:89-99, `snap: cfg!(feature = "crisp")`,
+      `crisp` in iced 0.14.0's default features, Cargo.toml:64-67;
+      iced_wgpu 0.14.0 src/shader/quad/solid.wgsl:38-40), and cosmic-text
+      truncates a glyph's y to a whole pixel (cosmic-text 0.15.0
+      src/layout.rs:84); iced_tiny_skia draws a quad at its fractional
+      bounds (engine.rs:65).
+    So the comparator rounds each edge of each rectangle -- left, top,
+    right = x + w, bottom = y + h, in window coordinates, as gpui does -- to
+    the device pixel grid of the dump's `scale` (whole logical pixels at
+    scale 1.0, the captures' scale), ties up (as egui's `f32::round` and
+    iced's shader round a positive coordinate; gpui's edges are already
+    whole), and compares w and h as rounded right - left and rounded
+    bottom - top, x and y as the rounded left and top edges minus the
+    parent's. A 0.4 px difference in an edge passes unless the two edges
+    fall on the two sides of a pixel's middle, where they paint a pixel
+    apart.
+
+R-shape -- a text run's width may differ by up to max(1 px, 2 %).
+    Each toolkit shapes text with its own shaper -- gpui with cosmic-text
+    0.19 on Linux, iced with cosmic-text 0.15, egui with epaint's own text
+    layout -- and each hints and kerns on its own; the theme states the
+    font (family, size, weight), not the shaper, so the same string comes
+    out a little wider or narrower in each. The width only: a text run's
+    left, top and height are the layout's and stay exact (after R-snap).
+    The tolerance is taken on the R-snap widths, of the widest of them. A
+    text run is an element whose rectangle is its text box (the list's
+    header: "a label's is its text box"), named in TEXT_RUNS below by the
+    list's `name`; `--check-list` fails on a name there no element has.
+
+R-glyph -- colour samples within a per-channel tolerance.
+    A glyph sample (`"glyph"`, `{ glyph = [...] }`: text, a check mark, an
+    arrow, a spinner's arc) passes when the three showcases' most
+    contrasting pixels are within 8 per channel of each other: glyph
+    anti-aliasing and the gamma each rasteriser blends coverage in (gpui's
+    atlas with its own glyph dilation, `glyph_dilation_for_color`, gpui-pre
+    0.3.6 src/window.rs:4673; cosmic-text/swash in iced; epaint's font
+    atlas in egui) move the darkest pixel of a stem by a few levels. A
+    point sample (a fill, a border, a line) passes within 1 per channel:
+    a translucent stated colour blended over its ground rounds to 8 bits
+    in each renderer, and may land one level apart. The comparator holds
+    no theme values, so both tolerances hold between the showcases'
+    samples; a sample that is not a colour (`outside`, `no glyph`) is
+    compared exactly.
 
 Exceptions
 ----------
@@ -131,6 +207,42 @@ WINDOW_SIZE = (1280, 720)
 GEOMETRY = ("present", "x", "y", "w", "h")
 # Decimal places numbers are compared at (1/100 logical pixel).
 PLACES = 2
+
+# The rules (see the module's docstring), each on by default.
+RULES = ("snap", "shape", "glyph")
+# R-shape: a text run's width may differ by up to max(SHAPE_PX, SHAPE_SHARE x width).
+SHAPE_PX = 1.0
+SHAPE_SHARE = 0.02
+# R-glyph: per-channel tolerance of a glyph sample and of a point sample.
+GLYPH_CHANNEL = 8
+POINT_CHANNEL = 1
+# R-shape: the list's `name`s of the elements whose rectangle is a text box.
+TEXT_RUNS = frozenset(
+    {
+        "Button label",
+        "Checkbox label",
+        "Drop-down text",
+        "Expander body",
+        "Expander title",
+        "Input text",
+        "Label",
+        "Link",
+        "Menu shortcut",
+        "Radio label",
+        "Section heading",
+        "Side panel label",
+        "Status text",
+        "Switch label",
+        "Text",
+        "Text area text",
+        "Tooltip text",
+        "Widget Info hint",
+        "Widget Info leaf",
+        "Widget Info route",
+        "Widget Info section",
+        "Widget Info title",
+    }
+)
 
 ID = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)*$")
 SAMPLE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -458,16 +570,47 @@ def number(value):
     return f"{round(value, PLACES):.{PLACES}f}".rstrip("0").rstrip(".")
 
 
-def relative(element, rects):
-    """The element's position relative to its parent, or None when the
-    parent is not drawn."""
-    rect = rects[element["id"]]
+def snap(value, scale):
+    """R-snap: a coordinate on the device pixel grid of `scale`, ties up."""
+    return math.floor(value * scale + 0.5) / scale
+
+
+def geometry(element, rects, scale, snapped):
+    """The element's w and h and, where its parent is drawn, its x and y
+    relative to the parent; with `snapped`, from its edges rounded to the
+    pixel grid (R-snap)."""
+
+    def edges(rect):
+        left, top = rect["x"], rect["y"]
+        right, bottom = left + rect["w"], top + rect["h"]
+        if snapped:
+            left, top, right, bottom = (snap(v, scale) for v in (left, top, right, bottom))
+        return left, top, right, bottom
+
+    left, top, right, bottom = edges(rects[element["id"]])
+    values = {"w": right - left, "h": bottom - top}
     parent = element["parent"]
     if parent == WINDOW:
-        return rect["x"], rect["y"]
-    if parent not in rects:
-        return None
-    return rect["x"] - rects[parent]["x"], rect["y"] - rects[parent]["y"]
+        values["x"], values["y"] = left, top
+    elif parent in rects:
+        parent_left, parent_top, _, _ = edges(rects[parent])
+        values["x"], values["y"] = left - parent_left, top - parent_top
+    return values
+
+
+def rgb(value):
+    """A `#rrggbb` sample as (r, g, b), or None for a note (`outside`, ...)."""
+    if isinstance(value, str) and re.fullmatch(r"#[0-9a-f]{6}", value):
+        return tuple(int(value[i : i + 2], 16) for i in (1, 3, 5))
+    return None
+
+
+def within_channels(values, tolerance):
+    """Whether every channel of the colours differs by at most `tolerance`."""
+    colours = [rgb(v) for v in values]
+    if any(c is None for c in colours):
+        return False
+    return all(max(c[i] for c in colours) - min(c[i] for c in colours) <= tolerance for i in range(3))
 
 
 # ---------------------------------------------------------------------------
@@ -475,11 +618,32 @@ def relative(element, rects):
 # ---------------------------------------------------------------------------
 
 
-def compare(groups, elements, exceptions, kinds):
+def covered(element, prop, raw, ruled, samples, rules):
+    """The rule that covers a difference in `prop`, or None. `raw` holds the
+    dumps' values (numbers) or the samples (colours), `ruled` the R-snap
+    values of a geometry property."""
+    if prop in ("x", "y", "w", "h"):
+        values = ruled if "snap" in rules else raw
+        if "snap" in rules and len({number(v) for v in values.values()}) == 1:
+            return "R-snap"
+        if prop == "w" and "shape" in rules and element["name"] in TEXT_RUNS:
+            widest = max(values.values())
+            if widest - min(values.values()) <= max(SHAPE_PX, SHAPE_SHARE * widest):
+                return "R-shape"
+        return None
+    if "glyph" not in rules:
+        return None
+    if samples[prop][0] == "glyph":
+        return "R-glyph (glyph)" if within_channels(raw.values(), GLYPH_CHANNEL) else None
+    return "R-glyph (point)" if within_channels(raw.values(), POINT_CHANNEL) else None
+
+
+def compare(groups, elements, exceptions, kinds, rules=RULES):
     """Every difference, as (group, key, {kind: value}, reason or None);
     a reason of None is an unexcepted difference. Also the exception keys
-    that matched, and the conditional elements no kind drew, per group."""
-    rows, used, unseen = [], set(), {}
+    that matched, the conditional elements no kind drew, per group, and how
+    many differences each rule covered."""
+    rows, used, unseen, ruled_out = [], set(), {}, {}
 
     def differ(group, key, values, exceptable=True):
         reason = exceptions.get(key) if exceptable else None
@@ -513,23 +677,29 @@ def compare(groups, elements, exceptions, kinds):
                 )
             if len(drawn) < 2:
                 continue
-            measured = {}
+            measured, snapped = {}, {}
             for k in drawn:
-                rects = dumps[k]["elements"]
-                rect = rects[ident]
-                values = {"w": number(rect["w"]), "h": number(rect["h"])}
-                at = relative(element, rects)
-                if at is not None:
-                    values["x"], values["y"] = number(at[0]), number(at[1])
+                rects, scale = dumps[k]["elements"], dumps[k]["scale"]
+                values = geometry(element, rects, scale, False)
+                snapped[k] = geometry(element, rects, scale, True)
                 if dumps[k]["capture"] is not None:
                     for name, spec in element["samples"].items():
-                        values[name] = sample_colour(dumps[k]["capture"], dumps[k]["scale"], rect, spec)
+                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec)
                 measured[k] = values
             for prop in ("x", "y", "w", "h", *element["samples"]):
-                values = {k: v[prop] for k, v in measured.items() if prop in v}
-                if len(values) >= 2 and len(set(values.values())) > 1:
-                    differ(group, f"{ident}.{prop}", values)
-    return rows, used, unseen
+                raw = {k: v[prop] for k, v in measured.items() if prop in v}
+                if len(raw) < 2:
+                    continue
+                shown = {k: number(v) if is_number(v) else v for k, v in raw.items()}
+                if len(set(shown.values())) == 1:
+                    continue
+                ruled = {k: snapped[k][prop] for k in raw if prop in snapped[k]}
+                rule = covered(element, prop, raw, ruled, element["samples"], rules)
+                if rule is not None:
+                    ruled_out[rule] = ruled_out.get(rule, 0) + 1
+                    continue
+                differ(group, f"{ident}.{prop}", shown)
+    return rows, used, unseen, ruled_out
 
 
 def print_table(rows, kinds):
@@ -580,9 +750,9 @@ LINE = (188, 190, 191)
 INK = (35, 38, 39)
 
 
-def self_test_capture(path, scale, panel, label, fill=FILL, frame=None):
+def self_test_capture(path, scale, panel, label, fill=FILL, frame=None, ink=INK):
     """A capture of `panel` (framed in LINE, filled with `fill`) holding
-    `label` (a glyph-like stroke in INK); `frame` = (dx, dy) draws a window
+    `label` (a glyph-like stroke in `ink`); `frame` = (dx, dy) draws a window
     frame round the content."""
     w, h = round(WINDOW_SIZE[0] * scale), round(WINDOW_SIZE[1] * scale)
     content = Image.new("RGB", (w, h), BACKGROUND)
@@ -592,7 +762,7 @@ def self_test_capture(path, scale, panel, label, fill=FILL, frame=None):
     lx, ly, lw, lh = (round(v * scale) for v in (label["x"], label["y"], label["w"], label["h"]))
     # An anti-aliased edge, then the solid stem.
     draw.line((lx + 1, ly + 1, lx + 1, ly + lh - 2), fill=(120, 122, 123))
-    draw.line((lx + 2, ly + 1, lx + 2, ly + lh - 2), fill=INK)
+    draw.line((lx + 2, ly + 1, lx + 2, ly + lh - 2), fill=ink)
     if frame is None:
         content.save(path)
         return
@@ -625,9 +795,7 @@ def self_test():
             os.mkdir(run)
             for kind in KINDS:
                 rects = {"t.panel": dict(panel), "t.panel.label": dict(label)}
-                fill = FILL
-                if change is not None:
-                    fill = change(kind, rects) or FILL
+                paint = (change(kind, rects) if change is not None else None) or {}
                 stem = os.path.join(run, f"{kind}-test-preset-light")
                 dump = {
                     "kind": kind,
@@ -640,12 +808,20 @@ def self_test():
                     json.dump(dump, f)
                 shown_panel = rects.get("t.panel", panel)
                 shown_label = rects.get("t.panel.label", label)
-                self_test_capture(stem + ".png", 1.0, shown_panel, shown_label, fill, frame)
+                self_test_capture(
+                    stem + ".png",
+                    1.0,
+                    shown_panel,
+                    shown_label,
+                    paint.get("fill", FILL),
+                    frame,
+                    paint.get("ink", INK),
+                )
                 if frame is not None:
                     with open(stem + ".offset", "w", encoding="utf-8") as f:
                         f.write(f"+{frame[0]}+{frame[1]}\n")
             groups = load_run(run, KINDS, None)
-            rows, _, _ = compare(groups, elements, excepted, KINDS)
+            rows, _, _, _ = compare(groups, elements, excepted, KINDS)
         unexcepted = [key for _, key, _, reason in rows if reason is None]
         ok = (
             bool(unexcepted) == expect_unexcepted
@@ -664,7 +840,38 @@ def self_test():
             rects["t.panel"]["w"] += 1.0
 
     def recoloured(kind, rects):
-        return (250, 250, 250) if kind == "iced" else None
+        return {"fill": (250, 250, 250)} if kind == "iced" else None
+
+    def edge_off(by):
+        def change(kind, rects):
+            if kind == "egui":
+                rects["t.panel"]["w"] += by
+
+        return change
+
+    def text_wider(share):
+        def change(kind, rects):
+            rects["t.panel.label"]["w"] = 150.0
+            if kind == "iced":
+                rects["t.panel.label"]["w"] *= 1 + share
+
+        return change
+
+    def text_moved(kind, rects):
+        if kind == "iced":
+            rects["t.panel.label"]["x"] += 1.2
+
+    def ink_off(by):
+        def change(kind, rects):
+            return {"ink": tuple(c + by for c in INK)} if kind == "gpui" else None
+
+        return change
+
+    def fill_off(by):
+        def change(kind, rects):
+            return {"fill": tuple(c - by for c in FILL)} if kind == "egui" else None
+
+        return change
 
     def dropped(kind, rects):
         if kind == "iced":
@@ -708,6 +915,15 @@ def self_test():
     scenario("a child moved inside its parent fails", True, ("t.panel.label.y",), moved_child)
     scenario("a conditional element drawn by every kind is compared and passes", False, change=tip_in_all)
     scenario("a conditional element drawn by one kind only fails", True, ("t.panel.tip.present",), tip_in_one)
+    scenario("R-snap: an edge 0.4 px off passes", False, change=edge_off(0.4))
+    scenario("R-snap: an edge 1.2 px off fails", True, ("t.panel.w",), edge_off(1.2))
+    scenario("R-shape: a text run 1.5 % wider passes", False, change=text_wider(0.015))
+    scenario("R-shape: a text run 3 % wider fails", True, ("t.panel.label.w",), text_wider(0.03))
+    scenario("R-shape: a text run's left edge 1.2 px off fails", True, ("t.panel.label.x",), text_moved)
+    scenario("R-glyph: a glyph sample 7 per channel off passes", False, change=ink_off(7))
+    scenario("R-glyph: a glyph sample 9 per channel off fails", True, ("t.panel.label.text",), ink_off(9))
+    scenario("R-glyph: a fill 1 per channel off passes", False, change=fill_off(1))
+    scenario("R-glyph: a fill 2 per channel off fails", True, ("t.panel.fill",), fill_off(2))
     if failures:
         print(f"self-test FAILED: {len(failures)} scenario(s)")
         return 1
@@ -754,8 +970,13 @@ def main():
         raise Failure(f"--kinds takes names from {', '.join(KINDS)}")
     elements = load_elements(args.elements, registry_paths(load_toml(REGISTRY)))
     exceptions = load_parity_exceptions(args.exceptions, elements)
+    names = {element["name"] for element in elements.values()}
+    stale_runs = sorted(TEXT_RUNS - names)
+    if stale_runs:
+        raise Failure(f"TEXT_RUNS names what no element of {args.elements} is named: {', '.join(stale_runs)}")
     if args.check_list:
-        print(f"{len(elements)} elements, {len(exceptions)} parity exceptions: valid")
+        runs = sum(1 for element in elements.values() if element["name"] in TEXT_RUNS)
+        print(f"{len(elements)} elements ({runs} text runs), {len(exceptions)} parity exceptions: valid")
         return 0
     if args.dump_dir is None:
         parser.error("a dump directory is required (or --check-list / --self-test)")
@@ -763,7 +984,7 @@ def main():
         raise Failure("comparing needs at least two kinds")
 
     groups = load_run(args.dump_dir, kinds, args.content_offset)
-    rows, used, unseen = compare(groups, elements, exceptions, kinds)
+    rows, used, unseen, ruled_out = compare(groups, elements, exceptions, kinds)
     if rows:
         print_table(rows, kinds)
     for group, idents in sorted(unseen.items()):
@@ -774,9 +995,11 @@ def main():
     if stale:
         print("\nParity exceptions that matched no difference in this run:")
         print("\n".join("  " + key for key in stale))
+    covered_by = ", ".join(f"{rule} {count}" for rule, count in sorted(ruled_out.items())) or "none"
     print(
         f"\n{len(groups)} preset/variant group(s), {len(rows)} difference(s), "
-        f"{len(rows) - unexcepted} excepted, {unexcepted} not excepted."
+        f"{len(rows) - unexcepted} excepted, {unexcepted} not excepted; "
+        f"covered by a rule: {covered_by}."
     )
     return 1 if unexcepted else 0
 

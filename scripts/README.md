@@ -283,8 +283,12 @@ elements `docs/showcase-elements.toml` lists. Reads a directory of layout dumps
 beside them, the captures (`<kind>-<preset>-<variant>.png`, the content alone or
 framed with a `.offset` file or `--content-offset X,Y`), and compares sizes,
 positions relative to each element's parent, and the colours at the list's
-sample points. Every difference must be listed with a reason in the `[parity]`
-table of `docs/showcase-exceptions.toml`. Exits 0 when clean, 1 on an
+sample points. Three rules, documented with their sources in the script's
+docstring, cover what the renderers alone make differ: edges are compared
+rounded to the pixel grid (R-snap), a text run's width within max(1 px, 2 %)
+(R-shape), a glyph sample within 8 and a fill or border within 1 per channel
+(R-glyph). Every other difference must be listed with a reason in the
+`[parity]` table of `docs/showcase-exceptions.toml`. Exits 0 when clean, 1 on an
 unexcepted difference, 2 on an input it cannot read. `--check-list` validates
 the list against `docs/property-registry.toml` and the exceptions against the
 list; `--self-test` runs its built-in scenarios.
