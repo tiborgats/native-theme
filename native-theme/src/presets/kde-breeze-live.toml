@@ -144,6 +144,8 @@ item_gap_px = 0.0
 # platform-facts.md:1353-1354 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md:1354 (§2.13): ToolBar_FrameWidth = 0, no frame round the toolbar
+line_width_px = 0.0
 
 
 [light.status_bar.border]
@@ -357,6 +359,8 @@ item_gap_px = 0.0
 # platform-facts.md:1353-1354 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md:1354 (§2.13): ToolBar_FrameWidth = 0, no frame round the toolbar
+line_width_px = 0.0
 
 
 [dark.status_bar.border]
