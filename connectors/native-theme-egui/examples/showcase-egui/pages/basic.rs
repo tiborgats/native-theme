@@ -411,8 +411,16 @@ fn wrap_before(ui: &mut egui::Ui, key: &str) {
     };
     let line_start = ui.max_rect().left();
     let at = ui.cursor().left();
-    if at > line_start + 0.5 && at + width > ui.max_rect().right() + 0.5 {
+    if at > line_start + 0.5 && at + width > ui.max_rect().right() + 1e-3 {
+        // A new line `item_spacing.y` under this one and as tall, inside the row's room: `end_row`
+        // opens it with no height below the room so far (`egui/src/layout.rs:769-778`), and a
+        // scope takes the room between the line's top and the room's bottom
+        // (`available_from_cursor_max_rect`, `:446-450`), which would lift its item.
+        let height = ui.cursor().height();
         ui.end_row();
+        ui.set_row_height(height);
+        let bottom = ui.cursor().bottom();
+        ui.expand_to_include_y(bottom);
     }
 }
 
@@ -1158,15 +1166,16 @@ fn icon_buttons(
         RoleVariant::Normal,
         "icon buttons",
         |ui, bar, reg| {
+            // A line as tall as its buttons, and the lines as far apart as the buttons, as the
+            // gpui (`flex_wrap` under one gap) and iced (`Row::wrap`) rows lay theirs out: the
+            // toolbar scope's `interact_size.y` is `toolbar.bar_height`, a bar's, which this row
+            // of tool buttons is not, and a wrapping row takes its first line's height from it
+            // when it opens (`egui/src/ui.rs:2376-2379`).
+            ui.spacing_mut().interact_size.y = 0.0;
             // Wrapping onto a further line where the column is too narrow for the three.
             ui.horizontal_wrapped(|ui| {
                 demo::toolbar_gap(ui, t, atlas.layout());
-                // A line as tall as its buttons, and the lines as far apart as the buttons, as
-                // the gpui (`flex_wrap` under one gap) and iced (`Row::wrap`) rows lay theirs
-                // out: the toolbar scope's `interact_size.y` is `toolbar.bar_height`, a bar's,
-                // which this row of tool buttons is not.
                 let spacing = ui.spacing_mut();
-                spacing.interact_size.y = 0.0;
                 spacing.item_spacing.y = spacing.item_spacing.x;
                 for (role, label, id) in [
                     (IconRole::ActionCopy, "Copy", "basic.icons.copy"),

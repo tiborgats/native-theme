@@ -140,6 +140,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     );
     // A side of `toolbar.border.padding` the theme leaves unstated is `layout.container_margin`,
     // as the other two showcases pad their toolbars, where the panel frame would keep egui's own.
+    let own_margin = seams.frame.inner_margin;
     if let Some(margin) = app.atlas.layout().container_margin {
         let stated = &app
             .atlas
@@ -157,6 +158,24 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         seams.frame.inner_margin =
             native_theme_egui::convert::to_margin(seams.frame.inner_margin, &unstated);
     }
+    // Where the theme states `toolbar.bar_height`, the bar stays that tall: the toolbar scope's
+    // row (`interact_size.y`) is the stated height less the frame egui's own panel preset would
+    // pad it by, so the room the margin above grew by comes off the row, as the other two
+    // showcases lay their padding inside the stated height.
+    let stated_height = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .toolbar
+        .bar_height
+        .is_some();
+    let shrink = if stated_height {
+        seams.frame.inner_margin.sum().y - own_margin.sum().y
+    } else {
+        0.0
+    };
+    // The panel's own height, `interact_size.y` of the `Ui` it is shown in plus its frame
+    // (`egui/src/containers/panel.rs:1068-1073`).
+    fit_row(ui, shrink);
     // The line under the bar is the panel's own, in `toolbar.border`'s colour and width (the
     // toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`), as
     // the status bar's line above it is `status_bar.border`'s.
@@ -164,10 +183,17 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         .frame(seams.frame)
         .show(ui, |ui| {
             seams.enter(ui);
-            toolbar(app, ui);
+            fit_row(ui, shrink);
+            toolbar(app, ui, shrink);
         });
     seams.record(&mut app.registry, &out.response, "Toolbar");
     app.registry.tag("chrome.toolbar", &out.response);
+}
+
+/// A toolbar row `shrink` less tall than its scope's `interact_size.y` makes it.
+fn fit_row(ui: &mut egui::Ui, shrink: f32) {
+    let row = &mut ui.spacing_mut().interact_size.y;
+    *row = (*row - shrink).max(0.0);
 }
 
 /// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
@@ -411,13 +437,14 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
 /// `toolbar.icon_size` (a required size, `f32` on the resolved theme), a missing icon's label in
 /// `toolbar.font`, the items `toolbar.item_gap` apart (the scope's `item_spacing.x`), the row as
 /// tall as the scope's `interact_size.y` — `toolbar.bar_height` less the bar's padding where
-/// the theme states a bar height (connector spec §6.10). The theme states no tool button
+/// the theme states a bar height (connector spec §6.10), less `shrink`, the room the panel's
+/// margin grew by in [`chrome_bar`]. The theme states no tool button
 /// geometry or fill, so each is Ghost, transparent at rest, and hovered and pressed in the
 /// scope's own fills and padding. The icons are gpui's: `SquareTerminal` and `RotateCw` by
 /// their names in the chosen set, Settings by its role, loaded as the Icons page loads them — a
 /// freedesktop icon from the chosen theme in the text colour, a bundled key tinted it (§9.2,
 /// §10.4).
-fn toolbar(app: &mut App, ui: &mut egui::Ui) {
+fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
     let theme = ui.ctx().theme();
     let chosen = app.chosen_icons();
     let App {
@@ -430,6 +457,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     let icon_size = t.toolbar.icon_size;
     let layout = atlas.layout();
     let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
+        fit_row(ui, shrink);
         ui.horizontal(|ui| {
             demo::toolbar_gap(ui, t, layout);
             for (icon, label, action, id) in [
