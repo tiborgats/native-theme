@@ -494,7 +494,7 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 }
 
 /// The family gpui is asked to draw a theme's `family` in: the macOS alias
-/// of [`ui_font_family`]; with feature `system-fonts`, where the system
+/// of `ui_font_family`; with feature `system-fonts`, where the system
 /// lacks `family`, the family the platform substitutes for it
 /// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
 /// the font every native application of the system gets); else `family` as

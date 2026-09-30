@@ -344,7 +344,7 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 /// The edge is `tooltip.border.line_width` wide, over upstream's `border_1`
 /// (`:117`). The drop shadow is upstream's `shadow_md` (`:119`) where
 /// `tooltip.border.shadow_enabled` holds -- its two layers
-/// ([`TOOLTIP_SHADOW`]), the model stating no shadow geometry -- in
+/// (`TOOLTIP_SHADOW`), the model stating no shadow geometry -- in
 /// `defaults.shadow_color`, and none where it does not.
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
