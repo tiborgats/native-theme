@@ -14,6 +14,7 @@ use native_theme_egui::{
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
+use native_theme_egui_widgets::fade::fade_as_one;
 use native_theme_egui_widgets::parts::Parts;
 use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
@@ -225,33 +226,6 @@ fn checkbox_parts(
     parts
 }
 
-/// Disables `ui` for a check box faded as one, as the platform fades a disabled widget where the
-/// theme states no disabled colours: `filter: Opacity(var(--disabled-opacity))` on the whole
-/// widget, which keeps its normal colours (docs/platform-facts.md §2.1.6, GNOME), so its mark is
-/// drawn on its fill and the pair fades over the page. egui fades each shape on its own
-/// (`Ui::disable` multiplies the painter's opacity by `disabled_alpha`,
-/// `egui/src/ui.rs:497-503`), which would fade the mark over the faded fill; here each colour
-/// the box paints is composed over what lies under it (its fill over `ground`, the border and
-/// the mark over the fill, the label over `ground`) and faded by `disabled_alpha` over `ground`,
-/// and the painter keeps its opacity.
-fn fade_as_one(ui: &mut egui::Ui, ground: egui::Color32) {
-    let alpha = ui.visuals().disabled_alpha();
-    let opacity = ui.opacity();
-    let fade = |colour: egui::Color32| ground.lerp_to_gamma(colour, alpha);
-    let text = ui.visuals().override_text_color;
-    let visuals = ui.visuals_mut();
-    let widgets = &mut visuals.widgets;
-    for cell in [&mut widgets.noninteractive, &mut widgets.inactive] {
-        let fill = ground.blend(cell.bg_fill);
-        cell.bg_fill = fade(fill);
-        cell.bg_stroke.color = fade(fill.blend(cell.bg_stroke.color));
-        cell.fg_stroke.color = fade(fill.blend(cell.fg_stroke.color));
-    }
-    visuals.override_text_color = text.map(|colour| fade(ground.blend(colour)));
-    ui.disable();
-    ui.set_opacity(opacity);
-}
-
 /// A companion-crate widget's `Parts`, each placed as `<id>.<element part>`: `names` pairs the
 /// widget's part with the element list's.
 fn place_parts(
@@ -432,6 +406,8 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             let r = if !enabled && variant == RoleVariant::Selected {
                 let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
+                    // The check box faded as one over the page (the companion crate's rule,
+                    // which its switch and radio button follow too).
                     fade_as_one(ui, ground);
                     ui.add(egui::Checkbox::new(&mut value, text.clone()))
                 })

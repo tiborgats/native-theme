@@ -37,8 +37,9 @@ use crate::scope;
 ///   role's cell carries no text colour of the switch's.
 /// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
 ///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
-///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` (the crate's
-///   *Disabled*); under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s
+///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` as one widget over
+///   the backdrop (the crate's *Disabled*): the thumb on the track, the pair over
+///   [`Switch::backdrop`]; under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s
 ///   `disabled_alpha`.
 ///
 /// The focus ring surrounds the track (`register_focus_shape`). AccessKit sees a
@@ -51,6 +52,7 @@ pub struct Switch<'a> {
     on: &'a mut bool,
     label: Option<egui::WidgetText>,
     enabled: bool,
+    backdrop: Option<egui::Color32>,
 }
 
 impl<'a> Switch<'a> {
@@ -60,6 +62,7 @@ impl<'a> Switch<'a> {
             on,
             label: None,
             enabled: true,
+            backdrop: None,
         }
     }
 
@@ -70,9 +73,18 @@ impl<'a> Switch<'a> {
     }
 
     /// `false` shows the platform's disabled switch, its disabled colours faded by its
-    /// `disabled_opacity`, and takes no input.
+    /// `disabled_opacity` as one widget over its backdrop ([`Self::backdrop`]), and takes no
+    /// input.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// The colour under the switch, which a disabled one is faded over as one widget: the thumb
+    /// on its track, the pair over the backdrop ([`crate::fade::fade_as_one`]); the window's,
+    /// `defaults.background_color`, where not given.
+    pub fn backdrop(mut self, backdrop: egui::Color32) -> Self {
+        self.backdrop = Some(backdrop);
         self
     }
 }
@@ -112,10 +124,21 @@ struct Paint {
     sw: ResolvedSwitchTheme,
     text: Rgba,
     disabled_text: Rgba,
+    /// The colour a switch disabled by its own `.enabled(false)` is faded over as one widget;
+    /// `None` where it is enabled, or its calling `Ui` faded it already.
+    ground: Option<egui::Color32>,
 }
 
 impl egui::Widget for Switch<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
+        let Switch {
+            on,
+            label,
+            enabled,
+            backdrop,
+        } = self;
+        // Faded here, as one widget, only where the calling `Ui` has not faded it already.
+        let own_fade = !enabled && ui.is_enabled();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let t = atlas.resolved_for(ui.ctx().theme());
             Geometry::of(&t.switch).map(|geometry| Paint {
@@ -123,13 +146,16 @@ impl egui::Widget for Switch<'_> {
                 sw: t.switch.clone(),
                 text: t.defaults.font.color,
                 disabled_text: t.defaults.disabled_text_color,
+                ground: own_fade
+                    .then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color))),
             })
         });
-        let Switch { on, label, enabled } = self;
         match paint {
-            Some(paint) => scope::open(ui, Role::Switch, enabled, |ui| {
-                switch_ui(ui, on, label, &paint)
-            }),
+            Some(paint) => {
+                scope::open_faded(ui, Role::Switch, false, enabled, paint.ground, |ui| {
+                    switch_ui(ui, on, label, &paint)
+                })
+            }
             None => {
                 let checkbox = match label {
                     Some(label) => egui::Checkbox::new(on, label),
@@ -152,7 +178,16 @@ fn switch_ui(
         sw,
         text: label_text,
         disabled_text,
+        ground,
     } = paint;
+    // Faded as one over `ground` (the painter's opacity kept), or not at all here: where the
+    // platform dims by colour alone (`disabled_alpha` 1) the colours are as stated.
+    let alpha = ui.visuals().disabled_alpha();
+    let ground = &ground.filter(|_| alpha < 1.0);
+    let as_one = |under: egui::Color32, colour: egui::Color32| match ground {
+        Some(ground) => crate::fade::faded(*ground, under.blend(colour), alpha),
+        None => colour,
+    };
     // The state of the previous pass, as `Checkbox` reads it (`egui/src/widgets/checkbox.rs:72-74`).
     let id = ui.next_auto_id();
     let state = ui
@@ -221,7 +256,8 @@ fn switch_ui(
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    prepared.fallback_text_color = to_color32(if enabled { *label_text } else { *disabled_text });
+    let text = to_color32(if enabled { *label_text } else { *disabled_text });
+    prepared.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
         return laid.response;
@@ -269,9 +305,17 @@ fn switch_ui(
     let half = 0.5 * g.track.y;
     let ends = (track.left() + half)..=(track.right() - half);
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
+    // Faded as one: the track over the ground, the thumb over the track.
+    let (fill, thumb) = match ground {
+        Some(ground) => {
+            let on_ground = ground.blend(fill);
+            (as_one(*ground, fill), as_one(on_ground, to_color32(thumb)))
+        }
+        None => (fill, to_color32(thumb)),
+    };
     let painter = ui.painter();
     painter.rect_filled(track, radius, fill);
-    painter.circle_filled(centre, 0.5 * diameter, to_color32(thumb));
+    painter.circle_filled(centre, 0.5 * diameter, thumb);
     let mut parts = Parts::default();
     parts.push("track", track);
     parts.push(

@@ -65,6 +65,13 @@
 //! (`docs/platform-facts.md` §2.1.6): 1.0 on KDE and Windows, no disabled
 //! colours of its own on GNOME. Under `ui.add_enabled(false, w)` the fade is
 //! the calling `Ui`'s, which egui applied before the widget's scope opened.
+//!
+//! A [`switch::Switch`] or [`radio_button::RadioButton`] built with
+//! `.enabled(false)` is faded as one widget over its backdrop, the window's
+//! `defaults.background_color` unless `.backdrop(..)` names another
+//! ([`fade::fade_as_one`]): its thumb or dot keeps its colour on the track or
+//! circle, and the whole fades, as libadwaita's `filter: Opacity(..)` does,
+//! where egui's per-shape fade would show the thumb through the faded track.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -78,6 +85,7 @@
 
 pub mod combo_box;
 pub mod expander;
+pub mod fade;
 pub mod parts;
 pub mod progress_bar;
 pub mod radio_button;

@@ -1,6 +1,6 @@
 //! [`RadioButton`]: egui's radio button, its dot the theme's size.
 
-use native_theme_egui::convert::clamp_length;
+use native_theme_egui::convert::{clamp_length, to_color32};
 use native_theme_egui::egui;
 use native_theme_egui::{Role, ThemeAtlas};
 
@@ -42,6 +42,7 @@ pub struct RadioButton {
     checked: bool,
     text: egui::WidgetText,
     enabled: bool,
+    backdrop: Option<egui::Color32>,
 }
 
 impl RadioButton {
@@ -51,13 +52,23 @@ impl RadioButton {
             checked,
             text: text.into(),
             enabled: true,
+            backdrop: None,
         }
     }
 
     /// `false` shows the platform's disabled radio button, its disabled colours faded by
-    /// `checkbox.disabled_opacity`, and takes no input.
+    /// `checkbox.disabled_opacity` as one widget over its backdrop ([`Self::backdrop`]), and
+    /// takes no input.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// The colour under the radio button, which a disabled one is faded over as one widget
+    /// ([`crate::fade::fade_as_one`]); the window's, `defaults.background_color`, where not
+    /// given.
+    pub fn backdrop(mut self, backdrop: egui::Color32) -> Self {
+        self.backdrop = Some(backdrop);
         self
     }
 }
@@ -100,14 +111,17 @@ impl egui::Widget for RadioButton {
             checked,
             text,
             enabled,
+            backdrop,
         } = self;
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             return ui.add_enabled(enabled, egui::RadioButton::new(checked, text));
         };
-        let checkbox = &atlas.resolved_for(ui.ctx().theme()).checkbox;
+        let resolved = atlas.resolved_for(ui.ctx().theme());
+        let checkbox = &resolved.checkbox;
         let dot = checkbox.radio_dot_diameter.and_then(scope::length);
         let width = checkbox.radio_indicator_width.and_then(scope::length);
-        scope::open_selected(ui, Role::Checkbox, checked, enabled, |ui| {
+        let ground = backdrop.unwrap_or_else(|| to_color32(resolved.defaults.background_color));
+        scope::open_faded(ui, Role::Checkbox, checked, enabled, Some(ground), |ui| {
             if let Some(width) = width {
                 ui.spacing_mut().icon_width = clamp_length(width);
             }

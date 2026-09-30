@@ -159,6 +159,73 @@ fn the_check_mark_fills_the_indicator_inside_its_padding() {
     );
 }
 
+/// A colour as 8-bit sRGB channels, alpha dropped: what a capture reads.
+fn rgb8(colour: gpui::Hsla) -> [u8; 3] {
+    let rgba = gpui::Rgba::from(colour);
+    let channel = |v: f32| (v.clamp(0., 1.) * 255.).round() as u8;
+    [channel(rgba.r), channel(rgba.g), channel(rgba.b)]
+}
+
+/// docs/platform-facts.md §2.1.6: libadwaita fades a disabled switch as one
+/// widget, `filter: Opacity(..)` (`_switch.scss:20-22`), so its white thumb
+/// stays white on the track and the pair fades over the window at 0.5:
+/// light #fcfcfd, dark #909092 -- where fading each part on its own gave
+/// #cbdff7 and #95a9c2. The track, faded as one, is its own colour over the
+/// window at half strength.
+#[test]
+fn a_disabled_switch_fades_as_one_over_its_backdrop() {
+    for (mode, thumb) in [
+        (ColorMode::Light, [0xfc, 0xfc, 0xfd]),
+        (ColorMode::Dark, [0x90, 0x90, 0x92]),
+    ] {
+        let r = resolved("adwaita", mode);
+        let ground = c(r.defaults.background_color);
+        let look = SwitchLook::of(&r, true, true).map(|l| l.faded_over(ground));
+        assert_eq!(look.map(|l| l.opacity), Some(1.), "{mode:?}");
+        let got = look.map(|l| rgb8(l.thumb_color));
+        let near = got.is_some_and(|g| g.iter().zip(thumb).all(|(g, want)| g.abs_diff(want) <= 1));
+        assert!(near, "{mode:?}: thumb {got:?}, want {thumb:?}");
+        let track = r
+            .switch
+            .disabled_checked_background
+            .unwrap_or(r.switch.checked_background);
+        assert_eq!(
+            look.map(|l| l.track),
+            Some(ground.blend(ground.blend(c(track)).opacity(r.switch.disabled_opacity))),
+            "{mode:?}: the track over the window"
+        );
+    }
+    // An enabled switch, or one the platform dims by colour alone, is as it
+    // was.
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let ground = c(r.defaults.background_color);
+    let look = SwitchLook::of(&r, true, true);
+    assert_eq!(look.map(|l| l.faded_over(ground)), look);
+}
+
+/// The same rule for a checkbox: its mark on its fill, the pair faded over
+/// the window.
+#[test]
+fn a_disabled_checkbox_fades_as_one_over_its_backdrop() {
+    let r = resolved("adwaita", ColorMode::Light);
+    let ground = c(r.defaults.background_color);
+    let a = r.checkbox.disabled_opacity;
+    assert!(a < 1., "adwaita dims a disabled checkbox by opacity");
+    let look = CheckboxLook::of(&r, true, true);
+    let faded = look.map(|l| l.faded_over(ground));
+    let fill = look.map(|l| ground.blend(l.fill));
+    assert_eq!(faded.map(|l| l.opacity), Some(1.));
+    assert_eq!(
+        faded.map(|l| l.mark),
+        look.zip(fill)
+            .map(|(l, fill)| ground.blend(fill.blend(l.mark).opacity(a)))
+    );
+    assert_eq!(
+        faded.map(|l| l.fill),
+        fill.map(|fill| ground.blend(fill.opacity(a)))
+    );
+}
+
 #[test]
 fn a_switch_paints_switch_theme() {
     for (preset, mode) in PRESETS {

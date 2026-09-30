@@ -129,6 +129,26 @@ pub(super) fn dim(c: Color, opacity: f32) -> Color {
     }
 }
 
+/// A colour of a disabled switch or check box as the platform fades it, as
+/// one widget over the window (`docs/platform-facts.md` §2.1.6, libadwaita's
+/// `filter: Opacity(..)`): `c` over `under`, the part it is painted on,
+/// dimmed by `opacity` and laid over `defaults.background_color`. Where the
+/// opacity is 1, or not a number, the platform dims by colour alone, and `c`
+/// is as given.
+#[cfg(feature = "widgets")]
+pub(super) fn as_one(r: &ResolvedTheme, under: Color, c: Color, opacity: f32) -> Color {
+    if !(opacity.is_finite() && opacity < 1.0) {
+        return c;
+    }
+    over(dim(over(c, under), opacity), window(r))
+}
+
+/// The colour under a control: the window's, `defaults.background_color`.
+#[cfg(feature = "widgets")]
+pub(super) fn window(r: &ResolvedTheme) -> Color {
+    to_color(r.defaults.background_color)
+}
+
 #[cfg(feature = "widgets")]
 pub(super) const BUTTON_STATUSES: &[button::Status] = &[
     button::Status::Active,
@@ -630,13 +650,30 @@ pub(super) fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) 
         ),
         // One disabled fill for both, replacing the idle one, as given; with
         // none stated the platform dims by opacity alone and the box is its
-        // enabled self. Faded either way.
-        checkbox::Status::Disabled { is_checked } => dim(
-            c.disabled_background
-                .map_or_else(|| native_checkbox_idle(r, is_checked), to_color),
+        // enabled self. Faded as one either way.
+        checkbox::Status::Disabled { is_checked } => as_one(
+            r,
+            window(r),
+            native_checkbox_disabled_fill(r, is_checked),
             c.disabled_opacity,
         ),
     }
+}
+
+/// A disabled box's fill before its fade: `disabled_background`, or the
+/// idle fill where none is stated.
+#[cfg(feature = "widgets")]
+fn native_checkbox_disabled_fill(r: &ResolvedTheme, is_checked: bool) -> Color {
+    r.checkbox
+        .disabled_background
+        .map_or_else(|| native_checkbox_idle(r, is_checked), to_color)
+}
+
+/// What a disabled box's border and mark are painted on: its fill over the
+/// window.
+#[cfg(feature = "widgets")]
+fn native_checkbox_disabled_ground(r: &ResolvedTheme, is_checked: bool) -> Color {
+    over(native_checkbox_disabled_fill(r, is_checked), window(r))
 }
 
 /// The outline the native fields give a checkbox or a radio button: an
@@ -660,9 +697,12 @@ pub(super) fn native_checkbox_label(r: &ResolvedTheme, status: checkbox::Status)
     match status {
         checkbox::Status::Active { is_checked: _ }
         | checkbox::Status::Hovered { is_checked: _ } => to_color(c.font.color),
-        checkbox::Status::Disabled { is_checked: _ } => {
-            dim(to_color(c.disabled_text_color), c.disabled_opacity)
-        }
+        checkbox::Status::Disabled { is_checked: _ } => as_one(
+            r,
+            window(r),
+            to_color(c.disabled_text_color),
+            c.disabled_opacity,
+        ),
     }
 }
 
@@ -680,7 +720,9 @@ pub(super) fn native_checkbox_mark(r: &ResolvedTheme, status: checkbox::Status) 
     match status {
         checkbox::Status::Active { is_checked: _ }
         | checkbox::Status::Hovered { is_checked: _ } => to_color(c.indicator_color),
-        checkbox::Status::Disabled { is_checked: _ } => dim(
+        checkbox::Status::Disabled { is_checked } => as_one(
+            r,
+            native_checkbox_disabled_ground(r, is_checked),
             to_color(if c.disabled_background.is_some() {
                 c.disabled_text_color
             } else {
@@ -697,7 +739,9 @@ fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color 
         checkbox::Status::Active { is_checked } | checkbox::Status::Hovered { is_checked } => {
             native_checkbox_outline(r, is_checked)
         }
-        checkbox::Status::Disabled { is_checked } => dim(
+        checkbox::Status::Disabled { is_checked } => as_one(
+            r,
+            native_checkbox_disabled_ground(r, is_checked),
             native_checkbox_outline(r, is_checked),
             r.checkbox.disabled_opacity,
         ),
@@ -868,18 +912,28 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
             }),
             native_toggler_idle(r, is_toggled),
         ),
-        // A disabled track replaces the idle one, so it is as given, faded.
-        toggler::Status::Disabled { is_toggled } => dim(
-            to_color(if is_toggled {
-                s.disabled_checked_background
-                    .unwrap_or(s.checked_background)
-            } else {
-                s.disabled_unchecked_background
-                    .unwrap_or(s.unchecked_background)
-            }),
+        // A disabled track replaces the idle one, so it is as given, faded as
+        // one with its thumb.
+        toggler::Status::Disabled { is_toggled } => as_one(
+            r,
+            window(r),
+            native_toggler_disabled_track(r, is_toggled),
             s.disabled_opacity,
         ),
     }
+}
+
+/// A disabled track before its fade.
+#[cfg(feature = "widgets")]
+fn native_toggler_disabled_track(r: &ResolvedTheme, is_toggled: bool) -> Color {
+    let s = &r.switch;
+    to_color(if is_toggled {
+        s.disabled_checked_background
+            .unwrap_or(s.checked_background)
+    } else {
+        s.disabled_unchecked_background
+            .unwrap_or(s.unchecked_background)
+    })
 }
 
 /// The thumb the native fields give a switch in `status`. A thumb is painted
@@ -900,7 +954,9 @@ pub(super) fn native_toggler_thumb(r: &ResolvedTheme, status: toggler::Status) -
         toggler::Status::Active { is_toggled } | toggler::Status::Hovered { is_toggled } => {
             to_color(rest(is_toggled))
         }
-        toggler::Status::Disabled { is_toggled } => dim(
+        toggler::Status::Disabled { is_toggled } => as_one(
+            r,
+            over(native_toggler_disabled_track(r, is_toggled), window(r)),
             to_color(s.disabled_thumb_color.unwrap_or(rest(is_toggled))),
             s.disabled_opacity,
         ),

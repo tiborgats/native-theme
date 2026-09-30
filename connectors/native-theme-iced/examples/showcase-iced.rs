@@ -6968,7 +6968,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .text_size(scaled_text_size(c.font.size, a11y))
                 .text_line_height(native_theme_iced::line_height_multiplier(resolved))
                 .font(theme_font(&c.font))
-                .style(glyphless_when_stated(styles::checkbox(resolved), stated));
+                // Drawn on the page, the window's background, which a
+                // disabled box is faded over as one widget.
+                .style(glyphless_when_stated(
+                    styles::checkbox_over(resolved, to_color(resolved.defaults.background_color)),
+                    stated,
+                ));
             // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
             let boxed = if enabled {
                 boxed.on_toggle(|_| Message::BasicHeld)
@@ -14168,7 +14173,7 @@ mod tests {
         },
         Dressed {
             ctor: "checkbox",
-            styles: &[&["styles::checkbox"]],
+            styles: &[&["styles::checkbox", "styles::checkbox_over"]],
         },
         Dressed {
             ctor: "radio",
@@ -14176,7 +14181,7 @@ mod tests {
         },
         Dressed {
             ctor: "toggler",
-            styles: &[&["styles::toggler"]],
+            styles: &[&["styles::toggler", "styles::toggler_over"]],
         },
         Dressed {
             ctor: "pick_list",
@@ -14231,8 +14236,14 @@ mod tests {
     /// `(constructor, the style it applies, the function)`:
     /// `native_theme_iced::radio(resolved, radio(..), ..)` applies
     /// `styles::radio` with the platform's geometry and dot (`src/lib.rs`).
-    const CONNECTOR_DRESSED: &[(&str, &str, &str)] =
-        &[("radio", "styles::radio", "native_theme_iced::radio")];
+    const CONNECTOR_DRESSED: &[(&str, &str, &str)] = &[
+        ("radio", "styles::radio", "native_theme_iced::radio"),
+        (
+            "toggler",
+            "styles::toggler_over",
+            "native_theme_iced::switch",
+        ),
+    ];
 
     /// Is the constructor at `site` the widget argument of the connector
     /// function that dresses it -- `<function>(resolved, <site>..`?

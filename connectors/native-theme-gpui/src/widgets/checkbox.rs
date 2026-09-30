@@ -16,7 +16,7 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -172,6 +172,31 @@ impl CheckboxLook {
             opacity,
         })
     }
+
+    /// This look faded as one control over `ground`, the colour it is drawn
+    /// on: where [`opacity`](Self::opacity) is below 1, each colour composited
+    /// over what lies under it -- the fill over `ground`, the border and the
+    /// mark over the fill, the label over `ground` -- and faded by it over
+    /// `ground`, the opacity then 1. As the platform that fades a disabled
+    /// control by opacity fades it (docs/platform-facts.md §2.1.6, GNOME), so
+    /// the mark is drawn on its fill and the pair fades over the page, where
+    /// fading each part on its own would fade the mark over the faded fill.
+    #[must_use]
+    pub fn faded_over(self, ground: Hsla) -> Self {
+        if self.opacity >= 1. {
+            return self;
+        }
+        let a = self.opacity;
+        let fill = over(ground, self.fill);
+        Self {
+            fill: faded(ground, ground, self.fill, a),
+            border: faded(ground, fill, self.border, a),
+            mark: faded(ground, fill, self.mark, a),
+            label: faded(ground, ground, self.label, a),
+            opacity: 1.,
+            ..self
+        }
+    }
 }
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -184,6 +209,7 @@ struct Parts {
     disabled: bool,
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
+    backdrop: Option<Hsla>,
 }
 
 impl Parts {
@@ -195,7 +221,18 @@ impl Parts {
             disabled: false,
             on_change: None,
             observer: None,
+            backdrop: None,
         }
+    }
+
+    /// The look of this control faded as one over its backdrop:
+    /// [`CheckboxLook::faded_over`] the backdrop the caller gave, or the
+    /// window's, `defaults.background_color`.
+    fn faded(&self, look: CheckboxLook, resolved: &ResolvedTheme) -> CheckboxLook {
+        look.faded_over(
+            self.backdrop
+                .unwrap_or_else(|| color(resolved.defaults.background_color)),
+        )
     }
 }
 
@@ -377,22 +414,10 @@ fn indicator_and_label(
             box_.rounded(radius)
         }
     };
-    // Faded, the fill is a box of its own inside the edge rather than the
-    // indicator's own background: gpui fades each quad it paints on its own
-    // (gpui-pre src/window.rs:4513-4521, `paint_quad`) and draws a quad's
-    // border over its own background (gpui-pre-wgpu src/shaders.wgsl:887,
-    // `fs_quad`), so the faded fill would show through the faded edge, where
-    // a platform fades the control as one. Unfaded, both are opaque and one
-    // quad draws them.
-    // An absolute child is placed inside its parent's border, so `inset_0`
-    // is the box inside the edge.
-    let inner_fill = (look.opacity < 1.).then(|| {
-        rounded(
-            div().absolute().inset_0().bg(look.fill),
-            px((f32::from(look.radius) - f32::from(look.border_width)).max(0.)),
-        )
-        .into_any_element()
-    });
+    // One quad draws the fill and the edge: a look faded as one
+    // (`CheckboxLook::faded_over`) holds opaque colours, so the edge gpui
+    // draws over its own fill (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`)
+    // shows no fill through it.
     let indicator = rounded(
         div()
             .relative()
@@ -403,14 +428,13 @@ fn indicator_and_label(
             .size(look.indicator)
             .border(look.border_width)
             .border_color(look.border)
-            .when(inner_fill.is_none(), |box_| box_.bg(look.fill)),
+            .bg(look.fill),
         look.radius,
     )
     .when_some(look.hover_fill, |box_, hover| {
         box_.group_hover(HOVER_GROUP, move |style| style.bg(hover))
     })
     .debug_selector(|| "native-checkbox-indicator".into())
-    .children(inner_fill)
     .child(mark)
     .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
     .into_any_element();
@@ -488,6 +512,15 @@ impl Checkbox {
         self
     }
 
+    /// The colour under the checkbox, which a disabled one is faded over as
+    /// one control ([`CheckboxLook::faded_over`]); the window's,
+    /// `defaults.background_color`, where not given.
+    #[must_use]
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.parts.backdrop = Some(backdrop);
+        self
+    }
+
     fn fallback(self) -> AnyElement {
         let parts = self.parts;
         gpui_component::checkbox::Checkbox::new(parts.id)
@@ -510,6 +543,7 @@ impl RenderOnce for Checkbox {
         else {
             return self.fallback();
         };
+        let look = self.parts.faded(look, n.resolved);
         let font = &n.resolved.checkbox.font;
         let font = (
             text_size(font.size, n),
@@ -524,6 +558,7 @@ impl RenderOnce for Checkbox {
             disabled,
             on_change,
             observer: _,
+            backdrop: _,
         } = self.parts;
         let focus_handle = window
             .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
@@ -623,6 +658,15 @@ impl Radio {
         self
     }
 
+    /// The colour under the radio, which a disabled one is faded over as one
+    /// control ([`CheckboxLook::faded_over`]); the window's,
+    /// `defaults.background_color`, where not given.
+    #[must_use]
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.parts.backdrop = Some(backdrop);
+        self
+    }
+
     fn fallback(self) -> AnyElement {
         let parts = self.parts;
         gpui_component::radio::Radio::new(parts.id)
@@ -645,6 +689,7 @@ impl RenderOnce for Radio {
         else {
             return self.fallback();
         };
+        let look = self.parts.faded(look, n.resolved);
         let font = &n.resolved.checkbox.font;
         let font = (
             text_size(font.size, n),
@@ -659,6 +704,7 @@ impl RenderOnce for Radio {
             disabled,
             on_change,
             observer: _,
+            backdrop: _,
         } = self.parts;
         let focus_handle = window
             .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())

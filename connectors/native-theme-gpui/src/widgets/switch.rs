@@ -11,7 +11,7 @@ use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:197).
@@ -116,6 +116,30 @@ impl SwitchLook {
         })
     }
 
+    /// This look faded as one control over `ground`, the colour it is drawn
+    /// on: where [`opacity`](Self::opacity) is below 1, the track composited
+    /// over `ground`, the thumb over the track and the label over `ground`,
+    /// each faded by it over `ground`, the opacity then 1. As libadwaita
+    /// fades a disabled switch, `filter: Opacity(..)` on the whole widget
+    /// (docs/platform-facts.md §2.1.6), so the thumb keeps its colour on the
+    /// track and the pair fades over the page, where fading each part on its
+    /// own would fade the thumb over the faded track.
+    #[must_use]
+    pub fn faded_over(self, ground: Hsla) -> Self {
+        if self.opacity >= 1. {
+            return self;
+        }
+        let a = self.opacity;
+        let track = over(ground, self.track);
+        Self {
+            track: faded(ground, ground, self.track, a),
+            thumb_color: faded(ground, track, self.thumb_color, a),
+            label: faded(ground, ground, self.label, a),
+            opacity: 1.,
+            ..self
+        }
+    }
+
     /// The thumb's left edge, from the track's left edge, at rest `checked`
     /// or not.
     #[must_use]
@@ -142,6 +166,7 @@ pub struct Switch {
     disabled: bool,
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
+    backdrop: Option<Hsla>,
 }
 
 impl Switch {
@@ -155,7 +180,17 @@ impl Switch {
             disabled: false,
             on_change: None,
             observer: None,
+            backdrop: None,
         }
+    }
+
+    /// The colour under the switch, which a disabled one is faded over as
+    /// one control ([`SwitchLook::faded_over`]); the window's,
+    /// `defaults.background_color`, where not given.
+    #[must_use]
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.backdrop = Some(backdrop);
+        self
     }
 
     /// Hands `observer` the bounds of the track, the thumb and the label as
@@ -215,6 +250,10 @@ impl RenderOnce for Switch {
         let Some(look) = SwitchLook::of(n.resolved, self.checked, self.disabled) else {
             return self.fallback();
         };
+        let look = look.faded_over(
+            self.backdrop
+                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
+        );
         let checked = self.checked;
         let observer = self.observer.as_ref();
         let label_size = text_size(n.resolved.defaults.font.size, n);

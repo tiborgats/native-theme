@@ -121,6 +121,25 @@ pub(crate) fn faded(color: Color, opacity: f32) -> Color {
     }
 }
 
+/// One colour of a disabled control faded as one widget over `ground`, the
+/// opaque colour under the control: `color` composited over `under`, the part
+/// it is painted on (`ground` itself, or a fill already composited over it),
+/// then [`faded`] by `opacity` and composited over `ground`.
+///
+/// libadwaita fades a disabled switch or check box as a whole,
+/// `filter: Opacity(var(--disabled-opacity))` (`docs/platform-facts.md`
+/// §2.1.6), so a thumb or a check mark keeps its colour on its fill and the
+/// pair fades over the page; fading each colour on its own, as [`faded`]
+/// does, would show the thumb through the faded track. Where the opacity is
+/// 1, or not a number, the platform dims by colour alone and `color` is as
+/// given.
+pub(crate) fn faded_as_one(ground: Color, under: Color, color: Color, opacity: f32) -> Color {
+    if !(opacity.is_finite() && opacity < 1.0) {
+        return color;
+    }
+    composite_over(faded(composite_over(color, under), opacity), ground)
+}
+
 /// A border as a disabled widget shows it: its colour [`faded`].
 fn faded_border(border: Border, opacity: f32) -> Border {
     Border {
@@ -541,8 +560,12 @@ pub fn text_editor(
 /// hovered checked box is exactly the checked box. `.disabled_background`
 /// replaces the fill, as given; where it is not stated the platform dims by
 /// opacity alone and a disabled box is its enabled self. Either way a disabled
-/// box has each colour's alpha multiplied by `.disabled_opacity`. An unchecked box may
-/// state a border color of its own, `.unchecked_border_color`.
+/// box is faded by `.disabled_opacity` as one widget over the window,
+/// `defaults.background_color` ([`checkbox_over`] takes another backdrop):
+/// its fill over the window, its border and mark over the fill, its label
+/// over the window, each then faded over the window
+/// (`docs/platform-facts.md` §2.1.6). An unchecked box may state a border
+/// color of its own, `.unchecked_border_color`.
 ///
 /// The check mark is `checkbox.indicator_color` -- the model has no
 /// `check_color` -- in every status but `Disabled`. `indicator_color` is the
@@ -572,9 +595,21 @@ pub fn checkbox(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + Clone + use<>
 {
+    checkbox_over(resolved, to_color(resolved.defaults.background_color))
+}
+
+/// [`checkbox`] for a box drawn on `backdrop` rather than on the window: a
+/// disabled box is faded as one widget over `backdrop`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn checkbox_over(
+    resolved: &ResolvedTheme,
+    backdrop: Color,
+) -> impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + Clone + use<>
+{
     use iced_widget::checkbox::{Status, Style};
 
     let c = &resolved.checkbox;
+    let ground = backdrop;
 
     let checked = to_color(c.checked_background);
     // Both soft options copy the checkbox's own fill: the platform saying the
@@ -619,8 +654,9 @@ pub fn checkbox(
             // on-accent color, and a disabled box no longer shows the accent,
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
-            // With no disabled fill stated the box is its enabled self. Every
-            // colour is then faded by `checkbox.disabled_opacity`.
+            // With no disabled fill stated the box is its enabled self. The
+            // box is then faded by `checkbox.disabled_opacity` as one widget
+            // over the ground: the border and the mark on the fill.
             Status::Disabled { is_checked } => {
                 let (background, border, mark) = match (disabled, is_checked) {
                     (Some(fill), true) => (fill, checked_border, disabled_label),
@@ -628,11 +664,12 @@ pub fn checkbox(
                     (None, true) => (checked, checked_border, mark),
                     (None, false) => (unchecked, unchecked_border, mark),
                 };
+                let fill = composite_over(background, ground);
                 (
-                    faded(background, opacity),
-                    faded(border, opacity),
-                    faded(disabled_label, opacity),
-                    faded(mark, opacity),
+                    faded_as_one(ground, ground, background, opacity),
+                    faded_as_one(ground, fill, border, opacity),
+                    faded_as_one(ground, ground, disabled_label, opacity),
+                    faded_as_one(ground, fill, mark, opacity),
                 )
             }
         };
@@ -734,8 +771,12 @@ pub fn radio(
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
 /// so emitted as given in every state -- `.unchecked_thumb_background`, where
 /// the theme states one, while not toggled -- and `.disabled_thumb_color`
-/// whenever the switch is disabled, toggled or not. A disabled track and thumb
-/// have their alpha multiplied by `switch.disabled_opacity`.
+/// whenever the switch is disabled, toggled or not. A disabled switch is
+/// faded by `switch.disabled_opacity` as one widget over the window,
+/// `defaults.background_color` ([`toggler_over`] takes another backdrop):
+/// the thumb over the track, the track over the window, each then faded over
+/// the window (`docs/platform-facts.md` §2.1.6, libadwaita's
+/// `filter: Opacity(..)`).
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius
@@ -767,9 +808,21 @@ pub fn radio(
 pub fn toggler(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + Clone + use<> {
+    toggler_over(resolved, to_color(resolved.defaults.background_color))
+}
+
+/// [`toggler`] for a switch drawn on `backdrop` rather than on the window: a
+/// disabled switch is faded as one widget over `backdrop`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn toggler_over(
+    resolved: &ResolvedTheme,
+    backdrop: Color,
+) -> impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + Clone + use<> {
     use iced_widget::toggler::{Status, Style};
 
     let s = &resolved.switch;
+    let ground = backdrop;
+    let opacity = s.disabled_opacity;
 
     let checked = to_color(s.checked_background);
     let unchecked = to_color(s.unchecked_background);
@@ -794,22 +847,23 @@ pub fn toggler(
             .unwrap_or(s.unchecked_background),
     );
 
-    // Each disabled colour is faded by `switch.disabled_opacity` (see `faded`).
-    let disabled_checked = faded(disabled_checked, s.disabled_opacity);
-    let disabled_unchecked = faded(disabled_unchecked, s.disabled_opacity);
-
     let thumb = to_color(s.thumb_background);
     // The off thumb: a soft option copying the on one.
     let unchecked_thumb = s.unchecked_thumb_background.unwrap_or(s.thumb_background);
-    let disabled_thumb = faded(
-        to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
-        s.disabled_opacity,
-    );
-    let disabled_unchecked_thumb = faded(
-        to_color(s.disabled_thumb_color.unwrap_or(unchecked_thumb)),
-        s.disabled_opacity,
-    );
+    let disabled_thumb = to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background));
+    let disabled_unchecked_thumb = to_color(s.disabled_thumb_color.unwrap_or(unchecked_thumb));
     let unchecked_thumb = to_color(unchecked_thumb);
+
+    // A disabled switch is faded by `switch.disabled_opacity` as one widget
+    // over the ground: the thumb on its track (see `faded_as_one`).
+    let disabled_as_one = |track: Color, thumb: Color| {
+        (
+            faded_as_one(ground, ground, track, opacity),
+            faded_as_one(ground, composite_over(track, ground), thumb, opacity),
+        )
+    };
+    let disabled_on = disabled_as_one(disabled_checked, disabled_thumb);
+    let disabled_off = disabled_as_one(disabled_unchecked, disabled_unchecked_thumb);
 
     let track_radius = Radius::new(s.track_radius);
     // Guarded so that a track with no height, or a thumb taller than its
@@ -845,9 +899,9 @@ pub fn toggler(
             }
             Status::Disabled { is_toggled } => {
                 if is_toggled {
-                    (disabled_checked, disabled_thumb)
+                    disabled_on
                 } else {
-                    (disabled_unchecked, disabled_unchecked_thumb)
+                    disabled_off
                 }
             }
         };

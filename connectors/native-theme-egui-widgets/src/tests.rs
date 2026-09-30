@@ -818,8 +818,10 @@ fn a_disabled_widget_paints_its_disabled_leaves() {
 
 /// The disabled rule (docs/platform-facts.md §2.1.6): adwaita dims by opacity alone, stating
 /// no disabled switch colours and `disabled_opacity` 0.5, so a disabled switch is its enabled
-/// self at half its alpha — both mechanisms applied, the colours an identity. A disabled
-/// calling `Ui` disables the widget as `.enabled(false)` does.
+/// self faded as one widget over the window, as libadwaita's `filter: Opacity(..)` fades it:
+/// the white thumb stays white on the track and the pair fades over the window (light
+/// #fcfcfd, where fading each shape on its own gave #cbdff7). A disabled calling `Ui`
+/// disables the widget as `.enabled(false)` does, with the calling `Ui`'s own fade.
 #[test]
 fn a_disabled_widget_fades_by_its_disabled_opacity() {
     let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
@@ -828,14 +830,26 @@ fn a_disabled_widget_fades_by_its_disabled_opacity() {
     assert_eq!(t.switch.disabled_checked_background, None);
     assert_eq!(t.switch.disabled_opacity, 0.5);
     let ctx = installed(&t, &AccessibilityPreferences::default());
-    let track = to_color32(t.switch.checked_background).gamma_multiply(0.5);
+    let ground = to_color32(t.defaults.background_color);
+    let on_ground = ground.blend(to_color32(t.switch.checked_background));
     let mut on = true;
     let (out, _) = click(&ctx, |ui| ui.add(Switch::new(&mut on).enabled(false)));
+    let as_one = ground.lerp_to_gamma(on_ground, 0.5);
     assert!(
-        rects(&out).iter().any(|s| s.fill == track),
+        rects(&out).iter().any(|s| s.fill == as_one),
         "{:#?}",
         rects(&out)
     );
+    let thumb = ground.lerp_to_gamma(on_ground.blend(to_color32(t.switch.thumb_background)), 0.5);
+    assert!(circles(&out).iter().any(|c| c.fill == thumb));
+    assert!(
+        [thumb.r(), thumb.g(), thumb.b()]
+            .iter()
+            .zip([0xfc, 0xfc, 0xfd])
+            .all(|(got, want)| got.abs_diff(want) <= 1),
+        "{thumb:?}"
+    );
+    let track = to_color32(t.switch.checked_background).gamma_multiply(0.5);
     let (out, r) = click(&ctx, |ui| {
         ui.add_enabled_ui(false, |ui| ui.add(Switch::new(&mut on)))
             .inner

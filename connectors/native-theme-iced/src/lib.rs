@@ -604,12 +604,37 @@ where
     Message: Clone + 'a,
     Renderer: iced_core::Renderer + 'a,
 {
+    switch_over(
+        resolved,
+        is_toggled,
+        on_toggle,
+        palette::to_color(resolved.defaults.background_color),
+    )
+}
+
+/// [`switch()`] drawn on `backdrop` rather than on the window: a disabled
+/// switch is faded as one widget over `backdrop` ([`styles::toggler_over()`]),
+/// where [`switch()`] fades it over `defaults.background_color`.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn switch_over<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+    backdrop: iced_core::Color,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
     use iced_widget::toggler::Status as Toggler;
     use iced_widget::{button, container};
 
     let s = &resolved.switch;
     let enabled = on_toggle.is_some();
-    let track = styles::toggler(resolved);
+    let track = styles::toggler_over(resolved, backdrop);
     let thumb_style = track.clone();
     let round = iced_core::border::Radius::new(s.track_height / 2.0);
     let diameter = if is_toggled {
@@ -1220,6 +1245,42 @@ mod tests {
 
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
+    }
+
+    /// docs/platform-facts.md §2.1.6: libadwaita fades a disabled switch as
+    /// one widget (`_switch.scss:20-22`), so its white thumb stays white on
+    /// the track and the pair fades over the window at 0.5: light #fcfcfd,
+    /// dark #909092 -- where fading each colour on its own gave the thumb
+    /// through the faded track. Over another backdrop it fades over that.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_disabled_switch_fades_as_one_over_its_backdrop() {
+        use iced_widget::toggler::Status;
+        // A solid thumb within one level of `want`, opaque.
+        let near = |thumb: iced_core::Background, want: [u8; 3]| match thumb {
+            iced_core::Background::Color(c) => {
+                let rgb = c.into_rgba8();
+                rgb.iter()
+                    .zip(want)
+                    .all(|(got, want)| got.abs_diff(want) <= 1)
+                    && rgb.get(3) == Some(&255)
+            }
+            iced_core::Background::Gradient(_) => false,
+        };
+        for (dark, want) in [(false, [0xfc, 0xfc, 0xfd]), (true, [0x90, 0x90, 0x92])] {
+            let r = make_resolved_preset("adwaita", dark);
+            let theme = to_theme(&r, "adwaita");
+            let style = styles::toggler(&r)(&theme, Status::Disabled { is_toggled: true });
+            assert!(near(style.foreground, want), "dark {dark}: {style:?}");
+        }
+        let r = make_resolved_preset("adwaita", false);
+        let theme = to_theme(&r, "adwaita");
+        let black = iced_core::Color::BLACK;
+        let style = styles::toggler_over(&r, black)(&theme, Status::Disabled { is_toggled: true });
+        assert!(
+            near(style.foreground, [0x80, 0x80, 0x80]),
+            "white at 0.5 over black: {style:?}"
+        );
     }
 
     /// The active tab's line exists exactly where the theme states its
