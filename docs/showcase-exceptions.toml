@@ -138,7 +138,9 @@ keys = [
     "material:chrome.menu_bar.theme.x",
     "catppuccin-mocha:chrome.menu_bar.theme.h",
     "material:chrome.menu_bar.theme.h",
-    "chrome.menu_bar.help.w",
+    "adwaita:chrome.menu_bar.help.w",
+    "catppuccin-mocha:chrome.menu_bar.help.w",
+    "kde-breeze:chrome.menu_bar.help.w",
     "catppuccin-mocha:chrome.menu_bar.help.h",
     "material:chrome.menu_bar.help.h",
 ]
@@ -161,7 +163,9 @@ keys = [
 [[parity.group]]
 reason = "iced_aw aligns a menu's rows, not its panel, with the title (Aod::adaptive, iced_aw 0.14.1 src/widget/menu/menu_tree.rs:1007-1060) and pads the panel out from the rows (pad_rectangle, :764-780), so the panel starts popover.border.padding_left_px (or iced_aw's 5 where unstated) left of the title; no setter moves it sideways"
 keys = [
-    "chrome.menu.theme.x",
+    "adwaita:chrome.menu.theme.x",
+    "catppuccin-mocha:chrome.menu.theme.x",
+    "kde-breeze:chrome.menu.theme.x",
 ]
 
 [[parity.group]]
@@ -170,16 +174,11 @@ keys = [
     "catppuccin-mocha:chrome.menu.theme.y",
     "material:chrome.menu.theme.y",
     "catppuccin-mocha:chrome.menu.theme.reload.h",
-    "material:chrome.menu.theme.reload.h",
     "catppuccin-mocha:chrome.menu.theme.light.h",
     "kde-breeze:chrome.menu.theme.light.h",
-    "material:chrome.menu.theme.light.h",
     "catppuccin-mocha:chrome.menu.theme.dark.h",
-    "material:chrome.menu.theme.dark.h",
     "catppuccin-mocha:chrome.menu.theme.preferences.h",
-    "material:chrome.menu.theme.preferences.h",
     "catppuccin-mocha:chrome.menu.theme.preferences.shortcut.y",
-    "material:chrome.menu.theme.preferences.shortcut.y",
 ]
 
 [[parity.group]]
@@ -223,9 +222,7 @@ reason = "theme silence: no preset states a menu's width (no such leaf), kde-bre
 keys = [
     "catppuccin-mocha:chrome.menu.theme.reload.fill",
     "kde-breeze:chrome.menu.theme.reload.fill",
-    "material:chrome.menu.theme.reload.fill",
     "catppuccin-mocha:chrome.menu.theme.system.h",
-    "material:chrome.menu.theme.system.h",
 ]
 
 [[parity.group]]
@@ -257,33 +254,19 @@ keys = [
 reason = "the theme states no button.border.padding_* on material and catppuccin-mocha (their [button] has no border.padding): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; a flat button's icon sits inside it) | theme silence: material and catppuccin-mocha state no toolbar.border.padding_* and no button.border.padding_* (None), so the toolbar's height and its tool buttons' size and places are each toolkit's own button padding (egui's 4 x 1, egui-0.36.2/src/style.rs:1458)"
 keys = [
     "catppuccin-mocha:chrome.toolbar.command_palette.w",
-    "material:chrome.toolbar.command_palette.w",
     "catppuccin-mocha:chrome.toolbar.command_palette.h",
-    "material:chrome.toolbar.command_palette.h",
     "catppuccin-mocha:chrome.toolbar.command_palette.icon.x",
-    "material:chrome.toolbar.command_palette.icon.x",
     "catppuccin-mocha:chrome.toolbar.command_palette.icon.y",
-    "material:chrome.toolbar.command_palette.icon.y",
     "catppuccin-mocha:chrome.toolbar.reload_theme.x",
-    "material:chrome.toolbar.reload_theme.x",
     "catppuccin-mocha:chrome.toolbar.reload_theme.w",
-    "material:chrome.toolbar.reload_theme.w",
     "catppuccin-mocha:chrome.toolbar.reload_theme.h",
-    "material:chrome.toolbar.reload_theme.h",
     "catppuccin-mocha:chrome.toolbar.reload_theme.icon.x",
-    "material:chrome.toolbar.reload_theme.icon.x",
     "catppuccin-mocha:chrome.toolbar.reload_theme.icon.y",
-    "material:chrome.toolbar.reload_theme.icon.y",
     "catppuccin-mocha:chrome.toolbar.preferences.x",
-    "material:chrome.toolbar.preferences.x",
     "catppuccin-mocha:chrome.toolbar.preferences.w",
-    "material:chrome.toolbar.preferences.w",
     "catppuccin-mocha:chrome.toolbar.preferences.h",
-    "material:chrome.toolbar.preferences.h",
     "catppuccin-mocha:chrome.toolbar.preferences.icon.x",
-    "material:chrome.toolbar.preferences.icon.x",
     "catppuccin-mocha:chrome.toolbar.preferences.icon.y",
-    "material:chrome.toolbar.preferences.icon.y",
 ]
 
 [[parity.group]]
@@ -291,7 +274,6 @@ reason = "theme silence: with --open-menu theme gpui's Theme popup lies over the
 keys = [
     "menu@adwaita:chrome.toolbar.preferences.fill",
     "menu@catppuccin-mocha:chrome.toolbar.preferences.fill",
-    "menu@material:chrome.toolbar.preferences.fill",
 ]
 
 [[parity.group]]
@@ -318,18 +300,18 @@ keys = [
     "adwaita:chrome.side_panel.settings.theme.y",
     "catppuccin-mocha:chrome.side_panel.settings.mode_label.h",
     "kde-breeze:chrome.side_panel.settings.mode_label.h",
-    "material:chrome.side_panel.settings.mode_label.h",
     "catppuccin-mocha:chrome.side_panel.settings.mode.y",
     "kde-breeze:chrome.side_panel.settings.mode.y",
-    "material:chrome.side_panel.settings.mode.y",
     "chrome.side_panel.separator.y",
     "adwaita:basic.page.h",
     "catppuccin-mocha:basic.page.h",
+    "material:basic.page.h",
     "adwaita:basic.column_1.h",
     "catppuccin-mocha:basic.column_1.h",
+    "material:basic.column_1.h",
     "adwaita:basic.column_3.h",
     "catppuccin-mocha:basic.column_3.h",
-    "kde-breeze:basic.column_3.h",
+    "material:basic.column_3.h",
     "adwaita:basic.buttons.heading.h",
     "adwaita:basic.buttons.default.y",
     "adwaita:basic.buttons.default.label.h",
@@ -344,8 +326,8 @@ keys = [
     "catppuccin-mocha:basic.buttons.toggle_off.label.h",
     "adwaita:basic.buttons.toggle_on.label.h",
     "catppuccin-mocha:basic.buttons.toggle_on.label.h",
-    "catppuccin-mocha:basic.switches.heading.h",
-    "catppuccin-mocha:basic.switches.off.y",
+    "adwaita:basic.switches.heading.h",
+    "adwaita:basic.switches.off.y",
     "adwaita:basic.text_inputs.heading.h",
     "adwaita:basic.text_inputs.placeholder.y",
     "adwaita:basic.text_inputs.filled.text.h",
@@ -357,16 +339,8 @@ keys = [
     "adwaita:basic.text_area.field.text.h",
     "kde-breeze:basic.text_area.field.text.h",
     "material:basic.text_area.field.text.h",
-    "kde-breeze:basic.drop_down.heading.h",
-    "kde-breeze:basic.drop_down.trigger.y",
-    "adwaita:basic.number_input.heading.h",
-    "adwaita:basic.number_input.field.y",
-    "catppuccin-mocha:basic.spinner.heading.h",
-    "kde-breeze:basic.spinner.heading.h",
-    "catppuccin-mocha:basic.spinner.indicator.y",
-    "kde-breeze:basic.spinner.indicator.y",
-    "adwaita:basic.tabs.heading.h",
-    "adwaita:basic.tabs.bar.y",
+    "catppuccin-mocha:basic.drop_down.heading.h",
+    "catppuccin-mocha:basic.drop_down.trigger.y",
     "adwaita:basic.typography.heading.h",
     "adwaita:basic.typography.caption.y",
     "kde-breeze:basic.typography.caption.h",
@@ -374,9 +348,7 @@ keys = [
     "kde-breeze:basic.typography.body.h",
     "kde-breeze:basic.typography.link.y",
     "catppuccin-mocha:basic.typography.link.h",
-    "material:basic.typography.link.h",
     "catppuccin-mocha:basic.typography.section_heading.y",
-    "material:basic.typography.section_heading.y",
     "adwaita:basic.typography.section_heading.h",
     "catppuccin-mocha:basic.typography.section_heading.h",
     "kde-breeze:basic.typography.section_heading.h",
@@ -389,29 +361,16 @@ keys = [
     "adwaita:basic.typography.monospace.y",
     "adwaita:basic.typography.monospace.h",
     "catppuccin-mocha:basic.typography.monospace.h",
-    "adwaita:basic.icons.heading.y",
-    "catppuccin-mocha:basic.icons.heading.y",
-    "catppuccin-mocha:basic.icons.heading.h",
-    "adwaita:basic.separator.heading.h",
-    "adwaita:basic.separator.line.y",
-    "adwaita:basic.list.heading.h",
-    "adwaita:basic.list.frame.y",
-    "material:basic.expander.details.title.h",
+    "adwaita:basic.icons.heading.h",
+    "catppuccin-mocha:basic.separator.heading.h",
+    "catppuccin-mocha:basic.separator.line.y",
+    "kde-breeze:basic.list.heading.h",
+    "kde-breeze:basic.list.frame.y",
     "adwaita:basic.table.frame.h",
+    "catppuccin-mocha:basic.table.frame.h",
     "kde-breeze:basic.table.frame.h",
-    "material:basic.table.frame.h",
-    "adwaita:basic.table.header.h",
-    "adwaita:basic.table.header.name.h",
-    "adwaita:basic.table.header.size.h",
-    "adwaita:basic.table.row_1.y",
-    "material:basic.table.row_1.h",
-    "material:basic.table.row_2.y",
-]
-
-[[parity.group]]
-reason = "with --open-menu theme the sample point lies under the open menu, which each toolkit places and fills its own way where the theme is silent: iced_aw starts the panel popover.border.padding left of the title (chrome.menu.theme.x; iced_aw 0.14.1 src/widget/menu/menu_tree.rs:764-780, :1007-1060), the theme states no spacing round a menu separator, and on material the panel's width follows the unstated menu.border.padding and popover.border.padding, so another part of the menu, or its frame, lies under the point"
-keys = [
-    "menu@material:chrome.side_panel.settings.theme.fill",
+    "kde-breeze:basic.table.row_1.h",
+    "kde-breeze:basic.table.row_2.y",
 ]
 
 [[parity.group]]
@@ -419,6 +378,7 @@ reason = "theme silence: with --open-menu theme the popup lies over the page and
 keys = [
     "menu@catppuccin-mocha:chrome.side_panel.settings.theme.border",
     "menu@kde-breeze:chrome.side_panel.settings.mode.border",
+    "menu@material:chrome.side_panel.settings.mode.border",
 ]
 
 [[parity.group]]
@@ -427,7 +387,11 @@ keys = [
     "hover@chrome.side_panel.settings.mode_label.text",
     "menu@kde-breeze/light:chrome.side_panel.settings.mode_label.text",
     "rest@kde-breeze/light:chrome.side_panel.settings.mode_label.text",
-    "adwaita/light:basic.buttons.toggle_on.label.text",
+    "hover@basic.buttons.toggle_on.label.text",
+    "menu@adwaita/light:basic.buttons.toggle_on.label.text",
+    "menu@kde-breeze/light:basic.buttons.toggle_on.label.text",
+    "rest@adwaita/light:basic.buttons.toggle_on.label.text",
+    "rest@kde-breeze/light:basic.buttons.toggle_on.label.text",
     "hover@basic.checkboxes.unchecked.label.text",
     "menu@kde-breeze/light:basic.checkboxes.unchecked.label.text",
     "rest@kde-breeze/light:basic.checkboxes.unchecked.label.text",
@@ -453,6 +417,7 @@ reason = "theme silence: with --open-menu theme gpui's Theme popup lies over the
 keys = [
     "menu@adwaita:chrome.side_panel.settings.mode.fill",
     "menu@kde-breeze:chrome.side_panel.settings.mode.fill",
+    "menu@material:chrome.side_panel.settings.mode.fill",
 ]
 
 [[parity.group]]
@@ -460,12 +425,9 @@ reason = "the theme states no tab.border.padding_* on material and catppuccin-mo
 keys = [
     "adwaita:chrome.side_panel.inspector_tabs.widget.w",
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.widget.w",
-    "material:chrome.side_panel.inspector_tabs.widget.w",
     "adwaita:chrome.side_panel.inspector_tabs.theme.x",
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.theme.x",
-    "material:chrome.side_panel.inspector_tabs.theme.x",
     "catppuccin-mocha:chrome.page_tabs.buttons.w",
-    "material:chrome.page_tabs.buttons.w",
 ]
 
 [[parity.group]]
@@ -473,7 +435,6 @@ reason = "gpui's text metrics are whole pixels: a line of text is laid out one l
 keys = [
     "adwaita:chrome.side_panel.inspector_tabs.theme.w",
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.theme.w",
-    "material:chrome.side_panel.inspector_tabs.theme.w",
 ]
 
 [[parity.group]]
@@ -484,7 +445,6 @@ keys = [
     "chrome.status_bar.shown.x",
     "kde-breeze:basic.buttons.default.label.x",
     "kde-breeze:basic.buttons.tooltip.label.x",
-    "material:basic.buttons.tooltip.label.x",
     "catppuccin-mocha:basic.buttons.toggle_off.label.x",
     "kde-breeze:basic.buttons.toggle_on.label.x",
     "catppuccin-mocha:basic.checkboxes.checked.w",
@@ -499,46 +459,30 @@ keys = [
 reason = "the theme states no button.border.padding_* on material and catppuccin-mocha (their [button] has no border.padding): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; a flat button's icon sits inside it) | theme silence: material and catppuccin-mocha state no button.border.padding_* (all four sides None, both variants), so each toolkit pads a button, a tool button and an icon button by its own default: egui's spacing.button_padding 4 x 1 (egui-0.36.2/src/style.rs:1458), iced's 5 x 10, gpui-component's own"
 keys = [
     "catppuccin-mocha:chrome.page_tabs.menu.x",
-    "material:chrome.page_tabs.menu.x",
     "catppuccin-mocha:chrome.page_tabs.menu.w",
-    "material:chrome.page_tabs.menu.w",
     "catppuccin-mocha:chrome.page_tabs.menu.h",
-    "material:chrome.page_tabs.menu.h",
     "catppuccin-mocha:chrome.page_tabs.menu.icon.x",
-    "material:chrome.page_tabs.menu.icon.x",
     "catppuccin-mocha:basic.buttons.primary.w",
     "material:basic.buttons.primary.w",
     "adwaita:basic.buttons.disabled.w",
     "catppuccin-mocha:basic.buttons.disabled.w",
     "material:basic.buttons.disabled.w",
     "catppuccin-mocha:basic.icons.copy.w",
-    "material:basic.icons.copy.w",
     "catppuccin-mocha:basic.icons.copy.h",
-    "material:basic.icons.copy.h",
     "catppuccin-mocha:basic.icons.copy.icon.x",
-    "material:basic.icons.copy.icon.x",
     "catppuccin-mocha:basic.icons.copy.icon.y",
-    "material:basic.icons.copy.icon.y",
     "catppuccin-mocha:basic.icons.paste.x",
-    "material:basic.icons.paste.x",
     "catppuccin-mocha:basic.icons.paste.w",
-    "material:basic.icons.paste.w",
     "catppuccin-mocha:basic.icons.paste.h",
-    "material:basic.icons.paste.h",
     "catppuccin-mocha:basic.icons.paste.icon.x",
-    "material:basic.icons.paste.icon.x",
     "catppuccin-mocha:basic.icons.paste.icon.y",
-    "material:basic.icons.paste.icon.y",
     "catppuccin-mocha:basic.icons.delete.x",
-    "material:basic.icons.delete.x",
     "catppuccin-mocha:basic.icons.delete.w",
     "material:basic.icons.delete.w",
     "catppuccin-mocha:basic.icons.delete.h",
-    "material:basic.icons.delete.h",
     "catppuccin-mocha:basic.icons.delete.icon.x",
     "material:basic.icons.delete.icon.x",
     "catppuccin-mocha:basic.icons.delete.icon.y",
-    "material:basic.icons.delete.icon.y",
     "catppuccin-mocha:basic.icons.small.y",
     "material:basic.icons.small.y",
 ]
@@ -547,10 +491,9 @@ keys = [
 reason = "the theme states no button.border.padding_* on material and catppuccin-mocha (their [button] has no border.padding): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; a flat button's icon sits inside it)"
 keys = [
     "catppuccin-mocha:chrome.page_tabs.menu.y",
-    "material:chrome.page_tabs.menu.y",
     "catppuccin-mocha:chrome.page_tabs.menu.icon.y",
-    "material:chrome.page_tabs.menu.icon.y",
-    "catppuccin-mocha:basic.icons.copy.y",
+    "adwaita:basic.icons.copy.y",
+    "material:basic.icons.copy.y",
 ]
 
 [[parity.group]]
@@ -566,32 +509,32 @@ keys = [
     "material:chrome.status_bar.toggle.y",
     "adwaita:chrome.status_bar.toggle.w",
     "catppuccin-mocha:chrome.status_bar.toggle.w",
-    "material:chrome.status_bar.toggle.w",
     "catppuccin-mocha:chrome.status_bar.toggle.h",
-    "material:chrome.status_bar.toggle.h",
     "catppuccin-mocha:chrome.status_bar.toggle.icon.x",
-    "material:chrome.status_bar.toggle.icon.x",
     "catppuccin-mocha:chrome.status_bar.toggle.icon.y",
-    "material:chrome.status_bar.toggle.icon.y",
     "adwaita:chrome.status_bar.environment.x",
     "catppuccin-mocha:chrome.status_bar.environment.x",
-    "material:chrome.status_bar.environment.x",
     "catppuccin-mocha:chrome.status_bar.environment.y",
-    "material:chrome.status_bar.environment.y",
 ]
 
 [[parity.group]]
 reason = "the theme states no button.border.padding_* (the side-panel toggle is a flat button) or a status-bar padding on material and catppuccin-mocha: each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs)"
 keys = [
     "catppuccin-mocha:chrome.status_bar.environment.h",
-    "material:chrome.status_bar.environment.h",
+]
+
+[[parity.group]]
+reason = "gpui rounds each box's edges in absolute device pixels after layout (gpui-pre src/taffy.rs:332-335), so the five equal flex columns' edges are the exact edges rounded, as R-snap rounds iced's (adwaita column 2: iced 507.6..684.2, gpui 508..684; column 3: 702.2..878.8, gpui 702..879), and each column's width is the difference of its rounded edges, 176 or 177 in turn; only the width compared on its own, against iced's unrounded 176.6 (and egui's, which pairs a rounded x with the unrounded width), differs"
+keys = [
+    "material:basic.column_2.w",
+    "material:basic.column_3.w",
+    "material:basic.column_4.w",
 ]
 
 [[parity.group]]
 reason = "a sum: it holds or is placed after boxes that differ for the reasons their own entries give (sub-pixel line boxes, unstated paddings) | theme silence: the group's place and a column's height sum the heights above it, which hold the unstated paddings of material and catppuccin-mocha (button, input, text_area, list, segmented_control, expander .border.padding_* None) and the switch label gap and check-mark size no preset states | toolkit limit, kde-breeze and adwaita: text_area.border.padding states 5 / 0, below the 10 across and 8 down gpui-component pads a Textarea's editor with -- a Textarea renders an Input at Size::Medium (gpui-component src/input/textarea.rs:141-158, no size of its own), whose editor paddings are that Size's input_px / input_py (sizing.rs:147-166), set on every render (input/input.rs:531-541) where no style reaches; geometry::text_area pads the root by the rest of a larger stated side only, so the text sits 10 / 8 inside the line (kde-breeze 5, adwaita 0 stated) and the three-line field is 72 px tall where iced's and egui's are 66.4 / 55.25; the drop-down under it and the column's height move with it | toolkit limit, whole text rows: egui lays every text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971, round_to_pixel of the row height), as gpui rounds a line box (gpui-pre src/style.rs:554-556), where iced keeps the stated fractional line box; so where adwaita and kde-breeze state a fractional one (adwaita 14.67 x 1.21 = 17.75, kde-breeze 13.33 x 1.36 = 18.13; its section heading's the same), each heading is 18 px in egui against 17.75 in iced, and the text area's rows 3 x 18 (egui's TextEdit lays its text out in one galley, whose rows epaint rounds) against 3 x 17.75, and a group's place and a column's height sum them"
 keys = [
     "basic.column_2.h",
-    "basic.drop_down.heading.y",
 ]
 
 [[parity.group]]
@@ -605,7 +548,9 @@ keys = [
 [[parity.group]]
 reason = "a sum: it holds or is placed after boxes that differ for the reasons their own entries give (sub-pixel line boxes, unstated paddings) | theme silence: the group's place and a column's height sum the heights above it, which hold the unstated paddings of material and catppuccin-mocha (button, input, text_area, list, segmented_control, expander .border.padding_* None) and the switch label gap and check-mark size no preset states | toolkit limit, whole text rows: egui lays every text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971, round_to_pixel of the row height), as gpui rounds a line box (gpui-pre src/style.rs:554-556), where iced keeps the stated fractional line box; so where adwaita and kde-breeze state a fractional one (adwaita 14.67 x 1.21 = 17.75, kde-breeze 13.33 x 1.36 = 18.13; its section heading's the same), each heading is 18 px in egui against 17.75 in iced, and the text area's rows 3 x 18 (egui's TextEdit lays its text out in one galley, whose rows epaint rounds) against 3 x 17.75, and a group's place and a column's height sum them"
 keys = [
-    "basic.column_5.h",
+    "adwaita:basic.column_5.h",
+    "catppuccin-mocha:basic.column_5.h",
+    "material:basic.column_5.h",
 ]
 
 [[parity.group]]
@@ -631,8 +576,10 @@ reason = "gpui's text metrics are whole pixels: a line of text is laid out one l
 keys = [
     "adwaita:basic.buttons.default.w",
     "catppuccin-mocha:basic.buttons.default.w",
+    "material:basic.buttons.default.w",
     "adwaita:basic.buttons.primary.x",
     "catppuccin-mocha:basic.buttons.primary.x",
+    "material:basic.buttons.primary.x",
 ]
 
 [[parity.group]]
@@ -646,22 +593,16 @@ reason = "sub-pixel line box: iced lays a line of text out on the theme's own li
 keys = [
     "adwaita:basic.buttons.default.label.y",
     "catppuccin-mocha:basic.buttons.default.label.y",
-    "material:basic.buttons.default.label.y",
     "adwaita:basic.buttons.primary.label.y",
     "catppuccin-mocha:basic.buttons.primary.label.y",
-    "material:basic.buttons.primary.label.y",
     "adwaita:basic.buttons.disabled.label.y",
     "catppuccin-mocha:basic.buttons.disabled.label.y",
-    "material:basic.buttons.disabled.label.y",
     "adwaita:basic.buttons.tooltip.label.y",
     "catppuccin-mocha:basic.buttons.tooltip.label.y",
-    "material:basic.buttons.tooltip.label.y",
     "adwaita:basic.buttons.toggle_off.label.y",
     "catppuccin-mocha:basic.buttons.toggle_off.label.y",
-    "material:basic.buttons.toggle_off.label.y",
     "adwaita:basic.buttons.toggle_on.label.y",
     "catppuccin-mocha:basic.buttons.toggle_on.label.y",
-    "material:basic.buttons.toggle_on.label.y",
     "adwaita:basic.text_inputs.filled.text.y",
     "catppuccin-mocha:basic.text_inputs.filled.text.y",
     "material:basic.text_inputs.filled.text.y",
@@ -671,7 +612,6 @@ keys = [
     "adwaita:basic.text_inputs.focused.text.y",
     "catppuccin-mocha:basic.text_inputs.focused.text.y",
     "material:basic.text_inputs.focused.text.y",
-    "adwaita:basic.number_input.field.text.y",
     "catppuccin-mocha:basic.number_input.field.text.y",
     "material:basic.number_input.field.text.y",
 ]
@@ -680,11 +620,10 @@ keys = [
 reason = "theme silence: material and catppuccin-mocha state no button.border.padding_* (all four sides None, both variants), so each toolkit pads a button, a tool button and an icon button by its own default: egui's spacing.button_padding 4 x 1 (egui-0.36.2/src/style.rs:1458), iced's 5 x 10, gpui-component's own"
 keys = [
     "catppuccin-mocha:basic.buttons.primary.label.x",
-    "material:basic.buttons.primary.label.x",
     "catppuccin-mocha:basic.buttons.disabled.label.x",
     "kde-breeze:basic.buttons.disabled.label.x",
-    "material:basic.buttons.disabled.label.x",
     "catppuccin-mocha:basic.buttons.tooltip.w",
+    "material:basic.buttons.tooltip.w",
 ]
 
 [[parity.group]]
@@ -706,28 +645,13 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "toolkit limit: a 1-px border on a curve (a round indicator: radio buttons everywhere, material's check box of radius 12 on 18) is anti-aliased by each renderer on its own, so the pixel half a pixel inside the edge mixes the stated colour with the fill by coverage: egui feathers every shape edge over 1 px (epaint-0.36.2/src/tessellator.rs:731, feathering_size_in_pixels 1.0), iced and gpui by their SDF shaders; the stated colour is drawn at full strength along the edge's middle"
-keys = [
-    "material:basic.checkboxes.unchecked.indicator.border",
-    "material:basic.checkboxes.checked.indicator.border",
-    "material:basic.checkboxes.disabled.indicator.border",
-    "basic.radios.option_a.indicator.border",
-    "basic.radios.option_b.indicator.border",
-]
-
-[[parity.group]]
 reason = "gpui's text metrics are whole pixels: a line of text is laid out one line_height tall rounded to the nearest pixel (gpui-pre src/style.rs:554-556, TextStyle::line_height_in_pixels) and as wide as its shaped run rounded up (src/elements/text.rs:765), and every box's edges are then rounded in absolute device pixels, half toward zero (src/taffy.rs:366-374); so a control sized by its label is up to one pixel wider than iced's fractional one, the box after it one pixel further on, and a label centred in a box (a button's, or a check box row's on catppuccin-mocha's 16.8 px line box) sits up to half a pixel left of or above iced's and egui's fraction, which R-snap can round the other way | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
     "catppuccin-mocha:basic.checkboxes.unchecked.label.y",
-    "material:basic.checkboxes.unchecked.label.y",
     "catppuccin-mocha:basic.checkboxes.checked.label.y",
-    "material:basic.checkboxes.checked.label.y",
     "catppuccin-mocha:basic.checkboxes.disabled.label.y",
-    "material:basic.checkboxes.disabled.label.y",
     "catppuccin-mocha:basic.radios.option_a.label.y",
-    "material:basic.radios.option_a.label.y",
     "catppuccin-mocha:basic.radios.option_b.label.y",
-    "material:basic.radios.option_b.label.y",
 ]
 
 [[parity.group]]
@@ -763,34 +687,35 @@ keys = [
 reason = "theme silence, material: checkbox.border.padding and check_mark_stroke_width are unstated there; gpui's check mark then fills the indicator inside its border ('checkmark fills indicator', docs/platform-facts.md:1216), gpui-component's Check icon 16 px across in an 18 px box rounded 12 px, so the glyph sample over the mark's box reaches the page beyond the rounded corners"
 keys = [
     "catppuccin-mocha:basic.checkboxes.checked.mark.mark",
-    "material:basic.checkboxes.checked.mark.mark",
 ]
 
 [[parity.group]]
 reason = "toolkit limit: gpui fades each primitive on its own (gpui-pre src/window.rs:4513-4521 paint_quad, :4586-4589 paint_path), so under checkbox.disabled_opacity the faded checked fill shows through the faded mark, where a platform fading the control as one shows the mark over the page alone; a colour composited in advance would need the page's colour under the control, which the widget does not know"
 keys = [
-    "adwaita:basic.checkboxes.disabled.mark.mark",
+    "adwaita/dark:basic.checkboxes.disabled.mark.mark",
     "material:basic.checkboxes.disabled.mark.mark",
+]
+
+[[parity.group]]
+reason = "toolkit limit: a 1-px border on a curve (a round indicator: radio buttons everywhere, material's check box of radius 12 on 18) is anti-aliased by each renderer on its own, so the pixel half a pixel inside the edge mixes the stated colour with the fill by coverage: egui feathers every shape edge over 1 px (epaint-0.36.2/src/tessellator.rs:731, feathering_size_in_pixels 1.0), iced and gpui by their SDF shaders; the stated colour is drawn at full strength along the edge's middle"
+keys = [
+    "basic.radios.option_a.indicator.border",
+    "basic.radios.option_b.indicator.border",
 ]
 
 [[parity.group]]
 reason = "the theme states no checkbox.radio_dot_diameter_px on material and catppuccin-mocha: each toolkit keeps its own default (iced: half the circle, iced_widget 0.14.2 src/radio.rs:409-433) | theme silence, material and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:242), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size | theme silence: material and catppuccin-mocha state no checkbox.radio_dot_diameter_px (None), so the selected radio button's dot is each toolkit's own size (egui-widgets RadioButton: egui's own radio dot, egui-0.36.2/src/widgets/radio_button.rs)"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.x",
-    "material:basic.radios.option_a.dot.x",
     "catppuccin-mocha:basic.radios.option_a.dot.y",
-    "material:basic.radios.option_a.dot.y",
     "catppuccin-mocha:basic.radios.option_a.dot.w",
-    "material:basic.radios.option_a.dot.w",
     "catppuccin-mocha:basic.radios.option_a.dot.h",
-    "material:basic.radios.option_a.dot.h",
 ]
 
 [[parity.group]]
 reason = "theme silence, material and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:242), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.mark",
-    "material:basic.radios.option_a.dot.mark",
 ]
 
 [[parity.group]]
@@ -815,20 +740,24 @@ keys = [
 [[parity.group]]
 reason = "toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
+    "adwaita:basic.switches.off.label.y",
     "catppuccin-mocha:basic.switches.off.label.y",
-    "material:basic.switches.off.label.y",
+    "adwaita:basic.switches.on.label.y",
     "catppuccin-mocha:basic.switches.on.label.y",
-    "material:basic.switches.on.label.y",
+    "adwaita:basic.switches.disabled.label.y",
     "catppuccin-mocha:basic.switches.disabled.label.y",
-    "material:basic.switches.disabled.label.y",
     "kde-breeze:basic.text_inputs.focused.h",
+    "material:basic.text_inputs.focused.h",
     "kde-breeze:basic.text_area.heading.y",
+    "material:basic.text_area.heading.y",
     "adwaita:basic.table.row_2.h",
+    "catppuccin-mocha:basic.table.row_2.h",
 ]
 
 [[parity.group]]
 reason = "theme silence: the registry has no switch label gap (switch.* states the track and thumb only; checkbox.label_gap_px belongs to the check box), so the label's place after the track is each toolkit's own (egui: spacing.icon_spacing, egui-0.36.2/src/style.rs:1468), and the switch's width follows"
 keys = [
+    "adwaita:basic.switches.disabled.w",
     "catppuccin-mocha:basic.switches.disabled.w",
     "kde-breeze:basic.switches.disabled.w",
 ]
@@ -852,14 +781,12 @@ keys = [
 reason = "gpui-base's Input element draws the placeholder itself and reports no bounds of it (gpui-base src/input/base/element.rs:1822-1826; InputState::range_to_bounds covers the value only), so the dump has no rectangle for it; the placeholder is drawn | the theme states no input.border.padding_* or combo_box.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: text_input's DEFAULT_PADDING 5 and pick_list's 5 / 10, iced_widget 0.14.2 src/text_input.rs, src/pick_list.rs) | theme silence: material and catppuccin-mocha state no input.border.padding_* (None), so a field's text inset is each toolkit's own padding (egui's TextEdit margin 4 x 2, egui-0.36.2/src/widgets/text_edit/builder.rs:136)"
 keys = [
     "catppuccin-mocha:basic.text_inputs.placeholder.text.x",
-    "material:basic.text_inputs.placeholder.text.x",
 ]
 
 [[parity.group]]
 reason = "gpui-base's Input element draws the placeholder itself and reports no bounds of it (gpui-base src/input/base/element.rs:1822-1826; InputState::range_to_bounds covers the value only), so the dump has no rectangle for it; the placeholder is drawn | sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
     "adwaita:basic.text_inputs.placeholder.text.y",
-    "material:basic.text_inputs.placeholder.text.y",
     "adwaita:basic.text_inputs.placeholder.text.h",
     "catppuccin-mocha:basic.text_inputs.placeholder.text.h",
 ]
@@ -868,11 +795,8 @@ keys = [
 reason = "the theme states no input.border.padding_* or combo_box.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: text_input's DEFAULT_PADDING 5 and pick_list's 5 / 10, iced_widget 0.14.2 src/text_input.rs, src/pick_list.rs) | theme silence: material and catppuccin-mocha state no input.border.padding_* (None), so a field's text inset is each toolkit's own padding (egui's TextEdit margin 4 x 2, egui-0.36.2/src/widgets/text_edit/builder.rs:136)"
 keys = [
     "catppuccin-mocha:basic.text_inputs.filled.text.x",
-    "material:basic.text_inputs.filled.text.x",
     "catppuccin-mocha:basic.text_inputs.disabled.text.x",
-    "material:basic.text_inputs.disabled.text.x",
     "catppuccin-mocha:basic.text_inputs.focused.text.x",
-    "material:basic.text_inputs.focused.text.x",
 ]
 
 [[parity.group]]
@@ -885,6 +809,7 @@ keys = [
 reason = "in the --open-menu captures only: gpui dispatches a key along the focused element's path alone (gpui-pre src/window.rs:5815-5816), so a menu that answers the keyboard holds the focus while it is open, as gpui-component's AppMenu gives its popup the focus (src/menu/app_menu_bar.rs:197-200); the focused field shows unfocused until the menu closes and hands the focus back"
 keys = [
     "menu@basic.text_inputs.focused.border",
+    "rest@material:basic.text_inputs.focused.border",
 ]
 
 [[parity.group]]
@@ -896,8 +821,12 @@ keys = [
 [[parity.group]]
 reason = "the theme states no input.border.padding_* or combo_box.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: text_input's DEFAULT_PADDING 5 and pick_list's 5 / 10, iced_widget 0.14.2 src/text_input.rs, src/pick_list.rs) | theme silence: material and catppuccin-mocha state no text_area.border.padding_* (None), so the text area's text inset and height are each toolkit's own padding (egui's TextEdit margin 4 x 2, egui-0.36.2/src/widgets/text_edit/builder.rs:136) | toolkit limit, kde-breeze and adwaita: text_area.border.padding states 5 / 0, below the 10 across and 8 down gpui-component pads a Textarea's editor with -- a Textarea renders an Input at Size::Medium (gpui-component src/input/textarea.rs:141-158, no size of its own), whose editor paddings are that Size's input_px / input_py (sizing.rs:147-166), set on every render (input/input.rs:531-541) where no style reaches; geometry::text_area pads the root by the rest of a larger stated side only, so the text sits 10 / 8 inside the line (kde-breeze 5, adwaita 0 stated) and the three-line field is 72 px tall where iced's and egui's are 66.4 / 55.25; the drop-down under it and the column's height move with it"
 keys = [
-    "basic.text_area.field.text.x",
-    "basic.text_area.field.text.y",
+    "adwaita:basic.text_area.field.text.x",
+    "catppuccin-mocha:basic.text_area.field.text.x",
+    "kde-breeze:basic.text_area.field.text.x",
+    "adwaita:basic.text_area.field.text.y",
+    "catppuccin-mocha:basic.text_area.field.text.y",
+    "kde-breeze:basic.text_area.field.text.y",
 ]
 
 [[parity.group]]
@@ -910,7 +839,6 @@ keys = [
 reason = "gpui-component's Select draws its value inside its trigger and reports no bounds of it (gpui-component src/select.rs:568-575, the `title` div of Select::render), so the dump has no rectangle for it; the value is drawn | the theme states no input.border.padding_* or combo_box.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: text_input's DEFAULT_PADDING 5 and pick_list's 5 / 10, iced_widget 0.14.2 src/text_input.rs, src/pick_list.rs) | theme silence: material and catppuccin-mocha state no combo_box.border.padding_* and no combo_box.arrow_area_width_px (None), so the drop-down's text inset and its arrow's column are each toolkit's own (egui: button_padding and icon_spacing, egui-0.36.2/src/containers/combo_box.rs:342-361)"
 keys = [
     "catppuccin-mocha:basic.drop_down.trigger.text.x",
-    "material:basic.drop_down.trigger.text.x",
 ]
 
 [[parity.group]]
@@ -933,17 +861,22 @@ keys = [
 ]
 
 [[parity.group]]
+reason = "gpui-component's Select draws its arrow inside its trigger and reports no bounds of it (gpui-component src/select.rs:585-590 and :58-59, IconName::ChevronDown), so there is no rectangle to sample; the arrow is drawn"
+keys = [
+    "kde-breeze:basic.drop_down.trigger.arrow.mark",
+]
+
+[[parity.group]]
 reason = "the theme states no input.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's NumberInput pads its text_input by the showcase's input padding, text_input's DEFAULT_PADDING 5 on an unstated side, iced_widget 0.14.2 src/text_input.rs:125) | theme silence, material and catppuccin-mocha: input.border.padding_* is unstated there; each field keeps its toolkit's own padding (gpui: the Input's Size::Medium input_px, 10, gpui-component src/sizing.rs:147-150, inside the 1 px edge; iced and egui theirs), as the text inputs' values do | theme silence: material and catppuccin-mocha state no input.border.padding_* (None), so a field's text inset is each toolkit's own padding (egui's TextEdit margin 4 x 2, egui-0.36.2/src/widgets/text_edit/builder.rs:136)"
 keys = [
     "catppuccin-mocha:basic.number_input.field.text.x",
-    "material:basic.number_input.field.text.x",
 ]
 
 [[parity.group]]
 reason = "sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel | toolkit limit: egui's DragValue builds its value's text itself, RichText::new(value_text).text_style(..) with no line height (egui-0.36.2/src/widgets/drag_value.rs:627-633), so its row is the font's own (Noto Sans, fontconfig's substitute for catppuccin-mocha's Inter, 14 px: 19) where the theme's line box is 14 x 1.2 = 16.8; the text is centred in the field either way"
 keys = [
-    "adwaita:basic.number_input.field.text.h",
     "catppuccin-mocha:basic.number_input.field.text.h",
+    "material:basic.number_input.field.text.h",
 ]
 
 [[parity.group]]
@@ -996,10 +929,8 @@ keys = [
 [[parity.group]]
 reason = "the theme states no list.border.padding_* or list.row_height_px on material and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow"
 keys = [
-    "catppuccin-mocha:basic.list.row_1.h",
-    "material:basic.list.row_1.h",
-    "catppuccin-mocha:basic.list.row_2.y",
-    "material:basic.list.row_2.y",
+    "basic.list.row_1.h",
+    "basic.list.row_2.y",
     "catppuccin-mocha:basic.list.row_2.h",
     "material:basic.list.row_2.h",
     "catppuccin-mocha:basic.list.row_3.y",
@@ -1029,20 +960,15 @@ keys = [
 [[parity.group]]
 reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:602-603, Scrollbar::vertical), so the dump has no rectangle for its thumb; the thumb is drawn | the theme states no list.border.padding_* or list.row_height_px on material and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow"
 keys = [
-    "catppuccin-mocha:basic.list.scrollbar.thumb.h",
+    "adwaita:basic.list.scrollbar.thumb.h",
     "material:basic.list.scrollbar.thumb.h",
-]
-
-[[parity.group]]
-reason = "a sum: it holds or is placed after boxes that differ for the reasons their own entries give (sub-pixel line boxes, unstated paddings) | theme silence: the group's place and a column's height sum the heights above it, which hold the unstated paddings of material and catppuccin-mocha (button, input, text_area, list, segmented_control, expander .border.padding_* None) and the switch label gap and check-mark size no preset states | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
-keys = [
-    "basic.expander.heading.y",
 ]
 
 [[parity.group]]
 reason = "theme silence, material and catppuccin-mocha: expander.frame_enabled, arrow_side, arrow_gap, content_indent and the padding are unstated there (docs/platform-facts.md section 2.27 states them for the desktops); gpui keeps upstream's bordered Accordion (gpui-component src/accordion.rs), both items in one frame whose line insets the headers and whose items pad their bodies, where iced and egui draw no frame"
 keys = [
     "catppuccin-mocha:basic.expander.details.h",
+    "kde-breeze:basic.expander.details.h",
     "material:basic.expander.details.h",
     "catppuccin-mocha:basic.expander.details.header.x",
     "material:basic.expander.details.header.x",
@@ -1051,10 +977,10 @@ keys = [
     "catppuccin-mocha:basic.expander.details.header.w",
     "material:basic.expander.details.header.w",
     "catppuccin-mocha:basic.expander.details.title.y",
-    "material:basic.expander.details.title.y",
     "catppuccin-mocha:basic.expander.details.body.y",
     "material:basic.expander.details.body.y",
     "catppuccin-mocha:basic.expander.more.y",
+    "kde-breeze:basic.expander.more.y",
     "material:basic.expander.more.y",
     "catppuccin-mocha:basic.expander.more.h",
     "material:basic.expander.more.h",
@@ -1098,7 +1024,7 @@ keys = [
 reason = "theme silence, material and catppuccin-mocha: expander.frame_enabled, arrow_side, arrow_gap, content_indent and the padding are unstated there (docs/platform-facts.md section 2.27 states them for the desktops); gpui keeps upstream's bordered Accordion (gpui-component src/accordion.rs), both items in one frame whose line insets the headers and whose items pad their bodies, where iced and egui draw no frame | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
     "catppuccin-mocha:basic.expander.more.title.y",
-    "material:basic.expander.more.title.y",
+    "kde-breeze:basic.expander.more.title.y",
 ]
 
 [[parity.group]]
