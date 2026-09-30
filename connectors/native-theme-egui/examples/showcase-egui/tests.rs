@@ -3806,6 +3806,25 @@ fn listed_elements() -> Vec<crate::elements::ShowcaseElement> {
     elements.unwrap_or_default()
 }
 
+/// Whether this build carries an icon set: without `material-icons`, `lucide-icons` and
+/// `system-icons` no icon loads, so the showcase draws no icon element (a tool button shows its
+/// label instead).
+const ICONS_BUILT: bool = cfg!(any(
+    feature = "material-icons",
+    feature = "lucide-icons",
+    feature = "system-icons"
+));
+
+/// The list's elements that are an icon itself: a `.icon` part, or one of the Icons group's three
+/// sizes.
+fn is_icon_element(id: &str) -> bool {
+    id.ends_with(".icon")
+        || matches!(
+            id,
+            "basic.icons.small" | "basic.icons.toolbar" | "basic.icons.large"
+        )
+}
+
 /// R11 §C: the layout dump holds exactly the list's elements the showcase draws. On the Basic
 /// page at rest every element of the list is drawn but those shown only under a condition
 /// (`when`: an open menu, a hover, a tooltip), and the showcase places no id the list lacks;
@@ -3825,6 +3844,7 @@ fn the_layout_dump_names_every_listed_element_the_basic_page_draws() {
         let missing: Vec<&str> = elements
             .iter()
             .filter(|e| e.when.is_none() && !places.contains_key(&e.id))
+            .filter(|e| ICONS_BUILT || !is_icon_element(&e.id))
             .map(|e| e.id.as_str())
             .collect();
         assert!(missing.is_empty(), "listed but not placed: {missing:?}");
@@ -3832,7 +3852,10 @@ fn the_layout_dump_names_every_listed_element_the_basic_page_draws() {
             let placed = places.get(&element.id);
             let parent = places.get(&element.parent);
             assert!(
-                placed.is_none() || element.parent == "window" || parent.is_some(),
+                placed.is_none()
+                    || element.parent == "window"
+                    || parent.is_some()
+                    || (!ICONS_BUILT && is_icon_element(&element.parent)),
                 "{} is placed but its parent {} is not",
                 element.id,
                 element.parent
