@@ -1462,6 +1462,10 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
             "scrollbar",
             "the page lays its scrollbar over the body's right edge and takes no refinement -- Tier U (setting/page.rs, SettingPage); the group is padded by the platform's groove width instead (setting/group.rs, SettingGroup)",
         )
+        .not_themeable(
+            "divider",
+            "gpui-component's own renderer, a border hairline with a muted_foreground pill, installed inside Settings (setting/settings.rs, Settings; resizable.rs, resize_handle_appearance), which no caller can replace, so splitter.* does not reach it",
+        )
 }
 
 /// The Settings inside the Preferences sheet (spec §2.8). Its geometry line

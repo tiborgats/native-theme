@@ -112,8 +112,20 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
 
 /// Resize-handle colours from the splitter (spec §8.3). Upstream projects
 /// `border` / `drag_border` into the same two slots
-/// (gpui-component `src/theme/mod.rs:342-344`); the handle width is a
-/// constant upstream (gpui-base `src/resizable/resize_handle.rs:12`), Tier U.
+/// (gpui-component `src/theme/mod.rs:431-433`); the handle width is a
+/// constant upstream (gpui-base `src/resizable/resize_handle.rs:13`), Tier U.
+///
+/// They reach every handle gpui-base draws with its built-in line: groups
+/// built with `gpui_base::h_resizable` / `v_resizable` (re-exported as
+/// `gpui_kit::base::h_resizable` / `v_resizable`), which install no renderer
+/// (gpui-base `src/resizable/resize_handle.rs:309-336`) — the splitter's
+/// colours at that 1 px width, not `splitter.divider_width`, the hover colour
+/// only while the handle is dragged. They do not reach gpui-component 0.7.0's
+/// `h_resizable` / `v_resizable`, which install gpui-component's own
+/// renderer (a `border` hairline and a `muted_foreground` pill,
+/// gpui-component `src/resizable.rs:27-30, 93, 104-111`), nor `Settings`'
+/// divider or the dock's edges, which install it internally
+/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:143`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
     ResizableTheme {

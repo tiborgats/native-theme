@@ -705,19 +705,23 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// An application-drawn toolbar row (docs/platform-facts.md §2.13):
-/// `toolbar.bar_height` as its minimum height where the platform states one
-/// -- a toolbar that sizes to its content, as KDE's does, states none, and a
-/// fixed height would be an invention there --, `toolbar.item_gap` between
-/// items where the theme states one, the `toolbar.border` padding sides the
-/// platform states, `toolbar.background_color`, and `toolbar.font` size and
-/// weight. The row is the application's own, so an unstated side, gap or
-/// height is left to the application. No edge: §2.13 states none; an application that wants a
-/// rule draws a Separator.
+/// A toolbar row (docs/platform-facts.md §2.13), the application's own or
+/// gpui-component's `Toolbar`: its height the content's, at least
+/// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
+/// toolbars size to their content and state none (platform-facts.md:1351),
+/// and a fixed height would be an invention there, so the refinement sets
+/// the height to `auto`, which also replaces the `h_8` gpui-component's
+/// `Toolbar` sets at its Small size (toolbar.rs:252-256); an application that
+/// wants a fixed height sets one after the refinement --,
+/// `toolbar.item_gap` between items where the theme states one, the
+/// `toolbar.border` padding sides the platform states,
+/// `toolbar.background_color`, and `toolbar.font` size and weight. An
+/// unstated side or gap is left to the application. No edge: §2.13 states
+/// none; an application that wants a rule draws a Separator.
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    let r = with_text(StyleRefinement::default(), &t.font, n);
+    let r = with_text(StyleRefinement::default(), &t.font, n).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
         None => r,
@@ -1907,7 +1911,11 @@ mod tests {
                     t.bar_height.map(|h| px(h).into()),
                     "{at}: bar height"
                 );
-                assert_eq!(out.size.height, None, "{at}: the height is a floor");
+                assert_eq!(
+                    out.size.height,
+                    Some(gpui::Length::Auto),
+                    "{at}: the toolbar's height is its content's, the bar height a floor"
+                );
                 assert_eq!(out.gap.width, t.item_gap.and_then(def), "{at}: item gap");
                 stated += assert_padding(&out, &t.border.padding, &at);
                 assert_eq!(
@@ -2050,7 +2058,8 @@ mod tests {
         assert_eq!(out.padding.right, None, "an unstated side is upstream's");
     }
 
-    /// Without a stated bar height the application's row keeps its own.
+    /// Without a stated bar height the toolbar is its content's height, with
+    /// no floor.
     #[test]
     fn toolbar_leaves_min_height_unset_without_a_bar_height() {
         let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
@@ -2058,7 +2067,7 @@ mod tests {
         r.toolbar.item_gap = None;
         let out = toolbar(Native::unscaled(&r));
         assert_eq!(out.min_size.height, None);
-        assert_eq!(out.size.height, None);
+        assert_eq!(out.size.height, Some(gpui::Length::Auto));
         assert_eq!(out.gap.width, None, "an unstated gap is the row's own");
         r.toolbar.bar_height = Some(40.0);
         assert_eq!(toolbar(Native::unscaled(&r)).min_size.height, len(40.0));

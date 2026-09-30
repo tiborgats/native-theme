@@ -69,7 +69,7 @@
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
 //! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
-//! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
+//! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
 //! reach the widgets through the [`geometry`] module: pure builders returning a

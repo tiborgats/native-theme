@@ -23,6 +23,12 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   going through gpui-component; the connector writes the native scrollbar
   width, thumb width, inset and radius, minimum thumb length and colours, and
   the splitter colours, and keeps them installed across upstream rebuilds.
+  The splitter colours reach the handles gpui-base draws itself — groups built
+  with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
+  colours at gpui-base's 1 px width, the hover colour only while dragged — not
+  gpui-component 0.7.0's own `h_resizable` / `v_resizable`, `Settings`' divider
+  or the dock's edges, which draw a `border` hairline and a `muted_foreground`
+  pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
   the native heights, paddings, radii, borders and text sizes for the widgets
   where gpui-component applies the caller's style after its own — and the
@@ -138,7 +144,8 @@ variant.
 
 - **`apply(theme, &resolved, &prefs, cx)`** — installs the theme, stores the
   resolved variant and the preferences in the `NativeTheme` global, projects
-  into gpui-base, writes the native scrollbar and resize-handle values, forwards
+  into gpui-base, writes the native scrollbar values and resize-handle colours
+  (which gpui-base's own resizables draw), forwards
   reduce-motion, installs the re-apply observer once, and repaints every window.
 - **`apply_system_theme(&sys, cx)`** — `apply` for the OS theme, storing both
   variants (and both configs) at once.
@@ -241,7 +248,7 @@ test over every preset and mode says so.
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
-| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements — gpui-component has no toolbar widget. No edge: the platforms state none |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements, or gpui-component 0.7.0's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. No edge: the platforms state none |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
@@ -501,7 +508,8 @@ conflict with any other dependency wanting a later snapshot.
   factor), `radius`, `shadow`, `focus_ring`, `scrollbar_mode`.
 - **Base layer** — scrollbar track width, thumb width, thumb inset (centred),
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
-  colours from the splitter.
+  colours from the splitter, which gpui-base's own resizables draw (not
+  gpui-component's, `Settings` or dock edges).
 - **Icons** — every gpui-component `IconName` (101 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names
