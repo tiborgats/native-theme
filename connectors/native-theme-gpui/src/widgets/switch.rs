@@ -32,7 +32,8 @@ pub struct SwitchLook {
     pub track_height: Pixels,
     /// `switch.track_radius`.
     pub track_radius: Pixels,
-    /// `switch.thumb_diameter`.
+    /// `switch.thumb_diameter`; off, `unchecked_thumb_diameter` where the
+    /// theme states one.
     pub thumb: Pixels,
     /// The thumb's inset from either end of the track, and from its top:
     /// `0.5 × (track_height − thumb_diameter)`, the centred thumb the two
@@ -42,7 +43,9 @@ pub struct SwitchLook {
     pub track: Hsla,
     /// The track's colour under the pointer, where the control is enabled.
     pub hover_track: Option<Hsla>,
-    /// The thumb's colour.
+    /// The thumb's colour: `switch.thumb_background`, off
+    /// `unchecked_thumb_background` where the theme states one, disabled
+    /// `disabled_thumb_color`.
     pub thumb_color: Hsla,
     /// The label's colour: `SwitchTheme` states none, so the window's text,
     /// `defaults.text_color`, and `defaults.disabled_text_color` disabled.
@@ -78,10 +81,15 @@ impl SwitchLook {
             s.hover_unchecked_background
         };
         let hover_track = (!disabled).then(|| over(color(base), color(hover.unwrap_or(base))));
-        let thumb_color = if disabled {
-            s.disabled_thumb_color.unwrap_or(s.thumb_background)
-        } else {
+        let rest_thumb = if checked {
             s.thumb_background
+        } else {
+            s.unchecked_thumb_background.unwrap_or(s.thumb_background)
+        };
+        let thumb_color = if disabled {
+            s.disabled_thumb_color.unwrap_or(rest_thumb)
+        } else {
+            rest_thumb
         };
         let label = if disabled {
             resolved.defaults.disabled_text_color
@@ -89,7 +97,11 @@ impl SwitchLook {
             resolved.defaults.text_color
         };
         let track_height = length(s.track_height)?;
-        let thumb = length(s.thumb_diameter)?;
+        let thumb = length(if checked {
+            s.thumb_diameter
+        } else {
+            s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+        })?;
         Some(Self {
             track_width: length(s.track_width)?,
             track_height,

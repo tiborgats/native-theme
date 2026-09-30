@@ -383,9 +383,13 @@ disabled_unchecked_background = "#e6e0e91f"
 disabled_thumb_color = "#1d1b2061"
 # platform-facts.md:1473 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
 thumb_background = "#ffffff"
+# platform-facts.md:1476 (§2.21): unselected-handle-color = outline (_md-comp-switch.scss:105)
+unchecked_thumb_background = "#79747e"
 track_width_px = 52.0
 track_height_px = 32.0
 thumb_diameter_px = 24.0
+# platform-facts.md:1475 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
+unchecked_thumb_diameter_px = 16.0
 track_radius_px = 16.0
 
 [light.dialog]
@@ -871,9 +875,13 @@ disabled_unchecked_background = "#36343b1f"
 disabled_thumb_color = "#e6e0e961"
 # platform-facts.md:1473 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
 thumb_background = "#381e72"
+# platform-facts.md:1476 (§2.21): unselected-handle-color = outline (_md-comp-switch.scss:105)
+unchecked_thumb_background = "#938f99"
 track_width_px = 52.0
 track_height_px = 32.0
 thumb_diameter_px = 24.0
+# platform-facts.md:1475 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
+unchecked_thumb_diameter_px = 16.0
 track_radius_px = 16.0
 
 [dark.dialog]

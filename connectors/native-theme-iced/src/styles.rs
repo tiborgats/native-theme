@@ -732,9 +732,10 @@ pub fn radio(
 /// The track is `switch.checked_background` or `.unchecked_background` by
 /// `is_toggled`, with `.hover_*` layered over it and `.disabled_*`
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
-/// so emitted as given in every state, and `.disabled_thumb_color` whenever
-/// the switch is disabled -- toggled or not. A disabled track and thumb have
-/// their alpha multiplied by `switch.disabled_opacity`.
+/// so emitted as given in every state -- `.unchecked_thumb_background`, where
+/// the theme states one, while not toggled -- and `.disabled_thumb_color`
+/// whenever the switch is disabled, toggled or not. A disabled track and thumb
+/// have their alpha multiplied by `switch.disabled_opacity`.
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius
@@ -749,6 +750,8 @@ pub fn radio(
 /// `(track_height - thumb_diameter) / (2 * track_height)`. A preset that
 /// states no track height, or a thumb taller than its track, would ask for a
 /// division by zero or a negative inset; there the ratio is iced's own instead.
+/// While not toggled the thumb is `.unchecked_thumb_diameter` across where the
+/// theme states one (Material's 16 against its 24).
 ///
 /// One native field is the consumer's builder geometry rather than a `Style`
 /// field: `switch.track_height` belongs to `Toggler::size(..)`
@@ -796,21 +799,32 @@ pub fn toggler(
     let disabled_unchecked = faded(disabled_unchecked, s.disabled_opacity);
 
     let thumb = to_color(s.thumb_background);
+    // The off thumb: a soft option copying the on one.
+    let unchecked_thumb = s.unchecked_thumb_background.unwrap_or(s.thumb_background);
     let disabled_thumb = faded(
         to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
         s.disabled_opacity,
     );
+    let disabled_unchecked_thumb = faded(
+        to_color(s.disabled_thumb_color.unwrap_or(unchecked_thumb)),
+        s.disabled_opacity,
+    );
+    let unchecked_thumb = to_color(unchecked_thumb);
 
     let track_radius = Radius::new(s.track_radius);
     // Guarded so that a track with no height, or a thumb taller than its
     // track, falls back to iced's own ratio rather than dividing by zero or
-    // insetting the thumb by a negative length.
-    let padding_ratio =
-        if s.track_height > 0.0 && s.thumb_diameter >= 0.0 && s.thumb_diameter <= s.track_height {
-            Some((s.track_height - s.thumb_diameter) / (2.0 * s.track_height))
+    // insetting the thumb by a negative length. The off thumb is
+    // `unchecked_thumb_diameter` across where the theme states one.
+    let ratio = |thumb: f32| {
+        if s.track_height > 0.0 && thumb >= 0.0 && thumb <= s.track_height {
+            Some((s.track_height - thumb) / (2.0 * s.track_height))
         } else {
             None
-        };
+        }
+    };
+    let padding_ratio = ratio(s.thumb_diameter);
+    let unchecked_padding_ratio = ratio(s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter));
 
     move |theme, status| {
         let iced = iced_widget::toggler::default(theme, status);
@@ -819,23 +833,33 @@ pub fn toggler(
                 if is_toggled {
                     (checked, thumb)
                 } else {
-                    (unchecked, thumb)
+                    (unchecked, unchecked_thumb)
                 }
             }
             Status::Hovered { is_toggled } => {
                 if is_toggled {
                     (hovered_checked, thumb)
                 } else {
-                    (hovered_unchecked, thumb)
+                    (hovered_unchecked, unchecked_thumb)
                 }
             }
             Status::Disabled { is_toggled } => {
                 if is_toggled {
                     (disabled_checked, disabled_thumb)
                 } else {
-                    (disabled_unchecked, disabled_thumb)
+                    (disabled_unchecked, disabled_unchecked_thumb)
                 }
             }
+        };
+        let is_toggled = match status {
+            Status::Active { is_toggled }
+            | Status::Hovered { is_toggled }
+            | Status::Disabled { is_toggled } => is_toggled,
+        };
+        let padding_ratio = if is_toggled {
+            padding_ratio
+        } else {
+            unchecked_padding_ratio
         };
         Style {
             background: Background::Color(background),

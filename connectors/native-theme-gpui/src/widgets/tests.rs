@@ -193,6 +193,18 @@ fn a_switch_paints_switch_theme() {
 
         let off = SwitchLook::of(&r, false, false).expect("finite");
         assert_eq!(off.track, c(s.unchecked_background), "{preset}");
+        let off_thumb = s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter);
+        assert_eq!(off.thumb, px(off_thumb), "{preset}");
+        assert_eq!(
+            off.inset,
+            (px(s.track_height) - px(off_thumb)) / 2.,
+            "{preset}"
+        );
+        assert_eq!(
+            off.thumb_color,
+            c(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
+            "{preset}"
+        );
 
         let disabled_on = SwitchLook::of(&r, true, true).expect("finite");
         assert_eq!(
@@ -217,6 +229,13 @@ fn a_switch_paints_switch_theme() {
             disabled_off.track,
             c(s.disabled_unchecked_background
                 .unwrap_or(s.unchecked_background)),
+            "{preset}"
+        );
+        assert_eq!(
+            disabled_off.thumb_color,
+            c(s.disabled_thumb_color
+                .or(s.unchecked_thumb_background)
+                .unwrap_or(s.thumb_background)),
             "{preset}"
         );
     }

@@ -28,8 +28,11 @@ use crate::scope;
 ///   `hover_unchecked_background` composited over it while hovered.
 /// * The thumb is a `switch.thumb_diameter` circle in `thumb_background`, centred on the
 ///   track's axis and inset `0.5 · (track_height − thumb_diameter)` from its ends; a thumb
-///   larger than its track overhangs it, as those numbers state. It moves over the scope's
-///   `Style::animation_time`, which the connector sets to `0.0` under reduced motion.
+///   larger than its track overhangs it, as those numbers state. While off it is
+///   `unchecked_thumb_diameter` across in `unchecked_thumb_background` where the theme
+///   states them (Material's 16 in `outline`, against 24 in `on-primary`). It moves, and
+///   grows or shrinks, over the scope's `Style::animation_time`, which the connector sets to
+///   `0.0` under reduced motion.
 /// * The label is text of no widget font of its own, so in `defaults.font.color`: the switch
 ///   role's cell carries no text colour of the switch's.
 /// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
@@ -80,17 +83,25 @@ struct Geometry {
     track: egui::Vec2,
     radius: f32,
     thumb: f32,
+    /// The thumb while off: `unchecked_thumb_diameter`, or `thumb`.
+    unchecked_thumb: f32,
 }
 
 impl Geometry {
     fn of(sw: &ResolvedSwitchTheme) -> Option<Self> {
+        let thumb = scope::length(sw.thumb_diameter)?;
+        let unchecked_thumb = match sw.unchecked_thumb_diameter {
+            Some(d) => scope::length(d)?,
+            None => thumb,
+        };
         Some(Self {
             track: egui::vec2(
                 scope::length(sw.track_width)?,
                 scope::length(sw.track_height)?,
             ),
             radius: scope::length(sw.track_radius)?,
-            thumb: scope::length(sw.thumb_diameter)?,
+            thumb,
+            unchecked_thumb,
         })
     }
 }
@@ -152,8 +163,9 @@ fn switch_ui(
     let style = ui.style().checkbox_style(&Classes::default(), state);
 
     // The atom holds the track and a thumb that overhangs it.
-    let overhang = (g.thumb - g.track.y).max(0.0);
-    let atom = egui::vec2(g.track.x + overhang, g.track.y.max(g.thumb));
+    let largest = g.thumb.max(g.unchecked_thumb);
+    let overhang = (largest - g.track.y).max(0.0);
+    let atom = egui::vec2(g.track.x + overhang, g.track.y.max(largest));
     let mut min_size = egui::Vec2::splat(ui.spacing().interact_size.y);
     min_size.y = min_size.y.max(atom.y);
     let text = label.as_ref().map(|l| l.text().to_string());
@@ -240,11 +252,18 @@ fn switch_ui(
         Some(layer) if hovered => composite_over(layer, fill),
         _ => to_color32(fill),
     };
-    let thumb = if enabled {
+    let rest_thumb = if checked {
         sw.thumb_background
     } else {
-        sw.disabled_thumb_color.unwrap_or(sw.thumb_background)
+        sw.unchecked_thumb_background.unwrap_or(sw.thumb_background)
     };
+    let thumb = if enabled {
+        rest_thumb
+    } else {
+        sw.disabled_thumb_color.unwrap_or(rest_thumb)
+    };
+    // The thumb grows from its off diameter to its on one as it travels.
+    let diameter = egui::lerp(g.unchecked_thumb..=g.thumb, position);
     // The thumb's centre travels between the two ends of the track's axis, each half the
     // track's height in from its end: the thumb inset `0.5 · (track_height − thumb_diameter)`.
     let half = 0.5 * g.track.y;
@@ -252,12 +271,12 @@ fn switch_ui(
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
     let painter = ui.painter();
     painter.rect_filled(track, radius, fill);
-    painter.circle_filled(centre, 0.5 * g.thumb, to_color32(thumb));
+    painter.circle_filled(centre, 0.5 * diameter, to_color32(thumb));
     let mut parts = Parts::default();
     parts.push("track", track);
     parts.push(
         "thumb",
-        egui::Rect::from_center_size(centre, egui::Vec2::splat(g.thumb)),
+        egui::Rect::from_center_size(centre, egui::Vec2::splat(diameter)),
     );
     if let Some(size) = label_size {
         parts.push(

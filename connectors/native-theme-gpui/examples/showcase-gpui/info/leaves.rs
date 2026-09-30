@@ -1939,6 +1939,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "switch.unchecked_thumb_background",
+        "gpui: the off thumb's fill, thumb_background where unstated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.unchecked_thumb_diameter_px",
+        "gpui: the off thumb's size, thumb_diameter where unstated (SwitchLook)",
+    ),
+    (
+        "",
         "switch.track_height_px",
         "gpui: the track's height (SwitchLook)",
     ),

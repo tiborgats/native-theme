@@ -288,6 +288,8 @@ hover_color = "#e5e5e5"
 [light.switch]
 unchecked_background = "#c5c5c5"
 thumb_background = "#ffffff"
+# platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #9E000000
+unchecked_thumb_background = "#0000009e"
 track_width_px = 40.0
 track_height_px = 20.0
 thumb_diameter_px = 12.0
@@ -691,6 +693,8 @@ hover_color = "#454545"
 [dark.switch]
 unchecked_background = "#454545"
 thumb_background = "#ffffff"
+# platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #C5FFFFFF
+unchecked_thumb_background = "#ffffffc5"
 track_width_px = 40.0
 track_height_px = 20.0
 thumb_diameter_px = 12.0

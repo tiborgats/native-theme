@@ -658,9 +658,16 @@ pub struct SwitchTheme {
     pub checked_background: Option<Rgba>,
     /// Track background when the switch is off.
     pub unchecked_background: Option<Rgba>,
-    /// Thumb (knob) color.
+    /// Thumb (knob) color; while the switch is off, `unchecked_thumb_background`
+    /// where the theme states one.
     #[theme(inherit_from = "defaults.surface_color")]
     pub thumb_background: Option<Rgba>,
+    /// Thumb color while the switch is off, where the platform colours it
+    /// apart: Material's `outline`, WinUI's `TextFillColorSecondary`,
+    /// libadwaita's `$slider_color`. `None` where the thumb is one colour in
+    /// both states, `thumb_background` (docs/platform-facts.md §2.21).
+    #[theme(category = "soft_option")]
+    pub unchecked_thumb_background: Option<Rgba>,
     /// Track width in logical pixels.
     #[serde(rename = "track_width_px")]
     #[theme(check = "non_negative")]
@@ -669,10 +676,18 @@ pub struct SwitchTheme {
     #[serde(rename = "track_height_px")]
     #[theme(check = "non_negative")]
     pub track_height: Option<f32>,
-    /// Thumb diameter in logical pixels.
+    /// Thumb diameter in logical pixels; while the switch is off,
+    /// `unchecked_thumb_diameter` where the theme states one.
     #[serde(rename = "thumb_diameter_px")]
     #[theme(check = "non_negative")]
     pub thumb_diameter: Option<f32>,
+    /// Thumb diameter while the switch is off, in logical pixels, where the
+    /// platform sizes it apart: Material's is 16 off, 24 on. `None` where the
+    /// thumb is one size in both states, `thumb_diameter`
+    /// (docs/platform-facts.md §2.21).
+    #[serde(rename = "unchecked_thumb_diameter_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub unchecked_thumb_diameter: Option<f32>,
     /// Track corner radius in logical pixels.
     #[serde(rename = "track_radius_px")]
     #[theme(check = "non_negative")]

@@ -392,6 +392,7 @@ fields = [
     "switch.disabled_checked_background", # platform-specific disabled checked track
     "switch.disabled_unchecked_background", # platform-specific disabled unchecked track
     "switch.disabled_thumb_color",     # platform-specific disabled thumb
+    "switch.unchecked_thumb_background", # None: the off thumb is `thumb_background` (§2.21)
     "combo_box.hover_background",      # platform-specific hover bg
     "combo_box.disabled_background",   # platform-specific disabled bg
     "segmented_control.hover_background", # platform-specific hover bg
@@ -400,6 +401,7 @@ fields = [
     # soft_option size: stays None where the platform states none
     "checkbox.radio_dot_diameter",     # macOS publishes no radio dot size (platform-facts §2.5)
     "checkbox.radio_indicator_width",  # None: the radio is `indicator_width` across (§2.5)
+    "switch.unchecked_thumb_diameter", # None: the off thumb is `thumb_diameter` across (§2.21)
     "tab.item_gap",                    # macOS publishes no tab spacing (platform-facts §2.11)
     "checkbox.check_mark_stroke_width", # WinUI's mark is a glyph, macOS publishes none (§2.5)
     "expander.arrow_side",             # enum: KDE/macOS leading, GNOME/Windows trailing (§2.27)

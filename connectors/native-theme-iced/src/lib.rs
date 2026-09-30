@@ -572,9 +572,10 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
 }
 
 /// A switch at the platform's size: a track `switch.track_width` by
-/// `.track_height`, holding a thumb `switch.thumb_diameter` across, inset by
-/// half the difference of the two heights, at the right end while
-/// `is_toggled`. `on_toggle` is the message a press sends; `None` is a
+/// `.track_height`, holding a thumb `switch.thumb_diameter` across
+/// (`.unchecked_thumb_diameter`, where the theme states one, while not
+/// `is_toggled`), inset by half the difference of the two heights, at the
+/// right end while `is_toggled`. `on_toggle` is the message a press sends; `None` is a
 /// disabled switch.
 ///
 /// iced's `Toggler` lays its track out as twice its height
@@ -611,10 +612,15 @@ where
     let track = styles::toggler(resolved);
     let thumb_style = track.clone();
     let round = iced_core::border::Radius::new(s.track_height / 2.0);
+    let diameter = if is_toggled {
+        s.thumb_diameter
+    } else {
+        s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+    };
 
     let thumb = container(iced_widget::Space::new())
-        .width(s.thumb_diameter)
-        .height(s.thumb_diameter)
+        .width(diameter)
+        .height(diameter)
         .style(move |theme| {
             let status = if enabled {
                 Toggler::Active { is_toggled }
@@ -633,7 +639,7 @@ where
             }
         });
     let seat = container(thumb)
-        .padding(((s.track_height - s.thumb_diameter) / 2.0).max(0.0))
+        .padding(((s.track_height - diameter) / 2.0).max(0.0))
         .width(iced_core::Length::Fill)
         .height(iced_core::Length::Fill)
         .align_x(if is_toggled {

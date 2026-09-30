@@ -1024,7 +1024,7 @@ sample = { text = "glyph" }
 id = "basic.switches.off"
 name = "Switch"
 parent = "basic.switches.heading"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
 states = ["Off"]
 
 [[element]]
@@ -1040,7 +1040,7 @@ sample = { fill = [0.75, 0.5] }
 id = "basic.switches.off.thumb"
 name = "Switch thumb"
 parent = "basic.switches.off.track"
-leaves = ["switch.thumb_diameter_px", "switch.thumb_background"]
+leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background"]
 states = ["Off"]
 part = true
 sample = { fill = [0.5, 0.5] }

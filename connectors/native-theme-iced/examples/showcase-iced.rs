@@ -5700,6 +5700,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "styles::toggler: the Hovered track background".into()
         }
         ("switch", "thumb_background") => "styles::toggler: the thumb's foreground".into(),
+        ("switch", "unchecked_thumb_diameter_px") => {
+            "native_theme_iced::switch: the off thumb container, thumb_diameter where unstated"
+                .into()
+        }
+        ("switch", "unchecked_thumb_background") => {
+            "styles::toggler: the off thumb's foreground, thumb_background where unstated".into()
+        }
         ("switch", "disabled_checked_background") => {
             "styles::toggler: the Disabled track background".into()
         }

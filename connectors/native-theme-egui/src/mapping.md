@@ -10,13 +10,13 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
-| Buttons (button, link, switch, checkbox, segmented control) | 102 | 11 | 46 | 29 | 16 |
+| Buttons (button, link, switch, checkbox, segmented control) | 104 | 11 | 46 | 29 | 18 |
 | Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 96 | 0 | 54 | 23 | 19 |
-| **TOTAL** | **498** | **47** | **208** | **162** | **81** |
+| **TOTAL** | **500** | **47** | **208** | **162** | **83** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 13.
+UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
 ## Rows
 
@@ -310,6 +310,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `switch.track_radius` | SCOPED | «switch» `visuals.widgets.noninteractive.corner_radius`; «switch» `visuals.widgets.inactive.corner_radius`; «switch» `visuals.widgets.hovered.corner_radius`; «switch» `visuals.widgets.active.corner_radius`; «switch» `visuals.widgets.open.corner_radius` |  |
 | `switch.track_width` | DERIVED | → T18(a) |  |
 | `switch.unchecked_background` | SCOPED | «switch» `visuals.widgets.inactive.weak_bg_fill`; «switch» `visuals.widgets.open.weak_bg_fill`; «switch» `visuals.widgets.hovered.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: switch.disabled_unchecked_background is None, §6.4) |  |
+| `switch.unchecked_thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's colour |
+| `switch.unchecked_thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's size |
 
 ### Inputs (input, text area, combo box, list)
 

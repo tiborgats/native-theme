@@ -1161,6 +1161,11 @@ verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1)"
 
+["switch.unchecked_thumb_background"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's colour"
+
 ["switch.track_width"]
 verdict   = "derived"
 tested_by = "T18(a)"
@@ -1173,6 +1178,11 @@ sinks   = [{ path = "spacing.interact_size.y", scope = "switch" }]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1)"
+
+["switch.unchecked_thumb_diameter"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's size"
 
 ["switch.track_radius"]
 verdict = "scoped"

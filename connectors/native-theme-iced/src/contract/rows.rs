@@ -883,19 +883,53 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
 }
 
 /// The thumb the native fields give a switch in `status`. A thumb is painted
-/// over a track the widget also paints, so it is emitted as given.
+/// over a track the widget also paints, so it is emitted as given. While off
+/// it is `switch.unchecked_thumb_background`, a soft option copying
+/// `thumb_background`.
 #[cfg(feature = "widgets")]
 pub(super) fn native_toggler_thumb(r: &ResolvedTheme, status: toggler::Status) -> Color {
     let s = &r.switch;
-    match status {
-        toggler::Status::Active { is_toggled: _ } | toggler::Status::Hovered { is_toggled: _ } => {
-            to_color(s.thumb_background)
+    let rest = |is_toggled: bool| {
+        if is_toggled {
+            s.thumb_background
+        } else {
+            s.unchecked_thumb_background.unwrap_or(s.thumb_background)
         }
-        toggler::Status::Disabled { is_toggled: _ } => dim(
-            to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
+    };
+    match status {
+        toggler::Status::Active { is_toggled } | toggler::Status::Hovered { is_toggled } => {
+            to_color(rest(is_toggled))
+        }
+        toggler::Status::Disabled { is_toggled } => dim(
+            to_color(s.disabled_thumb_color.unwrap_or(rest(is_toggled))),
             s.disabled_opacity,
         ),
     }
+}
+
+/// The thumb's diameter in `status`: `switch.unchecked_thumb_diameter` while
+/// off, a soft option copying `thumb_diameter`.
+#[cfg(feature = "widgets")]
+fn native_toggler_thumb_diameter(r: &ResolvedTheme, status: toggler::Status) -> f32 {
+    let s = &r.switch;
+    match status {
+        toggler::Status::Active { is_toggled }
+        | toggler::Status::Hovered { is_toggled }
+        | toggler::Status::Disabled { is_toggled } => {
+            if is_toggled {
+                s.thumb_diameter
+            } else {
+                s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+            }
+        }
+    }
+}
+
+/// Whether a thumb `thumb` across fits the switch's track: a track with a
+/// height, and a thumb inside it.
+#[cfg(feature = "widgets")]
+fn thumb_fits(r: &ResolvedTheme, thumb: f32) -> bool {
+    r.switch.track_height > 0.0 && thumb >= 0.0 && thumb <= r.switch.track_height
 }
 
 /// Every color field of `styles::toggler`. Five of the remaining seven fields
@@ -919,14 +953,15 @@ pub(super) const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
 ];
 
 /// Whether the model's switch geometry can state the inset iced asks for: a
-/// track with a height, and a thumb that fits inside it.
+/// track with a height, and a thumb that fits inside it, on and off.
 ///
 /// Written here as well as in `styles::toggler`, because the contract's side
 /// of a guarded value has to be computed independently of the code under test.
 #[cfg(feature = "widgets")]
 pub(super) fn switch_geometry_is_usable(r: &ResolvedTheme) -> bool {
-    let s = &r.switch;
-    s.track_height > 0.0 && s.thumb_diameter >= 0.0 && s.thumb_diameter <= s.track_height
+    TOGGLER_STATUSES
+        .iter()
+        .all(|&status| thumb_fits(r, native_toggler_thumb_diameter(r, status)))
 }
 
 /// The inset the native fields state between the track and the thumb, as the
@@ -940,8 +975,9 @@ pub(super) fn switch_geometry_is_usable(r: &ResolvedTheme) -> bool {
 #[cfg(feature = "widgets")]
 fn native_toggler_padding_ratio(t: &Theme, r: &ResolvedTheme, status: toggler::Status) -> f32 {
     let s = &r.switch;
-    if switch_geometry_is_usable(r) {
-        (s.track_height - s.thumb_diameter) / (2.0 * s.track_height)
+    let thumb = native_toggler_thumb_diameter(r, status);
+    if thumb_fits(r, thumb) {
+        (s.track_height - thumb) / (2.0 * s.track_height)
     } else {
         toggler::default(t, status).padding_ratio
     }

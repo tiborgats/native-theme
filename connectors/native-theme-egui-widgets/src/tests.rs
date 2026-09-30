@@ -425,6 +425,26 @@ fn every_widget_reports_its_role() {
     assert_eq!(node(&out, ids[7]).role(), accesskit::Role::RadioButton);
 }
 
+/// An off switch's thumb is `switch.unchecked_thumb_diameter` across in
+/// `unchecked_thumb_background` where the theme states them (Material's 16 in `outline`,
+/// docs/platform-facts.md:1475-1476), centred on the track's axis.
+#[test]
+fn the_off_thumb_is_the_stated_off_thumb() {
+    let mut t = kde();
+    assert_eq!(t.switch.unchecked_thumb_diameter, None);
+    assert_eq!(t.switch.unchecked_thumb_background, None);
+    t.switch.unchecked_thumb_diameter = Some(t.switch.thumb_diameter - 6.0);
+    t.switch.unchecked_thumb_background = Some(t.defaults.danger_color);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut on = false;
+    let (out, _) = response(&ctx, at(0.0), |ui| ui.add(Switch::new(&mut on)));
+    let thumb = circles(&out)
+        .into_iter()
+        .find(|c| c.fill == to_color32(t.defaults.danger_color))
+        .map(|c| 2.0 * c.radius);
+    assert_eq!(thumb, t.switch.unchecked_thumb_diameter);
+}
+
 /// The radio button's circle is `checkbox.radio_indicator_width` across its outline where the
 /// theme states one (Material's 20 against its check box's 18, docs/platform-facts.md:1222).
 #[test]

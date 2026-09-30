@@ -618,6 +618,8 @@ hover_color = "#4a4a4e"
 [dark.switch]
 unchecked_background = "#4a4a4e"
 thumb_background = "#ffffff"
+# platform-facts.md:1476 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
+unchecked_thumb_background = "#d2d2d2"
 track_width_px = 46.0
 track_height_px = 26.0
 thumb_diameter_px = 20.0
