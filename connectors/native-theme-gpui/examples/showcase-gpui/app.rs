@@ -124,8 +124,46 @@ pub(crate) fn init(cx: &mut App) {
         KeyBinding::new("secondary-k", OpenCommandPalette, None),
         KeyBinding::new("secondary-,", OpenPreferences, None),
     ]);
-    cx.on_action(|_: &Quit, cx| cx.quit());
+    cx.on_action(|_: &Quit, cx| quit(cx));
 }
+
+/// Quit the showcase: take the focus off every field, let the windows paint
+/// that, close them, then quit the application.
+///
+/// A focused text field hands the platform window, at paint, an input handler
+/// holding its state (gpui-base's `InputBaseState`), and the platform window
+/// keeps the last frame's handler. `App::quit`, or closing the window in the
+/// same tick, leaves that handle to outlive the application, which gpui's
+/// leak detector (on in the showcase's build: the dev-dependency's
+/// `test-support` enables `leak-detection`) reports by panicking — as the
+/// Basic page's focused field did on the Windows screenshot runner, whose
+/// quit drops the application. Blurring, then letting a frame paint with no
+/// focused field, replaces the handler before the windows go; each step
+/// waits [`QUIT_SETTLE`].
+pub(crate) fn quit(cx: &mut App) {
+    for window in cx.windows() {
+        let _ = window.update(cx, |_, window, cx| {
+            window.blur(cx);
+            window.refresh();
+        });
+    }
+    cx.spawn(async move |cx| {
+        cx.background_executor().timer(QUIT_SETTLE).await;
+        cx.update(|cx| {
+            for window in cx.windows() {
+                let _ = window.update(cx, |_, window, _| window.remove_window());
+            }
+        });
+        cx.background_executor().timer(QUIT_SETTLE).await;
+        cx.update(|cx| cx.quit());
+    })
+    .detach();
+}
+
+/// How long [`quit`] waits between its steps: for the windows to paint a frame
+/// with no focused field, then for the platform to take the closed windows
+/// down. Six frames at 60 Hz; not a platform value.
+const QUIT_SETTLE: std::time::Duration = std::time::Duration::from_millis(100);
 
 // ---------------------------------------------------------------------------
 // Color mode (light / dark / system)

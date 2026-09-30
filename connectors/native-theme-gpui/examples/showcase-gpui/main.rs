@@ -829,7 +829,7 @@ fn dump_layout(
                 std::process::exit(1);
             }
             if quit {
-                cx.update(|cx| cx.quit());
+                cx.update(app::quit);
             }
             break;
         }
@@ -1545,7 +1545,7 @@ fn main() {
                             eprintln!("ERROR: screenshot capture failed for {path}");
                             std::process::exit(1);
                         }
-                        let _ = cx.update(|cx| cx.quit());
+                        cx.update(app::quit);
                     })
                     .detach();
                 }
@@ -1566,7 +1566,7 @@ fn main() {
                             eprintln!("ERROR: screenshot capture failed for {path}");
                             std::process::exit(1);
                         }
-                        let _ = cx.update(|cx| cx.quit());
+                        cx.update(app::quit);
                     })
                     .detach();
                 }
