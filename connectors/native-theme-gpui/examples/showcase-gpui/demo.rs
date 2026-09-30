@@ -7661,6 +7661,7 @@ pub(crate) enum ThemeToken {
     Chart5,
     ChartBullish,
     ChartBearish,
+    ChartGrid,
     DescriptionListLabel,
     DescriptionListLabelForeground,
     DragBorder,

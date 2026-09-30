@@ -223,6 +223,7 @@ pub(crate) const THEME_MAP_GROUPS: [(&str, &str, &[ThemeToken]); 18] = [
             ThemeToken::Chart5,
             ThemeToken::ChartBullish,
             ThemeToken::ChartBearish,
+            ThemeToken::ChartGrid,
         ],
     ),
     (

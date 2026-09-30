@@ -2,7 +2,7 @@
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
-//! shadow settings, and the colours as hex strings: 126 of `ThemeColor`'s 138
+//! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
 //! fields (see [`theme_color_to_config_colors`]).
 //!
 //! Upstream citations in this module are verified against gpui-component 0.6.6,
@@ -20,7 +20,7 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
 /// in logical pixels (conversion from platform points is handled by the resolution step).
 ///
-/// Also populates the `colors` field with all 138 ThemeColor fields converted
+/// Also populates the `colors` field with all 139 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
@@ -90,12 +90,12 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// `ThemeColor` has 138 fields (gpui-component 0.6.6
-/// `src/theme/theme_color.rs:59-341`) and `ThemeConfigColors` 139: the same
-/// 138 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
-/// `ThemeColor` field feeds. 126 are exported. The 12 base colours (`red`,
+/// `ThemeColor` has 139 fields (gpui-component 0.7.0
+/// `src/theme/theme_color.rs:59-343`) and `ThemeConfigColors` 140: the same
+/// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
+/// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,
 /// `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light` variants)
-/// are private in `ThemeConfigColors` (`schema.rs:640-674`) and stay `None`,
+/// are private in `ThemeConfigColors` (`schema.rs:643-677`) and stay `None`,
 /// as does `group_box_title_foreground`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
@@ -178,6 +178,7 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.success_active = h(tc.success_active);
     colors.chart_bullish = h(tc.chart_bullish);
     colors.chart_bearish = h(tc.chart_bearish);
+    colors.chart_grid = h(tc.chart_grid);
     colors.switch = h(tc.switch);
     colors.switch_thumb = h(tc.switch_thumb);
     colors.tab = h(tc.tab);
@@ -313,10 +314,31 @@ mod tests {
         assert_eq!(config.shadow, Some(resolved.defaults.border.shadow_enabled));
     }
 
-    /// §5.3: the config copy carries every new field, so `Theme::change`
-    /// reproduces the solid button surfaces instead of upstream's tint.
+    /// K4: `Theme::change` reinstalls this config, so it must carry the
+    /// native grid colour, or upstream's `border × 0.6` fallback
+    /// (`theme/schema.rs:928`) replaces it.
     #[test]
-    fn theme_config_colors_cover_the_0_6_fields() {
+    fn the_config_carries_the_native_chart_grid() {
+        let resolved = test_resolved();
+        let tc = crate::colors::to_theme_color(&resolved, true, false);
+        let config = to_theme_config(
+            &resolved,
+            "Grid",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
+        assert_eq!(
+            config.colors.chart_grid,
+            Some(SharedString::from(hsla_to_hex(tc.chart_grid)))
+        );
+    }
+
+    /// §5.3, K5: the config copy carries every colour the direct path sets, so
+    /// `Theme::change` reproduces the native palette instead of upstream's.
+    /// The check names the keys left unset rather than counting the others,
+    /// so a key upstream adds and the connector forgets fails by name.
+    #[test]
+    fn theme_config_colors_export_every_key() {
         let resolved = test_resolved();
         let config = to_theme_config(
             &resolved,
@@ -325,42 +347,32 @@ mod tests {
             &AccessibilityPreferences::default(),
         );
         let c = &config.colors;
-        for (name, value) in [
-            ("button", &c.button),
-            ("button_foreground", &c.button_foreground),
-            ("button_primary", &c.button_primary),
-            ("button_primary_foreground", &c.button_primary_foreground),
-            ("button_secondary_active", &c.button_secondary_active),
-            ("button_danger_hover", &c.button_danger_hover),
-            ("button_info_active", &c.button_info_active),
-            ("button_success_foreground", &c.button_success_foreground),
-            ("button_warning", &c.button_warning),
-            ("chart_bullish", &c.chart_bullish),
-            ("chart_bearish", &c.chart_bearish),
-            ("status_bar", &c.status_bar),
-            ("status_bar_border", &c.status_bar_border),
-            ("table_foot", &c.table_foot),
-            ("table_foot_foreground", &c.table_foot_foreground),
-        ] {
-            assert!(value.is_some(), "config colour {name} not exported");
-        }
         // D36: drag_border is primary at alpha 0.65, so its export carries alpha.
         assert_eq!(
             c.drag_border.as_deref().map(str::len),
             Some(9),
             "translucent colours are exported as #rrggbbaa"
         );
-        // Every field ThemeConfigColors exposes is exported: 138 ThemeColor
-        // fields minus the 12 private base-palette ones (D43), and
-        // group_box_title_foreground, which ThemeColor does not have, stays None.
         let value = serde_json::to_value(c).expect("ThemeConfigColors serialises");
-        let exported = value
+        let object = value
             .as_object()
-            .expect("ThemeConfigColors serialises as an object")
-            .values()
-            .filter(|v| !v.is_null())
-            .count();
-        assert_eq!(exported, 126, "config colours exported");
+            .expect("ThemeConfigColors serialises as an object");
+        let unset: Vec<&str> = object
+            .iter()
+            .filter(|(_, v)| v.is_null())
+            .map(|(k, _)| k.as_str())
+            .collect();
+        // D43: the 12 private base-palette colours are not exported; and
+        // group_box_title_foreground has no ThemeColor source.
+        let expected_unset =
+            |key: &str| key.starts_with("base.") || key == "group_box.title.foreground";
+        let base = unset.iter().filter(|k| k.starts_with("base.")).count();
+        assert_eq!(base, 12, "the base palette has 12 keys: {unset:?}");
+        let forgotten: Vec<&&str> = unset.iter().filter(|k| !expected_unset(k)).collect();
+        assert!(
+            forgotten.is_empty(),
+            "ThemeConfigColors keys not exported: {forgotten:?}"
+        );
     }
 
     #[test]

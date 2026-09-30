@@ -8,7 +8,7 @@
 //! reason in `exceptions`, and an exception that no longer describes a real
 //! difference fails just as loudly as a broken row.
 //!
-//! The coverage tripwire (section 5.2) closes the table: every one of the 138
+//! The coverage tripwire (section 5.2) closes the table: every one of the 139
 //! `ThemeColor` fields -- enumerated through serde, the same mechanism
 //! `colors::tests::no_theme_color_field_is_left_at_default` uses, so a field
 //! added upstream appears here without anyone listing it -- must appear in
@@ -49,7 +49,7 @@ struct ComputedRow {
 /// Every `ThemeColor` field that equals one named native field.
 ///
 /// The fields whose value is composited or derived are in `COMPUTED_ROWS` and
-/// `DERIVED`; the three lists partition the 138 fields, which
+/// `DERIVED`; the three lists partition the 139 fields, which
 /// `every_theme_color_field_has_a_declared_source` asserts.
 const ROWS: &[Row] = &[
     // The model states the window's own fill, which inherits
@@ -243,6 +243,12 @@ const ROWS: &[Row] = &[
         slot: "chart_bearish",
         native: |r| r.defaults.danger_color,
         get: |tc| tc.chart_bearish,
+        exceptions: &[],
+    },
+    Row {
+        slot: "chart_grid",
+        native: |r| r.list.grid_color,
+        get: |tc| tc.chart_grid,
         exceptions: &[],
     },
     // The 28 `button_*` fields take the values the semantic fields their
@@ -906,7 +912,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    background in every state (`button/button.rs:1133` hovered, \
                    `:1210` pressed, `:1250` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
-                   on `Theme`, not on `ThemeColor`, and is not one of the 138. \
+                   on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
                    pressed *text* (`theme_color.rs:178-179`), which is what \
                    their rows give them.",
@@ -1249,7 +1255,7 @@ fn every_mapped_field_equals_its_native_source() -> crate::Result<()> {
     Ok(())
 }
 
-/// Every one of the 138 `ThemeColor` fields is in exactly one of the contract
+/// Every one of the 139 `ThemeColor` fields is in exactly one of the contract
 /// table and `DERIVED` (spec section 5.2).
 ///
 /// The field names come from serde rather than from a hand-written list, so a
@@ -1273,7 +1279,7 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
         .unwrap_or_default();
     assert_eq!(
         fields.len(),
-        138,
+        139,
         "serde sees a different field count than the tripwire in colors.rs"
     );
 
@@ -1304,7 +1310,7 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
 
     let rows = ROWS.len() + COMPUTED_ROWS.len();
     println!(
-        "--- gpui coverage: {rows} contract rows + {} derived = {} of 138 fields ---",
+        "--- gpui coverage: {rows} contract rows + {} derived = {} of 139 fields ---",
         DERIVED.len(),
         rows + DERIVED.len()
     );

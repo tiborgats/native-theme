@@ -1,6 +1,6 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (138 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (139 fields).
 //!
-//! Maps native-theme's per-widget resolved fields to gpui-component's 138-field
+//! Maps native-theme's per-widget resolved fields to gpui-component's 139-field
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ones are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
@@ -134,7 +134,7 @@ struct ResolvedColors {
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 138 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// Maps all 139 fields: ~40 directly from ResolvedTheme per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
 ///
@@ -412,6 +412,12 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // The grid line between rows and columns (`table/table.rs:203`,
     // `table/state.rs:1424`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
+    // The grid of a chart (`chart/mod.rs:419`, `chart/bar_chart.rs:857`,
+    // `chart/radar_chart.rs:485`): the model's grid-line colour, which
+    // platform-facts §2.15 states as macOS `gridColor` and Material's
+    // `outline-variant`, and which elsewhere inherits `defaults.border.color`
+    // (`docs/inheritance-rules.toml:238`).
+    tc.chart_grid = c.list_grid;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
     // kind, so these stay the window's own background and muted text rather
@@ -715,6 +721,31 @@ mod tests {
             .expect("preset must have the variant")
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
+    }
+
+    /// K4: a chart's grid is the model's grid-line colour, on every preset in
+    /// both variants (platform-facts §2.15: macOS `gridColor`, Material
+    /// `outline-variant`, the border colour elsewhere).
+    #[test]
+    fn chart_grid_is_the_list_grid_colour() {
+        for info in Theme::list_presets() {
+            for (mode, is_dark) in [(ColorMode::Light, false), (ColorMode::Dark, true)] {
+                let theme = Theme::preset(info.key).expect("a listed preset loads");
+                let Ok(variant) = theme.into_variant(mode) else {
+                    continue;
+                };
+                let resolved = variant
+                    .into_resolved(&native_theme::ResolutionContext::for_tests())
+                    .expect("resolved preset must validate");
+                let tc = to_theme_color(&resolved, is_dark, false);
+                assert_eq!(
+                    tc.chart_grid,
+                    rgba_to_hsla(resolved.list.grid_color),
+                    "{} {mode:?}: chart_grid is not list.grid_color",
+                    info.key
+                );
+            }
+        }
     }
 
     #[test]
@@ -1170,14 +1201,14 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 138 Hsla fields in gpui-component 0.6.6 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.7.0 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
-            field_count, 138,
+            field_count, 139,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
     }
@@ -1196,7 +1227,7 @@ mod tests {
                 .expect("ThemeColor serialises as an object");
             assert_eq!(
                 fields.len(),
-                138,
+                139,
                 "serde sees a different field count than the tripwire"
             );
             let unassigned: Vec<&String> = fields

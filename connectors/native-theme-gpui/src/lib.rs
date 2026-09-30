@@ -46,7 +46,7 @@
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
-//! (all 138 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
+//! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
 //! the styled `Theme`'s `focus_ring` and `scrollbar_mode`, and gpui-base's
 //! scrollbar and resize-handle styles.
 //!
@@ -68,7 +68,7 @@
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
-//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 138 `ThemeColor` colours |
+//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
@@ -151,13 +151,13 @@ use std::rc::Rc;
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
 /// Builds a complete GpuiTheme by:
-/// 1. Mapping all 138 ThemeColor fields via `colors::to_theme_color`
+/// 1. Mapping all 139 ThemeColor fields via `colors::to_theme_color`
 /// 2. Setting font, geometry, and mode fields directly on the Theme
 /// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
 ///
 /// All Theme fields are set explicitly -- no `apply_config` call is used.
 /// This avoids the fragile apply-then-restore pattern where `apply_config`
-/// would overwrite all 138 color fields with defaults.
+/// would overwrite all 139 color fields with defaults.
 ///
 /// The `is_dark` parameter is required rather than auto-derived because
 /// several presets (e.g. solarized, gruvbox) have borderline lightness
@@ -1109,7 +1109,7 @@ mod tests {
             // a later `apply` stores the other variant (D34).
             light_theme: _,
             dark_theme: _,
-            // Written by `Theme::from(&ThemeColor)`: the 138-field colour map,
+            // Written by `Theme::from(&ThemeColor)`: the 139-field colour map,
             // the tokens upstream derives from it, and `transparent` (Issue 53).
             colors: _,
             tokens: _,

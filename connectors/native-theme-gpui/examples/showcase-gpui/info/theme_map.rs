@@ -1236,6 +1236,15 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             ),
             |i| i.config("model", "defaults.danger_color"),
         ),
+        ThemeToken::ChartGrid => (
+            claim(
+                "value",
+                "chart_grid",
+                t.chart_grid,
+                "native-theme-gpui/colors.rs:420",
+            ),
+            |i| i.config("model", "list.grid_color"),
+        ),
         ThemeToken::DescriptionListLabel => (
             claim(
                 "value",
