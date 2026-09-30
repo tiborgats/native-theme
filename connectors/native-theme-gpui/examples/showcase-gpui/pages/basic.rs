@@ -435,7 +435,11 @@ impl Showcase {
                         "basic-select",
                         &self.basic_select,
                         "Pick a fruit",
-                        width,
+                        // At least `combo_box.min_width`, which `geometry::select`
+                        // sets on the trigger inside: the box round it too, as
+                        // the iced and egui pages size theirs.
+                        native_value(cx, |n| px(BASIC_WIDTH.max(n.resolved.combo_box.min_width)))
+                            .unwrap_or(width),
                     )
                     .into_any_element(),
                 ],

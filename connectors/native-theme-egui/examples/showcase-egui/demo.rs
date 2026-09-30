@@ -312,8 +312,10 @@ fn role_modifier(
     ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
 }
 
-/// `role`'s modifier for an open menu (`MenuConfig::style`): the popup padded inside its border
-/// by `popover.border.padding` on each side the theme states, where egui pads by its own
+/// `role`'s modifier for an open menu (`MenuConfig::style`): the popup framed by
+/// `popover.border`'s colour, line width and radius, where the base style frames every menu by
+/// `defaults.border` (`Frame::popup` reads `window_stroke` and `menu_corner_radius`), padded
+/// inside that border by `popover.border.padding` on each side the theme states, where egui pads by its own
 /// `menu_margin` (`Frame::popup`, `egui/src/containers/frame.rs:220-230`, a frame whose total
 /// margin is that margin and its stroke), and its rows one under another, `menu.row_height`
 /// apart where the theme states it: the theme states no gap between two menu rows, where egui
@@ -326,12 +328,16 @@ fn menu_modifier(
     let theme = ui.ctx().theme();
     let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
     let role_style = atlas.role_modifier(theme, role, variant);
-    let padding = atlas.resolved_for(theme).popover.border.padding;
+    let border = atlas.resolved_for(theme).popover.border.clone();
     Some(egui::style::StyleModifier::new(
         move |style: &mut egui::Style| {
+            use native_theme_egui::convert::{to_corner_radius, to_margin, to_stroke};
             role_style.apply(style);
-            style.spacing.menu_margin =
-                native_theme_egui::convert::to_margin(style.spacing.menu_margin, &padding);
+            style.visuals.window_stroke =
+                to_stroke(style.visuals.window_stroke, border.color, border.line_width);
+            style.visuals.menu_corner_radius =
+                to_corner_radius(style.visuals.menu_corner_radius, border.corner_radius);
+            style.spacing.menu_margin = to_margin(style.spacing.menu_margin, &border.padding);
             style.spacing.item_spacing.y = 0.0;
         },
     ))

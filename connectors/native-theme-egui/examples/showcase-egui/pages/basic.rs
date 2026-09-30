@@ -226,12 +226,13 @@ pub(crate) fn show(
     let mut used = egui::Rect::NOTHING;
     let pixels = ui.pixels_per_point();
     for (column, members) in arrangement(count).iter().enumerate() {
-        // Both edges on whole pixels, so a one-pixel border the column draws is one pixel wide,
-        // not two half-covered ones, and the column is the room between the edges it paints.
+        // The left edge on a whole pixel, so a one-pixel border a control at the column's start
+        // draws is one pixel wide, not two half-covered ones; the column the width the page
+        // gives it, fraction and all, as the iced page's, so a row wraps where theirs does.
         let left = origin.x + column as f32 * (width + gap);
         let snap = |x: f32| egui::emath::GuiRounding::round_to_pixels(x, pixels);
         let rect = egui::Rect::from_x_y_ranges(
-            snap(left)..=snap(left + width),
+            snap(left)..=snap(left) + width,
             origin.y..=origin.y + ui.available_height(),
         );
         let mut child = ui.new_child(
@@ -376,6 +377,10 @@ fn text_button(
     wrap_before(ui, id);
     let mut label = None;
     let response = demo::scoped(reg, ui, Role::Button, variant, kind, |ui| {
+        // The label on one line, as the other two showcases set it: in a wrapping row egui
+        // would wrap it to the room left (`TextWrapMode::Wrap`), where the row wraps before the
+        // button instead (`wrap_before`).
+        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
         let text = demo::lined(ui, text, egui::TextStyle::Button);
         let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
@@ -1156,6 +1161,13 @@ fn icon_buttons(
             // Wrapping onto a further line where the column is too narrow for the three.
             ui.horizontal_wrapped(|ui| {
                 demo::toolbar_gap(ui, t, atlas.layout());
+                // A line as tall as its buttons, and the lines as far apart as the buttons, as
+                // the gpui (`flex_wrap` under one gap) and iced (`Row::wrap`) rows lay theirs
+                // out: the toolbar scope's `interact_size.y` is `toolbar.bar_height`, a bar's,
+                // which this row of tool buttons is not.
+                let spacing = ui.spacing_mut();
+                spacing.interact_size.y = 0.0;
+                spacing.item_spacing.y = spacing.item_spacing.x;
                 for (role, label, id) in [
                     (IconRole::ActionCopy, "Copy", "basic.icons.copy"),
                     (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
@@ -1166,6 +1178,8 @@ fn icon_buttons(
                     wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
+                            // One line, as `text_button`'s label.
+                            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
                             demo::tool_button(ui, &t.button.border.padding);
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
