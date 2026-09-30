@@ -199,10 +199,8 @@ reason = "the theme states no popover.border.padding_* on kde-breeze, material a
 keys = [
     "catppuccin-mocha:chrome.menu.theme.reload.x",
     "kde-breeze:chrome.menu.theme.reload.x",
-    "material:chrome.menu.theme.reload.x",
     "catppuccin-mocha:chrome.menu.theme.reload.y",
     "kde-breeze:chrome.menu.theme.reload.y",
-    "material:chrome.menu.theme.reload.y",
 ]
 
 [[parity.group]]
@@ -247,7 +245,6 @@ keys = [
     "catppuccin-mocha:chrome.toolbar.y",
     "material:chrome.toolbar.y",
     "catppuccin-mocha:chrome.toolbar.h",
-    "material:chrome.toolbar.h",
 ]
 
 [[parity.group]]
@@ -274,6 +271,7 @@ reason = "theme silence: with --open-menu theme gpui's Theme popup lies over the
 keys = [
     "menu@adwaita:chrome.toolbar.preferences.fill",
     "menu@catppuccin-mocha:chrome.toolbar.preferences.fill",
+    "menu@material:chrome.toolbar.preferences.fill",
 ]
 
 [[parity.group]]
@@ -295,23 +293,26 @@ keys = [
 [[parity.group]]
 reason = "sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
 keys = [
-    "chrome.side_panel.settings.h",
+    "adwaita:chrome.side_panel.settings.h",
+    "catppuccin-mocha:chrome.side_panel.settings.h",
+    "kde-breeze:chrome.side_panel.settings.h",
     "adwaita:chrome.side_panel.settings.theme_label.h",
     "adwaita:chrome.side_panel.settings.theme.y",
     "catppuccin-mocha:chrome.side_panel.settings.mode_label.h",
     "kde-breeze:chrome.side_panel.settings.mode_label.h",
     "catppuccin-mocha:chrome.side_panel.settings.mode.y",
     "kde-breeze:chrome.side_panel.settings.mode.y",
-    "chrome.side_panel.separator.y",
+    "adwaita:chrome.side_panel.separator.y",
+    "catppuccin-mocha:chrome.side_panel.separator.y",
+    "kde-breeze:chrome.side_panel.separator.y",
     "adwaita:basic.page.h",
     "catppuccin-mocha:basic.page.h",
-    "material:basic.page.h",
     "adwaita:basic.column_1.h",
     "catppuccin-mocha:basic.column_1.h",
     "material:basic.column_1.h",
     "adwaita:basic.column_3.h",
     "catppuccin-mocha:basic.column_3.h",
-    "material:basic.column_3.h",
+    "kde-breeze:basic.column_3.h",
     "adwaita:basic.buttons.heading.h",
     "adwaita:basic.buttons.default.y",
     "adwaita:basic.buttons.default.label.h",
@@ -328,19 +329,31 @@ keys = [
     "catppuccin-mocha:basic.buttons.toggle_on.label.h",
     "adwaita:basic.switches.heading.h",
     "adwaita:basic.switches.off.y",
+    "adwaita:basic.switches.off.label.h",
+    "catppuccin-mocha:basic.switches.off.label.h",
+    "adwaita:basic.switches.on.label.h",
+    "catppuccin-mocha:basic.switches.on.label.h",
+    "adwaita:basic.switches.disabled.label.h",
+    "catppuccin-mocha:basic.switches.disabled.label.h",
     "adwaita:basic.text_inputs.heading.h",
     "adwaita:basic.text_inputs.placeholder.y",
     "adwaita:basic.text_inputs.filled.text.h",
     "catppuccin-mocha:basic.text_inputs.filled.text.h",
+    "material:basic.text_inputs.filled.text.h",
     "adwaita:basic.text_inputs.disabled.text.h",
     "catppuccin-mocha:basic.text_inputs.disabled.text.h",
+    "material:basic.text_inputs.disabled.text.h",
     "adwaita:basic.text_inputs.focused.text.h",
     "catppuccin-mocha:basic.text_inputs.focused.text.h",
+    "material:basic.text_inputs.focused.text.h",
     "adwaita:basic.text_area.field.text.h",
     "kde-breeze:basic.text_area.field.text.h",
-    "material:basic.text_area.field.text.h",
     "catppuccin-mocha:basic.drop_down.heading.h",
     "catppuccin-mocha:basic.drop_down.trigger.y",
+    "kde-breeze:basic.slider.heading.h",
+    "kde-breeze:basic.slider.control.y",
+    "catppuccin-mocha:basic.segmented.heading.h",
+    "catppuccin-mocha:basic.segmented.control.y",
     "adwaita:basic.typography.heading.h",
     "adwaita:basic.typography.caption.y",
     "kde-breeze:basic.typography.caption.h",
@@ -362,10 +375,26 @@ keys = [
     "adwaita:basic.typography.monospace.h",
     "catppuccin-mocha:basic.typography.monospace.h",
     "adwaita:basic.icons.heading.h",
+    "adwaita:basic.card.heading.h",
+    "kde-breeze:basic.card.heading.h",
+    "adwaita:basic.card.frame.y",
+    "kde-breeze:basic.card.frame.y",
+    "kde-breeze:basic.card.frame.h",
+    "kde-breeze:basic.card.text.h",
+    "adwaita:basic.separator.heading.y",
+    "catppuccin-mocha:basic.separator.heading.y",
     "catppuccin-mocha:basic.separator.heading.h",
     "catppuccin-mocha:basic.separator.line.y",
     "kde-breeze:basic.list.heading.h",
     "kde-breeze:basic.list.frame.y",
+    "kde-breeze:basic.expander.heading.h",
+    "kde-breeze:basic.expander.details.y",
+    "kde-breeze:basic.expander.details.body.h",
+    "kde-breeze:basic.expander.more.title.h",
+    "adwaita:basic.table.heading.h",
+    "kde-breeze:basic.table.heading.h",
+    "adwaita:basic.table.frame.y",
+    "kde-breeze:basic.table.frame.y",
     "adwaita:basic.table.frame.h",
     "catppuccin-mocha:basic.table.frame.h",
     "kde-breeze:basic.table.frame.h",
@@ -379,6 +408,8 @@ keys = [
     "menu@catppuccin-mocha:chrome.side_panel.settings.theme.border",
     "menu@kde-breeze:chrome.side_panel.settings.mode.border",
     "menu@material:chrome.side_panel.settings.mode.border",
+    "menu@adwaita/light:chrome.page_tabs.basic.fill",
+    "menu@material/light:chrome.page_tabs.basic.fill",
 ]
 
 [[parity.group]]
@@ -435,6 +466,7 @@ reason = "gpui's text metrics are whole pixels: a line of text is laid out one l
 keys = [
     "adwaita:chrome.side_panel.inspector_tabs.theme.w",
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.theme.w",
+    "catppuccin-mocha:basic.switches.disabled.label.w",
 ]
 
 [[parity.group]]
@@ -478,13 +510,10 @@ keys = [
     "catppuccin-mocha:basic.icons.paste.icon.y",
     "catppuccin-mocha:basic.icons.delete.x",
     "catppuccin-mocha:basic.icons.delete.w",
-    "material:basic.icons.delete.w",
     "catppuccin-mocha:basic.icons.delete.h",
     "catppuccin-mocha:basic.icons.delete.icon.x",
-    "material:basic.icons.delete.icon.x",
     "catppuccin-mocha:basic.icons.delete.icon.y",
     "catppuccin-mocha:basic.icons.small.y",
-    "material:basic.icons.small.y",
 ]
 
 [[parity.group]]
@@ -493,7 +522,6 @@ keys = [
     "catppuccin-mocha:chrome.page_tabs.menu.y",
     "catppuccin-mocha:chrome.page_tabs.menu.icon.y",
     "adwaita:basic.icons.copy.y",
-    "material:basic.icons.copy.y",
 ]
 
 [[parity.group]]
@@ -524,17 +552,38 @@ keys = [
 ]
 
 [[parity.group]]
+reason = "gpui rounds each box's edges in absolute device pixels after layout (gpui-pre src/taffy.rs:332-335), so equal flex columns' edges are the exact edges rounded, as R-snap rounds iced's; material's four columns are 222.5 px wide, so every other column edge falls on a half pixel, which gpui and R-snap can round apart, and a column's width compared on its own (gpui's the difference of its rounded edges, iced's and egui's the unrounded 222.5) or a group heading placed at its column's edge differs by one pixel"
+keys = [
+    "material:basic.column_1.w",
+    "material:basic.column_2.x",
+    "material:basic.column_3.x",
+    "material:basic.column_4.x",
+    "material:basic.tabs.heading.x",
+    "material:basic.table.heading.x",
+]
+
+[[parity.group]]
 reason = "gpui rounds each box's edges in absolute device pixels after layout (gpui-pre src/taffy.rs:332-335), so the five equal flex columns' edges are the exact edges rounded, as R-snap rounds iced's (adwaita column 2: iced 507.6..684.2, gpui 508..684; column 3: 702.2..878.8, gpui 702..879), and each column's width is the difference of its rounded edges, 176 or 177 in turn; only the width compared on its own, against iced's unrounded 176.6 (and egui's, which pairs a rounded x with the unrounded width), differs"
 keys = [
+    "adwaita:basic.column_2.w",
+    "kde-breeze:basic.column_2.w",
     "material:basic.column_2.w",
+    "catppuccin-mocha:basic.column_3.w",
     "material:basic.column_3.w",
+    "adwaita:basic.column_4.w",
+    "kde-breeze:basic.column_4.w",
     "material:basic.column_4.w",
 ]
 
 [[parity.group]]
 reason = "a sum: it holds or is placed after boxes that differ for the reasons their own entries give (sub-pixel line boxes, unstated paddings) | theme silence: the group's place and a column's height sum the heights above it, which hold the unstated paddings of material and catppuccin-mocha (button, input, text_area, list, segmented_control, expander .border.padding_* None) and the switch label gap and check-mark size no preset states | toolkit limit, kde-breeze and adwaita: text_area.border.padding states 5 / 0, below the 10 across and 8 down gpui-component pads a Textarea's editor with -- a Textarea renders an Input at Size::Medium (gpui-component src/input/textarea.rs:141-158, no size of its own), whose editor paddings are that Size's input_px / input_py (sizing.rs:147-166), set on every render (input/input.rs:531-541) where no style reaches; geometry::text_area pads the root by the rest of a larger stated side only, so the text sits 10 / 8 inside the line (kde-breeze 5, adwaita 0 stated) and the three-line field is 72 px tall where iced's and egui's are 66.4 / 55.25; the drop-down under it and the column's height move with it | toolkit limit, whole text rows: egui lays every text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971, round_to_pixel of the row height), as gpui rounds a line box (gpui-pre src/style.rs:554-556), where iced keeps the stated fractional line box; so where adwaita and kde-breeze state a fractional one (adwaita 14.67 x 1.21 = 17.75, kde-breeze 13.33 x 1.36 = 18.13; its section heading's the same), each heading is 18 px in egui against 17.75 in iced, and the text area's rows 3 x 18 (egui's TextEdit lays its text out in one galley, whose rows epaint rounds) against 3 x 17.75, and a group's place and a column's height sum them"
 keys = [
-    "basic.column_2.h",
+    "adwaita:basic.column_2.h",
+    "catppuccin-mocha:basic.column_2.h",
+    "kde-breeze:basic.column_2.h",
+    "adwaita:basic.slider.heading.y",
+    "catppuccin-mocha:basic.slider.heading.y",
+    "kde-breeze:basic.slider.heading.y",
 ]
 
 [[parity.group]]
@@ -550,7 +599,6 @@ reason = "a sum: it holds or is placed after boxes that differ for the reasons t
 keys = [
     "adwaita:basic.column_5.h",
     "catppuccin-mocha:basic.column_5.h",
-    "material:basic.column_5.h",
 ]
 
 [[parity.group]]
@@ -577,7 +625,6 @@ keys = [
     "adwaita:basic.buttons.default.w",
     "catppuccin-mocha:basic.buttons.default.w",
     "material:basic.buttons.default.w",
-    "adwaita:basic.buttons.primary.x",
     "catppuccin-mocha:basic.buttons.primary.x",
     "material:basic.buttons.primary.x",
 ]
@@ -613,7 +660,6 @@ keys = [
     "catppuccin-mocha:basic.text_inputs.focused.text.y",
     "material:basic.text_inputs.focused.text.y",
     "catppuccin-mocha:basic.number_input.field.text.y",
-    "material:basic.number_input.field.text.y",
 ]
 
 [[parity.group]]
@@ -629,9 +675,11 @@ keys = [
 [[parity.group]]
 reason = "sized by, or centred on, a line of text whose own width differs within R-shape (each toolkit's shaper hints and kerns the theme font on its own: iced cosmic-text 0.15.0, egui epaint, gpui the platform text system): the difference moves the control's far edge, the box after it, or a centred label's left edge by a fraction of a pixel that R-snap can round either way | theme silence: material and catppuccin-mocha state no button.border.padding_* (all four sides None, both variants), so each toolkit pads a button, a tool button and an icon button by its own default: egui's spacing.button_padding 4 x 1 (egui-0.36.2/src/style.rs:1458), iced's 5 x 10, gpui-component's own"
 keys = [
-    "adwaita:basic.buttons.tooltip.x",
     "catppuccin-mocha:basic.buttons.tooltip.x",
     "material:basic.buttons.tooltip.x",
+    "material:basic.buttons.toggle_off.w",
+    "material:basic.buttons.toggle_on.x",
+    "material:basic.buttons.toggle_on.w",
 ]
 
 [[parity.group]]
@@ -747,9 +795,7 @@ keys = [
     "adwaita:basic.switches.disabled.label.y",
     "catppuccin-mocha:basic.switches.disabled.label.y",
     "kde-breeze:basic.text_inputs.focused.h",
-    "material:basic.text_inputs.focused.h",
     "kde-breeze:basic.text_area.heading.y",
-    "material:basic.text_area.heading.y",
     "adwaita:basic.table.row_2.h",
     "catppuccin-mocha:basic.table.row_2.h",
 ]
@@ -789,6 +835,7 @@ keys = [
     "adwaita:basic.text_inputs.placeholder.text.y",
     "adwaita:basic.text_inputs.placeholder.text.h",
     "catppuccin-mocha:basic.text_inputs.placeholder.text.h",
+    "material:basic.text_inputs.placeholder.text.h",
 ]
 
 [[parity.group]]
@@ -815,7 +862,9 @@ keys = [
 [[parity.group]]
 reason = "the theme states no input.border.padding_* or combo_box.border.padding_* on material and catppuccin-mocha: each toolkit keeps its own default (iced: text_input's DEFAULT_PADDING 5 and pick_list's 5 / 10, iced_widget 0.14.2 src/text_input.rs, src/pick_list.rs) | theme silence: material and catppuccin-mocha state no text_area.border.padding_* (None), so the text area's text inset and height are each toolkit's own padding (egui's TextEdit margin 4 x 2, egui-0.36.2/src/widgets/text_edit/builder.rs:136) | toolkit limit, kde-breeze and adwaita: text_area.border.padding states 5 / 0, below the 10 across and 8 down gpui-component pads a Textarea's editor with -- a Textarea renders an Input at Size::Medium (gpui-component src/input/textarea.rs:141-158, no size of its own), whose editor paddings are that Size's input_px / input_py (sizing.rs:147-166), set on every render (input/input.rs:531-541) where no style reaches; geometry::text_area pads the root by the rest of a larger stated side only, so the text sits 10 / 8 inside the line (kde-breeze 5, adwaita 0 stated) and the three-line field is 72 px tall where iced's and egui's are 66.4 / 55.25; the drop-down under it and the column's height move with it | toolkit limit, whole text rows: egui lays every text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971, round_to_pixel of the row height), as gpui rounds a line box (gpui-pre src/style.rs:554-556), where iced keeps the stated fractional line box; so where adwaita and kde-breeze state a fractional one (adwaita 14.67 x 1.21 = 17.75, kde-breeze 13.33 x 1.36 = 18.13; its section heading's the same), each heading is 18 px in egui against 17.75 in iced, and the text area's rows 3 x 18 (egui's TextEdit lays its text out in one galley, whose rows epaint rounds) against 3 x 17.75, and a group's place and a column's height sum them"
 keys = [
-    "basic.text_area.field.h",
+    "adwaita:basic.text_area.field.h",
+    "catppuccin-mocha:basic.text_area.field.h",
+    "kde-breeze:basic.text_area.field.h",
 ]
 
 [[parity.group]]
@@ -911,10 +960,28 @@ keys = [
 ]
 
 [[parity.group]]
+reason = "theme silence: kde-breeze, material and catppuccin-mocha state no segmented_control.border.padding_* (None), so a segment is its label and each toolkit's own side padding (gpui: upstream's 12 for a segment at the default Size, gpui-component tab/tab.rs:73-80, TabVariant::inner_paddings; iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; egui: button_padding in the segmented-control scope, egui-0.36.2/src/style.rs:1458); on kde-breeze and catppuccin-mocha gpui's three segments so padded are wider than the Basic page's column, so its row wraps, as a row wider than its column does in all three, and the control is two lines tall, the third segment and the line before it on the second"
+keys = [
+    "catppuccin-mocha:basic.segmented.control.h",
+    "kde-breeze:basic.segmented.control.h",
+    "catppuccin-mocha:basic.segmented.divider_2.y",
+    "kde-breeze:basic.segmented.divider_2.y",
+    "catppuccin-mocha:basic.segmented.month.y",
+    "kde-breeze:basic.segmented.month.y",
+]
+
+[[parity.group]]
 reason = "glyph coverage: catppuccin-mocha's caption is 9 px (text_scale.caption), drawn in Noto Sans, fontconfig's substitute for the Inter the capture machine lacks; iced places the Typography column at a fractional x (898.4, five Fill columns; its layout keeps fractions) and cosmic-text rasterises each glyph at its subpixel offset (cosmic-text 0.15.0 src/glyph_cache.rs:35-58, SubpixelBin), so every 9 px stem spreads over two pixels and no pixel reaches defaults.font.color (#64667d / #b3bbd7 against #4c4f69 / #cdd6f4); gpui's darkest pixel misses it as well (#635878 / #bacee7) | the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :495-541) wherever the window is opaque (gpui-pre src/window.rs:4725-4742), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
 keys = [
     "catppuccin-mocha:basic.typography.caption.text",
     "kde-breeze:basic.typography.caption.text",
+]
+
+[[parity.group]]
+reason = "a sum: the card follows the segmented control, which on kde-breeze and catppuccin-mocha is two lines tall in gpui for the reason basic.segmented.control.h gives (no segmented_control.border.padding_* stated there, so gpui-component's own 12 per side, tab/tab.rs:73-80) | sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
+keys = [
+    "catppuccin-mocha:basic.card.heading.y",
+    "kde-breeze:basic.card.heading.y",
 ]
 
 [[parity.group]]
@@ -1014,10 +1081,8 @@ reason = "theme silence: expander.* states the arrow's size, colour and side, no
 keys = [
     "catppuccin-mocha:basic.expander.details.arrow.mark",
     "kde-breeze:basic.expander.details.arrow.mark",
-    "material:basic.expander.details.arrow.mark",
     "catppuccin-mocha:basic.expander.more.arrow.mark",
     "kde-breeze:basic.expander.more.arrow.mark",
-    "material:basic.expander.more.arrow.mark",
 ]
 
 [[parity.group]]
