@@ -848,9 +848,22 @@ impl eframe::App for App {
         chrome::status_bar(self, ui);
         chrome::side_panel(self, ui);
         ui.reset_style();
-        chrome::central_panel(self, ui, |app, ui| {
-            pages::show_fixed(app, ui);
-            let _page = egui::ScrollArea::vertical().show(ui, |ui| pages::show(app, ui));
+        chrome::central_panel(self, ui, |app, ui, margin| {
+            if pages::has_fixed(app) {
+                egui::Frame::NONE
+                    .inner_margin(margin)
+                    .show(ui, |ui| pages::show_fixed(app, ui));
+            }
+            // The page scrolls vertically in the panel, padded by the panel's margin inside the
+            // scroll area, which spans the panel: its bar at the panel's edge, as the gpui and
+            // iced content panels draw theirs. At rest it is at the top.
+            let _page = egui::ScrollArea::vertical()
+                .auto_shrink([false, true])
+                .show(ui, |ui| {
+                    egui::Frame::NONE
+                        .inner_margin(margin)
+                        .show(ui, |ui| pages::show(app, ui));
+                });
             #[cfg(test)]
             {
                 app.page_scrolls = _page.content_size.y > _page.inner_rect.height();

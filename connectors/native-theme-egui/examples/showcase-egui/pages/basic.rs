@@ -36,8 +36,9 @@ pub(crate) const BASIC_WIDTH: f32 = 140.0;
 /// Basic page's own, as `BASIC_WIDTH`, and the gpui and iced showcases' `BASIC_WIDE`.
 pub(crate) const BASIC_WIDE: f32 = 170.0;
 
-/// The page's columns: the Basic page's layout (a datum of the page, not a style value).
-const COLUMNS: usize = 5;
+/// The fewest and the most columns the page lays its groups out in.
+const MIN_COLUMNS: usize = 3;
+const MAX_COLUMNS: usize = 5;
 
 /// The drop-down's rows.
 const FRUITS: [&str; 3] = ["Apple", "Banana", "Cherry"];
@@ -66,27 +67,142 @@ const TABLE_HEADER: [&str; 2] = ["Name", "Size"];
 const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
 const TABLE_SELECTED: usize = 1;
 
-/// The groups of the page, column by column, in order (Basic page v5), which the tests check
-/// the page against.
+/// The page's groups in reading order (Basic page v6): the five columns' groups, left to right,
+/// each column top to bottom, which the tests check the page against.
 #[cfg(test)]
-pub(crate) const GROUPS: [&[&str]; COLUMNS] = [
-    &["Buttons", "Checkboxes", "Radio buttons", "Drop-down"],
-    &["Text inputs", "Text area", "Slider"],
-    &[
-        "Switches",
-        "Number input",
-        "Spinner",
-        "Segmented control",
-        "Card",
-    ],
-    &["Typography", "Separator", "Progress bar", "List"],
-    &["Icons", "Tabs", "Expander", "Table"],
+pub(crate) const GROUPS: [&str; 20] = [
+    "Buttons",
+    "Checkboxes",
+    "Radio buttons",
+    "Drop-down",
+    "Text inputs",
+    "Text area",
+    "Slider",
+    "Switches",
+    "Number input",
+    "Spinner",
+    "Segmented control",
+    "Card",
+    "Typography",
+    "Separator",
+    "Progress bar",
+    "List",
+    "Icons",
+    "Tabs",
+    "Expander",
+    "Table",
 ];
 
-/// Five columns of equal width, `layout.section_gap` apart (the page's gap where the theme
-/// states none: egui's `item_spacing`), each a stack of groups top-aligned: each column is laid
-/// out in a `Ui` of its own at its place, so a group wider than its column (a preset's tab
-/// minimum width) shows as the overflow it is, and the next column does not move.
+/// Each column's groups, top to bottom, as indices of the groups in reading order, for the
+/// page's five, four and three columns: the gpui and iced pages' arrangements
+/// (docs/showcase-elements.toml, the Basic page).
+pub(crate) const FIVE: [&[usize]; 5] = [
+    &[0, 1, 2, 3],
+    &[4, 5, 6],
+    &[7, 8, 9, 10, 11],
+    &[12, 13, 14, 15],
+    &[16, 17, 18, 19],
+];
+pub(crate) const FOUR: [&[usize]; 4] = [
+    &[0, 1, 2, 3, 18],
+    &[4, 5, 6, 16],
+    &[7, 8, 9, 10, 11, 17],
+    &[12, 13, 14, 15, 19],
+];
+pub(crate) const THREE: [&[usize]; 3] = [
+    &[0, 1, 2, 3, 15, 18],
+    &[4, 5, 6, 13, 14, 16, 19],
+    &[7, 8, 9, 10, 11, 12, 17],
+];
+
+/// The groups of each column of a page of `columns` columns.
+pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
+    match columns {
+        5 => &FIVE,
+        4 => &FOUR,
+        _ => &THREE,
+    }
+}
+
+/// How many columns the page lays its groups out in, from the theme alone, as the gpui and
+/// iced pages count them: the most, of five, four and three, whose width,
+/// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
+/// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
+/// apart, `BASIC_WIDE` and `BASIC_WIDTH` — where `page` is `content_width` less
+/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the
+/// `scrollbar.groove_width` a scrolling page keeps free. Three where not even three do: the
+/// page is then wider than its area.
+pub(crate) fn column_count(
+    t: &native_theme_egui::ResolvedTheme,
+    layout: &native_theme::theme::LayoutTheme,
+    content_width: f32,
+) -> usize {
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &t.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let page = content_width - margin - margin - gutter;
+    let tabs = t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default();
+    let widest = t
+        .combo_box
+        .min_width
+        .max(tabs)
+        .max(BASIC_WIDE)
+        .max(BASIC_WIDTH);
+    (MIN_COLUMNS..=MAX_COLUMNS)
+        .rev()
+        .find(|&n| {
+            let n = n as f32;
+            (page - (n - 1.0) * gap) / n >= widest
+        })
+        .unwrap_or(MIN_COLUMNS)
+}
+
+/// One group of the page, by its index in reading order.
+fn group(
+    ix: usize,
+    reg: &mut Registry,
+    state: &mut DemoState,
+    atlas: &ThemeAtlas,
+    ui: &mut egui::Ui,
+    chosen: &(IconSet, Option<String>),
+) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    match ix {
+        0 => buttons(reg, atlas, ui),
+        1 => checkboxes(reg, atlas, ui),
+        2 => radios(reg, state, ui),
+        // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6).
+        3 => drop_down(reg, state, ui),
+        4 => text_inputs(reg, state, atlas, ui),
+        5 => text_area(reg, state, atlas, ui),
+        // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2).
+        6 => slider(reg, state, ui),
+        7 => switches(reg, ui),
+        8 => number_input(reg, state, atlas, ui),
+        9 => spinner(reg, ui),
+        10 => segmented(reg, state, ui),
+        11 => card(reg, atlas, ui),
+        12 => typography(reg, atlas, ui),
+        13 => separator(reg, ui),
+        14 => progress_bar(reg, atlas, ui),
+        15 => list_group(reg, state, atlas, ui),
+        16 => icons_group(reg, atlas, ui, chosen),
+        17 => tabs(reg, state, t, ui),
+        18 => expander(reg, ui),
+        _ => table_group(reg, atlas, ui),
+    }
+}
+
+/// Columns of equal width, as many as [`column_count`] counts from the content panel's width,
+/// `layout.section_gap` apart (the page's gap where the theme states none: egui's
+/// `item_spacing`), each a stack of groups top-aligned: each column is laid out in a `Ui` of its
+/// own at its place, so a group wider than its column shows as the overflow it is, and the next
+/// column does not move.
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -99,12 +215,17 @@ pub(crate) fn show(
         .section_gap
         .unwrap_or(ui.spacing().item_spacing.x);
     let origin = ui.cursor().min;
-    let columns = COLUMNS as f32;
+    let count = column_count(
+        atlas.resolved_for(ui.ctx().theme()),
+        atlas.layout(),
+        state.content_width,
+    );
+    let columns = count as f32;
     let page_width = ui.available_width();
     let width = ((page_width - gap * (columns - 1.0)) / columns).max(0.0);
     let mut used = egui::Rect::NOTHING;
     let pixels = ui.pixels_per_point();
-    for column in 0..COLUMNS {
+    for (column, members) in arrangement(count).iter().enumerate() {
         // Both edges on whole pixels, so a one-pixel border the column draws is one pixel wide,
         // not two half-covered ones, and the column is the room between the edges it paints.
         let left = origin.x + column as f32 * (width + gap);
@@ -119,12 +240,8 @@ pub(crate) fn show(
                 .max_rect(rect)
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
-        match column {
-            0 => column_1(reg, state, atlas, &mut child),
-            1 => column_2(reg, state, atlas, &mut child),
-            2 => column_3(reg, state, atlas, &mut child),
-            3 => column_4(reg, state, atlas, &mut child),
-            _ => column_5(reg, state, atlas, &mut child, chosen),
+        for &ix in *members {
+            group(ix, reg, state, atlas, &mut child, chosen);
         }
         let content = child.min_rect();
         reg.place(
@@ -256,6 +373,7 @@ fn text_button(
     make: impl FnOnce(egui::RichText) -> Button<'static>,
     enabled: bool,
 ) -> egui::Response {
+    wrap_before(ui, id);
     let mut label = None;
     let response = demo::scoped(reg, ui, Role::Button, variant, kind, |ui| {
         let text = demo::lined(ui, text, egui::TextStyle::Button);
@@ -268,14 +386,42 @@ fn text_button(
         i.read.push(("button.min_height", min.y.to_string()));
     });
     reg.tag(id, &response);
+    remember_width(ui, id, response.rect);
     if let Some(label) = label {
         reg.place(ui, &format!("{id}.label"), label);
     }
     response
 }
 
+/// In a wrapping row (`Ui::horizontal_wrapped`), starts a new line before the item `key` where
+/// the width it took in the last pass no longer fits beside what the line holds. An item added
+/// through a scope — every role scope, `Ui::scope` — is allocated after it is laid out and
+/// never wraps by itself (`egui/src/ui.rs:2203-2215`, `scope_dyn`: the child takes the room
+/// before the wrap, and the row only advances past it); a first pass, with no width yet, lays
+/// the line out as it comes.
+fn wrap_before(ui: &mut egui::Ui, key: &str) {
+    let id = egui::Id::new(("basic wrap", key));
+    let Some(width) = ui.ctx().data(|d| d.get_temp::<f32>(id)) else {
+        return;
+    };
+    let line_start = ui.max_rect().left();
+    let at = ui.cursor().left();
+    if at > line_start + 0.5 && at + width > ui.max_rect().right() + 0.5 {
+        ui.end_row();
+    }
+}
+
+/// The width of the item `key`, laid out at `rect`, for [`wrap_before`] in the next pass.
+fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
+    let id = egui::Id::new(("basic wrap", key));
+    ui.ctx().data_mut(|d| d.insert_temp(id, rect.width()));
+}
+
 /// Buttons (the toggle button their third row), check boxes, radio buttons, the drop-down.
-fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+/// The Buttons group: three rows of two buttons, each row wrapping onto a further line where the
+/// column is too narrow for it (`horizontal_wrapped`), as the gpui (`flex_wrap`) and iced
+/// (`Row::wrap`) pages' rows wrap.
+fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
@@ -285,14 +431,14 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     let plain = |text: egui::RichText| Button::new(text);
 
     heading(reg, ui, "basic.buttons.heading", "Buttons");
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.default", "button (enabled)", normal);
         text_button(reg, ui, kind, ("Button", min), plain, true);
         let kind = ("basic.buttons.primary", "button (suggested action)", normal);
         let primary = |text: egui::RichText| Button::new(text).selected(true);
         text_button(reg, ui, kind, ("Primary", min), primary, true);
     });
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         let kind = (
             "basic.buttons.disabled",
             "button (disabled)",
@@ -344,14 +490,19 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             .checked_text_color
             .unwrap_or(t.button.active_text_color),
     );
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
         let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
         text_button(reg, ui, kind, ("On", min), held, true);
     });
+}
 
+/// The Checkboxes group.
+fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
     // The disabled box is checked. Where the theme states a disabled fill it is the `Disabled`
@@ -423,10 +574,14 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             reg.place(ui, &format!("{id}.{part}"), rect);
         }
     }
+}
 
-    // The companion crate's radio button (docs/todo_egui-widgets-spec.md §4.8): egui's, in
-    // `RoleVariant::Selected` while selected as on the Selection page, its dot
-    // `checkbox.radio_dot_diameter` across where the theme states one.
+/// The Radio buttons group: the companion crate's radio button
+/// (docs/todo_egui-widgets-spec.md §4.8): egui's, in `RoleVariant::Selected` while selected as
+/// on the Selection page, its dot `checkbox.radio_dot_diameter` across where the theme states
+/// one.
+fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.radios.heading", "Radio buttons");
     for (i, (label, id)) in [
         ("Option A", "basic.radios.option_a"),
@@ -456,9 +611,6 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             state.basic_radio = i;
         }
     }
-
-    // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6).
-    drop_down(reg, state, ui);
 }
 
 /// The Switches group: the companion crate's switch (docs/todo_egui-widgets-spec.md §4.1),
@@ -589,7 +741,8 @@ fn text_field(
 }
 
 /// Text inputs (the focused one their fourth row), the text area, the slider.
-fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+/// The Text inputs group.
+fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
@@ -624,7 +777,12 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         focused.request_focus();
         state.basic_focus_given = true;
     }
+}
 
+/// The Text area group.
+fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
@@ -645,9 +803,6 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     if let Some(text) = text {
         reg.place(ui, "basic.text_area.field.text", text);
     }
-
-    // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2).
-    slider(reg, state, ui);
 }
 
 /// The Slider group: the companion crate's slider (docs/todo_egui-widgets-spec.md §4.2),
@@ -704,6 +859,12 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
+    // `BASIC_WIDTH`, and at least `combo_box.min_width`, which egui's `ComboBox` never reads
+    // from the style: the width is the application's, per call, as the gpui page's select's
+    // refinement and the iced page's pick list take it.
+    let width = ThemeAtlas::from_ctx(ui.ctx()).map_or(BASIC_WIDTH, |atlas| {
+        BASIC_WIDTH.max(atlas.resolved_for(ui.ctx().theme()).combo_box.min_width)
+    });
     let combo = demo::scoped_popup(
         reg,
         ui,
@@ -713,7 +874,7 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         |ui, modifier, row, reg| {
             let mut combo = ComboBox::from_id_salt("basic/combo")
                 .selected_text(demo::lined(ui, current, egui::TextStyle::Button))
-                .width(BASIC_WIDTH);
+                .width(width);
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
             }
@@ -734,11 +895,10 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
 }
 
 /// The switches, the number input, the spinner, the segmented control, a card.
-fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+/// The Number input group.
+fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
-
-    switches(reg, ui);
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
     // scope, `BASIC_WIDTH` wide and `input.min_height` tall (its `interact_size`, which
@@ -778,13 +938,15 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     if let Some(text) = text {
         reg.place(ui, "basic.number_input.field.text", text);
     }
+}
 
-    spinner(reg, ui);
-
-    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4): one
-    // control of joined buttons in one `Role::SegmentedControl` scope, whose cell carries the
-    // segment height, padding and colours; one outline in `border`, `separator_width`
-    // dividers between the segments; a radio group.
+/// The Segmented control group: the companion crate's segmented control
+/// (docs/todo_egui-widgets-spec.md §4.4): one control of joined buttons in one
+/// `Role::SegmentedControl` scope, whose cell carries the segment height, padding and colours;
+/// one outline in `border`, `separator_width` dividers between the segments; a radio group. Its
+/// segments wrap onto a further line where the column is too narrow for them.
+fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.segmented.heading", "Segmented control");
     let control = demo::widget(
         reg,
@@ -794,7 +956,7 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         "segmented control",
         |ui| {
             let segments = SEGMENTS.map(|s| demo::lined(ui, s, egui::TextStyle::Button));
-            ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
+            ui.add(SegmentedControl::new(&mut state.basic_segment, segments).wrap())
         },
     );
     reg.tag("basic.segmented.control", &control);
@@ -811,8 +973,6 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             }
         }
     }
-
-    card(reg, atlas, ui);
 }
 
 /// The Tabs group: a tab bar of two tabs, the first selected.
@@ -878,8 +1038,8 @@ fn typography_line(
     reg.tag(id, &line);
 }
 
-/// Typography, a separator, the progress bar, the list.
-fn column_4(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+/// The Typography group.
+fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
@@ -937,7 +1097,11 @@ fn column_4(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         )
     });
     reg.tag("basic.typography.monospace", &mono);
+}
 
+/// The Separator group.
+fn separator(reg: &mut Registry, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.separator.heading", "Separator");
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);
@@ -961,9 +1125,11 @@ fn column_4(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             crate::chrome::separator_line(&line, width),
         );
     });
+}
 
-    progress_bar(reg, atlas, ui);
-
+/// The List group.
+fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.list.heading", "List");
     list(reg, state, t, ui);
 }
@@ -987,7 +1153,8 @@ fn icon_buttons(
         RoleVariant::Normal,
         "icon buttons",
         |ui, bar, reg| {
-            ui.horizontal(|ui| {
+            // Wrapping onto a further line where the column is too narrow for the three.
+            ui.horizontal_wrapped(|ui| {
                 demo::toolbar_gap(ui, t, atlas.layout());
                 for (role, label, id) in [
                     (IconRole::ActionCopy, "Copy", "basic.icons.copy"),
@@ -996,6 +1163,7 @@ fn icon_buttons(
                 ] {
                     let image = demo::role_image(ui, role, *set, icon_theme.as_deref(), size);
                     let drawn = image.is_some();
+                    wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
                             demo::tool_button(ui, &t.button.border.padding);
@@ -1014,6 +1182,7 @@ fn icon_buttons(
                         .inner;
                     reg.ghost_last();
                     reg.tag(id, &response);
+                    remember_width(ui, id, response.rect);
                     if drawn {
                         crate::chrome::place_icon(reg, ui, id, &response, size);
                     }
@@ -1038,7 +1207,8 @@ fn icons(
         // One row, as tall as the largest icon, each icon centred on it: `ui.horizontal`
         // centres on the row's `interact_size.y` (`egui/src/ui.rs:2376-2379`).
         ui.spacing_mut().interact_size.y = sizes.small.max(sizes.toolbar).max(sizes.large);
-        ui.horizontal(|ui| {
+        // Wrapping onto a further line where the column is too narrow for the three.
+        ui.horizontal_wrapped(|ui| {
             for (size, id) in [
                 (sizes.small, "basic.icons.small"),
                 (sizes.toolbar, "basic.icons.toolbar"),
@@ -1049,31 +1219,32 @@ fn icons(
                 else {
                     continue;
                 };
+                wrap_before(ui, id);
                 let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
                 reg.amend_last(|i| i.read.push(("size", format!("{size}"))));
                 reg.tag(id, &icon);
+                remember_width(ui, id, icon.rect);
             }
         });
     });
 }
 
-/// Icons (the icon buttons their first row), a tab bar, the expander, a table.
-fn column_5(
+/// The Icons group: the icon buttons, then the icons at the theme's three sizes.
+fn icons_group(
     reg: &mut Registry,
-    state: &mut DemoState,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
-    let normal = RoleVariant::Normal;
-
     heading(reg, ui, "basic.icons.heading", "Icons");
     icon_buttons(reg, atlas, ui, chosen);
     icons(reg, t, ui, chosen);
+}
 
-    tabs(reg, state, t, ui);
-
+/// The Expander group.
+fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     // The companion crate's expander (docs/todo_egui-widgets-spec.md §4.10): the arrow in
     // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
     // `arrow_gap` from the title, the body `content_indent` in, framed as `frame_enabled`
@@ -1136,7 +1307,11 @@ fn column_5(
             }
         }
     });
+}
 
+/// The Table group.
+fn table_group(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.table.heading", "Table");
     table(reg, t, ui);
 }

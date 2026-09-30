@@ -1230,69 +1230,84 @@ fn page_rule(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The content: the central panel surface fed from `theme.defaults`; the page tabs flush at its
-/// top, then — padded by the surface's own inner margin — a theme error in a card, and the page.
+/// top, then a theme error in a card, padded by the surface's own inner margin but for its
+/// bottom, and `add`, handed that margin to pad the page with inside the scroll area that holds
+/// it, so the area, and its bar, span the panel, as the gpui and iced content panels' do.
 pub(crate) fn central_panel(
     app: &mut App,
     ui: &mut egui::Ui,
-    add: impl FnOnce(&mut App, &mut egui::Ui),
+    add: impl FnOnce(&mut App, &mut egui::Ui, egui::Margin),
 ) {
     let mut seams = PanelSeams::apply(ui, Surface::CentralPanel, None, None);
     let page_margin = seams.lift_margin();
     let out = egui::CentralPanel::default()
         .frame(seams.frame)
         .show(ui, |ui| {
+            app.demo_state.content_width = ui.max_rect().width();
             // The tabs, the rule under them and the page follow one another with no room
             // between them; the page keeps the panel's spacing.
             let spacing = ui.spacing().item_spacing;
             ui.spacing_mut().item_spacing.y = 0.0;
             page_tabs(app, ui);
             page_rule(app, ui);
-            egui::Frame::NONE.inner_margin(page_margin).show(ui, |ui| {
-                ui.spacing_mut().item_spacing = spacing;
-                if let Some(error) = app.theme_error.clone() {
-                    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:1342-1357`):
-                    // across the content, the chosen icon theme's error icon first, where it
-                    // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
-                    // (`showcase-gpui/support.rs:435`) — at `defaults.icon_sizes.small`.
-                    let (set, icon_theme) = app.chosen_icons();
-                    let size = app
-                        .atlas
-                        .resolved_for(ui.ctx().theme())
-                        .defaults
-                        .icon_sizes
-                        .small;
-                    demo::framed(
-                        &mut app.registry,
-                        ui,
-                        Surface::Card,
-                        None,
-                        "theme error",
-                        |ui, reg| {
-                            ui.set_min_width(ui.available_width());
-                            ui.horizontal(|ui| {
-                                let icon = demo::role_image(
-                                    ui,
-                                    IconRole::DialogError,
-                                    set,
-                                    icon_theme.as_deref(),
-                                    size,
-                                );
-                                if let Some(icon) = icon {
-                                    demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
-                                }
-                                demo::base(reg, ui, "theme error text", |ui| {
-                                    ui.colored_label(ui.visuals().error_fg_color, error)
-                                });
-                            });
-                        },
-                    );
-                }
-                add(app, ui);
-            });
+            let banner = egui::Margin {
+                bottom: 0,
+                ..page_margin
+            };
+            if app.theme_error.is_some() {
+                egui::Frame::NONE.inner_margin(banner).show(ui, |ui| {
+                    ui.spacing_mut().item_spacing = spacing;
+                    theme_error_banner(app, ui);
+                });
+            }
+            ui.spacing_mut().item_spacing = spacing;
+            add(app, ui, page_margin);
         });
     seams.record(&mut app.registry, &out.response, "Central panel");
     app.registry.tag("chrome.content", &out.response);
     app.registry.untarget(&out.response);
+}
+
+/// The theme error, in a card across the content.
+fn theme_error_banner(app: &mut App, ui: &mut egui::Ui) {
+    if let Some(error) = app.theme_error.clone() {
+        // As the gpui showcase's error banner (`showcase-gpui/demo.rs:1342-1357`):
+        // across the content, the chosen icon theme's error icon first, where it
+        // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
+        // (`showcase-gpui/support.rs:435`) — at `defaults.icon_sizes.small`.
+        let (set, icon_theme) = app.chosen_icons();
+        let size = app
+            .atlas
+            .resolved_for(ui.ctx().theme())
+            .defaults
+            .icon_sizes
+            .small;
+        demo::framed(
+            &mut app.registry,
+            ui,
+            Surface::Card,
+            None,
+            "theme error",
+            |ui, reg| {
+                ui.set_min_width(ui.available_width());
+                ui.horizontal(|ui| {
+                    let icon = demo::role_image(
+                        ui,
+                        IconRole::DialogError,
+                        set,
+                        icon_theme.as_deref(),
+                        size,
+                    );
+                    if let Some(icon) = icon {
+                        demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
+                    }
+                    demo::base(reg, ui, "theme error text", |ui| {
+                        ui.colored_label(ui.visuals().error_fg_color, error)
+                    });
+                });
+            },
+        );
+    }
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,

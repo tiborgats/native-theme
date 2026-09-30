@@ -1127,7 +1127,8 @@ pub(crate) struct TabBar<'a, T> {
     /// tabs do; the trailing widgets stay at the row's right end.
     pub scroll: bool,
     /// Whether the strip spans the width it is given (the page and inspector tab rows), or is
-    /// as wide as its tabs (the Basic page's).
+    /// as wide as its tabs (the Basic page's), which then wrap onto a further line where the
+    /// row is too narrow for them, as the page's other rows do.
     pub full_width: bool,
     /// The row's element in `docs/showcase-elements.toml`, and its tabs', in order: a tab past
     /// the end of `tab_elements` is not one of the list's.
@@ -1285,8 +1286,13 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                                 });
                         });
                     });
-                } else {
+                } else if bar.full_width {
                     ui.horizontal(|ui| {
+                        tabs(ui, reg);
+                        trailing(ui, reg);
+                    });
+                } else {
+                    ui.horizontal_wrapped(|ui| {
                         tabs(ui, reg);
                         trailing(ui, reg);
                     });

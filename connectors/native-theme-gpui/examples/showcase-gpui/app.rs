@@ -658,6 +658,27 @@ impl Showcase {
             .or(self.icon_set_choice.freedesktop_theme())
     }
 
+    /// The content panel's width: the page's scroll area's, as the last frame
+    /// laid it out (the area spans the panel; the scrollbar is drawn over
+    /// it). Before a first layout, the window's width less the side panel
+    /// where it is shown -- its width, the strip it keeps clear for the
+    /// splitter's line (`demo::splitter_reserve`) and the resize handle
+    /// (`demo::HANDLE_SIZE`) -- as the body lays a newly opened window out.
+    pub(crate) fn content_width(&self, window: &Window, cx: &App) -> Pixels {
+        let laid = self.content_scroll.bounds().size.width;
+        if laid > gpui::px(0.) {
+            return laid;
+        }
+        let viewport = window.viewport_size().width;
+        if !self.side_panel_visible {
+            return viewport;
+        }
+        viewport
+            - self.side_panel_width
+            - crate::demo::splitter_reserve(cx).unwrap_or_default()
+            - crate::demo::HANDLE_SIZE
+    }
+
     /// The icon set the theme-drawn Spinner draws its indicator from: the
     /// page's own, with the freedesktop theme its icons load from.
     pub(crate) fn spinner_icons(&self) -> crate::demo::SpinnerIcons {

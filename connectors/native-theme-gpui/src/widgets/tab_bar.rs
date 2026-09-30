@@ -205,7 +205,8 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// least `min_width` by `min_height`, padded by the stated `border.padding`
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
 /// size and weight, `item_gap` from its neighbours (none where unstated, as
-/// gpui-component's). The tabs scroll sideways where they do not fit; a
+/// gpui-component's). The tabs scroll sideways where they do not fit, or
+/// wrap onto a further row with [`wrap`](Self::wrap); a
 /// [`suffix`](Self::suffix) follows them.
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
@@ -219,6 +220,7 @@ pub struct TabBar {
     suffix: Option<AnyElement>,
     style: StyleRefinement,
     observer: Option<PartBounds>,
+    wrap: bool,
 }
 
 impl TabBar {
@@ -233,6 +235,7 @@ impl TabBar {
             suffix: None,
             style: StyleRefinement::default(),
             observer: None,
+            wrap: false,
         }
     }
 
@@ -269,6 +272,14 @@ impl TabBar {
     #[must_use]
     pub fn on_click(mut self, handler: impl Fn(&usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Rc::new(handler));
+        self
+    }
+
+    /// Wraps the tabs onto a further row where the bar is too narrow for
+    /// them, instead of scrolling them sideways.
+    #[must_use]
+    pub fn wrap(mut self) -> Self {
+        self.wrap = true;
         self
     }
 
@@ -382,7 +393,13 @@ impl RenderOnce for TabBar {
             .items_end()
             .flex_auto()
             .min_w_0()
-            .overflow_x_scroll()
+            .map(|row| {
+                if self.wrap {
+                    row.flex_wrap()
+                } else {
+                    row.overflow_x_scroll()
+                }
+            })
             .gap(look.gap)
             .children(tabs);
         div()

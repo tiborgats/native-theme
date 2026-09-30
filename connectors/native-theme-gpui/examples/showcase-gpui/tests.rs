@@ -4085,54 +4085,105 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     );
 }
 
-/// The Basic page lays its groups out as the three showcases do: five
-/// columns, left to right, each a stack of its groups in order, every group
-/// its heading over its controls, and every control the page shows drawn.
+/// The Basic page's column rule, the iced and egui showcases' too: under a
+/// preset whose widest fixed-width control fits a fifth of the page, five
+/// columns; under material, whose drop-down is 210 wide, four; and each
+/// arrangement holds every group once, a column's groups in reading order.
+#[test]
+fn the_basic_page_counts_its_columns_from_the_theme() {
+    use crate::pages::basic::{
+        BASIC_FIVE, BASIC_FOUR, BASIC_THREE, basic_arrangement, basic_column_count,
+    };
+    let resolved = |preset: &str| {
+        native_theme::theme::Theme::preset(preset)
+            .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light))
+            .and_then(|v| v.into_resolved(&native_theme::ResolutionContext::for_tests()))
+            .map_err(|e| format!("{preset}: {e}"))
+    };
+    let layout = |preset: &str| {
+        native_theme::theme::Theme::preset(preset)
+            .map(|t| t.layout)
+            .unwrap_or_default()
+    };
+    // The content panel beside the 300px side panel and a 1px splitter.
+    for (preset, content, columns) in [
+        ("kde-breeze", 979.0, 5),
+        ("adwaita", 979.0, 5),
+        ("catppuccin-mocha", 976.0, 5),
+        ("material", 976.0, 4),
+    ] {
+        let r = resolved(preset);
+        assert!(r.is_ok(), "{r:?}");
+        if let Ok(r) = r {
+            assert_eq!(
+                basic_column_count(&r, &layout(preset), content),
+                columns,
+                "{preset}"
+            );
+        }
+    }
+    let r = resolved("kde-breeze");
+    if let Ok(r) = r {
+        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0), 3);
+    }
+    for (count, arrangement) in [
+        (5, &BASIC_FIVE[..]),
+        (4, &BASIC_FOUR[..]),
+        (3, &BASIC_THREE[..]),
+    ] {
+        assert_eq!(basic_arrangement(count), arrangement);
+        assert_eq!(arrangement.len(), count);
+        let mut all: Vec<usize> = arrangement.iter().flat_map(|c| c.iter().copied()).collect();
+        for column in arrangement {
+            assert!(
+                column.windows(2).all(|w| w.first() < w.get(1)),
+                "{count} columns: {column:?} is not in reading order"
+            );
+        }
+        all.sort_unstable();
+        assert_eq!(all, (0..20).collect::<Vec<_>>(), "{count} columns");
+    }
+}
+
+/// The Basic page lays its groups out as the three showcases do: under
+/// kde-breeze five columns, under material four, left to right, each a stack
+/// of its groups in order, every group its heading over its controls, and
+/// every control the page shows drawn.
 #[gpui::test]
 fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
-    use crate::pages::basic::{
-        BASIC_COLUMN_1, BASIC_COLUMN_2, BASIC_COLUMN_3, BASIC_COLUMN_4, BASIC_COLUMN_5,
-    };
+    use crate::pages::basic::{BASIC_GROUPS, basic_arrangement};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    show(&mut cx, &showcase, Page::Basic);
-    let columns: [&[(&'static str, &'static str)]; 5] = [
-        &BASIC_COLUMN_1,
-        &BASIC_COLUMN_2,
-        &BASIC_COLUMN_3,
-        &BASIC_COLUMN_4,
-        &BASIC_COLUMN_5,
-    ];
-    let mut previous_left = None;
-    for column in columns {
-        let mut above: Option<Bounds<Pixels>> = None;
-        for &(id, text) in column {
-            let heading = bounds_of(&mut cx, id);
-            if let Some(above) = above {
-                assert!(
-                    heading.top() > above.bottom(),
-                    "{text} is not below the group above it"
-                );
-                assert_eq!(
-                    heading.left(),
-                    above.left(),
-                    "{text} does not start where its column does"
-                );
+    for (preset, count) in [("material", 4), ("kde-breeze", 5)] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let mut previous_left = None;
+        for column in basic_arrangement(count) {
+            let mut above: Option<Bounds<Pixels>> = None;
+            let mut first = None;
+            for &(id, text) in column.iter().filter_map(|&ix| BASIC_GROUPS.get(ix)) {
+                let heading = bounds_of(&mut cx, id);
+                if let Some(above) = above {
+                    assert!(
+                        heading.top() > above.bottom(),
+                        "{preset}: {text} is not below the group above it"
+                    );
+                    assert_eq!(
+                        heading.left(),
+                        above.left(),
+                        "{preset}: {text} does not start where its column does"
+                    );
+                }
+                first.get_or_insert(heading.left());
+                above = Some(heading);
             }
-            above = Some(heading);
+            assert!(
+                previous_left < first,
+                "{preset}: a column is not right of the one before"
+            );
+            previous_left = first;
         }
-        let left = column.first().map(|&(id, _)| bounds_of(&mut cx, id).left());
-        assert!(
-            previous_left < left,
-            "the column headed {:?} is not right of the one before",
-            column.first()
-        );
-        previous_left = left;
     }
-    let names: Vec<&str> = columns
-        .iter()
-        .flat_map(|column| column.iter().map(|&(_, text)| text))
-        .collect();
+    let names: Vec<&str> = BASIC_GROUPS.iter().map(|&(_, text)| text).collect();
     assert_eq!(
         names,
         [
@@ -4309,10 +4360,14 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     );
 }
 
-/// The Basic page fits the window without scrolling under each Linux
-/// preset the captures take, in both modes.
+/// The Basic page never needs sideways scrolling under the Linux presets the
+/// captures take, in both modes: every control ends inside the scroll area,
+/// and the page lays out the columns its rule counts from the content
+/// panel's width. It may be taller than the scroll area (material is), and
+/// then scrolls, at rest at the top; the test reports by how much.
 #[gpui::test]
-fn the_basic_page_fits_the_window(cx: &mut TestAppContext) {
+fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
+    use crate::pages::basic::basic_column_count;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
@@ -4320,13 +4375,55 @@ fn the_basic_page_fits_the_window(cx: &mut TestAppContext) {
             run_menu_item(&mut cx, "Theme", mode);
             show(&mut cx, &showcase, Page::Basic);
             let page = bounds_of(&mut cx, PAGE_ROOT);
-            let viewport = bounds_of(&mut cx, CONTENT_SCROLL);
-            assert!(
-                page.size.height <= viewport.size.height,
-                "{preset} {mode}: the Basic page is {}px tall in a {}px viewport",
-                page.size.height.as_f32(),
-                viewport.size.height.as_f32()
+            // The scroll area: what the content panel shows of the page.
+            let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
+            let content = bounds_of(&mut cx, CONTENT_PANEL);
+            let computed = cx.update(|window, cx| showcase.read(cx).content_width(window, cx));
+            assert_eq!(
+                computed, content.size.width,
+                "{preset} {mode}: the content width the page counts columns from is not the panel's"
             );
+            let count = read(&mut cx, &showcase, |this, cx| {
+                native_value(cx, |n| {
+                    basic_column_count(n.resolved, &this.layout, f32::from(computed))
+                })
+            });
+            let drawn = read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).layout_drawn()
+            });
+            let columns = drawn
+                .keys()
+                .filter(|id| id.starts_with("basic.column_"))
+                .count();
+            assert_eq!(
+                Some(columns),
+                count,
+                "{preset} {mode}: the columns laid out"
+            );
+            for (id, bounds) in drawn.iter().filter(|(id, _)| id.starts_with("basic.")) {
+                assert!(
+                    bounds.right() <= viewport.right(),
+                    "{preset} {mode}: {id} ends at {:?}, past the scroll area's {:?}",
+                    bounds.right(),
+                    viewport.right()
+                );
+            }
+            println!(
+                "{preset} {mode}: {columns} columns; page {:?} in scroll area {:?}",
+                page.size, viewport.size
+            );
+            if page.size.height > viewport.size.height {
+                println!(
+                    "{preset} {mode}: the Basic page is {}px tall in a {}px scroll area: it scrolls",
+                    page.size.height.as_f32(),
+                    viewport.size.height.as_f32()
+                );
+                assert_eq!(
+                    page.top(),
+                    viewport.top(),
+                    "{preset} {mode}: the page is not at rest at the top"
+                );
+            }
         }
     }
 }

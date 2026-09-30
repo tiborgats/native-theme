@@ -55,6 +55,7 @@ use crate::parts::Parts;
 pub struct SegmentedControl<'a> {
     selected: &'a mut usize,
     segments: Vec<egui::WidgetText>,
+    wrap: bool,
 }
 
 impl<'a> SegmentedControl<'a> {
@@ -67,13 +68,25 @@ impl<'a> SegmentedControl<'a> {
         Self {
             selected,
             segments: segments.into_iter().map(Into::into).collect(),
+            wrap: false,
         }
+    }
+
+    /// Wraps the segments onto a further line, inside the one outline, where the `Ui` is too
+    /// narrow for them (`Ui::horizontal_wrapped`), instead of running past its edge.
+    pub fn wrap(mut self) -> Self {
+        self.wrap = true;
+        self
     }
 }
 
 impl egui::Widget for SegmentedControl<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let SegmentedControl { selected, segments } = self;
+        let SegmentedControl {
+            selected,
+            segments,
+            wrap,
+        } = self;
         if let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) {
             let padding = &atlas
                 .resolved_for(ui.ctx().theme())
@@ -86,13 +99,17 @@ impl egui::Widget for SegmentedControl<'_> {
                     fit_height(ui, &segments);
                 }
                 let outline = Outline::of(ui);
-                ui.horizontal(|ui| {
+                let contents = |ui: &mut egui::Ui| {
                     outline
                         .frame()
                         .show(ui, |ui| row(ui, selected, segments, Some(&outline)))
                         .inner
-                })
-                .map_changed()
+                };
+                if wrap {
+                    ui.horizontal_wrapped(contents).map_changed()
+                } else {
+                    ui.horizontal(contents).map_changed()
+                }
             })
             .inner
         } else {

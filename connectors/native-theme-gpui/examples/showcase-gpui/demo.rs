@@ -1900,6 +1900,7 @@ pub(crate) fn tab_row(
             .instance("selected", shown)
             .instance("click", "selects the tab; the showcase keeps the state");
         return native_tab_strip(n, id)
+            .wrap()
             .when_some(elements::part_observer(ui, id), |bar, observer| {
                 bar.on_part_bounds(observer)
             })
@@ -2030,7 +2031,10 @@ pub(crate) fn segmented(
             }))
             .on_click(move |_, window, cx| on_click(&ix, window, cx))
     });
+    // The segments wrap onto a further line where the control's column is
+    // too narrow for them, as the Basic page's other rows do.
     h_flex()
+        .flex_wrap()
         .bg(colour(s.background_color))
         .border(px(b.line_width))
         .border_color(colour(b.color))

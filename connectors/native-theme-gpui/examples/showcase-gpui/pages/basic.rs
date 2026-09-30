@@ -3,8 +3,11 @@
 //! so the gpui, iced and egui captures compare control by control. Each
 //! control is built by the helper its own page builds it with.
 //!
-//! Five equal columns, each a stack of groups; a group is its heading over
-//! its rows of controls. The groups and their elements are
+//! Equal columns, five, four or three as the theme's widest fixed-width
+//! control leaves room for (`basic_column_count`), each a stack of groups; a
+//! group is its heading over its rows of controls, a row wrapping where its
+//! column is too narrow for it. The page scrolls in the content panel where
+//! it is taller than the panel. The groups and their elements are
 //! docs/showcase-elements.toml's; the page, its columns and every element
 //! record where they were laid out (`crate::elements`).
 
@@ -147,40 +150,111 @@ const ICONS: [SizedIcon; 3] = [
 /// A group of the page, as `(heading id, heading)`.
 pub(crate) type BasicGroup = (&'static str, &'static str);
 
-/// The groups of each column, top to bottom.
-pub(crate) const BASIC_COLUMN_1: [BasicGroup; 4] = [
+/// The page's groups in reading order: the five columns' groups, left to
+/// right, each column top to bottom.
+pub(crate) const BASIC_GROUPS: [BasicGroup; 20] = [
     ("basic-heading-buttons", "Buttons"),
     ("basic-heading-checkboxes", "Checkboxes"),
     ("basic-heading-radio", "Radio buttons"),
     ("basic-heading-select", "Drop-down"),
-];
-pub(crate) const BASIC_COLUMN_2: [BasicGroup; 3] = [
     ("basic-heading-inputs", "Text inputs"),
     ("basic-heading-textarea", "Text area"),
     ("basic-heading-slider", "Slider"),
-];
-pub(crate) const BASIC_COLUMN_3: [BasicGroup; 5] = [
     ("basic-heading-switches", "Switches"),
     ("basic-heading-number", "Number input"),
     ("basic-heading-spinner", "Spinner"),
     ("basic-heading-segmented", "Segmented control"),
     ("basic-heading-card", "Card"),
-];
-pub(crate) const BASIC_COLUMN_4: [BasicGroup; 4] = [
     ("basic-heading-typography", "Typography"),
     ("basic-heading-separator", "Separator"),
     ("basic-heading-progress", "Progress bar"),
     ("basic-heading-list", "List"),
-];
-pub(crate) const BASIC_COLUMN_5: [BasicGroup; 4] = [
     ("basic-heading-icons", "Icons"),
     ("basic-heading-tabs", "Tabs"),
     ("basic-heading-expander", "Expander"),
     ("basic-heading-table", "Table"),
 ];
 
-/// The elements of docs/showcase-elements.toml the page and its five
-/// columns are.
+/// Each column's groups, top to bottom, as indices of [`BASIC_GROUPS`], for
+/// the page's five, four and three columns (docs/showcase-elements.toml, the
+/// Basic page): four columns end the other four with the fifth's groups,
+/// three put the fourth's too, balanced by the groups' heights under the
+/// material preset, the tallest.
+pub(crate) const BASIC_FIVE: [&[usize]; 5] = [
+    &[0, 1, 2, 3],
+    &[4, 5, 6],
+    &[7, 8, 9, 10, 11],
+    &[12, 13, 14, 15],
+    &[16, 17, 18, 19],
+];
+pub(crate) const BASIC_FOUR: [&[usize]; 4] = [
+    &[0, 1, 2, 3, 18],
+    &[4, 5, 6, 16],
+    &[7, 8, 9, 10, 11, 17],
+    &[12, 13, 14, 15, 19],
+];
+pub(crate) const BASIC_THREE: [&[usize]; 3] = [
+    &[0, 1, 2, 3, 15, 18],
+    &[4, 5, 6, 13, 14, 16, 19],
+    &[7, 8, 9, 10, 11, 12, 17],
+];
+
+/// The fewest and the most columns the page lays its groups out in.
+const MIN_COLUMNS: usize = 3;
+const MAX_COLUMNS: usize = 5;
+
+/// The groups of each column for a page of `columns` columns.
+pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
+    match columns {
+        5 => &BASIC_FIVE,
+        4 => &BASIC_FOUR,
+        _ => &BASIC_THREE,
+    }
+}
+
+/// How many columns the page lays its groups out in, from the theme alone,
+/// as the iced and egui Basic pages count them: the most, of five, four and
+/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
+/// widest fixed-width control the theme states on the page --
+/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
+/// apart, `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is
+/// `content_width` less `layout.window_margin` on both sides and, where
+/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
+/// scrolling page keeps free. Three where not even three do: the page is then
+/// wider than its area.
+pub(crate) fn basic_column_count(
+    resolved: &native_theme::theme::ResolvedTheme,
+    layout: &native_theme::theme::LayoutTheme,
+    content_width: f32,
+) -> usize {
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &resolved.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let page = content_width - margin - margin - gutter;
+    let t = &resolved.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let widest = resolved
+        .combo_box
+        .min_width
+        .max(tabs)
+        .max(BASIC_WIDE)
+        .max(BASIC_WIDTH);
+    (MIN_COLUMNS..=MAX_COLUMNS)
+        .rev()
+        .find(|&n| {
+            let n = n as f32;
+            (page - (n - 1.0) * gap) / n >= widest
+        })
+        .unwrap_or(MIN_COLUMNS)
+}
+
+/// The elements of docs/showcase-elements.toml the page and its columns
+/// are.
 const PAGE: &str = "basic.page";
 const COLUMNS: [&str; 5] = [
     "basic.column_1",
@@ -239,8 +313,10 @@ impl Showcase {
                 .child(demo::heading(ui, cx, id, text))
                 .children(rows)
         };
-        // Controls side by side, `widget_gap` apart.
-        let row = || with_gap(h_flex(), widget_gap).items_center();
+        // Controls side by side, `widget_gap` apart, wrapping onto the next
+        // line where their column is too narrow for them, as the iced
+        // (`Row::wrap`) and egui (`horizontal_wrapped`) pages wrap them.
+        let row = || with_gap(h_flex(), widget_gap).flex_wrap().items_center();
         let button = |(id, label, kind, state): BasicButton| {
             demo::button(
                 ui,
@@ -254,11 +330,28 @@ impl Showcase {
                 },
             )
         };
-        let [buttons, checkboxes, radios, select] = BASIC_COLUMN_1;
-        let [inputs, textarea, slider] = BASIC_COLUMN_2;
-        let [switches, number, spinner, segmented, card] = BASIC_COLUMN_3;
-        let [typography, separator, progress, list] = BASIC_COLUMN_4;
-        let [icons, tabs, expander, table] = BASIC_COLUMN_5;
+        let [
+            buttons,
+            checkboxes,
+            radios,
+            select,
+            inputs,
+            textarea,
+            slider,
+            switches,
+            number,
+            spinner,
+            segmented,
+            card,
+            typography,
+            separator,
+            progress,
+            list,
+            icons,
+            tabs,
+            expander,
+            table,
+        ] = BASIC_GROUPS;
         let no_click = None::<fn(&bool, &mut Window, &mut gpui::App)>;
 
         let column1 = vec![
@@ -517,6 +610,7 @@ impl Showcase {
                 // As the toolbar's buttons are spaced: `toolbar.item_gap`,
                 // `layout.widget_gap` where the theme states none.
                 with_gap(h_flex(), tool_gap.or(widget_gap))
+                    .flex_wrap()
                     .items_center()
                     .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
                         demo::icon_button(ui, cx, id, name, &self.role_chrome_icon(role), listed)
@@ -611,20 +705,64 @@ impl Showcase {
             ],
         );
 
-        let column3 = vec![g_switches, g_number, g_spinner, g_segmented, g_card];
-        let column4 = vec![g_typography, g_separator, g_progress, g_list];
-        let column5 = vec![g_icons, g_tabs, g_expander, g_table];
-
-        let column = |listed: &'static str, groups: Vec<gpui::Div>| {
-            with_gap(v_flex(), section_gap)
-                .relative()
-                .flex_1()
-                .min_w_0()
-                .items_start()
-                .child(elements::record(ui, listed))
-                .children(groups)
-        };
-        let [c1, c2, c3, c4, c5] = COLUMNS;
+        // Every group in reading order, each taken once into its column.
+        let mut groups: Vec<Option<gpui::Div>> = column1
+            .into_iter()
+            .chain(column2)
+            .chain([
+                g_switches,
+                g_number,
+                g_spinner,
+                g_segmented,
+                g_card,
+                g_typography,
+                g_separator,
+                g_progress,
+                g_list,
+                g_icons,
+                g_tabs,
+                g_expander,
+                g_table,
+            ])
+            .map(Some)
+            .collect();
+        let content_width = self.content_width(window, cx);
+        let count = native_value(cx, |n| {
+            basic_column_count(n.resolved, &self.layout, f32::from(content_width))
+        })
+        .unwrap_or(MAX_COLUMNS);
+        // The width is the last frame's: where this frame lays the content
+        // panel out at another (a first frame, a moved splitter), the next
+        // frame counts the columns again.
+        let watched = self.content_scroll.clone();
+        let this = cx.entity().downgrade();
+        let recount = gpui::canvas(
+            move |_, _, cx| {
+                if watched.bounds().size.width != content_width {
+                    this.update(cx, |_, cx| cx.notify()).ok();
+                }
+            },
+            |_, _, _, _| {},
+        )
+        .absolute()
+        .size_0();
+        let columns = basic_arrangement(count)
+            .iter()
+            .zip(COLUMNS)
+            .map(|(members, listed)| {
+                with_gap(v_flex(), section_gap)
+                    .relative()
+                    .flex_1()
+                    .min_w_0()
+                    .items_start()
+                    .child(elements::record(ui, listed))
+                    .children(
+                        members
+                            .iter()
+                            .filter_map(|&ix| groups.get_mut(ix).and_then(Option::take)),
+                    )
+            })
+            .collect::<Vec<_>>();
         // The page is the columns' row, inside the window margin.
         with_padding(div(), window_margin).flex_1().child(
             with_gap(h_flex(), section_gap)
@@ -632,11 +770,8 @@ impl Showcase {
                 .w_full()
                 .items_start()
                 .child(elements::record(ui, PAGE))
-                .child(column(c1, column1))
-                .child(column(c2, column2))
-                .child(column(c3, column3))
-                .child(column(c4, column4))
-                .child(column(c5, column5)),
+                .child(recount)
+                .children(columns),
         )
     }
 

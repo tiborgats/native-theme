@@ -6663,6 +6663,124 @@ const BASIC_SLIDER: f32 = 40.0;
 /// fit the page).
 const BASIC_WIDE: f32 = 170.0;
 
+/// The Basic page's groups in reading order, by heading: the five columns'
+/// groups, left to right, each column top to bottom.
+#[cfg(test)]
+const BASIC_GROUPS: [&str; 20] = [
+    "Buttons",
+    "Checkboxes",
+    "Radio buttons",
+    "Drop-down",
+    "Text inputs",
+    "Text area",
+    "Slider",
+    "Switches",
+    "Number input",
+    "Spinner",
+    "Segmented control",
+    "Card",
+    "Typography",
+    "Separator",
+    "Progress bar",
+    "List",
+    "Icons",
+    "Tabs",
+    "Expander",
+    "Table",
+];
+
+/// Each column's groups, top to bottom, as indices of [`BASIC_GROUPS`], for
+/// the Basic page's five, four and three columns: the gpui and egui pages'
+/// arrangements (docs/showcase-elements.toml, the Basic page).
+const BASIC_FIVE: [&[usize]; 5] = [
+    &[0, 1, 2, 3],
+    &[4, 5, 6],
+    &[7, 8, 9, 10, 11],
+    &[12, 13, 14, 15],
+    &[16, 17, 18, 19],
+];
+const BASIC_FOUR: [&[usize]; 4] = [
+    &[0, 1, 2, 3, 18],
+    &[4, 5, 6, 16],
+    &[7, 8, 9, 10, 11, 17],
+    &[12, 13, 14, 15, 19],
+];
+const BASIC_THREE: [&[usize]; 3] = [
+    &[0, 1, 2, 3, 15, 18],
+    &[4, 5, 6, 13, 14, 16, 19],
+    &[7, 8, 9, 10, 11, 12, 17],
+];
+
+/// The fewest and the most columns the Basic page lays its groups out in.
+const BASIC_MIN_COLUMNS: usize = 3;
+const BASIC_MAX_COLUMNS: usize = 5;
+
+/// The Basic page's columns' ids in the element list.
+const BASIC_COLUMN_IDS: [&str; 5] = [
+    "basic.column_1",
+    "basic.column_2",
+    "basic.column_3",
+    "basic.column_4",
+    "basic.column_5",
+];
+
+/// The groups of each column of a Basic page of `columns` columns.
+fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
+    match columns {
+        5 => &BASIC_FIVE,
+        4 => &BASIC_FOUR,
+        _ => &BASIC_THREE,
+    }
+}
+
+/// How many columns the Basic page lays its groups out in, from the theme
+/// alone, as the gpui and egui pages count them: the most, of five, four and
+/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
+/// widest fixed-width control the theme states on the page --
+/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
+/// apart, `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is `content_width`
+/// less `layout.window_margin` on both sides and, where
+/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
+/// scrolling page keeps free. Three where not even three do: the page is then
+/// wider than its area.
+fn basic_column_count(resolved: &ResolvedTheme, layout: &LayoutTheme, content_width: f32) -> usize {
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &resolved.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let page = content_width - margin - margin - gutter;
+    let t = &resolved.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let widest = resolved
+        .combo_box
+        .min_width
+        .max(tabs)
+        .max(BASIC_WIDE)
+        .max(BASIC_WIDTH);
+    (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
+        .rev()
+        .find(|&n| {
+            let n = n as f32;
+            (page - (n - 1.0) * gap) / n >= widest
+        })
+        .unwrap_or(BASIC_MIN_COLUMNS)
+}
+
+/// The content panel's width: the window's, less the side panel and the
+/// splitter beside it where the side panel is shown, as `view` lays the body
+/// out.
+fn content_width(state: &State) -> f32 {
+    if state.side_panel_visible {
+        state.window_width - state.side_panel_width - state.current_resolved.splitter.divider_width
+    } else {
+        state.window_width
+    }
+}
+
 /// The Basic tab's text area: its text, and how many lines tall it is.
 const BASIC_TEXT_AREA: &str = "Line one\nLine two\nLine three";
 const BASIC_TEXT_AREA_LINES: f32 = 3.0;
@@ -6923,7 +7041,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     Some(Message::ButtonPressed),
                 ),
             ]
-            .spacing(gap.widget),
+            .spacing(gap.widget)
+            .wrap(),
             row![
                 push(
                     "basic.buttons.disabled",
@@ -6934,7 +7053,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 ),
                 tip,
             ]
-            .spacing(gap.widget),
+            .spacing(gap.widget)
+            .wrap(),
             // The toggle buttons, off and on (Basic v4's third row).
             row![
                 push(
@@ -6952,7 +7072,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     Some(Message::ButtonPressed),
                 ),
             ]
-            .spacing(gap.widget),
+            .spacing(gap.widget)
+            .wrap(),
         ]
         .spacing(gap.widget)
         .into(),
@@ -7336,7 +7457,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .font(theme_font(&resolved.combo_box.font))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
-                .width(Length::Fixed(BASIC_WIDTH)),
+                // `BASIC_WIDTH`, and at least `combo_box.min_width`, which `PickList` has no
+                // setter for: the width is the application's, as the gpui page's select's
+                // refinement and the egui page's combo box take it.
+                .width(Length::Fixed(BASIC_WIDTH.max(resolved.combo_box.min_width))),
             )
             // The text inside the padding, left of the arrow; the arrow
             // right-aligned at the right padding's inner edge, centred
@@ -7603,7 +7727,11 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .width(Length::Shrink)
             .style(styles::aw::tab_bar(resolved));
         // tab.item_gap between the tabs, where stated; iced_aw's own none
-        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`).
+        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`). iced_aw lays
+        // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
+        // `layout`), so the bar cannot wrap as the page's other rows do; the
+        // page's column rule leaves every column room for the two tabs at
+        // `tab.min_width`, `tab.item_gap` apart, which is their width here.
         let bar = match tab_t.item_gap {
             Some(gap) => bar.spacing(gap),
             None => bar,
@@ -7664,7 +7792,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 tab.style(styles::button(resolved)).into()
             }
         }))
-        .spacing(tab_t.item_gap.unwrap_or(sp.xs)),
+        .spacing(tab_t.item_gap.unwrap_or(sp.xs))
+        .wrap(),
     )
     .loose()
     .node("basic.tabs.one", &[0])
@@ -7717,7 +7846,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             Length::Shrink,
             tagged(
                 "basic.segmented.control",
-                container(row(segments).spacing(sc.separator_width))
+                // The segments wrap onto a further line where the column is
+                // too narrow for them, as the page's other rows do.
+                container(row(segments).spacing(sc.separator_width).wrap())
                     .padding(sc.border.line_width)
                     .style(styles::segmented_control(resolved)),
             )
@@ -8028,7 +8159,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
     ]
     .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
-    .align_y(iced::Center);
+    .align_y(iced::Center)
+    .wrap();
 
     // The text scale, a line per role, each in its own size, line height
     // and weight, in the body font's family, the link after the body text
@@ -8114,36 +8246,53 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 folder("basic.icons.large", sizes.large),
             ]
             .spacing(gap.widget)
-            .align_y(iced::Center),
+            .align_y(iced::Center)
+            .wrap(),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
-    let column_of = |id: &'static str, groups: Vec<Element<'a, Message>>| {
-        tagged(id, column(groups).spacing(gap.section).width(Fill))
-    };
-    tagged(
-        "basic.page",
-        row![
-            column_of(
-                "basic.column_1",
-                vec![buttons, checkboxes, radios, drop_down]
-            ),
-            column_of("basic.column_2", vec![inputs, text_area, slider_group]),
-            column_of(
-                "basic.column_3",
-                vec![switches, number, spinner_group, segmented, card_group]
-            ),
-            column_of(
-                "basic.column_4",
-                vec![typography, separator, progress, list_group]
-            ),
-            column_of("basic.column_5", vec![icon_group, tabs, expanders, table]),
-        ]
-        .spacing(gap.section),
-    )
-    .into()
+    // Every group in reading order ([`BASIC_GROUPS`]), each taken once into
+    // the column the page's column count puts it in.
+    let mut groups: Vec<Option<Element<'a, Message>>> = [
+        buttons,
+        checkboxes,
+        radios,
+        drop_down,
+        inputs,
+        text_area,
+        slider_group,
+        switches,
+        number,
+        spinner_group,
+        segmented,
+        card_group,
+        typography,
+        separator,
+        progress,
+        list_group,
+        icon_group,
+        tabs,
+        expanders,
+        table,
+    ]
+    .into_iter()
+    .map(Some)
+    .collect();
+    let count = basic_column_count(resolved, &state.layout, content_width(state));
+    let columns: Vec<Element<'a, Message>> = basic_arrangement(count)
+        .iter()
+        .zip(BASIC_COLUMN_IDS)
+        .map(|(members, id)| {
+            let members: Vec<Element<'a, Message>> = members
+                .iter()
+                .filter_map(|&ix| groups.get_mut(ix).and_then(Option::take))
+                .collect();
+            tagged(id, column(members).spacing(gap.section).width(Fill)).into()
+        })
+        .collect();
+    tagged("basic.page", row(columns).spacing(gap.section)).into()
 }
 
 /// The Basic page's table (Basic v3), built from containers: iced_widget's
@@ -14777,25 +14926,72 @@ mod tests {
         found
     }
 
-    /// The Basic page is Basic v5: its five columns hold their groups in
-    /// order, each group under its heading, and every control label the spec
-    /// names is on the page.
+    /// The Basic page's column rule, the gpui and egui pages' too: five
+    /// columns under a preset whose widest fixed-width control fits a fifth
+    /// of the page, four under material (its drop-down is 210 wide), three
+    /// where not even four fit; each arrangement holds every group once, a
+    /// column's groups in reading order.
+    #[test]
+    fn the_basic_page_counts_its_columns_from_the_theme() {
+        for (preset, content, columns) in [
+            ("kde-breeze", 979.0, 5),
+            ("adwaita", 979.0, 5),
+            ("catppuccin-mocha", 976.0, 5),
+            ("material", 976.0, 4),
+            ("kde-breeze", 400.0, 3),
+        ] {
+            let mut state = State::default();
+            let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), false);
+            assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+            assert_eq!(
+                basic_column_count(&state.current_resolved, &state.layout, content),
+                columns,
+                "{preset} in {content}px"
+            );
+        }
+        for (count, arrangement) in [
+            (5, &BASIC_FIVE[..]),
+            (4, &BASIC_FOUR[..]),
+            (3, &BASIC_THREE[..]),
+        ] {
+            assert_eq!(basic_arrangement(count), arrangement);
+            assert_eq!(arrangement.len(), count);
+            for column in arrangement {
+                assert!(
+                    column.windows(2).all(|w| w[0] < w[1]),
+                    "{count} columns: {column:?} is not in reading order"
+                );
+            }
+            let mut all: Vec<usize> = arrangement.iter().flat_map(|c| c.iter().copied()).collect();
+            all.sort_unstable();
+            assert_eq!(
+                all,
+                (0..BASIC_GROUPS.len()).collect::<Vec<_>>(),
+                "{count} columns"
+            );
+        }
+    }
+
+    /// The Basic page is Basic v6: its columns, as many as its column rule
+    /// counts, hold their groups in order, each group under its heading, and
+    /// every control label the spec names is on the page.
     #[test]
     fn the_basic_page_has_every_group_in_its_column() {
-        const COLUMNS: [&[&str]; 5] = [
-            &["Buttons", "Checkboxes", "Radio buttons", "Drop-down"],
-            &["Text inputs", "Text area", "Slider"],
-            &[
-                "Switches",
-                "Number input",
-                "Spinner",
-                "Segmented control",
-                "Card",
-            ],
-            &["Typography", "Separator", "Progress bar", "List"],
-            &["Icons", "Tabs", "Expander", "Table"],
-        ];
         let state = State::default();
+        let count = basic_column_count(
+            &state.current_resolved,
+            &state.layout,
+            content_width(&state),
+        );
+        let columns: Vec<Vec<&str>> = basic_arrangement(count)
+            .iter()
+            .map(|members| {
+                members
+                    .iter()
+                    .filter_map(|&ix| BASIC_GROUPS.get(ix).copied())
+                    .collect()
+            })
+            .collect();
         let mut ui = interface(&state);
         let texts = texts(&mut ui);
         // A heading shares its words with a page tab ("Buttons"), which sits
@@ -14812,21 +15008,20 @@ mod tests {
             }
         };
         let mut previous_x = f32::NEG_INFINITY;
-        for column in COLUMNS {
-            let first = heading(column[0]);
+        for column in &columns {
+            let top = column.first().copied().unwrap_or_default();
+            let first = heading(top);
             assert!(
                 first.x > previous_x,
-                "{:?} is not right of the column before it",
-                column[0]
+                "{top:?} is not right of the column before it"
             );
             previous_x = first.x;
             let mut previous_y = f32::NEG_INFINITY;
-            for label in column {
+            for &label in column {
                 let bounds = heading(label);
                 assert!(
                     (bounds.x - first.x).abs() < 0.01,
-                    "{label:?} is not in {:?}'s column",
-                    column[0]
+                    "{label:?} is not in {top:?}'s column"
                 );
                 assert!(bounds.y > previous_y, "{label:?} is out of order");
                 previous_y = bounds.y;
@@ -15406,13 +15601,15 @@ mod tests {
         );
     }
 
-    /// The Basic page fits the window without scrolling under every preset
-    /// and mode the captures take (kde-breeze, material, catppuccin-mocha and
-    /// adwaita, light and dark): its content, laid out in the page area of a
-    /// 1280 x 720 window with the preset's own layout gaps, ends inside the
-    /// window.
+    /// The Basic page never needs sideways scrolling under the presets and
+    /// modes the captures take (kde-breeze, material, catppuccin-mocha and
+    /// adwaita, light and dark): laid out in the page area of a 1280 x 720
+    /// window, every element ends inside the page's scroll area, and the page
+    /// has the columns its rule counts from the content panel's width. It may
+    /// be taller than its area (material is): it then scrolls, and the test
+    /// reports by how much.
     #[test]
-    fn the_basic_page_fits_the_window() {
+    fn the_basic_page_fits_the_window_across() {
         for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
             for dark in [false, true] {
                 let mut state = State {
@@ -15452,11 +15649,54 @@ mod tests {
                 );
                 if let Some((bounds, content)) = page {
                     assert!(
-                        content.height <= bounds.height + 0.01,
-                        "{preset} (dark: {dark}): the Basic page is {}px tall, its area {}px",
-                        content.height,
-                        bounds.height
+                        content.width <= bounds.width + 0.01,
+                        "{preset} (dark: {dark}): the Basic page is {}px wide, its area {}px",
+                        content.width,
+                        bounds.width
                     );
+                    println!(
+                        "{preset} (dark: {dark}): page {}x{} in an area {}x{}{}",
+                        content.width,
+                        content.height,
+                        bounds.width,
+                        bounds.height,
+                        if content.height > bounds.height + 0.01 {
+                            ": it scrolls"
+                        } else {
+                            ""
+                        }
+                    );
+                    let _ = texts(&mut ui);
+                    let laid = surveyed_layout();
+                    let columns = laid
+                        .keys()
+                        .filter(|id| id.starts_with("basic.column_"))
+                        .count();
+                    let count = basic_column_count(
+                        &state.current_resolved,
+                        &state.layout,
+                        content_width(&state),
+                    );
+                    assert_eq!(
+                        columns, count,
+                        "{preset} (dark: {dark}): the columns laid out"
+                    );
+                    if let Some(panel) = laid.get("chrome.content") {
+                        assert!(
+                            (panel.width - content_width(&state)).abs() < 0.01,
+                            "{preset} (dark: {dark}): the content panel is {}px, the page counts from {}px",
+                            panel.width,
+                            content_width(&state)
+                        );
+                    }
+                    for (id, r) in laid.iter().filter(|(id, _)| id.starts_with("basic.")) {
+                        assert!(
+                            r.x + r.width <= bounds.x + bounds.width + 0.01,
+                            "{preset} (dark: {dark}): {id} ends at {}, past the page area's {}",
+                            r.x + r.width,
+                            bounds.x + bounds.width
+                        );
+                    }
                 }
             }
         }

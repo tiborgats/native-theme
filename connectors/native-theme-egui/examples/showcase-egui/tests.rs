@@ -2374,18 +2374,34 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
 /// selected, its frame three rows and its border tall.
 #[test]
 fn the_basic_page_has_every_group_in_its_column() {
-    let groups: Vec<&str> = crate::pages::basic::GROUPS
-        .iter()
-        .flat_map(|column| column.iter().copied())
-        .collect();
+    use crate::pages::basic::{GROUPS, arrangement, column_count};
     let named: Vec<&str> = BASIC_CONTROLS.iter().map(|(group, _)| *group).collect();
-    assert_eq!(groups, named, "the controls are listed per group, in order");
-    for preset in ["kde-breeze", "material", TEST_PRESET] {
+    assert_eq!(
+        GROUPS.to_vec(),
+        named,
+        "the controls are listed per group, in order"
+    );
+    for (preset, expected) in [("kde-breeze", 5), ("material", 4), (TEST_PRESET, 5)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
         );
         harness.run_steps(4);
+        let count = column_count(
+            harness.state().atlas.resolved_for(egui::Theme::Light),
+            harness.state().atlas.layout(),
+            harness.state().demo_state.content_width,
+        );
+        assert_eq!(count, expected, "{preset}: the column count");
+        let columns: Vec<Vec<&str>> = arrangement(count)
+            .iter()
+            .map(|members| {
+                members
+                    .iter()
+                    .filter_map(|&ix| GROUPS.get(ix).copied())
+                    .collect()
+            })
+            .collect();
         let records = harness.state().registry.records();
         let page_left = records
             .iter()
@@ -2400,7 +2416,7 @@ fn the_basic_page_has_every_group_in_its_column() {
                 .unwrap_or_else(|| panic!("{preset}: no heading {name:?} on the page"))
         };
         let mut column_left = f32::MIN;
-        for column in crate::pages::basic::GROUPS {
+        for column in &columns {
             let tops: Vec<egui::Rect> = column.iter().map(|name| heading(name)).collect();
             let left = tops[0].left();
             assert!(
@@ -2428,7 +2444,9 @@ fn the_basic_page_has_every_group_in_its_column() {
                         .map(|r| r.rect)
                         .collect();
                     assert_eq!(found.len(), *count, "{preset}: {kind} under {name:?}");
-                    for r in found {
+                    // A record's rect is what is shown of the widget: one the page scrolled
+                    // out of view has none to place.
+                    for r in found.into_iter().filter(|r| r.is_positive()) {
                         assert!(
                             r.top() >= rect.bottom() - 0.5
                                 && r.bottom() <= next + 0.5
@@ -2438,6 +2456,10 @@ fn the_basic_page_has_every_group_in_its_column() {
                     }
                 }
             }
+        }
+        // The list's rows, which a page that scrolls may show only in part (material's).
+        if harness.state().page_scrolls {
+            continue;
         }
         let t = harness
             .state()
@@ -2479,18 +2501,49 @@ fn the_basic_page_has_every_group_in_its_column() {
     }
 }
 
-/// The Basic page fits the window at its default size, 1280 × 720, in both modes, under the
-/// four presets the captures compare: its page area never needs to scroll.
+/// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
+/// both modes, under the four presets the captures compare: every element it places ends inside
+/// the content panel, and it lays out the columns its rule counts from the panel's width. It may
+/// be taller than its area (material is): it then scrolls, and the test reports it.
 #[test]
-fn the_basic_page_fits_the_window() {
+fn the_basic_page_fits_the_window_across() {
+    use crate::pages::basic::column_count;
     for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
+            let state = harness.state();
+            let places = state.registry.places();
+            let Some(panel) = places.get("chrome.content").copied() else {
+                panic!("{preset} {theme:?}: no content panel placed");
+            };
             assert!(
-                !harness.state().page_scrolls,
-                "{preset} {theme:?}: the Basic page is taller than the window's page area"
+                (panel.width() - state.demo_state.content_width).abs() < 0.5,
+                "{preset} {theme:?}: the panel is {} wide, the page counts from {}",
+                panel.width(),
+                state.demo_state.content_width
             );
+            let columns = places
+                .keys()
+                .filter(|id| id.starts_with("basic.column_"))
+                .count();
+            let count = column_count(
+                state.atlas.resolved_for(theme),
+                state.atlas.layout(),
+                state.demo_state.content_width,
+            );
+            assert_eq!(columns, count, "{preset} {theme:?}: the columns laid out");
+            for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
+                assert!(
+                    rect.right() <= panel.right() + 0.5,
+                    "{preset} {theme:?}: {id} ends at {}, past the panel's {}",
+                    rect.right(),
+                    panel.right()
+                );
+            }
+            if state.page_scrolls {
+                println!("{preset} {theme:?}: the Basic page scrolls");
+            }
         }
     }
 }

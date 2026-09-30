@@ -82,6 +82,8 @@ pub(crate) struct DemoState {
     pub basic_number: f64,
     pub basic_focused: String,
     pub basic_focus_given: bool,
+    /// The content panel's width this pass, which the Basic page counts its columns from.
+    pub content_width: f32,
 }
 
 impl Default for DemoState {
@@ -137,6 +139,7 @@ impl Default for DemoState {
             basic_number: basic::NUMBER,
             basic_focused: "Focused".to_string(),
             basic_focus_given: false,
+            content_width: 0.0,
         }
     }
 }
@@ -201,6 +204,11 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui
 
 /// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's
 /// nested panels, which egui does not clip to a scrolled page (`containers::nested_panels`).
+/// Whether the page shown draws something fixed above its scrolling part ([`show_fixed`]).
+pub(crate) fn has_fixed(app: &App) -> bool {
+    app.settings.page == Page::Containers
+}
+
 pub(crate) fn show_fixed(app: &mut App, ui: &mut egui::Ui) {
     if app.settings.page == Page::Containers {
         containers::nested_panels(&mut app.registry, ui);
