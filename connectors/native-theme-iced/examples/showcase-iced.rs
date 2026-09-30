@@ -6650,7 +6650,7 @@ const BASIC_TABS: [&str; 2] = ["One", "Two"];
 /// scrollbar is part of the page.
 const BASIC_LIST_ITEMS: usize = 8;
 const BASIC_LIST_SELECTED: usize = 1;
-const BASIC_LIST_VISIBLE: f32 = 4.0;
+const BASIC_LIST_VISIBLE: f32 = 3.0;
 
 /// The Basic tab's number input: its value, stepped by 1 (R11 §D).
 const BASIC_NUMBER: i32 = 42;
@@ -6659,14 +6659,12 @@ const BASIC_NUMBER: i32 = 42;
 const FOCUSED_INPUT_ID: &str = "showcase-basic-focused-input";
 
 /// The Basic tab's table (R11 §D): each row's id in the list, its name and
-/// its size; the row selected, and the row on the alternate background.
-const BASIC_TABLE_ROWS: [(&str, &str, &str); 3] = [
+/// its size; the row selected.
+const BASIC_TABLE_ROWS: [(&str, &str, &str); 2] = [
     ("basic.table.row_1", "a.txt", "1 KB"),
     ("basic.table.row_2", "b.png", "20 KB"),
-    ("basic.table.row_3", "c.rs", "3 KB"),
 ];
 const BASIC_TABLE_SELECTED: usize = 1;
-const BASIC_TABLE_ALTERNATE: usize = 2;
 
 /// The padding iced gives a tooltip's bubble where the showcase sets none:
 /// `Tooltip::DEFAULT_PADDING` (iced_widget 0.14.2 `src/tooltip.rs:89`),
@@ -7665,12 +7663,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // the theme states above and below it.
     let label_line = label * resolved.defaults.line_height;
     let row_height = list_t.row_height.unwrap_or(label_line + row_pad.y());
-    const LIST_ROW_IDS: [&str; 4] = [
-        "basic.list.row_1",
-        "basic.list.row_2",
-        "basic.list.row_3",
-        "basic.list.row_4",
-    ];
+    const LIST_ROW_IDS: [&str; 3] = ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"];
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
         let item = button(
             text(format!("Item {}", i + 1))
@@ -8057,25 +8050,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         row![
             column_of(
                 "basic.column_1",
-                vec![buttons, checkboxes, radios, switches]
+                vec![buttons, checkboxes, radios, drop_down]
             ),
-            column_of("basic.column_2", vec![inputs, text_area, drop_down]),
+            column_of("basic.column_2", vec![inputs, text_area, slider_group]),
             column_of(
                 "basic.column_3",
-                vec![
-                    number,
-                    slider_group,
-                    progress,
-                    spinner_group,
-                    tabs,
-                    segmented
-                ]
+                vec![switches, number, spinner_group, segmented, card_group]
             ),
             column_of(
                 "basic.column_4",
-                vec![typography, icon_group, card_group, separator]
+                vec![typography, separator, progress, list_group]
             ),
-            column_of("basic.column_5", vec![list_group, expanders, table]),
+            column_of("basic.column_5", vec![icon_group, tabs, expanders, table]),
         ]
         .spacing(gap.section),
     )
@@ -8085,10 +8071,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// The Basic page's table (Basic v3), built from containers: iced_widget's
 /// `table` has no style setter (iced_widget 0.14.2 `src/table.rs:149-196`),
 /// so its separators, header and rows could not take `list.*`. A header row
-/// `Name | Size` on `list.header_background` in `list.header_font`, three
+/// `Name | Size` on `list.header_background` in `list.header_font`, two
 /// rows in `list.item_font` -- the second selected, in
-/// `list.selection_background` and `.selection_text_color`, the third on
-/// `list.alternate_row_background` -- each `list.row_height` tall, or its
+/// `list.selection_background` and `.selection_text_color` -- each
+/// `list.row_height` tall, or its
 /// line box and padding where unstated; the two columns half the width
 /// inside the frame each (the model states no column width); the cells
 /// padded by `list.border.padding`, none on a side it leaves unstated; a
@@ -8176,11 +8162,6 @@ fn basic_table(state: &State) -> Element<'_, Message> {
                 (
                     Some(to_color(l.selection_background)),
                     to_color(l.selection_text_color),
-                )
-            } else if i == BASIC_TABLE_ALTERNATE {
-                (
-                    Some(to_color(l.alternate_row_background)),
-                    to_color(l.item_font.color),
                 )
             } else {
                 (None, to_color(l.item_font.color))
@@ -14707,24 +14688,23 @@ mod tests {
         found
     }
 
-    /// The Basic page is Basic v4 (round 12): its five columns hold their
-    /// groups in order, each group under its heading, and every control label
-    /// the spec names is on the page.
+    /// The Basic page is Basic v5: its five columns hold their groups in
+    /// order, each group under its heading, and every control label the spec
+    /// names is on the page.
     #[test]
     fn the_basic_page_has_every_group_in_its_column() {
         const COLUMNS: [&[&str]; 5] = [
-            &["Buttons", "Checkboxes", "Radio buttons", "Switches"],
-            &["Text inputs", "Text area", "Drop-down"],
+            &["Buttons", "Checkboxes", "Radio buttons", "Drop-down"],
+            &["Text inputs", "Text area", "Slider"],
             &[
+                "Switches",
                 "Number input",
-                "Slider",
-                "Progress bar",
                 "Spinner",
-                "Tabs",
                 "Segmented control",
+                "Card",
             ],
-            &["Typography", "Icons", "Card", "Separator"],
-            &["List", "Expander", "Table"],
+            &["Typography", "Separator", "Progress bar", "List"],
+            &["Icons", "Tabs", "Expander", "Table"],
         ];
         let state = State::default();
         let mut ui = interface(&state);
@@ -14813,7 +14793,7 @@ mod tests {
     /// the sizes the theme states: three of the theme's lines inside the
     /// field's padding; `segmented_control.segment_height` and
     /// `expander.header_height` as outer heights, where the label fits;
-    /// four rows of the list, each `list.row_height` or its content.
+    /// three rows of the list, each `list.row_height` or its content.
     #[test]
     fn basic_composites_take_the_stated_sizes() {
         for preset in ["kde-breeze", "material", "adwaita"] {

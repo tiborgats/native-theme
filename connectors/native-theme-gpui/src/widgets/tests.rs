@@ -128,7 +128,11 @@ fn the_checkbox_look_is_the_presets_values() {
     );
     let md = CheckboxLook::of(&resolved("material", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
-    assert_eq!(md.mark_stroke, None, "material states none: the icon's own");
+    assert_eq!(
+        md.mark_stroke,
+        Some(px(2.)),
+        "material-web's $_mark-stroke (docs/platform-facts.md:1221)"
+    );
 }
 
 /// The check mark fills the indicator inside `checkbox.border.padding`

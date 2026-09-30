@@ -50,7 +50,7 @@ const SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
 
 /// The list's rows, and how many of them it shows: data of the page.
 const LIST_ROWS: usize = 8;
-const LIST_VISIBLE: usize = 4;
+const LIST_VISIBLE: usize = 3;
 
 /// The text area's text, three lines.
 pub(crate) const AREA_TEXT: &str = "Line one\nLine two\nLine three";
@@ -62,25 +62,24 @@ const NUMBER_STEP: f64 = 1.0;
 
 /// The table's header and rows, and the row shown selected (the second): data of the page.
 const TABLE_HEADER: [&str; 2] = ["Name", "Size"];
-const TABLE_ROWS: [[&str; 2]; 3] = [["a.txt", "1 KB"], ["b.png", "20 KB"], ["c.rs", "3 KB"]];
+const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
 const TABLE_SELECTED: usize = 1;
 
-/// The groups of the page, column by column, in order (Basic page v4), which the tests check
+/// The groups of the page, column by column, in order (Basic page v5), which the tests check
 /// the page against.
 #[cfg(test)]
 pub(crate) const GROUPS: [&[&str]; COLUMNS] = [
-    &["Buttons", "Checkboxes", "Radio buttons", "Switches"],
-    &["Text inputs", "Text area", "Drop-down"],
+    &["Buttons", "Checkboxes", "Radio buttons", "Drop-down"],
+    &["Text inputs", "Text area", "Slider"],
     &[
+        "Switches",
         "Number input",
-        "Slider",
-        "Progress bar",
         "Spinner",
-        "Tabs",
         "Segmented control",
+        "Card",
     ],
-    &["Typography", "Icons", "Card", "Separator"],
-    &["List", "Expander", "Table"],
+    &["Typography", "Separator", "Progress bar", "List"],
+    &["Icons", "Tabs", "Expander", "Table"],
 ];
 
 /// Five columns of equal width, `layout.section_gap` apart (the page's gap where the theme
@@ -123,8 +122,8 @@ pub(crate) fn show(
             0 => column_1(reg, state, atlas, &mut child),
             1 => column_2(reg, state, atlas, &mut child),
             2 => column_3(reg, state, atlas, &mut child),
-            3 => column_4(reg, atlas, &mut child, chosen),
-            _ => column_5(reg, state, atlas, &mut child),
+            3 => column_4(reg, state, atlas, &mut child),
+            _ => column_5(reg, state, atlas, &mut child, chosen),
         }
         let content = child.min_rect();
         reg.place(
@@ -301,7 +300,7 @@ fn text_button(
     response
 }
 
-/// Buttons (the toggle button their third row), check boxes, radio buttons, switches.
+/// Buttons (the toggle button their third row), check boxes, radio buttons, the drop-down.
 fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
@@ -475,9 +474,16 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         }
     }
 
-    // The companion crate's switch (docs/todo_egui-widgets-spec.md §4.1): `switch.*`'s track
-    // and thumb, which no egui widget draws, the label after it; `.enabled(false)` is the
-    // platform's disabled switch. Each is held in its state, as the check boxes are.
+    // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6).
+    drop_down(reg, state, ui);
+}
+
+/// The Switches group: the companion crate's switch (docs/todo_egui-widgets-spec.md §4.1),
+/// `switch.*`'s track and thumb, which no egui widget draws, the label after it;
+/// `.enabled(false)` is the platform's disabled switch. Each is held in its state, as the check
+/// boxes are.
+fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.switches.heading", "Switches");
     for (label, on, enabled, kind, id) in [
         ("Off", false, true, "switch (off)", "basic.switches.off"),
@@ -599,7 +605,7 @@ fn text_field(
     response
 }
 
-/// Text inputs (the focused one their fourth row), the text area, the drop-down.
+/// Text inputs (the focused one their fourth row), the text area, the slider.
 fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
@@ -657,9 +663,62 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         reg.place(ui, "basic.text_area.field.text", text);
     }
 
-    // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6): egui's own
-    // `ComboBox` in the combo-box scope, as tall as its text and padding make it, at least
-    // `combo_box.min_height`, where egui's square arrow box would make it taller.
+    // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2).
+    slider(reg, state, ui);
+}
+
+/// The Slider group: the companion crate's slider (docs/todo_egui-widgets-spec.md §4.2),
+/// `slider.*`'s rail, trailing fill and a knob in `slider.thumb_color`, which egui paints in
+/// the rail's colour.
+fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
+    heading(reg, ui, "basic.slider.heading", "Slider");
+    let slider = demo::widget(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
+        ui.scope(|ui| {
+            ui.spacing_mut().slider_width = BASIC_WIDTH;
+            ui.add(Slider::new(&mut state.basic_slider, 0.0..=100.0))
+        })
+        .inner
+    });
+    reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
+    reg.tag("basic.slider.control", &slider);
+    let names = [("track", "track"), ("fill", "fill"), ("thumb", "thumb")];
+    place_parts(reg, ui, "basic.slider.control", &slider, &names);
+}
+
+/// The Progress bar group: the companion crate's progress bar
+/// (docs/todo_egui-widgets-spec.md §4.9), egui's, rounded `progress_bar.border.corner_radius`
+/// and outlined as `progress_bar.border` states, which egui's `ProgressBar` does not draw.
+fn progress_bar(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
+    heading(reg, ui, "basic.progress_bar.heading", "Progress bar");
+    let bar = demo::scoped(reg, ui, Role::ProgressBar, normal, "ProgressBar", |ui| {
+        ui.add(ProgressBar::new(PROGRESS).desired_width(BASIC_WIDTH))
+    });
+    reg.amend_last(|i| {
+        i.read.push((
+            "progress_bar.border.corner_radius",
+            t.progress_bar.border.corner_radius.to_string(),
+        ));
+        i.read.push((
+            "progress_bar.border.line_width",
+            t.progress_bar.border.line_width.to_string(),
+        ));
+        i.read.push((
+            "progress_bar.border.color",
+            format!("{:?}", t.progress_bar.border.color),
+        ));
+    });
+    reg.tag("basic.progress_bar.bar", &bar);
+    place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
+}
+
+/// The Drop-down group: the companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6),
+/// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
+/// least `combo_box.min_height`, where egui's square arrow box would make it taller.
+fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
     let combo = demo::scoped_popup(
@@ -691,11 +750,12 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     place_parts(reg, ui, "basic.drop_down.trigger", &combo, &names);
 }
 
-/// The number input, the slider, the progress bar, the spinner, a tab bar, the segmented
-/// control.
+/// The switches, the number input, the spinner, the segmented control, a card.
 fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
+
+    switches(reg, ui);
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
     // scope, `BASIC_WIDTH` wide and `input.min_height` tall (its `interact_size`, which
@@ -736,76 +796,7 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         reg.place(ui, "basic.number_input.field.text", text);
     }
 
-    // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2): `slider.*`'s rail,
-    // trailing fill and a knob in `slider.thumb_color`, which egui paints in the rail's colour.
-    heading(reg, ui, "basic.slider.heading", "Slider");
-    let slider = demo::widget(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
-        ui.scope(|ui| {
-            ui.spacing_mut().slider_width = BASIC_WIDTH;
-            ui.add(Slider::new(&mut state.basic_slider, 0.0..=100.0))
-        })
-        .inner
-    });
-    reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
-    reg.tag("basic.slider.control", &slider);
-    let names = [("track", "track"), ("fill", "fill"), ("thumb", "thumb")];
-    place_parts(reg, ui, "basic.slider.control", &slider, &names);
-
-    // The companion crate's progress bar (docs/todo_egui-widgets-spec.md §4.9): egui's, rounded
-    // `progress_bar.border.corner_radius` and outlined as `progress_bar.border` states, which
-    // egui's `ProgressBar` does not draw.
-    heading(reg, ui, "basic.progress_bar.heading", "Progress bar");
-    let bar = demo::scoped(reg, ui, Role::ProgressBar, normal, "ProgressBar", |ui| {
-        ui.add(ProgressBar::new(PROGRESS).desired_width(BASIC_WIDTH))
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "progress_bar.border.corner_radius",
-            t.progress_bar.border.corner_radius.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.line_width",
-            t.progress_bar.border.line_width.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.color",
-            format!("{:?}", t.progress_bar.border.color),
-        ));
-    });
-    reg.tag("basic.progress_bar.bar", &bar);
-    place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
-
-    // The companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3): the icon set's
-    // loading indicator at `spinner.diameter`, or an arc at `spinner.stroke_width`, which
-    // egui's `Spinner` hardcodes.
-    heading(reg, ui, "basic.spinner.heading", "Spinner");
-    let spinner = demo::widget(reg, ui, Role::Spinner, normal, "Spinner", |ui| {
-        ui.add(Spinner::new())
-    });
-    reg.tag("basic.spinner.indicator", &spinner);
-
-    heading(reg, ui, "basic.tabs.heading", "Tabs");
-    let tabs: Vec<(usize, &'static str)> = TABS.into_iter().enumerate().collect();
-    let picked = demo::tab_bar(
-        reg,
-        ui,
-        t,
-        demo::TabBar {
-            kind: "TabBar · Basic",
-            tab_kind: "Tab · Basic",
-            tabs: &tabs,
-            current: state.basic_tab,
-            margin: None,
-            scroll: false,
-            full_width: false,
-            element: "basic.tabs.bar",
-            tab_elements: &["basic.tabs.one", "basic.tabs.two"],
-        },
-        |_, _, _| {},
-    );
-    if let Some(tab) = picked {
-        state.basic_tab = tab;
-    }
+    spinner(reg, ui);
 
     // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4): one
     // control of joined buttons in one `Role::SegmentedControl` scope, whose cell carries the
@@ -837,6 +828,55 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             }
         }
     }
+
+    card(reg, atlas, ui);
+}
+
+/// The Tabs group: a tab bar of two tabs, the first selected.
+fn tabs(
+    reg: &mut Registry,
+    state: &mut DemoState,
+    t: &native_theme_egui::ResolvedTheme,
+    ui: &mut egui::Ui,
+) {
+    heading(reg, ui, "basic.tabs.heading", "Tabs");
+    let tabs: Vec<(usize, &'static str)> = TABS.into_iter().enumerate().collect();
+    let picked = demo::tab_bar(
+        reg,
+        ui,
+        t,
+        demo::TabBar {
+            kind: "TabBar · Basic",
+            tab_kind: "Tab · Basic",
+            tabs: &tabs,
+            current: state.basic_tab,
+            margin: None,
+            scroll: false,
+            full_width: false,
+            element: "basic.tabs.bar",
+            tab_elements: &["basic.tabs.one", "basic.tabs.two"],
+        },
+        |_, _, _| {},
+    );
+    if let Some(tab) = picked {
+        state.basic_tab = tab;
+    }
+}
+
+/// The Spinner group: the companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3),
+/// the icon set's loading indicator at `spinner.diameter`, or an arc at
+/// `spinner.stroke_width`, which egui's `Spinner` hardcodes.
+fn spinner(reg: &mut Registry, ui: &mut egui::Ui) {
+    heading(reg, ui, "basic.spinner.heading", "Spinner");
+    let spinner = demo::widget(
+        reg,
+        ui,
+        Role::Spinner,
+        RoleVariant::Normal,
+        "Spinner",
+        |ui| ui.add(Spinner::new()),
+    );
+    reg.tag("basic.spinner.indicator", &spinner);
 }
 
 /// One line of the Typography group in `role` (the base style's `Body`, `defaults.font`, for
@@ -855,13 +895,8 @@ fn typography_line(
     reg.tag(id, &line);
 }
 
-/// Typography, icons (the icon buttons their first row), a card, a separator.
-fn column_4(
-    reg: &mut Registry,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-    chosen: &(IconSet, Option<String>),
-) {
+/// Typography, a separator, the progress bar, the list.
+fn column_4(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
@@ -920,12 +955,6 @@ fn column_4(
     });
     reg.tag("basic.typography.monospace", &mono);
 
-    heading(reg, ui, "basic.icons.heading", "Icons");
-    icon_buttons(reg, atlas, ui, chosen);
-    icons(reg, t, ui, chosen);
-
-    card(reg, atlas, ui);
-
     heading(reg, ui, "basic.separator.heading", "Separator");
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);
@@ -949,6 +978,11 @@ fn column_4(
             crate::chrome::separator_line(&line, width),
         );
     });
+
+    progress_bar(reg, atlas, ui);
+
+    heading(reg, ui, "basic.list.heading", "List");
+    list(reg, state, t, ui);
 }
 
 /// The Icons group's first row: three icon-only tool buttons, as the toolbar's
@@ -1040,13 +1074,22 @@ fn icons(
     });
 }
 
-/// The list, the expander, a table.
-fn column_5(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+/// Icons (the icon buttons their first row), a tab bar, the expander, a table.
+fn column_5(
+    reg: &mut Registry,
+    state: &mut DemoState,
+    atlas: &ThemeAtlas,
+    ui: &mut egui::Ui,
+    chosen: &(IconSet, Option<String>),
+) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
-    heading(reg, ui, "basic.list.heading", "List");
-    list(reg, state, t, ui);
+    heading(reg, ui, "basic.icons.heading", "Icons");
+    icon_buttons(reg, atlas, ui, chosen);
+    icons(reg, t, ui, chosen);
+
+    tabs(reg, state, t, ui);
 
     // The companion crate's expander (docs/todo_egui-widgets-spec.md §4.10): the arrow in
     // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
@@ -1372,13 +1415,13 @@ fn paint_cell_text(
     cell
 }
 
-/// The table: a header and three rows, the second selected, `BASIC_WIDE` across the list's
+/// The table: a header and two rows, the second selected, `BASIC_WIDE` across the list's
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
 /// stripes), so it is painted here as the list's rows are: the header in
 /// `list.header_background` and `list.header_font`, the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
-/// `list.selection_text_color`, the third in `list.alternate_row_background`; a vertical
+/// `list.selection_text_color`; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
 fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui::Ui) {
@@ -1446,8 +1489,6 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                         );
                         let (fill, colour) = if i == TABLE_SELECTED {
                             (Some(l.selection_background), l.selection_text_color)
-                        } else if i == 2 {
-                            (Some(l.alternate_row_background), l.item_font.color)
                         } else {
                             (None, l.item_font.color)
                         };

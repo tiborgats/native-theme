@@ -1251,11 +1251,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
         "basic.table",
-        "list.alternate_row_background",
-        "gpui: the third row's fill (demo::files_table)",
-    ),
-    (
-        "basic.table",
         "list.background_color",
         "gpui: the table's fill (demo::files_table)",
     ),
@@ -1348,11 +1343,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "list.header_font.color",
         "gpui: the header row's text (demo::files_table)",
-    ),
-    (
-        "",
-        "list.alternate_row_background",
-        "gpui: the third row's fill (demo::files_table)",
     ),
     // --- list: the List, demo::list and demo::ListRow ---------------------------
     (

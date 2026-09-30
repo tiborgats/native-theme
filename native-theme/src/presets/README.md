@@ -13,9 +13,12 @@ preset and get a resolved theme without needing a platform reader.
 
 Gated sizes (padding sides, menu and list row heights, toolbar `bar_height`
 and `item_gap`, combobox `arrow_area_width`): a native preset states one only
-where `docs/platform-facts.md` gives it for its platform. The color-scheme
-presets, and the `material` and `ios` platform presets, which have no
-platform-facts column, state none (`documented_sizes.rs` checks both). An
+where `docs/platform-facts.md` gives it for its platform: KDE, GNOME, macOS,
+Windows or Material, whose column counts a material-web or Compose
+implementation constant cited at a pinned line as documented, as the KDE and
+GNOME columns count a Breeze or libadwaita source constant. The color-scheme
+presets, and the `ios` platform preset, which has no platform-facts column,
+state none (`documented_sizes.rs` checks both). An
 unstated gated size resolves to `None` and the toolkit's own applies. The
 presets' other sizes (`min_height_px`, `max_width_px`, …) are stated,
 often without a source, and are still being audited (`docs/todo.md`,

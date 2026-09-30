@@ -1,5 +1,10 @@
 # Material Design 3 baseline theme
-# Source: m3.material.io baseline color scheme
+# Source: the material-web token set v0_192 at material-web cbd34a8921915af94d5ef65c2a69eece41d5b4f3
+# (tokens/versions/v0_192/), the one its components use; docs/platform-facts.md's Material column.
+# A role's hex is md.sys.color (_md-sys-color.scss:19-76 dark, :78-135 light) through
+# md.ref.palette (_md-ref-palette.scss:15-109). A state layer is its colour at the md.sys.state
+# opacity (_md-sys-state.scss:17-20: hover 0.08, focus and pressed 0.12, dragged 0.16) over the
+# container, composited as round(container · (1 − a) + layer · a) per 8-bit channel.
 name = "Material"
 icon_set = "material"
 icon_theme = "material"
@@ -7,12 +12,17 @@ icon_theme = "material"
 # === Light variant ===
 
 [light.defaults]
+# md.sys.color.primary, primary40 (_md-sys-color.scss:110, _md-ref-palette.scss:73)
 accent_color = "#6750a4"
-background_color = "#fffbfe"
-text_color = "#1c1b1f"
-surface_color = "#fffbfe"
+# platform-facts.md:1044 (§2.1.3): md.sys.color.surface = background, neutral98 (_md-sys-color.scss:120, :84; _md-ref-palette.scss:66)
+background_color = "#fef7ff"
+# on-surface, neutral10 (_md-sys-color.scss:102; _md-ref-palette.scss:45)
+text_color = "#1d1b20"
+# surface, neutral98 (_md-sys-color.scss:120; _md-ref-palette.scss:66)
+surface_color = "#fef7ff"
 muted_color = "#49454f"
-shadow_color = "#00000018"
+# md.sys.color.shadow #000000 (_md-sys-color.scss:119) as material-web's key shadow renders it, opacity 0.3 (elevation/internal/_elevation.scss:104-105)
+shadow_color = "#0000004d"
 
 danger_color = "#b3261e"
 danger_text_color = "#ffffff"
@@ -23,11 +33,14 @@ success_text_color = "#ffffff"
 info_color = "#6750a4"
 info_text_color = "#ffffff"
 
-selection_background = "#6750a4"
-selection_text_color = "#ffffff"
+# platform-facts.md:1053-1054 (§2.1.3): list and menu selection, secondary-container, secondary90 (_md-sys-color.scss:116; _md-ref-palette.scss:91) and on-secondary-container, secondary10 (:98; :82)
+selection_background = "#e8def8"
+selection_text_color = "#1d192b"
 link_color = "#6750a4"
-focus_ring_color = "#6750a4"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1102 (§2.1.5): md-focus-ring color = secondary, secondary40 (tokens/_md-comp-focus-ring.scss:47; _md-sys-color.scss:115; _md-ref-palette.scss:86)
+focus_ring_color = "#625b71"
+# platform-facts.md:1058 (§2.1.3): on-surface at disabled-label-text-opacity 0.38 (_md-comp-filled-button.scss:45-46)
+disabled_text_color = "#1d1b2061"
 accent_text_color = "#ffffff"
 
 # 1.0: Material 3 dims a disabled component by its colours alone, the container at
@@ -35,9 +48,11 @@ accent_text_color = "#ffffff"
 # on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
 # button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
 disabled_opacity = 1.0
-line_height = 1.2
-focus_ring_width_px = 2.0
-focus_ring_offset_px = 1.0
+# platform-facts.md:1028 (§2.1.1): body-medium-line-height 20 / body-medium-size 14 (_md-sys-typescale.scss:55-56)
+line_height = 1.43
+# platform-facts.md:1103-1104 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
+focus_ring_width_px = 3.0
+focus_ring_offset_px = 2.0
 
 
 [light.defaults.border]
@@ -61,11 +76,14 @@ weight = 400
 toolbar_px = 24.0
 small_px = 16.0
 large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
+# platform-facts.md:1135 (§2.1.8): comp.dialog with-icon-icon-size 24 (_md-comp-dialog.scss:122)
+dialog_px = 24.0
+# platform-facts.md:1136 (§2.1.8): comp.navigation-drawer icon-size 24 (_md-comp-navigation-drawer.scss:94)
+panel_px = 24.0
 
 [light.text_scale.caption]
-size_px =11.0
+# platform-facts.md:1435 (§2.19): md.sys.typescale.body-small, 12 / 400, line 16 (material-web cbd34a8, tokens/versions/v0_192/_md-sys-typescale.scss:72-75)
+size_px =12.0
 weight = 400
 line_height_px = 16.0
 
@@ -89,43 +107,113 @@ background_color = "#e8def8"
 min_width_px = 64.0
 min_height_px = 40.0
 icon_text_gap_px = 8.0
-hover_background = "#ddd3f0"
+# platform-facts.md:1179 (§2.3): on-secondary-container at hover-state-layer-opacity 0.08 over secondary-container (_md-comp-filled-tonal-button.scss:57-60)
+hover_background = "#d8cee8"
 hover_text_color = "#1d192b"
-active_background = "#d4c9e8"
+# on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
+active_background = "#d0c6df"
 active_text_color = "#1d192b"
-disabled_background = "#1c1b1f1f"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1177 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
+disabled_background = "#1d1b201f"
+disabled_text_color = "#1d1b2061"
 
 
 [light.button.font]
 color = "#1d192b"
+# platform-facts.md:1163 (§2.3): label-text = label-large, weight 500 (_md-comp-filled-tonal-button.scss:80; _md-sys-typescale.scss:195)
+weight = 500
+
+[light.button.border]
+# platform-facts.md:1171-1172 (§2.3): material-web leading-space / trailing-space 24 (cbd34a8, tokens/_md-comp-filled-tonal-button.scss:96-105); padding-block (container-height 40 − line 20) / 2 = 10 (button/internal/_shared.scss:31-32)
+padding_horizontal_px = 24.0
+padding_vertical_px = 10.0
+# platform-facts.md:1173 (§2.3): container-shape corner-full, a pill: half the 40 container-height (_md-comp-filled-tonal-button.scss:39, :41)
+corner_radius_px = 20.0
+# platform-facts.md:1165-1166 (§2.3): the tonal button has no outline token (_md-comp-filled-tonal-button.scss:37-99)
+line_width_px = 0.0
+# platform-facts.md:1178 (§2.3): container-elevation level0 (_md-comp-filled-tonal-button.scss:38)
+shadow_enabled = false
 [light.input]
-background_color = "#fffbfe"
+# platform-facts.md:1185 (§2.4): the outlined field has no container, the surface shows through
+background_color = "#fef7ff"
 min_height_px = 56.0
-hover_border_color = "#1c1b1f"
+# platform-facts.md:1187 (§2.4): hover-outline-color = on-surface (_md-comp-outlined-text-field.scss:87)
+hover_border_color = "#1d1b20"
 focus_border_color = "#6750a4"
-disabled_background = "#1c1b1f0a"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1199 (§2.4): input text on-surface at 0.38 (_md-comp-outlined-text-field.scss:33-34)
+disabled_text_color = "#1d1b2061"
+# platform-facts.md:1191 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
+caret_color = "#6750a4"
 
 
 [light.input.font]
-color = "#1c1b1f"
+# platform-facts.md:1186 (§2.4): input-text-color = on-surface (_md-comp-outlined-text-field.scss:93); input-text = body-large 16 (:101)
+color = "#1d1b20"
+size_px = 16.0
+
+[light.input.border]
+# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
+padding_horizontal_px = 16.0
+padding_vertical_px = 16.0
+# platform-facts.md:1198 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
+corner_radius_px = 4.0
+# platform-facts.md:1199 (§2.4): the text fields have no elevation token
+shadow_enabled = false
+
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
+padding_horizontal_px = 16.0
+padding_vertical_px = 16.0
 [light.checkbox]
 indicator_width_px = 18.0
+# platform-facts.md:1220 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
+radio_dot_diameter_px = 10.0
+# platform-facts.md:1221 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)
+check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
-hover_background = "#6750a414"
-disabled_background = "#1c1b1f1f"
-disabled_text_color = "#c4c7c5"
-unchecked_background = "#fffbfe"
-unchecked_border_color = "#79747e"
+# unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
+hover_background = "#1d1b2014"
+# platform-facts.md:1219 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
+disabled_background = "#1d1b2061"
+disabled_text_color = "#1d1b2061"
+# platform-facts.md:1204 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
+unchecked_background = "#00000000"
+# platform-facts.md:1207 (§2.5): unselected-outline-color = on-surface-variant (_md-comp-checkbox.scss:118)
+unchecked_border_color = "#49454f"
+
+[light.checkbox.border]
+# platform-facts.md:1208 (§2.5): unselected-outline-width 2 (_md-comp-checkbox.scss:120)
+line_width_px = 2.0
+# platform-facts.md:1212 (§2.5): container-shape 2 (_md-comp-checkbox.scss:31)
+corner_radius_px = 2.0
+# platform-facts.md:1213 (§2.5): no elevation token
+shadow_enabled = false
+# platform-facts.md:1207 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80): the line is its selected-container-color, primary (:43)
+color = "#6750a4"
 
 [light.tooltip]
-background_color = "#313033"
-max_width_px = 300.0
+# platform-facts.md:1249 (§2.7): container-color = inverse-surface, neutral20 (_md-comp-plain-tooltip.scss:31; _md-sys-color.scss:89; _md-ref-palette.scss:49)
+background_color = "#322f35"
+# platform-facts.md:1255 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
+max_width_px = 200.0
 
 
 [light.tooltip.font]
-color = "#f4eff4"
+# platform-facts.md:1254 (§2.7): supporting-text-color = inverse-on-surface, neutral95 (_md-comp-plain-tooltip.scss:33; _md-sys-color.scss:87; _md-ref-palette.scss:64)
+color = "#f5eff7"
+# platform-facts.md:1251 (§2.7): supporting-text-size = body-small-size 12 (_md-comp-plain-tooltip.scss:39)
+size_px = 12.0
+
+[light.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): Compose PlainTooltipHorizontalPadding 8, PlainTooltipVerticalPadding 4 (androidx 1e677685, Tooltip.kt:1454-1459)
+padding_horizontal_px = 8.0
+padding_vertical_px = 4.0
+# platform-facts.md:1259 (§2.7): container-shape corner-extra-small 4 (_md-comp-plain-tooltip.scss:32)
+corner_radius_px = 4.0
+# platform-facts.md:1260-1261 (§2.7): no outline token
+line_width_px = 0.0
+# platform-facts.md:1262 (§2.7): no elevation token; Compose PlainTooltip shadowElevation = 0.dp (Tooltip.kt:350-351)
+shadow_enabled = false
 [light.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 4.0
@@ -137,56 +225,140 @@ thumb_active_color = "#625b71"
 [light.slider]
 track_height_px = 4.0
 thumb_diameter_px = 20.0
-tick_mark_length_px = 4.0
+# platform-facts.md:1294 (§2.9): with-tick-marks-container-size 2 (_md-comp-slider.scss:108)
+tick_mark_length_px = 2.0
 # md.comp.slider.handle.color = md.sys.color.primary, primary40 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-slider.scss:52, _md-sys-color.scss:110, _md-ref-palette.scss:73)
 thumb_color = "#6750a4"
 thumb_hover_color = "#6750a4"
-disabled_fill_color = "#1c1b1f61"
-disabled_track_color = "#1c1b1f1f"
-disabled_thumb_color = "#1c1b1f61"
+# platform-facts.md:1288 (§2.9): inactive-track-color = surface-container-highest, neutral90 (_md-comp-slider.scss:62; _md-sys-color.scss:124; _md-ref-palette.scss:61)
+track_color = "#e6e0e9"
+# platform-facts.md:1295 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
+disabled_fill_color = "#1d1b2061"
+disabled_track_color = "#1d1b201f"
+disabled_thumb_color = "#1d1b2061"
 
 [light.progress_bar]
 track_height_px = 4.0
 min_width_px = 100.0
+# platform-facts.md:1300 (§2.10): track-color = surface-container-highest (_md-comp-linear-progress-indicator.scss:39)
+track_color = "#e6e0e9"
+
+[light.progress_bar.border]
+# platform-facts.md:1305 (§2.10): track-shape / active-indicator-shape corner-none (_md-comp-linear-progress-indicator.scss:30, :41)
+corner_radius_px = 0.0
+# platform-facts.md:1306-1308 (§2.10): no elevation token, no outline
+shadow_enabled = false
+line_width_px = 0.0
 
 [light.tab]
-min_width_px = 64.0
+# platform-facts.md:1316 (§2.11): fixed tabs share the width; scrollable tabs, Compose ScrollableTabRowMinTabWidth 90 (androidx 1e677685, TabRow.kt:981)
+min_width_px = 90.0
 min_height_px = 48.0
-hover_background = "#6750a414"
-hover_text_color = "#1c1b1f"
-active_background = "#6750a41f"
+# with-label-text-inactive-hover: on-surface at hover opacity 0.08 (_md-comp-primary-navigation-tab.scss:59-61)
+hover_background = "#1d1b2014"
+# inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
+hover_text_color = "#1d1b20"
 active_text_color = "#6750a4"
 
+[light.tab.font]
+# platform-facts.md:1325 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
+color = "#49454f"
+# platform-facts.md:1324 (§2.11): with-label-text-label-text = title-small, weight 500 (_md-comp-primary-navigation-tab.scss:121)
+weight = 500
+
+[light.tab.border]
+# platform-facts.md:1318 (§2.11): material-web tab padding: 0 16px (cbd34a8, tabs/internal/_tab.scss:23)
+padding_horizontal_px = 16.0
 
 [light.menu]
-icon_text_gap_px = 8.0
-hover_background = "#6750a414"
-hover_text_color = "#1c1b1f"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1234 (§2.6): md.comp.menu list-item-container-height 48 (material-web cbd34a8, tokens/versions/latest/sass/_md-comp-menu.scss:36; v0_192/_md-comp-outlined-select.scss:47)
+row_height_px = 48.0
+# platform-facts.md:1239 (§2.6): md-menu-item gap: 16px (material-web cbd34a8, menu/internal/menuitem/_menu-item.scss:39)
+icon_text_gap_px = 16.0
+# platform-facts.md:1241 (§2.6): list-item-hover-state-layer-color = on-surface at 0.08 (tokens/versions/latest/sass/_md-comp-menu.scss:112-116)
+hover_background = "#1d1b2014"
+# platform-facts.md:1242 (§2.6): list-item-hover-label-text-color = on-surface (latest/sass/_md-comp-menu.scss:108)
+hover_text_color = "#1d1b20"
+# platform-facts.md:1243 (§2.6): on-surface at 0.38 (latest/sass/_md-comp-menu.scss:92, :40)
+disabled_text_color = "#1d1b2061"
+# platform-facts.md:1225 (§2.6): container-color = surface-container, neutral94 (_md-comp-menu.scss:31; _md-sys-color.scss:122; _md-ref-palette.scss:63)
+background_color = "#f3edf7"
+# platform-facts.md:1226 (§2.6): divider-color = surface-variant, neutral-variant90 (latest/sass/_md-comp-menu.scss:76; _md-sys-color.scss:129; _md-ref-palette.scss:41)
+separator_color = "#e7e0ec"
 
+[light.menu.font]
+# platform-facts.md:1229 (§2.6): list-item-label-text = label-large, weight 500 (latest/sass/_md-comp-menu.scss:140)
+weight = 500
+
+[light.menu.border]
+# platform-facts.md:1235 (§2.6): md-menu-item takes the list item's leading-space / trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225; tokens/_md-comp-menu-item.scss:93)
+padding_horizontal_px = 16.0
+# platform-facts.md:1239 (§2.6): container-shape corner-extra-small 4 (_md-comp-menu.scss:34)
+corner_radius_px = 4.0
+# platform-facts.md:1240 (§2.6): container-elevation level2 (_md-comp-menu.scss:32)
+shadow_enabled = true
 
 [light.list]
-alternate_row_background = "#f7f2fa"
-hover_background = "#1c1b1f14"
-hover_text_color = "#1c1b1f"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1380 (§2.15): (none), M3 has no row striping: the alternate row is the list's surface (_md-comp-list.scss:39)
+alternate_row_background = "#fef7ff"
+# platform-facts.md:1392 (§2.15): list-item-hover-state-layer-color = on-surface at 0.08 (_md-comp-list.scss:85-87)
+hover_background = "#1d1b2014"
+# list-item-hover-label-text-color = on-surface (_md-comp-list.scss:81)
+hover_text_color = "#1d1b20"
+# list-item-disabled-label-text-color = on-surface at 0.38 (_md-comp-list.scss:43-45)
+disabled_text_color = "#1d1b2061"
+# platform-facts.md:1386 (§2.15): row-item-outline-color = outline-variant, neutral-variant80 (_md-comp-data-table.scss:84; _md-sys-color.scss:109; _md-ref-palette.scss:40)
+grid_color = "#cac4d0"
 
+[light.list.header_font]
+# platform-facts.md:1383-1384 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)
+weight = 500
+color = "#49454f"
+
+[light.list.border]
+# platform-facts.md:1390 (§2.15): md.comp.list list-item-leading-space / list-item-trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225)
+padding_horizontal_px = 16.0
 
 [light.toolbar]
+# platform-facts.md:1351 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
+bar_height_px = 64.0
+
+[light.toolbar.font]
+# platform-facts.md:1345 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+size_px = 22.0
+
+[light.toolbar.border]
+# platform-facts.md:1355 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+corner_radius_px = 0.0
+shadow_enabled = false
+line_width_px = 0.0
 
 [light.sidebar]
-background_color = "#f3edf7"
-hover_background = "#e8e0f0"
+# platform-facts.md:1340 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+hover_background = "#1d1b2014"
 
 
 [light.sidebar.font]
-color = "#1c1b1f"
+# platform-facts.md:1330-1331 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+color = "#49454f"
+weight = 500
 [light.popover]
-background_color = "#fffbfe"
+# platform-facts.md:1403 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
+background_color = "#f3edf7"
 
 
 [light.popover.font]
-color = "#1c1b1f"
+# platform-facts.md:1405 (§2.16): ← defaults.font.color, on-surface
+color = "#1d1b20"
+
+[light.popover.border]
+# platform-facts.md:1412-1413 (§2.16): the menu container pads 8 top and bottom, nothing at the sides (material-web cbd34a8, tokens/_md-comp-menu.scss:53-54)
+padding_horizontal_px = 0.0
+padding_vertical_px = 8.0
+# platform-facts.md:1408 (§2.16): the menu's corner-extra-small 4 (_md-comp-menu.scss:34)
+corner_radius_px = 4.0
+# platform-facts.md:1407 (§2.16): no outline
+line_width_px = 0.0
 [light.separator]
 line_color = "#cac4d0"
 
@@ -195,13 +367,20 @@ divider_width_px = 4.0
 hover_color = "#6750a4"
 
 [light.switch]
-unchecked_background = "#79747e"
-hover_checked_background = "#5b4495"
-hover_unchecked_background = "#6d6878"
-disabled_checked_background = "#1c1b1f1f"
-disabled_unchecked_background = "#1c1b1f1f"
-disabled_thumb_color = "#1c1b1f61"
-thumb_background = "#fffbfe"
+# platform-facts.md:1470 (§2.21): unselected-track-color = surface-container-highest (_md-comp-switch.scss:135)
+unchecked_background = "#e6e0e9"
+# selected-hover-track-color = primary (_md-comp-switch.scss:73)
+hover_checked_background = "#6750a4"
+# unselected-hover-track-color = surface-container-highest (_md-comp-switch.scss:116)
+hover_unchecked_background = "#e6e0e9"
+# disabled-selected-track-color on-surface at disabled-track-opacity 0.12 (_md-comp-switch.scss:35-37)
+disabled_checked_background = "#1d1b201f"
+# disabled-unselected-track-color surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
+disabled_unchecked_background = "#e6e0e91f"
+# disabled-unselected-handle-color on-surface at 0.38 (_md-comp-switch.scss:38-40)
+disabled_thumb_color = "#1d1b2061"
+# platform-facts.md:1473 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
+thumb_background = "#ffffff"
 track_width_px = 52.0
 track_height_px = 32.0
 thumb_diameter_px = 24.0
@@ -212,9 +391,31 @@ button_order = "primary_right"
 min_width_px = 280.0
 max_width_px = 560.0
 min_height_px = 140.0
-max_height_px = 600.0
+# platform-facts.md:1487 (§2.22): material-web min(560px, calc(100% - 48px)) (cbd34a8, dialog/internal/_dialog.scss:39)
+max_height_px = 560.0
 button_gap_px = 8.0
-icon_size_px =32.0
+# platform-facts.md:1503 (§2.22): with-icon-icon-size 24 (_md-comp-dialog.scss:122)
+icon_size_px = 24.0
+# platform-facts.md:1482 (§2.22): container-color = surface-container-high, neutral92 (_md-comp-dialog.scss:73; _md-sys-color.scss:123; _md-ref-palette.scss:62)
+background_color = "#ece6f0"
+
+[light.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): md.comp.dialog headline-size = headline-small-size 24, headline-small-weight 400 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-dialog.scss:80, :95)
+size_px = 24.0
+weight = 400
+
+[light.dialog.body_font]
+# platform-facts.md:1484 (§2.22): supporting-text-color = on-surface-variant (_md-comp-dialog.scss:97)
+color = "#49454f"
+
+[light.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): material-web dialog headline padding 24px 24px 0, actions 16px 24px 24px (cbd34a8, dialog/internal/_dialog.scss:111, :218)
+padding_horizontal_px = 24.0
+padding_vertical_px = 24.0
+# platform-facts.md:1500 (§2.22): container-shape corner-extra-large 28 (_md-comp-dialog.scss:75)
+corner_radius_px = 28.0
+# platform-facts.md:1501-1502 (§2.22): no outline token
+line_width_px = 0.0
 
 [light.link]
 underline_enabled = false
@@ -225,28 +426,63 @@ active_text_color = "#4f3d8a"
 disabled_text_color = "#c4c7c5"
 
 [light.spinner]
-diameter_px = 24.0
+# platform-facts.md:1531 (§2.23): comp.circular-progress-indicator size 48 (_md-comp-circular-progress-indicator.scss:39)
+diameter_px = 48.0
 min_diameter_px = 16.0
-stroke_width_px = 3.0
+# platform-facts.md:1533 (§2.23): active-indicator-width 4 (_md-comp-circular-progress-indicator.scss:30)
+stroke_width_px = 4.0
 
 [light.combo_box]
-min_height_px = 40.0
-min_width_px = 120.0
-arrow_icon_size_px =12.0
-hover_background = "#1c1b1f14"
-disabled_background = "#1c1b1f0a"
-disabled_text_color = "#c4c7c5"
+# platform-facts.md:1549 (§2.24): the text field's height, container-height 56 (tokens/versions/latest/sass/_md-comp-outlined-text-field.scss:26)
+min_height_px = 56.0
+# platform-facts.md:1550 (§2.24): md-outlined-select min-width: 210px (material-web cbd34a8, select/internal/_shared.scss:19)
+min_width_px = 210.0
+# platform-facts.md:1553 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
+arrow_icon_size_px = 24.0
+disabled_text_color = "#1d1b2061"
 
+[light.combo_box.font]
+# platform-facts.md:1545 (§2.24): text-field-input-text = body-large 16 (_md-comp-outlined-select.scss:184)
+size_px = 16.0
+
+[light.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127)
+padding_left_px = 16.0
+padding_right_px = 12.0
+padding_vertical_px = 16.0
+# platform-facts.md:1555 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
+corner_radius_px = 4.0
+# platform-facts.md:1556 (§2.24): the field has no elevation
+shadow_enabled = false
 
 [light.segmented_control]
 segment_height_px = 40.0
 separator_width_px = 1.0
-hover_background = "#6750a414"
-active_background = "#6750a4"
-active_text_color = "#ffffff"
+# unselected-hover-state-layer-color = on-surface at 0.08 (_md-comp-outlined-segmented-button.scss:99-102)
+hover_background = "#1d1b2014"
+# platform-facts.md:1565-1566 (§2.25): selected-container-color = secondary-container, selected-label-text-color = on-secondary-container (_md-comp-outlined-segmented-button.scss:69, :83)
+active_background = "#e8def8"
+active_text_color = "#1d192b"
 
+[light.segmented_control.font]
+# platform-facts.md:1563 (§2.25): label-text = label-large, weight 500 (_md-comp-outlined-segmented-button.scss:63)
+weight = 500
+
+[light.segmented_control.border]
+# platform-facts.md:1571 (§2.25): material-web labs outlined segmented button spacing-leading / spacing-trailing 12 (cbd34a8, labs/segmentedbutton/internal/_outlined-segmented-button.scss:22-23)
+padding_horizontal_px = 12.0
+# platform-facts.md:1572 (§2.25): shape corner-full, a pill: half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
+corner_radius_px = 20.0
+# platform-facts.md:1575 (§2.25): no elevation token
+shadow_enabled = false
 
 [light.card]
+# platform-facts.md:1585 (§2.26): filled card container-color = surface-container-highest (_md-comp-filled-card.scss:34)
+background_color = "#e6e0e9"
+
+[light.card.border]
+# platform-facts.md:1588 (§2.26): container-shape corner-medium 12 (_md-comp-filled-card.scss:38)
+corner_radius_px = 12.0
 
 [light.expander]
 header_height_px = 48.0
@@ -255,18 +491,24 @@ hover_background = "#1c1b1f14"
 arrow_color = "#49454f"
 
 [light.window]
-inactive_title_bar_background = "#fffbfe"
-inactive_title_bar_text_color = "#1c1b1f"
+# platform-facts.md:1146-1147 (§2.2): (none), M3 has no window-focus state; nearest the top app bar's surface and on-surface (_md-comp-top-app-bar-small.scss:34, :38)
+inactive_title_bar_background = "#fef7ff"
+inactive_title_bar_text_color = "#1d1b20"
 
 # === Dark variant ===
 
 [dark.defaults]
+# md.sys.color.primary, primary80 (_md-sys-color.scss:51, _md-ref-palette.scss:77)
 accent_color = "#d0bcff"
-background_color = "#1c1b1f"
-text_color = "#e6e1e5"
-surface_color = "#1c1b1e"
+# platform-facts.md:1044 (§2.1.3): md.sys.color.surface = background, neutral6 (_md-sys-color.scss:61, :25; _md-ref-palette.scss:56)
+background_color = "#141218"
+# on-surface, neutral90 (_md-sys-color.scss:43; _md-ref-palette.scss:61)
+text_color = "#e6e0e9"
+# surface, neutral6 (_md-sys-color.scss:61; _md-ref-palette.scss:56)
+surface_color = "#141218"
 muted_color = "#cac4d0"
-shadow_color = "#00000040"
+# md.sys.color.shadow #000000 (_md-sys-color.scss:60) as material-web's key shadow renders it, opacity 0.3 (elevation/internal/_elevation.scss:104-105)
+shadow_color = "#0000004d"
 
 danger_color = "#f2b8b5"
 danger_text_color = "#601410"
@@ -277,11 +519,14 @@ success_text_color = "#1b3700"
 info_color = "#d0bcff"
 info_text_color = "#381e72"
 
-selection_background = "#d0bcff"
-selection_text_color = "#381e72"
+# platform-facts.md:1053-1054 (§2.1.3): list and menu selection, secondary-container, secondary30 (_md-sys-color.scss:57; _md-ref-palette.scss:85) and on-secondary-container, secondary90 (:39; :91)
+selection_background = "#4a4458"
+selection_text_color = "#e8def8"
 link_color = "#d0bcff"
-focus_ring_color = "#d0bcff"
-disabled_text_color = "#49454f"
+# platform-facts.md:1102 (§2.1.5): md-focus-ring color = secondary, secondary80 (tokens/_md-comp-focus-ring.scss:47; _md-sys-color.scss:56; _md-ref-palette.scss:90)
+focus_ring_color = "#ccc2dc"
+# platform-facts.md:1058 (§2.1.3): on-surface at disabled-label-text-opacity 0.38 (_md-comp-filled-button.scss:45-46)
+disabled_text_color = "#e6e0e961"
 accent_text_color = "#381e72"
 
 # 1.0: Material 3 dims a disabled component by its colours alone, the container at
@@ -289,9 +534,11 @@ accent_text_color = "#381e72"
 # on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
 # button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
 disabled_opacity = 1.0
-line_height = 1.2
-focus_ring_width_px = 2.0
-focus_ring_offset_px = 1.0
+# platform-facts.md:1028 (§2.1.1): body-medium-line-height 20 / body-medium-size 14 (_md-sys-typescale.scss:55-56)
+line_height = 1.43
+# platform-facts.md:1103-1104 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
+focus_ring_width_px = 3.0
+focus_ring_offset_px = 2.0
 
 
 [dark.defaults.border]
@@ -315,11 +562,14 @@ weight = 400
 toolbar_px = 24.0
 small_px = 16.0
 large_px = 32.0
-dialog_px = 22.0
-panel_px = 20.0
+# platform-facts.md:1135 (§2.1.8): comp.dialog with-icon-icon-size 24 (_md-comp-dialog.scss:122)
+dialog_px = 24.0
+# platform-facts.md:1136 (§2.1.8): comp.navigation-drawer icon-size 24 (_md-comp-navigation-drawer.scss:94)
+panel_px = 24.0
 
 [dark.text_scale.caption]
-size_px =11.0
+# platform-facts.md:1435 (§2.19): md.sys.typescale.body-small, 12 / 400, line 16 (material-web cbd34a8, tokens/versions/v0_192/_md-sys-typescale.scss:72-75)
+size_px =12.0
 weight = 400
 line_height_px = 16.0
 
@@ -343,43 +593,113 @@ background_color = "#4a4458"
 min_width_px = 64.0
 min_height_px = 40.0
 icon_text_gap_px = 8.0
-hover_background = "#554f64"
+# platform-facts.md:1179 (§2.3): on-secondary-container at hover-state-layer-opacity 0.08 over secondary-container (_md-comp-filled-tonal-button.scss:57-60)
+hover_background = "#575065"
 hover_text_color = "#e8def8"
-active_background = "#5e586e"
+# on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
+active_background = "#5d566b"
 active_text_color = "#e8def8"
-disabled_background = "#e6e1e51f"
-disabled_text_color = "#49454f"
+# platform-facts.md:1177 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
+disabled_background = "#e6e0e91f"
+disabled_text_color = "#e6e0e961"
 
 
 [dark.button.font]
 color = "#e8def8"
+# platform-facts.md:1163 (§2.3): label-text = label-large, weight 500 (_md-comp-filled-tonal-button.scss:80; _md-sys-typescale.scss:195)
+weight = 500
+
+[dark.button.border]
+# platform-facts.md:1171-1172 (§2.3): material-web leading-space / trailing-space 24 (cbd34a8, tokens/_md-comp-filled-tonal-button.scss:96-105); padding-block (container-height 40 − line 20) / 2 = 10 (button/internal/_shared.scss:31-32)
+padding_horizontal_px = 24.0
+padding_vertical_px = 10.0
+# platform-facts.md:1173 (§2.3): container-shape corner-full, a pill: half the 40 container-height (_md-comp-filled-tonal-button.scss:39, :41)
+corner_radius_px = 20.0
+# platform-facts.md:1165-1166 (§2.3): the tonal button has no outline token (_md-comp-filled-tonal-button.scss:37-99)
+line_width_px = 0.0
+# platform-facts.md:1178 (§2.3): container-elevation level0 (_md-comp-filled-tonal-button.scss:38)
+shadow_enabled = false
 [dark.input]
-background_color = "#1c1b1e"
+# platform-facts.md:1185 (§2.4): the outlined field has no container, the surface shows through
+background_color = "#141218"
 min_height_px = 56.0
-hover_border_color = "#e6e1e5"
+# platform-facts.md:1187 (§2.4): hover-outline-color = on-surface (_md-comp-outlined-text-field.scss:87)
+hover_border_color = "#e6e0e9"
 focus_border_color = "#d0bcff"
-disabled_background = "#e6e1e50a"
-disabled_text_color = "#49454f"
+# platform-facts.md:1199 (§2.4): input text on-surface at 0.38 (_md-comp-outlined-text-field.scss:33-34)
+disabled_text_color = "#e6e0e961"
+# platform-facts.md:1191 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
+caret_color = "#d0bcff"
 
 
 [dark.input.font]
-color = "#e6e1e5"
+# platform-facts.md:1186 (§2.4): input-text-color = on-surface (_md-comp-outlined-text-field.scss:93); input-text = body-large 16 (:101)
+color = "#e6e0e9"
+size_px = 16.0
+
+[dark.input.border]
+# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
+padding_horizontal_px = 16.0
+padding_vertical_px = 16.0
+# platform-facts.md:1198 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
+corner_radius_px = 4.0
+# platform-facts.md:1199 (§2.4): the text fields have no elevation token
+shadow_enabled = false
+
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
+padding_horizontal_px = 16.0
+padding_vertical_px = 16.0
 [dark.checkbox]
 indicator_width_px = 18.0
+# platform-facts.md:1220 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
+radio_dot_diameter_px = 10.0
+# platform-facts.md:1221 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)
+check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
-hover_background = "#d0bcff14"
-disabled_background = "#e6e1e51f"
-disabled_text_color = "#49454f"
-unchecked_background = "#1c1b1e"
-unchecked_border_color = "#938f99"
+# unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
+hover_background = "#e6e0e914"
+# platform-facts.md:1219 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
+disabled_background = "#e6e0e961"
+disabled_text_color = "#e6e0e961"
+# platform-facts.md:1204 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
+unchecked_background = "#00000000"
+# platform-facts.md:1207 (§2.5): unselected-outline-color = on-surface-variant (_md-comp-checkbox.scss:118)
+unchecked_border_color = "#cac4d0"
+
+[dark.checkbox.border]
+# platform-facts.md:1208 (§2.5): unselected-outline-width 2 (_md-comp-checkbox.scss:120)
+line_width_px = 2.0
+# platform-facts.md:1212 (§2.5): container-shape 2 (_md-comp-checkbox.scss:31)
+corner_radius_px = 2.0
+# platform-facts.md:1213 (§2.5): no elevation token
+shadow_enabled = false
+# platform-facts.md:1207 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80): the line is its selected-container-color, primary (:43)
+color = "#d0bcff"
 
 [dark.tooltip]
-background_color = "#e6e1e5"
-max_width_px = 300.0
+# platform-facts.md:1249 (§2.7): container-color = inverse-surface, neutral90 (_md-comp-plain-tooltip.scss:31; _md-sys-color.scss:30; _md-ref-palette.scss:61)
+background_color = "#e6e0e9"
+# platform-facts.md:1255 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
+max_width_px = 200.0
 
 
 [dark.tooltip.font]
-color = "#313033"
+# platform-facts.md:1254 (§2.7): supporting-text-color = inverse-on-surface, neutral20 (_md-comp-plain-tooltip.scss:33; _md-sys-color.scss:28; _md-ref-palette.scss:49)
+color = "#322f35"
+# platform-facts.md:1251 (§2.7): supporting-text-size = body-small-size 12 (_md-comp-plain-tooltip.scss:39)
+size_px = 12.0
+
+[dark.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): Compose PlainTooltipHorizontalPadding 8, PlainTooltipVerticalPadding 4 (androidx 1e677685, Tooltip.kt:1454-1459)
+padding_horizontal_px = 8.0
+padding_vertical_px = 4.0
+# platform-facts.md:1259 (§2.7): container-shape corner-extra-small 4 (_md-comp-plain-tooltip.scss:32)
+corner_radius_px = 4.0
+# platform-facts.md:1260-1261 (§2.7): no outline token
+line_width_px = 0.0
+# platform-facts.md:1262 (§2.7): no elevation token; Compose PlainTooltip shadowElevation = 0.dp (Tooltip.kt:350-351)
+shadow_enabled = false
 [dark.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 4.0
@@ -391,56 +711,140 @@ thumb_active_color = "#aea9b4"
 [dark.slider]
 track_height_px = 4.0
 thumb_diameter_px = 20.0
-tick_mark_length_px = 4.0
+# platform-facts.md:1294 (§2.9): with-tick-marks-container-size 2 (_md-comp-slider.scss:108)
+tick_mark_length_px = 2.0
 # md.comp.slider.handle.color = md.sys.color.primary, primary80 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-slider.scss:52, _md-sys-color.scss:51, _md-ref-palette.scss:77)
 thumb_color = "#d0bcff"
 thumb_hover_color = "#d0bcff"
-disabled_fill_color = "#e6e1e561"
-disabled_track_color = "#e6e1e51f"
-disabled_thumb_color = "#e6e1e561"
+# platform-facts.md:1288 (§2.9): inactive-track-color = surface-container-highest, neutral22 (_md-comp-slider.scss:62; _md-sys-color.scss:65; _md-ref-palette.scss:50)
+track_color = "#36343b"
+# platform-facts.md:1295 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
+disabled_fill_color = "#e6e0e961"
+disabled_track_color = "#e6e0e91f"
+disabled_thumb_color = "#e6e0e961"
 
 [dark.progress_bar]
 track_height_px = 4.0
 min_width_px = 100.0
+# platform-facts.md:1300 (§2.10): track-color = surface-container-highest (_md-comp-linear-progress-indicator.scss:39)
+track_color = "#36343b"
+
+[dark.progress_bar.border]
+# platform-facts.md:1305 (§2.10): track-shape / active-indicator-shape corner-none (_md-comp-linear-progress-indicator.scss:30, :41)
+corner_radius_px = 0.0
+# platform-facts.md:1306-1308 (§2.10): no elevation token, no outline
+shadow_enabled = false
+line_width_px = 0.0
 
 [dark.tab]
-min_width_px = 64.0
+# platform-facts.md:1316 (§2.11): fixed tabs share the width; scrollable tabs, Compose ScrollableTabRowMinTabWidth 90 (androidx 1e677685, TabRow.kt:981)
+min_width_px = 90.0
 min_height_px = 48.0
-hover_background = "#d0bcff14"
-hover_text_color = "#e6e1e5"
-active_background = "#d0bcff1f"
+# with-label-text-inactive-hover: on-surface at hover opacity 0.08 (_md-comp-primary-navigation-tab.scss:59-61)
+hover_background = "#e6e0e914"
+# inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
+hover_text_color = "#e6e0e9"
 active_text_color = "#d0bcff"
 
+[dark.tab.font]
+# platform-facts.md:1325 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
+color = "#cac4d0"
+# platform-facts.md:1324 (§2.11): with-label-text-label-text = title-small, weight 500 (_md-comp-primary-navigation-tab.scss:121)
+weight = 500
+
+[dark.tab.border]
+# platform-facts.md:1318 (§2.11): material-web tab padding: 0 16px (cbd34a8, tabs/internal/_tab.scss:23)
+padding_horizontal_px = 16.0
 
 [dark.menu]
-icon_text_gap_px = 8.0
-hover_background = "#d0bcff14"
-hover_text_color = "#e6e1e5"
-disabled_text_color = "#49454f"
+# platform-facts.md:1234 (§2.6): md.comp.menu list-item-container-height 48 (material-web cbd34a8, tokens/versions/latest/sass/_md-comp-menu.scss:36; v0_192/_md-comp-outlined-select.scss:47)
+row_height_px = 48.0
+# platform-facts.md:1239 (§2.6): md-menu-item gap: 16px (material-web cbd34a8, menu/internal/menuitem/_menu-item.scss:39)
+icon_text_gap_px = 16.0
+# platform-facts.md:1241 (§2.6): list-item-hover-state-layer-color = on-surface at 0.08 (tokens/versions/latest/sass/_md-comp-menu.scss:112-116)
+hover_background = "#e6e0e914"
+# platform-facts.md:1242 (§2.6): list-item-hover-label-text-color = on-surface (latest/sass/_md-comp-menu.scss:108)
+hover_text_color = "#e6e0e9"
+# platform-facts.md:1243 (§2.6): on-surface at 0.38 (latest/sass/_md-comp-menu.scss:92, :40)
+disabled_text_color = "#e6e0e961"
+# platform-facts.md:1225 (§2.6): container-color = surface-container, neutral12 (_md-comp-menu.scss:31; _md-sys-color.scss:63; _md-ref-palette.scss:47)
+background_color = "#211f26"
+# platform-facts.md:1226 (§2.6): divider-color = surface-variant, neutral-variant30 (latest/sass/_md-comp-menu.scss:76; _md-sys-color.scss:70; _md-ref-palette.scss:35)
+separator_color = "#49454f"
 
+[dark.menu.font]
+# platform-facts.md:1229 (§2.6): list-item-label-text = label-large, weight 500 (latest/sass/_md-comp-menu.scss:140)
+weight = 500
+
+[dark.menu.border]
+# platform-facts.md:1235 (§2.6): md-menu-item takes the list item's leading-space / trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225; tokens/_md-comp-menu-item.scss:93)
+padding_horizontal_px = 16.0
+# platform-facts.md:1239 (§2.6): container-shape corner-extra-small 4 (_md-comp-menu.scss:34)
+corner_radius_px = 4.0
+# platform-facts.md:1240 (§2.6): container-elevation level2 (_md-comp-menu.scss:32)
+shadow_enabled = true
 
 [dark.list]
-alternate_row_background = "#211f26"
-hover_background = "#e6e1e514"
-hover_text_color = "#e6e1e5"
-disabled_text_color = "#49454f"
+# platform-facts.md:1380 (§2.15): (none), M3 has no row striping: the alternate row is the list's surface (_md-comp-list.scss:39)
+alternate_row_background = "#141218"
+# platform-facts.md:1392 (§2.15): list-item-hover-state-layer-color = on-surface at 0.08 (_md-comp-list.scss:85-87)
+hover_background = "#e6e0e914"
+# list-item-hover-label-text-color = on-surface (_md-comp-list.scss:81)
+hover_text_color = "#e6e0e9"
+# list-item-disabled-label-text-color = on-surface at 0.38 (_md-comp-list.scss:43-45)
+disabled_text_color = "#e6e0e961"
+# platform-facts.md:1386 (§2.15): row-item-outline-color = outline-variant, neutral-variant30 (_md-comp-data-table.scss:84; _md-sys-color.scss:50; _md-ref-palette.scss:35)
+grid_color = "#49454f"
 
+[dark.list.header_font]
+# platform-facts.md:1383-1384 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)
+weight = 500
+color = "#cac4d0"
+
+[dark.list.border]
+# platform-facts.md:1390 (§2.15): md.comp.list list-item-leading-space / list-item-trailing-space 16 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-list.scss:152, :225)
+padding_horizontal_px = 16.0
 
 [dark.toolbar]
+# platform-facts.md:1351 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
+bar_height_px = 64.0
+
+[dark.toolbar.font]
+# platform-facts.md:1345 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+size_px = 22.0
+
+[dark.toolbar.border]
+# platform-facts.md:1355 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+corner_radius_px = 0.0
+shadow_enabled = false
+line_width_px = 0.0
 
 [dark.sidebar]
-background_color = "#25232a"
-hover_background = "#302e36"
+# platform-facts.md:1340 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+hover_background = "#e6e0e914"
 
 
 [dark.sidebar.font]
-color = "#e6e1e5"
+# platform-facts.md:1330-1331 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+color = "#cac4d0"
+weight = 500
 [dark.popover]
-background_color = "#2b2930"
+# platform-facts.md:1403 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
+background_color = "#211f26"
 
 
 [dark.popover.font]
-color = "#e6e1e5"
+# platform-facts.md:1405 (§2.16): ← defaults.font.color, on-surface
+color = "#e6e0e9"
+
+[dark.popover.border]
+# platform-facts.md:1412-1413 (§2.16): the menu container pads 8 top and bottom, nothing at the sides (material-web cbd34a8, tokens/_md-comp-menu.scss:53-54)
+padding_horizontal_px = 0.0
+padding_vertical_px = 8.0
+# platform-facts.md:1408 (§2.16): the menu's corner-extra-small 4 (_md-comp-menu.scss:34)
+corner_radius_px = 4.0
+# platform-facts.md:1407 (§2.16): no outline
+line_width_px = 0.0
 [dark.separator]
 line_color = "#49454f"
 
@@ -449,13 +853,20 @@ divider_width_px = 4.0
 hover_color = "#d0bcff"
 
 [dark.switch]
-unchecked_background = "#938f99"
-hover_checked_background = "#c4aaff"
-hover_unchecked_background = "#9e99a5"
-disabled_checked_background = "#e6e1e51f"
-disabled_unchecked_background = "#e6e1e51f"
-disabled_thumb_color = "#e6e1e561"
-thumb_background = "#e6e1e5"
+# platform-facts.md:1470 (§2.21): unselected-track-color = surface-container-highest (_md-comp-switch.scss:135)
+unchecked_background = "#36343b"
+# selected-hover-track-color = primary (_md-comp-switch.scss:73)
+hover_checked_background = "#d0bcff"
+# unselected-hover-track-color = surface-container-highest (_md-comp-switch.scss:116)
+hover_unchecked_background = "#36343b"
+# disabled-selected-track-color on-surface at disabled-track-opacity 0.12 (_md-comp-switch.scss:35-37)
+disabled_checked_background = "#e6e0e91f"
+# disabled-unselected-track-color surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
+disabled_unchecked_background = "#36343b1f"
+# disabled-unselected-handle-color on-surface at 0.38 (_md-comp-switch.scss:38-40)
+disabled_thumb_color = "#e6e0e961"
+# platform-facts.md:1473 (§2.21): selected-handle-color = on-primary (_md-comp-switch.scss:62)
+thumb_background = "#381e72"
 track_width_px = 52.0
 track_height_px = 32.0
 thumb_diameter_px = 24.0
@@ -466,9 +877,31 @@ button_order = "primary_right"
 min_width_px = 280.0
 max_width_px = 560.0
 min_height_px = 140.0
-max_height_px = 600.0
+# platform-facts.md:1487 (§2.22): material-web min(560px, calc(100% - 48px)) (cbd34a8, dialog/internal/_dialog.scss:39)
+max_height_px = 560.0
 button_gap_px = 8.0
-icon_size_px =32.0
+# platform-facts.md:1503 (§2.22): with-icon-icon-size 24 (_md-comp-dialog.scss:122)
+icon_size_px = 24.0
+# platform-facts.md:1482 (§2.22): container-color = surface-container-high, neutral17 (_md-comp-dialog.scss:73; _md-sys-color.scss:64; _md-ref-palette.scss:48)
+background_color = "#2b2930"
+
+[dark.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): md.comp.dialog headline-size = headline-small-size 24, headline-small-weight 400 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-dialog.scss:80, :95)
+size_px = 24.0
+weight = 400
+
+[dark.dialog.body_font]
+# platform-facts.md:1484 (§2.22): supporting-text-color = on-surface-variant (_md-comp-dialog.scss:97)
+color = "#cac4d0"
+
+[dark.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): material-web dialog headline padding 24px 24px 0, actions 16px 24px 24px (cbd34a8, dialog/internal/_dialog.scss:111, :218)
+padding_horizontal_px = 24.0
+padding_vertical_px = 24.0
+# platform-facts.md:1500 (§2.22): container-shape corner-extra-large 28 (_md-comp-dialog.scss:75)
+corner_radius_px = 28.0
+# platform-facts.md:1501-1502 (§2.22): no outline token
+line_width_px = 0.0
 
 [dark.link]
 underline_enabled = false
@@ -479,28 +912,63 @@ active_text_color = "#e8deff"
 disabled_text_color = "#49454f"
 
 [dark.spinner]
-diameter_px = 24.0
+# platform-facts.md:1531 (§2.23): comp.circular-progress-indicator size 48 (_md-comp-circular-progress-indicator.scss:39)
+diameter_px = 48.0
 min_diameter_px = 16.0
-stroke_width_px = 3.0
+# platform-facts.md:1533 (§2.23): active-indicator-width 4 (_md-comp-circular-progress-indicator.scss:30)
+stroke_width_px = 4.0
 
 [dark.combo_box]
-min_height_px = 40.0
-min_width_px = 120.0
-arrow_icon_size_px =12.0
-hover_background = "#e6e1e514"
-disabled_background = "#e6e1e50a"
-disabled_text_color = "#49454f"
+# platform-facts.md:1549 (§2.24): the text field's height, container-height 56 (tokens/versions/latest/sass/_md-comp-outlined-text-field.scss:26)
+min_height_px = 56.0
+# platform-facts.md:1550 (§2.24): md-outlined-select min-width: 210px (material-web cbd34a8, select/internal/_shared.scss:19)
+min_width_px = 210.0
+# platform-facts.md:1553 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
+arrow_icon_size_px = 24.0
+disabled_text_color = "#e6e0e961"
 
+[dark.combo_box.font]
+# platform-facts.md:1545 (§2.24): text-field-input-text = body-large 16 (_md-comp-outlined-select.scss:184)
+size_px = 16.0
+
+[dark.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127)
+padding_left_px = 16.0
+padding_right_px = 12.0
+padding_vertical_px = 16.0
+# platform-facts.md:1555 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
+corner_radius_px = 4.0
+# platform-facts.md:1556 (§2.24): the field has no elevation
+shadow_enabled = false
 
 [dark.segmented_control]
 segment_height_px = 40.0
 separator_width_px = 1.0
-hover_background = "#d0bcff14"
-active_background = "#d0bcff"
-active_text_color = "#381e72"
+# unselected-hover-state-layer-color = on-surface at 0.08 (_md-comp-outlined-segmented-button.scss:99-102)
+hover_background = "#e6e0e914"
+# platform-facts.md:1565-1566 (§2.25): selected-container-color = secondary-container, selected-label-text-color = on-secondary-container (_md-comp-outlined-segmented-button.scss:69, :83)
+active_background = "#4a4458"
+active_text_color = "#e8def8"
 
+[dark.segmented_control.font]
+# platform-facts.md:1563 (§2.25): label-text = label-large, weight 500 (_md-comp-outlined-segmented-button.scss:63)
+weight = 500
+
+[dark.segmented_control.border]
+# platform-facts.md:1571 (§2.25): material-web labs outlined segmented button spacing-leading / spacing-trailing 12 (cbd34a8, labs/segmentedbutton/internal/_outlined-segmented-button.scss:22-23)
+padding_horizontal_px = 12.0
+# platform-facts.md:1572 (§2.25): shape corner-full, a pill: half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
+corner_radius_px = 20.0
+# platform-facts.md:1575 (§2.25): no elevation token
+shadow_enabled = false
 
 [dark.card]
+# platform-facts.md:1585 (§2.26): filled card container-color = surface-container-highest (_md-comp-filled-card.scss:34)
+background_color = "#36343b"
+
+[dark.card.border]
+# platform-facts.md:1588 (§2.26): container-shape corner-medium 12 (_md-comp-filled-card.scss:38)
+corner_radius_px = 12.0
 
 [dark.expander]
 header_height_px = 48.0
@@ -509,8 +977,9 @@ hover_background = "#e6e1e514"
 arrow_color = "#cac4d0"
 
 [dark.window]
-inactive_title_bar_background = "#1c1b1e"
-inactive_title_bar_text_color = "#e6e1e5"
+# platform-facts.md:1146-1147 (§2.2): (none), M3 has no window-focus state; nearest the top app bar's surface and on-surface (_md-comp-top-app-bar-small.scss:34, :38)
+inactive_title_bar_background = "#141218"
+inactive_title_bar_text_color = "#e6e0e9"
 
 [layout]
 widget_gap_px = 6.0

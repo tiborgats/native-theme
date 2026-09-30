@@ -2449,7 +2449,9 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 r.progress_bar.track_color
             }),
         ] {
-            let want = expect(&mut cx, pick);
+            // A transparent leaf paints no box (material's unchecked box has
+            // no container, docs/platform-facts.md §2.5).
+            let want = expect(&mut cx, pick).filter(|c| !c.is_transparent());
             assert_eq!(
                 painted_fill(&mut cx, control),
                 want,
@@ -4130,21 +4132,21 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
             "Buttons",
             "Checkboxes",
             "Radio buttons",
-            "Switches",
+            "Drop-down",
             "Text inputs",
             "Text area",
-            "Drop-down",
-            "Number input",
             "Slider",
-            "Progress bar",
+            "Switches",
+            "Number input",
             "Spinner",
-            "Tabs",
             "Segmented control",
-            "Typography",
-            "Icons",
             "Card",
+            "Typography",
             "Separator",
+            "Progress bar",
             "List",
+            "Icons",
+            "Tabs",
             "Expander",
             "Table",
         ],
@@ -4265,10 +4267,10 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     }
 }
 
-/// The Basic List shows four of its eight rows: its box is four rows and
+/// The Basic List shows three of its eight rows: its box is three rows and
 /// its frame tall, so the rest scroll.
 #[gpui::test]
-fn the_basic_list_shows_four_rows(cx: &mut TestAppContext) {
+fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
@@ -4282,8 +4284,8 @@ fn the_basic_list_shows_four_rows(cx: &mut TestAppContext) {
     let frame = frame.unwrap_or_default();
     assert_eq!(
         list.size.height,
-        row.size.height * 4. + frame + frame,
-        "the List box is not four rows ({row:?}) and its frame ({frame:?}) tall"
+        row.size.height * 3. + frame + frame,
+        "the List box is not three rows ({row:?}) and its frame ({frame:?}) tall"
     );
     // Item 2 is selected, its text in the list's selection text colour.
     let info = settle_on(&mut cx, &showcase, "basic-list-row-1");

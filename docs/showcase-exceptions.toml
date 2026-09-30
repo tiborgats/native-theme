@@ -406,7 +406,6 @@ keys = [
     "adwaita:basic.table.row_1.y",
     "material:basic.table.row_1.h",
     "material:basic.table.row_2.y",
-    "kde-breeze:basic.table.row_3.h",
 ]
 
 [[parity.group]]
@@ -447,11 +446,6 @@ keys = [
     "adwaita/light:basic.icons.heading.text",
     "adwaita/light:basic.card.heading.text",
     "catppuccin-mocha/dark:basic.table.row_2.text",
-    "hover@basic.table.row_3.text",
-    "menu@kde-breeze/light:basic.table.row_3.text",
-    "menu@material/light:basic.table.row_3.text",
-    "rest@kde-breeze/light:basic.table.row_3.text",
-    "rest@material/light:basic.table.row_3.text",
 ]
 
 [[parity.group]]
@@ -830,7 +824,6 @@ keys = [
     "kde-breeze:basic.text_inputs.focused.h",
     "kde-breeze:basic.text_area.heading.y",
     "adwaita:basic.table.row_2.h",
-    "adwaita:basic.table.row_3.y",
 ]
 
 [[parity.group]]
@@ -998,10 +991,6 @@ keys = [
     "adwaita:basic.list.row_3.h",
     "catppuccin-mocha:basic.list.row_3.h",
     "material:basic.list.row_3.h",
-    "adwaita:basic.list.row_4.y",
-    "catppuccin-mocha:basic.list.row_4.y",
-    "material:basic.list.row_4.y",
-    "basic.list.row_4.h",
 ]
 
 [[parity.group]]

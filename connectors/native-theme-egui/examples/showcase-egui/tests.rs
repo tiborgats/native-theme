@@ -2035,12 +2035,18 @@ fn the_basic_page_applies_the_per_call_leaves() {
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // Both presets state it; `None` would be filled with nothing and fail. egui fades the
-        // disabled field by `input.disabled_opacity` on top (docs/platform-facts.md §2.1.6):
-        // 1.0 on kde-breeze, material's own on material.
-        let fill = t.input.disabled_background.map(|c| {
-            native_theme_egui::convert::to_color32(c).gamma_multiply(t.input.disabled_opacity)
-        });
+        // kde-breeze states it; material's outlined field has no disabled container
+        // (docs/platform-facts.md §2.4), so it keeps its enabled fill (`None`, the enabled
+        // background). egui fades the disabled field by `input.disabled_opacity` on top
+        // (docs/platform-facts.md §2.1.6): 1.0 on both.
+        let fill = Some(
+            native_theme_egui::convert::to_color32(
+                t.input
+                    .disabled_background
+                    .unwrap_or(t.input.background_color),
+            )
+            .gamma_multiply(t.input.disabled_opacity),
+        );
         let shapes = harness.output().shapes.clone();
         let filled = shapes.iter().any(|clipped| match &clipped.shape {
             egui::Shape::Rect(r) => {
@@ -2273,7 +2279,7 @@ fn groups_and_columns_are_a_section_gap_apart() {
         ("TextEdit (hint)", 1),
         ("DragValue", 2),
         ("Label (typography)", 3),
-        ("List", 4),
+        ("Table", 4),
     ] {
         assert!(
             (rect(kind).left() - lefts[column]).abs() < 0.5,
@@ -2311,14 +2317,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
         ],
     ),
     ("Radio buttons", &[("RadioButton", 2)]),
-    (
-        "Switches",
-        &[
-            ("switch (off)", 1),
-            ("switch (on)", 1),
-            ("switch (disabled)", 1),
-        ],
-    ),
+    ("Drop-down", &[("ComboBox", 1)]),
     (
         "Text inputs",
         &[
@@ -2329,13 +2328,19 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
         ],
     ),
     ("Text area", &[("TextEdit (multiline)", 1)]),
-    ("Drop-down", &[("ComboBox", 1)]),
-    ("Number input", &[("DragValue", 1)]),
     ("Slider", &[("Slider (horizontal)", 1)]),
-    ("Progress bar", &[("ProgressBar", 1)]),
+    (
+        "Switches",
+        &[
+            ("switch (off)", 1),
+            ("switch (on)", 1),
+            ("switch (disabled)", 1),
+        ],
+    ),
+    ("Number input", &[("DragValue", 1)]),
     ("Spinner", &[("Spinner", 1)]),
-    ("Tabs", &[("Tab · Basic", 2)]),
     ("Segmented control", &[("segmented control", 1)]),
+    ("Card", &[("card", 1), ("card label", 1)]),
     (
         "Typography",
         &[
@@ -2344,12 +2349,13 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
             ("Label (monospace)", 1),
         ],
     ),
+    ("Separator", &[("Separator (horizontal)", 1)]),
+    ("Progress bar", &[("ProgressBar", 1)]),
+    ("List", &[("List", 1)]),
     // The icon buttons; the chosen set's open folder, where the set has one, is not counted: a
     // freedesktop theme the test's machine lacks shows none, never another set's.
     ("Icons", &[("icon button", 3)]),
-    ("Card", &[("card", 1), ("card label", 1)]),
-    ("Separator", &[("Separator (horizontal)", 1)]),
-    ("List", &[("List", 1)]),
+    ("Tabs", &[("Tab · Basic", 2)]),
     (
         "Expander",
         &[
@@ -2364,8 +2370,8 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
 /// The Basic page shows every group of its spec (SC BASIC2), each in its column and in order:
 /// under three presets, each group's heading is a label at its column's left edge below the
 /// group before it, each column right of the one before, and every control of the group lies
-/// between its heading and the next one. The list holds eight rows and shows four, the second
-/// selected, its frame four rows and its border tall.
+/// between its heading and the next one. The list holds eight rows and shows three, the second
+/// selected, its frame three rows and its border tall.
 #[test]
 fn the_basic_page_has_every_group_in_its_column() {
     let groups: Vec<&str> = crate::pages::basic::GROUPS
@@ -2452,12 +2458,12 @@ fn the_basic_page_has_every_group_in_its_column() {
         // A record holds the rect a widget can be hovered in, clipped to what is shown
         // (`Response::interact_rect`): a row scrolled out of the list has none.
         let shown = rows.iter().filter(|r| r.is_positive()).count();
-        assert_eq!(shown, 4, "{preset}: the rows the list shows");
+        assert_eq!(shown, 3, "{preset}: the rows the list shows");
         let row = rows[0].height();
         let line = t.list.border.line_width;
         assert!(
-            (list.height() - (4.0 * row + 2.0 * line)).abs() < 0.5,
-            "{preset}: the list is {} tall, four {row} rows and a {line} border",
+            (list.height() - (3.0 * row + 2.0 * line)).abs() < 0.5,
+            "{preset}: the list is {} tall, three {row} rows and a {line} border",
             list.height()
         );
         assert!(

@@ -3583,12 +3583,14 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
 fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> {
     // The entry in the table above runs on windows-11, where `tab` states the
     // same color for an idle and for a selected tab, so a fallback onto the
-    // wrong one of the two would pass it. `material` is the one bundled preset
-    // that states them differently (measured 2026-09-21 over all 32
-    // combinations), so the copy is proved here instead.
+    // wrong one of the two would pass it. No bundled preset states them
+    // differently any more (material's active tab is marked by an indicator,
+    // not a fill: docs/platform-facts.md §2.11), so the selected fill is set
+    // apart here, to the preset's accent, and the copy is proved on that.
     let mut resolved = native_theme::theme::Theme::preset("material")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    resolved.tab.active_background = resolved.defaults.accent_color;
     let idle = to_color(resolved.tab.background_color);
     let selected = to_color(resolved.tab.active_background);
     assert!(

@@ -1511,10 +1511,7 @@ const PAIRS: &[Pair] = &[
             )
         },
         emitted: |tc, _| (tc.accent_foreground, tc.accent, tc.popover),
-        exceptions: &[
-            ("windows-11/dark", MENU_SURFACE),
-            ("material/dark", MENU_SURFACE),
-        ],
+        exceptions: &[("windows-11/dark", MENU_SURFACE)],
     },
     Pair {
         what: "popover text",

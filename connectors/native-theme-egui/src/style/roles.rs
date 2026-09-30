@@ -1484,7 +1484,17 @@ mod tests {
             let (c, base, t, notes) = cell(preset, mode, Role::Checkbox);
             let k = &t.checkbox;
             let w = &c.visuals.widgets;
-            assert!(notes.is_empty(), "{preset}: {notes:?}");
+            // The one note a preset may cause here: material's unchecked box has no
+            // container (docs/platform-facts.md §2.5), a transparent fill written as given.
+            let transparent_box = k.unchecked_background.is_some_and(|c| c.a == 0);
+            assert!(
+                notes.iter().all(|n| transparent_box
+                    && *n
+                        == Note::TransparentFill {
+                            path: "checkbox.unchecked_background"
+                        }),
+                "{preset}: {notes:?}"
+            );
             let idle = k.unchecked_background.unwrap_or(k.background_color);
             assert_eq!(w.inactive.bg_fill, to_color32(idle), "{preset}");
             assert_eq!(w.open.bg_fill, to_color32(idle), "{preset}");

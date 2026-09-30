@@ -12,9 +12,12 @@
 //! reads.
 //!
 //! Presets that platform-facts does not cover (the colour schemes, and the
-//! `material` and `ios` platform presets, which no platform-facts column
-//! documents) state none of these sizes: nothing cites a source for them, so
-//! the toolkit's own stand.
+//! `ios` platform preset, which no platform-facts column documents) state
+//! none of these sizes: nothing cites a source for them, so the toolkit's own
+//! stand. The Material column counts a material-web or Compose implementation
+//! constant cited at a pinned line, which its cells tag **(impl)**, as
+//! documented, as the KDE and GNOME columns count a Breeze or libadwaita
+//! source constant.
 //!
 //! A second table, one row per (platform, field), gives the text scale's
 //! sizes and weights, the dialog title font's size and weight, the slider's
@@ -35,6 +38,8 @@
 //! resolution covers. The live resolution here applies the constants to each
 //! variant in turn, as the pipeline does when that variant is the active one.
 //! The macOS reader fills both variants. GNOME's reader states no sizes.
+//! Material has no reader and no `-live` preset, so only its static
+//! resolution is checked.
 //!
 //! This lives inside the crate because the reader constants
 //! (`kde_metrics::populate_widget_sizing`, `windows::winui3_widget_sizing`,
@@ -52,14 +57,16 @@ enum Platform {
     Gnome,
     Macos,
     Windows,
+    Material,
 }
 
 impl Platform {
-    const ALL: [Platform; 4] = [
+    const ALL: [Platform; 5] = [
         Platform::Kde,
         Platform::Gnome,
         Platform::Macos,
         Platform::Windows,
+        Platform::Material,
     ];
 
     fn preset(self) -> &'static str {
@@ -68,15 +75,28 @@ impl Platform {
             Platform::Gnome => "adwaita",
             Platform::Macos => "macos-sonoma",
             Platform::Windows => "windows-11",
+            Platform::Material => "material",
         }
     }
 
-    fn live_preset(self) -> &'static str {
+    /// The `-live` preset the platform's reader merges over; `None` for a
+    /// platform no reader serves.
+    fn live_preset(self) -> Option<&'static str> {
         match self {
-            Platform::Kde => "kde-breeze-live",
-            Platform::Gnome => "adwaita-live",
-            Platform::Macos => "macos-sonoma-live",
-            Platform::Windows => "windows-11-live",
+            Platform::Kde => Some("kde-breeze-live"),
+            Platform::Gnome => Some("adwaita-live"),
+            Platform::Macos => Some("macos-sonoma-live"),
+            Platform::Windows => Some("windows-11-live"),
+            Platform::Material => None,
+        }
+    }
+
+    /// The resolutions the gate checks: static, and live where the platform
+    /// has a `-live` preset.
+    fn resolutions(self) -> &'static [bool] {
+        match self.live_preset() {
+            Some(_) => &[false, true],
+            None => &[false],
         }
     }
 
@@ -88,7 +108,7 @@ impl Platform {
                 crate::kde_metrics::populate_widget_sizing(&mut v);
                 Some(v)
             }
-            Platform::Gnome => None,
+            Platform::Gnome | Platform::Material => None,
             Platform::Macos => Some(crate::macos::macos_widget_defaults()),
             Platform::Windows => {
                 let mut v = ThemeMode::default();
@@ -158,7 +178,7 @@ const fn row(
     }
 }
 
-use Platform::{Gnome, Kde, Macos, Windows};
+use Platform::{Gnome, Kde, Macos, Material, Windows};
 
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
@@ -290,6 +310,38 @@ const ROWS: &[Row] = &[
     row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
     row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0")
         .with(&[("arrow_gap", Some(30.0), 1614), ("content_indent", Some(16.0), 1615)]),
+    // --- Material (material; no reader, no -live preset) ---
+    row(Material, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
+    row(Material, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
+    row(Material, "input", all(16.0), &[1196, 1197], "outlined field leading/trailing-space 16; top/bottom-space 16"),
+    row(Material, "text_area", all(16.0), &[1639, 1640], "the outlined field's 16; 16"),
+    row(Material, "checkbox", NONE, &[1216, 1217], "(none): the mark fills the box"),
+    row(Material, "menu", [None, Some(16.0), None, Some(16.0)], &[1235, 1236], "16 (md-menu-item); vertical left to the row height: the cell's 14 is (derived), material-web's item 12, latest 8")
+        .with(&[("row_height", Some(48.0), 1234)]),
+    row(Material, "tooltip", axes(4.0, 8.0), &[1257, 1258], "Compose PlainTooltipHorizontalPadding 8; PlainTooltipVerticalPadding 4"),
+    row(Material, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
+    row(Material, "tab", [None, Some(16.0), None, Some(16.0)], &[1318, 1319], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
+        .with(&[("item_gap", None, 1326)]),
+    row(Material, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    Row {
+        platform: Material,
+        widget: "toolbar",
+        padding: NONE,
+        lines: &[1353, 1354],
+        note: "v0_192 has no app-bar space token (latest's 4 not taken); none",
+        extra: &[("bar_height", Some(64.0), 1351), ("item_gap", None, 1352)],
+    },
+    row(Material, "status_bar", NONE, &[1372, 1373], "(none): M3 has no status bar"),
+    row(Material, "list", [None, Some(16.0), None, Some(16.0)], &[1390, 1391], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
+        .with(&[("row_height", None, 1389)]),
+    row(Material, "popover", axes(8.0, 0.0), &[1412, 1413], "the menu container pads 8 top and bottom, 0 at the sides"),
+    row(Material, "dialog", all(24.0), &[1491, 1492], "material-web dialog 24; 24 top / 24 bottom"),
+    row(Material, "combo_box", trbl(16.0, 12.0, 16.0, 16.0), &[1552, 1557], "outlined field 16 leading / 12 trailing (the arrow's trailing space); 16")
+        .with(&[("arrow_area_width", None, 1554)]),
+    row(Material, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1571, 1576], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
+    row(Material, "card", NONE, &[1592, 1593], "(app-defined)"),
+    row(Material, "expander", NONE, &[1607, 1608], "(none): M3 has no expander")
+        .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
 ];
 
 /// Every widget whose border carries padding.
@@ -451,8 +503,11 @@ fn static_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, Stri
 /// The live resolution's input, unresolved: the full preset, the `-live`
 /// preset merged over it, then the reader's size constants.
 fn live_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
+    let live = platform
+        .live_preset()
+        .ok_or_else(|| format!("{} has no -live preset", platform.preset()))?;
     let mut merged = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
-    merged.merge(&Theme::preset(platform.live_preset()).map_err(|e| e.to_string())?);
+    merged.merge(&Theme::preset(live).map_err(|e| e.to_string())?);
     let mut variant = merged.into_variant(mode).map_err(|e| e.to_string())?;
     if let Some(reader) = platform.reader_constants() {
         variant.merge(&reader);
@@ -473,7 +528,7 @@ fn source(platform: Platform, live: bool) -> String {
         format!(
             "{} + {} + reader constants",
             platform.preset(),
-            platform.live_preset()
+            platform.live_preset().unwrap_or("no -live preset")
         )
     } else {
         platform.preset().to_string()
@@ -505,7 +560,7 @@ fn native_themes_state_documented_sizes() {
     let mut failures = Vec::new();
     for platform in Platform::ALL {
         for (mode, variant) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
-            for live in [false, true] {
+            for &live in platform.resolutions() {
                 let theme = match gate_variant(platform, mode, live).and_then(resolve) {
                     Ok(t) => t,
                     Err(e) => {
@@ -619,13 +674,16 @@ fn every_citation_names_its_platform_facts_row() {
 fn full_and_live_presets_state_the_same_sizes() {
     let mut failures = Vec::new();
     for platform in Platform::ALL {
+        let Some(live_name) = platform.live_preset() else {
+            continue;
+        };
         for mode in [ColorMode::Light, ColorMode::Dark] {
             let variant = |name: &str| {
                 Theme::preset(name)
                     .and_then(|t| t.into_variant(mode))
                     .map_err(|e| format!("{name} {mode:?}: {e}"))
             };
-            let (full, live) = match (variant(platform.preset()), variant(platform.live_preset())) {
+            let (full, live) = match (variant(platform.preset()), variant(live_name)) {
                 (Ok(f), Ok(l)) => (f, l),
                 (f, l) => {
                     failures.extend(f.err().into_iter().chain(l.err()));
@@ -641,9 +699,8 @@ fn full_and_live_presets_state_the_same_sizes() {
                 for ((key, f), (_, l)) in f.iter().zip(&l) {
                     if f != l {
                         failures.push(format!(
-                            "{widget}.{key} {mode:?}: {} states {f:?}, {} states {l:?}",
+                            "{widget}.{key} {mode:?}: {} states {f:?}, {live_name} states {l:?}",
                             platform.preset(),
-                            platform.live_preset(),
                         ));
                     }
                 }
@@ -659,16 +716,14 @@ fn full_and_live_presets_state_the_same_sizes() {
 }
 
 /// Presets that platform-facts does not cover: the colour schemes, and the
-/// `material` and `ios` platform presets, which no platform-facts column
-/// documents.
-const UNSOURCED_PRESETS: [&str; 12] = [
+/// `ios` platform preset, which no platform-facts column documents.
+const UNSOURCED_PRESETS: [&str; 11] = [
     "catppuccin-latte",
     "catppuccin-frappe",
     "catppuccin-macchiato",
     "catppuccin-mocha",
     "dracula",
     "gruvbox",
-    "material",
     "nord",
     "one-dark",
     "solarized",
@@ -832,6 +887,22 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Windows, "progress_bar.track_height", Px(1.0), 1303, "the groove, ProgressBarTrackHeight: 1"),
     field(Windows, "checkbox.radio_dot_diameter", Px(12.0), 1220, "RadioButtonCheckGlyphSize: 12"),
     field(Windows, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): a font glyph"),
+    // --- Material (dp = logical pixels, rem × 16) ---
+    field(Material, "text_scale.caption.size", Px(12.0), 1435, "body-small: 12"),
+    field(Material, "text_scale.caption.weight", Weight(400), 1435, "body-small: 400"),
+    field(Material, "text_scale.section_heading.size", Px(16.0), 1436, "title-medium: 16"),
+    field(Material, "text_scale.section_heading.weight", Weight(500), 1436, "title-medium: 500"),
+    field(Material, "text_scale.dialog_title.size", Px(24.0), 1437, "headline-small: 24"),
+    field(Material, "text_scale.dialog_title.weight", Weight(400), 1437, "headline-small: 400"),
+    field(Material, "text_scale.display.size", Px(36.0), 1438, "display-small: 36"),
+    field(Material, "text_scale.display.weight", Weight(400), 1438, "display-small: 400"),
+    field(Material, "dialog.title_font.size", Px(24.0), 1496, "comp.dialog headline-size: 24"),
+    field(Material, "dialog.title_font.weight", Weight(400), 1497, "headline-small-weight: 400"),
+    field(Material, "slider.track_height", Px(4.0), 1292, "active/inactive-track-height: 4"),
+    field(Material, "slider.thumb_diameter", Px(20.0), 1293, "handle-width/height: 20"),
+    field(Material, "progress_bar.track_height", Px(4.0), 1303, "linear track-height: 4"),
+    field(Material, "checkbox.radio_dot_diameter", Px(10.0), 1220, "material-web radio.ts: inner circle r = 5"),
+    field(Material, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "material-web $_mark-stroke: 2px"),
 ];
 
 /// Every field a [`FieldRow`] may name.
@@ -935,7 +1006,7 @@ fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
 fn gate_variants(platform: Platform) -> Vec<Result<(String, &'static str, ThemeMode), String>> {
     let mut out = Vec::new();
     for (mode, name) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
-        for live in [false, true] {
+        for &live in platform.resolutions() {
             out.push(
                 gate_variant(platform, mode, live)
                     .map(|v| (source(platform, live), name, v))
@@ -1061,13 +1132,18 @@ fn every_field_citation_names_its_platform_facts_row() {
     }
 }
 
-/// Platform-facts gives no text-scale line height, so no native preset states
-/// one and the resolver computes it from `defaults.line_height` (E5).
+/// Platform-facts gives no desktop platform's text-scale line height, so no
+/// desktop preset states one and the resolver computes it from
+/// `defaults.line_height` (E5). Material's typescale states each style's line
+/// height (platform-facts §2.19), so the material preset states them.
 #[test]
 fn native_presets_state_no_text_scale_line_height() {
     let mut failures = Vec::new();
     for platform in Platform::ALL {
-        for name in [platform.preset(), platform.live_preset()] {
+        if platform == Material {
+            continue;
+        }
+        for name in std::iter::once(platform.preset()).chain(platform.live_preset()) {
             for mode in [ColorMode::Light, ColorMode::Dark] {
                 let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
                     Ok(v) => v,
@@ -1099,11 +1175,12 @@ fn native_presets_state_no_text_scale_line_height() {
 /// arrow's side (`:1613`) and whether a frame holds header and content
 /// (`:1616`); `None` where the cell states none.
 #[rustfmt::skip]
-const EXPANDER_STRUCTURE: [(Platform, Option<crate::model::ArrowSide>, Option<bool>); 4] = [
+const EXPANDER_STRUCTURE: [(Platform, Option<crate::model::ArrowSide>, Option<bool>); 5] = [
     (Kde, Some(crate::model::ArrowSide::Leading), Some(false)),
     (Gnome, Some(crate::model::ArrowSide::Trailing), Some(true)),
     (Macos, Some(crate::model::ArrowSide::Leading), None),
     (Windows, Some(crate::model::ArrowSide::Trailing), Some(true)),
+    (Material, None, None),
 ];
 
 /// The native themes state the expander's side and frame as platform-facts

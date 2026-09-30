@@ -1453,6 +1453,7 @@ mod tests {
     #[test]
     fn text_colour_is_the_platforms_wherever_upstream_would_override_it() {
         let mut tooltip_differs = 0usize;
+        let mut dialog_body_differs = 0usize;
         for info in Theme::list_presets() {
             for mode in [ColorMode::Light, ColorMode::Dark] {
                 let r = resolved(info.key, mode);
@@ -1539,11 +1540,9 @@ mod tests {
                     "{at}: status bar colour no longer differs from upstream's \
                      muted_foreground, so this builder's colour proves nothing"
                 );
-                assert_ne!(
-                    r.dialog.body_font.color, r.defaults.muted_color,
-                    "{at}: dialog body colour no longer differs from upstream's \
-                     muted_foreground"
-                );
+                if r.dialog.body_font.color != r.defaults.muted_color {
+                    dialog_body_differs += 1;
+                }
                 if r.tooltip.font.color != r.popover.font.color {
                     tooltip_differs += 1;
                 }
@@ -1553,6 +1552,14 @@ mod tests {
             tooltip_differs > 0,
             "no preset states a tooltip colour of its own any more, so the \
              tooltip builder's colour proves nothing"
+        );
+        // Material's dialog body is `on-surface-variant`, its muted colour
+        // too (docs/platform-facts.md §2.22, §2.1.3); the others differ.
+        assert!(
+            dialog_body_differs > 0,
+            "no preset's dialog body colour differs from upstream's \
+             muted_foreground any more, so the dialog builder's colour proves \
+             nothing"
         );
     }
 

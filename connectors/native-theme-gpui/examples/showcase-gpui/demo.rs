@@ -8019,9 +8019,8 @@ struct TableLine {
 /// states it, else its line -- its font's size by `defaults.line_height` --
 /// and that padding; the header in `list.header_background` and
 /// `list.header_font`, the rows in `list.item_font`, the row at `selected`
-/// in `list.selection_background` and `selection_text_color`, the third in
-/// `list.alternate_row_background` (docs/showcase-elements.toml,
-/// `basic.table.row_3`); a `list.grid_color` line `separator.line_width`
+/// in `list.selection_background` and `selection_text_color`; a
+/// `list.grid_color` line `separator.line_width`
 /// wide inside the header's bottom edge and one down the first column's
 /// right edge through every row; the whole framed by `list.border` on
 /// `list.background_color`. The header, its two cells and every row report
@@ -8132,11 +8131,6 @@ pub(crate) fn files_table(
                 Some(colour(l.selection_background)),
                 colour(l.selection_text_color),
             )
-        } else if ix == TABLE_ALTERNATE_ROW {
-            (
-                Some(colour(l.alternate_row_background)),
-                colour(l.item_font.color),
-            )
         } else {
             (None, colour(l.item_font.color))
         };
@@ -8174,7 +8168,3 @@ pub(crate) fn files_table(
         .self_start()
         .debug_selector(move || id.into())
 }
-
-/// The index of the table row filled with `list.alternate_row_background`:
-/// the third, as docs/showcase-elements.toml has it (`basic.table.row_3`).
-const TABLE_ALTERNATE_ROW: usize = 2;

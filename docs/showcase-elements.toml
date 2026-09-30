@@ -653,7 +653,10 @@ when = "a widget is hovered"
 sample = { text = "glyph" }
 
 # =============================================================================================
-# The Basic page (v4): five columns, each a stack of groups; a group is its heading over its rows.
+# The Basic page (v5): five columns, each a stack of groups; a group is its heading over its rows.
+# Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text area, Slider.
+# Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4: Typography,
+# Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
 # A heading is measured against the element above it in its column (the column for the
 # first); a control against its heading or the control before it.
 # =============================================================================================
@@ -1007,12 +1010,12 @@ states = ["Normal"]
 part = true
 sample = { text = "glyph" }
 
-# --- Column 1: Switches -----------------------------------------------------------------------
+# --- Column 3: Switches -----------------------------------------------------------------------
 
 [[element]]
 id = "basic.switches.heading"
 name = "Section heading"
-parent = "basic.radios.option_b"
+parent = "basic.column_3"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1224,12 +1227,12 @@ states = ["Normal"]
 part = true
 sample = { text = "glyph" }
 
-# --- Column 2: Drop-down ----------------------------------------------------------------------
+# --- Column 1: Drop-down ----------------------------------------------------------------------
 
 [[element]]
 id = "basic.drop_down.heading"
 name = "Section heading"
-parent = "basic.text_area.field"
+parent = "basic.radios.option_b"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1268,7 +1271,7 @@ sample = { mark = "glyph" }
 [[element]]
 id = "basic.number_input.heading"
 name = "Section heading"
-parent = "basic.column_3"
+parent = "basic.switches.disabled"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1290,12 +1293,12 @@ states = ["Normal"]
 part = true
 sample = { text = "glyph" }
 
-# --- Column 3: Slider -------------------------------------------------------------------------
+# --- Column 2: Slider -------------------------------------------------------------------------
 
 [[element]]
 id = "basic.slider.heading"
 name = "Section heading"
-parent = "basic.number_input.field"
+parent = "basic.text_area.field"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1334,12 +1337,12 @@ states = ["40"]
 part = true
 sample = { fill = [0.5, 0.5] }
 
-# --- Column 3: Progress bar -------------------------------------------------------------------
+# --- Column 4: Progress bar -------------------------------------------------------------------
 
 [[element]]
 id = "basic.progress_bar.heading"
 name = "Section heading"
-parent = "basic.slider.control"
+parent = "basic.separator.line"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1366,7 +1369,7 @@ sample = { fill = [0.5, 0.5] }
 [[element]]
 id = "basic.spinner.heading"
 name = "Section heading"
-parent = "basic.progress_bar.bar"
+parent = "basic.number_input.field"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1379,12 +1382,12 @@ leaves = ["spinner.diameter_px", "spinner.min_diameter_px", "spinner.stroke_widt
 states = ["Spinning"]
 sample = { arc = "glyph" }
 
-# --- Column 3: Tabs ---------------------------------------------------------------------------
+# --- Column 5: Tabs ---------------------------------------------------------------------------
 
 [[element]]
 id = "basic.tabs.heading"
 name = "Section heading"
-parent = "basic.spinner.indicator"
+parent = "basic.icons.small"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1417,7 +1420,7 @@ sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } 
 [[element]]
 id = "basic.segmented.heading"
 name = "Section heading"
-parent = "basic.tabs.bar"
+parent = "basic.spinner.indicator"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1541,14 +1544,14 @@ leaves = ["defaults.line_height", "defaults.mono_font", "defaults.mono_font.colo
 states = ["Monospace"]
 sample = { text = "glyph" }
 
-# --- Column 4: Icons --------------------------------------------------------------------------
+# --- Column 5: Icons --------------------------------------------------------------------------
 # The first row: three icon buttons. The second: one icon of the shown set at each size
 # `defaults.icon_sizes` states for small, toolbar and large.
 
 [[element]]
 id = "basic.icons.heading"
 name = "Section heading"
-parent = "basic.typography.monospace"
+parent = "basic.column_5"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1622,12 +1625,12 @@ parent = "basic.icons.toolbar"
 leaves = ["defaults.icon_sizes.large_px", "defaults.icon_theme", "theme_variant.icon_set"]
 states = ["Large"]
 
-# --- Column 4: Card ---------------------------------------------------------------------------
+# --- Column 3: Card ---------------------------------------------------------------------------
 
 [[element]]
 id = "basic.card.heading"
 name = "Section heading"
-parent = "basic.icons.small"
+parent = "basic.segmented.control"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1653,7 +1656,7 @@ sample = { text = "glyph" }
 [[element]]
 id = "basic.separator.heading"
 name = "Section heading"
-parent = "basic.card.frame"
+parent = "basic.typography.monospace"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1666,13 +1669,13 @@ leaves = ["separator.line_color", "separator.line_width_px"]
 states = ["Normal"]
 sample = { line = [0.5, 0.5] }
 
-# --- Column 5: List ---------------------------------------------------------------------------
-# Eight rows, four shown, "Item 2" selected.
+# --- Column 4: List ---------------------------------------------------------------------------
+# Eight rows, three shown, "Item 2" selected.
 
 [[element]]
 id = "basic.list.heading"
 name = "Section heading"
-parent = "basic.column_5"
+parent = "basic.progress_bar.bar"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1712,15 +1715,6 @@ states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 
-[[element]]
-id = "basic.list.row_4"
-name = "List row"
-parent = "basic.list.row_3"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
-states = ["Normal"]
-part = true
-sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
-
 # Where `scrollbar.overlay_mode` hides it at rest, no showcase draws it.
 [[element]]
 id = "basic.list.scrollbar"
@@ -1748,7 +1742,7 @@ sample = { fill = [0.5, 0.5] }
 [[element]]
 id = "basic.expander.heading"
 name = "Section heading"
-parent = "basic.list.frame"
+parent = "basic.tabs.bar"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1844,7 +1838,7 @@ sample = { text = "glyph" }
 id = "basic.table.frame"
 name = "Table"
 parent = "basic.table.heading"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.alternate_row_background", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Row 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1890,14 +1884,5 @@ name = "Table row"
 parent = "basic.table.row_1"
 leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.grid_color", "list.row_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Selected"]
-part = true
-sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
-
-[[element]]
-id = "basic.table.row_3"
-name = "Table row"
-parent = "basic.table.row_2"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.alternate_row_background", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
-states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }

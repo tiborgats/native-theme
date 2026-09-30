@@ -221,7 +221,6 @@ const LISTED: &[(&str, &str)] = &[
     ("basic-list-row-0", "basic.list.row_1"),
     ("basic-list-row-1", "basic.list.row_2"),
     ("basic-list-row-2", "basic.list.row_3"),
-    ("basic-list-row-3", "basic.list.row_4"),
     ("basic-heading-expander", "basic.expander.heading"),
     ("basic-expander-body", "basic.expander.details.body"),
     ("basic-heading-card", "basic.card.heading"),
@@ -234,7 +233,6 @@ const LISTED: &[(&str, &str)] = &[
     ("basic-table-header", "basic.table.header"),
     ("basic-table-row-0", "basic.table.row_1"),
     ("basic-table-row-1", "basic.table.row_2"),
-    ("basic-table-row-2", "basic.table.row_3"),
 ];
 
 /// The parts of a theme-drawn control (`native_theme_gpui::widgets`) that

@@ -40,7 +40,7 @@ const BASIC_PROGRESS: f32 = 40.0;
 
 /// How many of the List's rows show at once: fewer than it has, so its
 /// scrollbar shows.
-const BASIC_LIST_VISIBLE: f32 = 4.0;
+const BASIC_LIST_VISIBLE: f32 = 3.0;
 
 /// A Button of the page, as `(id, label, variant, state)`.
 type BasicButton = (&'static str, &'static str, ButtonKind, ButtonState);
@@ -127,7 +127,7 @@ const TABLE_HEAD: [(&str, &str); 2] = [
     ("Name", "basic.table.header.name"),
     ("Size", "basic.table.header.size"),
 ];
-const TABLE_ROWS: [[&str; 2]; 3] = [["a.txt", "1 KB"], ["b.png", "20 KB"], ["c.rs", "3 KB"]];
+const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
 const TABLE_SELECTED: usize = 1;
 
 /// The Icons group's icons, as (id, the size builder, what it is), each
@@ -152,29 +152,29 @@ pub(crate) const BASIC_COLUMN_1: [BasicGroup; 4] = [
     ("basic-heading-buttons", "Buttons"),
     ("basic-heading-checkboxes", "Checkboxes"),
     ("basic-heading-radio", "Radio buttons"),
-    ("basic-heading-switches", "Switches"),
+    ("basic-heading-select", "Drop-down"),
 ];
 pub(crate) const BASIC_COLUMN_2: [BasicGroup; 3] = [
     ("basic-heading-inputs", "Text inputs"),
     ("basic-heading-textarea", "Text area"),
-    ("basic-heading-select", "Drop-down"),
-];
-pub(crate) const BASIC_COLUMN_3: [BasicGroup; 6] = [
-    ("basic-heading-number", "Number input"),
     ("basic-heading-slider", "Slider"),
-    ("basic-heading-progress", "Progress bar"),
+];
+pub(crate) const BASIC_COLUMN_3: [BasicGroup; 5] = [
+    ("basic-heading-switches", "Switches"),
+    ("basic-heading-number", "Number input"),
     ("basic-heading-spinner", "Spinner"),
-    ("basic-heading-tabs", "Tabs"),
     ("basic-heading-segmented", "Segmented control"),
+    ("basic-heading-card", "Card"),
 ];
 pub(crate) const BASIC_COLUMN_4: [BasicGroup; 4] = [
     ("basic-heading-typography", "Typography"),
-    ("basic-heading-icons", "Icons"),
-    ("basic-heading-card", "Card"),
     ("basic-heading-separator", "Separator"),
-];
-pub(crate) const BASIC_COLUMN_5: [BasicGroup; 3] = [
+    ("basic-heading-progress", "Progress bar"),
     ("basic-heading-list", "List"),
+];
+pub(crate) const BASIC_COLUMN_5: [BasicGroup; 4] = [
+    ("basic-heading-icons", "Icons"),
+    ("basic-heading-tabs", "Tabs"),
     ("basic-heading-expander", "Expander"),
     ("basic-heading-table", "Table"),
 ];
@@ -254,11 +254,11 @@ impl Showcase {
                 },
             )
         };
-        let [buttons, checkboxes, radios, switches] = BASIC_COLUMN_1;
-        let [inputs, textarea, select] = BASIC_COLUMN_2;
-        let [number, slider, progress, spinner, tabs, segmented] = BASIC_COLUMN_3;
-        let [typography, icons, card, separator] = BASIC_COLUMN_4;
-        let [list, expander, table] = BASIC_COLUMN_5;
+        let [buttons, checkboxes, radios, select] = BASIC_COLUMN_1;
+        let [inputs, textarea, slider] = BASIC_COLUMN_2;
+        let [switches, number, spinner, segmented, card] = BASIC_COLUMN_3;
+        let [typography, separator, progress, list] = BASIC_COLUMN_4;
+        let [icons, tabs, expander, table] = BASIC_COLUMN_5;
         let no_click = None::<fn(&bool, &mut Window, &mut gpui::App)>;
 
         let column1 = vec![
@@ -334,14 +334,17 @@ impl Showcase {
                 ],
             ),
             group(
-                switches,
+                select,
                 vec![
-                    demo::switch(ui, cx, "basic-switch-off", "Off", false, Some(held))
-                        .into_any_element(),
-                    demo::switch(ui, cx, "basic-switch-on", "On", true, Some(held))
-                        .into_any_element(),
-                    demo::switch(ui, cx, "basic-switch-disabled", "Disabled", true, no_click)
-                        .into_any_element(),
+                    demo::select(
+                        ui,
+                        cx,
+                        "basic-select",
+                        &self.basic_select,
+                        "Pick a fruit",
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
         ];
@@ -400,228 +403,217 @@ impl Showcase {
                 ],
             ),
             group(
-                select,
-                vec![
-                    demo::select(
-                        ui,
-                        cx,
-                        "basic-select",
-                        &self.basic_select,
-                        "Pick a fruit",
-                        width,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-        ];
-
-        let column3 = vec![
-            group(
-                number,
-                vec![
-                    demo::number_input(
-                        ui,
-                        cx,
-                        window,
-                        "basic-number",
-                        &self.basic_number_state,
-                        width,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
                 slider,
                 vec![
                     demo::slider(ui, cx, "basic-slider", &self.basic_slider_state, width)
                         .into_any_element(),
                 ],
             ),
-            group(
-                progress,
-                vec![
-                    div()
-                        .w(width)
-                        .child(demo::progress(
-                            ui,
-                            cx,
-                            "basic-progress",
-                            "Progress bar",
-                            BASIC_PROGRESS,
-                        ))
-                        .into_any_element(),
-                ],
-            ),
-            group(
-                spinner,
-                vec![
-                    demo::spinner(
-                        ui,
-                        cx,
-                        "basic-spinner",
-                        SpinnerKind::Medium,
-                        &self.spinner_icons(),
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
-                tabs,
-                vec![
-                    demo::tab_row(
-                        ui,
-                        cx,
-                        "basic-tabs",
-                        &["One", "Two"],
-                        self.basic_tab,
-                        on_tab,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
-                segmented,
-                vec![
-                    demo::segmented(
-                        ui,
-                        cx,
-                        "basic-segmented",
-                        &["Day", "Week", "Month"],
-                        self.basic_segment,
-                        on_segment,
-                    )
-                    .into_any_element(),
-                ],
-            ),
         ];
+
+        let g_switches = group(
+            switches,
+            vec![
+                demo::switch(ui, cx, "basic-switch-off", "Off", false, Some(held))
+                    .into_any_element(),
+                demo::switch(ui, cx, "basic-switch-on", "On", true, Some(held)).into_any_element(),
+                demo::switch(ui, cx, "basic-switch-disabled", "Disabled", true, no_click)
+                    .into_any_element(),
+            ],
+        );
+        let g_number = group(
+            number,
+            vec![
+                demo::number_input(
+                    ui,
+                    cx,
+                    window,
+                    "basic-number",
+                    &self.basic_number_state,
+                    width,
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_spinner = group(
+            spinner,
+            vec![
+                demo::spinner(
+                    ui,
+                    cx,
+                    "basic-spinner",
+                    SpinnerKind::Medium,
+                    &self.spinner_icons(),
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_tabs = group(
+            tabs,
+            vec![
+                demo::tab_row(
+                    ui,
+                    cx,
+                    "basic-tabs",
+                    &["One", "Two"],
+                    self.basic_tab,
+                    on_tab,
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_segmented = group(
+            segmented,
+            vec![
+                demo::segmented(
+                    ui,
+                    cx,
+                    "basic-segmented",
+                    &["Day", "Week", "Month"],
+                    self.basic_segment,
+                    on_segment,
+                )
+                .into_any_element(),
+            ],
+        );
 
         let type_line =
             |(id, role, text)| demo::type_line(ui, cx, id, role, text).into_any_element();
         let folder = self.role_chrome_icon(IconRole::FolderOpen);
-        let column4 = vec![
-            group(
-                typography,
-                TYPE_LINES_ABOVE_LINK
-                    .map(type_line)
-                    .into_iter()
-                    .chain([demo::link(
+        let g_progress = group(
+            progress,
+            vec![
+                div()
+                    .w(width)
+                    .child(demo::progress(
                         ui,
                         cx,
-                        "basic-link",
-                        "Link",
-                        "https://github.com/tiborgats/native-theme",
-                    )
-                    .into_any_element()])
-                    .chain(TYPE_LINES_BELOW_LINK.map(type_line))
-                    .collect(),
-            ),
-            group(
-                icons,
-                vec![
-                    // As the toolbar's buttons are spaced: `toolbar.item_gap`,
-                    // `layout.widget_gap` where the theme states none.
-                    with_gap(h_flex(), tool_gap.or(widget_gap))
-                        .items_center()
-                        .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
-                            demo::icon_button(
-                                ui,
-                                cx,
-                                id,
-                                name,
-                                &self.role_chrome_icon(role),
-                                listed,
-                            )
-                        }))
-                        .into_any_element(),
-                    row()
-                        .children(ICONS.map(|(id, size, what)| {
+                        "basic-progress",
+                        "Progress bar",
+                        BASIC_PROGRESS,
+                    ))
+                    .into_any_element(),
+            ],
+        );
+        let g_typography = group(
+            typography,
+            TYPE_LINES_ABOVE_LINK
+                .map(type_line)
+                .into_iter()
+                .chain([demo::link(
+                    ui,
+                    cx,
+                    "basic-link",
+                    "Link",
+                    "https://github.com/tiborgats/native-theme",
+                )
+                .into_any_element()])
+                .chain(TYPE_LINES_BELOW_LINK.map(type_line))
+                .collect(),
+        );
+        let g_icons = group(
+            icons,
+            vec![
+                // As the toolbar's buttons are spaced: `toolbar.item_gap`,
+                // `layout.widget_gap` where the theme states none.
+                with_gap(h_flex(), tool_gap.or(widget_gap))
+                    .items_center()
+                    .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
+                        demo::icon_button(ui, cx, id, name, &self.role_chrome_icon(role), listed)
+                    }))
+                    .into_any_element(),
+                row()
+                    .children(
+                        ICONS.map(|(id, size, what)| {
                             demo::sized_icon(ui, cx, id, &folder, size, what)
-                        }))
-                        .into_any_element(),
-                ],
-            ),
-            group(
-                card,
-                vec![
-                    demo::card(
-                        ui,
-                        cx,
-                        "basic-card",
-                        "basic-card-text",
-                        "Card content",
-                        wide,
-                        geometry::container_margin(&self.layout),
+                        }),
                     )
                     .into_any_element(),
-                ],
-            ),
-            group(
-                separator,
-                vec![
-                    div()
-                        .w(wide)
-                        .child(demo::separator(
-                            ui,
-                            cx,
-                            "basic-separator",
-                            SeparatorKind::Horizontal,
-                        ))
-                        .into_any_element(),
-                ],
-            ),
-        ];
+            ],
+        );
+        let g_separator = group(
+            separator,
+            vec![
+                div()
+                    .w(wide)
+                    .child(demo::separator(
+                        ui,
+                        cx,
+                        "basic-separator",
+                        SeparatorKind::Horizontal,
+                    ))
+                    .into_any_element(),
+            ],
+        );
 
-        let column5 = vec![
-            group(
-                list,
-                vec![
-                    demo::list(
-                        ui,
-                        cx,
-                        "basic-list",
-                        "basic-list",
-                        &self.basic_list,
-                        wide,
-                        list_height,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
-                expander,
-                vec![
-                    demo::expander(
-                        ui,
-                        cx,
-                        "basic-expander",
-                        [
-                            ("Details", "basic-expander-body", "Expanded content"),
-                            ("More", "basic-expander-more-body", "More content"),
-                        ],
-                        self.basic_expanded,
-                        wide,
-                        widget_gap,
-                        on_expander,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-            group(
-                table,
-                vec![
-                    demo::files_table(
-                        ui,
-                        cx,
-                        "basic-table",
-                        TABLE_HEAD,
-                        &TABLE_ROWS,
-                        TABLE_SELECTED,
-                        wide,
-                    )
-                    .into_any_element(),
-                ],
-            ),
-        ];
+        let g_card = group(
+            card,
+            vec![
+                demo::card(
+                    ui,
+                    cx,
+                    "basic-card",
+                    "basic-card-text",
+                    "Card content",
+                    wide,
+                    geometry::container_margin(&self.layout),
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_list = group(
+            list,
+            vec![
+                demo::list(
+                    ui,
+                    cx,
+                    "basic-list",
+                    "basic-list",
+                    &self.basic_list,
+                    wide,
+                    list_height,
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_expander = group(
+            expander,
+            vec![
+                demo::expander(
+                    ui,
+                    cx,
+                    "basic-expander",
+                    [
+                        ("Details", "basic-expander-body", "Expanded content"),
+                        ("More", "basic-expander-more-body", "More content"),
+                    ],
+                    self.basic_expanded,
+                    wide,
+                    widget_gap,
+                    on_expander,
+                )
+                .into_any_element(),
+            ],
+        );
+        let g_table = group(
+            table,
+            vec![
+                demo::files_table(
+                    ui,
+                    cx,
+                    "basic-table",
+                    TABLE_HEAD,
+                    &TABLE_ROWS,
+                    TABLE_SELECTED,
+                    wide,
+                )
+                .into_any_element(),
+            ],
+        );
+
+        let column3 = vec![g_switches, g_number, g_spinner, g_segmented, g_card];
+        let column4 = vec![g_typography, g_separator, g_progress, g_list];
+        let column5 = vec![g_icons, g_tabs, g_expander, g_table];
 
         let column = |listed: &'static str, groups: Vec<gpui::Div>| {
             with_gap(v_flex(), section_gap)
