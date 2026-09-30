@@ -391,6 +391,10 @@ geometry is still restored). The default registry holds two themes,
 
 Non-finite or non-positive scaling factors count as 1.0.
 
+Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
+focus ring in `defaults.focus_ring_color` while focused (the `Switch` since
+gpui-component 0.7.0, whose own switch gained one).
+
 ## Features
 
 All six are on by default; `default-features = false` is the way to narrow.

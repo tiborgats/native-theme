@@ -956,6 +956,25 @@ fn a_switch_toggles_on_click_and_from_the_keyboard(cx: &mut TestAppContext) {
     assert_eq!((value.get(), calls.get()), (false, 2));
 }
 
+/// K10: the switch's own focus handle is the base switch's one tab stop. In
+/// this harness the switch is the only focusable element, so Tab from it
+/// comes back to the same handle; a second tab stop would take the focus.
+#[gpui::test]
+fn a_switch_keeps_one_tab_stop(cx: &mut TestAppContext) {
+    let (cx, value, calls) = toggler(cx, false, true);
+    focus_next(cx);
+    let first = cx.update(|window, cx| window.focused(cx));
+    activate_key(cx, "space");
+    assert_eq!((value.get(), calls.get()), (true, 1));
+    redraw(cx);
+    focus_next(cx);
+    assert_eq!(
+        cx.update(|window, cx| window.focused(cx)),
+        first,
+        "Tab from the only switch landed on a second tab stop"
+    );
+}
+
 #[gpui::test]
 fn a_disabled_switch_is_inert(cx: &mut TestAppContext) {
     let (cx, value, calls) = toggler(cx, true, true);

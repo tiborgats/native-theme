@@ -8,7 +8,7 @@ use gpui::{
     Pixels, RenderOnce, SharedString, Styled, Window, div, prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
-use gpui_component::{ActiveTheme as _, Disableable as _};
+use gpui_component::{ActiveTheme as _, Disableable as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
 use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
@@ -156,6 +156,9 @@ impl SwitchLook {
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
 /// state. The thumb travels on gpui-component's spring (switch.rs:169-178).
+/// While focused, the track draws the focus ring in `ThemeColor::ring`
+/// (`defaults.focus_ring_color`), as gpui-component's switch does
+/// (switch.rs:269-272).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Without a
 /// native theme it renders gpui-component's `Switch`.
@@ -266,6 +269,14 @@ impl RenderOnce for Switch {
             window,
             cx,
         );
+        // The switch's own focus handle, handed to the base switch as its one
+        // tab stop (gpui-base switch.rs, `Switch::track_focus`), so the track
+        // knows when to draw the ring -- the `Checkbox` pattern.
+        let focus_handle = window
+            .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
+            .read(cx)
+            .clone();
+        let focused = focus_handle.is_focused(window);
         let track = SwitchTrack::new((self.id.clone(), "track"))
             .checked(checked)
             .disabled(self.disabled)
@@ -275,6 +286,9 @@ impl RenderOnce for Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
+            .when(focused && !self.disabled, |track| {
+                track.focus_ring_style(window, cx)
+            })
             .when_some(look.hover_track, |track, hover| {
                 track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
             })
@@ -299,6 +313,7 @@ impl RenderOnce for Switch {
         BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
+            .track_focus(&focus_handle)
             .when_some(self.label.clone(), |switch, label| {
                 switch.accessibility_label(label)
             })

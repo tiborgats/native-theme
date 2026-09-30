@@ -437,6 +437,18 @@ pub fn switch(
         t.switch_thumb,
         "gpui-component/switch.rs:146",
     ));
+    // 0.7.0: the track draws the focus ring while focused (switch.rs,
+    // `Switch::render`); a disabled switch takes no focus.
+    let info = if disabled {
+        info
+    } else {
+        info.color(claim(
+            "focus ring",
+            "ring",
+            t.ring,
+            "gpui-component/styled.rs:175-189",
+        ))
+    };
     let info = if disabled {
         info.color(claim(
             "disabled label",
@@ -757,6 +769,19 @@ pub fn native_switch(
             ),
             "native-theme-gpui/widgets/switch.rs:75",
         )),
+    };
+    // While focused the track draws the focus ring in `ring`, which the
+    // connector maps from `defaults.focus_ring_color`; a disabled switch
+    // takes no focus.
+    let info = if disabled {
+        info
+    } else {
+        info.color(claim(
+            "focus ring",
+            "focus_ring_color",
+            stated(r.defaults.focus_ring_color),
+            "native-theme-gpui/colors.rs:197",
+        ))
     };
     let rest_thumb = if checked {
         s.thumb_background
