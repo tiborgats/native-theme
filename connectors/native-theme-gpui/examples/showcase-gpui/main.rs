@@ -40,6 +40,7 @@ mod app;
 mod chrome;
 mod demo;
 mod elements;
+mod host;
 mod info;
 mod inspector;
 mod pages;
@@ -54,7 +55,7 @@ use gpui::{
     MouseMoveEvent, ParentElement, Pixels, PlatformInput, WindowBounds, WindowDecorations,
     WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{IconName, Root};
+use gpui_component::IconName;
 
 use native_theme::icons::IconSetChoice;
 
@@ -1457,21 +1458,17 @@ fn main() {
             } else {
                 window_options(bounds)
             };
-            let mut showcase_entity = None;
-            let window_handle = cx.open_window(options, |window, cx| {
-                let showcase = cx.new(|cx| {
+            // gpui-kit's one window entry point: the showcase is the content
+            // of a gpui-base `Root` (gpui-kit lib.rs, `open_window`), whose
+            // plugins host the overlays and the showcase's actions (host.rs).
+            let opened = gpui_kit::open_window(options, cx, |window, cx| {
+                cx.new(|cx| {
                     let mut s = Showcase::new(window, cx);
                     apply_cli_args(&mut s, &cli_args, window, cx);
                     s
-                });
-                showcase_entity = Some(showcase.clone());
-                cx.new(|cx| Root::new(showcase, window, cx))
+                })
             });
-            // Read only by the macOS `--screenshot` block below; elsewhere this
-            // read keeps rustc's "assigned to, but never used" warning away.
-            #[cfg(not(target_os = "macos"))]
-            let _ = &showcase_entity;
-            let Ok(window_handle) = window_handle else {
+            let Ok((window_handle, showcase_entity)) = opened else {
                 eprintln!("Fatal: failed to open main application window");
                 cx.quit();
                 return;
@@ -1479,17 +1476,17 @@ fn main() {
             window_handle
                 .update(cx, |_, window, _| name_window(window))
                 .ok();
-            if let (Some(path), Some(showcase)) = (&cli_args.dump_layout, &showcase_entity) {
+            if let Some(path) = &cli_args.dump_layout {
                 dump_layout(
                     cx,
-                    *window_handle,
-                    showcase.clone(),
+                    window_handle,
+                    showcase_entity.clone(),
                     path.clone(),
                     !cli_args.capture,
                 );
             }
             if let Some(at) = cli_args.pointer {
-                hold_pointer(cx, *window_handle, at, cli_args.press);
+                hold_pointer(cx, window_handle, at, cli_args.press);
             }
 
             // Force Metal drawable to adopt the Retina scale factor by
@@ -1513,8 +1510,8 @@ fn main() {
                     // ask: `TestAppContext::build` gives gpui's
                     // `NoopTextSystem` (gpui-pre 0.3.6
                     // src/app/test_context.rs:131, src/platform/test/platform.rs:124-131).
-                    if let Some(showcase) = &showcase_entity {
-                        let mono = showcase.read(cx).original_mono_font.family.clone();
+                    {
+                        let mono = showcase_entity.read(cx).original_mono_font.family.clone();
                         let names = cx.text_system().all_font_names();
                         let held = names.iter().any(|name| name.as_str() == mono.as_ref());
                         println!(
@@ -1522,7 +1519,7 @@ fn main() {
                         );
                     }
                     let path = screenshot_path.clone();
-                    let any_handle = *window_handle;
+                    let any_handle = window_handle;
                     cx.spawn(async move |cx| {
                         // Force Metal drawable to update on Retina displays.
                         // Calls [NSWindow setContentSize:] directly (synchronous)
@@ -1552,7 +1549,7 @@ fn main() {
                 #[cfg(target_os = "windows")]
                 {
                     let path = screenshot_path.clone();
-                    let any_handle = *window_handle;
+                    let any_handle = window_handle;
                     cx.spawn(async move |cx| {
                         cx.background_executor()
                             .timer(Duration::from_millis(1500))

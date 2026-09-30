@@ -7,15 +7,13 @@
 //! opens — and drive it with real input.
 
 use gpui::{
-    AbsoluteLength, App, Bounds, DefiniteLength, Entity, Focusable as _, Length, Modifiers,
-    MouseButton, Pixels, Point, TestAppContext, VisualTestContext, point, prelude::*, px, rems,
-    size,
+    AbsoluteLength, AnyWindowHandle, App, Bounds, DefiniteLength, Entity, Focusable as _, Length,
+    Modifiers, MouseButton, Pixels, Point, TestAppContext, VisualTestContext, point, prelude::*,
+    px, rems, size,
 };
 use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
-use std::cell::RefCell;
-use std::ops::Deref as _;
 use std::rc::Rc;
 
 use crate::app::{
@@ -88,7 +86,7 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 fn open(
     cx: &mut TestAppContext,
     window_size: gpui::Size<Pixels>,
-) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
+) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
     open_with(
         cx,
         crate::window_options(Bounds {
@@ -102,30 +100,23 @@ fn open(
 fn open_with(
     cx: &mut TestAppContext,
     options: gpui::WindowOptions,
-) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
+) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
     cx.update(|cx| {
         gpui_kit::init(cx);
         crate::app::init(cx);
     });
-    let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
     let handle = cx
         .update(|cx| {
-            cx.open_window(options, {
-                let view = view.clone();
-                move |window, cx| {
-                    let showcase = cx.new(|cx| Showcase::new(window, cx));
-                    *view.borrow_mut() = Some(showcase.clone());
-                    cx.new(|cx| Root::new(showcase, window, cx))
-                }
+            gpui_kit::open_window(options, cx, |window, cx| {
+                cx.new(|cx| Showcase::new(window, cx))
             })
         })
         .expect("the window opened");
-    let root = handle.root(cx).expect("the root view was built");
-    let showcase = view.borrow_mut().take().expect("the showcase was built");
-    let mut cx = VisualTestContext::from_window(*handle.deref(), cx);
+    let (window_handle, showcase) = handle;
+    let mut cx = VisualTestContext::from_window(window_handle, cx);
     cx.run_until_parked();
     draw(&mut cx);
-    (showcase, root, cx)
+    (showcase, window_handle, cx)
 }
 
 /// Lay the window out and paint it, which is what fills `debug_bounds`,
@@ -620,7 +611,7 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
     // --- Feedback page ------------------------------------------------
     show(&mut cx, &showcase, Page::Feedback);
 
-    // Notification: the button pushes one onto the Root's own layer.
+    // Notification: the button pushes one onto the window's notification layer.
     let before = cx.update(|window, cx| window.notifications(cx).len());
     click(&mut cx, PROBE_NOTIFICATION);
     assert_eq!(
@@ -7654,6 +7645,43 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
         .as_deref(),
         Some("nord"),
         "the preset switch does not show the preset the palette installed"
+    );
+}
+
+/// A shortcut pressed while the palette's query has the focus still reaches
+/// the showcase: its handlers wrap the overlays (host.rs), not only the view.
+#[gpui::test]
+fn a_shortcut_works_while_the_palette_has_the_focus(cx: &mut TestAppContext) {
+    let (showcase, _window, mut cx) = open(cx, WINDOW_SIZE);
+    let before = read(&mut cx, &showcase, |this, _| this.side_panel_visible);
+    press(&mut cx, "secondary-k");
+    assert!(a_dialog_is_open(&mut cx), "the palette did not open");
+    press(&mut cx, "secondary-b");
+    assert_ne!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        before,
+        "Ctrl+B inside the palette did not toggle the side panel"
+    );
+}
+
+/// The capture shield covers an open dialog too: nothing on it is hovered.
+/// A dialog paints deferred (gpui-base dialog.rs, `Dialog::render`), so the
+/// shield must be deferred above it, not merely last.
+#[gpui::test]
+fn the_pointer_shield_covers_an_open_dialog(cx: &mut TestAppContext) {
+    let (showcase, _window, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.pointer_shield = true;
+            cx.notify();
+        });
+    });
+    run_menu_item(&mut cx, "Help", "About");
+    draw(&mut cx);
+    assert!(
+        settle_on(&mut cx, &showcase, OVERLAY_ABOUT_NAME).is_none(),
+        "under the shield the About dialog is still hovered"
     );
 }
 

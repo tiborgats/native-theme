@@ -37,6 +37,7 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         "elements.rs",
         include_str!("../examples/showcase-gpui/elements.rs"),
     ),
+    ("host.rs", include_str!("../examples/showcase-gpui/host.rs")),
     (
         "info/buttons.rs",
         include_str!("../examples/showcase-gpui/info/buttons.rs"),
@@ -1059,35 +1060,7 @@ const DRAWN_TRAITS: &[&str] = &["RenderOnce", "Render", "Element", "IntoElement"
 
 /// Calls of a widget type's associated functions outside the helpers that put
 /// no widget on screen, as (file, `Type::function`, why).
-const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[
-    (
-        "app.rs",
-        "Root::render_dialog_layer",
-        "draws the Dialogs Root keeps (root.rs, Root::render_dialog_layer); each is \
-         built by the demo helper its opener hands `open_dialog` or \
-         `open_alert_dialog`",
-    ),
-    (
-        "app.rs",
-        "Root::render_notification_layer",
-        "draws the Notifications Root keeps (root.rs, \
-         Root::render_notification_layer); each is pushed by the demo helper whose \
-         widget reports it",
-    ),
-    (
-        "app.rs",
-        "Root::render_sheet_layer",
-        "draws the Sheet Root keeps (root.rs, Root::render_sheet_layer), built by \
-         the demo helper its opener hands `open_sheet` or `open_sheet_at`",
-    ),
-    (
-        "main.rs",
-        "Root::new",
-        "the window's root view: upstream finds its Dialogs, Sheets and \
-         Notifications through window.root::<Root>() (root.rs, Root::update), so the \
-         window has to be a Root, which no element can wrap",
-    ),
-];
+const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[];
 
 /// Whether `file` is one the first rule of `every_widget_reports_itself`
 /// leaves out: a helper file, the inspector, the test module, or an info file.

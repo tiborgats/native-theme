@@ -115,8 +115,9 @@ pub(crate) struct SetPreset(pub SharedString);
 /// so the menus show each platform's own shortcut.
 ///
 /// `Quit` is handled here, for the whole application, so it quits whatever
-/// has the focus; the actions that change the showcase are handled on its
-/// view (`Showcase::render`).
+/// has the focus; the actions that change the showcase are handled around
+/// the whole window, view and overlays, by `host::ShowcaseHost`, which this
+/// registers before any window opens.
 pub(crate) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("secondary-q", Quit, None),
@@ -125,6 +126,7 @@ pub(crate) fn init(cx: &mut App) {
         KeyBinding::new("secondary-,", OpenPreferences, None),
     ]);
     cx.on_action(|_: &Quit, cx| quit(cx));
+    crate::host::register(cx);
 }
 
 /// Quit the showcase: take the focus off every field, let the windows paint
@@ -1886,7 +1888,12 @@ impl Showcase {
         cx.notify();
     }
 
-    fn on_show_page(&mut self, action: &ShowPage, _: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_show_page(
+        &mut self,
+        action: &ShowPage,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if let Some(page) = Page::at(action.0) {
             self.show_page(page, cx);
         }
@@ -1895,7 +1902,7 @@ impl Showcase {
     /// Hide the side panel or show it again. Hidden, its widgets leave the
     /// screen, so the info of one of them does not stay on show (spec
     /// §4.3.4), as on a page change.
-    fn on_toggle_side_panel(
+    pub(crate) fn on_toggle_side_panel(
         &mut self,
         _: &ToggleSidePanel,
         _: &mut Window,
@@ -1935,7 +1942,7 @@ impl Showcase {
         cx.notify();
     }
 
-    fn on_set_color_mode(
+    pub(crate) fn on_set_color_mode(
         &mut self,
         action: &SetColorMode,
         window: &mut Window,
@@ -1945,17 +1952,27 @@ impl Showcase {
         cx.notify();
     }
 
-    fn on_reload_theme(&mut self, _: &ReloadTheme, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_reload_theme(
+        &mut self,
+        _: &ReloadTheme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         self.reload_system_theme(window, cx);
         cx.notify();
     }
 
-    fn on_set_preset(&mut self, action: &SetPreset, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_set_preset(
+        &mut self,
+        action: &SetPreset,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         self.apply_theme_by_name(&action.0, window, cx);
         cx.notify();
     }
 
-    fn on_open_command_palette(
+    pub(crate) fn on_open_command_palette(
         &mut self,
         _: &OpenCommandPalette,
         window: &mut Window,
@@ -1964,7 +1981,7 @@ impl Showcase {
         chrome::open_command_palette(self, window, cx);
     }
 
-    fn on_open_preferences(
+    pub(crate) fn on_open_preferences(
         &mut self,
         _: &OpenPreferences,
         window: &mut Window,
@@ -1973,7 +1990,12 @@ impl Showcase {
         chrome::open_preferences(self, window, cx);
     }
 
-    fn on_open_about(&mut self, _: &OpenAbout, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_open_about(
+        &mut self,
+        _: &OpenAbout,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         chrome::open_about(self, window, cx);
     }
 }
@@ -2152,27 +2174,18 @@ impl Render for Showcase {
         self.status_title_drawn = shown.clone();
 
         // Main layout: the title bar or the menu-bar row (spec S8), the
-        // toolbar, the body and the status bar, and above them the three
-        // layers `Root` keeps but does not draw.
-        // `Root::render` renders only the view it was given (root.rs,
-        // Root::render), so a dialog, a sheet or a notification the showcase
-        // pushes reaches the screen only because these three are here --
-        // upstream's own dialog test builds its host the same way
-        // (dialog/dialog.rs, DialogHost).
+        // toolbar, the body and the status bar. Dialogs, sheets and
+        // notifications are drawn beside this view, not inside it, by
+        // gpui-component's `WindowState` plugin (gpui-base root.rs,
+        // `Root::render`), so the showcase's actions are handled around both
+        // by `host::ShowcaseHost`, where an action dispatched from inside an
+        // overlay still finds them.
         div()
             .relative()
             .size_full()
             .bg(theme.background)
             .text_color(theme.foreground)
             .track_focus(&self.focus_handle)
-            .on_action(cx.listener(Self::on_show_page))
-            .on_action(cx.listener(Self::on_set_color_mode))
-            .on_action(cx.listener(Self::on_reload_theme))
-            .on_action(cx.listener(Self::on_toggle_side_panel))
-            .on_action(cx.listener(Self::on_set_preset))
-            .on_action(cx.listener(Self::on_open_command_palette))
-            .on_action(cx.listener(Self::on_open_preferences))
-            .on_action(cx.listener(Self::on_open_about))
             // First, so its prepaint opens the frame for every target
             // (info/registry.rs, epoch_marker).
             .child(epoch_marker(&self.info_ui))
@@ -2194,19 +2207,27 @@ impl Render for Showcase {
                     )
                     .child(chrome::status_bar(self, cx, shown)),
             )
-            // Last, so it is the topmost hitbox: an occluding box takes the
-            // pointer out of the hit test of everything under it (gpui-pre
-            // window.rs, `HitboxBehavior::BlockMouse`), so no widget is
-            // hovered and the inspector is handed no hover.
+            // Deferred at the highest priority, so it is the topmost hitbox:
+            // dialogs, menus and popovers paint deferred themselves (gpui-base
+            // dialog.rs, popup.rs), above any ordinary element, and a deferred
+            // element is painted by priority wherever it sits in the tree; an
+            // occluding box takes the pointer out of the hit test of
+            // everything under it (gpui-pre window.rs,
+            // `HitboxBehavior::BlockMouse`), so no widget is hovered and the
+            // inspector is handed no hover. A popup nested inside a deferred
+            // overlay (a submenu) is prepainted later and still lands above.
             .when(self.pointer_shield, |root| {
                 root.child(
-                    div()
-                        .absolute()
-                        .top_0()
-                        .left_0()
-                        .size_full()
-                        .occlude()
-                        .debug_selector(|| POINTER_SHIELD.into()),
+                    gpui::deferred(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full()
+                            .occlude()
+                            .debug_selector(|| POINTER_SHIELD.into()),
+                    )
+                    .with_priority(usize::MAX),
                 )
             })
     }
