@@ -6,7 +6,7 @@ use gpui::{
     actions, div, prelude::*,
 };
 use gpui_component::{
-    ActiveTheme, IconName, IconNamed as _, ResizableState, Root,
+    ActiveTheme, IconName, IconNamed as _, ResizableState,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
@@ -2194,9 +2194,6 @@ impl Render for Showcase {
                     )
                     .child(chrome::status_bar(self, cx, shown)),
             )
-            .children(Root::render_sheet_layer(window, cx))
-            .children(Root::render_dialog_layer(window, cx))
-            .children(Root::render_notification_layer(window, cx))
             // Last, so it is the topmost hitbox: an occluding box takes the
             // pointer out of the hit test of everything under it (gpui-pre
             // window.rs, `HitboxBehavior::BlockMouse`), so no widget is

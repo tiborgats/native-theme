@@ -238,17 +238,8 @@ fn ring(look: SpinnerLook, start: f32, end: f32) -> impl IntoElement {
                         .inner_radius(inner.max(0.))
                         .outer_radius(outer)
                         .paint(
-                            &ArcData {
-                                data: &(),
-                                index: 0,
-                                value: end - start,
-                                start_angle: start * TAU,
-                                end_angle: end * TAU,
-                                pad_angle: 0.,
-                            },
+                            &ArcData::new(&(), 0, end - start, start * TAU, end * TAU),
                             look.color,
-                            None,
-                            None,
                             &bounds,
                             window,
                         );

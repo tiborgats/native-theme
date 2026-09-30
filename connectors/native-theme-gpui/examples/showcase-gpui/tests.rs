@@ -512,7 +512,7 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
 /// being wired up fails the step that names it.
 #[gpui::test]
 fn interactive_controls_respond(cx: &mut TestAppContext) {
-    let (showcase, root, mut cx) = open(cx, TALL_WINDOW);
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
 
     // --- Buttons page -------------------------------------------------
     show(&mut cx, &showcase, Page::Buttons);
@@ -621,10 +621,10 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Feedback);
 
     // Notification: the button pushes one onto the Root's own layer.
-    let before = cx.update(|_w, cx| root.read(cx).notification.read(cx).notifications().len());
+    let before = cx.update(|window, cx| window.notifications(cx).len());
     click(&mut cx, PROBE_NOTIFICATION);
     assert_eq!(
-        cx.update(|_w, cx| root.read(cx).notification.read(cx).notifications().len()),
+        cx.update(|window, cx| window.notifications(cx).len()),
         before + 1,
         "Notification: nothing was pushed"
     );

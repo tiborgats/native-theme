@@ -73,10 +73,10 @@ impl std::fmt::Debug for AnimatedImageSources {
 ///
 /// # Coverage
 ///
-/// Maps 30 of the 42 `IconRole` variants to `IconName`. The 12 unmapped roles
-/// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionRefresh,
-/// ActionPrint, NavHome, TrashFull, DialogQuestion, Help, Lock) have no
-/// corresponding Lucide icon in gpui-component 0.6.
+/// Maps 31 of the 42 `IconRole` variants to `IconName`. The 11 unmapped roles
+/// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionPrint,
+/// NavHome, TrashFull, DialogQuestion, Help, Lock) have no corresponding icon
+/// in gpui-component 0.7.
 ///
 /// # Examples
 ///
@@ -114,6 +114,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         IconRole::ActionSettings => IconName::Settings,
         IconRole::ActionAdd => IconName::Plus,
         IconRole::ActionRemove => IconName::Minus,
+        IconRole::ActionRefresh => IconName::RefreshCw,
 
         // Navigation
         IconRole::NavBack => IconName::ChevronLeft,
@@ -140,7 +141,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         IconRole::UserAccount => IconName::User,
         IconRole::Notification => IconName::Bell,
 
-        // No Lucide equivalent in gpui-component 0.6
+        // No Lucide equivalent in gpui-component 0.7
         _ => return None,
     })
 }
@@ -150,7 +151,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 101 gpui-component 0.6.6 `IconName` variants. Returns `None`
+/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
 /// where Lucide has no equivalent (today only `StarFill`, spec §10.2); every
 /// `Some` is Lucide's own file name (`LucideLoader::new(name)` resolves it).
 #[must_use]
@@ -162,6 +163,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::ArrowRight => "arrow-right",
         IconName::ArrowUp => "arrow-up",
         IconName::Asterisk => "asterisk",
+        IconName::Ban => "ban",
         IconName::Battery => "battery",
         IconName::BatteryCharging => "battery-charging",
         IconName::BatteryFull => "battery-full",
@@ -181,6 +183,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::ChevronRight => "chevron-right",
         IconName::ChevronsUpDown => "chevrons-up-down",
         IconName::ChevronUp => "chevron-up",
+        IconName::CircleAlert => "circle-alert",
         IconName::CircleCheck => "circle-check",
         IconName::CircleUser => "circle-user",
         IconName::CircleX => "circle-x",
@@ -234,6 +237,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Plus => "plus",
         IconName::Redo => "redo",
         IconName::Redo2 => "redo-2",
+        IconName::RefreshCw => "refresh-cw",
         IconName::Replace => "replace",
         IconName::ResizeCorner => "grip",
         IconName::RotateCw => "rotate-cw",
@@ -269,7 +273,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 101 gpui-component 0.6.6 `IconName` variants. Returns `None`
+/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
 /// where Material Symbols has no equivalent (today only `StarOff`); every
 /// `Some` is a bundled Material Symbols Outlined 24px file.
 ///
@@ -294,9 +298,10 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::ArrowRight => "arrow_forward",
         IconName::ArrowUp => "arrow_upward",
         IconName::Asterisk => "emergency",
-        IconName::Battery => "battery_0_bar", // close
+        IconName::Ban => "block",                             // exact
+        IconName::Battery => "battery_0_bar",                 // close
         IconName::BatteryCharging => "battery_charging_full", // exact
-        IconName::BatteryFull => "battery_full", // exact
+        IconName::BatteryFull => "battery_full",              // exact
         IconName::BatteryLow => "battery_2_bar", // close: one of three bars <-> two of six
         IconName::BatteryMedium => "battery_4_bar", // close: two of three <-> four of six
         IconName::BatteryWarning => "battery_alert", // exact
@@ -313,6 +318,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::ChevronRight => "chevron_right",
         IconName::ChevronsUpDown => "unfold_more",
         IconName::ChevronUp => "expand_less",
+        IconName::CircleAlert => "error", // exact
         IconName::CircleCheck => "check_circle",
         IconName::CircleUser => "account_circle",
         IconName::CircleX => "cancel",
@@ -366,6 +372,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Plus => "add",
         IconName::Redo => "redo",
         IconName::Redo2 => "redo",
+        IconName::RefreshCw => "refresh", // close: one circular arrow, Lucide's has two
         IconName::Replace => "find_replace",
         IconName::ResizeCorner => "drag_indicator",
         IconName::RotateCw => "rotate_right", // exact
@@ -413,7 +420,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 101 gpui-component 0.6.6 `IconName` variants. Returns `None`
+/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
 /// where the freedesktop icon naming specification has no name for the
 /// concept (today every variant has one, some only as a labelled `close` or
 /// `approximate` substitute: `StarOff` and `HeartOff` both take
@@ -438,41 +445,44 @@ pub fn freedesktop_name_for_gpui_icon(
 
     Some(match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        IconName::Battery => "battery",                     // exact
-        IconName::BookOpen => "help-contents",              // close
-        IconName::Bot => "face-smile",                      // approximate
-        IconName::ChevronDown => "go-down", // close: full nav arrow, not disclosure chevron
+        IconName::Ban => "action-unavailable", // exact: circle with a slash (Adwaita, Breeze)
+        IconName::Battery => "battery",        // exact
+        IconName::BookOpen => "help-contents", // close
+        IconName::Bot => "face-smile",         // approximate
+        IconName::ChevronDown => "go-down",    // close: full nav arrow, not disclosure chevron
         IconName::ChevronLeft => "go-previous", // close
-        IconName::ChevronRight => "go-next", // close
-        IconName::ChevronUp => "go-up",     // close
-        IconName::CircleX => "dialog-error", // close
-        IconName::Copy => "edit-copy",      // exact
-        IconName::Dash => "list-remove",    // exact
-        IconName::Delete => "edit-delete",  // exact
-        IconName::File => "text-x-generic", // exact
-        IconName::FileText => "text-x-generic", // exact
-        IconName::Folder => "folder",       // exact
-        IconName::FolderClosed => "folder", // exact
-        IconName::FolderOpen => "folder-open", // exact
-        IconName::HardDrive => "drive-harddisk", // exact
+        IconName::ChevronRight => "go-next",   // close
+        IconName::ChevronUp => "go-up",        // close
+        IconName::CircleAlert => "emblem-important", // close: Adwaita a circle with "!", Breeze a bare "!"
+        IconName::CircleX => "dialog-error",         // close
+        IconName::Copy => "edit-copy",               // exact
+        IconName::Dash => "list-remove",             // exact
+        IconName::Delete => "edit-delete",           // exact
+        IconName::File => "text-x-generic",          // exact
+        IconName::FileText => "text-x-generic",      // exact
+        IconName::Folder => "folder",                // exact
+        IconName::FolderClosed => "folder",          // exact
+        IconName::FolderOpen => "folder-open",       // exact
+        IconName::HardDrive => "drive-harddisk",     // exact
         IconName::HeartOff => "non-starred", // approximate: un-favourite semantics, star metaphor
         IconName::Info => "dialog-information", // exact
         IconName::LayoutDashboard => "view-grid", // close
-        IconName::Map => "find-location",   // close
+        IconName::Map => "find-location",    // close
         IconName::Maximize => "view-fullscreen", // exact
-        IconName::Menu => "open-menu",      // exact
+        IconName::Menu => "open-menu",       // exact
         IconName::Minimize => "window-minimize", // exact
-        IconName::Minus => "list-remove",   // exact
+        IconName::Minus => "list-remove",    // exact
         IconName::Moon => "weather-clear-night", // close: dark mode toggle
         IconName::Network => "network-workgroup", // close
         IconName::Pause => "media-playback-pause", // exact
         IconName::Play => "media-playback-start", // exact
-        IconName::Plus => "list-add",       // exact
-        IconName::Redo => "edit-redo",      // exact
-        IconName::Redo2 => "edit-redo",     // exact
+        IconName::Plus => "list-add",        // exact
+        IconName::Redo => "edit-redo",       // exact
+        IconName::Redo2 => "edit-redo",      // exact
+        IconName::RefreshCw => "view-refresh", // exact
         IconName::Replace => "edit-find-replace", // exact
         IconName::RotateCw => "object-rotate-right", // exact
-        IconName::Search => "edit-find",    // exact
+        IconName::Search => "edit-find",     // exact
         IconName::Settings => "preferences-system", // exact
         IconName::SortAscending => "view-sort-ascending", // exact
         IconName::SortDescending => "view-sort-descending", // exact
@@ -1399,6 +1409,7 @@ mod tests {
         IconName::ArrowRight,
         IconName::ArrowUp,
         IconName::Asterisk,
+        IconName::Ban,
         IconName::Battery,
         IconName::BatteryCharging,
         IconName::BatteryFull,
@@ -1418,6 +1429,7 @@ mod tests {
         IconName::ChevronRight,
         IconName::ChevronsUpDown,
         IconName::ChevronUp,
+        IconName::CircleAlert,
         IconName::CircleCheck,
         IconName::CircleUser,
         IconName::CircleX,
@@ -1471,6 +1483,7 @@ mod tests {
         IconName::Plus,
         IconName::Redo,
         IconName::Redo2,
+        IconName::RefreshCw,
         IconName::Replace,
         IconName::ResizeCorner,
         IconName::RotateCw,
@@ -1721,37 +1734,42 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_maps_exactly_30_roles() {
+    fn icon_name_maps_exactly_31_roles() {
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(**r).is_some())
             .count();
         assert_eq!(
-            some_count, 30,
-            "Expected exactly 30 mappings, got {some_count}"
+            some_count, 31,
+            "Expected exactly 31 mappings, got {some_count}"
         );
     }
 
     // Issue 41: ALL_ICON_NAMES count tripwire test. `IconName` is generated by
     // `icon_named!` from gpui-kit-assets' icons directory with no `ALL` or
-    // iterator, so the list is audited by hand against gpui-component 0.6.6's
-    // 101 files. A *removed* variant breaks the list at compile time; an
+    // iterator, so the list is audited by hand against gpui-component 0.7.0's
+    // 104 files. A *removed* variant breaks the list at compile time; an
     // *added* one is not detected here and must be caught by re-auditing on
     // every gpui-component bump (ROADMAP: an iterable `IconName::ALL`).
     #[test]
     fn all_icon_names_count_matches_gpui_component() {
         assert_eq!(
             ALL_ICON_NAMES.len(),
-            101,
+            104,
             "ALL_ICON_NAMES count changed (got {}) -- update the list",
             ALL_ICON_NAMES.len()
         );
     }
 
-    // Issue 45: data-driven icon mapping regression tests covering all 30 Some() mappings.
+    // Issue 45: data-driven icon mapping regression tests covering all 31 Some() mappings.
     // Uses matches!() since IconName doesn't implement PartialEq.
     #[test]
     fn icon_name_data_driven() {
+        // 0.7.0 added IconName::RefreshCw, native-theme's ActionRefresh glyph.
+        assert!(matches!(
+            icon_name(IconRole::ActionRefresh),
+            Some(IconName::RefreshCw)
+        ));
         // Dialog / Alert
         assert!(matches!(
             icon_name(IconRole::DialogWarning),

@@ -520,6 +520,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
         "Settings" => Some(IconRole::ActionSettings),
         "Plus" => Some(IconRole::ActionAdd),
         "Minus" => Some(IconRole::ActionRemove),
+        "RefreshCw" => Some(IconRole::ActionRefresh),
         "ChevronLeft" => Some(IconRole::NavBack),
         "ChevronRight" => Some(IconRole::NavForward),
         "ChevronUp" => Some(IconRole::NavUp),
@@ -536,7 +537,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 101 gpui-component 0.6.6 IconName variants shown in the gallery.
+/// The 104 gpui-component 0.7.0 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -544,6 +545,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ArrowRight", IconName::ArrowRight),
     ("ArrowUp", IconName::ArrowUp),
     ("Asterisk", IconName::Asterisk),
+    ("Ban", IconName::Ban),
     ("Battery", IconName::Battery),
     ("BatteryCharging", IconName::BatteryCharging),
     ("BatteryFull", IconName::BatteryFull),
@@ -563,6 +565,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ChevronRight", IconName::ChevronRight),
     ("ChevronsUpDown", IconName::ChevronsUpDown),
     ("ChevronUp", IconName::ChevronUp),
+    ("CircleAlert", IconName::CircleAlert),
     ("CircleCheck", IconName::CircleCheck),
     ("CircleUser", IconName::CircleUser),
     ("CircleX", IconName::CircleX),
@@ -616,6 +619,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("Plus", IconName::Plus),
     ("Redo", IconName::Redo),
     ("Redo2", IconName::Redo2),
+    ("RefreshCw", IconName::RefreshCw),
     ("Replace", IconName::Replace),
     ("ResizeCorner", IconName::ResizeCorner),
     ("RotateCw", IconName::RotateCw),
