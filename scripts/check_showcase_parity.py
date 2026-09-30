@@ -85,7 +85,16 @@ For each preset and variant, across the three kinds:
   list names in `parent`; for `parent = "window"` the content origin;
 - colour, where the captures are there: every `sample` point the list gives
   the element, sampled in each capture (see docs/showcase-elements.toml for
-  the point syntax). A colour is `#rrggbb`.
+  the point syntax). A colour is `#rrggbb`. A sample is taken only where it
+  is visible: its point, or all of its glyph box, inside the window's
+  content and inside every ancestor the list marks `clip = true` (an area
+  that shows its descendants only within its own rectangle, as a scrolled
+  page's panel does), each rectangle from the same dump. Elsewhere its value
+  is `not visible`: the sample is left out of the comparison for that
+  showcase, not a difference, and the run counts the element samples it left
+  out so under "not visible". Geometry is compared wherever the dumps hold
+  the element, visible or not, so every showcase dumps off-screen elements
+  too.
 
 Numbers are compared under the rules below, colours too; what no rule covers
 is compared exactly (numbers at 1/100 of a logical pixel: the dumps are f32
@@ -452,7 +461,7 @@ def load_elements(path, leaves_known):
         where = f"{path}: element #{n}"
         if not isinstance(row, dict):
             raise Failure(f"{where}: not a table")
-        unknown = set(row) - {"id", "name", "parent", "leaves", "states", "sample", "part", "when"}
+        unknown = set(row) - {"id", "name", "parent", "leaves", "states", "sample", "part", "when", "clip"}
         if unknown:
             raise Failure(f"{where}: unknown keys {sorted(unknown)}")
         ident = row.get("id")
@@ -474,6 +483,8 @@ def load_elements(path, leaves_known):
             raise Failure(f"{where}: `states` names at least the state shown")
         if not isinstance(row.get("part", False), bool):
             raise Failure(f"{where}: `part` must be true or false")
+        if not isinstance(row.get("clip", False), bool):
+            raise Failure(f"{where}: `clip` must be true or false")
         if "when" in row and (not isinstance(row["when"], str) or not row["when"]):
             raise Failure(f"{where}: `when` must be a non-empty string")
         for leaf in row["leaves"]:
@@ -492,6 +503,7 @@ def load_elements(path, leaves_known):
             "states": row["states"],
             "samples": samples,
             "when": row.get("when"),
+            "clip": row.get("clip", False),
         }
     for ident, element in elements.items():
         parent = element["parent"]
@@ -751,19 +763,43 @@ def hex_colour(rgb):
     return "#{:02x}{:02x}{:02x}".format(*rgb[:3])
 
 
-def sample_colour(capture, scale, rect, spec):
-    """The colour a sample point shows, or a note saying why there is none.
-    Fractions are taken of the rectangle's R-snap edges, where it is
-    painted, not of the dump's fractional ones."""
+NOT_VISIBLE = "not visible"
+
+
+def visible_area(ident, elements, rects, scale):
+    """The window-content rectangle, as (left, top, right, bottom) R-snap
+    edges in logical pixels, in which the element `ident` shows: the window's
+    content, cut to every ancestor the list marks `clip` that the dump holds."""
+    left, top, right, bottom = 0.0, 0.0, float(WINDOW_SIZE[0]), float(WINDOW_SIZE[1])
+    parent = elements[ident]["parent"]
+    while parent != WINDOW:
+        if elements[parent]["clip"] and parent in rects:
+            l, t, r, b = snapped_edges(rects[parent], scale)
+            left, top, right, bottom = max(left, l), max(top, t), min(right, r), min(bottom, b)
+        parent = elements[parent]["parent"]
+    return left, top, right, bottom
+
+
+def sample_colour(capture, scale, rect, spec, area=None):
+    """The colour a sample point shows, or a note saying why there is none:
+    `not visible` where the point, or a glyph box, is not all inside `area`
+    (logical left, top, right, bottom; `visible_area`). Fractions are taken
+    of the rectangle's R-snap edges, where it is painted, not of the dump's
+    fractional ones."""
     image, pixels, (ox, oy) = capture["image"], capture["pixels"], capture["offset"]
     content_w = round(WINDOW_SIZE[0] * scale)
     content_h = round(WINDOW_SIZE[1] * scale)
     left, top, right, bottom = snapped_edges(rect, scale)
     w, h = right - left, bottom - top
+    if area is None:
+        area = (0.0, 0.0, float(WINDOW_SIZE[0]), float(WINDOW_SIZE[1]))
+    a_left, a_top, a_right, a_bottom = (round(v * scale) for v in area)
     if spec[0] == "point":
         _, fx, fy, dx, dy = spec
         px = math.floor((left + fx * w + dx) * scale)
         py = math.floor((top + fy * h + dy) * scale)
+        if not (a_left <= px < a_right and a_top <= py < a_bottom):
+            return NOT_VISIBLE
         if not (0 <= px < content_w and 0 <= py < content_h):
             return "outside"
         return hex_colour(pixels[ox + px, oy + py])
@@ -775,11 +811,19 @@ def sample_colour(capture, scale, rect, spec):
     # its ground, so the whole box's most frequent colour could be the glyph.
     # Where the ring ties, the whole box's count decides.
     _, x0, y0, x1, y1 = spec
+    box = (
+        math.floor((left + x0 * w) * scale),
+        math.floor((top + y0 * h) * scale),
+        math.ceil((left + x1 * w) * scale),
+        math.ceil((top + y1 * h) * scale),
+    )
+    if box[0] < a_left or box[1] < a_top or box[2] > a_right or box[3] > a_bottom:
+        return NOT_VISIBLE
     left, top, right, bottom = (
-        max(0, math.floor((left + x0 * w) * scale)),
-        max(0, math.floor((top + y0 * h) * scale)),
-        min(content_w, math.ceil((left + x1 * w) * scale)),
-        min(content_h, math.ceil((top + y1 * h) * scale)),
+        max(0, box[0]),
+        max(0, box[1]),
+        min(content_w, box[2]),
+        min(content_h, box[3]),
     )
     if right <= left or bottom <= top:
         return "outside"
@@ -945,11 +989,14 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                 values = geometry(element, rects, scale, False)
                 snapped[k] = geometry(element, rects, scale, True)
                 if dumps[k]["capture"] is not None:
+                    area = visible_area(ident, elements, rects, scale)
                     for name, spec in element["samples"].items():
-                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec)
+                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec, area)
                 measured[k] = values
             for prop in ("x", "y", "w", "h", *element["samples"]):
-                raw = {k: v[prop] for k, v in measured.items() if prop in v}
+                if any(v.get(prop) == NOT_VISIBLE for v in measured.values()):
+                    ruled_out[NOT_VISIBLE] = ruled_out.get(NOT_VISIBLE, 0) + 1
+                raw = {k: v[prop] for k, v in measured.items() if prop in v and v[prop] != NOT_VISIBLE}
                 if len(raw) < 2:
                     continue
                 compared.add((group, f"{ident}.{prop}"))
@@ -1179,6 +1226,7 @@ parent = "window"
 leaves = ["card.background_color", "card.border.color"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.5], border = [0.0, 0.5, 0.5, 0.0] }
+clip = true
 
 [[element]]
 id = "t.panel.label"
@@ -1440,6 +1488,12 @@ def self_test():
         if kind == "iced":
             del rects["t.panel.label"]
 
+    def label_clipped(kind, rects, *_):
+        # Below the panel that clips it, in every kind: its glyph, drawn in
+        # the capture in a colour of its own in gpui, is not visible.
+        rects["t.panel.label"]["y"] = 95.0
+        return {"ink": tuple(c + 60 for c in INK)} if kind == "gpui" else None
+
     def dropped_everywhere(kind, rects, *_):
         del rects["t.panel.label"]
 
@@ -1510,6 +1564,11 @@ def self_test():
     scenario("R-glyph: a glyph sample 9 per channel off fails", True, ("t.panel.label.text",), ink_off(9))
     scenario("R-glyph: a fill 1 per channel off passes", False, change=fill_off(1))
     scenario("R-glyph: a fill 2 per channel off fails", True, ("t.panel.fill",), fill_off(2))
+    scenario(
+        "a sample outside a `clip` ancestor is not visible, and not a difference",
+        False,
+        change=label_clipped,
+    )
     # A row highlight painted on rows 40 to 55 (y = 39.6, h = 16 rounded)
     # over a darker ground, a glyph stem in it: a floor of 39.6 would take in
     # row 39, the ground, farther from the highlight than the glyph is.

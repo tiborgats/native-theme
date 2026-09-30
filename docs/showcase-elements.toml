@@ -22,6 +22,9 @@
 #   part   = true                               (optional) a part of a control: dumped and
 #                                               compared, never a Widget Info target of its own
 #   when   = "a widget is hovered"              (optional) on screen only while this holds
+#   clip   = true                               (optional) shows its descendants only inside its
+#                                               own rectangle (a panel a page scrolls in): the
+#                                               comparator samples none of theirs outside it
 #   sample = { fill = [0.5, 0.0, 0.0, 2.5] }    (optional) colour sample points, see below
 #
 # `leaves` is every leaf the element draws, the inherited defaults it draws included
@@ -560,6 +563,7 @@ parent = "chrome.window"
 leaves = ["window.background_color", "layout.window_margin_px"]
 states = ["Normal"]
 sample = { fill = [1.0, 1.0, -3.5, -3.5] }
+clip = true
 
 [[element]]
 id = "chrome.page_tabs"
@@ -654,19 +658,31 @@ when = "a widget is hovered"
 sample = { text = "glyph" }
 
 # =============================================================================================
-# The Basic page (v5): five columns, each a stack of groups; a group is its heading over its rows.
-# Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text area, Slider.
-# Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4: Typography,
-# Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
-# A heading is measured against the element above it in its column (the column for the
-# first); a control against its heading or the control before it.
+# The Basic page (v6): columns, each a stack of groups; a group is its heading over its rows.
+# The column count n is the theme's, never measured text's: the largest n of 5, 4 and 3 whose
+# column, (page width - (n - 1) * layout.section_gap) / n, holds the widest fixed-width control
+# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap,
+# BASIC_WIDE, BASIC_WIDTH); the page width is the content area's less twice
+# layout.window_margin and, where scrollbar.overlay_mode is false, scrollbar.groove_width. The
+# page scrolls vertically where it is taller than its area (at rest at the top), never sideways.
+# n = 5: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text
+# area, Slider. Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4:
+# Typography, Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
+# n = 4: column 5's groups end the other four: Expander after Drop-down, Icons after Slider,
+# Tabs after Card, Table after List.
+# n = 3: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down, Expander, List. Column 2: Text
+# inputs, Text area, Slider, Icons, Separator, Progress bar, Table. Column 3: Switches, Number
+# input, Spinner, Segmented control, Card, Tabs, Typography.
+# A heading is measured against the element above it in its five-column column (the column for
+# the first), wherever fewer columns put it; a control against its heading or the control
+# before it.
 # =============================================================================================
 
 [[element]]
 id = "basic.page"
 name = "Basic page"
 parent = "chrome.content"
-leaves = ["layout.window_margin_px", "layout.section_gap_px"]
+leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "combo_box.min_width_px"]
 states = ["Normal"]
 
 [[element]]
@@ -696,6 +712,7 @@ name = "Column"
 parent = "basic.column_3"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
 states = ["Normal"]
+when = "the page has four columns or five"
 
 [[element]]
 id = "basic.column_5"
@@ -703,6 +720,7 @@ name = "Column"
 parent = "basic.column_4"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
 states = ["Normal"]
+when = "the page has five columns"
 
 # --- Column 1: Buttons ------------------------------------------------------------------------
 
