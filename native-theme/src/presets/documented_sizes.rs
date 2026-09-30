@@ -314,8 +314,8 @@ const ROWS: &[Row] = &[
     // --- Material (material; no reader, no -live preset) ---
     row(Material, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
     row(Material, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
-    row(Material, "input", all(16.0), &[1196, 1197], "outlined field leading/trailing-space 16; top/bottom-space 16"),
-    row(Material, "text_area", all(16.0), &[1639, 1640], "the outlined field's 16; 16"),
+    row(Material, "input", all(15.0), &[1196, 1197], "outlined field 16 from the edge, less the 1 outline; the same down"),
+    row(Material, "text_area", all(15.0), &[1639, 1640], "the outlined field's 16 less the 1 outline; the same down"),
     row(Material, "checkbox", NONE, &[1216, 1217], "(none): the mark fills the box"),
     row(Material, "menu", [None, Some(16.0), None, Some(16.0)], &[1235, 1236], "16 (md-menu-item); vertical left to the row height: the cell's 14 is (derived), material-web's item 12, latest 8")
         .with(&[("row_height", Some(48.0), 1234)]),
@@ -337,7 +337,7 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", None, 1389)]),
     row(Material, "popover", axes(8.0, 0.0), &[1412, 1413], "the menu container pads 8 top and bottom, 0 at the sides"),
     row(Material, "dialog", all(24.0), &[1491, 1492], "material-web dialog 24; 24 top / 24 bottom"),
-    row(Material, "combo_box", trbl(16.0, 12.0, 16.0, 16.0), &[1552, 1557], "outlined field 16 leading / 12 trailing (the arrow's trailing space); 16")
+    row(Material, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1552, 1557], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
         .with(&[("arrow_area_width", None, 1554)]),
     row(Material, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1571, 1576], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
     row(Material, "card", NONE, &[1592, 1593], "(app-defined)"),

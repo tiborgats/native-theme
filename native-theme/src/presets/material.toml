@@ -155,18 +155,18 @@ color = "#1d1b20"
 size_px = 16.0
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
+# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 from the field's edge (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it (field/internal/_outlined-field.scss:50-59, v0_192 outline-width :146)
+padding_horizontal_px = 15.0
+padding_vertical_px = 15.0
 # platform-facts.md:1198 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
 corner_radius_px = 4.0
 # platform-facts.md:1199 (§2.4): the text fields have no elevation token
 shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
+# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 from its edge (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it
+padding_horizontal_px = 15.0
+padding_vertical_px = 15.0
 [light.checkbox]
 indicator_width_px = 18.0
 # platform-facts.md:1222 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
@@ -459,10 +459,10 @@ disabled_text_color = "#1d1b2061"
 size_px = 16.0
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127)
-padding_left_px = 16.0
-padding_right_px = 12.0
-padding_vertical_px = 16.0
+# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom from the field's edge (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127), less the 1 outline laid over it (v0_192 _md-comp-outlined-select.scss:234)
+padding_left_px = 15.0
+padding_right_px = 11.0
+padding_vertical_px = 15.0
 # platform-facts.md:1555 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
 corner_radius_px = 4.0
 # platform-facts.md:1556 (§2.24): the field has no elevation
@@ -654,18 +654,18 @@ color = "#e6e0e9"
 size_px = 16.0
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
+# platform-facts.md:1196-1197 (§2.4): material-web outlined field leading-space / trailing-space 16, top-space / bottom-space 16 from the field's edge (cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it (field/internal/_outlined-field.scss:50-59, v0_192 outline-width :146)
+padding_horizontal_px = 15.0
+padding_vertical_px = 15.0
 # platform-facts.md:1198 (§2.4): container-shape corner-extra-small 4 (_md-comp-outlined-text-field.scss:32)
 corner_radius_px = 4.0
 # platform-facts.md:1199 (§2.4): the text fields have no elevation token
 shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142)
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
+# platform-facts.md:1639-1640 (§2.29): the outlined field's 16; 16 from its edge (material-web cbd34a8, tokens/_md-comp-outlined-text-field.scss:139-142), less the 1 outline laid over it
+padding_horizontal_px = 15.0
+padding_vertical_px = 15.0
 [dark.checkbox]
 indicator_width_px = 18.0
 # platform-facts.md:1222 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
@@ -958,10 +958,10 @@ disabled_text_color = "#e6e0e961"
 size_px = 16.0
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127)
-padding_left_px = 16.0
-padding_right_px = 12.0
-padding_vertical_px = 16.0
+# platform-facts.md:1552, :1557 (§2.24): material-web outlined field 16 leading, 12 trailing (the arrow's with-trailing-content-trailing-space), 16 top and bottom from the field's edge (cbd34a8, tokens/_md-comp-outlined-field.scss:222, :240-241, :235, :127), less the 1 outline laid over it (v0_192 _md-comp-outlined-select.scss:234)
+padding_left_px = 15.0
+padding_right_px = 11.0
+padding_vertical_px = 15.0
 # platform-facts.md:1555 (§2.24): text-field-container-shape corner-extra-small 4 (_md-comp-outlined-select.scss:84)
 corner_radius_px = 4.0
 # platform-facts.md:1556 (§2.24): the field has no elevation

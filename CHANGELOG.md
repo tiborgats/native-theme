@@ -84,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-egui-widgets**: `segmented_control::SegmentedControl::wrap`, segments that wrap onto a further line inside the one outline where the `Ui` is too narrow.
 - **Development**: `scripts/check_showcase_parity.py` takes a colour sample only where it is visible: inside the window and inside every ancestor the element list marks `clip = true` (the content panel a page scrolls in); a sample elsewhere is counted as "not visible" and left out of the comparison, while geometry is compared from the dumps, which hold off-screen elements too.
 - **native-theme**: kde-breeze's single-line input pads 7 horizontally and 6 vertically inside its frame line (was 6 / 3): Breeze insets a line edit's contents `LineEdit_FrameWidth` 6 from its outer edge, the 1px line the outermost of those, and QLineEdit sets its text 2 across and 1 down further in; a real Breeze QLineEdit measured 2026-09-28 agrees (`docs/platform-facts.md` §2.4). The KDE reader agrees.
+- **native-theme**: material's outlined text field, text area and drop-down pad 15 inside their 1px outline (the drop-down 15 leading, 11 trailing), where material-web sets their content 16 (and the arrow's 12) from the field's edge and lays the outline over that space (`field/internal/_outlined-field.scss`, `outline-width` 1; `docs/platform-facts.md` §2.4, §2.24, §2.29); they stated 16 and 12, which the connectors draw inside the outline, so the fields were 2px taller and wider than Material's.
 
 ### Fixed
 
