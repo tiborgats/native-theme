@@ -237,7 +237,7 @@ impl Parts {
 }
 
 /// gpui-component's check mark, the Lucide `check` icon it draws as
-/// `IconName::Check` (gpui-kit-assets 0.6.6 `assets/icons/check.svg`,
+/// `IconName::Check` (gpui-kit-assets 0.7.0 `assets/icons/check.svg`,
 /// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
 /// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
 const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];

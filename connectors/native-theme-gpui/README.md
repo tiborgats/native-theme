@@ -44,15 +44,17 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   reduce-motion is forwarded to GPUI; under reduce-transparency no overlay
   is drawn behind a dialog or sheet (it is transparent), and the dialog stays
   modal.
-- **Icons**: mappings from every gpui-component `IconName` (101 variants) to
+- **Icons**: mappings from every gpui-component `IconName` (104 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
   in code, so the tables are audited by hand: against 0.6.4's variant set,
   and again against 0.6.1, which keeps the same 101 variants (its full Lucide
   catalog lives in `gpui_kit_assets::IconName`). It holds for 0.6.6 too,
   whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
-  from is unchanged between the two releases. The audit is repeated on every
-  gpui-component bump.
+  from is unchanged between the two releases. It was audited again against
+  0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
+  `refresh-cw` to 0.6.6's 101. The audit is repeated on every gpui-component
+  bump.
 
 ## How it fits
 
@@ -66,13 +68,13 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.6.6 |
-| `gpui-base` | 0.6.6 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.6 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.6.6 |
+| `gpui-component` | 0.7.0 |
+| `gpui-base` | 0.7.0 |
+| `gpui-pre` (GPUI, named `gpui` here) | 0.3.7 |
+| `gpui-kit` (dev-dependency: the showcase) | 0.7.0 |
 | `rust-version` | 1.95.0 |
 
-Each is a floor and nothing more. It is not an open-ended `0.6.x`, because a
+Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
 *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
 stopped compiling on a fresh dependency resolution.
@@ -95,7 +97,7 @@ the CHANGELOG.
 [dependencies]
 native-theme = "0.6"
 native-theme-gpui = "0.6"
-gpui-kit = "0.6.6"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.7.0"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
@@ -110,9 +112,19 @@ gpui_kit::application().run(|cx| {
             }
         }
     }
-    // open windows as usual
+    let opened = gpui_kit::open_window(WindowOptions::default(), cx, |_, cx| cx.new(|_| MyView));
+    if let Err(error) = opened {
+        eprintln!("could not open the window: {error}");
+    }
 });
 ```
+
+`gpui_kit::open_window` wraps the view in gpui-base's `Root`, which carries
+the dialogs, sheets and notifications. A window opened before
+`gpui_kit::init` gets no `WindowState` — the root plugin `init` registers,
+which hosts them and sets the window's rem — so it shows no dialogs and text
+scaling fails silently (gpui-component `src/root.rs:21, 434-436`; gpui-base
+`src/root.rs:43-44`).
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
@@ -227,7 +239,7 @@ test over every preset and mode says so.
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
-| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:700-702`) |
+| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:762-764`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `input_fill(n, disabled)` | `input.background_color`, or disabled `input.disabled_background` (nothing where that is not stated) | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
@@ -384,7 +396,7 @@ geometry is still restored). The default registry holds two themes,
 
 | Preference | Effect |
 |---|---|
-| `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); `Root` sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
+| `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); gpui-component's `WindowState` plugin sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
 | `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress and marker honour the flag |
 | `reduce_transparency` | the overlay behind a dialog or sheet is not drawn (`overlay` becomes transparent): macOS asks for no semitransparent backgrounds, and an opaque overlay would hide the window. The dialog or sheet stays modal |
 | `high_contrast` | no receiver in GPUI or gpui-component yet |
@@ -486,11 +498,11 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 ## GPUI as `gpui-pre`
 
-gpui-component 0.6 depends on GPUI published as the **`gpui-pre`** package:
+gpui-component 0.7 depends on GPUI published as the **`gpui-pre`** package:
 snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
 `0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
 arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.6" }`) so its `Hsla`, `Pixels`
+(`gpui = { package = "gpui-pre", version = "0.3.7" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types; its GPUI surface is small
 (`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
 `ImageSource`, `RenderImage`, `Image` and `ImageFormat` (without
@@ -514,7 +526,7 @@ conflict with any other dependency wanting a later snapshot.
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
   colours from the splitter, which gpui-base's own resizables draw (not
   gpui-component's, `Settings` or dock edges).
-- **Icons** — every gpui-component `IconName` (101 variants) in three tables
+- **Icons** — every gpui-component `IconName` (104 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names
   Material Symbols Outlined files (`StarOff` has none), the freedesktop table
@@ -529,7 +541,7 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-139-field colour map and a 101-icon gallery. It opens on the Basic page, the
+139-field colour map and a 104-icon gallery. It opens on the Basic page, the
 controls all three showcases draw — buttons, checkboxes, radio buttons, text,
 text fields, a drop-down, a slider and a progress bar — in the same order and
 states, packed onto one screen, so the three showcases' captures compare

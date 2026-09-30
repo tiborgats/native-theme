@@ -3,7 +3,7 @@
 //!
 //! gpui-component paints a flat button's hover from a token that means something
 //! else. A standalone `.ghost()` button hovers with `tokens.accent`, the
-//! item-highlight colour of menus and lists (`src/button/button.rs:1125-1132`);
+//! item-highlight colour of menus and lists (`src/button/button.rs:1156-1163`);
 //! an [`InputGroupButton`](gpui_component::input::InputGroupButton) hovers with
 //! `muted`, the subdued-surface colour of `Kbd`, code blocks and chat bubbles
 //! (`src/input/group.rs:544-583`). Both readings are hardcoded, and both tokens
@@ -20,7 +20,7 @@
 //! (a dialog's close button, calendar navigation, the tab bar) stay upstream
 //! work; see "Upstream PR candidates" in `docs/todo.md`.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.6.
+//! Upstream citations in this module are verified against gpui-component 0.7.0.
 
 use gpui::App;
 use gpui_component::ActiveTheme as _;

@@ -107,10 +107,14 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // Upstream documents `selection` as the *input* selection background
-    // (`theme_color.rs:226`) and every reader is a text selection: the input
-    // editor style (`input/input.rs:502`), the text view (`text/mod.rs:51`)
-    // and the touch handle (`touch_selection/handle.rs:96`). The model's
-    // counterpart is therefore `input.selection_background`, which inherits
+    // (`theme_color.rs:228`), and its text readers are the input editor style
+    // (`input/input.rs:550`), the text view (`text/mod.rs:52`), the touch
+    // handle (`touch_selection/handle.rs:96`) and the time field's selected
+    // segment (`time/time_field.rs:135`). It also fills a token input's chips
+    // (`input/token.rs:50-51`) and outlines a table's or list's
+    // secondary-selected row (`table/state.rs:2261`, `list/list_item.rs:272`),
+    // so it is not only a text selection. The documented meaning decides the
+    // model's counterpart: `input.selection_background`, which inherits
     // `defaults.text_selection_background` and in turn
     // `defaults.selection_background` -- the row-selection colour the
     // `sidebar_accent` and `list_active` rows read.
@@ -120,7 +124,7 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
-    // The link's own text (`link.rs:76`, `button/button.rs:993`), which the
+    // The link's own text (`link.rs:76`, `button/button.rs:1024`), which the
     // model states as `link.font.color` -- the one font colour that inherits
     // `defaults.link_color` instead of `defaults.font.color`.
     Row {
@@ -130,10 +134,10 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // `link_hover` and `link_active` are upstream's hovered and pressed link
-    // *text* colours ("Hover link text color", `theme_color.rs:178-179`), and
+    // *text* colours ("Hover link text color", `theme_color.rs:180-181`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1139, 1215, 1257`) over the transparent fill that
-    // variant paints in every state (`:1133, 1210, 1250`). Neither native
+    // (`button/button.rs:1170, 1246, 1288`) over the transparent fill that
+    // variant paints in every state (`:1164, 1241, 1281`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
@@ -366,8 +370,8 @@ const ROWS: &[Row] = &[
     // (`list.header_background`, inheriting `defaults.surface_color`), and it
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:278`,
-    // `table/state.rs:1528, :1768`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.6.6 beyond a schema fallback (`theme/schema.rs:968, 1006`),
+    // `table/state.rs:1579, :1819`, `table/table.rs:199`); `list_head` has no
+    // reader in 0.7.0 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -406,7 +410,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1769`), which the model states as `list.header_font`.
+    // `table/state.rs:1820`), which the model states as `list.header_font`.
     Row {
         slot: "table_head_foreground",
         native: |r| r.list.header_font.color,
@@ -414,7 +418,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The line between rows and columns (`table/table.rs:203, 343, 415`,
-    // `table/state.rs:1424, 1527, 1978, 2233`), which the model states as
+    // `table/state.rs:1475, 1578, 2030, 2289`), which the model states as
     // `list.grid_color` rather than as the generic border.
     Row {
         slot: "table_row_border",
@@ -909,12 +913,12 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "link.hover_background",
         native: |r| r.link.hover_background,
         evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
-                   background in every state (`button/button.rs:1133` hovered, \
-                   `:1210` pressed, `:1250` selected) and the `Link` widget \
+                   background in every state (`button/button.rs:1164` hovered, \
+                   `:1241` pressed, `:1281` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
-                   pressed *text* (`theme_color.rs:178-179`), which is what \
+                   pressed *text* (`theme_color.rs:180-181`), which is what \
                    their rows give them.",
         stated_none: &[
             ("kde-breeze", LINK_HOVER_NONE),
@@ -970,8 +974,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         native: |r| r.switch.checked_background,
         evidence: "`ThemeColor` has no checked-state field for a switch -- \
                    only `switch` and `switch_thumb` -- and upstream paints a \
-                   checked one with `tokens.primary` (`switch.rs:136-139`). \
-                   `Switch::color` is a per-instance receiver (`switch.rs:95`), \
+                   checked one with `tokens.primary` (`switch.rs:172-175`). \
+                   `Switch::color` is a per-instance receiver (`switch.rs:102`), \
                    which an application can feed and the connector does not. \
                    Recorded at `colors.rs`'s Issue 51 note as well.",
     },
@@ -1358,7 +1362,7 @@ struct Pair {
 /// layer lands on a surface the platform did not put it on.
 ///
 /// `PopupMenu::render` calls `.popover_style(cx)`, which is
-/// `bg(theme.popover)` (`gpui-component-0.6.6/src/menu/popup_menu.rs:1476`,
+/// `bg(theme.popover)` (`gpui-component-0.7.0/src/menu/popup_menu.rs:1476`,
 /// `styled.rs:193-199`), and upstream has no menu-surface token. The connector
 /// feeds `popover` from `popover.background_color`, the token's documented
 /// meaning, but `menu.background_color` differs from it in 30 of the 32
@@ -1370,7 +1374,7 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
                             background differs from its popover background";
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.6.6/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
+/// (`gpui-component-0.7.0/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
@@ -1429,7 +1433,7 @@ fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 78 sites outside `theme/` in 0.6.6) and the surfaces
+/// alone has 83 sites outside `theme/` in 0.7.0) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -1628,7 +1632,7 @@ const PAIRS: &[Pair] = &[
     // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
-    // `tokens.tab`, which nothing in 0.6.6 reads, keeps its row but takes no
+    // `tokens.tab`, which nothing in 0.7.0 reads, keeps its row but takes no
     // part here.
     Pair {
         what: "tab label",
@@ -1656,7 +1660,7 @@ const PAIRS: &[Pair] = &[
     },
     // The header row upstream paints: `table_head_foreground` on
     // `tokens.table_head` (`table/table.rs:199-200`,
-    // `table/state.rs:1768-1769`), over the window behind the table.
+    // `table/state.rs:1819-1820`), over the window behind the table.
     Pair {
         what: "table head text",
         native: |r, _| {
@@ -1669,9 +1673,9 @@ const PAIRS: &[Pair] = &[
         emitted: |tc, _| (tc.table_head_foreground, tc.table_head, tc.background),
         exceptions: &[],
     },
-    // A list row keeps the inherited text colour whatever its state
-    // (`list/list_item.rs:209, 237`), so the emitted foreground is the
-    // window's; for an idle and a hovered row the platform agrees.
+    // A list row sets `foreground` and no state changes it
+    // (`list/list_item.rs:205`; the hover and selected branches set only a
+    // fill, `:227-233, 257-265`), so the emitted foreground is the window's; for an idle and a hovered row the platform agrees.
     Pair {
         what: "list row text",
         native: |r, _| {
@@ -1703,7 +1707,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
-    // (`button/button.rs:1133, 1210, 1250`) and takes `link_hover` and
+    // (`button/button.rs:1164, 1241, 1281`) and takes `link_hover` and
     // `link_active` as its text, so both pairs are that colour on the window.
     Pair {
         what: "hovered link text",
@@ -1750,8 +1754,8 @@ const REPORTED: &[Reported] = &[
     Reported {
         what: "selected list row",
         why: "ThemeColor has no foreground for a selected row: upstream paints \
-              list_active and lets the window foreground through \
-              (list/list_item.rs:237), while the platform pairs \
+              list_active and keeps the window foreground \
+              (list/list_item.rs:205, 259), while the platform pairs \
               list.selection_background with list.selection_text_color",
         native: |r| {
             (
@@ -1766,7 +1770,7 @@ const REPORTED: &[Reported] = &[
         what: "selected text",
         why: "ThemeColor has no foreground for selected text: `selection` is a \
               highlight upstream paints under text that keeps its own colour \
-              (input/input.rs:502), while the platform pairs \
+              (input/input.rs:550), while the platform pairs \
               input.selection_background with input.selection_text_color",
         native: |r| {
             (
@@ -1861,7 +1865,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.6.6 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.7.0 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -1873,18 +1877,18 @@ const INERT_SURFACES: &[(&str, &str)] = &[
     (
         "list row text",
         "nothing reads tokens.list: a ListItem paints no idle background \
-         (list/list_item.rs:209, 236-242) and the token survives only as a \
-         schema fallback (theme/schema.rs:967-968, 1002)",
+         (list/list_item.rs:227-233, 257-275) and the token survives only as a \
+         schema fallback (theme/schema.rs:971-972, 1006)",
     ),
     (
         "hovered list row",
-        "the hover fill itself is painted (list/list_item.rs:209), but the \
+        "the hover fill itself is painted (list/list_item.rs:231), but the \
          surface under it is tokens.list, which nothing paints",
     ),
     (
         "sidebar primary button label",
         "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.6.6",
+         outside theme/ in 0.7.0",
     ),
 ];
 
@@ -2047,7 +2051,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.6.6 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.0 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

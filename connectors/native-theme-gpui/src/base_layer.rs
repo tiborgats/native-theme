@@ -3,11 +3,13 @@
 //!
 //! gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
 //! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component
-//! `src/theme/mod.rs:294-347`), so these values are written after every such
-//! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3).
+//! `src/theme/mod.rs:383-437`), so these values are written after every such
+//! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3). The
+//! rebuild also carries 0.7.0's plot theme (`:435`), which this module leaves
+//! as upstream projects it.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.6,
-//! gpui-base 0.6.6 and gpui-pre 0.3.6.
+//! Upstream citations in this module are verified against gpui-component 0.7.0,
+//! gpui-base 0.7.0 and gpui-pre 0.3.7.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
@@ -36,7 +38,7 @@ pub struct ScrollbarGeometry {
     /// `2 × inset` from the thumb length and clamps the inset to half of it).
     pub thumb_inset: Pixels,
     /// `defaults.border.corner_radius.max(0)`, mirroring upstream's projection
-    /// (gpui-component `src/theme/mod.rs:310-330`); the theme has no
+    /// (gpui-component `src/theme/mod.rs:399-419`); the theme has no
     /// scrollbar radius and platform-facts records none.
     pub thumb_radius: Pixels,
     /// `scrollbar.min_thumb_length`.
@@ -44,7 +46,7 @@ pub struct ScrollbarGeometry {
     /// `scrollbar.track_color`, all three track states (upstream uses one colour).
     pub track: Hsla,
     /// `defaults.border.color` for the active track border, mirroring upstream
-    /// (`src/theme/mod.rs:309`).
+    /// (`src/theme/mod.rs:398`).
     pub track_active_border: Hsla,
     /// `scrollbar.thumb_color`.
     pub thumb: Hsla,
@@ -52,7 +54,7 @@ pub struct ScrollbarGeometry {
     pub thumb_hover: Hsla,
     /// `scrollbar.thumb_active_color`, or `thumb_hover_color` when the theme
     /// leaves it unset (a soft option, `None` in the `*-live` presets); upstream
-    /// itself puts the hover colour in the active slot (`theme/mod.rs:331-340`).
+    /// itself puts the hover colour in the active slot (`theme/mod.rs:420-429`).
     pub thumb_active: Hsla,
 }
 
@@ -137,7 +139,7 @@ pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
 /// Write both onto `gpui_base::Theme`, keeping the scrollbar `mode()` and
 /// `motion()` upstream projected. Never panics: `gpui_base::Theme::global_mut`
 /// creates a default when the global is absent (gpui-base
-/// `src/theme.rs:31-36`).
+/// `src/theme.rs:32-37`).
 ///
 /// Public so an application that writes the base theme itself can restore the
 /// native values; the observer `crate::apply` installs calls the same function.

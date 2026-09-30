@@ -1817,7 +1817,7 @@ fn the_theme_token_readers_do_their_jobs() {
 // A line and not a symbol, although `file.rs, Symbol` is the form the prose
 // notes use. `ButtonVariant::text_color` holds `Self::Link => link` and
 // `Self::Text => foreground.opacity(0.9)` two lines apart
-// (`button.rs:993-994`), so a symbol-scoped check finds `foreground` inside
+// (`button.rs:1024-1025`), so a symbol-scoped check finds `foreground` inside
 // that function and passes Button (Link)'s claim of it. Only a line separates
 // variants that share a function. The cost is drift -- an insertion earlier
 // in a file moves every later line -- so a failure prints what the cited line
@@ -1962,7 +1962,7 @@ fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str, &'
 ///   (`Showcase::icon_cache_fg`), with the alpha dropped as the SVG drops
 ///   it; that copy is passed in, not read off the theme where it is used.
 /// - `.input_background(`: upstream's `Theme::input_background()`, which
-///   paints input in dark mode and background in light (theme/mod.rs:379-384);
+///   paints input in dark mode and background in light (theme/mod.rs:465-470);
 ///   the one claim built with it (info/buttons.rs, `disabled_fill`) is the
 ///   dark-mode arm and names input.
 ///

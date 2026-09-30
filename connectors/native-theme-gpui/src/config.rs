@@ -5,8 +5,8 @@
 //! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
 //! fields (see [`theme_color_to_config_colors`]).
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.6,
-//! gpui-base 0.6.6 and gpui-pre 0.3.6.
+//! Upstream citations in this module are verified against gpui-component 0.7.0,
+//! gpui-base 0.7.0 and gpui-pre 0.3.7.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -46,7 +46,7 @@ pub fn to_theme_config(
 
     // D41: upstream's own default highlighter style for this mode. Theme::change
     // installs a config's highlight as highlight_theme only when it is Some
-    // (gpui-component src/theme/schema.rs:1066-1073) and otherwise keeps
+    // (gpui-component src/theme/schema.rs:1070-1077) and otherwise keeps
     // the previous mode's; to_theme sets Theme.highlight_theme to this same
     // default directly, so both paths agree.
     let highlight = if is_dark {
@@ -102,9 +102,9 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 
     // ThemeConfigColors keeps the 12 base-palette fields (red, blue, green,
     // yellow, magenta, cyan and their _light variants) private (gpui-component
-    // src/theme/schema.rs:640-674), so this config cannot carry them and
+    // src/theme/schema.rs:643-677), so this config cannot carry them and
     // Theme::apply_config resets them to ThemeColor::dark()/light() on every
-    // rebuild (:688-696, :1075-1079). `apply`'s observer restores them (D43).
+    // rebuild (:691-699, :1079-1083). `apply`'s observer restores them (D43).
     let mut colors = ThemeConfigColors::default();
     colors.accent = h(tc.accent);
     colors.accent_foreground = h(tc.accent_foreground);

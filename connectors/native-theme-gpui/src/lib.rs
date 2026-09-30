@@ -195,8 +195,8 @@ pub fn to_theme(
     // It's used internally by gpui-component for transparent overlays.
     theme.mode = mode;
     theme.font_family = font_family(&d.font.family);
-    // §3.4: Root sets the window rem to font_size (gpui-component
-    // src/root.rs:582), so scaling these two sizes scales every rem-relative
+    // §3.4: gpui-component's `WindowState` root plugin sets the window rem
+    // to font_size (gpui-component src/root.rs:436), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(d.font.size * s);
     theme.mono_font_family = font_family(&d.mono_font.family);
@@ -475,10 +475,10 @@ pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
 /// alias `.SystemUIFont`, "used to identify the system UI font, which varies
-/// based on platform" (gpui-pre 0.3.6 `src/text_system.rs` line 1295): gpui's
+/// based on platform" (gpui-pre 0.3.7 `src/text_system.rs` line 1295): gpui's
 /// macOS text system maps it to `.AppleSystemUIFont` through
-/// `font_name_with_fallbacks` (gpui-pre 0.3.6 `src/text_system.rs` lines 1420–1430,
-/// gpui-pre-macos 0.3.6 `src/text_system.rs` line 282) and looks that up among
+/// `font_name_with_fallbacks` (gpui-pre 0.3.7 `src/text_system.rs` lines 1420–1430,
+/// gpui-pre-macos 0.3.7 `src/text_system.rs` line 282) and looks that up among
 /// its memory fonts first, then in the system source (lines 286–289), so Core
 /// Text supplies its own system UI font. Every other family, and every
 /// family elsewhere, is passed as stated: fontdb-style databases file the
@@ -499,7 +499,7 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
 /// the font every native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
-/// list of its own, `.ZedMono` first (gpui-pre 0.3.6 `src/text_system.rs`
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.7 `src/text_system.rs`
 /// lines 255-266, 370-379), not the platform's. The platform is asked once
 /// per family and the answer kept, so a caller may ask every frame.
 #[must_use]
@@ -912,9 +912,12 @@ fn apply_inner(
     forward_reduce_motion(prefs.reduce_motion, cx);
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
-    // not wait for the next input event; upstream refreshes only the window
-    // passed to Theme::change (gpui-component src/theme/mod.rs:287-289), and
-    // `refresh_windows` schedules every window (gpui-pre src/app.rs:1153).
+    // not wait for the next input event. The theme is written through
+    // `Theme::global_mut` and `sync_base`, which refresh nothing -- upstream
+    // leaves the refresh to such a caller (gpui-component
+    // src/theme/mod.rs:448-449), where its own `Theme::change` refreshes every
+    // window (`:314`) -- and `refresh_windows` schedules every window (gpui-pre
+    // src/app.rs:1156).
     cx.refresh_windows();
 }
 
@@ -992,15 +995,15 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// theme from the stored variant for the current mode (D43).
 ///
 /// `ThemeConfigColors` keeps them private (gpui-component
-/// `src/theme/schema.rs:640-674`), so the config `apply` installs for a variant
+/// `src/theme/schema.rs:643-677`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
-/// them to `ThemeColor::dark()` / `light()` (`:688-696`, `:1075-1079`) and
-/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:283-284`,
-/// `:367-371`), whose notification reaches the base-theme observer. Writes
-/// only when a field differs; the styled theme has no upstream observer, so
-/// the write triggers no rebuild. After `apply` the connector is the sole
-/// writer of these 12 fields: a value an application sets on them itself is
-/// replaced at the next rebuild.
+/// them to `ThemeColor::dark()` / `light()` (`:691-699`, `:1079-1083`) and
+/// ends in `sync_base` (`theme/mod.rs:313`), whose `cx.set_global` of
+/// `gpui_base::Theme` (`:453-458`) is the one write of it; its notification
+/// reaches the base-theme observer. Writes only when a field differs; the
+/// styled theme has no upstream observer, so the write triggers no rebuild.
+/// After `apply` the connector is the sole writer of these 12 fields: a value
+/// an application sets on them itself is replaced at the next rebuild.
 fn repair_base_palette(cx: &mut App) {
     let Some(nt) = cx.try_global::<NativeTheme>() else {
         return;
@@ -1021,11 +1024,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:1767-1769`), delivered
-/// after the pending mark is removed (`:1924-1928`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1770-1772`), delivered
+/// after the pending mark is removed (`:1927-1931`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2189-2201`)
+/// The subscription activates through a deferred effect (`src/app.rs:2192-2204`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next
@@ -1078,7 +1081,7 @@ mod tests {
     use super::*;
 
     /// Compile-time tripwire: `gpui_component::Theme` has exactly these 20
-    /// fields in 0.6.6. Upstream carried three `tile_*` fields through 0.6.0
+    /// fields in 0.7.0. Upstream carried three `tile_*` fields through 0.6.0
     /// and 0.6.1 that this connector never set, and nothing noticed until
     /// 0.6.2 removed them again; a field *added* in a patch release would be
     /// left at upstream's default just as silently. Naming every field here

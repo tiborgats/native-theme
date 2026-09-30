@@ -908,8 +908,8 @@ const MAX_ICON_SIZE: u32 = 512;
 /// carries a decoded [`gpui::RenderImage`], which takes a tile in each
 /// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2841-2851`,
-/// `src/window.rs:4997-5008`); nothing releases it on its own. An application
+/// `Window::drop_image` (gpui-pre `src/app.rs:2845-2855`,
+/// `src/window.rs:4989-5000`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
 /// before it lets go of it. Without `svg-rasterize`, an SVG icon's source is
@@ -1268,8 +1268,8 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// A [`RenderImage`] the caller keeps holds a tile in each window's sprite
 /// atlas from the first frame that draws it, and nothing releases that tile on
 /// its own: gpui frees one only through `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2841-2851`,
-/// `src/window.rs:4997-5008`), which its own image cache calls when it evicts
+/// `Window::drop_image` (gpui-pre `src/app.rs:2845-2855`,
+/// `src/window.rs:4989-5000`), which its own image cache calls when it evicts
 /// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should hand each replaced source to `App::drop_image`

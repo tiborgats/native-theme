@@ -182,7 +182,7 @@ R-glyph -- colour samples within a per-channel tolerance.
     contrasting pixels are within 8 per channel of each other: glyph
     anti-aliasing and the gamma each rasteriser blends coverage in (gpui's
     atlas with its own glyph dilation, `glyph_dilation_for_color`, gpui-pre
-    0.3.6 src/window.rs:4673; cosmic-text/swash in iced; epaint's font
+    0.3.7 src/window.rs:4665; cosmic-text/swash in iced; epaint's font
     atlas in egui) move the darkest pixel of a stem by a few levels. A
     point sample (a fill, a border, a line) passes within 1 per channel:
     a translucent stated colour blended over its ground rounds to 8 bits
