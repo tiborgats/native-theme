@@ -463,6 +463,9 @@ fn build_theme(
     variant.defaults.surface_color = Some(bg);
     variant.button.primary_background = Some(primary_bg);
     variant.button.primary_text_color = Some(fg);
+    // A checked ToggleButton is filled with the accent button's brush,
+    // `AccentFillColorDefault` (docs/platform-facts.md §2.3).
+    variant.button.checked_background = Some(primary_bg);
 
     // Disabled text color: midpoint between fg and bg (u8::midpoint is overflow-free).
     let disabled_r = fg.r.midpoint(bg.r);

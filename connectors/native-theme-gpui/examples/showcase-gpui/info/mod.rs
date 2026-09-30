@@ -287,6 +287,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
     ),
     (
+        "button_checked",
+        "button.checked_background and button.checked_text_color on a selected Button, the pressed pair (button.active_background, button.active_text_color) where none is stated, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
+    ),
+    (
         "link",
         "link.font size and weight, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),

@@ -895,6 +895,32 @@ pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
         .opacity(unit(b.disabled_opacity))
 }
 
+/// The fill and label colour of a toggle `Button` that is on
+/// (`Button::selected(true)`): `button.checked_background` and
+/// `button.checked_text_color`, or, where the theme states none, the pressed
+/// pair, `button.active_background` and `button.active_text_color`
+/// (docs/platform-facts.md §2.3: Breeze, WinUI, libadwaita and Material state
+/// a checked pair, AppKit none). Where neither fill is stated the refinement
+/// sets none, and upstream's selected fill stands.
+///
+/// Colour, not geometry, carried because no `ThemeColor` field reaches it:
+/// upstream fills a selected Default button with its `button_active` token
+/// and letters it in `button_foreground` (`src/button/button.rs`,
+/// `ButtonVariant::selected`), and replays the caller's refinement over that
+/// state, so the refinement's colours win. Apply it after [`button`], to a
+/// selected Button only.
+#[must_use]
+pub fn button_checked(n: Native<'_>) -> StyleRefinement {
+    let b = &n.resolved.button;
+    let r = StyleRefinement::default().text_color(rgba_to_hsla(
+        b.checked_text_color.unwrap_or(b.active_text_color),
+    ));
+    match b.checked_background.or(b.active_background) {
+        Some(fill) => r.bg(rgba_to_hsla(fill)),
+        None => r,
+    }
+}
+
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
 /// text size and weight.
 ///
@@ -1249,6 +1275,44 @@ mod tests {
             }
         }
         assert!(stated_fill > 0, "no preset states a disabled button fill");
+    }
+
+    /// `button_checked` is `button.checked_background` and
+    /// `.checked_text_color`, the pressed pair where the theme states none
+    /// (docs/platform-facts.md §2.3), and nothing else.
+    #[test]
+    fn button_checked_is_the_platforms_checked_pair() {
+        let mut stated = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let b = &r.button;
+                let out = button_checked(Native::unscaled(&r));
+                assert_eq!(
+                    out.background,
+                    b.checked_background
+                        .or(b.active_background)
+                        .map(|fill| rgba_to_hsla(fill).into()),
+                    "{at}: checked fill"
+                );
+                assert_eq!(
+                    out.text.color,
+                    Some(rgba_to_hsla(
+                        b.checked_text_color.unwrap_or(b.active_text_color)
+                    )),
+                    "{at}: checked label"
+                );
+                stated += usize::from(b.checked_background.is_some());
+                let bare = StyleRefinement {
+                    background: None,
+                    text: Default::default(),
+                    ..out
+                };
+                assert_eq!(bare, StyleRefinement::default(), "{at}: only the pair");
+            }
+        }
+        assert!(stated > 0, "no preset states a checked button fill");
     }
 
     /// `link` carries the link's text size and weight, and removes upstream's

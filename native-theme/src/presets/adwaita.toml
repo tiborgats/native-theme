@@ -93,6 +93,9 @@ hover_background = "#d5d5d5"
 hover_text_color = "#2e3436"
 active_background = "#c8c8c8"
 active_text_color = "#2e3436"
+# platform-facts.md:1181-1182 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
+checked_background = "#c8c8c8"
+checked_text_color = "#2e3436"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled button is its enabled self at disabled_opacity
 
 
@@ -451,6 +454,9 @@ hover_background = "#464649"
 hover_text_color = "#ffffff"
 active_background = "#2e2e32"
 active_text_color = "#ffffff"
+# platform-facts.md:1181-1182 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
+checked_background = "#2e2e32"
+checked_text_color = "#ffffff"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled button is its enabled self at disabled_opacity
 
 

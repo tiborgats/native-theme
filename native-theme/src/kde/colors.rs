@@ -41,6 +41,12 @@ fn mix(a: Rgba, b: Rgba, bias: f32) -> Rgba {
     Rgba::from_f32(channel(ar, br), channel(ag, bg), channel(ab, bb), 1.0)
 }
 
+/// How far a checked, non-flat Breeze button's fill moves from `Button`
+/// towards `ButtonText`: `KColorUtils::mix(palette.button(),
+/// palette.buttonText(), 0.125)` (breezehelper.cpp:695-699 at breeze f0b1d75;
+/// docs/platform-facts.md §2.3).
+const CHECKED_BUTTON_MIX: f32 = 0.125;
+
 /// The alpha of the accent over the window in a Breeze progress bar's
 /// contents, `alphaColor(fg, 0.7)` (breezehelper.cpp:1216 at breeze f0b1d75;
 /// docs/platform-facts.md §2.10).
@@ -148,6 +154,15 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     if let Some(color) = get_color(ini, "Colors:Button", "ForegroundNormal") {
         variant.button.font.get_or_insert_default().color = Some(color);
     }
+    // A checked button (docs/platform-facts.md §2.3): the button colour moved
+    // an eighth towards the button text, lettered in the button text.
+    let button_fg = get_color(ini, "Colors:Button", "ForegroundNormal");
+    variant.button.checked_background = variant
+        .button
+        .background_color
+        .zip(button_fg)
+        .map(|(button, text)| mix(button, text, CHECKED_BUTTON_MIX));
+    variant.button.checked_text_color = button_fg;
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
@@ -492,6 +507,27 @@ inactiveForeground=161,169,177
             assert_eq!(
                 v.progress_bar.border.as_ref().and_then(|b| b.color),
                 Some(outline)
+            );
+        }
+    }
+
+    /// docs/platform-facts.md §2.3's KDE cells, which the kde-breeze preset
+    /// states: a checked button is `Button` mixed an eighth towards
+    /// `ButtonText`, lettered in `ButtonText`.
+    #[test]
+    fn test_checked_button_colors_are_breezes() {
+        let cases = [
+            ("252,252,252", "35,38,41", Rgba::rgb(0xe1, 0xe1, 0xe2)),
+            ("41,44,48", "252,252,252", Rgba::rgb(0x43, 0x46, 0x4a)),
+        ];
+        for (button, text, checked) in cases {
+            let v = populate_fixture(&format!(
+                "[Colors:Button]\nBackgroundNormal={button}\nForegroundNormal={text}\n"
+            ));
+            assert_eq!(v.button.checked_background, Some(checked), "{button}");
+            assert_eq!(
+                v.button.checked_text_color,
+                v.button.font.as_ref().and_then(|f| f.color)
             );
         }
     }

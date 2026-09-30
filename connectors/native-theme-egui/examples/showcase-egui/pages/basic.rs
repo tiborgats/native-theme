@@ -353,16 +353,23 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             reg.tag("basic.buttons.tooltip.bubble", &bubble);
         }
     });
-    // A toggle button: `Off` a button at rest, `On` the same button held on, in the button
-    // role's pressed colours, `button.active_background` (its hover fill where it states none,
-    // §6.4) and `button.active_text_color` — the model has no checked-button colour — per call:
-    // egui's `selected` flag would take the suggested action's `selection` colours.
+    // A toggle button: `Off` a button at rest, `On` the same button held on, in
+    // `button.checked_background` and `button.checked_text_color` (docs/platform-facts.md
+    // §2.3) — where the theme states none, the button role's pressed colours,
+    // `button.active_background` (its hover fill where it states none, §6.4) and
+    // `button.active_text_color` — per call: egui's `selected` flag would take the suggested
+    // action's `selection` colours.
     let on_fill = to_color32(
         t.button
-            .active_background
+            .checked_background
+            .or(t.button.active_background)
             .unwrap_or(t.button.hover_background),
     );
-    let on_text = to_color32(t.button.active_text_color);
+    let on_text = to_color32(
+        t.button
+            .checked_text_color
+            .unwrap_or(t.button.active_text_color),
+    );
     ui.horizontal(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);

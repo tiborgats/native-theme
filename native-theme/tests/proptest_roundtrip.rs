@@ -250,6 +250,8 @@ fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
                 disabled_text_color: colors[6],
                 active_background: colors[7],
                 disabled_background: colors[8],
+                checked_background: colors[9],
+                checked_text_color: colors[10],
                 font,
                 border,
             },

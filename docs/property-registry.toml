@@ -184,6 +184,8 @@ active_background            = "color"
 active_text_color            = "color"
 disabled_background          = "color"
 disabled_text_color          = "color"
+checked_background           = "color"
+checked_text_color           = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════

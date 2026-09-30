@@ -98,6 +98,9 @@ active_text_color = "#fcfcfc"
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.30.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
+# platform-facts.md:1181-1182 (§2.3): a checked button is KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+checked_background = "#e1e1e2"
+checked_text_color = "#232629"
 
 
 [light.button.border]
@@ -473,6 +476,9 @@ active_text_color = "#fcfcfc"
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.30.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"
+# platform-facts.md:1181-1182 (§2.3): a checked button is KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+checked_background = "#43464a"
+checked_text_color = "#fcfcfc"
 
 
 [dark.button.border]

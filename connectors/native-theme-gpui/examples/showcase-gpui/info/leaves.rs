@@ -16,13 +16,23 @@ pub const HOW: &[(&str, &str, &str)] = &[
     // --- button: the toggle button that is on --------------------------------
     (
         "basic.buttons.toggle_on",
+        "button.checked_background",
+        "gpui: geometry::button_checked's bg, replayed over the selected Button's style (demo::toggle_button)",
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.checked_text_color",
+        "gpui: geometry::button_checked's text colour, over the selected Button's style (demo::toggle_button)",
+    ),
+    (
+        "basic.buttons.toggle_on",
         "button.active_background",
-        "gpui: the selected Button's own bg, replayed over its selected style (demo::toggle_button)",
+        "gpui: geometry::button_checked's bg where checked_background is unstated (demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
         "button.active_text_color",
-        "gpui: the selected Button's own text colour, over its selected style (demo::toggle_button)",
+        "gpui: geometry::button_checked's text colour where checked_text_color is unstated (demo::toggle_button)",
     ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (

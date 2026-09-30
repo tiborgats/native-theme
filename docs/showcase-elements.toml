@@ -617,7 +617,8 @@ leaves = ["status_bar.background_color", "status_bar.border.color", "status_bar.
 states = ["Normal"]
 sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 
-# The side-panel toggle shows the panel open. The model has no checked-button colour; the
+# The side-panel toggle shows the panel open. It is a flat button, and `button.checked_*` are a
+# raised button's (Breeze fills a checked flat button apart, breezehelper.cpp:680-684); the
 # pressed colours are listed until the maintainer settles it.
 [[element]]
 id = "chrome.status_bar.toggle"
@@ -819,13 +820,13 @@ states = ["Off"]
 part = true
 sample = { text = "glyph" }
 
-# The model has no checked-button colour; the pressed colours are listed until the maintainer
-# settles it (as for chrome.status_bar.toggle).
+# A checked button: `button.checked_*`, the pressed colours where the theme states none
+# (docs/platform-facts.md §2.3).
 [[element]]
 id = "basic.buttons.toggle_on"
 name = "Toggle button"
 parent = "basic.buttons.toggle_off"
-leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["On"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -833,7 +834,7 @@ sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 id = "basic.buttons.toggle_on.label"
 name = "Button label"
 parent = "basic.buttons.toggle_on"
-leaves = ["button.font", "button.active_text_color", "defaults.line_height"]
+leaves = ["button.font", "button.checked_text_color", "button.active_text_color", "defaults.line_height"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }

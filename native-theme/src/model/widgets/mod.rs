@@ -81,6 +81,18 @@ pub struct ButtonTheme {
     /// Button background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
+    /// Background of a toggle button that is on (checked): Breeze's
+    /// `Button` mixed an eighth towards `ButtonText`, WinUI's accent fill,
+    /// libadwaita's pressed fill, Material's `secondary`. `None` where the
+    /// platform states none (AppKit); a connector then shows the pressed
+    /// pair, `active_background` and `active_text_color`
+    /// (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub checked_background: Option<Rgba>,
+    /// Label color of a toggle button that is on; `None`, as for
+    /// `checked_background`, the pressed pair's (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub checked_text_color: Option<Rgba>,
     /// Button label font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -1764,6 +1776,8 @@ mod tests {
             disabled_text_color: Some(Rgba::rgb(128, 128, 128)),
             active_background: Some(Rgba::rgb(180, 180, 180)),
             disabled_background: Some(Rgba::rgb(220, 220, 220)),
+            checked_background: Some(Rgba::rgb(190, 190, 190)),
+            checked_text_color: None,
             font: Some(FontSpec {
                 family: Some("Inter".into()),
                 size: Some(FontSize::Px(14.0)),
@@ -1793,6 +1807,8 @@ mod tests {
         // soft_option fields pass through as Option
         assert_eq!(resolved.active_background, Some(Rgba::rgb(180, 180, 180)));
         assert_eq!(resolved.disabled_background, Some(Rgba::rgb(220, 220, 220)));
+        assert_eq!(resolved.checked_background, Some(Rgba::rgb(190, 190, 190)));
+        assert_eq!(resolved.checked_text_color, None);
     }
 
     #[test]

@@ -91,6 +91,9 @@ disabled_text_color = "#c5c5c5"
 active_background = "#00000008"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#f9f9f900"
+# platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF
+checked_background = "#0078d4"
+checked_text_color = "#ffffff"
 
 
 [light.button.border]
@@ -496,6 +499,9 @@ disabled_text_color = "#454545"
 active_background = "#ffffff08"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"
+# platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000
+checked_background = "#0078d4"
+checked_text_color = "#000000"
 
 
 [dark.button.border]

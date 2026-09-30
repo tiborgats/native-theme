@@ -116,6 +116,9 @@ active_text_color = "#1d192b"
 # platform-facts.md:1177 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
 disabled_background = "#1d1b201f"
 disabled_text_color = "#1d1b2061"
+# platform-facts.md:1181-1182 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
+checked_background = "#625b71"
+checked_text_color = "#ffffff"
 
 
 [light.button.font]
@@ -612,6 +615,9 @@ active_text_color = "#e8def8"
 # platform-facts.md:1177 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
 disabled_background = "#e6e0e91f"
 disabled_text_color = "#e6e0e961"
+# platform-facts.md:1181-1182 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
+checked_background = "#ccc2dc"
+checked_text_color = "#332d41"
 
 
 [dark.button.font]

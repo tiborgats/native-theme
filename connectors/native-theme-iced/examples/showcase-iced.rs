@@ -5548,8 +5548,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             format!("{class}: the Hovered fill, composited over the rest fill").into()
         }
         ("button", "hover_text_color") => format!("{class}: the Hovered text_color").into(),
+        ("button", "checked_background") => {
+            "toggle_on: the fill at rest, the Pressed fill where unstated".into()
+        }
+        ("button", "checked_text_color") => {
+            "toggle_on: text_color at rest, the Pressed one where unstated".into()
+        }
         ("button", "active_background") if toggle_on => {
-            "toggle_on: the fill at rest, composited over button.background_color".into()
+            "toggle_on: the fill at rest where checked_background is unstated, composited over button.background_color".into()
         }
         ("button", "active_background") if ghost => {
             "ghost_button: the Pressed fill, and the fill while selected".into()
@@ -5557,7 +5563,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("button", "active_background") => {
             format!("{class}: the Pressed fill, composited over the rest fill").into()
         }
-        ("button", "active_text_color") if toggle_on => "toggle_on: text_color at rest".into(),
+        ("button", "active_text_color") if toggle_on => {
+            "toggle_on: text_color at rest where checked_text_color is unstated".into()
+        }
         ("button", "active_text_color") => format!("{class}: the Pressed text_color").into(),
         ("button", "primary_background") => {
             "styles::button_primary: button::Style::background at rest".into()
@@ -6702,16 +6710,28 @@ enum Push {
     On,
 }
 
-/// A toggle button that is on, in the button's own colours: its pressed
-/// look, `button.active_background` and `.active_text_color`, at rest and
-/// under the pointer, as a checked button holds its pressed look (the model
-/// states no checked colour of its own). Disabled stays `style`'s.
+/// A toggle button that is on, at rest and under the pointer:
+/// `button.checked_background` and `.checked_text_color`
+/// (docs/platform-facts.md §2.3), and where the theme states none the
+/// button's pressed look, `style`'s `Pressed` (`button.active_background` and
+/// `.active_text_color`). Disabled stays `style`'s.
 fn toggle_on(
+    resolved: &ResolvedTheme,
     style: impl Fn(&Theme, button::Status) -> button::Style,
 ) -> impl Fn(&Theme, button::Status) -> button::Style {
+    let b = &resolved.button;
+    let fill = b.checked_background.map(to_color);
+    let label = b.checked_text_color.map(to_color);
     move |theme, status| match status {
         button::Status::Disabled => style(theme, status),
-        _ => style(theme, button::Status::Pressed),
+        _ => {
+            let pressed = style(theme, button::Status::Pressed);
+            button::Style {
+                background: fill.map(iced::Background::Color).or(pressed.background),
+                text_color: label.unwrap_or(pressed.text_color),
+                ..pressed
+            }
+        }
     }
 }
 
@@ -6838,7 +6858,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
-            .style(toggle_on(styles::button(resolved)))
+            .style(toggle_on(resolved, styles::button(resolved)))
             .padding(btn_pad),
         };
         // At its own width even where its row runs past the column, as the

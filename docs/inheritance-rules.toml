@@ -373,6 +373,8 @@ fields = [
     # batch 1 interactive state colors (Phase 52, plan 01)
     "button.active_background",        # platform-specific pressed state
     "button.disabled_background",      # platform-specific disabled bg
+    "button.checked_background",       # None: the pressed pair shows a checked toggle (§2.3)
+    "button.checked_text_color",       # None: the pressed pair shows a checked toggle (§2.3)
     "input.hover_border_color",        # platform-specific hover border
     "input.focus_border_color",        # platform-specific focus border
     "input.disabled_background",       # platform-specific disabled bg

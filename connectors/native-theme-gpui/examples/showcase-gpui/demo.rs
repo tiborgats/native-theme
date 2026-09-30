@@ -7798,11 +7798,11 @@ fn tool_box_of(n: Native<'_>) -> StyleRefinement {
 }
 
 /// A toggle button that is on: a Default Button reading `label`, refined by
-/// `geometry::button`, shown selected, and filled with
-/// `button.active_background` and lettered in `button.active_text_color`
-/// where the theme states them -- the model's colours of a pressed button,
-/// for want of a checked one. Upstream's selected style would fill it with
-/// its `button_active` token and letter it in `button_foreground`
+/// `geometry::button`, shown selected, and refined by
+/// `geometry::button_checked` -- filled with `button.checked_background` and
+/// lettered in `button.checked_text_color`, the pressed pair where the theme
+/// states none. Upstream's selected style would fill it with its
+/// `button_active` token and letter it in `button_foreground`
 /// (button/button.rs, `ButtonVariant::selected`); the Button replays the
 /// caller's style over that state (button/button.rs, `RenderOnce for
 /// Button`, `styles.selected`), so these win.
@@ -7823,7 +7823,7 @@ pub(crate) fn toggle_button(
     )
     .instance(
         "state",
-        "selected: on, in button.active_background and button.active_text_color",
+        "selected: on, in button.checked_background and button.checked_text_color (the pressed pair where unstated)",
     );
     let button = native_info(
         Button::new(id),
@@ -7832,13 +7832,13 @@ pub(crate) fn toggle_button(
         "button",
         &mut button_info,
     );
-    let fill = native_value(cx, |n| n.resolved.button.active_background).flatten();
-    let text = native_value(cx, |n| n.resolved.button.active_text_color);
-    let button = button
-        .selected(true)
-        .toggled(true)
-        .when_some(fill, |button, fill| button.bg(info::stated(fill)))
-        .when_some(text, |button, text| button.text_color(info::stated(text)));
+    let button = native_info(
+        button.selected(true).toggled(true),
+        cx,
+        geometry::button_checked,
+        "button_checked",
+        &mut button_info,
+    );
     InfoExt::info(labelled(ui, button, id, label), ui, id, button_info)
         .debug_selector(move || id.into())
 }

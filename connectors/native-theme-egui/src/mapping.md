@@ -10,11 +10,11 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
-| Buttons (button, link, switch, checkbox, segmented control) | 104 | 11 | 46 | 29 | 18 |
+| Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
 | Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **503** | **47** | **208** | **165** | **83** |
+| **TOTAL** | **505** | **47** | **208** | **167** | **83** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
@@ -219,6 +219,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `button.border.padding.right` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` |  |
 | `button.border.padding.top` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` |  |
 | `button.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
+| `button.checked_background` | DERIVED | → T18(a) |  |
+| `button.checked_text_color` | DERIVED | → T18(a) |  |
 | `button.disabled_background` | SCOPED | «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies button.background_color, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: stated; None keeps button.primary_background, §6.3); «button:disabled» `visuals.selection.stroke.color` (when: stated: button.disabled_text_color, else button.primary_text_color, §6.3) |  |
 | `button.disabled_opacity` | SCOPED | «button» `visuals.disabled_alpha`; «button:disabled» `visuals.disabled_alpha` |  |
 | `button.disabled_text_color` | SCOPED | «button:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «button:disabled» `visuals.widgets.inactive.fg_stroke.color`; «button:disabled» `visuals.selection.stroke.color` (when: button.disabled_background is stated, §6.3) |  |

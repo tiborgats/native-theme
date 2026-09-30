@@ -966,6 +966,14 @@ sinks   = [
   { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled", when = "stated: button.disabled_text_color, else button.primary_text_color, §6.3" },
 ]
 
+["button.checked_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["button.checked_text_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
 ["button.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"
