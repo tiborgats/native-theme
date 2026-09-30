@@ -22,8 +22,8 @@
 //! A second table, one row per (platform, field), gives the text scale's
 //! sizes and weights, the dialog title font's size and weight, the slider's
 //! `track_height` and `thumb_diameter`, the progress bar's `track_height`,
-//! and the checkbox's `radio_dot_diameter` and `check_mark_stroke_width`. A
-//! cell that leaves the field to
+//! and the checkbox's `radio_dot_diameter`, `check_mark_stroke_width` and
+//! `radio_indicator_width`. A cell that leaves the field to
 //! inheritance ("← `defaults.font`", "(none)") is checked as not stated.
 //!
 //! Every row is checked in both variants against two resolutions:
@@ -789,8 +789,8 @@ struct FieldRow {
     platform: Platform,
     /// `text_scale.<role>.size` / `.weight`, `dialog.title_font.size` /
     /// `.weight`, `slider.track_height`, `slider.thumb_diameter`,
-    /// `progress_bar.track_height`, `checkbox.radio_dot_diameter` or
-    /// `checkbox.check_mark_stroke_width`.
+    /// `progress_bar.track_height`, `checkbox.radio_dot_diameter`,
+    /// `checkbox.check_mark_stroke_width` or `checkbox.radio_indicator_width`.
     field: &'static str,
     want: Want,
     /// The platform-facts.md line of the cell.
@@ -835,6 +835,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Kde, "progress_bar.track_height", Px(6.0), 1303, "ProgressBar_Thickness = 6"),
     field(Kde, "checkbox.radio_dot_diameter", Px(6.0), 1220, "renderRadioButton: radius (18 - 12) / 2 = 3"),
     field(Kde, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "the check pen: PenWidth::Frame * 2 = 2.002"),
+    field(Kde, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: CheckBox_Size for both"),
     // --- GNOME ---
     field(Gnome, "text_scale.caption.size", Pt(9.0), 1435, ".caption: ≈9pt"),
     field(Gnome, "text_scale.caption.weight", Weight(400), 1435, ".caption: 400"),
@@ -851,6 +852,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Gnome, "progress_bar.track_height", Px(8.0), 1303, "libadwaita .progressbar: 8"),
     field(Gnome, "checkbox.radio_dot_diameter", Px(8.0), 1220, "bullet.svg: a circle of radius 4"),
     field(Gnome, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "check.svg (1.10.0): a stroke 2 wide"),
+    field(Gnome, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: one check, radio rule"),
     // --- macOS ---
     field(Macos, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
     field(Macos, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
@@ -867,6 +869,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Macos, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
     field(Macos, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
     field(Macos, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
+    field(Macos, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
@@ -887,6 +890,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Windows, "progress_bar.track_height", Px(1.0), 1303, "the groove, ProgressBarTrackHeight: 1"),
     field(Windows, "checkbox.radio_dot_diameter", Px(12.0), 1220, "RadioButtonCheckGlyphSize: 12"),
     field(Windows, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): a font glyph"),
+    field(Windows, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: OuterEllipse 20 as CheckBoxSize 20"),
     // --- Material (dp = logical pixels, rem × 16) ---
     field(Material, "text_scale.caption.size", Px(12.0), 1435, "body-small: 12"),
     field(Material, "text_scale.caption.weight", Weight(400), 1435, "body-small: 400"),
@@ -903,10 +907,11 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Material, "progress_bar.track_height", Px(4.0), 1303, "linear track-height: 4"),
     field(Material, "checkbox.radio_dot_diameter", Px(10.0), 1220, "material-web radio.ts: inner circle r = 5"),
     field(Material, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "material-web $_mark-stroke: 2px"),
+    field(Material, "checkbox.radio_indicator_width", Px(20.0), 1222, "comp.radio-button icon-size: 20"),
 ];
 
 /// Every field a [`FieldRow`] may name.
-const FIELDS: [&str; 15] = [
+const FIELDS: [&str; 16] = [
     "text_scale.caption.size",
     "text_scale.caption.weight",
     "text_scale.section_heading.size",
@@ -922,6 +927,7 @@ const FIELDS: [&str; 15] = [
     "progress_bar.track_height",
     "checkbox.radio_dot_diameter",
     "checkbox.check_mark_stroke_width",
+    "checkbox.radio_indicator_width",
 ];
 
 /// The platform-facts section and row key of a field's cell.
@@ -942,6 +948,7 @@ fn field_cell(field: &str) -> Option<(&'static str, &'static str)> {
         "progress_bar.track_height" => ("2.10", "track_height"),
         "checkbox.radio_dot_diameter" => ("2.5", "radio_dot_diameter"),
         "checkbox.check_mark_stroke_width" => ("2.5", "check_mark_stroke_width"),
+        "checkbox.radio_indicator_width" => ("2.5", "radio_indicator_width"),
         _ => return None,
     })
 }
@@ -967,6 +974,7 @@ fn states_field(v: &ThemeMode, field: &str) -> Option<bool> {
         "progress_bar.track_height" => v.progress_bar.track_height.is_some(),
         "checkbox.radio_dot_diameter" => v.checkbox.radio_dot_diameter.is_some(),
         "checkbox.check_mark_stroke_width" => v.checkbox.check_mark_stroke_width.is_some(),
+        "checkbox.radio_indicator_width" => v.checkbox.radio_indicator_width.is_some(),
         _ => {
             let (role, sub) = field.strip_prefix("text_scale.")?.split_once('.')?;
             let entry = stated_entry(v, role);
@@ -998,6 +1006,7 @@ fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
         "progress_bar.track_height" => theme.progress_bar.track_height,
         "checkbox.radio_dot_diameter" => theme.checkbox.radio_dot_diameter?,
         "checkbox.check_mark_stroke_width" => theme.checkbox.check_mark_stroke_width?,
+        "checkbox.radio_indicator_width" => theme.checkbox.radio_indicator_width?,
         _ => return None,
     })
 }

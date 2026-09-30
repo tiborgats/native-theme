@@ -285,6 +285,7 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
     (
         proptest::collection::vec(proptest::option::of(arb_rgba()), 7..=7),
         proptest::option::of(1.0f32..50.0),
+        proptest::option::of(1.0f32..50.0),
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(0.0f32..50.0),
@@ -293,11 +294,12 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
         proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(
-            |(colors, ind_w, dot, mark, gap, dis_op, font, border)| CheckboxTheme {
+            |(colors, ind_w, radio_w, dot, mark, gap, dis_op, font, border)| CheckboxTheme {
                 background_color: colors[0],
                 checked_background: colors[1],
                 indicator_color: colors[2],
                 indicator_width: ind_w,
+                radio_indicator_width: radio_w,
                 radio_dot_diameter: dot,
                 check_mark_stroke_width: mark,
                 label_gap: gap,

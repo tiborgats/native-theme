@@ -1259,6 +1259,11 @@ verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8)"
 
+["checkbox.radio_indicator_width"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width"
+
 ["checkbox.check_mark_stroke_width"]
 verdict = "scoped"
 sinks   = [

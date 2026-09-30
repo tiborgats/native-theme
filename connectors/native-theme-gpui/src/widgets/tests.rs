@@ -128,6 +128,13 @@ fn the_checkbox_look_is_the_presets_values() {
     );
     let md = CheckboxLook::of(&resolved("material", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
+    // The radio is `checkbox.radio_indicator_width` across where stated
+    // (material's 20, docs/platform-facts.md:1222), the checkbox's elsewhere.
+    let radio = |preset: &str| {
+        CheckboxLook::radio(&resolved(preset, ColorMode::Dark), false, false).map(|l| l.indicator)
+    };
+    assert_eq!(radio("material"), Some(px(20.)));
+    assert_eq!(radio("kde-breeze"), Some(kbl.indicator));
     assert_eq!(
         md.mark_stroke,
         Some(px(2.)),
@@ -527,9 +534,10 @@ fn the_radio_indicator_is_the_stated_size(cx: &mut TestAppContext) {
         Box::new(|_, _| Radio::new("r").label("A").into_any_element()),
     );
     let r = resolved("material", ColorMode::Dark);
+    assert_eq!(r.checkbox.radio_indicator_width, Some(20.));
     let b = bounds(cx, "native-checkbox-indicator");
-    assert_eq!(b.size.width, px(r.checkbox.indicator_width));
-    assert_eq!(b.size.height, px(r.checkbox.indicator_width));
+    assert_eq!(b.size.width, px(20.));
+    assert_eq!(b.size.height, px(20.));
 }
 
 /// docs/platform-facts.md:1220: Breeze's dot is 6px across, centred in the

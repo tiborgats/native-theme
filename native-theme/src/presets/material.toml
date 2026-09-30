@@ -166,6 +166,8 @@ padding_horizontal_px = 16.0
 padding_vertical_px = 16.0
 [light.checkbox]
 indicator_width_px = 18.0
+# platform-facts.md:1222 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
+radio_indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
 radio_dot_diameter_px = 10.0
 # platform-facts.md:1221 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)
@@ -652,6 +654,8 @@ padding_horizontal_px = 16.0
 padding_vertical_px = 16.0
 [dark.checkbox]
 indicator_width_px = 18.0
+# platform-facts.md:1222 (§2.5): comp.radio-button icon-size 20 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-radio-button.scss:34)
+radio_indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): material-web radio.ts:119, the inner circle r = 5 (cbd34a8)
 radio_dot_diameter_px = 10.0
 # platform-facts.md:1221 (§2.5): material-web $_mark-stroke: 2px (cbd34a8, checkbox/internal/_checkbox.scss:18-19)

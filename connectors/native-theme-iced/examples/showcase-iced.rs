@@ -5653,6 +5653,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("checkbox", "radio_dot_diameter_px") => {
             "native_theme_iced::radio: the dot's diameter, over iced's own dot".into()
         }
+        ("checkbox", "radio_indicator_width_px") => {
+            "native_theme_iced::radio: Radio::size, indicator_width where unstated".into()
+        }
         ("checkbox", "label_gap_px") => "Checkbox/Radio::spacing".into(),
         ("checkbox", "hover_background") => {
             "styles::checkbox / styles::radio: the Hovered unchecked fill".into()
@@ -8877,7 +8880,12 @@ fn checkbox_info(resolved: &ResolvedTheme) -> String {
 fn radio_info(resolved: &ResolvedTheme) -> String {
     let c = &resolved.checkbox;
     let label_gap_s = format!("{:.0}px", c.label_gap);
-    let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    // `checkbox.radio_indicator_width` where the theme sizes the radio apart
+    // (platform-facts.md:1222), the checkbox's `indicator_width` where not.
+    let indicator_width_s = format!(
+        "{:.0}px",
+        c.radio_indicator_width.unwrap_or(c.indicator_width)
+    );
     // `checkbox.radio_dot_diameter` (platform-facts.md:1220), which
     // `native_theme_iced::radio` draws over iced's radio; unstated, the dot is
     // iced's own, half the circle (radio.rs:409).

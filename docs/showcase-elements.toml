@@ -955,14 +955,14 @@ sample = { text = "glyph" }
 id = "basic.radios.option_a"
 name = "Radio button"
 parent = "basic.radios.heading"
-leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
 states = ["Selected"]
 
 [[element]]
 id = "basic.radios.option_a.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.indicator_width_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -989,14 +989,14 @@ sample = { text = "glyph" }
 id = "basic.radios.option_b"
 name = "Radio button"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.radios.option_b.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_b"
-leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }

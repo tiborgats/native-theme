@@ -674,7 +674,9 @@ where
 }
 
 /// A radio button at the platform's size, with the platform's dot: `radio`
-/// sized `checkbox.indicator_width` across and set `checkbox.label_gap` from
+/// sized `checkbox.radio_indicator_width` across where the theme states it
+/// (Material's radio is 20, its checkbox 18), `checkbox.indicator_width`
+/// where it does not, and set `checkbox.label_gap` from
 /// its label, styled by [`styles::radio()`], and, where the theme states
 /// `checkbox.radio_dot_diameter`, selected with a dot that many pixels across
 /// in `checkbox.indicator_color`, centred in the circle. `is_selected` is the
@@ -708,7 +710,8 @@ where
 
     let c = &resolved.checkbox;
     let style = styles::radio(resolved);
-    let radio = radio.size(c.indicator_width).spacing(c.label_gap);
+    let width = c.radio_indicator_width.unwrap_or(c.indicator_width);
+    let radio = radio.size(width).spacing(c.label_gap);
     let Some(dot) = c.radio_dot_diameter.filter(|d| d.is_finite() && *d >= 0.0) else {
         return radio.style(style).into();
     };
@@ -728,7 +731,7 @@ where
             ..container::Style::default()
         });
     let seat = container(mark)
-        .width(c.indicator_width)
+        .width(width)
         .height(iced_core::Length::Fill)
         .align_x(iced_core::alignment::Horizontal::Center)
         .align_y(iced_core::alignment::Vertical::Center);

@@ -425,6 +425,22 @@ fn every_widget_reports_its_role() {
     assert_eq!(node(&out, ids[7]).role(), accesskit::Role::RadioButton);
 }
 
+/// The radio button's circle is `checkbox.radio_indicator_width` across its outline where the
+/// theme states one (Material's 20 against its check box's 18, docs/platform-facts.md:1222).
+#[test]
+fn the_radio_circle_is_the_stated_radio_width() {
+    let mut t = kde();
+    assert_eq!(t.checkbox.radio_indicator_width, None);
+    t.checkbox.radio_indicator_width = Some(t.checkbox.indicator_width + 6.0);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (out, _) = response(&ctx, at(0.0), |ui| ui.add(RadioButton::new(true, "Radio")));
+    let across = circles(&out)
+        .iter()
+        .find(|c| c.fill == to_color32(t.checkbox.checked_background))
+        .map(|c| 2.0 * (c.radius + c.stroke.width));
+    assert_eq!(across, t.checkbox.radio_indicator_width);
+}
+
 /// The radio button's dot is `checkbox.radio_dot_diameter` across, in `indicator_color`, on
 /// the checked circle `indicator_width` across its outline in `checked_background` (epaint
 /// strokes a circle outside its radius, `epaint/src/tessellator.rs:1531`, as a check box's

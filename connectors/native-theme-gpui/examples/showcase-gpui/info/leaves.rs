@@ -523,6 +523,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "checkbox.radio_indicator_width_px",
+        "gpui: the radio's circle, indicator_width where unstated (widgets::Radio, CheckboxLook::radio)",
+    ),
+    (
+        "",
         "checkbox.unchecked_background",
         "gpui: the unchecked indicator's fill (CheckboxLook)",
     ),

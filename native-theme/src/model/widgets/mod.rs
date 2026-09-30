@@ -182,6 +182,13 @@ pub struct CheckboxTheme {
     #[serde(rename = "indicator_width_px")]
     #[theme(check = "non_negative")]
     pub indicator_width: Option<f32>,
+    /// Diameter of the radio indicator (circle) in logical pixels, where the
+    /// platform sizes it apart from the checkbox's square: Material's radio is
+    /// 20 across, its checkbox 18. `None` where the platform sizes both alike,
+    /// and the radio is `indicator_width` across (docs/platform-facts.md §2.5).
+    #[serde(rename = "radio_indicator_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub radio_indicator_width: Option<f32>,
     /// Diameter of the filled dot a selected radio button draws at the centre
     /// of its indicator, in logical pixels. `None` where the platform states
     /// no dot size: AppKit draws its own (docs/platform-facts.md §2.5).

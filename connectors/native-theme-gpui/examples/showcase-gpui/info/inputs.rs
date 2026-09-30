@@ -561,20 +561,20 @@ fn native_indicator(
             "fill",
             "disabled_background",
             stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:99",
+            "native-theme-gpui/widgets/checkbox.rs:124",
         )),
         (true, false) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
-            "native-theme-gpui/widgets/checkbox.rs:95",
+            "native-theme-gpui/widgets/checkbox.rs:120",
         )),
         (false, false) => {
             let info = info.color(claim(
                 "fill",
                 "unchecked_background",
                 stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:93",
+                "native-theme-gpui/widgets/checkbox.rs:118",
             ));
             if disabled {
                 info
@@ -583,7 +583,7 @@ fn native_indicator(
                     "hover layer, over the fill",
                     "hover_background",
                     stated(k.hover_background.unwrap_or(k.background_color)),
-                    "native-theme-gpui/widgets/checkbox.rs:106",
+                    "native-theme-gpui/widgets/checkbox.rs:131",
                 ))
             }
         }
@@ -593,14 +593,14 @@ fn native_indicator(
             "border",
             "border",
             stated(k.border.color),
-            "native-theme-gpui/widgets/checkbox.rs:110",
+            "native-theme-gpui/widgets/checkbox.rs:135",
         ))
     } else {
         info.color(claim(
             "border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:112",
+            "native-theme-gpui/widgets/checkbox.rs:137",
         ))
     };
     match (disabled, stated_disabled) {
@@ -608,33 +608,33 @@ fn native_indicator(
             "mark and label",
             "disabled_text_color",
             stated(k.disabled_text_color),
-            "native-theme-gpui/widgets/checkbox.rs:115",
+            "native-theme-gpui/widgets/checkbox.rs:140",
         )),
         (true, false) => info
             .color(claim(
                 "mark",
                 "indicator_color",
                 stated(k.indicator_color),
-                "native-theme-gpui/widgets/checkbox.rs:116",
+                "native-theme-gpui/widgets/checkbox.rs:141",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(k.disabled_text_color),
-                "native-theme-gpui/widgets/checkbox.rs:116",
+                "native-theme-gpui/widgets/checkbox.rs:141",
             )),
         (false, _) => info
             .color(claim(
                 "mark",
                 "indicator_color",
                 stated(k.indicator_color),
-                "native-theme-gpui/widgets/checkbox.rs:117",
+                "native-theme-gpui/widgets/checkbox.rs:142",
             ))
             .color(claim(
                 "label",
                 "font",
                 stated(k.font.color),
-                "native-theme-gpui/widgets/checkbox.rs:117",
+                "native-theme-gpui/widgets/checkbox.rs:142",
             )),
     }
 }
@@ -661,19 +661,19 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             stated(k.unchecked_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:93",
+            "native-theme-gpui/widgets/checkbox.rs:118",
         ))
         .color(claim(
             "unselected border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:112",
+            "native-theme-gpui/widgets/checkbox.rs:137",
         ))
         .color(claim(
             "hover layer, over an unselected fill",
             "hover_background",
             stated(k.hover_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:106",
+            "native-theme-gpui/widgets/checkbox.rs:131",
         ))
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));

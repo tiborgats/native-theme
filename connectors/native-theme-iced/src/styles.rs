@@ -667,7 +667,9 @@ pub fn checkbox(
 ///
 /// The same two native fields are builder geometry here as on a checkbox:
 /// `checkbox.indicator_width` is the radio indicator's diameter
-/// (`platform-facts.md:980`) -- the whole circle, not the selected dot, which
+/// (`platform-facts.md:980`), or `checkbox.radio_indicator_width` where the
+/// theme sizes the radio apart (`platform-facts.md:1222`) -- the whole circle,
+/// not the selected dot, which
 /// iced draws at half of it (`radio.rs:409`) -- and belongs to
 /// `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
 /// `checkbox.label_gap` to `Radio::spacing(..)` (`radio.rs:212`).

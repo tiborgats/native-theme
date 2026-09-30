@@ -25,7 +25,9 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// `EGUI_DOT_DIVISOR · 0.5 · radio_dot_diameter` for this radio alone, and the dot is that
 /// many pixels across, in the cell's `fg_stroke`, `checkbox.indicator_color`. Where the theme
 /// states none (macOS publishes none, `docs/platform-facts.md:1220`) or a size that is not
-/// finite, the dot is egui's own. And the circle's outline lies inside
+/// finite, the dot is egui's own. Where the theme sizes the radio apart from the check box
+/// (`checkbox.radio_indicator_width`, Material's 20 against its 18, `docs/platform-facts.md:1222`)
+/// the scope's `icon_width` becomes that width for this radio alone. And the circle's outline lies inside
 /// `checkbox.indicator_width`, as the check box's square's does: egui's circle is half the
 /// icon's width plus the state's `expansion` in radius and epaint strokes it outside that
 /// (`epaint/src/tessellator.rs:1531`), so this radio's `expansion` gives back the stroke's
@@ -102,12 +104,13 @@ impl egui::Widget for RadioButton {
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             return ui.add_enabled(enabled, egui::RadioButton::new(checked, text));
         };
-        let dot = atlas
-            .resolved_for(ui.ctx().theme())
-            .checkbox
-            .radio_dot_diameter
-            .and_then(scope::length);
+        let checkbox = &atlas.resolved_for(ui.ctx().theme()).checkbox;
+        let dot = checkbox.radio_dot_diameter.and_then(scope::length);
+        let width = checkbox.radio_indicator_width.and_then(scope::length);
         scope::open_selected(ui, Role::Checkbox, checked, enabled, |ui| {
+            if let Some(width) = width {
+                ui.spacing_mut().icon_width = clamp_length(width);
+            }
             if let Some(dot) = dot {
                 ui.spacing_mut().icon_width_inner = clamp_length(EGUI_DOT_DIVISOR * 0.5 * dot);
             }

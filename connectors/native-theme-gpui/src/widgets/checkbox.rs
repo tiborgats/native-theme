@@ -89,6 +89,31 @@ impl CheckboxLook {
     /// (docs/platform-facts.md §2.1.6).
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
+        Self::sized(
+            resolved,
+            checked,
+            disabled,
+            resolved.checkbox.indicator_width,
+        )
+    }
+
+    /// A radio's look: [`CheckboxLook::of`]'s, its circle
+    /// `checkbox.radio_indicator_width` across where the theme states it
+    /// (Material's radio is 20, its checkbox 18), `indicator_width` where it
+    /// does not (docs/platform-facts.md §2.5).
+    #[must_use]
+    pub fn radio(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
+        let c = &resolved.checkbox;
+        let width = c.radio_indicator_width.unwrap_or(c.indicator_width);
+        Self::sized(resolved, checked, disabled, width)
+    }
+
+    fn sized(
+        resolved: &ResolvedTheme,
+        checked: bool,
+        disabled: bool,
+        indicator_width: f32,
+    ) -> Option<Self> {
         let c = &resolved.checkbox;
         let unchecked = color(c.unchecked_background.unwrap_or(c.background_color));
         let enabled_fill = if checked {
@@ -117,15 +142,15 @@ impl CheckboxLook {
             (false, _) => (color(c.indicator_color), color(c.font.color)),
         };
         let opacity = super::disabled_opacity(disabled, c.disabled_opacity);
-        let indicator = length(c.indicator_width)?;
+        let indicator = length(indicator_width)?;
         let border_width = length(c.border.line_width)?;
         let p = &c.border.padding;
         let inset = |side: Option<f32>| {
             side.filter(|v| v.is_finite() && *v >= 0.0)
                 .unwrap_or(c.border.line_width)
         };
-        let across = c.indicator_width - inset(p.left) - inset(p.right);
-        let down = c.indicator_width - inset(p.top) - inset(p.bottom);
+        let across = indicator_width - inset(p.left) - inset(p.right);
+        let down = indicator_width - inset(p.top) - inset(p.bottom);
         let mark_size = length(across.min(down).max(0.0))?;
         let mark_padded = [p.top, p.right, p.bottom, p.left]
             .iter()
@@ -616,7 +641,7 @@ impl RenderOnce for Radio {
         let Some(n) = native(cx) else {
             return self.fallback();
         };
-        let Some(look) = CheckboxLook::of(n.resolved, self.parts.checked, self.parts.disabled)
+        let Some(look) = CheckboxLook::radio(n.resolved, self.parts.checked, self.parts.disabled)
         else {
             return self.fallback();
         };

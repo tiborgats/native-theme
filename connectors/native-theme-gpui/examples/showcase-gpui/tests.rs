@@ -4219,14 +4219,16 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
         let Some(r) = r else { return };
         let size =
             |cx: &mut VisualTestContext, selector: &'static str| bounds_of(cx, selector).size;
+        // The last indicator the page lays out, a radio button's.
         let indicator = size(&mut cx, "native-checkbox-indicator");
+        let radio = px(r
+            .checkbox
+            .radio_indicator_width
+            .unwrap_or(r.checkbox.indicator_width));
         assert_eq!(
             (indicator.width, indicator.height),
-            (
-                px(r.checkbox.indicator_width),
-                px(r.checkbox.indicator_width)
-            ),
-            "{preset}: checkbox.indicator_width"
+            (radio, radio),
+            "{preset}: checkbox.radio_indicator_width, or indicator_width"
         );
         let track = size(&mut cx, "native-switch-track");
         assert_eq!(
