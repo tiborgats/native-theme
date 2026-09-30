@@ -2574,16 +2574,23 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
         let row = bounds_of(&mut cx, CHROME_PAGE_TABS);
         let accent = cx.update(|window, cx| {
             let primary = Theme::global(cx).primary;
-            let row = row.scale(window.scale_factor());
+            let scale = window.scale_factor();
+            let row = row.scale(scale);
+            // The selected tab's line, where tab.* states one, may be the
+            // accent's colour: Breeze's is the selection colour.
+            let line = native_value(cx, |n| n.resolved.tab.active_indicator_width)
+                .flatten()
+                .map(|w| px(w).scale(scale));
             window.painted_quads().into_iter().any(|q| {
                 q.background.as_solid() == Some(primary)
                     && q.bounds.top() >= row.top()
                     && q.bounds.bottom() <= row.bottom()
+                    && line != Some(q.bounds.size.height)
             })
         });
         assert!(
             !accent,
-            "{preset}: the page tab row paints the accent, which tab.* states nowhere"
+            "{preset}: the page tab row paints the accent beyond what tab.* states"
         );
     }
 }

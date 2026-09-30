@@ -57,6 +57,8 @@ fn apply_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
     variant.defaults.accent_color = Some(*accent);
     variant.defaults.selection_background = Some(*accent);
     variant.defaults.focus_ring_color = Some(*accent);
+    // A checked notebook tab's line is `--accent-bg-color` (docs/platform-facts.md §2.11).
+    variant.tab.active_indicator_color = Some(*accent);
 }
 
 /// Parse a GNOME/Pango font string into a full FontSpec with weight extraction.

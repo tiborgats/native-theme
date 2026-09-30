@@ -1135,6 +1135,44 @@ pub(crate) struct TabBar<'a, T> {
     pub tab_elements: &'a [&'static str],
 }
 
+/// The selected tab's line, where the theme states `tab.active_indicator_color`,
+/// `tab.active_indicator_width` and `tab.active_indicator_side` (docs/platform-facts.md
+/// §2.11): a strip that thick across the tab's outer edge on that side, over its outline, as
+/// Breeze fills its strip from the tab's frame; on top, rounded as the tab's top corners are.
+/// egui's `Button` draws no such line, so the showcase paints it over the tab.
+fn tab_indicator(
+    ui: &egui::Ui,
+    tab: egui::Rect,
+    top_corners: egui::CornerRadius,
+    t: &native_theme::theme::ResolvedTheme,
+) {
+    use native_theme::theme::TabIndicatorSide;
+
+    let s = &t.tab;
+    let (Some(color), Some(width), Some(side)) = (
+        s.active_indicator_color,
+        s.active_indicator_width,
+        s.active_indicator_side,
+    ) else {
+        return;
+    };
+    if !(width.is_finite() && width > 0.0) {
+        return;
+    }
+    let (rect, radius) = match side {
+        TabIndicatorSide::Top => (
+            egui::Rect::from_min_max(tab.min, egui::pos2(tab.max.x, tab.min.y + width)),
+            top_corners,
+        ),
+        TabIndicatorSide::Bottom => (
+            egui::Rect::from_min_max(egui::pos2(tab.min.x, tab.max.y - width), tab.max),
+            egui::CornerRadius::ZERO,
+        ),
+    };
+    ui.painter()
+        .rect_filled(rect, radius, native_theme_egui::convert::to_color32(color));
+}
+
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
 /// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
@@ -1147,7 +1185,8 @@ pub(crate) struct TabBar<'a, T> {
 /// which keeps every tab the size its padding gives; and a tab is rounded on its two top corners
 /// only, as both platforms that state a tab radius round it (Breeze `CornersTop`, WinUI
 /// `TopCornerRadiusFilterConverter`, §2.11), the model's one `tab.border.corner_radius` on
-/// each. The theme states no line under the selected tab or under the row, so none is drawn.
+/// each. The selected tab carries the line the theme states for it ([`tab_indicator`]); the
+/// theme states no line under the row, so none is drawn there.
 /// `trailing` adds what follows the tabs. Returns the tab clicked.
 pub(crate) fn tab_bar<T: Copy + PartialEq>(
     reg: &mut Registry,
@@ -1205,6 +1244,9 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                             button = button.stroke(no_pen);
                         }
                         let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
+                        if selected {
+                            tab_indicator(ui, r.rect, top, t);
+                        }
                         if let Some(id) = bar.tab_elements.get(index) {
                             reg.tag(id, &r);
                         }
@@ -1256,6 +1298,24 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
     reg.amend_last(|i| {
         i.read.extend([
             ("tab.min_width", min_width.to_string()),
+            (
+                "tab.active_indicator_color",
+                t.tab
+                    .active_indicator_color
+                    .map_or_else(|| "not stated: no line".to_string(), |c| c.to_string()),
+            ),
+            (
+                "tab.active_indicator_width",
+                t.tab
+                    .active_indicator_width
+                    .map_or_else(|| "not stated: no line".to_string(), |w| w.to_string()),
+            ),
+            (
+                "tab.active_indicator_side",
+                t.tab
+                    .active_indicator_side
+                    .map_or_else(|| "not stated: no line".to_string(), |s| format!("{s:?}")),
+            ),
             (
                 "layout.container_margin",
                 bar.margin

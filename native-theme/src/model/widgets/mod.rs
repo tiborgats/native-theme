@@ -2,7 +2,7 @@
 
 use crate::Rgba;
 use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};
-use crate::model::{ArrowSide, DialogButtonOrder, FontSpec, ResolvedFontSpec};
+use crate::model::{ArrowSide, DialogButtonOrder, FontSpec, ResolvedFontSpec, TabIndicatorSide};
 use native_theme_derive::{ThemeFields, ThemeWidget};
 
 // ── 2.2 Window / Application Chrome ────────────────────────────────────────
@@ -447,6 +447,23 @@ pub struct TabTheme {
     #[serde(rename = "item_gap_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub item_gap: Option<f32>,
+    /// Color of the line that marks the active tab: Breeze's `Highlight`
+    /// strip, libadwaita's accent, Material's `primary` indicator. `None`
+    /// where the platform marks the active tab without one, by its fill and
+    /// border (docs/platform-facts.md §2.11); a connector draws the line only
+    /// where the theme states its color, width and side.
+    #[theme(category = "soft_option")]
+    pub active_indicator_color: Option<Rgba>,
+    /// Thickness of the active tab's indicator line in logical pixels:
+    /// KDE 3, GNOME 4, Material 3 (docs/platform-facts.md §2.11).
+    #[serde(rename = "active_indicator_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub active_indicator_width: Option<f32>,
+    /// Which edge of the active tab its indicator line lies along, for tabs
+    /// above their pages: KDE top, GNOME and Material bottom
+    /// (docs/platform-facts.md §2.11).
+    #[theme(category = "soft_option")]
+    pub active_indicator_side: Option<TabIndicatorSide>,
     /// Tab text color on hover.
     pub hover_text_color: Option<Rgba>,
     /// Tab background on hover.

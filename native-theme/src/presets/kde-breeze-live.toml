@@ -105,6 +105,9 @@ min_width_px = 80.0
 min_height_px = 30.0
 # platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
 item_gap_px = 0.0
+# platform-facts.md:1328-1329 (§2.11): a TabBar_ActiveEffectSize 3 strip along a North tab's top edge (breezemetrics.h:137, breezehelper.cpp:1471-1487)
+active_indicator_width_px = 3.0
+active_indicator_side = "top"
 
 
 [light.tab.border]
@@ -320,6 +323,9 @@ min_width_px = 80.0
 min_height_px = 30.0
 # platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
 item_gap_px = 0.0
+# platform-facts.md:1328-1329 (§2.11): a TabBar_ActiveEffectSize 3 strip along a North tab's top edge (breezemetrics.h:137, breezehelper.cpp:1471-1487)
+active_indicator_width_px = 3.0
+active_indicator_side = "top"
 
 
 [dark.tab.border]

@@ -51,6 +51,8 @@ pub mod icon_sizes;
 pub mod icons;
 /// Resolved (non-optional) theme types produced after resolution.
 pub mod resolved;
+/// Active-tab indicator placement convention.
+pub mod tab_indicator_side;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
@@ -77,6 +79,7 @@ pub use resolved::{
     Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
+pub use tab_indicator_side::TabIndicatorSide;
 pub use widgets::*; // All 26 XxxTheme + ResolvedXxxTheme pairs
 
 use std::borrow::Cow;

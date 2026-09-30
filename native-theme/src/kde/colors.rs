@@ -190,6 +190,10 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         .zip(window_fg)
         .map(|(window, text)| mix(window, text, frame_contrast(ini)));
 
+    // Tab (docs/platform-facts.md §2.11): Breeze marks the selected tab with a
+    // strip of `QPalette::Highlight`, the selection background.
+    variant.tab.active_indicator_color = selection_bg;
+
     // Progress bar (docs/platform-facts.md §2.10): Breeze fills the contents
     // with `QPalette::Accent`, the selection background
     // (kcolorscheme.cpp:681 at 27066d47), at alpha 0.7 over the window, and

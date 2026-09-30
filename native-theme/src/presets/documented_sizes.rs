@@ -23,7 +23,8 @@
 //! sizes and weights, the dialog title font's size and weight, the slider's
 //! `track_height` and `thumb_diameter`, the progress bar's `track_height`,
 //! the checkbox's `radio_dot_diameter`, `check_mark_stroke_width` and
-//! `radio_indicator_width`, and the switch's `unchecked_thumb_diameter`. A cell that leaves the field to
+//! `radio_indicator_width`, the switch's `unchecked_thumb_diameter` and the
+//! tab's `active_indicator_width`. A cell that leaves the field to
 //! inheritance ("← `defaults.font`", "(none)") is checked as not stated.
 //!
 //! Every row is checked in both variants against two resolutions:
@@ -194,7 +195,7 @@ const ROWS: &[Row] = &[
     row(Kde, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Kde, "tab", axes(4.0, 8.0), &[1318, 1319], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
         .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Kde, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    row(Kde, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
         platform: Kde,
         widget: "toolbar",
@@ -226,7 +227,7 @@ const ROWS: &[Row] = &[
     row(Gnome, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Gnome, "tab", axes(3.0, 12.0), &[1318, 1319], "12; 3")
         .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Gnome, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    row(Gnome, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
         platform: Gnome,
         widget: "toolbar",
@@ -258,7 +259,7 @@ const ROWS: &[Row] = &[
     row(Macos, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Macos, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)")
         .with(&[("item_gap", None, 1326)]),
-    row(Macos, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    row(Macos, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
         platform: Macos,
         widget: "toolbar",
@@ -290,7 +291,7 @@ const ROWS: &[Row] = &[
     row(Windows, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
         .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Windows, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    row(Windows, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
         platform: Windows,
         widget: "toolbar",
@@ -322,7 +323,7 @@ const ROWS: &[Row] = &[
     row(Material, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Material, "tab", [None, Some(16.0), None, Some(16.0)], &[1318, 1319], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
         .with(&[("item_gap", None, 1326)]),
-    row(Material, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
+    row(Material, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
         platform: Material,
         widget: "toolbar",
@@ -790,8 +791,8 @@ struct FieldRow {
     /// `text_scale.<role>.size` / `.weight`, `dialog.title_font.size` /
     /// `.weight`, `slider.track_height`, `slider.thumb_diameter`,
     /// `progress_bar.track_height`, `checkbox.radio_dot_diameter`,
-    /// `checkbox.check_mark_stroke_width`, `checkbox.radio_indicator_width` or
-    /// `switch.unchecked_thumb_diameter`.
+    /// `checkbox.check_mark_stroke_width`, `checkbox.radio_indicator_width`,
+    /// `switch.unchecked_thumb_diameter` or `tab.active_indicator_width`.
     field: &'static str,
     want: Want,
     /// The platform-facts.md line of the cell.
@@ -838,6 +839,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Kde, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "the check pen: PenWidth::Frame * 2 = 2.002"),
     field(Kde, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: CheckBox_Size for both"),
     field(Kde, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: one handle in both states"),
+    field(Kde, "tab.active_indicator_width", Px(3.0), 1328, "TabBar_ActiveEffectSize = 3"),
     // --- GNOME ---
     field(Gnome, "text_scale.caption.size", Pt(9.0), 1435, ".caption: ≈9pt"),
     field(Gnome, "text_scale.caption.weight", Weight(400), 1435, ".caption: 400"),
@@ -856,6 +858,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Gnome, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "check.svg (1.10.0): a stroke 2 wide"),
     field(Gnome, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: one check, radio rule"),
     field(Gnome, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: one slider rule"),
+    field(Gnome, "tab.active_indicator_width", Px(4.0), 1328, "_notebook.scss: inset 0 -4px"),
     // --- macOS ---
     field(Macos, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
     field(Macos, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
@@ -874,6 +877,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Macos, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
     field(Macos, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
     field(Macos, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
+    field(Macos, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
@@ -896,6 +900,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Windows, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): a font glyph"),
     field(Windows, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: OuterEllipse 20 as CheckBoxSize 20"),
     field(Windows, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: SwitchKnobOff 12 as SwitchKnobOn 12"),
+    field(Windows, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
     // --- Material (dp = logical pixels, rem × 16) ---
     field(Material, "text_scale.caption.size", Px(12.0), 1435, "body-small: 12"),
     field(Material, "text_scale.caption.weight", Weight(400), 1435, "body-small: 400"),
@@ -914,10 +919,11 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Material, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "material-web $_mark-stroke: 2px"),
     field(Material, "checkbox.radio_indicator_width", Px(20.0), 1222, "comp.radio-button icon-size: 20"),
     field(Material, "switch.unchecked_thumb_diameter", Px(16.0), 1475, "unselected-handle-width/height: 16"),
+    field(Material, "tab.active_indicator_width", Px(3.0), 1328, "active-indicator-height: 3"),
 ];
 
 /// Every field a [`FieldRow`] may name.
-const FIELDS: [&str; 17] = [
+const FIELDS: [&str; 18] = [
     "text_scale.caption.size",
     "text_scale.caption.weight",
     "text_scale.section_heading.size",
@@ -935,6 +941,7 @@ const FIELDS: [&str; 17] = [
     "checkbox.check_mark_stroke_width",
     "checkbox.radio_indicator_width",
     "switch.unchecked_thumb_diameter",
+    "tab.active_indicator_width",
 ];
 
 /// The platform-facts section and row key of a field's cell.
@@ -957,6 +964,7 @@ fn field_cell(field: &str) -> Option<(&'static str, &'static str)> {
         "checkbox.check_mark_stroke_width" => ("2.5", "check_mark_stroke_width"),
         "checkbox.radio_indicator_width" => ("2.5", "radio_indicator_width"),
         "switch.unchecked_thumb_diameter" => ("2.21", "unchecked_thumb_diameter"),
+        "tab.active_indicator_width" => ("2.11", "active_indicator_width"),
         _ => return None,
     })
 }
@@ -984,6 +992,7 @@ fn states_field(v: &ThemeMode, field: &str) -> Option<bool> {
         "checkbox.check_mark_stroke_width" => v.checkbox.check_mark_stroke_width.is_some(),
         "checkbox.radio_indicator_width" => v.checkbox.radio_indicator_width.is_some(),
         "switch.unchecked_thumb_diameter" => v.switch.unchecked_thumb_diameter.is_some(),
+        "tab.active_indicator_width" => v.tab.active_indicator_width.is_some(),
         _ => {
             let (role, sub) = field.strip_prefix("text_scale.")?.split_once('.')?;
             let entry = stated_entry(v, role);
@@ -1017,6 +1026,7 @@ fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
         "checkbox.check_mark_stroke_width" => theme.checkbox.check_mark_stroke_width?,
         "checkbox.radio_indicator_width" => theme.checkbox.radio_indicator_width?,
         "switch.unchecked_thumb_diameter" => theme.switch.unchecked_thumb_diameter?,
+        "tab.active_indicator_width" => theme.tab.active_indicator_width?,
         _ => return None,
     })
 }

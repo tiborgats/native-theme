@@ -444,9 +444,9 @@ states = ["Normal"]
 id = "chrome.side_panel.inspector_tabs.widget"
 name = "Tab"
 parent = "chrome.side_panel.inspector_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
 states = ["Selected"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
+sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
 [[element]]
 id = "chrome.side_panel.inspector_tabs.theme"
@@ -572,9 +572,9 @@ states = ["Normal"]
 id = "chrome.page_tabs.basic"
 name = "Tab"
 parent = "chrome.page_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
 states = ["Selected"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
+sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
 [[element]]
 id = "chrome.page_tabs.buttons"
@@ -1403,9 +1403,9 @@ states = ["Normal"]
 id = "basic.tabs.one"
 name = "Tab"
 parent = "basic.tabs.bar"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
 states = ["Selected"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
+sample = { fill = [0.0, 0.5, 2.5, 0.0], border = [0.0, 0.5, 0.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
 [[element]]
 id = "basic.tabs.two"

@@ -809,6 +809,102 @@ where
         .into()
 }
 
+/// `tab` marked as the active tab where `active`: [`tab_indicator_line()`]
+/// laid over it, across its outer edge, in a stack whose size is the tab's
+/// (`iced_widget` 0.14.2 `src/stack.rs:14-16`). `tab` as it is where not
+/// `active`, or where the theme states no indicator (Windows and macOS mark
+/// the active tab by its fill and border alone, docs/platform-facts.md
+/// §2.11).
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn tab_indicator<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    tab: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    active: bool,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let tab = tab.into();
+    match tab_indicator_line(resolved) {
+        Some(line) if active => iced_widget::Stack::new().push(tab).push(line).into(),
+        _ => tab,
+    }
+}
+
+/// The line that marks the active tab, alone: a strip
+/// `tab.active_indicator_width` thick in `tab.active_indicator_color`, as
+/// wide as the space it is given, along the top or the bottom of that space
+/// as `tab.active_indicator_side` says -- rounded on top as the tab's top
+/// corners are, `tab.border.corner_radius`, since Breeze fills its strip from
+/// the tab's rounded frame (docs/platform-facts.md §2.11). `None` where the
+/// theme leaves any of the three unstated, or states a width that is not a
+/// positive, finite length. Lay it over a tab as [`tab_indicator()`] does, or
+/// over the active tab's place in a tab bar that takes no per-tab content.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn tab_indicator_line<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> Option<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    use iced_core::alignment::Vertical;
+    use native_theme::theme::TabIndicatorSide;
+
+    let t = &resolved.tab;
+    let (Some(color), Some(width), Some(side)) = (
+        t.active_indicator_color,
+        t.active_indicator_width,
+        t.active_indicator_side,
+    ) else {
+        return None;
+    };
+    if !(width.is_finite() && width > 0.0) {
+        return None;
+    }
+    let color = palette::to_color(color);
+    let (align, radius) = match side {
+        TabIndicatorSide::Top => {
+            let r = t.border.corner_radius;
+            (
+                Vertical::Top,
+                iced_core::border::Radius {
+                    top_left: r,
+                    top_right: r,
+                    bottom_right: 0.0,
+                    bottom_left: 0.0,
+                },
+            )
+        }
+        TabIndicatorSide::Bottom => (Vertical::Bottom, iced_core::border::Radius::default()),
+    };
+    let strip = iced_widget::container(iced_widget::Space::new())
+        .width(iced_core::Length::Fill)
+        .height(width)
+        .style(move |_| iced_widget::container::Style {
+            background: Some(color.into()),
+            border: iced_core::Border {
+                radius,
+                ..iced_core::Border::default()
+            },
+            ..iced_widget::container::Style::default()
+        });
+    Some(
+        iced_widget::container(strip)
+            .width(iced_core::Length::Fill)
+            .height(iced_core::Length::Fill)
+            .align_y(align)
+            .into(),
+    )
+}
+
 /// Returns the standard border radius from the resolved theme.
 #[must_use]
 pub fn border_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
@@ -1124,6 +1220,30 @@ mod tests {
 
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
+    }
+
+    /// The active tab's line exists exactly where the theme states its
+    /// colour, width and side (docs/platform-facts.md §2.11): Breeze, GNOME
+    /// and Material draw one, Windows none; a width that is not a positive,
+    /// finite length draws none.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_tab_indicator_line_exists_where_the_theme_states_one() {
+        type Line = Option<iced_core::Element<'static, (), iced_core::Theme, iced::Renderer>>;
+        for (preset, drawn) in [
+            ("kde-breeze", true),
+            ("adwaita", true),
+            ("material", true),
+            ("windows-11", false),
+        ] {
+            let r = make_resolved_preset(preset, false);
+            let line: Line = tab_indicator_line(&r);
+            assert_eq!(line.is_some(), drawn, "{preset}");
+        }
+        let mut r = make_resolved_preset("kde-breeze", false);
+        r.tab.active_indicator_width = Some(f32::NAN);
+        let line: Line = tab_indicator_line(&r);
+        assert!(line.is_none(), "a width that is not finite");
     }
 
     fn scaled_prefs(text_scaling_factor: f32) -> AccessibilityPreferences {

@@ -13,8 +13,8 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Buttons (button, link, switch, checkbox, segmented control) | 104 | 11 | 46 | 29 | 18 |
 | Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 96 | 0 | 54 | 23 | 19 |
-| **TOTAL** | **500** | **47** | **208** | **162** | **83** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
+| **TOTAL** | **503** | **47** | **208** | **165** | **83** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
@@ -509,6 +509,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `status_bar.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `status_bar.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `tab.active_background` | SCOPED | «tab» `visuals.selection.bg_fill` |  |
+| `tab.active_indicator_color` | DERIVED | → T18(a) |  |
+| `tab.active_indicator_side` | DERIVED | → T18(a) |  |
+| `tab.active_indicator_width` | DERIVED | → T18(a) |  |
 | `tab.active_text_color` | SCOPED | «tab» `visuals.selection.stroke.color` |  |
 | `tab.background_color` | SCOPED | «tab» `visuals.widgets.inactive.weak_bg_fill`; «tab» `visuals.widgets.open.weak_bg_fill`; «tab» `visuals.widgets.hovered.weak_bg_fill` (when: tab.hover_background is None, §6.4); «tab» `visuals.widgets.active.weak_bg_fill` (when: tab.hover_background is None, §6.4) |  |
 | `tab.bar_background` | SCOPED | «tab» `visuals.panel_fill` |  |

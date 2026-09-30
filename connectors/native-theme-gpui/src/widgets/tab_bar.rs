@@ -10,7 +10,7 @@ use gpui::{
 };
 use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
-use native_theme::theme::ResolvedTheme;
+use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
 use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
 
@@ -61,6 +61,23 @@ pub struct TabLook {
     /// states none, gpui-component's for its `TabVariant::Tab`, none
     /// (tab/tab_bar.rs:366-369).
     pub gap: Pixels,
+    /// The line that marks the selected tab, where the theme states its
+    /// colour, width and side.
+    pub indicator: Option<TabIndicator>,
+}
+
+/// The line along one edge of the selected tab: `tab.active_indicator_color`,
+/// `tab.active_indicator_width` thick, along `tab.active_indicator_side`
+/// (docs/platform-facts.md §2.11: Breeze's `Highlight` strip on top,
+/// libadwaita's accent and Material's `primary` at the bottom).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TabIndicator {
+    /// `tab.active_indicator_color`.
+    pub color: Hsla,
+    /// `tab.active_indicator_width`: the line's thickness.
+    pub width: Pixels,
+    /// `tab.active_indicator_side`.
+    pub side: TabIndicatorSide,
 }
 
 /// The space between tabs where `tab.item_gap` is unstated: gpui-component
@@ -102,7 +119,41 @@ impl TabLook {
             padding_top: side(b.padding.top).ok()?,
             padding_bottom: side(b.padding.bottom).ok()?,
             gap: side(t.item_gap).ok()?.unwrap_or(px(TAB_GAP)),
+            indicator: match (
+                t.active_indicator_color,
+                side(t.active_indicator_width).ok()?,
+                t.active_indicator_side,
+            ) {
+                (Some(c), Some(width), Some(side)) => Some(TabIndicator {
+                    color: color(c),
+                    width,
+                    side,
+                }),
+                _ => None,
+            },
         })
+    }
+}
+
+/// The selected tab's indicator: a strip `line.width` thick across the tab's
+/// outer edge on `line.side`, over its outline, as Breeze fills its strip
+/// from the tab's frame rectangle (breezehelper.cpp:1471-1487); on top,
+/// rounded as the tab's top corners are.
+fn indicator(line: TabIndicator, look: &TabLook) -> gpui::Div {
+    let outside = px(-f32::from(look.border_width));
+    let strip = div()
+        .absolute()
+        .left(outside)
+        .right(outside)
+        .h(line.width)
+        .bg(line.color)
+        .debug_selector(|| "native-tab-indicator".into());
+    match line.side {
+        TabIndicatorSide::Top => strip
+            .top(outside)
+            .rounded_tl(look.radius)
+            .rounded_tr(look.radius),
+        TabIndicatorSide::Bottom => strip.bottom(outside),
     }
 }
 
@@ -145,9 +196,12 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// `active_text_color` and outlined by `tab.border` -- the outline on the
 /// selected tab only and rounded on its top corners, as Breeze and Windows
 /// draw it (docs/platform-facts.md §2.11, `border.color`,
-/// `border.corner_radius`). Nothing else marks it: gpui-component's own
+/// `border.corner_radius`) -- and, where the theme states
+/// `active_indicator_color`, `active_indicator_width` and
+/// `active_indicator_side`, by a line that thick along that edge
+/// ([`TabIndicator`]). Nothing else marks it: gpui-component's own
 /// variants add a primary underline or a frame in `border`
-/// (tab/tab.rs, `TabVariant`), and `tab.*` states neither. Every tab is at
+/// (tab/tab.rs, `TabVariant`), whatever the platform draws. Every tab is at
 /// least `min_width` by `min_height`, padded by the stated `border.padding`
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
 /// size and weight, `item_gap` from its neighbours (none where unstated, as
@@ -306,6 +360,9 @@ impl RenderOnce for TabBar {
                         .font_weight(weight)
                         .child(tab.label),
                 )
+                .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
+                    tab.relative().child(indicator(line, &look))
+                })
                 .children(
                     observer
                         .as_ref()

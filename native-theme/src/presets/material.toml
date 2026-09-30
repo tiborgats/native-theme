@@ -261,6 +261,10 @@ hover_background = "#1d1b2014"
 # inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
 hover_text_color = "#1d1b20"
 active_text_color = "#6750a4"
+# platform-facts.md:1327-1329 (§2.11): active-indicator-color = primary, active-indicator-height 3 (_md-comp-primary-navigation-tab.scss:37-38), along the bottom (tabs/internal/_tab.scss:92-102)
+active_indicator_color = "#6750a4"
+active_indicator_width_px = 3.0
+active_indicator_side = "bottom"
 
 [light.tab.font]
 # platform-facts.md:1325 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
@@ -336,12 +340,12 @@ shadow_enabled = false
 line_width_px = 0.0
 
 [light.sidebar]
-# platform-facts.md:1340 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+# platform-facts.md:1342 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
 hover_background = "#1d1b2014"
 
 
 [light.sidebar.font]
-# platform-facts.md:1330-1331 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+# platform-facts.md:1334-1335 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#49454f"
 weight = 500
 [light.popover]
@@ -753,6 +757,10 @@ hover_background = "#e6e0e914"
 # inactive-hover-label-text-color = on-surface (_md-comp-primary-navigation-tab.scss:95)
 hover_text_color = "#e6e0e9"
 active_text_color = "#d0bcff"
+# platform-facts.md:1327-1329 (§2.11): active-indicator-color = primary, active-indicator-height 3 (_md-comp-primary-navigation-tab.scss:37-38), along the bottom (tabs/internal/_tab.scss:92-102)
+active_indicator_color = "#d0bcff"
+active_indicator_width_px = 3.0
+active_indicator_side = "bottom"
 
 [dark.tab.font]
 # platform-facts.md:1325 (§2.11): with-label-text-inactive-label-text-color = on-surface-variant (_md-comp-primary-navigation-tab.scss:97)
@@ -828,12 +836,12 @@ shadow_enabled = false
 line_width_px = 0.0
 
 [dark.sidebar]
-# platform-facts.md:1340 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+# platform-facts.md:1342 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
 hover_background = "#e6e0e914"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1330-1331 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+# platform-facts.md:1334-1335 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#cac4d0"
 weight = 500
 [dark.popover]

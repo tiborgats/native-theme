@@ -2048,6 +2048,21 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "tab.item_gap_px",
         "gpui: the gap between tabs (TabLook)",
     ),
+    (
+        "",
+        "tab.active_indicator_color",
+        "gpui: the selected tab's line (TabLook, TabIndicator)",
+    ),
+    (
+        "",
+        "tab.active_indicator_side",
+        "gpui: the edge the selected tab's line lies along (TabIndicator)",
+    ),
+    (
+        "",
+        "tab.active_indicator_width_px",
+        "gpui: the selected tab's line's thickness (TabIndicator)",
+    ),
     ("", "tab.min_height_px", "gpui: each tab's min_h (TabLook)"),
     ("", "tab.min_width_px", "gpui: each tab's min_w (TabLook)"),
     // --- text_area: demo::rows_textarea ------------------------------------------

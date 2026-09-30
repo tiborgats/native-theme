@@ -78,7 +78,7 @@ pub use separator::{Separator, SeparatorLook};
 pub use slider::{Slider, SliderLook};
 pub use spinner::{Spinner, SpinnerLook};
 pub use switch::{Switch, SwitchLook};
-pub use tab_bar::{Tab, TabBar, TabLook};
+pub use tab_bar::{Tab, TabBar, TabIndicator, TabLook};
 
 into_element!(
     Checkbox,

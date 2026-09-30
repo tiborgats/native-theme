@@ -107,6 +107,9 @@ min_width_px = 64.0
 min_height_px = 30.0
 # platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
+# platform-facts.md:1328-1329 (§2.11): a checked notebook tab is inset 0 -4px, along its bottom edge (_notebook.scss:19)
+active_indicator_width_px = 4.0
+active_indicator_side = "bottom"
 
 
 [light.tab.border]
@@ -336,6 +339,9 @@ min_width_px = 64.0
 min_height_px = 30.0
 # platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
+# platform-facts.md:1328-1329 (§2.11): a checked notebook tab is inset 0 -4px, along its bottom edge (_notebook.scss:19)
+active_indicator_width_px = 4.0
+active_indicator_side = "bottom"
 
 
 [dark.tab.border]

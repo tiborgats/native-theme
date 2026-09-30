@@ -2262,6 +2262,18 @@ sinks   = [{ path = "visuals.panel_fill", scope = "tab" }]
 verdict   = "derived"
 tested_by = "T18(a)"
 
+["tab.active_indicator_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["tab.active_indicator_width"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["tab.active_indicator_side"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
 ["tab.min_height"]
 verdict = "scoped"
 sinks   = [{ path = "spacing.interact_size.y", scope = "tab" }]

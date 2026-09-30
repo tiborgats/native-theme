@@ -4727,9 +4727,11 @@ fn tab_row<'a>(
         .padding(pad)
         .style(tab_style(resolved, spec.open))
         .on_press(spec.message);
+        // The open tab's line, where the theme states one.
+        let tab = native_theme_iced::tab_indicator(resolved, tab, spec.open);
         match spec.tag {
             Some(tag) => tagged(tag, tab).into(),
-            None => tab.into(),
+            None => tab,
         }
     });
     // The strip scrolls sideways with no bar: a bar laid out under tabs no
@@ -5806,6 +5808,15 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("tab", "bar_background") => "surface: the strip container's background".into(),
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
+        ("tab", "active_indicator_color" | "active_indicator_width_px" | "active_indicator_side")
+            if under("basic.tabs.") =>
+        {
+            "native_theme_iced::tab_indicator_line over the open tab's place in iced_aw's bar"
+                .into()
+        }
+        ("tab", "active_indicator_color" | "active_indicator_width_px" | "active_indicator_side") => {
+            "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
+        }
         ("tab", "active_background") => "the open tab's background".into(),
         ("tab", "active_text_color") => "the open tab's text colour".into(),
         ("tab", "background_color") => "a tab's background at rest".into(),
@@ -7575,10 +7586,32 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             };
         // The tabs are the bar's row's nodes, one per label
         // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
-        tagged("basic.tabs.bar", bar)
+        let bar: Element<'a, Message> = tagged("basic.tabs.bar", bar)
             .loose()
             .node("basic.tabs.one", &[0])
             .node("basic.tabs.two", &[1])
+            .into();
+        // The active tab's line, where the theme states one, over that tab's
+        // place: iced_aw's tabs are `tab_width` wide, `spacing` apart
+        // (`src/widget/tab_bar.rs:490-510`), and its style has no line.
+        let slots = (0..BASIC_TABS.len()).map(|i| {
+            let line = (i == state.basic_tab)
+                .then(|| native_theme_iced::tab_indicator_line(resolved))
+                .flatten();
+            container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
+                .width(Length::Fixed(tab_t.min_width))
+                .height(Fill)
+                .into()
+        });
+        // tab.item_gap apart, as the bar's tabs are; a row's own none, as
+        // iced_aw's `DEFAULT_SPACING` is, where unstated.
+        let slots = match tab_t.item_gap {
+            Some(gap) => row(slots).spacing(gap),
+            None => row(slots),
+        };
+        iced::widget::Stack::new()
+            .push(bar)
+            .push(slots.height(Fill))
             .into()
     };
     // Without iced_aw, the page tab strip's tabs: buttons padded like the
@@ -7591,7 +7624,11 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .padding(tab_pad)
                 .on_press(Message::ButtonPressed);
             if i == 0 {
-                tab.style(styles::button_primary(resolved)).into()
+                native_theme_iced::tab_indicator(
+                    resolved,
+                    tab.style(styles::button_primary(resolved)),
+                    true,
+                )
             } else {
                 tab.style(styles::button(resolved)).into()
             }

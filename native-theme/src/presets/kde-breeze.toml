@@ -208,6 +208,10 @@ active_text_color = "#232629"
 # platform-facts.md:1312 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#232629"
+# platform-facts.md:1327-1329 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+active_indicator_color = "#3daee9"
+active_indicator_width_px = 3.0
+active_indicator_side = "top"
 
 
 [light.tab.border]
@@ -582,6 +586,10 @@ active_text_color = "#fcfcfc"
 # platform-facts.md:1312 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#fcfcfc"
+# platform-facts.md:1327-1329 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+active_indicator_color = "#3daee9"
+active_indicator_width_px = 3.0
+active_indicator_side = "top"
 
 
 [dark.tab.border]

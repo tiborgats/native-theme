@@ -13,7 +13,7 @@ use gpui::{
     Window, div, point, px,
 };
 use gpui_base::slider::SliderState;
-use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
+use native_theme::theme::{ColorMode, ResolvedTheme, TabIndicatorSide, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
 
 use super::*;
@@ -409,6 +409,77 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
         edge.is_none_or(|e| e.is_transparent()),
         "the unselected tab has no outline"
     );
+}
+
+/// docs/platform-facts.md:1327-1329: the selected tab's line, as thick as
+/// stated, across the tab's outer edge on the stated side -- Breeze's on top,
+/// Material's at the bottom.
+#[gpui::test]
+fn the_selected_breeze_tab_carries_its_indicator(cx: &mut TestAppContext) {
+    let (preset, mode) = PRESETS[0];
+    selected_tab_carries_the_stated_indicator(cx, preset, mode);
+}
+
+#[gpui::test]
+fn the_selected_material_tab_carries_its_indicator(cx: &mut TestAppContext) {
+    let (preset, mode) = PRESETS[1];
+    selected_tab_carries_the_stated_indicator(cx, preset, mode);
+}
+
+fn selected_tab_carries_the_stated_indicator(
+    cx: &mut TestAppContext,
+    preset: &str,
+    mode: ColorMode,
+) {
+    {
+        let cx = window_with(
+            cx,
+            Some((preset, mode)),
+            Box::new(|_, _| {
+                div()
+                    .child(
+                        TabBar::new("t")
+                            .child(Tab::new("One"))
+                            .child(Tab::new("Two").debug_selector(|| "two".into()))
+                            .selected_index(1),
+                    )
+                    .into_any_element()
+            }),
+        );
+        let r = resolved(preset, mode);
+        let t = &r.tab;
+        assert_eq!(
+            TabLook::of(&r).and_then(|l| l.indicator),
+            match (
+                t.active_indicator_color,
+                t.active_indicator_width,
+                t.active_indicator_side
+            ) {
+                (Some(colour), Some(width), Some(side)) => Some(TabIndicator {
+                    color: c(colour),
+                    width: px(width),
+                    side,
+                }),
+                _ => None,
+            },
+            "{preset}"
+        );
+        let (two, line) = (bounds(cx, "two"), bounds(cx, "native-tab-indicator"));
+        assert_eq!(line.size.width, two.size.width, "{preset}: across the tab");
+        assert_eq!(
+            Some(line.size.height),
+            t.active_indicator_width.map(px),
+            "{preset}"
+        );
+        let edge = match t.active_indicator_side {
+            Some(TabIndicatorSide::Top) => line.origin.y == two.origin.y,
+            Some(TabIndicatorSide::Bottom) => {
+                line.origin.y + line.size.height == two.origin.y + two.size.height
+            }
+            None => false,
+        };
+        assert!(edge, "{preset}: along the stated edge");
+    }
 }
 
 #[gpui::test]
