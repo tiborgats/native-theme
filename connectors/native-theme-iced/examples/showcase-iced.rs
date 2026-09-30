@@ -7444,13 +7444,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         c
     };
     // The thumb inside the track as `native_theme_iced::switch` seats it:
-    // inset by half the difference of the two heights, at the track's right
-    // end while on.
+    // `switch.thumb_diameter` across on, `unchecked_thumb_diameter` off where
+    // the theme states one, inset by half the difference of the two heights,
+    // at the track's right end while on.
     let sw = &resolved.switch;
-    let (thumb, thumb_inset) = (
-        sw.thumb_diameter,
-        ((sw.track_height - sw.thumb_diameter) / 2.0).max(0.0),
-    );
+    let seat = move |on: bool| {
+        let thumb = if on {
+            sw.thumb_diameter
+        } else {
+            sw.unchecked_thumb_diameter.unwrap_or(sw.thumb_diameter)
+        };
+        (thumb, ((sw.track_height - thumb) / 2.0).max(0.0))
+    };
     let switch = |id: &'static str,
                   probe_id: &'static str,
                   on: bool,
@@ -7483,6 +7488,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             control = control.node(label, &[1]);
         }
         if let Some(thumb_id) = parts("thumb") {
+            let (thumb, thumb_inset) = seat(on);
             control = control.part(thumb_id, move |layout| {
                 node_at(layout, &[0]).map(|track| {
                     let t = track.bounds();
