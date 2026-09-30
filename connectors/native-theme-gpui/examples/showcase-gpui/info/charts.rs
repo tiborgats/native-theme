@@ -58,19 +58,19 @@ pub fn bar_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/bar_chart.rs:518",
+            "gpui-component/chart/bar_chart.rs:821",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/bar_chart.rs:490",
+            "gpui-component/chart/bar_chart.rs:791",
         ))
         .color(claim(
             "grid",
-            "border",
-            t.border,
-            "gpui-component/chart/bar_chart.rs:563",
+            "chart_grid",
+            t.chart_grid,
+            "gpui-component/chart/bar_chart.rs:857",
         ))
         .not_themeable(
             "colour source",
@@ -106,19 +106,19 @@ pub fn line_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/line_chart.rs:196",
+            "gpui-component/chart/line_chart.rs:406",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/line_chart.rs:189",
+            "gpui-component/chart/line_chart.rs:393",
         ))
         .color(claim(
             "grid",
-            "border",
-            t.border,
-            "gpui-component/chart/line_chart.rs:206",
+            "chart_grid",
+            t.chart_grid,
+            "gpui-component/chart/mod.rs:419",
         ))
         .not_themeable(
             "colour source",
@@ -152,7 +152,8 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
     let info = WidgetInfo::new("AreaChart")
         .color(claim("line", "chart_3", t.chart_3, "showcase"))
         // The showcase asks for the series colour at AREA_FILL_OPACITY, and
-        // upstream paints the fill as given (plot/shape/area.rs:223).
+        // upstream paints the fill as given (gpui-base plot/shape/area.rs:212,
+        // 224).
         .color(claim(
             "fill, faded",
             "chart_3",
@@ -163,19 +164,19 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/area_chart.rs:201",
+            "gpui-component/chart/area_chart.rs:416",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/area_chart.rs:194",
+            "gpui-component/chart/area_chart.rs:403",
         ))
         .color(claim(
             "grid",
-            "border",
-            t.border,
-            "gpui-component/chart/area_chart.rs:211",
+            "chart_grid",
+            t.chart_grid,
+            "gpui-component/chart/mod.rs:419",
         ))
         .not_themeable(
             "colour source",
@@ -253,7 +254,7 @@ pub fn pie_chart(t: &Theme) -> WidgetInfo {
 /// `chart_bearish` by its own open and close.
 pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
     // Upstream's rule: a candle is bullish only where it closes above its
-    // open (chart/candlestick_chart.rs:273).
+    // open (chart/candlestick_chart.rs:343).
     let days = |bullish: bool| -> String {
         let days: Vec<&str> = SAMPLE_OHLC
             .iter()
@@ -267,31 +268,31 @@ pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
             "bullish candles",
             "chart_bullish",
             t.chart_bullish,
-            "gpui-component/chart/candlestick_chart.rs:158",
+            "gpui-component/chart/candlestick_chart.rs:227",
         ))
         .color(claim(
             "bearish candles",
             "chart_bearish",
             t.chart_bearish,
-            "gpui-component/chart/candlestick_chart.rs:159",
+            "gpui-component/chart/candlestick_chart.rs:228",
         ))
         .color(claim(
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/candlestick_chart.rs:224",
+            "gpui-component/chart/candlestick_chart.rs:294",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/candlestick_chart.rs:216",
+            "gpui-component/chart/candlestick_chart.rs:286",
         ))
         .color(claim(
             "grid",
             "border",
             t.border,
-            "gpui-component/chart/candlestick_chart.rs:234",
+            "gpui-component/chart/candlestick_chart.rs:304",
         ))
         .not_themeable(
             "candle colours",

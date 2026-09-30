@@ -189,8 +189,8 @@ pub(crate) fn title_bar(
 
 /// A menu title's side and top/bottom padding where `menu.border.padding`
 /// states no side: upstream's for a title of its `AppMenuBar`, a Small
-/// compact Button (button/button.rs:629-631, `px_1p5`) given `py_0p5`
-/// (menu/app_menu_bar.rs:265).
+/// compact Button (button/button.rs:660-662, `px_1p5`) given `py_0p5`
+/// (menu/app_menu_bar.rs:266).
 const MENU_TITLE_PADDING_X: Rems = rems(0.375);
 const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 
@@ -219,7 +219,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.6.6 src/styled.rs:66-71, `popover_shadow`), without its
+/// (gpui-component 0.7.0 src/styled.rs:66-71, `popover_shadow`), without its
 /// ring (:63-65), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -651,7 +651,7 @@ impl MenuBar {
                         let row = match look {
                             Some(look) => {
                                 // The shortcut is the plain text of a Kbd
-                                // without its appearance (kbd.rs:229-231),
+                                // without its appearance (kbd.rs:234-236),
                                 // which takes the row's font and line box.
                                 let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
                                     .font_family(look.family.clone())
@@ -1114,8 +1114,8 @@ pub(crate) struct ToolbarButton<'a> {
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
-/// (button/button.rs:580-583, 713-717), and the size an `Icon` is given last
-/// wins over its style (icon.rs:181-187).
+/// (button/button.rs:611-614, 713-717), and the size an `Icon` is given last
+/// wins over its style (icon.rs:187-193).
 pub(crate) fn toolbar_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1567,11 +1567,11 @@ impl SidebarItem for SampleItem {
 /// Platform-facts §2.1.8 names macOS's small size the sidebar's, and states
 /// 16px for Windows, KDE and GNOME. The panel size would not fit: KDE states
 /// 48px for its `Panel` group (platform-facts §2.1.8), which fits neither an
-/// expanded item's `h_7` row (sidebar/menu.rs:308) nor the 48px rail
+/// expanded item's `h_7` row (sidebar/menu.rs:323) nor the 48px rail
 /// (sidebar/mod.rs:28). `SidebarMenuItem` keeps the icon it is given
-/// (sidebar/menu.rs:300). The size goes on the Icon's style, which upstream
+/// (sidebar/menu.rs:315). The size goes on the Icon's style, which upstream
 /// lays out as it would the same size given through `with_size`
-/// (icon.rs:171-182), so a test can read it off the Icon this returns.
+/// (icon.rs:177-188), so a test can read it off the Icon this returns.
 ///
 /// It takes the Icon built: a public helper that builds one and does not
 /// report it fails `every_widget_reports_itself`, and the item it is handed
@@ -2045,12 +2045,12 @@ pub(crate) fn segmented(
         .debug_selector(move || id.into())
 }
 
-/// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the padding
+/// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:12): the padding
 /// a resize handle puts on each side of its line. It is `pub(crate)`
 /// upstream, so the showcase names it again to cover the handle's hit area.
 const HANDLE_PADDING: Pixels = px(4.);
 
-/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:12): the width a
+/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:13): the width a
 /// resize handle is given and its line is drawn at, `pub(crate)` upstream as
 /// well.
 pub(crate) const HANDLE_SIZE: Pixels = px(1.);
@@ -2106,7 +2106,7 @@ pub(crate) fn resize_handles(
             }
             let (id, between) = handles.get(ix).copied()?;
             let base = gpui_base::Theme::global(cx);
-            // gpui-base's `handle_color` (resizable/resize_handle.rs:286-295).
+            // gpui-base's `handle_color` (resizable/resize_handle.rs:460-469).
             let line = if handle.is_active() {
                 base.resizable
                     .active_handle
@@ -2808,8 +2808,8 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         &mut button_info,
     );
     // The platform's disabled pair, which upstream's disabled style replays
-    // the caller's refinement over (button/button.rs:754-760); a Button that
-    // is not disabled must not take it, since it lands at rest too (:690).
+    // the caller's refinement over (button/button.rs:785-791); a Button that
+    // is not disabled must not take it, since it lands at rest too (:721).
     let disabled_pair = (state == ButtonState::Disabled)
         .then(|| native_geometry(cx, geometry::button_disabled))
         .flatten();
@@ -2864,7 +2864,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
 
 /// A Default Button at `size`, left without `geometry::button`: this row
 /// shows upstream's own size scale, which the refinement would overrule
-/// (button/button.rs:626-641, then :690).
+/// (button/button.rs:657-672, then :721).
 pub(crate) fn sized_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3020,7 +3020,7 @@ pub(crate) fn text_input(
         InputField::Refined => {
             let input = native_info(input, cx, geometry::input, "input", &mut input_info);
             // The platform's fill for the state the field is built in, after
-            // upstream's (input/input.rs:711, then :719).
+            // upstream's (input/input.rs:773, then :781).
             let fill = native_geometry(cx, |n| geometry::input_fill(n, disabled));
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
@@ -3046,7 +3046,7 @@ pub(crate) fn text_input(
             input
         }
         // Through the caller's style, which Input applies after its own
-        // height and line height (input/input.rs:699-703, then :719).
+        // height and line height (input/input.rs:761-765, then :781).
         InputField::HeightOnly => native_info(
             input,
             cx,
@@ -3069,10 +3069,10 @@ const INPUT_GROUP: &str = "input-surface";
 /// pointer. The caller leaves the field without a fill or an edge colour of
 /// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
-/// `Input` is `Styled` only (input/input.rs:481) and its root's one state is
-/// `focused` (:677-684), so it has no hover edge of its own: the field is
+/// `Input` is `Styled` only (input/input.rs:518) and its root's one state is
+/// `focused` (:735-742), so it has no hover edge of its own: the field is
 /// left without a fill or an edge colour (its caller's style lands after its
-/// own, :719) and an absolute box under it, the field's size, paints them.
+/// own, :781) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
     r: &native_theme_gpui::ResolvedTheme,
@@ -3106,7 +3106,7 @@ fn input_surface(
 /// unfaded.
 ///
 /// The fill is a box of its own inside the line, not under it: gpui fades
-/// each primitive it paints on its own (gpui-pre src/window.rs:4513-4521,
+/// each primitive it paints on its own (gpui-pre src/window.rs:4505-4513,
 /// `paint_quad`), and a quad draws its border over its own background
 /// (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`), so a faded control whose
 /// fill lay under its line would show the fill through the faded line,
@@ -3145,7 +3145,7 @@ fn faded_surface(
 }
 
 /// A `Textarea` over `state`, `width` by `height`, refined by
-/// `geometry::text_area`: it renders as an `Input` (input/textarea.rs:164),
+/// `geometry::text_area`: it renders as an `Input` (input/textarea.rs:207),
 /// padded by the sides `text_area.border.padding` states, the multi-line
 /// field's own (docs/platform-facts.md §2.29); its `height` goes on after
 /// the builder.
@@ -3768,7 +3768,7 @@ pub(crate) fn select(
 /// `Combobox::render`), so these land over them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
-    // with (select.rs:535).
+    // with (select.rs:541).
     let none = cx.theme().transparent;
     native_value(cx, |n| {
         let c = &n.resolved.combo_box;
@@ -3782,8 +3782,8 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 /// `combo_box.background_color`, and under the pointer
 /// `combo_box.hover_background` over it, rounded as the trigger is
 /// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
-/// sets no hover (select.rs:528-546; combobox.rs:980-997) and neither
-/// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:788), so the
+/// sets no hover (select.rs:534-552; combobox.rs:980-997) and neither
+/// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:794), so the
 /// hover fill is this element's. Before `apply` ran it is a plain box.
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
     let look = native_value(cx, |n| {
@@ -3911,14 +3911,14 @@ pub(crate) enum DataTableRow {
 /// reported it to the delegate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct BodyRow {
-    /// An odd row of a striped table (table/state.rs:1959).
+    /// An odd row of a striped table (table/state.rs:2009).
     pub striped: bool,
     /// The last of the delegate's rows.
     pub last: bool,
     /// The table's selected row.
     pub selected: bool,
     /// The table is selecting rows, so it paints its selected row as one
-    /// (table/state.rs:2194); a column selection keeps the selected row but
+    /// (table/state.rs:497, 2243); a column selection keeps the selected row but
     /// not its fill.
     pub selection_shown: bool,
     pub right_clicked: bool,
@@ -4141,15 +4141,19 @@ pub(crate) fn list(
 pub(crate) enum ListRowState {
     Idle,
     Selected,
-    /// Right-clicked, selected or not: it paints the same either way
-    /// (list/list_item.rs:235-242).
+    /// Right-clicked and not selected: the `selection` outline and no fill
+    /// (list/list_item.rs:266-275).
     RightClicked,
+    /// Selected and right-clicked: the selected fill with the outline over
+    /// it (list/list_item.rs:257-275).
+    SelectedRightClicked,
 }
 
 impl ListRowState {
     fn of(selected: bool, right_clicked: bool) -> Self {
         match (selected, right_clicked) {
-            (_, true) => Self::RightClicked,
+            (true, true) => Self::SelectedRightClicked,
+            (false, true) => Self::RightClicked,
             (true, false) => Self::Selected,
             (false, false) => Self::Idle,
         }
@@ -4241,9 +4245,9 @@ impl RenderOnce for ListRow {
         }
         // A row under the pointer lettered in `list.hover_text_color`: the
         // ListItem's own hover sets its fill alone, inside render
-        // (list/list_item.rs:209), so the label takes the colour from the
+        // (list/list_item.rs:231), so the label takes the colour from the
         // row's group hover. Not on a selected row, which does not hover
-        // (:208).
+        // (:228-229).
         let hover_text = (!self.selected && !self.right_clicked)
             .then(|| native_color(cx, |n| n.resolved.list.hover_text_color))
             .flatten();
@@ -4327,7 +4331,7 @@ pub(crate) fn tree(
 /// it in a box of its own (tree.rs:41-44, 87-93), so nothing can be put
 /// around the row. Its info target is its suffix instead: `ListItem` puts
 /// the suffix straight into its root, which is `relative()`
-/// (list/list_item.rs:183, 233), so an absolute box there covers the
+/// (list/list_item.rs:199, 233), so an absolute box there covers the
 /// whole row. It takes no pointer from the row: an ordinary hitbox blocks
 /// nothing under it.
 fn tree_row(
@@ -5135,7 +5139,7 @@ pub(crate) fn tooltip_button(
 /// tooltip the application builds itself, reading `text`.
 ///
 /// `Button::tooltip` takes a string and builds the tooltip itself
-/// (`button/button.rs:389`), so the only way to a refined one is to build
+/// (`button/button.rs:399`), so the only way to a refined one is to build
 /// it: that is what `geometry::tooltip` documents, and the one place the
 /// platform's tooltip padding, radius and text colour reach the popup. The
 /// width is the content element's, through `Tooltip::element`: on the
@@ -6382,7 +6386,7 @@ pub(crate) fn carousel(
         .child(CarouselPagination::new().children(pages))
         // The carousel's own slide controls. They take the same state as
         // the viewport and position themselves outside the frame
-        // (`carousel/carousel.rs:757-768`), so they belong to the carousel
+        // (`carousel/carousel.rs:780-791`), so they belong to the carousel
         // rather than beside it.
         .child(CarouselPrevious::new(state))
         .child(CarouselNext::new(state))
@@ -6808,7 +6812,7 @@ pub(crate) fn alert_dialog(
     let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled, icon);
     let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
-    // surface through the refinement (dialog/dialog.rs:621).
+    // surface through the refinement (dialog/dialog.rs:677).
     let alert = match native_value(cx, geometry::dialog_max_width) {
         Some(width) => {
             alert_info = alert_info.geometry("dialog_max_width");
@@ -6935,7 +6939,7 @@ const HOVER_CARD_WIDTH: Pixels = px(260.);
 /// `variants::ghost_button` and refined by `geometry::button`, holding a
 /// title over a muted line, `gap` apart. The card pads itself, with the
 /// platform's popover padding where `geometry::popover` applies and upstream's
-/// otherwise (popover.rs:284), so the content adds none. The trigger and the
+/// otherwise (popover.rs:308), so the content adds none. The trigger and the
 /// content report the HoverCard.
 pub(crate) fn hover_card(
     ui: &Entity<InfoRegistry>,

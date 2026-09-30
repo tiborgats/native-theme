@@ -133,7 +133,7 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
             "title",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/group_box.rs:147",
+            "gpui-component/group_box.rs:158",
         ))
         // A Label would paint foreground over this on its own element
         // (label.rs:211), so the content's text is plain text.
@@ -141,23 +141,23 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
             "content text",
             "group_box_foreground",
             t.group_box_foreground,
-            "gpui-component/group_box.rs:157",
+            "gpui-component/group_box.rs:173",
         ));
-    // (fill, edge) per variant (group_box.rs:132-136).
+    // (fill, edge) per variant (group_box.rs:143-147).
     let info = match kind {
         GroupBoxKind::Normal => info,
         GroupBoxKind::Fill => info.color(claim(
             "bg",
             "group_box",
             t.group_box,
-            "gpui-component/group_box.rs:134",
+            "gpui-component/group_box.rs:145",
         )),
         GroupBoxKind::Outline if styled => info,
         GroupBoxKind::Outline => info.color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/group_box.rs:135",
+            "gpui-component/group_box.rs:146",
         )),
     };
     let info = match (kind, styled) {
@@ -201,7 +201,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "bg",
             "accordion",
             t.accordion,
-            "gpui-component/accordion.rs:371",
+            "gpui-component/accordion.rs:378",
         ))
         .color(claim(
             "border",
@@ -213,15 +213,15 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "line between items",
             "border",
             t.border,
-            "gpui-component/accordion.rs:374",
+            "gpui-component/accordion.rs:381",
         ))
         .color(claim(
             "open item's title",
             "foreground",
             t.foreground,
-            "gpui-component/accordion.rs:305",
+            "gpui-component/accordion.rs:306",
         ))
-        // A closed item's title row sets no colour (accordion.rs:305 is
+        // A closed item's title row sets no colour (accordion.rs:306 is
         // the open one's), so it takes the colour the showcase sets on its
         // window.
         .color(claim(
@@ -234,7 +234,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "chevron",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/accordion.rs:329",
+            "gpui-component/accordion.rs:330",
         ))
         .config(
             "border-radius",
@@ -273,13 +273,13 @@ pub fn expander(
             "bg",
             "accordion",
             t.accordion,
-            "gpui-component/accordion.rs:371",
+            "gpui-component/accordion.rs:378",
         ))
         .color(claim(
             "open item's title",
             "foreground",
             t.foreground,
-            "gpui-component/accordion.rs:305",
+            "gpui-component/accordion.rs:306",
         ))
         .color(claim(
             "closed item's title, inherited",
@@ -291,7 +291,7 @@ pub fn expander(
             "chevron",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/accordion.rs:329",
+            "gpui-component/accordion.rs:330",
         ))
         .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver")
         .not_themeable("fill", "the accordion token, which the connector gives the window's background: the model states no expander fill");
@@ -331,7 +331,7 @@ pub fn expander(
                 "line between items",
                 "border",
                 t.border,
-                "gpui-component/accordion.rs:374",
+                "gpui-component/accordion.rs:381",
             ))
             .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)"),
     };
@@ -369,7 +369,7 @@ pub fn card(
             "content text",
             "group_box_foreground",
             t.group_box_foreground,
-            "gpui-component/group_box.rs:157",
+            "gpui-component/group_box.rs:173",
         ));
     let info = match native {
         Some(r) => info
@@ -384,7 +384,7 @@ pub fn card(
             "fill",
             "group_box",
             t.group_box,
-            "gpui-component/group_box.rs:134",
+            "gpui-component/group_box.rs:145",
         )),
     };
     let info = match (native, container_margin) {
@@ -797,26 +797,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:662, :747-752).
+    // style (button/button.rs:693, :778-783).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1242",
+                "gpui-component/button/button.rs:1273",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:949",
+                "gpui-component/button/button.rs:980",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1001",
+                "gpui-component/button/button.rs:1032",
             ))
             .not_themeable(
                 "hover",
@@ -827,31 +827,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:935",
+            "gpui-component/button/button.rs:966",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:949",
+            "gpui-component/button/button.rs:980",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1001",
+            "gpui-component/button/button.rs:1032",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1079",
+            "gpui-component/button/button.rs:1110",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1163",
+            "gpui-component/button/button.rs:1194",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -1042,7 +1042,7 @@ pub fn form(t: &Theme, label_width: Pixels) -> WidgetInfo {
     WidgetInfo::new("Form")
         .variant("horizontal")
         // The label's box sets a size and a weight but no colour
-        // (form/field.rs:296-301), so the label takes the colour the
+        // (form/field.rs:302-307), so the label takes the colour the
         // showcase sets on its window.
         .color(claim(
             "label, inherited",
@@ -1054,13 +1054,13 @@ pub fn form(t: &Theme, label_width: Pixels) -> WidgetInfo {
             "description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/form/field.rs:338",
+            "gpui-component/form/field.rs:344",
         ))
         .color(claim(
             "required marker",
             "danger",
             t.danger,
-            "gpui-component/form/field.rs:315",
+            "gpui-component/form/field.rs:321",
         ))
         .not_themeable("fields", "the Field wrapper takes no geometry -- the model has no form theme. Each field's Input is refined by geometry::input and reports itself")
         .not_themeable("label style", "text_sm and font_medium on a box that sets no colour (form/field.rs, Field)")
@@ -1086,19 +1086,19 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             "track",
             "scrollbar",
             t.scrollbar,
-            "gpui-component/theme/mod.rs:307",
+            "gpui-component/theme/mod.rs:396",
         ))
         .color(claim(
             "thumb",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:312",
+            "gpui-component/theme/mod.rs:401",
         ))
         .color(claim(
             "thumb hover",
             "scrollbar_thumb_hover",
             t.scrollbar_thumb_hover,
-            "gpui-component/theme/mod.rs:323",
+            "gpui-component/theme/mod.rs:412",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(
@@ -1127,7 +1127,7 @@ pub fn settings(t: &Theme) -> WidgetInfo {
             "group title",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/group_box.rs:147",
+            "gpui-component/group_box.rs:158",
         ))
         .not_themeable("fill", "none of its own: nothing under setting/ sets a background, so a Settings page shows the window's (gpui-component setting/)")
         .not_themeable("sidebar width", "250px, upstream's default (setting/settings.rs, Settings::sidebar_width), kept between 160px and 360px (setting/settings.rs, sidebar_size_range), the range a drag of its handle stays in and a width set outside it is clamped to (gpui-base/resizable/panel.rs, ResizablePanel). px literals, and native-theme states no settings page")
@@ -1145,19 +1145,19 @@ pub fn sidebar(t: &Theme, collapsed: bool, header: &str) -> WidgetInfo {
             "bg",
             "sidebar",
             t.sidebar,
-            "gpui-component/sidebar/mod.rs:413",
+            "gpui-component/sidebar/mod.rs:422",
         ))
         .color(claim(
             "text",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:414",
+            "gpui-component/sidebar/mod.rs:423",
         ))
         .color(claim(
             "border",
             "sidebar_border",
             t.sidebar_border,
-            "gpui-component/sidebar/mod.rs:415",
+            "gpui-component/sidebar/mod.rs:424",
         ))
         .not_themeable(
             "width",
@@ -1218,32 +1218,32 @@ pub fn sidebar_item(
             "bg",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:297",
+            "gpui-component/sidebar/menu.rs:312",
         ))
         .color(claim(
             "text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:298",
+            "gpui-component/sidebar/menu.rs:313",
         ))
     } else {
         info.color(claim(
             "text (the Sidebar's)",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:414",
+            "gpui-component/sidebar/mod.rs:423",
         ))
         .color(claim(
             "hover bg, at 80%",
             "sidebar_accent",
             t.sidebar_accent.opacity(0.8),
-            "gpui-component/sidebar/menu.rs:291",
+            "gpui-component/sidebar/menu.rs:306",
         ))
         .color(claim(
             "hover text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:292",
+            "gpui-component/sidebar/menu.rs:307",
         ))
     };
     let info = info

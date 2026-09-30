@@ -429,7 +429,7 @@ fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
 }
 
 /// Whether a Dialog or a Sheet is open. Upstream stacks a new Dialog over any
-/// open one (root.rs, Root::open_dialog pushes a layer each time), so the
+/// open one (root.rs, WindowState::open_dialog pushes a layer each time), so the
 /// three overlays open only while none is: a second Ctrl+K would otherwise
 /// lay a second palette over the first, on the same state. A modal keeps the
 /// application's other windows out until it is dismissed, as a desktop
@@ -451,7 +451,7 @@ pub(crate) fn open_command_palette(app: &Showcase, window: &mut Window, cx: &mut
     window.open_dialog(cx, move |dialog, _window, cx| {
         demo::command_palette(&ui, cx, dialog, &state, groups.clone(), set.clone())
     });
-    // After the Dialog took the focus for itself (root.rs, Root::open_dialog),
+    // After the Dialog took the focus for itself (root.rs, WindowState::open_dialog),
     // so typing reaches the query at once.
     app.palette_state
         .clone()

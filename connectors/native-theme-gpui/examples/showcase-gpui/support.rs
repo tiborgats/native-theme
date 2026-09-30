@@ -230,7 +230,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:2782-2792`). The showcase rebuilds these caches on every
+/// `src/app.rs:2786-2796`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -903,8 +903,9 @@ pub(crate) struct DialogIcons {
 }
 
 /// The dialogs' icons as the view last set them, which it does as each
-/// frame starts: `Root` builds a dialog anew for every frame, from a builder
-/// that cannot borrow the view (root.rs, `Root::render_dialog_layer`), so
+/// frame starts: gpui-component's `WindowState` root plugin builds a dialog
+/// anew for every frame, from a builder that cannot borrow the view (root.rs,
+/// `WindowState::dialog_layer`), so
 /// this is how a dialog shows the icon theme installed now, not the one it
 /// opened under. `Showcase::overlay_gap` does the same for the gap.
 #[derive(Clone, Default)]
@@ -968,7 +969,7 @@ impl SampleTableDelegate {
             }
             TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
             // A right-clicked cell clears the right-clicked row (table/
-            // state.rs:745). Only a `cell_selectable` table emits it.
+            // state.rs:800). Only a `cell_selectable` table emits it.
             TableEvent::RightClickedCell(..) => self.right_clicked_row = None,
             _ => {}
         }
@@ -1007,7 +1008,7 @@ impl TableDelegate for SampleTableDelegate {
         cx: &mut Context<TableState<Self>>,
     ) -> Stateful<Div> {
         // `demo::data_table` stripes the table, which shades its odd rows
-        // (table/state.rs:1959).
+        // (table/state.rs:2009).
         let striped = !row_ix.is_multiple_of(2);
         let (row, cells) = match self.rows.get(row_ix) {
             Some(cells) => (

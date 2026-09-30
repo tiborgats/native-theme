@@ -161,8 +161,8 @@ impl Inspector {
             )
             // A claim's value is the ThemeColor field it names, and upstream
             // paints many widgets from `Theme::tokens` instead, which a theme
-            // can set apart from its fields (theme/schema.rs:1014, and the
-            // test at :1299 asserting a pair that differs). Said only before
+            // can set apart from its fields (theme/schema.rs:1018, and the
+            // test at :1308 asserting a pair that differs). Said only before
             // the connector's `apply` has run, while gpui-component's own
             // theme is up.
             .when(cx.native_theme().is_none(), |tab| {
@@ -257,17 +257,18 @@ impl Inspector {
 /// under `window_decorations`, the decorations the window was granted, with
 /// the client inset and the frame's insets the window reports. Under
 /// server-side decorations the window manager draws the frame; under
-/// client-side ones, `Root`'s client frame and the window's TitleBar do.
+/// client-side ones, gpui-component's client frame and the window's TitleBar
+/// do.
 pub(crate) fn window_rows(
     window_decorations: gpui::Decorations,
     inset: Option<gpui::Pixels>,
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
-    // `Root::new` sets `bordered` (root.rs:117) and `Root::render` wraps
-    // everything it holds in `window_border()` (root.rs:605). Its client-side
-    // arm alone sets the client inset (window_border.rs:147-149) and draws a
-    // frame; the Server arm hands back the bare backdrop (window_border.rs:172)
-    // and lays no hit zones (`:270-280`).
+    // gpui-component's `WindowState` root plugin wraps everything the window
+    // holds in `window_border()` (root.rs:450-458, `WindowState::decorate`).
+    // Its client-side arm alone sets the client inset (window_border.rs:155),
+    // lays hit zones and draws a frame; under server-side decorations it
+    // hands back the content itself (window_border.rs:134-139).
     let inset = match inset {
         Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
         None => "none: nothing has called set_client_inset".to_string(),
@@ -287,7 +288,7 @@ pub(crate) fn window_rows(
             ),
             (
                 "frame",
-                "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow). Root's WindowBorder draws nothing (window_border.rs, WindowBorder)"
+                "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow). The WindowBorder gpui-component wraps the window in draws nothing (window_border.rs, WindowBorder)"
                     .to_string(),
             ),
             ("client inset", inset),
@@ -305,7 +306,7 @@ pub(crate) fn window_rows(
             ),
             (
                 "frame",
-                "Root's client frame: a WindowBorder, which Root draws around everything it holds (root.rs, Root), with the window's TitleBar at its top"
+                "the client frame gpui-component draws: a WindowBorder, which its WindowState root plugin wraps around everything the window holds (root.rs, WindowState::decorate), with the window's TitleBar at its top"
                     .to_string(),
             ),
             ("client inset", inset),

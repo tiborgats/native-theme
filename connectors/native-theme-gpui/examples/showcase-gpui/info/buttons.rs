@@ -18,13 +18,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button",
                 t.button,
-                "gpui-component/button/button.rs:935",
+                "gpui-component/button/button.rs:966",
             ),
             claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:949",
+                "gpui-component/button/button.rs:980",
             ),
         ],
         ButtonKind::Primary => vec![
@@ -32,13 +32,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_primary",
                 t.button_primary,
-                "gpui-component/button/button.rs:936",
+                "gpui-component/button/button.rs:967",
             ),
             claim(
                 "text",
                 "button_primary_foreground",
                 t.button_primary_foreground,
-                "gpui-component/button/button.rs:954",
+                "gpui-component/button/button.rs:985",
             ),
         ],
         ButtonKind::Secondary => vec![
@@ -46,13 +46,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_secondary",
                 t.button_secondary,
-                "gpui-component/button/button.rs:937",
+                "gpui-component/button/button.rs:968",
             ),
             claim(
                 "text",
                 "button_secondary_foreground",
                 t.button_secondary_foreground,
-                "gpui-component/button/button.rs:961",
+                "gpui-component/button/button.rs:992",
             ),
         ],
         ButtonKind::Danger => vec![
@@ -60,13 +60,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_danger",
                 t.button_danger,
-                "gpui-component/button/button.rs:938",
+                "gpui-component/button/button.rs:969",
             ),
             claim(
                 "text",
                 "button_danger_foreground",
                 t.button_danger_foreground,
-                "gpui-component/button/button.rs:969",
+                "gpui-component/button/button.rs:1000",
             ),
         ],
         ButtonKind::Success => vec![
@@ -74,13 +74,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_success",
                 t.button_success,
-                "gpui-component/button/button.rs:940",
+                "gpui-component/button/button.rs:971",
             ),
             claim(
                 "text",
                 "button_success_foreground",
                 t.button_success_foreground,
-                "gpui-component/button/button.rs:983",
+                "gpui-component/button/button.rs:1014",
             ),
         ],
         ButtonKind::Warning => vec![
@@ -88,13 +88,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_warning",
                 t.button_warning,
-                "gpui-component/button/button.rs:939",
+                "gpui-component/button/button.rs:970",
             ),
             claim(
                 "text",
                 "button_warning_foreground",
                 t.button_warning_foreground,
-                "gpui-component/button/button.rs:976",
+                "gpui-component/button/button.rs:1007",
             ),
         ],
         ButtonKind::Info => vec![
@@ -102,13 +102,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_info",
                 t.button_info,
-                "gpui-component/button/button.rs:941",
+                "gpui-component/button/button.rs:972",
             ),
             claim(
                 "text",
                 "button_info_foreground",
                 t.button_info_foreground,
-                "gpui-component/button/button.rs:990",
+                "gpui-component/button/button.rs:1021",
             ),
         ],
         ButtonKind::Ghost => vec![claim(
@@ -121,13 +121,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             "text",
             "link",
             t.link,
-            "gpui-component/button/button.rs:993",
+            "gpui-component/button/button.rs:1024",
         )],
         ButtonKind::Text => vec![claim(
             "text, foreground at 90%",
             "foreground",
             t.foreground.opacity(0.9),
-            "gpui-component/button/button.rs:994",
+            "gpui-component/button/button.rs:1025",
         )],
         ButtonKind::DefaultOutline => vec![
             input_background(t),
@@ -135,7 +135,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:949",
+                "gpui-component/button/button.rs:980",
             ),
         ],
         ButtonKind::PrimaryOutline => vec![
@@ -143,13 +143,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "fill, primary at 10%",
                 "primary",
                 t.primary.opacity(0.1),
-                "gpui-component/button/button.rs:871",
+                "gpui-component/button/button.rs:902",
             ),
             claim(
                 "text",
                 "primary",
                 t.primary,
-                "gpui-component/button/button.rs:952",
+                "gpui-component/button/button.rs:983",
             ),
         ],
     }
@@ -163,13 +163,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_hover",
                 t.button_hover,
-                "gpui-component/button/button.rs:1079",
+                "gpui-component/button/button.rs:1110",
             ),
             claim(
                 "active",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1163",
+                "gpui-component/button/button.rs:1194",
             ),
         ],
         ButtonKind::Primary => vec![
@@ -177,13 +177,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_primary_hover",
                 t.button_primary_hover,
-                "gpui-component/button/button.rs:1086",
+                "gpui-component/button/button.rs:1117",
             ),
             claim(
                 "active",
                 "button_primary_active",
                 t.button_primary_active,
-                "gpui-component/button/button.rs:1170",
+                "gpui-component/button/button.rs:1201",
             ),
         ],
         ButtonKind::Secondary => vec![
@@ -191,13 +191,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_secondary_hover",
                 t.button_secondary_hover,
-                "gpui-component/button/button.rs:1093",
+                "gpui-component/button/button.rs:1124",
             ),
             claim(
                 "active",
                 "button_secondary_active",
                 t.button_secondary_active,
-                "gpui-component/button/button.rs:1177",
+                "gpui-component/button/button.rs:1208",
             ),
         ],
         ButtonKind::Danger => vec![
@@ -205,13 +205,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_danger_hover",
                 t.button_danger_hover,
-                "gpui-component/button/button.rs:1100",
+                "gpui-component/button/button.rs:1131",
             ),
             claim(
                 "active",
                 "button_danger_active",
                 t.button_danger_active,
-                "gpui-component/button/button.rs:1185",
+                "gpui-component/button/button.rs:1216",
             ),
         ],
         ButtonKind::Success => vec![
@@ -219,13 +219,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_success_hover",
                 t.button_success_hover,
-                "gpui-component/button/button.rs:1114",
+                "gpui-component/button/button.rs:1145",
             ),
             claim(
                 "active",
                 "button_success_active",
                 t.button_success_active,
-                "gpui-component/button/button.rs:1199",
+                "gpui-component/button/button.rs:1230",
             ),
         ],
         ButtonKind::Warning => vec![
@@ -233,13 +233,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_warning_hover",
                 t.button_warning_hover,
-                "gpui-component/button/button.rs:1107",
+                "gpui-component/button/button.rs:1138",
             ),
             claim(
                 "active",
                 "button_warning_active",
                 t.button_warning_active,
-                "gpui-component/button/button.rs:1192",
+                "gpui-component/button/button.rs:1223",
             ),
         ],
         ButtonKind::Info => vec![
@@ -247,13 +247,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_info_hover",
                 t.button_info_hover,
-                "gpui-component/button/button.rs:1121",
+                "gpui-component/button/button.rs:1152",
             ),
             claim(
                 "active",
                 "button_info_active",
                 t.button_info_active,
-                "gpui-component/button/button.rs:1206",
+                "gpui-component/button/button.rs:1237",
             ),
         ],
         ButtonKind::Ghost => vec![
@@ -275,13 +275,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover text",
                 "link_hover",
                 t.link_hover,
-                "gpui-component/button/button.rs:1139",
+                "gpui-component/button/button.rs:1170",
             ),
             claim(
                 "pressed text",
                 "link_active",
                 t.link_active,
-                "gpui-component/button/button.rs:1215",
+                "gpui-component/button/button.rs:1246",
             ),
         ],
         ButtonKind::Text => vec![
@@ -289,13 +289,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover text",
                 "foreground",
                 t.foreground,
-                "gpui-component/button/button.rs:1140",
+                "gpui-component/button/button.rs:1171",
             ),
             claim(
                 "pressed text, foreground at 70%",
                 "foreground",
                 t.foreground.opacity(0.7),
-                "gpui-component/button/button.rs:1216",
+                "gpui-component/button/button.rs:1247",
             ),
         ],
         ButtonKind::DefaultOutline => vec![
@@ -303,13 +303,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:860-864",
+                "gpui-component/button/button.rs:891-895",
             ),
             claim(
                 "active bg, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:865-869",
+                "gpui-component/button/button.rs:896-900",
             ),
         ],
         ButtonKind::PrimaryOutline => vec![
@@ -317,20 +317,20 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg, primary_hover at 20%",
                 "primary_hover",
                 t.primary_hover.opacity(0.2),
-                "gpui-component/button/button.rs:874",
+                "gpui-component/button/button.rs:905",
             ),
             claim(
                 "active bg, primary_active at 40%",
                 "primary_active",
                 t.primary_active.opacity(0.4),
-                "gpui-component/button/button.rs:877",
+                "gpui-component/button/button.rs:908",
             ),
         ],
     }
 }
 
 /// The edge of a Button of `kind` that upstream draws: only Default and an
-/// outlined Button have one (button/button.rs:656-661). `styled` is whether
+/// outlined Button have one (button/button.rs:687-692). `styled` is whether
 /// `geometry::button` refined it, which paints the edge at rest with the
 /// platform's colour and leaves upstream's to hover and press.
 fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
@@ -339,25 +339,25 @@ fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
             "border, hovered or pressed",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1001",
+            "gpui-component/button/button.rs:1032",
         )),
         (ButtonKind::Default | ButtonKind::DefaultOutline, false) => Some(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1001",
+            "gpui-component/button/button.rs:1032",
         )),
         (ButtonKind::PrimaryOutline, true) => Some(claim(
             "border, hovered or pressed",
             "primary",
             t.primary,
-            "gpui-component/button/button.rs:1003",
+            "gpui-component/button/button.rs:1034",
         )),
         (ButtonKind::PrimaryOutline, false) => Some(claim(
             "border",
             "primary",
             t.primary,
-            "gpui-component/button/button.rs:1003",
+            "gpui-component/button/button.rs:1034",
         )),
         _ => None,
     }
@@ -386,7 +386,7 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             "bg, at 15%",
             "button_primary",
             t.button_primary.opacity(0.15),
-            "gpui-component/button/button.rs:1276",
+            "gpui-component/button/button.rs:1307",
         )),
         // `opacity(1.5)`: gpui clamps the factor to 1 (gpui-pre
         // color.rs:637-644), so the fill is the token as it stands, in both
@@ -395,35 +395,35 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             "bg, button_secondary at 150% (clamped to 100%)",
             "button_secondary",
             t.button_secondary.opacity(1.5),
-            "gpui-component/button/button.rs:1281",
+            "gpui-component/button/button.rs:1312",
         )),
         ButtonKind::Danger => Some(claim(
             "bg, at 15%",
             "button_danger",
             t.button_danger.opacity(0.15),
-            "gpui-component/button/button.rs:1277",
+            "gpui-component/button/button.rs:1308",
         )),
-        // `input_background()` at 0.5 (button/button.rs:1291-1295), which
-        // reads a different field in each mode (theme/mod.rs:379-384).
+        // `input_background()` at 0.5 (button/button.rs:1322-1326), which
+        // reads a different field in each mode (theme/mod.rs:465-470).
         ButtonKind::Default if t.is_dark() => Some(claim(
             "bg (input mixed toward transparent), at 50%",
             "input",
             t.input_background().opacity(0.5),
-            "gpui-component/theme/mod.rs:381",
+            "gpui-component/theme/mod.rs:467",
         )),
         ButtonKind::Default => Some(claim(
             "bg, at 50%",
             "background",
             t.background.opacity(0.5),
-            "gpui-component/theme/mod.rs:383",
+            "gpui-component/theme/mod.rs:469",
         )),
         _ => None,
     }
 }
 
 /// What a loading Button of `kind` paints: its colours at rest, faded with
-/// the whole element to 80% (button/button.rs:782). It is not interactive,
-/// so it takes no hover or press style (:493-495, :669).
+/// the whole element to 80% (button/button.rs:813). It is not interactive,
+/// so it takes no hover or press style (:510-512, :700).
 ///
 /// Only the variant the page shows loading has an arm: read another's rest
 /// arms before the page loads one.
@@ -431,16 +431,16 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     match kind {
         ButtonKind::Primary => vec![
             claim(
-                "bg, at 80% (the whole Button fades, button.rs:782)",
+                "bg, at 80% (the whole Button fades, button.rs:813)",
                 "button_primary",
                 t.button_primary.opacity(0.8),
-                "gpui-component/button/button.rs:936",
+                "gpui-component/button/button.rs:967",
             ),
             claim(
-                "text, at 80% (the whole Button fades, button.rs:782)",
+                "text, at 80% (the whole Button fades, button.rs:813)",
                 "button_primary_foreground",
                 t.button_primary_foreground.opacity(0.8),
-                "gpui-component/button/button.rs:954",
+                "gpui-component/button/button.rs:985",
             ),
         ],
         _ => Vec::new(),
@@ -503,7 +503,7 @@ pub fn button(
                     "text, at 50%",
                     "muted_foreground",
                     t.muted_foreground.opacity(0.5),
-                    "gpui-component/button/button.rs:1284",
+                    "gpui-component/button/button.rs:1315",
                 ))
         }
     };
@@ -521,7 +521,7 @@ pub fn button(
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
                 }),
                 ButtonState::Disabled => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :782)".to_string(),
+                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :813)".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -531,7 +531,7 @@ pub fn button(
     } else {
         info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)")
     };
-    let info = info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm");
+    let info = info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm");
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
         ButtonKind::Ghost => ghost_variant(info),

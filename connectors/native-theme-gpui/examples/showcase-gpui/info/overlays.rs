@@ -102,7 +102,7 @@ pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -
         )
         .instance(
             "closes",
-            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:586; gpui-base dialog.rs:601)",
+            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:636; gpui-base dialog.rs:613)",
         )
 }
 
@@ -154,7 +154,7 @@ pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleI
         "confirm button",
         "button_danger",
         t.button_danger,
-        "gpui-component/button/button.rs:938",
+        "gpui-component/button/button.rs:969",
     ))
     .not_themeable(
         "surface",
@@ -276,7 +276,7 @@ pub fn popover(t: &Theme, styled: bool) -> WidgetInfo {
         )
         .instance(
             "unreported",
-            "the surface's padding shows no info of its own: upstream builds the surface around the content the showcase passes in (popover.rs, Popover::render_popover_content), so only the trigger and the content report",
+            "the surface's padding shows no info of its own: upstream builds the surface inline around the content the showcase passes in (popover.rs, Popover::render: popover_style and p_3 on the content's own v_flex), so only the trigger and the content report",
         )
 }
 

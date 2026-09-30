@@ -14,7 +14,7 @@ use crate::support::ChromeIcon;
 
 /// `c` as the colour an SVG recoloured with it is painted in: the connector
 /// writes it into the SVG as `#rrggbb`, which has no alpha
-/// (native-theme-gpui icons.rs:1245-1250).
+/// (native-theme-gpui icons.rs:1326-1330).
 fn opaque(c: Hsla) -> Hsla {
     Hsla { a: 1., ..c }
 }
@@ -34,7 +34,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
     match drawn {
         IconDrawn::Builtin => info
             // No colour of its own: the Icon takes the text colour it
-            // inherits (icon.rs:170, :219), which the showcase sets on its
+            // inherits (icon.rs:176, :225), which the showcase sets on its
             // window.
             .color(claim(
                 "icon, inherited foreground",
@@ -46,7 +46,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
                 "color",
                 "the inherited text colour unless text_color() sets one (icon.rs, Icon::into_svg)",
             )
-            .not_themeable("SVG shapes", "101 in gpui_component::IconName, a compatibility subset: gpui_kit_assets::IconName carries the whole Lucide catalogue (icon.rs, component_icon_names)")
+            .not_themeable("SVG shapes", "104 in gpui_component::IconName, a compatibility subset: gpui_kit_assets::IconName carries the whole Lucide catalogue (icon.rs, component_icon_names)")
             .instance(
                 "size",
                 "Medium: size_4, a rem (icon.rs, Icon::into_svg)",
@@ -343,8 +343,8 @@ pub fn icon_size(
     let info = name_label(WidgetInfo::new("Icon").variant(format!("{name} size")), t);
     let info = match drawn {
         ChromeIcon::Builtin(_) | ChromeIcon::Loaded(..) => info
-            // An Icon takes the text colour it inherits (icon.rs:170,
-            // :219), which the showcase sets on its window.
+            // An Icon takes the text colour it inherits (icon.rs:176,
+            // :225), which the showcase sets on its window.
             .color(claim(
                 "icon, inherited foreground",
                 "foreground",

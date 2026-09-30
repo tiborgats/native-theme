@@ -217,7 +217,7 @@ fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut Ap
 /// The root's first child: its prepaint bumps the epoch before any target
 /// records its bounds in the same frame (spec §4.2), and its paint runs
 /// after every prepaint of the frame, deferred draws included (gpui-pre
-/// `window.rs:3546-3579`).
+/// `window.rs:3538-3571`).
 pub fn epoch_marker(ui: &Entity<InfoRegistry>) -> impl IntoElement {
     let (on_prepaint, on_paint) = (ui.clone(), ui.clone());
     canvas(

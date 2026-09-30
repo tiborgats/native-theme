@@ -30,7 +30,7 @@ pub fn heading_level(t: &Theme, level: HeadingLevel) -> WidgetInfo {
                 px_text(rem)
             ),
         )
-        .not_themeable("size", "a rem ladder of this showcase's own -- 1.875 / 1.5 / 1.25 / 1.125 / 1 / 0.875 -- so it follows the platform: gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). What is unused is text_scale: the model states four named roles, each with its own size, weight and line height, and this demo states six of its own")
+        .not_themeable("size", "a rem ladder of this showcase's own -- 1.875 / 1.5 / 1.25 / 1.125 / 1 / 0.875 -- so it follows the platform: gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). What is unused is text_scale: the model states four named roles, each with its own size, weight and line height, and this demo states six of its own")
         .instance(
             "weight",
             format!(
@@ -73,7 +73,7 @@ pub fn decoration(t: &Theme, decoration: DecorationKind) -> WidgetInfo {
         ))
         .config("font", format!("font_family: {}", t.font_family));
     // A line given no colour is drawn in its text run's colour
-    // (gpui-pre text_system/line.rs:662, :682), which is inherited here.
+    // (gpui-pre text_system/line.rs:663, :683), which is inherited here.
     match decoration {
         DecorationKind::Bold => info.instance("style", "FontWeight::BOLD, a gpui constant the showcase sets"),
         DecorationKind::Underline => info
@@ -194,13 +194,13 @@ pub fn kbd(t: &Theme, keys: &str, drawn: &str) -> WidgetInfo {
             "bg",
             "muted",
             t.muted,
-            "gpui-component/kbd.rs:238",
+            "gpui-component/kbd.rs:243",
         ))
         .color(claim(
             "text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/kbd.rs:237",
+            "gpui-component/kbd.rs:242",
         ))
         .config(
             "border-radius",
@@ -217,7 +217,7 @@ pub fn kbd(t: &Theme, keys: &str, drawn: &str) -> WidgetInfo {
         )
         .not_themeable("edge", "none: only an outline Kbd draws one, in border, and these are not outlined (kbd.rs, Kbd)")
         .not_themeable("padding", "py_0p5 and px_1 (kbd.rs, Kbd) -- rems, so already proportional to the platform font")
-        .not_themeable("font", "not monospace, and not set at all: kbd.rs states a text size and a colour and no family (kbd.rs, Kbd), so a Kbd inherits the window's -- the platform UI font Root::render applies. The panel claimed a family nothing produces")
+        .not_themeable("font", "not monospace, and not set at all: kbd.rs states a text size and a colour and no family (kbd.rs, Kbd), so a Kbd inherits the window's -- the platform UI font gpui-component's WindowState root plugin applies (root.rs, WindowState::style). The panel claimed a family nothing produces")
         .instance(
             "keys",
             format!("{keys}, drawn as \"{drawn}\" on this platform (kbd.rs, Kbd::format)"),
@@ -231,19 +231,19 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "edge",
             "input",
             t.input,
-            "gpui-component/input/input.rs:714",
+            "gpui-component/input/input.rs:776",
         ))
         // Painted at a literal 85% of the style block's border
-        // (gpui-base input/base/element.rs:2319).
+        // (gpui-base input/base/element.rs:2998).
         .color(claim(
             "indent guides, border at 85%",
             "border",
             t.border.opacity(0.85),
-            "gpui-base/input/base/element.rs:2319",
+            "gpui-base/input/base/element.rs:2998",
         ))
         // Unhighlighted text is painted in the colour the element inherits
-        // (gpui-base input/base/element.rs:1823), not the style block's
-        // foreground, and Input sets none (input/input.rs:639): so the
+        // (gpui-base input/base/element.rs:2449), not the style block's
+        // foreground, and Input sets none (input/input.rs:694): so the
         // colour the showcase sets on its window.
         .color(claim(
             "unhighlighted text, inherited",
@@ -255,27 +255,27 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "caret",
             "caret",
             t.caret,
-            "gpui-component/input/input.rs:503",
+            "gpui-component/input/input.rs:551",
         ))
         .color(claim(
             "selection",
             "selection",
             t.selection,
-            "gpui-component/input/input.rs:502",
+            "gpui-component/input/input.rs:550",
         ))
         .color(claim(
             "line numbers",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/input/input.rs:499",
+            "gpui-component/input/input.rs:547",
         ))
         // The current line's number takes the style block's foreground
-        // (gpui-base input/base/element.rs:2126).
+        // (gpui-base input/base/element.rs:2797).
         .color(claim(
             "current line number",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:498",
+            "gpui-component/input/input.rs:546",
         ))
         .config(
             "mono font",
@@ -302,31 +302,31 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/text/mod.rs:48",
+            "gpui-component/text/mod.rs:49",
         ))
         .color(claim(
             "link",
             "link",
             t.link,
-            "gpui-component/text/mod.rs:50",
+            "gpui-component/text/mod.rs:51",
         ))
         .color(claim(
             "code block bg",
             "muted",
             t.muted,
-            "gpui-component/text/mod.rs:52",
+            "gpui-component/text/mod.rs:53",
         ))
         .color(claim(
             "inline code bg",
             "accent",
             t.accent,
-            "gpui-component/text/mod.rs:58",
+            "gpui-component/text/mod.rs:59",
         ))
         .color(claim(
             "table border",
             "border",
             t.border,
-            "gpui-component/text/mod.rs:53",
+            "gpui-component/text/mod.rs:54",
         ))
         .color(claim(
             "table head",
@@ -338,7 +338,7 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
             "table head text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/text/mod.rs:45",
+            "gpui-component/text/mod.rs:46",
         ))
         .config("border-radius", format!("radius: {}px", px_text(t.radius.as_f32())))
         .config(
@@ -347,5 +347,5 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
         )
         .not_themeable("style source", "a TextView reads no theme field itself: gpui-component builds a TextViewStyle from the theme once and the view takes it (text/mod.rs)")
         .not_themeable("inline code", "accent again -- the menu highlight, shared with menu rows, Toggle and a hovered ghost button (Tier U)")
-        .not_themeable("heading sizes", "2, 1.5, 1.25, 1.125, 1 and 1 times a fixed 14px, not the platform's font: base_text_view_style never sets heading_base_font_size (text/mod.rs, base_text_view_style), so gpui-base's default stands (gpui-base/text/style.rs, heading_base_font_size; gpui-base/text/node.rs, BlockNode::Heading). The weights are literals too, bold down to medium")
+        .not_themeable("heading sizes", "2, 1.5, 1.25, 1.125, 1 and 1 times a fixed 14px, not the platform's font: gpui-base sizes a heading from literals (gpui-base/text/node.rs, BlockNode::Heading), and base_text_view_style installs no heading refinement over them (text/mod.rs, base_text_view_style; gpui-base/text/style.rs, with_heading). The weights are literals too, bold down to medium")
 }

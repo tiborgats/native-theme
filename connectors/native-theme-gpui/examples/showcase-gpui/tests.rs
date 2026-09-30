@@ -338,7 +338,7 @@ fn a_page_that_fits_keeps_no_scrollbar_strip(cx: &mut TestAppContext) {
 /// A Settings row keeps off the page's scrollbar.
 ///
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
-/// (setting/page.rs:222-248, scroll/scrollable.rs:19-29) and reserves only its
+/// (setting/page.rs:227-253, scroll/scrollable.rs:19-29) and reserves only its
 /// own `px_4`; kde-breeze's groove is 21px, wider than that, so without a
 /// gutter on the group the bar covers the rows.
 #[gpui::test]
@@ -860,7 +860,7 @@ const CLIENT_SIDE: gpui::Decorations = gpui::Decorations::Client {
 ///
 /// The test platform grants server-side decorations only, so the grant is
 /// the test's (`Showcase::frame_for_test`). In a window really granted
-/// client-side decorations `Root`'s `window_border` insets the content by
+/// client-side decorations gpui-component's `window_border` insets the content by
 /// `window_paddings` and, on each side not tiled, its own border
 /// (window_border.rs, `window_content_insets`, which is not public), so the
 /// bar is held inside the paddings and across the content's whole width --
@@ -980,8 +980,8 @@ fn the_title_bar_sample_is_drawn_and_leaves_the_window_alone(cx: &mut TestAppCon
 
 /// The Theme tab's Window section names the decorations the window was
 /// granted and what draws the frame under them (spec S8): the window
-/// manager's frame, with none of the facts of `Root`'s client frame, or
-/// `Root`'s client frame.
+/// manager's frame, with none of the facts of gpui-component's client frame,
+/// or that client frame.
 #[test]
 fn the_theme_tabs_window_section_names_the_mode() {
     let value = |rows: &[(&str, String)], what: &str| {
@@ -1003,7 +1003,7 @@ fn the_theme_tabs_window_section_names_the_mode() {
         assert_eq!(
             value(&server, client_only),
             None,
-            "the server-side rows state {client_only}, a fact of Root's client frame"
+            "the server-side rows state {client_only}, a fact of the client frame"
         );
     }
     let client =
@@ -1013,8 +1013,8 @@ fn the_theme_tabs_window_section_names_the_mode() {
         "the client-side rows do not name the mode: {client:?}"
     );
     assert!(
-        value(&client, "frame").is_some_and(|v| v.starts_with("Root's client frame")),
-        "the client-side rows do not say Root's client frame is drawn: {client:?}"
+        value(&client, "frame").is_some_and(|v| v.starts_with("the client frame")),
+        "the client-side rows do not say the client frame is drawn: {client:?}"
     );
     for client_only in ["frame fill", "frame colour", "frame shadow"] {
         assert!(
@@ -2971,7 +2971,7 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1252, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1283, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -3084,9 +3084,9 @@ const SIDEBAR_ICON_PRESETS: [&str; 5] = [
 /// expanded and in the collapsed sample's rail.
 ///
 /// Upstream gives no hook to measure the drawn icon: `SidebarMenuItem`
-/// places the `Icon` it is given itself (sidebar/menu.rs:300), and an `Icon`
+/// places the `Icon` it is given itself (sidebar/menu.rs:315), and an `Icon`
 /// builds its `svg()` with nothing of it reachable but its style
-/// (icon.rs:169-177), so no debug selector gets there. What is checked:
+/// (icon.rs:175-183), so no debug selector gets there. What is checked:
 ///
 /// - the Icon `demo::sidebar_icon_sized` hands an item has the size
 ///   `geometry::icon_size_small` gives, read off its style;
@@ -3095,13 +3095,14 @@ const SIDEBAR_ICON_PRESETS: [&str; 5] = [
 ///   own: an item is as wide as the rail lets it be whatever its icon, and
 ///   grows taller rather than overlap. What does is the item's height:
 ///   there a row has no height of its own and holds its icon alone
-///   (sidebar/menu.rs:301-308), inside `p_2` on every side (:284), so the
+///   (sidebar/menu.rs:316-323), inside `p_2` on every side (:299), so the
 ///   measured height less that padding is the icon's, and the icon, as
 ///   wide as it is tall (the first check), has to fit the item's measured
 ///   width;
 /// - expanded, where every row is `h_7` whatever its icon
-///   (sidebar/menu.rs:308), the icon is no taller than that: 1.75 rem at the
-///   rem the Root installs, the theme's font size (root.rs:582). The items'
+///   (sidebar/menu.rs:323), the icon is no taller than that: 1.75 rem at the
+///   rem the `WindowState` root plugin installs, the theme's font size
+///   (root.rs:436). The items'
 ///   measured heights are checked to be that row. The icon's is a model
 ///   check, not a measurement: an icon taller than its row overflows it
 ///   without moving any bound a test can read.
@@ -3638,8 +3639,8 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// shows its tooltip's text as its label, never another icon theme's icon
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
-/// `text_sm`, sizing.rs:322, without a native theme) plus the theme's button
-/// padding, or the `px_2` on either side (button/button.rs:629-631) where it
+/// `text_sm`, sizing.rs:330, without a native theme) plus the theme's button
+/// padding, or the `px_2` on either side (button/button.rs:660-662) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
@@ -3965,7 +3966,7 @@ fn settle_on(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:994). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1025). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -4620,7 +4621,7 @@ fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
 /// A refined Input is filled with the platform's `input.background_color`
 /// in either mode, through `geometry::input_fill` -- not with
 /// `Theme::input_background()`, which is the window background in light mode
-/// and input mixed toward transparent in dark (theme/mod.rs:379-384) -- and
+/// and input mixed toward transparent in dark (theme/mod.rs:465-470) -- and
 /// its info shows no swatch for the fill upstream no longer paints, but the
 /// builder's geometry line. The Basic page's disabled field is filled with
 /// `input.disabled_background`.
@@ -4682,7 +4683,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1291-1295) -- in
+/// `input_background()` at half opacity (button/button.rs:1322-1326) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -4808,8 +4809,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:158-162), 4px
-/// itself included (`radius >= px(4.)`, switch.rs:158).
+/// under 4px, the track's own height from 4px up (switch.rs:194-198), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:194).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -5028,7 +5029,7 @@ fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
     } else {
         assert_eq!(
             text_claim.map(|c| c.cited_at),
-            Some("gpui-component/list/list_item.rs:189"),
+            Some("gpui-component/list/list_item.rs:205"),
             "the unstyled row's text is ListItem's foreground: {info:?}"
         );
     }
@@ -6058,19 +6059,21 @@ fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
-/// (gpui-component 0.6.6): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.7.0): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's
 /// and a Combobox's caret, a DatePicker's Calendar, a Calendar's month
 /// buttons, the command palette's Search, a Dialog's and a Sheet's close
 /// button, a Settings page's search and reset, a Pagination's arrows, the
 /// MessageScroller's jump button, an Alert's and a Notification's severity
 /// icon, a Spinner's Loader, the Marker's spinner, an Accordion's chevrons,
-/// the Carousel's controls, the Breadcrumb's separators and the Editor's
-/// fold buttons.
+/// the Carousel's controls, the Breadcrumb's separators, the Editor's
+/// fold buttons, and an Attachment's status glyph (Ban when failed, a
+/// Spinner while uploading or processing).
 #[gpui::test]
 fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
     use crate::demo::{ButtonKind, MarkerKind, Severity, SheetSide, SpinnerKind};
     use crate::info::{buttons, chrome, data, feedback, inputs, layout, overlays, typography};
+    use gpui_component::attachment::AttachmentStatus;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let t = cx.update(|_window, cx| Theme::global(cx).clone());
     let icon = read(&mut cx, &showcase, |this, _| {
@@ -6119,6 +6122,14 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Dialog", overlays::dialog(&t, false, false, &icon)),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
+        (
+            "failed Attachment",
+            data::attachment(&t, AttachmentStatus::Failed, "file", false, &icon),
+        ),
+        (
+            "uploading Attachment",
+            data::attachment(&t, AttachmentStatus::Uploading, "file", false, &icon),
+        ),
     ];
     for (name, info) in infos {
         let note = info.not_themeable.iter().find(|n| n.what == "own icons");
@@ -8102,8 +8113,8 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
 /// padding (spec §3.6), the reported defect. Under kde-breeze that is
 /// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
 /// the frame's inner edge: upstream draws the frame with `border_1`
-/// (dialog/dialog.rs:614) and pads each section inside it with the
-/// refinement's sides (dialog/dialog.rs:540-552, :657-658).
+/// (dialog/dialog.rs:670) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:589-601, :705-707).
 #[gpui::test]
 fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);

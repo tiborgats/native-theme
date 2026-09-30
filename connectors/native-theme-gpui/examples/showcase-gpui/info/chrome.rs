@@ -711,13 +711,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:964",
+                "gpui-component/button/button.rs:995",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1141",
+                "gpui-component/button/button.rs:1172",
             ),
         ),
         GhostContent::Icon => (
@@ -725,13 +725,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:964",
+                "gpui-component/button/button.rs:995",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1141",
+                "gpui-component/button/button.rs:1172",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -739,13 +739,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:964",
+                "gpui-component/button/button.rs:995",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1141",
+                "gpui-component/button/button.rs:1172",
             ),
         ),
     };
@@ -761,27 +761,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1180",
+        "gpui-component/button/button.rs:1211",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1125-1131).
+/// in dark mode (button/button.rs:1156-1162).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1128",
+            "gpui-component/button/button.rs:1159",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1126",
+            "gpui-component/button/button.rs:1157",
         )
     }
 }
@@ -790,21 +790,21 @@ fn ghost_hover(t: &Theme) -> ColorClaim {
 /// every widget styled like one: the window background in light mode, and in
 /// dark mode an Oklab mix of 30% input and 70% transparent -- `mix_oklab`'s
 /// factor is the first colour's share (theme/color.rs:44-49) -- read at
-/// theme/mod.rs:379-384. The swatch is that mix, not input at full strength.
+/// theme/mod.rs:465-470. The swatch is that mix, not input at full strength.
 pub(super) fn input_background(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "bg, 30% input mixed with 70% transparent",
             "input",
             t.input.mix_oklab(t.transparent, 0.3),
-            "gpui-component/theme/mod.rs:381",
+            "gpui-component/theme/mod.rs:467",
         )
     } else {
         claim(
             "bg",
             "background",
             t.background,
-            "gpui-component/theme/mod.rs:383",
+            "gpui-component/theme/mod.rs:469",
         )
     }
 }
@@ -1075,7 +1075,7 @@ pub fn resize_handle(
             "line",
             "handle",
             base.resizable.handle.unwrap_or(base.tokens.colors.border),
-            "gpui-base/resizable/resize_handle.rs:293",
+            "gpui-base/resizable/resize_handle.rs:467",
         ))
         .color(claim(
             "line while pressed",
@@ -1083,7 +1083,7 @@ pub fn resize_handle(
             base.resizable
                 .active_handle
                 .unwrap_or(base.tokens.colors.ring),
-            "gpui-base/resizable/resize_handle.rs:290",
+            "gpui-base/resizable/resize_handle.rs:464",
         ))
         .instance(
             "colour source",
@@ -1153,19 +1153,19 @@ pub(super) fn dialog_surface(
         "bg",
         "background",
         t.background,
-        "gpui-component/dialog/dialog.rs:613",
+        "gpui-component/dialog/dialog.rs:669",
     ))
     .color(claim(
         "border",
         "border",
         t.border,
-        "gpui-component/dialog/dialog.rs:615",
+        "gpui-component/dialog/dialog.rs:671",
     ))
     .color(claim(
         "backdrop",
         "overlay",
         t.overlay,
-        "gpui-component/dialog/dialog.rs:282",
+        "gpui-component/dialog/dialog.rs:324",
     ))
     .not_themeable(
         "fill",
@@ -1215,7 +1215,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:586; gpui-base dialog.rs:601)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:636; gpui-base dialog.rs:613)",
     )
 }
 
@@ -1231,55 +1231,55 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
             "surface bg",
             "popover",
             t.popover,
-            "gpui-component/command/state.rs:830",
+            "gpui-component/command/state.rs:913",
         ))
         .color(claim(
             "surface text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/command/state.rs:831",
+            "gpui-component/command/state.rs:914",
         ))
         .color(claim(
             "search divider",
             "border",
             t.border,
-            "gpui-component/command/state.rs:847",
+            "gpui-component/command/state.rs:930",
         ))
         .color(claim(
             "search icon",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:852",
+            "gpui-component/command/state.rs:935",
         ))
         .color(claim(
             "group label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:685",
+            "gpui-component/command/state.rs:729",
         ))
         .color(claim(
             "row icon",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:716",
+            "gpui-component/command/state.rs:808",
         ))
         .color(claim(
             "highlighted row",
             "accent",
             t.accent,
-            "gpui-component/command/state.rs:673",
+            "gpui-component/command/state.rs:717",
         ))
         .color(claim(
             "highlighted row text",
             "accent_foreground",
             t.accent_foreground,
-            "gpui-component/command/state.rs:674",
+            "gpui-component/command/state.rs:718",
         ))
         .color(claim(
             "empty text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:785",
+            "gpui-component/command/state.rs:868",
         ))
         .not_themeable(
             "geometry",
@@ -1343,7 +1343,7 @@ pub(super) fn sheet_surface(
             "backdrop",
             "overlay",
             t.overlay,
-            "gpui-component/dialog/dialog.rs:282",
+            "gpui-component/dialog/dialog.rs:324",
         ))
         .not_themeable(
             "fill",
@@ -1422,31 +1422,31 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
             "sidebar bg",
             "sidebar",
             t.sidebar,
-            "gpui-component/sidebar/mod.rs:413",
+            "gpui-component/sidebar/mod.rs:422",
         ))
         .color(claim(
             "sidebar text",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:414",
+            "gpui-component/sidebar/mod.rs:423",
         ))
         .color(claim(
             "page item",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:297",
+            "gpui-component/sidebar/menu.rs:312",
         ))
         .color(claim(
             "header rule",
             "border",
             t.border,
-            "gpui-component/setting/page.rs:185",
+            "gpui-component/setting/page.rs:190",
         ))
         .color(claim(
             "page description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/setting/page.rs:219",
+            "gpui-component/setting/page.rs:224",
         ))
         .color(claim(
             "item description",
@@ -1512,20 +1512,20 @@ pub fn preference_switch(
             "track",
             "primary",
             t.primary,
-            "gpui-component/switch.rs:139",
+            "gpui-component/switch.rs:175",
         )),
         (false, false) => info.color(claim(
             "track",
             "switch",
             t.switch,
-            "gpui-component/switch.rs:140",
+            "gpui-component/switch.rs:176",
         )),
     };
     info.color(claim(
         "thumb",
         "switch_thumb",
         t.switch_thumb,
-        "gpui-component/switch.rs:146",
+        "gpui-component/switch.rs:182",
     ))
     .not_themeable(
         "size",

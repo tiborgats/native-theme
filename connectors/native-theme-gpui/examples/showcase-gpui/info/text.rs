@@ -76,7 +76,7 @@ pub fn label(t: &Theme) -> WidgetInfo {
 fn inherited_font(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.config("font", format!("font_family: {}", t.font_family))
         .not_themeable("highlights", "blue, on the ranges Label::highlights marks, which this demo does not set (label.rs, Label::highlights)")
-        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and Root::render sets the family, the rem size and the foreground but no weight (root.rs, Root). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")
+        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and gpui-component's WindowState root plugin sets the rem size, the family and the foreground but no weight (root.rs, WindowState::prepare and WindowState::style). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")
 }
 
 /// A Label of the Typography page's Label gallery, of `kind`, reading
@@ -151,5 +151,5 @@ pub fn sized_label(t: &Theme, size: TextSize) -> WidgetInfo {
                 px_text(rem)
             ),
         )
-        .not_themeable("rem", "Theme::font_size, which gpui-component makes the window's rem (root.rs, Root::render set_rem_size) and the connector fills from the platform's font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). So all five sizes follow the platform's font and none is a size of its own: the model's text_scale roles, each with its own size, reach none of them")
+        .not_themeable("rem", "Theme::font_size, which gpui-component's WindowState root plugin makes the window's rem (root.rs, WindowState::prepare set_rem_size) and the connector fills from the platform's font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). So all five sizes follow the platform's font and none is a size of its own: the model's text_scale roles, each with its own size, reach none of them")
 }

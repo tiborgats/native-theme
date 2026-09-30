@@ -298,12 +298,13 @@ pub(crate) struct Showcase {
     /// Takes the focus back to the view when the focused element stops being
     /// drawn -- a page's widget whose page was left keeps its handle, and
     /// gpui would dispatch from the window's root instead (gpui-pre
-    /// window.rs:6244-6252), out of the view's handlers' reach.
+    /// window.rs:6251-6259), out of the view's handlers' reach.
     _refocus: Subscription,
 
     /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
-    /// overlays: `Root` builds them anew for every frame from builders that
-    /// cannot borrow the view (root.rs, `Root::render_dialog_layer`), so this
+    /// overlays: gpui-component's `WindowState` root plugin builds them anew
+    /// for every frame from builders that cannot borrow the view (root.rs,
+    /// `WindowState::dialog_layer`), so this
     /// is how the gap they read is the installed theme's, not the one they
     /// opened under.
     pub(crate) overlay_gap: Rc<Cell<Option<Pixels>>>,

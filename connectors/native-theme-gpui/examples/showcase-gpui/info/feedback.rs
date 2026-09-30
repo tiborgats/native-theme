@@ -209,7 +209,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:367",
+                "native-theme-gpui/widgets/spinner.rs:358",
             ))
         } else {
             info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
@@ -245,24 +245,24 @@ pub fn progress_circle(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("ProgressCircle").variant(kind.name());
     // Under reduced motion an indeterminate circle holds its loop's start,
-    // where both ends are at 0 (progress_circle.rs:201-205), and an arc of
-    // no length is not painted (:117): only the track shows.
+    // where both ends are at 0 (progress_circle.rs:183-187), and an arc of
+    // no length is not painted (:108): only the track shows.
     let arc_drawn = kind != CircleKind::Indeterminate || !reduce_motion;
     let info = if arc_drawn {
         info.color(claim(
             "arc",
             "progress_bar",
             t.progress_bar,
-            "gpui-component/progress/progress_circle.rs:176",
+            "gpui-component/progress/progress_circle.rs:158",
         ))
     } else {
         info
     };
     let info = info.color(claim(
-        "track, progress_bar at 20% (progress/progress_circle.rs:110)",
+        "track, progress_bar at 20% (progress/progress_circle.rs:103)",
         "progress_bar",
         t.progress_bar.opacity(0.2),
-        "gpui-component/progress/progress_circle.rs:176",
+        "gpui-component/progress/progress_circle.rs:158",
     ));
     let determinate_size = "size_2 to size_5 per Size, rems, so it follows the platform font; the model carries no circular-progress diameter";
     let info = match kind {
@@ -314,7 +314,7 @@ pub fn spinner(
             "showcase",
         )),
         // No colour of its own: the Loader icon takes the text colour it
-        // inherits (spinner.rs:64-66, icon.rs:219), which the showcase sets
+        // inherits (spinner.rs:64-66, icon.rs:225), which the showcase sets
         // on its window.
         None => info.color(claim(
             "icon, inherited foreground",
@@ -580,8 +580,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4513-4520 for fills and edges, :4657 and
-    // :4706 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre window.rs:4505-4512 for fills and edges, :4649 and
+    // :4698 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| {
@@ -650,7 +650,7 @@ pub fn marker(
         "text",
         "muted_foreground",
         t.muted_foreground,
-        "gpui-component/marker.rs:185",
+        "gpui-component/marker.rs:219",
     ));
     let info = match plain_icon {
         Some(icon) => info.instance("icon", icon.note("the Marker shows its text alone")),
@@ -661,20 +661,20 @@ pub fn marker(
             "icon, the row's text colour",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/marker.rs:185",
+            "gpui-component/marker.rs:219",
         )),
         MarkerKind::Plain => info,
         MarkerKind::Separator => info.color(claim(
             "separator line",
             "border",
             t.border,
-            "gpui-component/marker.rs:200",
+            "gpui-component/marker.rs:237",
         )),
         MarkerKind::Border => info.color(claim(
             "bottom border",
             "border",
             t.border,
-            "gpui-component/marker.rs:191",
+            "gpui-component/marker.rs:226",
         )),
         MarkerKind::Spinner => info
             .not_themeable(
@@ -685,7 +685,7 @@ pub fn marker(
                 "spinner, the row's text colour",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/marker.rs:185",
+                "gpui-component/marker.rs:219",
             ))
             .instance("spinner", if reduce_motion {
                 "added by the Marker itself, loading with no icon slot: an XSmall Spinner, standing still at its start angle while reduced motion is on (marker.rs, Marker::render; gpui-pre/elements/animation.rs, AnimationExt)"
@@ -735,7 +735,7 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
             .not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
     } else {
-        info.not_themeable("delay", "500ms, and fixed for a Button's tooltip: Button::tooltip goes through Root's tooltip overlay, whose SHOW_DELAY is a module const (gpui-base/tooltip.rs, SHOW_DELAY). native-theme states no hover delay, though the platforms do -- our model's gap")
+        info.not_themeable("delay", "500ms, and fixed for a Button's tooltip: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), whose SHOW_DELAY is a module const (gpui-base/tooltip.rs, SHOW_DELAY). native-theme states no hover delay, though the platforms do -- our model's gap")
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
     };
     info.instance(
@@ -778,29 +778,30 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
 
 /// The `Notification` of `severity` a Default Button reading `label`
 /// pushes, which reports through the Button: upstream draws the
-/// notification on the Root's layer, where nothing of the showcase can wrap
+/// notification on the notification layer of gpui-component's `WindowState`
+/// root plugin, where nothing of the showcase can wrap
 /// it. The Button's `geometry::button` line is recorded where
 /// `demo::notification_button` applies it.
 pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -> WidgetInfo {
     let icon = match severity {
-        Severity::Info => claim("icon", "info", t.info, "gpui-component/notification.rs:42"),
+        Severity::Info => claim("icon", "info", t.info, "gpui-component/notification.rs:49"),
         Severity::Success => claim(
             "icon",
             "success",
             t.success,
-            "gpui-component/notification.rs:43",
+            "gpui-component/notification.rs:50",
         ),
         Severity::Warning => claim(
             "icon",
             "warning",
             t.warning,
-            "gpui-component/notification.rs:44",
+            "gpui-component/notification.rs:51",
         ),
         Severity::Error => claim(
             "icon",
             "danger",
             t.danger,
-            "gpui-component/notification.rs:45",
+            "gpui-component/notification.rs:52",
         ),
     };
     let own = match severity {
@@ -824,13 +825,13 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
             "bg",
             "popover",
             t.popover,
-            "gpui-component/notification.rs:424",
+            "gpui-component/notification.rs:431",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/notification.rs:423",
+            "gpui-component/notification.rs:430",
         ))
         .color(icon)
         .config("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))

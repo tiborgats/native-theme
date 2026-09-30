@@ -81,13 +81,13 @@ pub fn data_table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/state.rs:1768",
+            "gpui-component/table/state.rs:1819",
         ))
         .color(claim(
             "text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/table/state.rs:1769",
+            "gpui-component/table/state.rs:1820",
         ))
         .instance("columns", columns.to_string())
 }
@@ -107,7 +107,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "stripe",
                     "table_even",
                     t.table_even,
-                    "gpui-component/table/state.rs:2234",
+                    "gpui-component/table/state.rs:2290",
                 ))
             } else {
                 info.color(claim(
@@ -122,7 +122,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "bottom border",
                     "table_row_border",
                     t.table_row_border,
-                    "gpui-component/table/state.rs:2233",
+                    "gpui-component/table/state.rs:2289",
                 ))
                 .not_themeable("purpose", "a row a striped table draws below its data to fill its height: no cells, and no hover (table/state.rs, TableState::render_table_row)");
         }
@@ -155,14 +155,14 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "selected bg",
             "table_active",
             t.table_active,
-            "gpui-component/table/state.rs:2196",
+            "gpui-component/table/state.rs:2245",
         ))
     } else if body.striped {
         info.color(claim(
             "stripe",
             "table_even",
             t.table_even,
-            "gpui-component/table/state.rs:1980",
+            "gpui-component/table/state.rs:2032",
         ))
     } else {
         info.color(claim(
@@ -189,7 +189,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "hover",
             "table_hover",
             t.table_hover,
-            "gpui-component/table/state.rs:1986",
+            "gpui-component/table/state.rs:2038",
         ))
     };
     let info = if body.right_clicked {
@@ -197,7 +197,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "right-click frame",
             "selection",
             t.selection,
-            "gpui-component/table/state.rs:2212",
+            "gpui-component/table/state.rs:2261",
         ))
         .not_themeable("bottom border", "transparent while the row is right-clicked, under the frame drawn around it (table/state.rs, TableState::render_table_row)")
     } else {
@@ -205,7 +205,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "bottom border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/state.rs:1978",
+            "gpui-component/table/state.rs:2030",
         ));
         if body.last && !body.selected {
             info.not_themeable("last border", "the last row's bottom border is drawn only while the rows leave room below them or the row is selected (table/state.rs, TableState::render_table_row)")
@@ -296,7 +296,7 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
 }
 
 /// The fill of the page Button showing the current page: an outlined
-/// Default Button's `input_background()` (button/button.rs:859), the shared
+/// Default Button's `input_background()` (button/button.rs:890), the shared
 /// claim with a role that says whose fill it is.
 fn current_page_fill(t: &Theme) -> ColorClaim {
     ColorClaim {
@@ -328,25 +328,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "current page text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:949",
+                "gpui-component/button/button.rs:980",
             ))
             .color(claim(
                 "current page edge",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1001",
+                "gpui-component/button/button.rs:1032",
             ))
             .color(claim(
                 "current page hover, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:860-864",
+                "gpui-component/button/button.rs:891-895",
             ))
             .color(claim(
                 "current page pressed, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:865-869",
+                "gpui-component/button/button.rs:896-900",
             ))
             .not_themeable("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
@@ -365,7 +365,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "disabled text, at 50%",
                 "muted_foreground",
                 t.muted_foreground.opacity(0.5),
-                "gpui-component/button/button.rs:1284",
+                "gpui-component/button/button.rs:1315",
             ))
             .instance("disabled", format!("{which}: there is no page beyond it (pagination.rs, Pagination::render_nav_button)")),
         None => info,
@@ -416,6 +416,7 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
         ListRowState::Idle => label.to_string(),
         ListRowState::Selected => format!("{label}, selected"),
         ListRowState::RightClicked => format!("{label}, right-clicked"),
+        ListRowState::SelectedRightClicked => format!("{label}, selected and right-clicked"),
     });
     // list_active because gpui-base's ListSettings::active_highlight
     // defaults to true (list_settings.rs:14) and the connector never sets it.
@@ -424,21 +425,51 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
             "hover",
             "list_hover",
             t.list_hover,
-            "gpui-component/list/list_item.rs:209",
+            "gpui-component/list/list_item.rs:231",
         )),
         ListRowState::Selected => info
             .color(claim(
                 "selected bg",
                 "list_active",
                 t.list_active,
-                "gpui-component/list/list_item.rs:237",
+                "gpui-component/list/list_item.rs:259",
             ))
-            .not_themeable("hover", "none while selected (list/list_item.rs, ListItem::render)"),
-        ListRowState::RightClicked => info.not_themeable("fill", "none, selected or not, and no hover: a right-clicked row paints neither (list/list_item.rs, ListItem::render)"),
+            .not_themeable(
+                "hover",
+                "none while selected (list/list_item.rs, ListItem::render)",
+            ),
+        ListRowState::RightClicked => info
+            .color(claim(
+                "outline, 1px",
+                "selection",
+                t.selection,
+                "gpui-component/list/list_item.rs:272",
+            ))
+            .not_themeable(
+                "fill",
+                "none, and no hover while right-clicked (list/list_item.rs, ListItem::render)",
+            ),
+        ListRowState::SelectedRightClicked => info
+            .color(claim(
+                "selected bg",
+                "list_active",
+                t.list_active,
+                "gpui-component/list/list_item.rs:259",
+            ))
+            .color(claim(
+                "outline, 1px, over the fill",
+                "selection",
+                t.selection,
+                "gpui-component/list/list_item.rs:272",
+            ))
+            .not_themeable(
+                "hover",
+                "none while selected (list/list_item.rs, ListItem::render)",
+            ),
     };
     let info = info.not_themeable("fill at rest", NO_LIST_FILL);
     // The label is plain text, so it takes the row's own text style: the
-    // foreground and text_base ListItem sets (list/list_item.rs:188-189),
+    // foreground and text_base ListItem sets (list/list_item.rs:204-205),
     // which geometry::list_item then refines with list.item_font, colour
     // included -- a colour no ThemeColor field holds.
     if styled {
@@ -448,7 +479,7 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/list/list_item.rs:189",
+            "gpui-component/list/list_item.rs:205",
         ))
         .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, so geometry::list_item has no font to give the row (list/list_item.rs, ListItem::render)")
     }
@@ -478,7 +509,7 @@ pub fn tree_row(t: &Theme, label: &str, selected: bool, styled: bool) -> WidgetI
         ListRowState::Idle
     };
     list_item(t, label, state, styled)
-        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (tree.rs, Tree::new), and marks a right-clicked row after it is built (tree.rs, RenderOnce for Tree). A right-clicked row paints no hover, and no fill even when selected (list/list_item.rs, ListItem::render)")
+        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (tree.rs, Tree::new), and marks a right-clicked row after it is built (tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
         .instance("click", "selects the row, and opens or closes a folder (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
 
@@ -525,56 +556,56 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                 "bg",
                 "primary",
                 t.primary,
-                "gpui-component/bubble.rs:211",
+                "gpui-component/bubble.rs:215",
             ))
             .color(claim(
                 "text",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/bubble.rs:212",
+                "gpui-component/bubble.rs:216",
             )),
         BubbleKind::Secondary => bubble_surface(info, t)
             .color(claim(
                 "bg",
                 "muted",
                 t.muted,
-                "gpui-component/bubble.rs:218",
+                "gpui-component/bubble.rs:222",
             ))
             .color(claim(
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/bubble.rs:219",
+                "gpui-component/bubble.rs:223",
             )),
         BubbleKind::Muted => bubble_surface(info, t)
             .color(claim(
                 "bg",
                 "muted",
                 t.muted,
-                "gpui-component/bubble.rs:221",
+                "gpui-component/bubble.rs:225",
             ))
             .color(claim(
                 "text",
                 "foreground",
                 t.foreground,
-                "gpui-component/bubble.rs:222",
+                "gpui-component/bubble.rs:226",
             )),
         // `mix_oklab`'s factor is the first colour's share (theme/color.rs:
-        // 44-49), and the arm picks it by the mode (bubble.rs:226).
+        // 44-49), and the arm picks it by the mode (bubble.rs:230).
         BubbleKind::Tinted => {
             let fill = if t.is_dark() {
                 claim(
                     "bg, 24% primary mixed with 76% background",
                     "primary",
                     t.primary.mix_oklab(t.background, 0.24),
-                    "gpui-component/bubble.rs:224-227",
+                    "gpui-component/bubble.rs:228-231",
                 )
             } else {
                 claim(
                     "bg, 12% primary mixed with 88% background",
                     "primary",
                     t.primary.mix_oklab(t.background, 0.12),
-                    "gpui-component/bubble.rs:224-227",
+                    "gpui-component/bubble.rs:228-231",
                 )
             };
             bubble_surface(info, t)
@@ -583,7 +614,7 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                     "text",
                     "foreground",
                     t.foreground,
-                    "gpui-component/bubble.rs:228",
+                    "gpui-component/bubble.rs:232",
                 ))
                 .not_themeable("tint", "a mix of primary into background by a literal share, 12% in light mode and 24% in dark (bubble.rs, BubbleContent)")
         }
@@ -592,13 +623,13 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                 "border",
                 "border",
                 t.border,
-                "gpui-component/bubble.rs:230",
+                "gpui-component/bubble.rs:234",
             ))
             .color(claim(
                 "bg",
                 "background",
                 t.background,
-                "gpui-component/bubble.rs:231",
+                "gpui-component/bubble.rs:235",
             ))
             .color(claim(
                 "text",
@@ -611,41 +642,41 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                 "bg",
                 "transparent",
                 t.transparent,
-                "gpui-component/bubble.rs:236",
+                "gpui-component/bubble.rs:240",
             ))
             .color(claim(
                 "text",
                 "foreground",
                 t.foreground,
-                "gpui-component/bubble.rs:237",
+                "gpui-component/bubble.rs:241",
             ))
             .not_themeable("surface", "none: the Ghost arm drops the border, the corner radius and the padding -- border_0, the radius tokens' none, p_0 (bubble.rs, BubbleContent)"),
-        // The semantic tokens name danger destructive (theme/mod.rs:428); the
+        // The semantic tokens name danger destructive (theme/mod.rs:514); the
         // Destructive arm reads it at a share picked by the mode
-        // (bubble.rs:240-245).
+        // (bubble.rs:244-249).
         BubbleKind::Destructive => {
             let fill = if t.is_dark() {
                 claim(
-                    "bg, destructive at 20% (bubble.rs:240)",
+                    "bg, destructive at 20% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.2),
-                    "gpui-component/theme/mod.rs:428",
+                    "gpui-component/theme/mod.rs:514",
                 )
             } else {
                 claim(
-                    "bg, destructive at 10% (bubble.rs:240)",
+                    "bg, destructive at 10% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.1),
-                    "gpui-component/theme/mod.rs:428",
+                    "gpui-component/theme/mod.rs:514",
                 )
             };
             bubble_surface(info, t)
                 .color(fill)
                 .color(claim(
-                    "text, destructive (bubble.rs:245)",
+                    "text, destructive (bubble.rs:249)",
                     "danger",
                     t.danger,
-                    "gpui-component/theme/mod.rs:428",
+                    "gpui-component/theme/mod.rs:514",
                 ))
         }
     };
@@ -662,13 +693,13 @@ pub fn message(t: &Theme, outgoing: bool, sender: &str, text: &str) -> WidgetInf
             "bubble bg",
             "primary",
             t.primary,
-            "gpui-component/bubble.rs:211",
+            "gpui-component/bubble.rs:215",
         ))
         .color(claim(
             "bubble text",
             "primary_foreground",
             t.primary_foreground,
-            "gpui-component/bubble.rs:212",
+            "gpui-component/bubble.rs:216",
         ))
         .instance("bubble", "Filled, at the end of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)")
     } else {
@@ -676,13 +707,13 @@ pub fn message(t: &Theme, outgoing: bool, sender: &str, text: &str) -> WidgetInf
             "bubble bg",
             "muted",
             t.muted,
-            "gpui-component/bubble.rs:221",
+            "gpui-component/bubble.rs:225",
         ))
         .color(claim(
             "bubble text",
             "foreground",
             t.foreground,
-            "gpui-component/bubble.rs:222",
+            "gpui-component/bubble.rs:226",
         ))
         .instance("bubble", "Muted, at the start of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)")
     };
@@ -707,7 +738,7 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
             "scrollbar",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:312",
+            "gpui-component/theme/mod.rs:401",
         ))
         .color(claim(
             "jump button",
@@ -751,90 +782,119 @@ pub fn attachment(
             "bg",
             "background",
             t.background,
-            "gpui-component/attachment.rs:214",
+            "gpui-component/attachment.rs:431",
         ))
         .color(claim(
             "title",
             "foreground",
             t.foreground,
-            "gpui-component/attachment.rs:215",
+            "gpui-component/attachment.rs:432",
         ));
-    // The semantic tokens name danger destructive (theme/mod.rs:428); a
-    // failed card reads it at three strengths.
+    // The semantic tokens name danger destructive (theme/mod.rs:514); a
+    // failed card reads it at full strength and at 10%.
     let info = if status == AttachmentStatus::Failed {
         info.color(claim(
-            "border, destructive at 30% (attachment.rs:209)",
-            "danger",
-            t.danger.opacity(0.3),
-            "gpui-component/theme/mod.rs:428",
-        ))
-        .color(claim(
-            "media bg, destructive at 10% (attachment.rs:373)",
-            "danger",
-            t.danger.opacity(0.1),
-            "gpui-component/theme/mod.rs:428",
-        ))
-        .colors(icon.shown().then(|| claim(
-            "media icon, destructive (attachment.rs:378)",
+            "border, destructive (attachment.rs:425-426)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:428",
-        )))
-        .color(claim(
-            "description, destructive at 80% (attachment.rs:594)",
-            "danger",
-            t.danger.opacity(0.8),
-            "gpui-component/theme/mod.rs:428",
+            "gpui-component/theme/mod.rs:514",
         ))
-        .not_themeable("failed tint", "the semantic layer renames danger to destructive, and a failed card tints its border with it at 30% (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)")
+        .color(claim(
+            "media bg, destructive at 10% (attachment.rs:840-841)",
+            "danger",
+            t.danger.opacity(0.1),
+            "gpui-component/theme/mod.rs:514",
+        ))
+        .color(claim(
+            "status glyph, upstream's Ban, destructive (attachment.rs:800, 845-846)",
+            "danger",
+            t.danger,
+            "gpui-component/theme/mod.rs:514",
+        ))
+        .color(claim(
+            "description, destructive (attachment.rs:1141-1142)",
+            "danger",
+            t.danger,
+            "gpui-component/theme/mod.rs:514",
+        ))
+        .not_themeable("failed tint", "the semantic layer renames danger to destructive, and a failed card draws its border, status glyph and description in it (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)")
     } else {
         info.color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/attachment.rs:211",
+            "gpui-component/attachment.rs:428",
         ))
         .color(claim(
             "media bg",
             "muted",
             t.muted,
-            "gpui-component/attachment.rs:375",
+            "gpui-component/attachment.rs:843",
         ))
-        .colors(icon.shown().then(|| {
-            claim(
-                "media icon",
-                "foreground",
-                t.foreground,
-                "gpui-component/attachment.rs:380",
-            )
-        }))
+        .colors(
+            if matches!(
+                status,
+                AttachmentStatus::Uploading | AttachmentStatus::Processing
+            ) {
+                Some(claim(
+                    "status spinner, in place of the media icon",
+                    "primary",
+                    t.primary,
+                    "gpui-component/attachment.rs:796",
+                ))
+            } else {
+                icon.shown().then(|| {
+                    claim(
+                        "media icon",
+                        "foreground",
+                        t.foreground,
+                        "gpui-component/attachment.rs:848",
+                    )
+                })
+            },
+        )
         .color(claim(
             "description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/attachment.rs:595",
+            "gpui-component/attachment.rs:1143",
         ))
     };
     let info = match status {
         AttachmentStatus::Pending => info.not_themeable("pending", "a dashed border (attachment.rs, Attachment::render: border_dashed)"),
-        AttachmentStatus::Uploading | AttachmentStatus::Processing => info.not_themeable("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs, AttachmentTitle::render)"),
-        AttachmentStatus::Complete | AttachmentStatus::Failed => info,
+        AttachmentStatus::Uploading | AttachmentStatus::Processing => info
+            .not_themeable("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs, AttachmentTitle::render)")
+            .not_themeable("own icons", super::own_icons("the status Spinner's Loader (attachment.rs, AttachmentMedia::render; spinner.rs, Spinner)")),
+        AttachmentStatus::Failed => info.not_themeable("own icons", super::own_icons("the failed status glyph, Ban (attachment.rs, AttachmentMedia::render)")),
+        AttachmentStatus::Complete => info,
     };
     let info = if clickable {
         info.color(claim(
             "hover bg, muted at 50%",
             "muted",
             t.muted.opacity(0.5),
-            "gpui-component/attachment.rs:220",
+            "gpui-component/attachment.rs:437",
         ))
         .instance("click", "steps it to the next status: Pending, Uploading, Processing, Complete, Failed, then Pending again")
     } else {
         info
     };
+    let media = if matches!(
+        status,
+        AttachmentStatus::Pending | AttachmentStatus::Complete
+    ) {
+        icon.note("the media frame is empty")
+    } else {
+        "replaced by the status glyph while the card has no image (attachment.rs, AttachmentMedia::render)".to_string()
+    };
     info.config(
         "border-radius",
-        format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
+        format!("radius_lg: {}px", t.radius_lg.as_f32()),
+    )
+    .not_themeable(
+        "size",
+        "a fixed chip: 3.5 rem tall and 14.5 rem wide at Medium (attachment.rs, CardMetrics)",
     )
     .instance("file", file.to_string())
-    .instance("media icon", icon.note("the media frame is empty"))
+    .instance("media icon", media)
 }
