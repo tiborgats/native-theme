@@ -1682,8 +1682,10 @@ fn the_third_row_reads_icon_theme(cx: &mut TestAppContext) {
         theme, set,
         "the two texts are as wide, so this proves nothing"
     );
+    // Nearer the one than the other: the label box rounds the text's width
+    // to the pixel grid, by how much depends on the font installed.
     assert!(
-        (label.size.width - theme).abs() <= device_pixel(&mut cx),
+        (label.size.width - theme).abs() < (label.size.width - set).abs(),
         "the third row's label is {:?} wide, not \"Icon theme\" at {theme:?} (\"Icon set\" is \
          {set:?})",
         label.size.width
@@ -4676,9 +4678,13 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
                             .and_then(|f| f.color())
                             .and_then(|b| b.as_solid())
                     };
+                    // A disabled field is faded by `input.disabled_opacity`
+                    // too, which gpui folds into the painted fill's alpha.
+                    let disabled = geometry::input_fill(n, true);
+                    let fade = disabled.opacity.unwrap_or(1.);
                     (
                         solid(geometry::input_fill(n, false)),
-                        solid(geometry::input_fill(n, true)),
+                        solid(disabled).map(|c| gpui::Hsla { a: c.a * fade, ..c }),
                     )
                 }
                 None => (None, None),
@@ -4735,7 +4741,15 @@ fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestApp
                     .disabled_background
                     .unwrap_or(b.background_color)
                     .to_f32_array();
-                gpui::Hsla::from(gpui::Rgba { r, g, b: bl, a })
+                // Faded by `button.disabled_opacity` too, which gpui folds
+                // into the painted fill's alpha.
+                let fade = geometry::button_disabled(n).opacity.unwrap_or(1.);
+                gpui::Hsla::from(gpui::Rgba {
+                    r,
+                    g,
+                    b: bl,
+                    a: a * fade,
+                })
             })
         });
         assert!(stated.is_some(), "no native theme is installed");
@@ -8643,6 +8657,16 @@ fn the_element_list_parses() {
 fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
+    // A bundled icon set, so every icon element is drawn on any machine:
+    // kde-breeze's own, Breeze, need not be installed (a missing icon is
+    // drawn as nothing, never as another set's).
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set(&IconSetChoice::Material.to_string(), window, cx);
+        })
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
     let (drawn, twice) = read(&mut cx, &showcase, |this, cx| {
         let ui = this.info_ui.read(cx);
         (ui.layout_drawn(), ui.listed_twice.clone())
