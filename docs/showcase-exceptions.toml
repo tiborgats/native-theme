@@ -5,7 +5,8 @@
 # naming a widget the toolkit no longer offers, or one the showcase does show
 # after all. An exception is therefore a claim that has to stay true.
 #
-# A reason belongs to one of seven kinds (spec §6a.4): a test harness, an
+# A reason belongs to one of seven kinds
+# (`docs/archive/todo_v0.5.9_theme-contracts-spec.md` §6a.4): a test harness, an
 # internal sub-part of a compound widget, a layout wrapper with no visual
 # surface, a widget needing a GPU pipeline the application supplies, a
 # widget native-theme models no counterpart for, a widget that would mix
@@ -51,7 +52,6 @@ SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
 WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` root plugin and never constructed by the showcase, which is what the check counts as shown: `WindowState::decorate` wraps the window in `window_border()` (root.rs:450-458; read in gpui-component 0.7.0). A second, nested one would call `set_client_inset` again (window_border.rs:155), so the showcase builds none; the inspector's Theme tab states the facts of the one gpui-component draws"
-
 
 # A widget whose state the toolkit only builds fallibly, which the showcase
 # cannot hold without a panic path (v0.6.0-rc1 gpui-kit 0.7 rationale K12).

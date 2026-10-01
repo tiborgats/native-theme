@@ -1162,7 +1162,7 @@ mod tests {
 
     /// §5.3, §6.1: egui's strong text is `widgets.active.text_color()` (`egui/src/style.rs:1147-1149`),
     /// so the base style writes the panel's text colour there; kde-breeze light's pressed-button
-    /// white `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:95`) stays in the Button cell.
+    /// white `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:97`) stays in the Button cell.
     #[test]
     fn strong_text_is_the_panel_text_and_the_button_cell_keeps_its_pressed_pair() {
         let (c, base, t, _) = cell("kde-breeze", ColorMode::Light, Role::Button);

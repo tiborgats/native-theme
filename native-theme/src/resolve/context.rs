@@ -1,7 +1,7 @@
 //! Resolution-time inputs (font DPI, button order, icon theme) captured
 //! once per theme-build and passed by reference through the pipeline.
 //!
-//! Per docs/todo_v0.5.7_gaps.md §G7 / doc 2 §J.2 refinement on B5:
+//! Per `docs/archive/v0.5.7_gaps.md` §G7:
 //! intentionally NO `impl Default` — runtime-detected types must signal
 //! intent at the call site. Use [`ResolutionContext::from_system`] for
 //! production, or [`ResolutionContext::for_tests`] for deterministic
@@ -19,8 +19,8 @@ use crate::model::DialogButtonOrder;
 ///
 /// Accessibility preferences live on
 /// [`SystemTheme`](crate::SystemTheme), NOT here — accessibility is a
-/// render-time concern, not a resolve-time concern. See doc 2 §J.2
-/// refinement on B4 for the rationale.
+/// render-time concern, not a resolve-time concern
+/// (`docs/archive/v0.5.7_gaps.md` §G7).
 ///
 /// # Examples
 ///
@@ -49,8 +49,8 @@ pub struct ResolutionContext {
     /// xrandr → 96.0, GNOME's `Xft.dpi` → xrandr → 96.0, macOS's 72.0 and
     /// Windows' 96.0.
     pub font_dpi: f32,
-    /// Dialog button ordering (`PrimaryLeft` on KDE, `PrimaryRight`
-    /// elsewhere).
+    /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,
+    /// `PrimaryRight` elsewhere).
     pub button_order: DialogButtonOrder,
     /// Runtime-detected icon theme name, used when the preset and
     /// per-variant `icon_theme` fields are both `None`. Three-tier

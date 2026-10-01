@@ -234,7 +234,7 @@ impl_merge!(FontSpec {
 /// is required (non-optional) because resolution has already filled in all
 /// defaults.
 ///
-/// Phase 93-01 (G1): no `Default` derive. `ResolvedFontSpec` is always
+/// No `Default` derive: `ResolvedFontSpec` is always
 /// constructed from a fully populated unresolved source; any "zero"
 /// instance is a placeholder sentinel built manually (see
 /// `resolve::validate_helpers::resolved_font_spec_sentinel`).

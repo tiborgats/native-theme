@@ -234,7 +234,7 @@ fn load_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
 /// The final SVG bytes (§9.2): a bundled set's coloured with the key's tint through
 /// `colorize_monochrome_svg`; a freedesktop icon's `currentColor` replaced by `c`'s `#rrggbb`
 /// where the bytes still hold `currentColor` and the document sets no `color` of its own
-/// (`str::replace`, iced's step, `connectors/native-theme-iced/src/icons.rs:292-293`); every
+/// (`str::replace`, iced's step, `connectors/native-theme-iced/src/icons.rs:313-314`); every
 /// other icon's bytes as they are.
 fn final_svg_bytes(key: &IconKey, bytes: &[u8], freedesktop: Option<Rgba>) -> Vec<u8> {
     match key.set {
@@ -628,7 +628,7 @@ mod tests {
         assert!(!super::uri(&rgba(2)).contains('.'));
     }
 
-    /// T9, per-scheme icon theme (`native-theme/src/presets/kde-breeze.toml:9`, `:317`).
+    /// T9, per-scheme icon theme (`native-theme/src/presets/kde-breeze.toml:9`, `:384`).
     #[test]
     fn the_icon_theme_is_per_scheme() {
         for is_dark in [false, true] {

@@ -69,13 +69,13 @@ Files: `kde-breeze-live.toml`, `macos-sonoma-live.toml`,
 
 ## Reader-provided fields
 
-Live presets should **not** contain these fields. They are filled at
-runtime by platform readers or `resolve_platform_defaults`:
+Live presets leave these fields to the platform readers or
+`resolve_platform_defaults`, except where noted:
 
 - **`button_order`** -- filled by `resolve_platform_defaults` based on
   detected desktop environment
-- **`icon_theme`** -- filled by platform reader or
-  `resolve_platform_defaults` from system icon settings
+- **`icon_theme`** -- stated at the Theme level by the adwaita, macOS and
+  Windows live presets; KDE's reader supplies it per variant
 - **`font_dpi`** -- filled by the platform reader: KDE's from `forceFontDPI`,
   `Xft.dpi` or the display, GNOME's from `Xft.dpi` or the display, macOS's a
   fixed 72, and Windows' a fixed 96, since it reads its fonts at 96 DPI so
@@ -85,4 +85,5 @@ runtime by platform readers or `resolve_platform_defaults`:
   accessibility settings (the macOS reader reports no text-scaling factor:
   its text size setting reaches only a few Apple apps,
   `docs/platform-facts.md` §2.1.7)
-- **`icon_sizes`** -- filled by platform reader from filesystem lookup
+- **`icon_sizes`** -- stated by every live preset; the KDE reader replaces
+  them from the icon theme's `index.theme`

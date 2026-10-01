@@ -136,29 +136,29 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 }
 
 /// Compile an atlas from a bundled preset, including its [`LayoutTheme`](crate::LayoutTheme)
-/// (`native_theme::theme::Theme::layout`, `native-theme/src/model/mod.rs:269`) and, with
+/// (`native_theme::theme::Theme::layout`, `native-theme/src/model/mod.rs:279`) and, with
 /// feature `system-fonts`, the preset's typefaces through
 /// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
-/// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:257`), as
-/// in both siblings (`connectors/native-theme-iced/src/lib.rs:260`,
-/// `connectors/native-theme-gpui/src/lib.rs:263`).
+/// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:267`), as
+/// in both siblings (`connectors/native-theme-iced/src/lib.rs:302`,
+/// `connectors/native-theme-gpui/src/lib.rs:278`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
 ///
 /// The atlas carries **both** of the preset's variants — `ColorMode::Light` into the light
 /// `Style`, `ColorMode::Dark` into the dark one, each through `Theme::resolve`
-/// (`native-theme/src/model/mod.rs:450`), whose `pick_variant` cross-fallback serves a
-/// one-variant preset (`:362-368`) and whose resolution is `ThemeMode::resolve_system`'s
-/// (`:472`; `native-theme/src/resolve/mod.rs:267-268`) — for
+/// (`native-theme/src/model/mod.rs:460`), whose `pick_variant` cross-fallback serves a
+/// one-variant preset (`:372-377`) and whose resolution is `ThemeMode::resolve_system`'s
+/// (`:482`; `native-theme/src/resolve/mod.rs:266-267`) — for
 /// the reason [`SystemThemeExt::to_egui_atlas`] gives: under `ThemePreference::System` egui
 /// selects between its two styles every pass, so a preset compiled into one scheme would
 /// leave the other scheme wrong. This is the one deviation from
 /// `native_theme_gpui::from_preset`, which compiles the `is_dark` variant only.
 ///
 /// The icon set is those two `Resolved`s' `icon_set`, a theme-level value they share
-/// (`native-theme/src/model/mod.rs:468-470`); the icon theme
+/// (`native-theme/src/model/mod.rs:478-480`); the icon theme
 /// is each variant's own `Resolved::icon_theme`, `Theme::resolve(ColorMode::Light)`'s for
 /// the light scheme and `ColorMode::Dark`'s for the dark one: [`ThemeAtlas::icon_set`](crate::ThemeAtlas::icon_set),
 /// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme).
@@ -176,7 +176,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `&AccessibilityPreferences::from_system()` to honour the OS preferences under a preset —
 /// accessibility is orthogonal to the theme choice, which is why
 /// `native_theme_gpui::from_preset` takes the same argument
-/// (`connectors/native-theme-gpui/src/lib.rs:257-261`).
+/// (`connectors/native-theme-gpui/src/lib.rs:272-276`).
 ///
 /// # Errors
 /// Propagates `Theme::preset` and `Theme::resolve` failures.
@@ -188,13 +188,13 @@ pub fn from_preset(
 ) -> Result<(ThemeAtlas, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     // Both variants, each through `Theme::resolve`, whose `pick_variant` cross-fallback serves
-    // a one-variant preset (`native-theme/src/model/mod.rs:362-368`).
+    // a one-variant preset (`native-theme/src/model/mod.rs:372-377`).
     let light = spec.resolve(ColorMode::Light)?;
     let dark = spec.resolve(ColorMode::Dark)?;
     let mut builder = ThemeAtlas::builder(&spec.name, &light.variant, &dark.variant)
         .layout(&spec.layout)
         .accessibility(prefs)
-        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:468-470`)
+        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:478-480`)
         .icon_set(light.icon_set);
     if let Some(icon_theme) = light.icon_theme.as_deref() {
         builder = builder.icon_theme(egui::Theme::Light, icon_theme);
@@ -222,12 +222,12 @@ pub fn from_preset(
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
 ///
-/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:488`), the platform reader's
+/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:497`), the platform reader's
 /// values merged field-wise over the preset's, fed to [`Builder::layout`](crate::Builder::layout); so this path
 /// reaches the same spacing fields [`from_preset`] does. The accessibility preferences travel
 /// inside the atlas ([`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility)), which is why the tuple has no fourth
 /// element as `native_theme_iced::from_system`'s does
-/// (`connectors/native-theme-iced/src/lib.rs:283-288`).
+/// (`connectors/native-theme-iced/src/lib.rs:325-330`).
 ///
 /// # Errors
 /// Propagates `SystemTheme::from_system`.
@@ -243,11 +243,11 @@ pub fn from_system() -> Result<(ThemeAtlas, ResolvedTheme, bool)> {
 /// Compile a detected [`SystemTheme`](native_theme::SystemTheme). Sealed, like the extension trait of §4.5.
 pub trait SystemThemeExt: sealed::Sealed {
     /// Compile an atlas carrying both OS variants, the OS colour mode, the OS accessibility
-    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:488`).
+    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:497`).
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
-    /// (`connectors/native-theme-iced/src/lib.rs:305`) and `to_gpui_theme`
-    /// (`connectors/native-theme-gpui/src/lib.rs:328`), which return one toolkit theme: egui
+    /// (`connectors/native-theme-iced/src/lib.rs:347`) and `to_gpui_theme`
+    /// (`connectors/native-theme-gpui/src/lib.rs:343`), which return one toolkit theme: egui
     /// stores one `Style` per `egui::Theme` and, under `ThemePreference::System`, picks one
     /// every pass from `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so
     /// returning one variant would guarantee a half-themed application. That input is the

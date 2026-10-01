@@ -52,7 +52,7 @@ pub(crate) fn show(
                 "Slider (disabled)",
                 |ui| ui.add_enabled(false, egui::Slider::new(&mut disabled, range.clone())),
             );
-            // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2): its knob in
+            // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2): its knob in
             // `slider.thumb_color`, where egui's resting knob takes the rail's colour.
             demo::widget(
                 reg,
@@ -120,7 +120,7 @@ pub(crate) fn show(
         demo::scoped(reg, ui, Role::Spinner, normal, "ui.spinner", |ui| {
             ui.spinner()
         });
-        // The companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3): the icon set's
+        // The companion crate's spinner (docs/archive/todo_egui-widgets-spec.md §4.3): the icon set's
         // indicator at `spinner.diameter`, or an arc at `spinner.stroke_width`.
         demo::widget(
             reg,

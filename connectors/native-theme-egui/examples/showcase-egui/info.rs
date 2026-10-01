@@ -740,7 +740,7 @@ fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respons
 }
 
 /// A name over its value, one label, the gpui showcase's inspector `row` and note line
-/// (`showcase-gpui/inspector.rs:321-329`, `:365-367`): the name in the weak text colour
+/// (`showcase-gpui/inspector.rs:343-351`, `:654-656`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
 /// rule R3), the value and each line after it in the text colour, all in the side panel's font
 /// (`sidebar.font`, `Body` in the sidebar scope), wrapping.
@@ -756,11 +756,11 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
     ui.add(egui::Label::new(job).wrap())
 }
 
-/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:342-360`): a
-/// `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame` in
-/// `defaults.border` (`showcase-gpui/support.rs:209-216`), beside `label` in `style` — the leaf
-/// and the colour's hex; the lines `under` it — the verdict and the details — weak, as gpui's
-/// citation line is muted.
+/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:364-371`,
+/// `:644-648`): a `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame`
+/// in `defaults.border` (`showcase-gpui/support.rs:209-216`), beside `label` in `style` — the
+/// leaf and the colour's hex; the lines `under` it — the verdict and the details — weak, as
+/// gpui's citation line is muted.
 pub(crate) fn swatch_row(
     ui: &mut egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
@@ -1087,7 +1087,7 @@ pub(crate) fn theme_tab(
     let row = |ui: &mut egui::Ui, key: &str, value: String| {
         key_value(ui, key, &[value]);
     };
-    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:166-232`).
+    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:187-253`).
     section(ui, "Theme");
     row(ui, "name", atlas.name().to_string());
     row(ui, "os_mode", format!("{:?}", atlas.os_mode()));

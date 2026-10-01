@@ -4,7 +4,8 @@
 //! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material,
 //! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
 //! Solarized, Tokyo Night, One Dark), plus 4 internal live presets
-//! (geometry-only, used by the OS-first pipeline) and functions for
+//! (no colours or font families: geometry, metrics and sizes, used by the
+//! OS-first pipeline) and functions for
 //! loading themes from TOML strings and files.
 
 use std::borrow::Cow;
@@ -124,8 +125,8 @@ pub struct PresetInfo {
     pub key: &'static str,
     /// Human-readable display name (e.g. `"Catppuccin Mocha"`, `"KDE Breeze"`).
     pub display_name: &'static str,
-    /// Target platform tags (e.g. `&["linux-kde"]`). Empty for community themes
-    /// that work on all platforms.
+    /// Target platform tags (e.g. `&["linux-kde"]`). Empty for presets offered
+    /// on every platform (`material` and the community themes).
     pub platforms: &'static [&'static str],
     /// Whether the preset provides only a light variant (no dark variant).
     pub light_only: bool,

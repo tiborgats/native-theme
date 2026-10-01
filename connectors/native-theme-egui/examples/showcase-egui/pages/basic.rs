@@ -1,5 +1,5 @@
 //! Basic: the controls the three showcases all draw, in the same order, with the same labels,
-//! values and states, packed onto one screen in five columns, so the gpui, iced and egui
+//! values and states, packed onto one screen in three to five columns, so the gpui, iced and egui
 //! captures compare control by control. Each control goes through the seam its palette page
 //! gives it; what egui leaves to the call site is applied per call from the theme. Every
 //! element of `docs/showcase-elements.toml` the page draws is placed where it is drawn, its
@@ -176,11 +176,11 @@ fn group(
         0 => buttons(reg, atlas, ui),
         1 => checkboxes(reg, atlas, ui),
         2 => radios(reg, state, ui),
-        // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6).
+        // The companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6).
         3 => drop_down(reg, state, ui),
         4 => text_inputs(reg, state, atlas, ui),
         5 => text_area(reg, state, atlas, ui),
-        // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2).
+        // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2).
         6 => slider(reg, state, ui),
         7 => switches(reg, ui),
         8 => number_input(reg, state, atlas, ui),
@@ -590,7 +590,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
 }
 
 /// The Radio buttons group: the companion crate's radio button
-/// (docs/todo_egui-widgets-spec.md §4.8): egui's, in `RoleVariant::Selected` while selected as
+/// (docs/archive/todo_egui-widgets-spec.md §4.8): egui's, in `RoleVariant::Selected` while selected as
 /// on the Selection page, its dot `checkbox.radio_dot_diameter` across where the theme states
 /// one.
 fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
@@ -626,7 +626,7 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     }
 }
 
-/// The Switches group: the companion crate's switch (docs/todo_egui-widgets-spec.md §4.1),
+/// The Switches group: the companion crate's switch (docs/archive/todo_egui-widgets-spec.md §4.1),
 /// `switch.*`'s track and thumb, which no egui widget draws, the label after it;
 /// `.enabled(false)` is the platform's disabled switch. Each is held in its state, as the check
 /// boxes are.
@@ -818,7 +818,7 @@ fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: 
     }
 }
 
-/// The Slider group: the companion crate's slider (docs/todo_egui-widgets-spec.md §4.2),
+/// The Slider group: the companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2),
 /// `slider.*`'s rail, trailing fill and a knob in `slider.thumb_color`, which egui paints in
 /// the rail's colour.
 fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
@@ -838,7 +838,7 @@ fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
 }
 
 /// The Progress bar group: the companion crate's progress bar
-/// (docs/todo_egui-widgets-spec.md §4.9), egui's, rounded `progress_bar.border.corner_radius`
+/// (docs/archive/todo_egui-widgets-spec.md §4.9), egui's, rounded `progress_bar.border.corner_radius`
 /// and outlined as `progress_bar.border` states, which egui's `ProgressBar` does not draw.
 fn progress_bar(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
@@ -865,7 +865,7 @@ fn progress_bar(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
 }
 
-/// The Drop-down group: the companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6),
+/// The Drop-down group: the companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6),
 /// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
 /// least `combo_box.min_height`, where egui's square arrow box would make it taller.
 fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
@@ -954,7 +954,7 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
 }
 
 /// The Segmented control group: the companion crate's segmented control
-/// (docs/todo_egui-widgets-spec.md §4.4): one control of joined buttons in one
+/// (docs/archive/todo_egui-widgets-spec.md §4.4): one control of joined buttons in one
 /// `Role::SegmentedControl` scope, whose cell carries the segment height, padding and colours;
 /// one outline in `border`, `separator_width` dividers between the segments; a radio group. Its
 /// segments wrap onto a further line where the column is too narrow for them.
@@ -1019,7 +1019,7 @@ fn tabs(
     }
 }
 
-/// The Spinner group: the companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3),
+/// The Spinner group: the companion crate's spinner (docs/archive/todo_egui-widgets-spec.md §4.3),
 /// the icon set's loading indicator at `spinner.diameter`, or an arc at
 /// `spinner.stroke_width`, which egui's `Spinner` hardcodes.
 fn spinner(reg: &mut Registry, ui: &mut egui::Ui) {
@@ -1068,7 +1068,7 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         "basic.typography.caption",
     );
     typography_line(reg, ui, None, "Body", "basic.typography.body");
-    // The companion crate's link (docs/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
+    // The companion crate's link (docs/archive/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
     // link scope, its text in `link.*`'s rest, hover, pressed and disabled colours and
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
@@ -1268,7 +1268,7 @@ fn icons_group(
 /// The Expander group.
 fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
-    // The companion crate's expander (docs/todo_egui-widgets-spec.md §4.10): the arrow in
+    // The companion crate's expander (docs/archive/todo_egui-widgets-spec.md §4.10): the arrow in
     // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
     // `arrow_gap` from the title, the body `content_indent` in, framed as `frame_enabled`
     // states; the header `expander.header_height` tall (the expander scope's

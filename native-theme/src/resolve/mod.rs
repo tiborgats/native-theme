@@ -32,7 +32,7 @@ inventory::collect!(WidgetFieldInfo);
 ///
 /// Populated by `#[derive(ThemeFields)]` on plain structs like `FontSpec`,
 /// `IconSizes`, `ThemeDefaults`, etc. Consumed by `lint_toml` to detect
-/// unknown keys in sub-tables. See `docs/todo_v0.5.7_gaps.md` §G5 for
+/// unknown keys in sub-tables. See `docs/archive/v0.5.7_gaps.md` §G5 for
 /// rationale — this sister registry to `WidgetFieldInfo` eliminates the
 /// hand-authored `FIELD_NAMES` constants that previously duplicated
 /// struct field lists.
@@ -110,15 +110,15 @@ use crate::model::ThemeMode;
 use crate::model::resolved::ResolvedTheme;
 
 impl ThemeMode {
-    /// Apply all ~91 inheritance rules in 5-phase order (pure data transform).
+    /// Apply all ~91 inheritance rules in 4-phase order (pure data transform).
     ///
     /// After calling resolve(), most Option fields that were None will be filled
     /// from defaults or related widget fields. Calling resolve() twice produces
     /// the same result (idempotent).
     ///
     /// This method is a pure data transform: it does not perform any OS detection
-    /// or I/O. For full resolution including platform defaults (icon theme from
-    /// the system), use [`resolve_all()`](Self::resolve_all).
+    /// or I/O. For full resolution including platform defaults (dialog button
+    /// order from the desktop environment), use [`resolve_all()`](Self::resolve_all).
     ///
     /// # Phases
     ///
@@ -243,9 +243,8 @@ impl ThemeMode {
     ///
     /// Placed on `ThemeMode` (not `Theme`) because `Theme` has both
     /// light and dark variants — variant selection must be explicit via
-    /// [`Theme::into_variant`](crate::theme::Theme::into_variant). See
-    /// plan 94-02 objective for the deviation rationale from gap doc §G7
-    /// step 4.
+    /// [`Theme::into_variant`](crate::theme::Theme::into_variant), a
+    /// deliberate deviation from `docs/archive/v0.5.7_gaps.md` §G7 step 4.
     ///
     /// # Errors
     ///

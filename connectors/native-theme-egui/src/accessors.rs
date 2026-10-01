@@ -14,8 +14,8 @@ use crate::{AccessibilityPreferences, Role, TextRole};
 
 /// A text size from the theme times the user's text-scaling factor; a factor that is not
 /// finite and positive is ignored. Same signature and semantics as
-/// `native_theme_iced::scaled_text_size` (`connectors/native-theme-iced/src/lib.rs:480`) and
-/// `native_theme_gpui::scaled_text_size` (`connectors/native-theme-gpui/src/lib.rs:444`).
+/// `native_theme_iced::scaled_text_size` (`connectors/native-theme-iced/src/lib.rs:1050`) and
+/// `native_theme_gpui::scaled_text_size` (`connectors/native-theme-gpui/src/lib.rs:463`).
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a
@@ -27,7 +27,7 @@ pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
 
 /// The text-scaling multiplier: the factor when it is finite and positive, else `1.0`, the
 /// multiplicative identity (§6.17) — the rule both siblings apply, iced's own
-/// `text_scale_factor` being `connectors/native-theme-iced/src/lib.rs:486-489`.
+/// `text_scale_factor` being `connectors/native-theme-iced/src/lib.rs:1056-1059`.
 fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
     let s = prefs.text_scaling_factor;
     if s.is_finite() && s > 0.0 { s } else { 1.0 }
@@ -481,7 +481,7 @@ pub fn expander_icon(t: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
     }
 }
 
-/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:535`) as an `egui::FontId`:
+/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:620`) as an `egui::FontId`:
 /// `FontFamily::Proportional` (the never-`Name` invariant, §4.9) at [`scaled_text_size`] of
 /// its size, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (§8.5). Feed to `RichText::font(..)`
@@ -533,7 +533,7 @@ pub fn font_family(t: &ResolvedTheme) -> &str {
 /// [`scaled_text_size`] of `defaults.font.size` — the `TextStyle::Body` size the atlas
 /// installs, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (§8.5). Same signature as `native_theme_iced::font_size`
-/// (`connectors/native-theme-iced/src/lib.rs:438-443`).
+/// (`connectors/native-theme-iced/src/lib.rs:981-986`).
 #[must_use]
 pub fn font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(
@@ -560,7 +560,7 @@ pub fn mono_font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f3
 }
 
 // --- accessibility: `&SystemTheme`, never `&ResolvedTheme` ---------------------
-// `AccessibilityPreferences` lives on `SystemTheme` (`native-theme/src/lib.rs:490`) and is
+// `AccessibilityPreferences` lives on `SystemTheme` (`native-theme/src/lib.rs:499`) and is
 // deliberately absent from `ResolutionContext` (`native-theme/src/resolve/context.rs:20-23`).
 // The bare `&SystemTheme` in these four signatures is resolved by a crate-private
 // `use native_theme::SystemTheme;`, NOT by a root re-export — §4.1 removes that one on purpose.

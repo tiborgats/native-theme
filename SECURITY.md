@@ -8,9 +8,9 @@ previous minor is no longer supported.
 
 | Version | Supported |
 |---|---|
-| Latest `0.5.x` | ✅ |
-| Older `0.5.*` | ❌ |
-| Any `0.4.x` or earlier | ❌ |
+| Latest `0.6.x` | ✅ |
+| Older `0.6.*` | ❌ |
+| Any `0.5.x` or earlier | ❌ |
 
 ## Reporting a vulnerability
 
@@ -46,6 +46,7 @@ This policy covers the following crates published from this repository:
 - [`native-theme-gpui`](https://crates.io/crates/native-theme-gpui)
 - [`native-theme-iced`](https://crates.io/crates/native-theme-iced)
 - [`native-theme-egui`](https://crates.io/crates/native-theme-egui)
+- [`native-theme-egui-widgets`](https://crates.io/crates/native-theme-egui-widgets)
 
 Vulnerabilities in downstream dependencies (gpui, iced, serde, ashpd, etc.)
 should be reported to those projects directly.

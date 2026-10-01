@@ -327,7 +327,7 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.chart_bearish = c.danger;
 }
 
-/// The 28 `button_*` fields gpui-component reads for `Button`
+/// The 28 `button*` fields gpui-component reads for `Button`
 /// (`src/button/button.rs:960-1025`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:630-635, 924-929`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing

@@ -306,7 +306,7 @@ pub(crate) struct App {
     pub(crate) settings: Settings,
     /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
     /// the OS: the name the Theme row, the command palette and the status bar give `default`,
-    /// "default (kde-breeze)", as the gpui showcase's (`showcase-gpui/support.rs:1031-1036`).
+    /// "default (kde-breeze)", as the gpui showcase's (`showcase-gpui/support.rs:1112-1117`).
     pub(crate) default_preset: String,
     /// The OS's semibold face of the theme's family, registered after each install.
     pub(crate) semibold: demo::Semibold,
@@ -555,7 +555,7 @@ impl App {
 
     /// What the Theme row and the command palette offer, as `(choice, display name)`: `default`
     /// named by the preset it builds on, then this platform's presets by their display names,
-    /// as the gpui showcase's `preset_items` (`showcase-gpui/support.rs:1038-1056`).
+    /// as the gpui showcase's `preset_items` (`showcase-gpui/support.rs:1119-1140`).
     pub(crate) fn theme_rows(&self) -> Vec<(ThemeChoice, String)> {
         std::iter::once((
             ThemeChoice::Default,

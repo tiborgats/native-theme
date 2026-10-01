@@ -1,4 +1,4 @@
-//! Widget tests (docs/todo_gpui-widgets-spec.md §4): every leaf a widget
+//! Widget tests (docs/archive/todo_gpui-widgets-spec.md §4): every leaf a widget
 //! paints is the one the spec names, the drawn boxes measure the stated
 //! sizes, and the controls behave as gpui-component's.
 

@@ -12,7 +12,7 @@ use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 /// §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
 /// `focus_ring_offset`. A non-finite width or offset is egui's own value — no ring — with a
 /// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as gpui's
-/// `focus_ring = width > 0.0` (`connectors/native-theme-gpui/src/lib.rs:198`). The offset is
+/// `focus_ring = width > 0.0` (`connectors/native-theme-gpui/src/lib.rs:213`). The offset is
 /// kept signed and unclamped: negative means inside the edge (`docs/platform-facts.md:1106`).
 pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> Option<FocusRing> {
     let (color, width, offset) = (

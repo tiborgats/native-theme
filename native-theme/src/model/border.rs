@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// **No padding fields:** Padding lives exclusively on [`WidgetBorderSpec`]
 /// because padding is a widget-level layout concern, not a global default.
-/// This split (Phase 79, BORDER-01) eliminated the former
+/// This split eliminated the former
 /// "derives-from-presence" rule where the resolver would fill padding with
 /// `0.0` based on whether `line_width` or `corner_radius` was set -- a
 /// confusing proxy heuristic that is no longer needed.
@@ -214,7 +214,7 @@ pub struct ResolvedPadding {
 /// The resolved `defaults.border`: the global border geometry and colour
 /// that widget borders inherit.
 ///
-/// Phase 93-01 (G1): no `Default` derive. It is constructed from a fully
+/// No `Default` derive: It is constructed from a fully
 /// populated unresolved source.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ResolvedDefaultsBorder {
@@ -236,7 +236,7 @@ pub struct ResolvedDefaultsBorder {
 
 /// A widget's resolved border: its colour, geometry and padding.
 ///
-/// Phase 93-01 (G1): no `Default` derive. Any "zero" instance is a
+/// No `Default` derive: Any "zero" instance is a
 /// placeholder sentinel built manually (see
 /// `resolve::validate_helpers::resolved_widget_border_sentinel`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

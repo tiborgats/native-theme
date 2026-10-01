@@ -122,7 +122,8 @@ dbus-send (D-Bus), Python 3, Pillow
 
 ## generate_gifs_theme_switching.sh
 
-Captures 4 theme presets from the iced, gpui and egui showcases, then assembles
+Captures four preset/variant pairs (kde-breeze dark, material light,
+catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
 Each frame passes `capture_window.sh`'s check.
 
@@ -146,7 +147,9 @@ Run after editing any `.dot` file. The generated `.svg` is checked into
 git so contributors don't need Graphviz installed to view diagrams.
 
 Requires: Graphviz (`pacman -S graphviz`, `apt install graphviz` or
-`brew install graphviz`)
+`brew install graphviz`). To embed the "Your app" label font: fontconfig
+(`fc-match`), python-fonttools and the Fuzzy Bubbles font; without them it
+still renders, with a fallback face.
 
 ```sh
 ./scripts/generate_diagrams.sh
@@ -168,8 +171,8 @@ releases, runs `check_widget_coverage.py` (Python 3.11+), and rewrites
 `docs/COMPATIBILITY.toml` and the Verified line in the connector READMEs. A
 connector that fails on the newest set fails the script.
 
-Requires: gh CLI (authenticated), spectacle, Python 3.11+, Pillow,
-ImageMagick 7, network access
+Requires: gh CLI (authenticated), spectacle, kscreen-doctor, qdbus6,
+dbus-monitor, dbus-send, Python 3.11+, Pillow, ImageMagick 7, network access
 
 ```sh
 ./scripts/generate_assets_release.sh
@@ -180,7 +183,8 @@ ImageMagick 7, network access
 Provenance stamp for the visual assets. `write` records the workspace
 version, the commit, and a SHA-256 over the git object ids of every path
 that feeds the showcases (crate manifests and sources, presets, icon
-bundles, the egui connector's `mapping.toml`, `Cargo.lock`, the capture
+bundles, the egui connector's `mapping.toml`, the egui widgets crate,
+`Cargo.lock`, the capture
 scripts, the screenshots workflow) into
 `docs/assets/PROVENANCE.toml`. `check` recomputes the hash at HEAD and exits
 non-zero with a message when the stamp is missing or the sources differ;

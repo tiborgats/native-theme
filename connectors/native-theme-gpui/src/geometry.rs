@@ -1,6 +1,7 @@
 //! Per-widget geometry for gpui-component 0.7.0 widgets (spec §9).
 //!
-//! Every builder is a pure function of a [`Native`] view and returns a
+//! Every builder is a pure function of a [`Native`] view (the four layout
+//! accessors, of a `LayoutTheme`) and returns a
 //! [`StyleRefinement`] the application applies with
 //! `gpui_component::StyledExt::refine_style`:
 //!
@@ -210,8 +211,8 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// applies at `:770`, before the caller's refinement at `:781`, so the
 /// rule's `h` would still replace it. The padding is a single-line field's too:
 /// upstream pads only a single-line root (`input/input.rs:762-764`), so a
-/// caller that refines a multi-line `Input` or a `Textarea` clears the
-/// refinement's padding as well.
+/// caller that refines a multi-line `Input` or a `Textarea` uses
+/// [`text_area`] instead, or clears this refinement's padding as well.
 ///
 /// The stated padding sides reach the root: upstream pads a single-line
 /// field (`input_px`/`input_py`, `input/input.rs:763`) before the refinement

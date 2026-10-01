@@ -141,15 +141,14 @@ pub struct ThemeDefaults {
     /// 3. [`crate::model::icons::system_icon_theme()`] (runtime detection;
     ///    none where it fails)
     ///
-    /// See doc 1 §20, `docs/todo_v0.5.7_gaps.md` §G4, and the Phase 80-fix
-    /// decision for the full rationale.
+    /// See `docs/archive/v0.5.7_gaps.md` §G4 for the rationale.
     pub icon_theme: Option<Cow<'static, str>>,
 }
 
 // Phase 93-05 G5: ThemeDefaults::FIELD_NAMES was a hand-authored 32-entry
 // mirror of the serde field names. Removed -- #[derive(ThemeFields)] above
 // registers the same list automatically into `crate::resolve::FieldInfo`,
-// consumed by `lint_toml`. See docs/todo_v0.5.7_gaps.md §G5.
+// consumed by `lint_toml`. See docs/archive/v0.5.7_gaps.md §G5.
 
 impl_merge!(ThemeDefaults {
     option {

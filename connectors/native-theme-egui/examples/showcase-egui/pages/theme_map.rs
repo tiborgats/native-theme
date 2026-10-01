@@ -20,7 +20,7 @@ pub(crate) fn show(
     let theme = ui.ctx().theme();
     let json = json.get(atlas, theme);
     // The page's heading, as the gpui Theme Map's "All ThemeColor Fields"
-    // (`showcase-gpui/pages/theme_map.rs:276-280`).
+    // (`showcase-gpui/pages/theme_map.rs:280-285`).
     caption(reg, ui, "All mapping.toml Rows");
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
     demo::contained(reg, ui, "verdict filter", |ui, reg| {
@@ -92,7 +92,7 @@ pub(crate) fn show(
                         body.rows(height, rows.len(), |mut row| {
                             if let Some(r) = rows.get(row.index()) {
                                 // A colour value beside its swatch, as the gpui Theme Map shows
-                                // every colour (`showcase-gpui/demo.rs:5407-5428`).
+                                // every colour (`showcase-gpui/demo.rs:7846-7867`).
                                 let colour = crate::info::value_at(json, &r.leaf)
                                     .as_ref()
                                     .and_then(crate::info::swatch_colour);

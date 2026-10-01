@@ -1167,12 +1167,12 @@ sinks   = [
 ["switch.thumb_background"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1)"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["switch.unchecked_thumb_background"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's colour"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's colour"
 
 ["switch.track_width"]
 verdict   = "derived"
@@ -1185,12 +1185,12 @@ sinks   = [{ path = "spacing.interact_size.y", scope = "switch" }]
 ["switch.thumb_diameter"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1)"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["switch.unchecked_thumb_diameter"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's size"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's size"
 
 ["switch.track_radius"]
 verdict = "scoped"
@@ -1231,7 +1231,7 @@ sinks   = [{ path = "visuals.widgets.inactive.weak_bg_fill", scope = "switch", v
 ["switch.disabled_thumb_color"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1)"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["checkbox.background_color"]
 verdict = "scoped"
@@ -1275,12 +1275,12 @@ sinks   = [
 ["checkbox.radio_dot_diameter"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8)"
+upstream = "native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8)"
 
 ["checkbox.radio_indicator_width"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width"
+upstream = "native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width"
 
 ["checkbox.check_mark_stroke_width"]
 verdict = "scoped"
@@ -2142,7 +2142,7 @@ sinks   = [{ path = "visuals.widgets.inactive.bg_fill", scope = "slider", varian
 ["slider.disabled_thumb_color"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Slider (docs/todo_egui-widgets-spec.md §4.2)"
+upstream = "native-theme-egui-widgets: Slider (docs/archive/todo_egui-widgets-spec.md §4.2)"
 
 ["progress_bar.fill_color"]
 verdict = "scoped"
@@ -2163,7 +2163,7 @@ tested_by = "T18(a)"
 ["progress_bar.border.color"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9)"
+upstream = "native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.corner_radius"]
 verdict   = "derived"
@@ -2172,7 +2172,7 @@ tested_by = "T18(a)"
 ["progress_bar.border.line_width"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9)"
+upstream = "native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.shadow_enabled"]
 verdict  = "unmappable"
@@ -2241,7 +2241,7 @@ sinks   = [{ path = "spacing.interact_size.y", scope = "spinner", when = "spinne
 ["spinner.stroke_width"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Spinner (docs/todo_egui-widgets-spec.md §4.3)"
+upstream = "native-theme-egui-widgets: Spinner (docs/archive/todo_egui-widgets-spec.md §4.3)"
 
 # ---- §5.6 Chrome — tab, sidebar, toolbar, status bar, expander
 
@@ -2698,22 +2698,22 @@ tested_by = "T18(f)"
 ["expander.arrow_side"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589)"
+upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589)"
 
 ["expander.arrow_gap"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589)"
+upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589)"
 
 ["expander.content_indent"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516)"
+upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516)"
 
 ["expander.frame_enabled"]
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
-upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568)"
+upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568)"
 
 ["expander.font.family"]
 verdict  = "unmappable"

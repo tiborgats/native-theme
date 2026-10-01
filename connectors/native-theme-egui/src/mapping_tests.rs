@@ -783,7 +783,7 @@ fn dedup(notes: &[Note]) -> Vec<&Note> {
 
 /// `got` equals the unmutated atlas's notes (`baseline`) plus `predicted`, as sets, over every
 /// note kind: a kind a hostile float does not cause — `TransparentFill` (windows-11's
-/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:133`), the font notes — must
+/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:146`), the font notes — must
 /// be exactly the baseline's.
 fn assert_same_notes(got: &[Note], baseline: &[Note], predicted: Vec<Note>, ctx: &str) {
     let mut want = baseline.to_vec();

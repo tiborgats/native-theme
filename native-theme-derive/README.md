@@ -2,8 +2,9 @@
 
 > **This is an internal implementation detail of [`native-theme`](../native-theme/).**
 > You should not depend on this crate directly. Its only purpose is to provide
-> the `#[derive(ThemeWidget)]` and `#[theme_inherit]` proc-macros used by
-> `native-theme`'s own widget types. Add `native-theme` as your dependency
+> the `#[derive(ThemeWidget)]` and `#[derive(ThemeFields)]` derive macros
+> (with their `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` helper
+> attributes) used by `native-theme`'s own widget types. Add `native-theme` as your dependency
 > instead — the macros are applied internally and do not appear in the public
 > API surface you consume.
 

@@ -1,6 +1,6 @@
 //! Internal backend-reader contract.
 //!
-//! Per `docs/todo_v0.5.7_gaps.md` §G8: each platform backend (KDE, GNOME,
+//! Per `docs/archive/v0.5.7_gaps.md` §G8: each platform backend (KDE, GNOME,
 //! macOS, Windows, GNOME+portal-KDE composite) implements this trait with
 //! a unit struct. Dispatch happens via [`pipeline::select_reader`].
 //!

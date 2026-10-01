@@ -4,7 +4,7 @@
 [![docs.rs](https://img.shields.io/docsrs/native-theme)](https://docs.rs/native-theme)
 [![CI](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
-[![MSRV: 1.88.0](https://img.shields.io/badge/MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
+[![core MSRV: 1.88.0](https://img.shields.io/badge/core%20MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
 Cross-platform native theme loading for Rust GUI applications. Reads OS themes
 on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets
@@ -24,19 +24,21 @@ populated `ResolvedTheme`.
 | [gpui](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
 | [iced](https://iced.rs) | [`native-theme-iced`](connectors/native-theme-iced/) |
 | [egui](https://www.egui.rs) | [`native-theme-egui`](connectors/native-theme-egui/) |
+| egui, with the widgets egui's own cannot draw natively (switch, slider knob, segmented control, …) | [`native-theme-egui-widgets`](connectors/native-theme-egui-widgets/), beside `native-theme-egui` |
 | Writing a new framework connector | [`native-theme`](native-theme/) directly |
 
 The connectors pull `native-theme` in transitively, so you only add one
-dependency for the common case.
+dependency for the common case. The core crates build with Rust 1.88; the gpui
+and egui connectors need Rust 1.95.
 
-## How the 6 crates fit together
+## How the 7 crates fit together
 
 ![native-theme crate relations](docs/assets/crate-relations.svg)
 
 ## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant `Theme::resolve(mode)` produces. Every font has a value, and so does every colour but 25 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, combobox arrow width) are `None` where the theme states none, and the toolkit's own value then applies. Your UI code reads from this.
+- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies. Your UI code reads from this.
 - **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-sonoma`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 

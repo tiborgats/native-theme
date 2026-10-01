@@ -15,7 +15,7 @@ use crate::{
 use native_theme::theme::Theme;
 
 /// A bundled preset resolved for one mode, by the route the iced connector's `from_preset`
-/// takes (`connectors/native-theme-iced/src/lib.rs:259-266`).
+/// takes (`connectors/native-theme-iced/src/lib.rs:297-311`).
 pub(crate) fn resolved(name: &str, mode: ColorMode) -> ResolvedTheme {
     Theme::preset(name)
         .unwrap()
@@ -172,7 +172,7 @@ use std::sync::Arc;
 use crate::NativeThemeUiExt;
 
 /// A preset's atlas through the public builder, both variants
-/// through `resolved` above, named as the preset names itself (`native-theme/src/model/mod.rs:257`).
+/// through `resolved` above, named as the preset names itself (`native-theme/src/model/mod.rs:267`).
 pub(crate) fn preset_atlas(id: &str) -> ThemeAtlas {
     let name = native_theme::theme::Theme::preset(id)
         .expect("a bundled preset")
@@ -2042,7 +2042,7 @@ mod t18_constructors {
     }
 
     /// T18 (a), `from_preset` clause: its `name()` is the preset's
-    /// `Theme::name` (`native-theme/src/model/mod.rs:257`), and the atlas carries both variants, each
+    /// `Theme::name` (`native-theme/src/model/mod.rs:267`), and the atlas carries both variants, each
     /// variant's icon theme, and the requested variant as the returned `ResolvedTheme`.
     #[test]
     fn t18_a_from_preset_carries_the_presets_name_and_both_variants() {
@@ -2125,7 +2125,7 @@ mod t18_constructors {
     #[test]
     fn t18_g_to_egui_atlas_reports_what_it_was_given() {
         // On a runner with no desktop there is nothing to compare; native-theme's own test
-        // accepts the same (`native-theme/src/watch/mod.rs:313`).
+        // accepts the same (`native-theme/src/watch/mod.rs:320`).
         let Ok(mut sys) = SystemTheme::from_system() else {
             assert!(
                 from_system().is_err(),
@@ -2328,7 +2328,7 @@ fn t8a_named_text_styles_survive_every_seam() {
 
 /// T8 (b) — §14 item 2b: the handle a `Window` paints is the outer `Ui`'s, so a
 /// `Role::Scrollbar` scope as the first statement inside the closure does not reach it. On
-/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:149`),
+/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:178`),
 /// so egui paints the bar at full opacity (`egui/src/containers/scroll_area.rs:1483-1485`,
 /// `:1495-1497`), and only the corner radius can tell the base style from the cell (§6.8).
 #[test]
@@ -2423,7 +2423,7 @@ mod t13_accessibility {
         AccessibilityPreferences, ResolvedTheme, Role, RoleVariant, ThemeAtlas, scaled_text_size,
     };
 
-    /// Every bundled preset (`native-theme/src/model/mod.rs:653`), both variants resolved.
+    /// Every bundled preset (`native-theme/src/model/mod.rs:663`), both variants resolved.
     fn presets() -> Vec<(&'static str, ResolvedTheme, ResolvedTheme)> {
         NativeTheme::list_presets()
             .iter()
@@ -2569,7 +2569,7 @@ mod t13_accessibility {
     }
 
     /// T13 (d): the three connectors' `scaled_text_size` are one function in three places (§4.7);
-    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:996-1004`).
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:1861-1874`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {

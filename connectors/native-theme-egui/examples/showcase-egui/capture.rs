@@ -1,6 +1,6 @@
 //! `--screenshot`: the window with its frame, as the gpui and iced showcases capture theirs,
 //! through xcap's safe API where they call the OS through `unsafe` FFI
-//! (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1023-1238`). On macOS it is
+//! (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1031-1349`). On macOS it is
 //! `screencapture -l <id> -o` of the window xcap's list finds, the siblings' own capture. On
 //! Windows it is the window's visible frame, `DWMWA_EXTENDED_FRAME_BOUNDS` as xcap reports it
 //! (`xcap-0.9.8/src/windows/utils.rs:241-254`), copied from the screen by
@@ -143,7 +143,7 @@ fn find_window(pid: u32) -> Result<xcap::Window, String> {
 
 /// `screencapture -l <id> -o <path>` of the showcase's window: the window with its title bar,
 /// without its shadow (`-o`), as the gpui showcase's `screencapture_own_window`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1062-1087`); then checked.
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1175-1198`); then checked.
 #[cfg(target_os = "macos")]
 fn capture_macos(ctx: &egui::Context, path: &str) -> Result<(), String> {
     let window = find_window(std::process::id())?;
@@ -228,7 +228,7 @@ pub(crate) fn run_finder(args: &[String]) -> Option<i32> {
 }
 
 /// The window's visible `frame` copied from the monitor it is on, made opaque as the siblings'
-/// capture is (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1216-1219`),
+/// capture is (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1329`),
 /// checked, and written to `path`. This process is per-monitor DPI aware, as winit makes every
 /// event loop's by default (`winit-0.30.13/src/platform_impl/windows/event_loop.rs:173`,
 /// `:198-200`; `dpi.rs:20-42`), so the copy is in the physical pixels the frame is given in.

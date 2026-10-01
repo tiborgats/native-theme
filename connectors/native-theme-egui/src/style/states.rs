@@ -242,7 +242,7 @@ mod tests {
     }
 
     /// C17: windows-11 states a translucent hover layer (`#0000000a`,
-    /// `native-theme/src/presets/windows-11.toml:85`), which is composited over the idle fill,
+    /// `native-theme/src/presets/windows-11.toml:86`), which is composited over the idle fill,
     /// not written as it stands.
     #[test]
     fn a_translucent_hover_layer_is_composited_over_the_idle_fill() {

@@ -88,8 +88,9 @@
 //! output file and emit `cargo::rerun-if-changed` / `cargo::warning`
 //! directives.
 //!
-//! The [`UnwrapOrExit`] trait provides `.unwrap_or_exit()` as a drop-in
-//! replacement for the old `process::exit(1)` behaviour.
+//! The [`UnwrapOrExit`] trait provides `.unwrap_or_exit()`: on error it prints
+//! the errors as `cargo::error` directives and exits the build script with
+//! status 1.
 //!
 //! # Using the Generated Code
 //!
@@ -107,7 +108,9 @@
 //! The output is a single `.rs` file containing:
 //!
 //! - A `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` enum with one
-//!   variant per role.
+//!   variant per role, `#[non_exhaustive]`, and an `ALL` constant listing
+//!   every variant.
+//! - `extern crate native_theme;` when the default crate path is used.
 //! - An `IconProvider` implementation with `icon_name()` returning the
 //!   platform-specific identifier and `icon_svg()` returning
 //!   `include_bytes!(...)` data for bundled themes.
@@ -234,9 +237,6 @@ impl GenerateOutput {
 
 /// Extension trait for converting `Result<GenerateOutput, BuildErrors>` into
 /// a direct output with `process::exit(1)` on error.
-///
-/// Provides a drop-in migration path from the old `generate_icons()` API
-/// that called `process::exit` internally.
 ///
 /// # Example
 ///

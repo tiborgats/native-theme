@@ -140,7 +140,7 @@ fn every_page_renders() {
 
 /// T11 (c), first rule of §10.4: a flag value the pickers do not offer is
 /// reported and ignored (the iced showcase's `the_command_line_rejects_what_it_cannot_honour`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:8052`).
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:14146`).
 #[test]
 fn the_command_line_rejects_what_it_cannot_honour() {
     let mut settings = Settings::for_tests();
@@ -217,7 +217,7 @@ fn the_showcase_opens_on_the_basic_page() {
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
 /// user picks one, and again after a pick of `default` (the iced showcase's
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:7995`). Following is
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:14089`). Following is
 /// `default_icon_choice` of what the atlas reports per scheme — `breeze`, then
 /// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:872`),
 /// which then keeps following.
@@ -389,7 +389,7 @@ fn a_capture_opens_at_the_default_size() {
 fn a_frame_capture_of_another_size_fails() {
     use crate::check_frame_capture;
     // A frame 2px wider and 32px taller than the content, as the Windows runner's gpui
-    // captures measured (`showcase-gpui/tests.rs:1959-1961`), and a 28px title bar alone.
+    // captures measured (`showcase-gpui/tests.rs:2062-2064`), and a 28px title bar alone.
     assert_eq!(
         check_frame_capture((1282, 752), (1280, 720), Some(1.0)),
         Ok(())
@@ -3395,7 +3395,7 @@ fn every_rendered_character_is_in_the_installed_fonts() {
 
 /// `raw` with every comment, string literal and char literal blanked to spaces,
 /// its length and line breaks kept (the gpui detector's `blanked`,
-/// `connectors/native-theme-gpui/src/showcase.rs:837`, ported line for line).
+/// `connectors/native-theme-gpui/src/showcase.rs:853`, ported line for line).
 fn blanked(raw: &str) -> String {
     let mut out = String::with_capacity(raw.len());
     let mut at = 0usize;
@@ -3433,7 +3433,7 @@ fn blanked(raw: &str) -> String {
     out
 }
 
-/// The gpui detector's helpers (`connectors/native-theme-gpui/src/showcase.rs:294-344`).
+/// The gpui detector's helpers (`connectors/native-theme-gpui/src/showcase.rs:301-357`).
 fn char_literal_len(from: &str) -> Option<usize> {
     let body = from.strip_prefix('\'')?;
     if let Some(escaped) = body.strip_prefix('\\') {
@@ -3700,7 +3700,7 @@ const CONSTRUCTORS: &[&str] = &[
     "FontId::monospace(",
 ];
 /// The sites the rule does not reach, by the enclosing `fn`, with the reason
-/// (the gpui showcase's `ALLOWED_STYLE_LITERALS`, `connectors/native-theme-gpui/src/showcase.rs:3007`).
+/// (the gpui showcase's `ALLOWED_STYLE_LITERALS`, `connectors/native-theme-gpui/src/showcase.rs:2985`).
 /// `tests.rs`, which holds the detector's own sample source, is not scanned, so it needs no entry.
 const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (

@@ -18,7 +18,7 @@ If the bundled `IconRole` variants cover your needs, you don't need this crate.
 ## How it fits
 
 This crate is a *build-time* dependency. Your final binary links against
-`native-theme` only — nothing from `native-theme-build` is at runtime. You add
+`native-theme` only — nothing from `native-theme-build` is linked into it. You add
 it to `[build-dependencies]` and call it from `build.rs`.
 
 ## Quick start
@@ -139,7 +139,7 @@ rebuild.
 - A role is declared in two TOML files (multi-source builder)
 - A DE-aware entry is missing its `default` key
 
-Each of these emits a build error pointing at the offending file and line.
+Each of these emits a `cargo::error` naming the offending file.
 
 ## Links
 

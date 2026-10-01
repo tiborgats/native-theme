@@ -31,7 +31,9 @@
 //! capture; `app.rs` the `Showcase` view, its state and theme switching;
 //! `pages/` one module per page; `chrome.rs` and `demo.rs` the window's
 //! chrome and the helpers that build a widget with its info; `info/` what
-//! each widget reports; `inspector.rs` the inspector; and
+//! each widget reports; `inspector.rs` the inspector; `elements.rs` the
+//! elements the three showcases share and the `--dump-layout` dump; `host.rs`
+//! the actions hosted around the whole window; `tests.rs` the self-tests; and
 //! `support.rs` the sample content, helpers, icon loading and delegates
 //! the pages share. Within a file, section-divider blocks (`// ─────`)
 //! separate one widget category, page or view from the next.
@@ -667,7 +669,7 @@ pub(crate) fn check_frame_capture(
 /// Optional CLI arguments for launching the showcase in a specific state.
 ///
 /// Parsed from `std::env::args()` — no external crate dependency.
-/// When no arguments are provided the showcase behaves identically to before.
+/// With no arguments the showcase opens in its defaults, on the Basic page.
 #[derive(Default)]
 struct CliArgs {
     theme: Option<String>,

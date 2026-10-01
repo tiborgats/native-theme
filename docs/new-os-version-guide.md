@@ -2,8 +2,8 @@
 
 native-theme ships platform-specific constants extracted from authoritative sources
 (KDE Breeze metrics, Apple HIG measurements, WinUI3 Fluent specs, libadwaita/GTK4
-defaults). When a new OS version ships (e.g., KDE Plasma 7, Windows 12, macOS 16,
-GNOME 48), these constants may need updating.
+defaults). When a new OS version ships (e.g., KDE Plasma 7, Windows 12, the next macOS or
+GNOME release), these constants may need updating.
 
 This guide covers the update procedure for each platform.
 
@@ -170,8 +170,11 @@ Steps:
    if widget sizing changed. State a new or changed size only from a source in
    `docs/platform-facts.md`. Where the platform documents none, leave it
    unstated only if it is a gated size (a padding side, a menu or list
-   `row_height`, the toolbar `bar_height` and `item_gap`, the combobox
-   `arrow_area_width`); every other size is required, and those the presets
+   `row_height`, the toolbar `bar_height` and `item_gap`, the tab `item_gap`
+   and `active_indicator_width`, the combobox `arrow_area_width`, the expander
+   `arrow_gap` and `content_indent`, the checkbox `radio_indicator_width`,
+   `radio_dot_diameter` and `check_mark_stroke_width`, the switch
+   `unchecked_thumb_diameter`); every other size is required, and those the presets
    state today without a source are listed in `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).

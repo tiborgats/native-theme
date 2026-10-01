@@ -258,7 +258,7 @@ impl_merge!(ThemeMode {
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Theme {
-    /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
+    /// Theme name (e.g., "KDE Breeze", "Adwaita", "Windows 11").
     ///
     /// Uses `Cow<'static, str>` so bundled presets can store borrowed
     /// `&'static str` values without per-load `String` allocations.
@@ -309,7 +309,7 @@ pub struct Theme {
     /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime
     ///    detection; none where it fails
     ///
-    /// See doc 1 §20 and `docs/todo_v0.5.7_gaps.md` §G4 for the design rationale.
+    /// See `docs/archive/v0.5.7_gaps.md` §G4 for the design rationale.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_theme: Option<Cow<'static, str>>,
 }
@@ -532,7 +532,7 @@ impl Theme {
     /// Theme files use the following structure. Every field is optional --
     /// omit any field you don't need. Unknown fields are silently ignored;
     /// [`lint_toml`](Self::lint_toml) reports them. Hex colors accept
-    /// `#RRGGBB` or `#RRGGBBAA` format. A size carries its unit in its key:
+    /// `#RGB`, `#RGBA`, `#RRGGBB` or `#RRGGBBAA` (the `#` is optional). A size carries its unit in its key:
     /// `_px` for logical pixels, and `size_pt` or `size_px` for a font.
     /// A widget border's padding takes one key per side (`padding_top_px`,
     /// `padding_right_px`, `padding_bottom_px`, `padding_left_px`) or one per
@@ -666,8 +666,10 @@ impl Theme {
 
     /// List presets appropriate for the current platform, with structured metadata.
     ///
-    /// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
-    /// are only included on their native platform. Community themes are always included.
+    /// Platform presets are included where their platform tag matches:
+    /// kde-breeze on KDE, adwaita on Linux, windows-11 on Windows,
+    /// macos-sonoma on macOS, ios on macOS and iOS. `material` and the
+    /// community themes are always included.
     ///
     /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,
     /// this method returns `Vec` because it filters the preset list at runtime based
@@ -676,8 +678,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// let presets = native_theme::theme::Theme::list_presets_for_platform();
-    /// // On Linux KDE: includes kde-breeze, adwaita, plus all community themes
-    /// // On Windows: includes windows-11 plus all community themes
+    /// // On Linux KDE: kde-breeze, adwaita, material and all community themes
+    /// // On Windows: windows-11, material and all community themes
     /// assert!(!presets.is_empty());
     /// ```
     #[must_use]

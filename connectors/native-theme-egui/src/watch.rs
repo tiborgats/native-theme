@@ -64,16 +64,16 @@ impl ThemeWatcher {
     /// returns the atlas to hand over: [`ThemeWatcher::system_rebuild`] for an application on
     /// the OS theme, else a closure that builds exactly what the application built at start-up,
     /// every builder input included, after `native_theme::detect::invalidate_caches()`
-    /// (`native-theme/src/detect.rs:155`) when it reads the OS (§10.2).
+    /// (`native-theme/src/detect.rs:154`) when it reads the OS (§10.2).
     ///
     /// Bind the result: dropping it stops the watch and joins the thread
-    /// (`native-theme/src/watch/mod.rs:172-187`). `Send` but not `Sync`, like native-theme's
+    /// (`native-theme/src/watch/mod.rs:174-189`). `Send` but not `Sync`, like native-theme's
     /// subscription (`native-theme/src/watch/mod.rs:107-109`).
     ///
     /// # Errors
-    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:217`),
+    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:224`),
     /// which reports `Error::WatchUnavailable` on desktops and feature sets it cannot watch
-    /// (`:234-266`). A `rebuild` error is not returned here; it is kept for
+    /// (`:241-273`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error is not returned here; it is kept for
     /// [`ThemeWatcher::last_error`].
     pub fn start(
         ctx: &egui::Context,
@@ -190,7 +190,7 @@ mod tests {
         assert!(handoff.last_error().is_none());
     }
 
-    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:311-325`):
+    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:318-332`):
     /// `Ok` or any error passes, and only a panic fails.
     #[test]
     fn start_never_panics_without_a_desktop() {

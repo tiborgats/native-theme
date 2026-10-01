@@ -40,8 +40,9 @@
 //!
 //! Every widget is an [`egui::Widget`](native_theme_egui::egui::Widget) added
 //! with `ui.add(..)`, so `ui.add_sized` and `ui.add_enabled` take them too —
-//! but the drop-down, whose contents are a closure: as egui's own, it is shown
-//! with [`combo_box::ComboBox::show_ui`]. No
+//! but the drop-down and the expander, whose contents are a closure: as
+//! egui's own, they are shown with [`combo_box::ComboBox::show_ui`] and
+//! [`expander::Expander::show`]. No
 //! extension trait on `egui::Ui` is provided: `Ui::button` and its siblings
 //! are inherent methods, which Rust resolves before a trait's, so a trait
 //! method of the same name would be silently ignored at every call site.

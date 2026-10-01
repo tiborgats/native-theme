@@ -3950,8 +3950,6 @@ pub(crate) fn color_picker(
         .info(ui, id, info::inputs::color_picker(cx.theme()))
 }
 
-/// A `DatePicker` over `state`, reading `placeholder` until a date is
-/// picked.
 /// A `TimeField` over `state` (spec §8.3), upstream's own: the theme states
 /// no time-field geometry, so its size and radius are upstream's.
 pub(crate) fn time_field(
@@ -3965,6 +3963,8 @@ pub(crate) fn time_field(
         .debug_selector(move || id.into())
 }
 
+/// A `DatePicker` over `state`, reading `placeholder` until a date is
+/// picked.
 pub(crate) fn date_picker(
     ui: &Entity<InfoRegistry>,
     cx: &App,

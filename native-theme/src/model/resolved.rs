@@ -29,7 +29,7 @@ pub struct ResolvedIconSizes {
 
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
 ///
-/// Phase 93-01 (G1): no `Default` derive. Constructed from a populated
+/// No `Default` derive: Constructed from a populated
 /// `TextScaleEntry` during resolution; the missing-field sentinel is
 /// written inline in
 /// `crate::resolve::validate_helpers::require_text_scale_entry` (private).
@@ -153,7 +153,7 @@ pub struct ResolvedDefaults {
 ///
 /// Produced by `validate()` after `resolve()`. Consumed by toolkit connectors.
 /// Mirrors [`crate::model::ThemeMode`] but with concrete (non-Option) types
-/// for all 25 per-widget structs plus defaults and text scale.
+/// for all 26 per-widget structs plus defaults and text scale.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTheme {
     /// Global defaults.

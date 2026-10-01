@@ -108,7 +108,7 @@ pub(crate) fn show(
         });
     });
 
-    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4).
+    // The companion crate's segmented control (docs/archive/todo_egui-widgets-spec.md §4.4).
     caption(reg, ui, "Segmented control (Role::SegmentedControl)");
     demo::widget(
         reg,
@@ -129,7 +129,7 @@ pub(crate) fn show(
         ui.add(egui::AtomLayout::new(("AtomLayout", "of two atoms")))
     });
 
-    // The companion crate's switch (docs/todo_egui-widgets-spec.md §4.1).
+    // The companion crate's switch (docs/archive/todo_egui-widgets-spec.md §4.1).
     caption(reg, ui, "Switch (Role::Switch)");
     ui.horizontal_wrapped(|ui| {
         // Held off, as the disabled one is held on: each shows one state; the next one toggles.

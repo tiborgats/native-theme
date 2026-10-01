@@ -11,8 +11,8 @@ verified against, are in [Compatibility](#compatibility).
 Turns a `native_theme::ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
-- **Colours**: all 139 `ThemeColor` fields, including the 28 `button_*`
-  fields gpui-component 0.6 reads for `Button`, so native themes keep their
+- **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
+  fields gpui-component 0.7 reads for `Button`, so native themes keep their
   solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
   `focus_ring`, `scrollbar_mode`; a `ThemeConfig` per mode so upstream's own
@@ -126,7 +126,7 @@ which hosts them and sets the window's rem — so its first `open_dialog`,
 `open_sheet` or `notifications` call panics with upstream's "component window
 state is missing" (gpui-component `src/root.rs:112, 126`), and text scaling
 fails silently, the rem staying gpui's default (`src/root.rs:21, 434-436`;
-gpui-base `src/root.rs:43-44`).
+gpui-base `src/root.rs:44-45`).
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
@@ -184,7 +184,8 @@ variant.
 
 gpui-component widgets apply the caller's `StyleRefinement` after their own
 geometry, so a refinement built from the native theme wins. Every builder in
-the `geometry` module is a pure function of `Native<'_>`:
+the `geometry` module is a pure function of `Native<'_>` (the four layout
+accessors, of a `LayoutTheme`):
 
 ```rust,ignore
 use gpui_component::StyledExt;
@@ -209,8 +210,10 @@ as the control's line height and is its stated height (`h`) at a text-scaling
 factor of 1 or less, in place of upstream's own (a `Select` or `Combobox`
 trigger's `h_8`); above 1 the stated height is a minimum and the height is
 automatic, so the control grows around its drawn text and padding. The rule
-is for single-line controls: for a multi-line `Input`, set the height after
-the builder as `Styled::h(input, height)`, fully qualified. In method syntax
+is for single-line controls: refine a multi-line `Input` or a `Textarea` with
+`text_area`, which sets no height (the rows the field holds size it). To give
+one a fixed height, set it after the builder as `Styled::h(input, height)`,
+fully qualified. In method syntax
 `input.h(..)` is `Input::h`, which shadows `Styled::h` and only records a
 height upstream applies before the caller's refinement, so the builder's
 height would replace it.
@@ -243,8 +246,10 @@ test over every preset and mode says so.
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
 | `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:762-764`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
-| `input_fill(n, disabled)` | `input.background_color`, or disabled `input.disabled_background` (nothing where that is not stated) | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement |
-| `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
+| `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
+| `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated) and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement |
+| `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
+| `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
 | `link` | `link.underline_enabled`, `link.font` size and weight | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
@@ -399,7 +404,7 @@ geometry is still restored). The default registry holds two themes,
 | Preference | Effect |
 |---|---|
 | `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); gpui-component's `WindowState` plugin sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
-| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress and marker honour the flag |
+| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress, marker and accordion honour the flag |
 | `reduce_transparency` | the overlay behind a dialog or sheet is not drawn (`overlay` becomes transparent): macOS asks for no semitransparent backgrounds, and an opaque overlay would hide the window. The dialog or sheet stays modal |
 | `high_contrast` | no receiver in GPUI or gpui-component yet |
 
@@ -505,11 +510,12 @@ snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
 `0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
 arrive as patch releases. This crate names the same package
 (`gpui = { package = "gpui-pre", version = "0.3.7" }`) so its `Hsla`, `Pixels`
-and `StyleRefinement` are gpui-component's types; its GPUI surface is small
-(`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
-`ImageSource`, `RenderImage`, `Image` and `ImageFormat` (without
-`svg-rasterize`), `ElementId`, `IntoElement`, `StyleRefinement`,
-`FontWeight`, `App`, `Global`, `Subscription`). To freeze a snapshot in an
+and `StyleRefinement` are gpui-component's types. Outside the `widgets`
+module its GPUI surface is small: colours and lengths (`Hsla`, `Rgba`,
+`Pixels`), `StyleRefinement`, images (`ImageSource`, `RenderImage`, and
+`Image` / `ImageFormat` without `svg-rasterize`), the `svg` spin animation,
+and `App` / `Global`; the `widgets` module draws elements of its own with
+GPUI's element API. To freeze a snapshot in an
 application, pin
 `gpui-pre = "=0.3.N"` there; a library must not, because an exact pin would
 conflict with any other dependency wanting a later snapshot.
@@ -533,7 +539,8 @@ conflict with any other dependency wanting a later snapshot.
   names (`StarFill` has no Lucide equivalent), the Material table names
   Material Symbols Outlined files (`StarOff` has none), the freedesktop table
   names Breeze/Adwaita icons. `None` means the set has no equivalent; nothing
-  is substituted. `30 of 42 IconRole` variants map to `IconName`.
+  is substituted. 31 of the 42 `IconRole` variants map to `IconName`
+  (`icons::icon_name`).
 
 ## Showcase
 
@@ -564,6 +571,17 @@ nothing: the resizable group and its content panel, not yet (the handle
 between the panels and the side panel do), and the inspector's own content
 below its tabs, by design, so the pointer can move into it without replacing
 what it shows.
+
+Flags: `--theme NAME` (a preset), `--variant light|dark|system`,
+`--tab PAGE` (`basic`, `buttons`, `inputs`, `data`, `feedback`, `typography`,
+`layout`, `overlays`, `charts`, `icons`, `theme-map`),
+`--icon-set material|lucide|gpui-builtin|system|freedesktop|<installed theme>`,
+`--icon-theme NAME`, `--screenshot FILE` (macOS and Windows; on Linux the
+capture scripts take the window), `--capture` (open at 1280 × 720 for a
+capture taken by another tool), `--pointer X,Y` and `--press` (hold the
+pointer, and the primary button, at a point of the window),
+`--dump-layout FILE` (the rectangles of the elements
+`docs/showcase-elements.toml` lists) and `--open-menu TITLE`.
 
 ## Gallery
 

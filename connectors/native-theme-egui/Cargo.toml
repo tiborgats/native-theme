@@ -70,8 +70,8 @@ egui_kittest = { version = "0.36.2", features = ["eframe"] }
 # §13 T2 and T10 parse `mapping.toml`; T3 walks `serde_json::to_value(&resolved)`;
 # the showcase's Widget Info does both (§10.4).
 # Neither crate is reachable transitively: `native-theme` depends on `toml`
-# (`native-theme/Cargo.toml:55`) but re-exports it nowhere, and its own
-# `serde_json` is dev-only (`native-theme/Cargo.toml:125`).
+# (`native-theme/Cargo.toml:57`) but re-exports it nowhere, and its own
+# `serde_json` is dev-only (`native-theme/Cargo.toml:134`).
 serde_json = "1.0.151"
 toml = { workspace = true }
 # The showcase draws the switch, slider, spinner, segmented control and links with the
@@ -92,7 +92,7 @@ test = true
 # `EventLoopBuilderExtMacOS::with_default_menu`, which eframe does not
 # re-export, at eframe's own requirement (`eframe/Cargo.toml:266-268`); muda
 # for the menu; objc2 and objc2-app-kit, at the versions `native-theme`
-# requires (`native-theme/Cargo.toml:58`, `:68`), to read back
+# requires (`native-theme/Cargo.toml:61`, `:71`), to read back
 # `NSApplication::mainMenu` for the macOS runner's check (§13).
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 winit = { version = "0.30.13", default-features = false }

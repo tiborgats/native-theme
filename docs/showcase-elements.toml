@@ -79,9 +79,8 @@
 # ---------------------------------------------------------------------------------------------
 #
 # With `include_str!` and the `toml` crate, parsed into an untyped `toml::Table` and walked by
-# hand, as the egui showcase already reads its mapping.toml (showcase-egui/info.rs). The egui
-# connector has `toml = { workspace = true }` in its [dev-dependencies]; the gpui and iced
-# connectors add the same line. That adds no crate to Cargo.lock: `toml` 1.1.5 is already
+# hand, as the egui showcase also reads its mapping.toml (showcase-egui/info.rs). All three
+# connectors have `toml = { workspace = true }` in their [dev-dependencies]. That adds no crate to Cargo.lock: `toml` 1.1.5 is already
 # there as a dependency of native-theme (native-theme/Cargo.toml, `toml.workspace = true`),
 # which re-exports none of it, so the examples cannot reach it without naming it. The path is
 # relative to the file holding the `include_str!`:
@@ -157,10 +156,9 @@
 #
 # Rectangles in logical px, in window-content coordinates ((0, 0) is the top-left of the
 # window's content area); `scale` is physical px per logical px; one entry per element of this
-# list the showcase draws, and none for anything else. The gpui and egui connectors have
-# `serde_json` in their [dev-dependencies] (`serde_json::json!` builds the object); the iced
-# connector adds `serde_json = "1.0.151"`, the version Cargo.lock already holds for native-theme's
-# own [dev-dependencies]. The comparator reads `<kind>-<preset>-<variant>.json` and, beside it,
+# list the showcase draws, and none for anything else. All three connectors have
+# `serde_json = "1.0.151"` in their [dev-dependencies] (`serde_json::json!` builds the object),
+# the version Cargo.lock already holds for native-theme's own [dev-dependencies]. The comparator reads `<kind>-<preset>-<variant>.json` and, beside it,
 # the capture `<kind>-<preset>-<variant>.png`; see scripts/check_showcase_parity.py.
 #
 # Shared elements only: a page tab, a menu or a menu row the three do not all have is not here.

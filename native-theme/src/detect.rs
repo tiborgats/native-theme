@@ -120,18 +120,17 @@ pub fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
 /// re-queries the OS. For a fresh reading without affecting the cache, use
 /// [`detect_is_dark()`] instead.
 ///
-/// For live dark-mode tracking, subscribe to OS appearance-change events
-/// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
-/// `UISettings.ColorValuesChanged` on Windows) and call [`crate::SystemTheme::from_system()`]
-/// to get a fresh [`crate::SystemTheme`] with updated resolved variants.
+/// For live dark-mode tracking, use `watch::on_theme_change` (feature
+/// `watch`): on each event call [`invalidate_caches()`] and re-read
+/// [`crate::SystemTheme::from_system()`].
 ///
 /// # Platform Behavior
 ///
-/// - **Linux:** Checks `GTK_THEME` env var for `:dark` suffix or `-dark`
-///   in name; queries `gsettings` for `color-scheme` (with 2-second
-///   timeout); falls back to KDE `kdeglobals` background luminance (with
-///   `kde` feature); reads `gtk-3.0/settings.ini` for
-///   `gtk-application-prefer-dark-theme=1` as final fallback.
+/// - **Linux:** Checks `GTK_THEME` for `:dark` or `-dark`; on KDE (with the
+///   `kde` feature) reads `kdeglobals`' background luminance; then
+///   `gsettings` `color-scheme` (2-second timeout); then `kdeglobals` on
+///   other desktops (with `kde`); finally `gtk-3.0/settings.ini`
+///   `gtk-application-prefer-dark-theme`.
 /// - **macOS:** Reads `AppleInterfaceStyle` via `NSUserDefaults` (with
 ///   `macos` feature) or `defaults` subprocess (without).
 /// - **Windows:** Checks foreground color luminance from `UISettings` via

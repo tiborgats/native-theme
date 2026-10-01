@@ -4253,7 +4253,7 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
 
 /// Under a native theme the Basic page's checkboxes, radios, switches,
 /// slider, progress bar and spinner are the connector's theme-drawn widgets
-/// (docs/todo_gpui-widgets-spec.md), each at the sizes the theme states,
+/// (docs/archive/todo_gpui-widgets-spec.md), each at the sizes the theme states,
 /// under two presets whose sizes all differ.
 #[cfg(feature = "widgets")]
 #[gpui::test]

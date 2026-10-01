@@ -144,7 +144,7 @@ pub mod watch;
 ///
 /// `use native_theme::prelude::*` imports:
 /// [`Theme`](theme::Theme), [`ResolvedTheme`](theme::ResolvedTheme),
-/// [`SystemTheme`], [`AccessibilityPreferences`],
+/// [`SystemTheme`], [`AccessibilityPreferences`], [`ResolutionContext`],
 /// [`Rgba`](color::Rgba), [`Error`](error::Error), and [`Result`].
 pub mod prelude;
 
@@ -431,13 +431,12 @@ pub(crate) struct OverlaySource {
 pub struct SystemTheme {
     /// Theme name (from reader or preset).
     ///
-    /// # Ownership type — principled deviation from doc 2 §J.2 / §K.3
+    /// # Ownership type
     ///
-    /// This field uses `Cow<'static, str>`, not `Arc<str>`. Doc 2 §J.2
-    /// ("B3 refinement: use `Arc<str>` for `ReaderOutput::name`") and
-    /// §K.3 recommend uniform `Arc<str>` across `name`, `icon_theme`,
+    /// This field uses `Cow<'static, str>`, not `Arc<str>`. The v0.5.7 API
+    /// review recommended uniform `Arc<str>` across `name`, `icon_theme`,
     /// `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
-    /// `docs/todo_v0.5.7_gaps.md` §G9 (lines 449-506) concluded that the
+    /// `docs/archive/v0.5.7_gaps.md` §G9 concluded that the
     /// uniform recommendation should be adopted ONLY for
     /// [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
     /// (where 26 widgets × connectors genuinely share font families), and
@@ -454,7 +453,7 @@ pub struct SystemTheme {
     /// [`Theme::name`](crate::theme::Theme), and
     /// [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
     ///
-    /// See `docs/todo_v0.5.7_gaps.md` §G9 for the full audit.
+    /// See `docs/archive/v0.5.7_gaps.md` §G9 for the full audit.
     pub name: Cow<'static, str>,
     /// The OS color mode preference (light or dark).
     pub mode: ColorMode,
@@ -479,7 +478,7 @@ pub struct SystemTheme {
     /// # Ownership type
     ///
     /// `Cow<'static, str>` is used here per the same principled deviation
-    /// documented on [`SystemTheme::name`](Self::name) — see `docs/todo_v0.5.7_gaps.md`
+    /// documented on [`SystemTheme::name`](Self::name) — see `docs/archive/v0.5.7_gaps.md`
     /// §G9. Each resolved theme carries a single icon-theme name (KDE has
     /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
     /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
@@ -645,20 +644,22 @@ impl SystemTheme {
     ///
     /// # Platform Behavior
     ///
-    /// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
-    ///   Reads both light and dark variants via NSAppearance, merges with
-    ///   `macos-sonoma` preset.
+    /// - **macOS:** with the `macos` feature, reads both light and dark
+    ///   variants via NSAppearance and merges them with the `macos-sonoma`
+    ///   preset.
     /// - **Linux:** Uses `pollster::block_on` to drive the async inner
     ///   implementation, which handles portal D-Bus calls when the `portal`
-    ///   feature is enabled.
-    /// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
-    ///   merges with `windows-11` preset.
+    ///   feature is enabled. Without a reader for the detected desktop
+    ///   (feature disabled, or a desktop with no reader), returns the
+    ///   `adwaita` preset resolved in the detected light/dark mode.
+    /// - **Windows:** with the `windows` feature, reads the active variant and
+    ///   merges it with the `windows-11` preset.
     /// - **Other platforms:** Returns `Error::PlatformUnsupported`.
     ///
     /// # Errors
     ///
-    /// - `Error::FeatureDisabled` if the platform has a reader but the required feature
-    ///   is not enabled.
+    /// - `Error::FeatureDisabled` on macOS or Windows when the `macos` /
+    ///   `windows` feature is not enabled.
     /// - `Error::PlatformUnsupported` if the platform has no reader at all.
     /// - `Error::ReaderFailed` if the platform reader cannot access theme data.
     ///

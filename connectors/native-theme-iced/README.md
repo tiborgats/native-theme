@@ -141,7 +141,7 @@ the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
-| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `text_input`, `text_editor`, `checkbox`, `radio`, `toggler`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks |
+| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; the `_over` forms fade a disabled control over a backdrop you name |
 | without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `segmented_control` | `.style(..)` — `segmented_control` styles the container holding the segments |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
@@ -187,13 +187,16 @@ disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
 `toggler` lays its track out twice its height, so a platform whose track is
 not — material's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
 states. `native_theme_iced::switch(&resolved, on, on_toggle)` is a switch at
-`switch.track_width` × `.track_height` with its thumb at `.thumb_diameter`,
+`switch.track_width` × `.track_height` with its thumb at `.thumb_diameter`
+(`.unchecked_thumb_diameter` while off, where stated),
 built from a button and two containers in `styles::toggler`'s colours; it
 has no label, and `None` for `on_toggle` disables it.
 
 `radio` draws its dot at half the circle, and `radio::Style` has no size for
 it. `native_theme_iced::radio(&resolved, radio(..), is_selected)` sizes the
-radio `checkbox.indicator_width` across, `checkbox.label_gap` from its label,
+radio `checkbox.radio_indicator_width` across where the theme states it
+(Material's radio is 20, its checkbox 18), `checkbox.indicator_width` where it
+does not, `checkbox.label_gap` from its label,
 in `styles::radio`, and where the theme states `checkbox.radio_dot_diameter`
 lays a dot that many pixels across over the circle, in
 `checkbox.indicator_color`; where it states none (macOS), the dot is iced's.
@@ -227,9 +230,11 @@ that needs dismissing a themed button of its own instead.
 | the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
 | the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
 
-`widgets` (default) enables `styles` and the `button_padding`,
-`input_padding`, `combo_box_padding`, `button_content_min_size` and
-`at_least` helpers; `spinner` (default, implies `widgets`) enables
+`widgets` (default) enables `styles`, the `button_padding`,
+`input_padding`, `text_area_padding`, `combo_box_padding`,
+`button_content_min_size` and `at_least` helpers, and the `switch`,
+`switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and
+`tab_indicator_line` widgets; `spinner` (default, implies `widgets`) enables
 `Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
@@ -268,10 +273,12 @@ Full helper list: `button_padding`, `input_padding`, `text_area_padding`
 `expander_arrow_color`,
 `selection_color`, `info_color`, `info_foreground_color`,
 `warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
-for converting CSS weight values to iced's `Weight` enum.
+for converting CSS weight values to iced's `Weight` enum, and the widgets
+`pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `switch` /
+`switch_over` and `radio` (all feature `widgets`).
 
-`button_padding`, `input_padding` and `combo_box_padding` need the `widgets`
-feature (on by default). Each side is the theme's where it states that side,
+`button_padding`, `input_padding`, `text_area_padding` and `combo_box_padding`
+need the `widgets` feature (on by default). Each side is the theme's where it states that side,
 plus the border's line width: the theme's padding lies inside the border,
 and iced paints the border inside the widget's bounds, over its padding
 (`padding_inside_border`). A side the theme does not state is iced's own
@@ -483,6 +490,7 @@ the widget's layout box stays constant during rotation.
 | `styles` | Per-widget style functions (feature `widgets`, default); `styles::aw` for `iced_aw` (feature `iced_aw`) |
 | `extended` | (internal) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. `apply_overrides`' own doc comment says where each one comes from |
 | `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
+| `spinner` | `Spinner`, the icon set's animated loading indicator or an arc (feature `spinner`, default) |
 
 ## Showcase
 

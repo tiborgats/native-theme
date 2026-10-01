@@ -12,6 +12,7 @@
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
 //! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
+//! | [`bundled_svg_to_image_source`] | Convert raw SVG bytes → [`ImageSource`] with optional color/size |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
 //!

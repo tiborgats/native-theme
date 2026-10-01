@@ -147,7 +147,7 @@
       divider's width, `separator_width` (`docs/platform-facts.md:987`), and
       no colour or join. Until the model states them, the egui widgets crate
       draws its segments `separator_width` apart as separate segments, with no
-      divider line (`docs/todo_egui-widgets-spec.md` §4.4); nothing is to be
+      divider line (`docs/archive/todo_egui-widgets-spec.md` §4.4); nothing is to be
       invented in the meantime.
 
 ### Checkbox: KDE's checked checkbox is not a solid accent box
@@ -359,7 +359,7 @@
       stroke for `None`, or record in §2.23 a source for a ring's stroke on
       those platforms. The egui widgets crate paints its spinner arc from this
       field where the icon set has no animated indicator
-      (`docs/todo_egui-widgets-spec.md` §4.3).
+      (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
       `min_diameter` either (**(none)**, `docs/platform-facts.md:1534`), yet
       `kde-breeze`, `kde-breeze-live`, `adwaita` and `adwaita-live` state
@@ -537,7 +537,7 @@
       slider the ring surrounds — the indicator or knob alone, or the whole
       control with its label. The egui connector's focus ring surrounds those
       three, and the egui widgets crate's painted `Slider`, around their whole
-      response until this is recorded (`docs/todo_egui-widgets-spec.md` §2.5).
+      response until this is recorded (`docs/archive/todo_egui-widgets-spec.md` §2.5).
       Research it per platform from
       source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
       measured rendering) with citations, then register the shape there.
@@ -824,8 +824,8 @@ model, the platform presets and the three connectors
       `docs/archive/todo_v0.6.0_egui-connector-rationale.md`). Targets egui 0.36.2.
       Archiving the three documents is the plan's last task.
 - [ ] Implement the companion widget crate, `native-theme-egui-widgets`, per
-      `docs/todo_egui-widgets-spec.md` (rationale:
-      `docs/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
+      `docs/archive/todo_egui-widgets-spec.md` (rationale:
+      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
       segmented control and link wrappers. Milestone undecided; it starts after
       the connector, whose API it consumes. When it is scheduled, re-verify the
       spec against the connector as built, then write its plan.

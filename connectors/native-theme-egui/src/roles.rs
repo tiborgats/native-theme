@@ -4,7 +4,7 @@
 /// A widget role: the *content* style for one kind of widget.
 ///
 /// **Exactly one variant per widget field of [`ResolvedTheme`](crate::ResolvedTheme)**
-/// (`native-theme/src/model/resolved.rs:164-212`), in declaration order. That is the whole
+/// (`native-theme/src/model/resolved.rs:164-216`), in declaration order. That is the whole
 /// rule. When native-theme grows a widget, this enum grows one variant and `mapping.toml`
 /// grows one section; nothing else in this crate's API changes.
 ///

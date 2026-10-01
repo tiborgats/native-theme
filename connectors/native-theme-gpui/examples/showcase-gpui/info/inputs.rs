@@ -513,10 +513,10 @@ pub fn slider(t: &Theme) -> WidgetInfo {
 
 /// Where the theme-drawn widgets read what they paint.
 #[cfg(feature = "widgets")]
-const DRAWN_BY: &str = "native_theme_gpui::widgets, on gpui-base's headless primitive, every part from the theme (docs/todo_gpui-widgets-spec.md)";
+const DRAWN_BY: &str = "native_theme_gpui::widgets, on gpui-base's headless primitive, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)";
 
 /// A theme-drawn `widgets::Checkbox` (spec §2.1 of
-/// docs/todo_gpui-widgets-spec.md) reading `label`, `checked` or not,
+/// docs/archive/todo_gpui-widgets-spec.md) reading `label`, `checked` or not,
 /// `disabled` or not, under `r`.
 #[cfg(feature = "widgets")]
 pub fn native_checkbox(

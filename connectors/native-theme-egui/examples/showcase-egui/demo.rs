@@ -234,12 +234,12 @@ impl Registry {
 /// What a button drawn in a `ghost` scope notes under *This instance*.
 pub(crate) const GHOST_NOTE: (&str, &str) = (
     "fill and border at rest",
-    "transparent, the border's width kept: a Ghost button, as gpui-component's (GC/button/button.rs:942, :1032)",
+    "transparent, the border's width kept: a Ghost button, as gpui-component's (GC/button/button.rs:973, :1063)",
 );
 
 /// Make the rest of `ui` Ghost: the resting entry's fill and border colour transparent, the
 /// border's width kept, so a button in it is transparent at rest, as gpui-component's ghost
-/// button is (`GC/button/button.rs:942`, `:1032`), and filled and bordered hovered and pressed
+/// button is (`GC/button/button.rs:973`, `:1063`), and filled and bordered hovered and pressed
 /// as its role states. It keeps its full frame, and so its size, in every state, where
 /// `frame_when_inactive(false)` lays it out at rest without the frame's border, which the
 /// hovered frame adds to its size (`egui/src/widgets/button.rs:364-368`). Each button drawn in
@@ -365,7 +365,7 @@ pub(crate) fn scoped(
 /// What a widget of the companion crate notes under *This instance*.
 pub(crate) const WIDGETS_NOTE: (&str, &str) = (
     "drawn by",
-    "native-theme-egui-widgets, in the role's scope, painted from the role's leaves themselves (docs/todo_egui-widgets-spec.md §4)",
+    "native-theme-egui-widgets, in the role's scope, painted from the role's leaves themselves (docs/archive/todo_egui-widgets-spec.md §4)",
 );
 
 /// A widget of the companion crate `native-theme-egui-widgets`, which opens `role`'s scope in
@@ -732,7 +732,7 @@ impl PanelSeams {
 
     /// The frame's inner margin, taken off the frame and handed to the caller, who pads the
     /// content below a row that sits flush at the panel's top with it: the page tabs, as the
-    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:1784`). Recorded
+    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:2060`). Recorded
     /// with the panel.
     pub(crate) fn lift_margin(&mut self) -> egui::Margin {
         let margin = std::mem::take(&mut self.frame.inner_margin);
@@ -743,7 +743,7 @@ impl PanelSeams {
     /// The panel with no inner margin of its own, its content padded by `container_margin`
     /// (`layout.container_margin`) where the theme states one, as the gpui showcase pads its
     /// side panel's settings and inspector
-    /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:606-630`), so a separator
+    /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1524-1534`), so a separator
     /// and a tab bar's rule inside run from edge to edge. Recorded with the panel.
     pub(crate) fn unpadded(mut self, container_margin: Option<f32>) -> Self {
         self.frame.inner_margin = egui::Margin::ZERO;
@@ -832,7 +832,7 @@ pub(crate) fn role_image(
 }
 
 /// A chrome icon the gpui showcase draws by a gpui-component `IconName` that no `IconRole` stands
-/// for (`showcase-gpui/support.rs:430-460`), loaded by the name native-theme-gpui gives it in
+/// for (`showcase-gpui/support.rs:503-538`), loaded by the name native-theme-gpui gives it in
 /// each set (parity rule R5).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ChromeIcon {
@@ -842,8 +842,8 @@ pub(crate) enum ChromeIcon {
 }
 
 impl ChromeIcon {
-    /// The icon's name in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:226`,
-    /// `:239`, `:245`; Material `:358`, `:371`, `:377`; freedesktop `:474`, `:479`, `:669-675`,
+    /// The icon's name in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:230`,
+    /// `:244`, `:250`; Material `:365`, `:379`, `:385`; freedesktop `:485`, `:490`, `:680-686`,
     /// the last by desktop, as GTK desktops and KDE name it apart); `None` in a set that has
     /// none — SF Symbols and Segoe Fluent here — where the button shows its label instead.
     fn name(self, set: IconSet) -> Option<&'static str> {
@@ -867,7 +867,7 @@ impl ChromeIcon {
 }
 
 /// Whether the desktop names its icons as GNOME's Adwaita does, as native-theme-gpui decides it
-/// (`connectors/native-theme-gpui/src/icons.rs:429-437`).
+/// (`connectors/native-theme-gpui/src/icons.rs:437-445`).
 #[cfg(target_os = "linux")]
 fn gtk_desktop() -> bool {
     use native_theme::detect::LinuxDesktop;

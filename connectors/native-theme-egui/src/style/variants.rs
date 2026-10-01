@@ -266,7 +266,7 @@ mod tests {
     }
 
     /// §6.3, §6.4: windows-11 states a fully transparent disabled checkbox fill, `#f9f9f900`
-    /// (`native-theme/src/presets/windows-11.toml:133`; dark `#33333300`, `:513`); it is written
+    /// (`native-theme/src/presets/windows-11.toml:146`; dark `#33333300`, `:554`); it is written
     /// as given into the `Disabled` cell's `inactive.bg_fill` and reported once, for the leaf.
     #[test]
     fn a_transparent_disabled_fill_is_written_and_noted_once() {

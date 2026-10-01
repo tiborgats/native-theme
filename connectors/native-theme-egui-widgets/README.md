@@ -33,8 +33,10 @@ fn settings(ui: &mut egui::Ui, wifi_on: &mut bool) {
 }
 ```
 
-Widgets are `egui::Widget`s added with `ui.add(..)`; `ui.add_sized` and
-`ui.add_enabled` take them too. There is no extension trait on `egui::Ui`:
+Every widget but the drop-down and the expander is an `egui::Widget` added
+with `ui.add(..)` (`ui.add_sized` and `ui.add_enabled` take them too); those
+two, whose contents are a closure, are shown with `ComboBox::show_ui` and
+`Expander::show`. There is no extension trait on `egui::Ui`:
 an inherent `Ui` method of the same name would silently win at every call
 site.
 

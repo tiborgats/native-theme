@@ -2485,7 +2485,7 @@ fn validate_border_records_missing_and_returns_sentinel_for_full_kind() {
 
 // ===== G7 (Phase 94-02) — `ResolutionContext` regression tests =====
 //
-// These tests lock the G7 contract (docs/todo_v0.5.7_gaps.md §G7) before the
+// These tests lock the G7 contract (docs/archive/v0.5.7_gaps.md §G7) before the
 // implementation is written. They prove:
 //   (a) `crate::resolve::ResolutionContext` does not exist yet
 //   (b) `ThemeMode::into_resolved(&ResolutionContext)` does not exist yet

@@ -41,7 +41,9 @@
 //! load from the preset's TOML. Presets that only define one variant will return
 //! that variant for both `is_dark=true` and `is_dark=false` (the resolution
 //! pipeline falls back to the available variant). To support runtime light/dark
-//! switching, call [`from_preset()`] twice and swap the resulting themes.
+//! switching, call [`from_preset()`] once per mode and [`apply`] both: each
+//! `apply` stores its variant, and gpui-component's `Theme::change` /
+//! `sync_system_appearance` then switch between the two native palettes.
 //!
 //! # Theme Field Coverage
 //!
@@ -54,7 +56,7 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
-//! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
+//! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 4 of 6 | background, font.color, selection_background, selection_text_color |
 //! | `window` | 4 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar` |
@@ -86,8 +88,8 @@
 //! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable. For
-//! the checkbox, radio, switch, slider, progress bar and spinner, the
-//! `widgets` module (feature `widgets`) draws controls of its own on
+//! the checkbox, radio, switch, slider, progress bar, spinner, tab bar and
+//! separator, the `widgets` module (feature `widgets`) draws controls of its own on
 //! gpui-base's headless primitives, every part from the theme.
 //!
 //! # Features
@@ -165,8 +167,8 @@ use std::rc::Rc;
 /// To auto-derive: `let is_dark = resolved.defaults.background_color` lightness < 0.5
 /// via [`is_dark_resolved()`].
 ///
-/// Note: `is_dark` is an explicit parameter here, unlike the iced connector
-/// which derives it from background luminance. Planned for unification in v0.6.0.
+/// Note: `is_dark` is an explicit parameter here; the iced connector's
+/// `to_theme` takes no mode.
 ///
 /// The families are [`font_family`]'s: on macOS the stated family of the
 /// system UI font, "SF Pro", is passed to gpui as its own alias

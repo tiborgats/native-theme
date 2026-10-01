@@ -165,12 +165,12 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
 }
 
 /// A theme-drawn `widgets::ProgressBar` at `value` (spec §2.5 of
-/// docs/todo_gpui-widgets-spec.md).
+/// docs/archive/todo_gpui-widgets-spec.md).
 #[cfg(feature = "widgets")]
 pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo {
     let p = &r.progress_bar;
     WidgetInfo::new("ProgressBar")
-        .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/todo_gpui-widgets-spec.md)")
+        .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
         .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:49"))
         .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:48"))
         .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:47"))

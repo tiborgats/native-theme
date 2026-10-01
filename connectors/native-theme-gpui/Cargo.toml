@@ -26,7 +26,7 @@ all-features = true
 [features]
 default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
 # `widgets`: the theme-drawn checkbox, radio, switch, slider, progress bar,
-# spinner, tab bar and separator (docs/todo_gpui-widgets-spec.md), for the
+# spinner, tab bar and separator (docs/archive/todo_gpui-widgets-spec.md), for the
 # parts gpui-component draws from literals of its own.
 widgets = []
 material-icons = ["native-theme/material-icons"]
@@ -50,7 +50,8 @@ gpui = { package = "gpui-pre", version = "0.3.7" }
 # added ThemeColor::chart_grid, which this crate writes.
 gpui-component = "0.7.0"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
-# apply_system_reduce_motion (not re-exported).
+# apply_system_reduce_motion (not re-exported), and the headless primitives
+# the `widgets` feature builds on (Tabs, the slider and progress parts).
 gpui-base = "0.7.0"
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the

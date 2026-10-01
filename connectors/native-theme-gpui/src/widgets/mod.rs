@@ -28,7 +28,7 @@
 //! or with a length that is not finite, it renders gpui-component's own
 //! control instead, so nothing here ever paints a value no source gives.
 //!
-//! Rules, from `docs/todo_gpui-widgets-spec.md` §1:
+//! Rules, from `docs/archive/todo_gpui-widgets-spec.md` §1:
 //!
 //! * a hover colour is a layer composited over the idle fill; a `None` soft
 //!   option copies the colour it would cover (a tab's hover takes the place

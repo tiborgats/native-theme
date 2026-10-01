@@ -1,6 +1,6 @@
 // Error enum with Display, std::error::Error, and From conversions
 //
-// Option F: flat 9-variant Error + ErrorKind + RangeViolation
+// Option F: flat 10-variant Error + ErrorKind + RangeViolation
 
 use std::fmt;
 
@@ -53,12 +53,13 @@ pub enum ErrorKind {
 
 /// Errors that can occur when reading or processing theme data.
 ///
-/// This is a flat enum with 9 variants. Use [`Error::kind()`] for coarse
+/// This is a flat enum with 10 variants. Use [`Error::kind()`] for coarse
 /// dispatch without matching every variant.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// A feature is compiled in but disabled at runtime or not applicable.
+    /// The platform has a theme reader, but the Cargo feature that compiles it
+    /// is not enabled (`macos` on macOS, `windows` on Windows).
     FeatureDisabled {
         /// Feature name (e.g. `"kde"`, `"portal"`).
         name: &'static str,
@@ -80,7 +81,8 @@ pub enum Error {
         known: &'static [&'static str],
     },
 
-    /// File-system watching is not available.
+    /// Theme-change watching is not available: no backend for this desktop
+    /// environment, or the platform's feature is disabled.
     WatchUnavailable {
         /// Why watching is unavailable.
         reason: &'static str,
@@ -96,7 +98,8 @@ pub enum Error {
         mode: crate::theme::ColorMode,
     },
 
-    /// TOML parsing or serialization error.
+    /// TOML parsing error. (Serialization errors from `Theme::to_toml` are
+    /// `ReaderFailed` with reader `"toml-serializer"`.)
     Toml(toml::de::Error),
 
     /// File I/O error.
@@ -116,7 +119,7 @@ pub enum Error {
 
     /// A platform reader failed with a platform-specific error.
     ReaderFailed {
-        /// Reader name (e.g. `"kde"`, `"gnome-portal"`, `"windows"`).
+        /// Reader name (e.g. `"kde"`, `"windows"`, `"icon-theme"`).
         reader: &'static str,
         /// The underlying error.
         source: Box<dyn std::error::Error + Send + Sync>,

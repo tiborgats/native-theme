@@ -28,7 +28,7 @@
 //!
 //! # How this file is organised
 //!
-//! The source is split into section-divider blocks (`// ───────`) — one per
+//! The source is split into section-divider blocks (`// -----`) — one per
 //! widget category, tab, or view. Search for the dividers to jump between
 //! sections.
 
@@ -3673,7 +3673,7 @@ const COMPATIBILITY_URL: &str = concat!(
 const LEFT_PANEL_WIDTH: f32 = 300.0;
 
 /// The narrowest the splitter leaves the side panel, and the page beside it:
-/// gpui-base's `PANEL_MIN_SIZE` (gpui-base 0.6.6 `src/resizable/mod.rs:14`),
+/// gpui-base's `PANEL_MIN_SIZE` (gpui-base 0.7.0 `src/resizable/mod.rs:14`),
 /// the floor of the gpui showcase's resizable body. The model states none.
 const PANEL_MIN_WIDTH: f32 = 100.0;
 

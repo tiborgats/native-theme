@@ -84,7 +84,7 @@ impl Combination {
     }
 }
 
-/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:653`) — sixteen; the four `-live`
+/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:663`) — sixteen; the four `-live`
 /// merge bases are not selectable — in both modes: the 32 combinations. One atlas per preset,
 /// carrying both variants, built with no plan and `AccessibilityPreferences::default()`.
 fn combinations() -> Vec<Combination> {
@@ -97,7 +97,7 @@ fn combinations() -> Vec<Combination> {
             (ColorMode::Light, Theme::Light, light),
             (ColorMode::Dark, Theme::Dark, dark),
         ] {
-            let json = serde_json::to_value(&resolved).expect("ResolvedTheme serialises"); // native-theme/src/model/resolved.rs:155
+            let json = serde_json::to_value(&resolved).expect("ResolvedTheme serialises"); // native-theme/src/model/resolved.rs:157
             let json = with_layout(json, atlas.layout());
             out.push(Combination {
                 key: info.key,
@@ -115,7 +115,7 @@ fn combinations() -> Vec<Combination> {
 
 /// `json` with the four `layout.` leaves under the manifest's names, as T3's `leaf_paths` adds
 /// them: they are the builder's `LayoutTheme`, not `ResolvedTheme` fields, and `LayoutTheme`
-/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:893-911`).
+/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:1025-1045`).
 fn with_layout(mut json: serde_json::Value, layout: &crate::LayoutTheme) -> serde_json::Value {
     if let Some(object) = json.as_object_mut() {
         object.insert(
@@ -459,7 +459,7 @@ fn padding_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedPad
     }
 }
 
-/// A widget's `ResolvedWidgetBorder` (`native-theme/src/model/border.rs:233-246`), read back
+/// A widget's `ResolvedWidgetBorder` (`native-theme/src/model/border.rs:243-256`), read back
 /// from the JSON leaves, for the helpers that take the whole border.
 fn border_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedWidgetBorder {
     native_theme::theme::ResolvedWidgetBorder {
@@ -1010,7 +1010,7 @@ fn t10_every_sink_holds_the_leafs_value() {
 }
 
 /// The §6.11 cases T10 names, on `adwaita`, the one bundled preset that states the checkbox
-/// padding (`native-theme/src/presets/adwaita.toml:124`, `:135-136`): 14 where egui draws 8;
+/// padding (`native-theme/src/presets/adwaita.toml:133`, `:147-148`): 14 where egui draws 8;
 /// pairs set apart, the mean of both; every side above half the box, `clamp_length`'s floor.
 #[test]
 fn t10_a_none_leaf_keeps_eguis_value() {
@@ -1279,7 +1279,7 @@ fn straight_native(c: Rgba) -> Straight {
 }
 
 /// `top` over `bottom`, straight-alpha source-over — the siblings' `over`
-/// (`connectors/native-theme-iced/src/contract.rs:852-877`).
+/// (`connectors/native-theme-iced/src/contract.rs:853-871`).
 fn over(top: Straight, bottom: Straight) -> Straight {
     let under = bottom.a * (1.0 - top.a);
     let alpha = top.a + under;

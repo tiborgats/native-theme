@@ -321,7 +321,8 @@ impl fmt::Display for DiagnosticEntry {
 ///
 /// Returned by [`platform_preset_name()`]. The `name` field is the
 /// user-facing preset name (e.g. `"macos-sonoma"`). The `is_live` field
-/// indicates whether the preset is a live (geometry-only) preset used
+/// indicates whether the preset is a live preset (no colours or font
+/// families) used
 /// by the OS-first pipeline.
 ///
 /// `Display` returns the user-facing name.
@@ -329,7 +330,8 @@ impl fmt::Display for DiagnosticEntry {
 pub struct PlatformPreset {
     /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-sonoma").
     pub name: &'static str,
-    /// Whether this is a live preset (geometry-only merge base for OS readers).
+    /// Whether this is a live preset (the merge base for OS readers: no
+    /// colours or font families).
     pub is_live: bool,
 }
 
@@ -379,8 +381,9 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 
 /// Map the current platform to its matching platform preset.
 ///
-/// Live presets contain only geometry/metrics (no colors, fonts, or icons)
-/// and are used as the merge base in the OS-first pipeline. Use
+/// Live presets state no colours and no font families: geometry, metrics,
+/// font and icon sizes, and (except `kde-breeze-live`) the theme-level
+/// `icon_theme`. They are used as the merge base in the OS-first pipeline. Use
 /// [`PlatformPreset::live_name()`] to get the internal live preset key.
 ///
 /// - macOS -> `PlatformPreset { name: "macos-sonoma", is_live: true }`
@@ -1246,7 +1249,7 @@ mod pipeline_tests {
 
     // --- Phase 93-04 G4: Theme.icon_theme + three-tier precedence ---
     //
-    // Per docs/todo_v0.5.7_gaps.md §G4 and doc 1 §20 Option C:
+    // Per docs/archive/v0.5.7_gaps.md §G4 and doc 1 §20 Option C:
     //   Tier 1 (highest): ThemeMode::defaults.icon_theme (per-variant override)
     //   Tier 2:           Theme::icon_theme (shared across variants)
     //   Tier 3 (fallback): system_icon_theme() (runtime detect), none where it fails

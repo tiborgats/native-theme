@@ -18,7 +18,7 @@
 //! (`native-theme-derive/src/gen_ranges.rs:127-141`, `check_padding` at
 //! `native-theme/src/resolve/validate_helpers.rs:458-485`), never its `corner_radius` or
 //! `line_width`, and [`crate::ResolvedTheme`] derives `Deserialize` with public fields
-//! (`native-theme/src/model/resolved.rs:155-156`), which bypasses validation altogether — so a
+//! (`native-theme/src/model/resolved.rs:157-158`), which bypasses validation altogether — so a
 //! hostile or buggy input really can put a non-finite number in
 //! `theme.button.border.corner_radius`, or in a padding side.
 
@@ -207,7 +207,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 
 /// `epaint::Margin` from a widget's per-side padding, over the sink's own margin.
 ///
-/// `ResolvedPadding` has one `Option<f32>` per side (`native-theme/src/model/border.rs:195-204`),
+/// `ResolvedPadding` has one `Option<f32>` per side (`native-theme/src/model/border.rs:203-212`),
 /// each a **per-side** value (`docs/platform-facts.md:910-926`) — do **not** halve. A stated,
 /// finite side (`Some(0.0)` included) is rounded to a whole point, saturating; an unstated
 /// side (`None`) and, by the non-finite rule, a `NaN` or `±∞` one keep `base`'s side, where
@@ -215,7 +215,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 /// `Spacing::window_margin`'s `Margin::same(6)` (`egui/src/style.rs:1456`), a panel frame's
 /// `Margin::symmetric(8, 2)` (`egui/src/containers/frame.rs:187`) — never an invented `0`.
 /// `base` is a parameter because only the call site knows the sink, as in iced's
-/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:329-339`). The call site reports a
+/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:371-381`). The call site reports a
 /// non-finite side, and a saturated one.
 #[inline]
 #[must_use]
@@ -355,7 +355,7 @@ pub fn to_stroke(base: egui::Stroke, color: Rgba, line_width_px: f32) -> egui::S
 /// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See §6.14.
 ///
 /// native-theme carries **no** shadow geometry — only `shadow_enabled: bool`
-/// (`native-theme/src/model/border.rs:224`, `:241`) — while `epaint::Shadow` needs
+/// (`native-theme/src/model/border.rs:234`, `:251`) — while `epaint::Shadow` needs
 /// `offset: [i8; 2]` (`epaint/src/shadow.rs:15`), `blur: u8` (`:20`) and `spread: u8` (`:23`).
 /// Only the colour is replaced; `enabled == false` yields `Shadow::NONE`
 /// (`epaint/src/shadow.rs:40-45`).

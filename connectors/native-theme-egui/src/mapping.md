@@ -261,8 +261,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `checkbox.indicator_color` | SCOPED | «checkbox» `visuals.widgets.noninteractive.fg_stroke.color`; «checkbox» `visuals.widgets.inactive.fg_stroke.color`; «checkbox» `visuals.widgets.hovered.fg_stroke.color`; «checkbox» `visuals.widgets.active.fg_stroke.color`; «checkbox» `visuals.widgets.open.fg_stroke.color` |  |
 | `checkbox.indicator_width` | DIRECT | `spacing.icon_width`; «checkbox» `spacing.icon_width`; «checkbox» `spacing.interact_size.y`; «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) |  |
 | `checkbox.label_gap` | DIRECT | `spacing.icon_spacing`; «checkbox» `spacing.icon_spacing` |  |
-| `checkbox.radio_dot_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8) |
-| `checkbox.radio_indicator_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width |
+| `checkbox.radio_dot_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8) |
+| `checkbox.radio_indicator_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width |
 | `checkbox.unchecked_background` | SCOPED | «checkbox» `visuals.widgets.inactive.bg_fill` (when: stated; None copies checkbox.background_color, §6.4); «checkbox» `visuals.widgets.open.bg_fill` (when: stated; None copies checkbox.background_color, §6.4); «checkbox» `visuals.widgets.hovered.bg_fill` (when: checkbox.hover_background is translucent or None, §6.1, §6.4); «checkbox» `visuals.widgets.active.bg_fill` (when: checkbox.hover_background is translucent or None, §6.1, §6.4); «checkbox:disabled» `visuals.widgets.inactive.bg_fill` (when: checkbox.disabled_background is None, §6.4) |  |
 | `checkbox.unchecked_border_color` | SCOPED | «checkbox» `visuals.widgets.noninteractive.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.inactive.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.hovered.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.active.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.open.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4) |  |
 | `link.active_text_color` | DERIVED | → T18(a) |  |
@@ -302,18 +302,18 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `switch.checked_background` | SCOPED | «switch» `visuals.selection.bg_fill`; «switch:disabled» `visuals.selection.bg_fill` (when: switch.disabled_checked_background is None, §6.4) |  |
 | `switch.disabled_checked_background` | SCOPED | «switch:disabled» `visuals.selection.bg_fill` (when: stated; None copies switch.checked_background, §6.4) |  |
 | `switch.disabled_opacity` | SCOPED | «switch» `visuals.disabled_alpha`; «switch:disabled» `visuals.disabled_alpha` |  |
-| `switch.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1) |
+| `switch.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
 | `switch.disabled_unchecked_background` | SCOPED | «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4) |  |
 | `switch.hover_checked_background` | DERIVED | → T18(a) |  |
 | `switch.hover_unchecked_background` | SCOPED | «switch» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4) |  |
-| `switch.thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1) |
-| `switch.thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1) |
+| `switch.thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
+| `switch.thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
 | `switch.track_height` | SCOPED | «switch» `spacing.interact_size.y` |  |
 | `switch.track_radius` | SCOPED | «switch» `visuals.widgets.noninteractive.corner_radius`; «switch» `visuals.widgets.inactive.corner_radius`; «switch» `visuals.widgets.hovered.corner_radius`; «switch» `visuals.widgets.active.corner_radius`; «switch» `visuals.widgets.open.corner_radius` |  |
 | `switch.track_width` | DERIVED | → T18(a) |  |
 | `switch.unchecked_background` | SCOPED | «switch» `visuals.widgets.inactive.weak_bg_fill`; «switch» `visuals.widgets.open.weak_bg_fill`; «switch» `visuals.widgets.hovered.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: switch.disabled_unchecked_background is None, §6.4) |  |
-| `switch.unchecked_thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's colour |
-| `switch.unchecked_thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1): the off thumb's size |
+| `switch.unchecked_thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's colour |
+| `switch.unchecked_thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's size |
 
 ### Inputs (input, text area, combo box, list)
 
@@ -410,9 +410,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
-| `progress_bar.border.color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9) |
+| `progress_bar.border.color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9) |
 | `progress_bar.border.corner_radius` | DERIVED | → T18(a) |  |
-| `progress_bar.border.line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9) |
+| `progress_bar.border.line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9) |
 | `progress_bar.border.padding.bottom` | UNMAPPABLE |  | `egui-limited`: egui: a progress-bar style (§14 item 36) |
 | `progress_bar.border.padding.left` | SCOPED | «progress_bar» `spacing.item_spacing.x` | probe `5.0` |
 | `progress_bar.border.padding.right` | UNMAPPABLE |  | `egui-limited`: egui: a progress-bar style (§14 item 36) |
@@ -434,7 +434,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `separator.line_width` | SCOPED | «separator» `visuals.widgets.noninteractive.bg_stroke.width` |  |
 | `slider.disabled_fill_color` | SCOPED | «slider:disabled» `visuals.selection.bg_fill` (when: stated; None copies slider.fill_color, §6.4) |  |
 | `slider.disabled_opacity` | SCOPED | «slider» `visuals.disabled_alpha`; «slider:disabled» `visuals.disabled_alpha` |  |
-| `slider.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider (docs/todo_egui-widgets-spec.md §4.2) |
+| `slider.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider (docs/archive/todo_egui-widgets-spec.md §4.2) |
 | `slider.disabled_track_color` | SCOPED | «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: stated; None copies slider.track_color, §6.4) |  |
 | `slider.fill_color` | SCOPED | «slider» `visuals.selection.bg_fill`; `visuals.slider_trailing_fill` (when: never: written true in the base style, which every cell inherits, §5.9); «slider:disabled» `visuals.selection.bg_fill` (when: slider.disabled_fill_color is None, §6.4) |  |
 | `slider.thumb_color` | SCOPED | «slider» `visuals.widgets.hovered.bg_fill` (when: slider.thumb_hover_color is None, §6.9); «slider» `visuals.widgets.active.bg_fill` (when: slider.thumb_hover_color is None, §6.9) |  |
@@ -446,7 +446,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `spinner.diameter` | DERIVED | «spinner» `spacing.interact_size.y` (when: spinner.diameter is at least spinner.min_diameter, §6.7) |  |
 | `spinner.fill_color` | SCOPED | «spinner» `visuals.widgets.active.fg_stroke.color` |  |
 | `spinner.min_diameter` | DERIVED | «spinner» `spacing.interact_size.y` (when: spinner.min_diameter exceeds spinner.diameter, §6.7) |  |
-| `spinner.stroke_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Spinner (docs/todo_egui-widgets-spec.md §4.3) |
+| `spinner.stroke_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Spinner (docs/archive/todo_egui-widgets-spec.md §4.3) |
 | `splitter.divider_color` | SCOPED | «splitter» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `splitter.divider_width` | SCOPED | «splitter» `visuals.widgets.noninteractive.bg_stroke.width`; «splitter» `visuals.widgets.hovered.fg_stroke.width`; «splitter» `visuals.widgets.active.fg_stroke.width` |  |
 | `splitter.hover_color` | SCOPED | «splitter» `visuals.widgets.hovered.fg_stroke.color`; «splitter» `visuals.widgets.active.fg_stroke.color` |  |
@@ -456,9 +456,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
 | `expander.arrow_color` | DERIVED | → T18(f) |  |
-| `expander.arrow_gap` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589) |
+| `expander.arrow_gap` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589) |
 | `expander.arrow_icon_size` | DERIVED | «expander» `spacing.icon_width_inner`; «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
-| `expander.arrow_side` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589) |
+| `expander.arrow_side` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589) |
 | `expander.border.color` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.color`; «expander» `visuals.widgets.inactive.bg_stroke.color`; «expander» `visuals.widgets.hovered.bg_stroke.color`; «expander» `visuals.widgets.active.bg_stroke.color`; «expander» `visuals.widgets.open.bg_stroke.color` |  |
 | `expander.border.corner_radius` | SCOPED | «expander» `visuals.widgets.noninteractive.corner_radius`; «expander» `visuals.widgets.inactive.corner_radius`; «expander» `visuals.widgets.hovered.corner_radius`; «expander» `visuals.widgets.active.corner_radius`; «expander» `visuals.widgets.open.corner_radius` |  |
 | `expander.border.line_width` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.width`; «expander» `visuals.widgets.inactive.bg_stroke.width`; «expander» `visuals.widgets.hovered.bg_stroke.width`; «expander» `visuals.widgets.active.bg_stroke.width`; «expander» `visuals.widgets.open.bg_stroke.width`; «expander» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «expander» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro); «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
@@ -467,14 +467,14 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `expander.border.padding.right` | DERIVED | «expander» `spacing.button_padding.x` |  |
 | `expander.border.padding.top` | DERIVED | «expander» `spacing.button_padding.y` |  |
 | `expander.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
-| `expander.content_indent` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516) |
+| `expander.content_indent` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516) |
 | `expander.font.color` | SCOPED | «expander» `visuals.widgets.noninteractive.fg_stroke.color`; «expander» `visuals.widgets.inactive.fg_stroke.color`; «expander» `visuals.widgets.hovered.fg_stroke.color`; «expander» `visuals.widgets.active.fg_stroke.color`; «expander» `visuals.widgets.open.fg_stroke.color` |  |
 | `expander.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `expander.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
 | `expander.font.size` | SCOPED | «expander» `text_styles[Button].size` |  |
 | `expander.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `expander.font.weight` | DERIVED | → T18(c) | probe `700` |
-| `expander.frame_enabled` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568) |
+| `expander.frame_enabled` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568) |
 | `expander.header_height` | SCOPED | «expander» `spacing.interact_size.y` |  |
 | `expander.hover_background` | SCOPED | «expander» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.widgets.active.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.collapsing_header_frame` (when: never: written true in every expander cell, the frame the hover fill lies in, §6.1) |  |
 | `sidebar.background_color` | SCOPED | \[panel_left\] `fill`; \[panel_right\] `fill`; «sidebar» `visuals.panel_fill` |  |
