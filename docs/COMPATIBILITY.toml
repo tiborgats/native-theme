@@ -14,16 +14,16 @@
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "826abcdcb237fe48b1f9693a1e353be6270e472c"
-generated = "2026-09-28"
-sources = "33accd7051eb3f592a0377d6c7d6e2f8e0b49f91dd3e9ead6819945fe21b332f"
+commit = "adf9619a60d70b5a0df8fbe1c74462309877bd1e"
+generated = "2026-10-01"
+sources = "9ebc1d12da493a89f139e981294f9e1519448e3fb7983367f82a608323ff9488"
 
 [native-theme-gpui.verified]
-gpui-base = "0.6.6"
-gpui-component = "0.6.6"
-gpui-kit = "0.6.6"
-gpui-kit-assets = "0.6.6"
-gpui-pre = "0.3.6"
+gpui-base = "0.7.0"
+gpui-component = "0.7.0"
+gpui-kit = "0.7.0"
+gpui-kit-assets = "0.7.0"
+gpui-pre = "0.3.7"
 
 [native-theme-iced]
 commit = "826abcdcb237fe48b1f9693a1e353be6270e472c"
