@@ -4,7 +4,7 @@
 // embedded subset of "Fuzzy Bubbles" for the "Your app" label).
 //
 // Palette: blue = the application, emerald = connectors (pick one), teal =
-// optional companion widgets, slate = the runtime core and its internal
+// the egui connector's optional companion widgets (inside the egui choice), slate = the runtime core and its internal
 // proc-macro, amber = the optional build-time code generator. Crate names
 // are monospace bold; the line under each says what it is for. No toolkit
 // versions appear here: they live in each connector's README, where a test
@@ -47,15 +47,22 @@ digraph crate_relations {
               fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
         iced [label=<<FONT FACE="monospace"><B>native-theme-iced</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>for iced</I></FONT>>,
               fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
-        egui [label=<<FONT FACE="monospace"><B>native-theme-egui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>for egui</I></FONT>>,
-              fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
-    }
+        // The egui choice: the connector, and beside it the optional
+        // companion crate of widgets egui's own cannot draw from a theme.
+        subgraph cluster_egui {
+            label="";
+            style="rounded,dotted";
+            color="#99f6e4";
+            penwidth=1.2;
+            margin=10;
 
-    // Optional companion of the egui connector: widgets egui lacks, drawn
-    // from the theme.
-    eguiw [label=<<FONT FACE="monospace"><B>native-theme-egui-widgets</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>optional · switch, slider, segmented…</I></FONT>>,
-           style="rounded,filled,dashed",
-           fillcolor="#f0fdfa", color="#0d9488", fontcolor="#134e4a"];
+            egui [label=<<FONT FACE="monospace"><B>native-theme-egui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>for egui</I></FONT>>,
+                  fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
+            eguiw [label=<<FONT FACE="monospace"><B>native-theme-egui-widgets</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>optional · egui widgets drawn from the theme</I></FONT>>,
+                   style="rounded,filled,dashed",
+                   fillcolor="#f0fdfa", color="#0d9488", fontcolor="#134e4a"];
+        }
+    }
 
     // Runtime core.
     core [label=<<FONT FACE="monospace" POINT-SIZE="15"><B>native-theme</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>runtime core · presets<BR/>reads the desktop's theme<BR/>Theme → ResolvedTheme</I></FONT>>,
@@ -72,12 +79,11 @@ digraph crate_relations {
            style="rounded,filled,dashed",
            fillcolor="#fffbeb", color="#d97706", fontcolor="#78350f"];
 
-    // Columns: app | companion widgets, build | connectors | core, derive.
-    { rank=same; gpui -> iced -> egui [style=invis]; }
-    { rank=same; eguiw -> build [style=invis]; }
+    // Columns: app, build | connectors | core, derive.
+    { rank=same; gpui -> iced -> egui -> eguiw [style=invis]; }
     { rank=same; core; derive; }
 
-    app -> iced [lhead=cluster_connectors, minlen=2];
+    app -> iced [lhead=cluster_connectors];
     app -> eguiw [style=dashed];
     app -> build [style=dashed, xlabel="build-dependency"];
 
