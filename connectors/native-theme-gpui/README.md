@@ -122,9 +122,11 @@ gpui_kit::application().run(|cx| {
 `gpui_kit::open_window` wraps the view in gpui-base's `Root`, which carries
 the dialogs, sheets and notifications. A window opened before
 `gpui_kit::init` gets no `WindowState` — the root plugin `init` registers,
-which hosts them and sets the window's rem — so it shows no dialogs and text
-scaling fails silently (gpui-component `src/root.rs:21, 434-436`; gpui-base
-`src/root.rs:43-44`).
+which hosts them and sets the window's rem — so its first `open_dialog`,
+`open_sheet` or `notifications` call panics with upstream's "component window
+state is missing" (gpui-component `src/root.rs:112, 126`), and text scaling
+fails silently, the rem staying gpui's default (`src/root.rs:21, 434-436`;
+gpui-base `src/root.rs:43-44`).
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
