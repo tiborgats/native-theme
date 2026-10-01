@@ -57,6 +57,14 @@ impl<'a> From<&'a dyn IconProvider> for IconId<'a> {
     }
 }
 
+/// A provider by reference, such as a variant of the icon enum
+/// `native-theme-build` generates: `MaterialLoader::new(&AppIcon::PlayPause)`.
+impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
+    fn from(provider: &'a T) -> Self {
+        IconId::Custom(provider)
+    }
+}
+
 // =============================================================================
 // Typed per-set icon loaders
 // =============================================================================
@@ -1021,6 +1029,29 @@ mod load_icon_tests {
             FreedesktopLoader::new(provider).load_with(undetected),
             Some(IconData::Svg(Cow::Borrowed(b"<svg>app</svg>"))),
             "the provider's own SVG did not load without a detected icon theme"
+        );
+    }
+
+    /// A generated icon enum (native-theme-build) is handed to a loader by
+    /// reference, as its README shows: `MaterialLoader::new(&AppIcon::X)`.
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn a_provider_is_passed_to_a_loader_by_reference() {
+        #[derive(Debug)]
+        struct AppIcon;
+        impl IconProvider for AppIcon {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                None
+            }
+            fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+                (set == IconSet::Material).then_some(Cow::Borrowed(b"<svg>app</svg>"))
+            }
+        }
+
+        assert_eq!(
+            MaterialLoader::new(&AppIcon).load(),
+            Some(IconData::Svg(Cow::Borrowed(b"<svg>app</svg>"))),
+            "a provider passed by reference did not load its own SVG"
         );
     }
 
