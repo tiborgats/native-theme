@@ -4,10 +4,11 @@ use gpui_component::{Colorize as _, Size, theme::Theme};
 
 use super::{
     ColorClaim, WidgetInfo,
-    chrome::{GhostContent, ghost_colours, input_background},
-    claim,
+    chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
+    claim, px_text,
 };
 use crate::demo::{ButtonKind, ButtonState};
+use crate::support::ChromeIcon;
 
 /// What a Button of `kind` paints at rest: its fill, where it has one, and
 /// its label.
@@ -733,4 +734,73 @@ pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
         .not_themeable("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")
         .not_themeable("own icons", super::own_icons("Copy, and Check once it has copied (clipboard.rs, Clipboard)"))
         .instance("value", value)
+}
+
+/// The Buttons page's component `Toolbar` (spec §8.2): gpui-component's own
+/// at its default Small Size, refined by `geometry::toolbar`, whose line
+/// `demo::component_toolbar` records; `item_gap` is the `toolbar.item_gap`
+/// the theme states. Its Buttons report themselves (`toolbar_item`).
+pub fn toolbar(item_gap: Option<f32>) -> WidgetInfo {
+    let group_gap = match item_gap {
+        Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
+        None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
+    };
+    WidgetInfo::new("Toolbar")
+        .variant("Small, two ToolbarGroups")
+        .not_themeable(
+            "size",
+            "h_8, p_1, gap_1 and text_sm at its default Small Size (toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
+        )
+        .not_themeable(
+            "fill",
+            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar); geometry::toolbar fills it with toolbar.background_color",
+        )
+        .not_themeable(
+            "items",
+            "added with content(), not child(): child() would make a Button a compact ghost and wrap it in an input_h box, 1.5 rem at Small (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar; sizing.rs, input_h)",
+        )
+        .instance("group gap", group_gap)
+        .instance(
+            "groups",
+            "Edit (Undo2, Redo2, Copy) and View (Search, Maximize, Settings), each a ToolbarGroup with its accessible label, a vertical Separator between them; each Button reports itself",
+        )
+}
+
+/// One of the component `Toolbar`'s Ghost Buttons, showing `icon` of the
+/// icon theme named `set`; it runs nothing. Its icon-size line is recorded
+/// where `demo::toolbar_item` applies the builder.
+pub fn toolbar_item(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+    let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
+    let info = WidgetInfo::new("Button").variant(if drawn {
+        "Ghost, icon"
+    } else {
+        "Ghost, labelled"
+    });
+    let info = native_ghost(info, t).not_themeable(
+        "fill",
+        "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
+    );
+    let info = if drawn {
+        info.not_themeable(
+            "icon",
+            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
+        )
+        .not_themeable(
+            "size",
+            "h_8 with px_2p5 at the default Size -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
+        )
+    } else {
+        info.not_themeable(
+            "size",
+            "h_8 with px_2p5 at the default Size -- rems, so the platform's font (button/button.rs, RenderOnce for Button)",
+        )
+    };
+    info.instance(
+        "icon",
+        chrome_icon_note(icon, set, "the button shows its name as its label instead"),
+    )
+    .instance(
+        "action",
+        "none: the section shows the Toolbar, so its Buttons run nothing",
+    )
 }

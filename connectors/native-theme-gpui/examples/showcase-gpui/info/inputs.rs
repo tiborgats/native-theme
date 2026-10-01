@@ -443,10 +443,10 @@ pub fn switch(
         info
     } else {
         info.color(claim(
-            "focus ring",
+            "focus ring, ring at 50% alpha",
             "ring",
-            t.ring,
-            "gpui-component/styled.rs:175-189",
+            t.ring.alpha(0.5),
+            "gpui-component/styled.rs:189",
         ))
     };
     let info = if disabled {
@@ -770,16 +770,16 @@ pub fn native_switch(
             "native-theme-gpui/widgets/switch.rs:75",
         )),
     };
-    // While focused the track draws the focus ring in `ring`, which the
-    // connector maps from `defaults.focus_ring_color`; a disabled switch
-    // takes no focus.
+    // While focused the track draws the focus ring in `ring` at 50% alpha
+    // (gpui-component styled.rs:189), `ring` being the connector's
+    // `defaults.focus_ring_color`; a disabled switch takes no focus.
     let info = if disabled {
         info
     } else {
         info.color(claim(
-            "focus ring",
+            "focus ring, focus_ring_color at 50% alpha",
             "focus_ring_color",
-            stated(r.defaults.focus_ring_color),
+            stated(r.defaults.focus_ring_color).alpha(0.5),
             "native-theme-gpui/colors.rs:197",
         ))
     };
@@ -1188,4 +1188,79 @@ pub fn calendar(t: &Theme) -> WidgetInfo {
         .not_themeable("fill", "none: a Calendar sets an edge, a radius and a padding but no background, so the window shows through (time/calendar.rs, Calendar)")
         .not_themeable("month navigation", "ChevronLeft and ChevronRight built inline with no setter (time/calendar.rs, Calendar)")
         .not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its month buttons (time/calendar.rs, Calendar)"))
+}
+
+/// The Inputs page's `TimeField` (spec §8.3), enabled and empty: a field of
+/// hour, minute and period segments over the state `Showcase::new` builds.
+pub fn time_field(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("TimeField")
+        .color(super::chrome::input_background(t))
+        .color(claim(
+            "text",
+            "foreground",
+            t.foreground,
+            "gpui-component/input/input.rs:105",
+        ))
+        .color(claim(
+            "border",
+            "input",
+            t.input,
+            "gpui-component/time/time_field.rs:110",
+        ))
+        .color(claim(
+            "border, invalid",
+            "danger",
+            t.danger,
+            "gpui-component/time/time_field.rs:119",
+        ))
+        .color(claim(
+            "selected segment",
+            "selection",
+            t.selection,
+            "gpui-component/time/time_field.rs:135",
+        ))
+        .color(claim(
+            "focus ring, ring at 50% alpha",
+            "ring",
+            t.ring.alpha(0.5),
+            "gpui-component/styled.rs:189",
+        ))
+        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable("segment radius", "half the theme's radius (time/time_field.rs, TimeField)")
+        .not_themeable("size", "input_h and the input text size of its Size, Medium unless the caller sizes it -- rems, so the platform's font (time/time_field.rs, TimeField; sizing.rs, input_h)")
+        .not_themeable("figures", "tabular figures, a font feature the field sets itself (time/time_field.rs, tabular_figures)")
+        .instance("value", "none until one is typed: TimeFieldState::new holds no time (gpui-base time_field.rs, TimeFieldState::new)")
+}
+
+/// `info`, an `Input`'s, for one that holds an inline token (spec §8.3),
+/// drawn as upstream's `InputToken` chip; the token is not selected.
+pub fn with_token(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    info.variant("with an inline token")
+        .color(claim(
+            "token bg",
+            "muted",
+            t.muted,
+            "gpui-component/input/token.rs:53",
+        ))
+        .color(claim(
+            "token border",
+            "border",
+            t.border,
+            "gpui-component/input/token.rs:53",
+        ))
+        .color(claim(
+            "token bg, selected",
+            "selection",
+            t.selection,
+            "gpui-component/input/token.rs:50",
+        ))
+        .color(claim(
+            "token text",
+            "foreground",
+            t.foreground,
+            "gpui-component/input/token.rs:56",
+        ))
+        .config("token radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable("token", "an InputToken chip the Input's token renderer draws, one line tall, gap_1 and px_1 inside a 1px border (input/token.rs, InputToken)")
+        .instance("token", "@native-theme, a mention inserted once when the state is built (gpui-base input/base/inline_tokens.rs, InlineToken::new)")
 }

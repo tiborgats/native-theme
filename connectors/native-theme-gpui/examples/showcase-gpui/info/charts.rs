@@ -3,7 +3,7 @@
 //! Every chart paints the same colours in light and in dark: no chart's
 //! paint branches on the mode, so each claim below reads its token in both.
 
-use gpui_component::theme::Theme;
+use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{WidgetInfo, claim, percent_text, px_text};
 use crate::demo::{
@@ -43,11 +43,49 @@ fn series_colours(info: WidgetInfo) -> WidgetInfo {
 
 /// A chart the showcase builds without an id, which upstream draws as a
 /// plain plot.
-fn no_hover(info: WidgetInfo) -> WidgetInfo {
-    info.instance(
-        "hover",
-        "none: the chart is built without an id, so upstream draws it as a plain plot, with no tooltip and no hover emphasis (plot/mod.rs, Plot::id)",
-    )
+/// The guide a chart draws at the hovered point.
+enum Guide {
+    /// A dashed hairline, the Line and Area charts'.
+    Dashed,
+    /// A band as wide as the hovered bar or candle, the Bar and Candlestick
+    /// charts' (`CrossLine::band`).
+    Band,
+    /// None: the Pie chart lifts the hovered slice instead.
+    None,
+}
+
+/// What a chart paints under the pointer: gpui-component 0.7.0's charts are
+/// interactive by default (chart/bar_chart.rs, BarChart::interactive), so the
+/// hovered point gets a tooltip on the popover surface and the `guide`.
+fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {
+    let info = info
+        .color(claim(
+            "tooltip bg",
+            "popover",
+            t.popover,
+            "gpui-component/styled.rs:197",
+        ))
+        .color(claim(
+            "tooltip label",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/plot/tooltip.rs:545",
+        ));
+    match guide {
+        Guide::Dashed => info.color(claim(
+            "guide line, dashed: border mixed 80% toward foreground",
+            "border",
+            t.border.mix(t.foreground, 0.8),
+            "gpui-component/plot/tooltip.rs:126",
+        )),
+        Guide::Band => info.color(claim(
+            "guide band, foreground at 8%",
+            "foreground",
+            t.foreground.opacity(0.08),
+            "gpui-component/plot/tooltip.rs:128",
+        )),
+        Guide::None => info,
+    }
 }
 
 /// The Charts page's BarChart, its bars in `chart_1`.
@@ -94,7 +132,10 @@ pub fn bar_chart(t: &Theme) -> WidgetInfo {
             "labels",
             "every month under its bar: tick_margin is 1, the default, and BarChart::tick_margin would label every n-th (chart/bar_chart.rs, BarChart::tick_margin)",
         );
-    no_hover(info)
+    hover(info, t, Guide::Band).not_themeable(
+        "hover emphasis",
+        "the bars away from the hovered one fade, the farther the more, by up to HOVER_DIM, 0.45, of their opacity -- a literal (chart/bar_chart.rs, HOVER_DIM)",
+    )
 }
 
 /// The Charts page's LineChart, its line and dots in `chart_2`.
@@ -142,7 +183,7 @@ pub fn line_chart(t: &Theme) -> WidgetInfo {
             "dots",
             "on, through LineChart::dot: one on each point (chart/line_chart.rs, LineChart::dot)",
         );
-    no_hover(info)
+    hover(info, t, Guide::Dashed)
 }
 
 /// The Charts page's AreaChart: one series, its line in `chart_3` over a
@@ -196,7 +237,7 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
             "series",
             "one; each AreaChart::y adds another, and the n-th stroke and fill are the n-th series' (chart/area_chart.rs, AreaChart::y)",
         );
-    no_hover(info)
+    hover(info, t, Guide::Dashed)
 }
 
 /// The Charts page's PieChart, a donut whose slices are `chart_1`,
@@ -247,7 +288,10 @@ pub fn pie_chart(t: &Theme) -> WidgetInfo {
             "labels",
             "none: PieChart::label would draw one outside the ring for each slice (chart/pie_chart.rs, PieChart::label)",
         );
-    no_hover(info)
+    hover(info, t, Guide::None).not_themeable(
+        "hover emphasis",
+        "the hovered slice lifts outward by HOVER_LIFT, 6px, and the others fade by HOVER_DIM, 0.35, of their opacity -- literals (chart/pie_chart.rs, HOVER_LIFT and HOVER_DIM)",
+    )
 }
 
 /// The Charts page's CandlestickChart, each candle `chart_bullish` or
@@ -319,5 +363,5 @@ pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
             "body width",
             "0.8 of the band, the default (chart/candlestick_chart.rs, CandlestickChart::body_width_ratio)",
         );
-    no_hover(info)
+    hover(info, t, Guide::Band)
 }

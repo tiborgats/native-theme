@@ -298,6 +298,31 @@ impl Showcase {
                 &self.date_picker_state,
                 "Select a date",
             ))
+            .child(demo::heading(
+                ui,
+                cx,
+                "inputs-heading-time-field",
+                "TimeField",
+            ))
+            .child(
+                demo::time_field(ui, cx, "inputs-time-field", &self.time_field_state).self_start(),
+            )
+            .child(demo::heading(
+                ui,
+                cx,
+                "inputs-heading-token-input",
+                "Input with an inline token",
+            ))
+            .child(
+                demo::token_input(
+                    ui,
+                    cx,
+                    "inputs-token-input",
+                    &self.token_input_state,
+                    px(360.0),
+                )
+                .self_start(),
+            )
             .child(demo::heading(ui, cx, "inputs-heading-calendar", "Calendar"))
             .child(demo::calendar(ui, cx, "inputs-calendar", &self.calendar_state).self_start())
     }

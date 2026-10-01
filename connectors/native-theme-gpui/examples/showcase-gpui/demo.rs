@@ -53,8 +53,8 @@ use gpui_component::{
     hover_card::HoverCard,
     input::{
         Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
-        InputGroupButton, InputGroupText, InputGroupTextarea, InputState, NumberInput, OtpInput,
-        OtpState, Textarea, TextareaState,
+        InputGroupButton, InputGroupText, InputGroupTextarea, InputState, InputToken, NumberInput,
+        OtpInput, OtpState, Textarea, TextareaState,
     },
     kbd::Kbd,
     label::Label,
@@ -87,6 +87,8 @@ use gpui_component::{
     table::{DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableState},
     tag::{Tag, TagVariant},
     text::TextView,
+    time_field::{TimeField, TimeFieldState},
+    toolbar::{Toolbar, ToolbarGroup},
     tooltip::Tooltip,
     tree::{Tree, TreeState},
     v_flex,
@@ -1187,6 +1189,98 @@ fn tool_label(cx: &App, button: Button, text: &'static str) -> Button {
         ),
         None => button.label(text),
     }
+}
+
+/// One ghost icon Button of the Buttons page's component `Toolbar`.
+pub(crate) struct ToolItem {
+    pub id: &'static str,
+    /// gpui-component's icon of the button, which `drawn` is of.
+    pub icon: IconName,
+    /// That icon as the chosen icon theme gives it.
+    pub drawn: ChromeIcon,
+    /// The button's name: its accessible label, and its text where the
+    /// chosen icon theme has no icon for it.
+    pub label: &'static str,
+}
+
+/// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
+/// 0.7.0's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// font, gap and padding sides the theme states, and no fallback or edge,
+/// since the section shows the widget and not the chrome's row -- holding
+/// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
+/// vertical `Separator` between them. Each group spaces its Buttons by
+/// `toolbar.item_gap` where the theme states one, else by the Toolbar's own
+/// Small gap, `gap_1` (toolbar.rs, `RenderOnce for Toolbar`): a group spaces
+/// nothing itself (gpui-base toolbar.rs, `RenderOnce for ToolbarGroup`).
+///
+/// Every item goes in through `content()`: `child()` would make a Button a
+/// compact ghost and wrap it in an `input_h` box (toolbar.rs, `ToolbarItem`;
+/// button/button.rs, `Button::prepare_for_toolbar`).
+pub(crate) fn component_toolbar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    set: &str,
+    edit: Vec<ToolItem>,
+    view: Vec<ToolItem>,
+) -> Stateful<Div> {
+    let item_gap = native_value(cx, |n| n.resolved.toolbar.item_gap).flatten();
+    let group = |id: &'static str, label: &'static str, items: Vec<ToolItem>| {
+        let group = ToolbarGroup::new(id).label(label);
+        let group = match item_gap {
+            Some(gap) => group.gap(px(gap)),
+            None => group.gap_1(),
+        };
+        items.into_iter().fold(group, |group, item| {
+            group.content(toolbar_item(ui, cx, set, item))
+        })
+    };
+    let mut toolbar_info = info::buttons::toolbar(item_gap);
+    let toolbar = native_info(
+        Toolbar::new("buttons-toolbar-row"),
+        cx,
+        geometry::toolbar,
+        "toolbar",
+        &mut toolbar_info,
+    )
+    .content(group("buttons-toolbar-edit", "Edit", edit))
+    .content(separator(
+        ui,
+        cx,
+        "buttons-toolbar-separator",
+        SeparatorKind::Vertical,
+    ))
+    .content(group("buttons-toolbar-view", "View", view));
+    toolbar.info(ui, "buttons-toolbar", toolbar_info)
+}
+
+/// One of the component `Toolbar`'s Buttons: a Ghost `Button` built as
+/// [`toolbar_button`] builds the chrome's, without an action or a tooltip,
+/// its icon of the chosen icon theme at `geometry::icon_size_toolbar`, and
+/// its label as its text where the icon theme has no icon for it, never
+/// another icon theme's icon.
+fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) -> Stateful<Div> {
+    let ToolItem {
+        id,
+        icon,
+        drawn,
+        label,
+    } = item;
+    let mut button_info = info::buttons::toolbar_item(cx.theme(), &drawn, set);
+    let icon =
+        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
+        button_info = button_info.geometry("icon_size_toolbar");
+    }
+    let button = refined(
+        ButtonKind::Ghost.apply(Button::new(id), cx),
+        tool_button_box(cx).as_ref(),
+    )
+    .map(|button| match icon {
+        Some(icon) => button.accessibility_label(label).child(icon),
+        None => tool_label(cx, button, label),
+    });
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }
 
 /// A tooltip reading `text` and the key binding of `action`, built by the
@@ -3006,16 +3100,51 @@ pub(crate) fn text_input(
     disabled: bool,
     width: Pixels,
 ) -> Stateful<Div> {
+    text_field(ui, cx, id, state, field, disabled, width, false)
+}
+
+/// The Inputs page's `Input` holding an inline token (spec §8.3):
+/// [`text_input`]'s field, refined whole and enabled, drawing its state's
+/// inline tokens as upstream's `InputToken` chips.
+pub(crate) fn token_input(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<InputState>,
+    width: Pixels,
+) -> Stateful<Div> {
+    text_field(ui, cx, id, state, InputField::Refined, false, width, true)
+}
+
+/// [`text_input`], drawing the state's inline tokens as `InputToken` chips
+/// where `tokens`.
+#[allow(clippy::too_many_arguments)]
+fn text_field(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<InputState>,
+    field: InputField,
+    disabled: bool,
+    width: Pixels,
+    tokens: bool,
+) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut input_info = info::inputs::input(cx.theme(), field, styled);
     if disabled {
         input_info = input_info.variant("disabled");
     }
+    if tokens {
+        input_info = info::inputs::with_token(input_info, cx.theme());
+    }
     let input = Input::new(state)
         .with_size(Size::Medium)
         .disabled(disabled)
-        .w(width);
+        .w(width)
+        .when(tokens, |input| {
+            input.token(|ctx, _, _| InputToken::new(ctx))
+        });
     let input = match field {
         InputField::Refined => {
             let input = native_info(input, cx, geometry::input, "input", &mut input_info);
@@ -3823,6 +3952,19 @@ pub(crate) fn color_picker(
 
 /// A `DatePicker` over `state`, reading `placeholder` until a date is
 /// picked.
+/// A `TimeField` over `state` (spec §8.3), upstream's own: the theme states
+/// no time-field geometry, so its size and radius are upstream's.
+pub(crate) fn time_field(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TimeFieldState>,
+) -> Stateful<Div> {
+    TimeField::new(state)
+        .info(ui, id, info::inputs::time_field(cx.theme()))
+        .debug_selector(move || id.into())
+}
+
 pub(crate) fn date_picker(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5674,6 +5816,8 @@ pub(crate) enum SeparatorKind {
     Labelled(&'static str),
     /// Horizontal, dashed.
     Dashed,
+    /// Vertical, between the groups of a row.
+    Vertical,
 }
 
 impl SeparatorKind {
@@ -5682,6 +5826,7 @@ impl SeparatorKind {
             Self::Horizontal => "horizontal",
             Self::Labelled(_) => "horizontal, labelled",
             Self::Dashed => "horizontal, dashed",
+            Self::Vertical => "vertical",
         }
     }
 }
@@ -5714,6 +5859,7 @@ pub(crate) fn separator(
         SeparatorKind::Horizontal => Separator::horizontal(),
         SeparatorKind::Labelled(label) => Separator::horizontal().label(label),
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
+        SeparatorKind::Vertical => Separator::vertical(),
     };
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
     let line = native_color(cx, |n| n.resolved.separator.line_color);
@@ -5726,8 +5872,13 @@ pub(crate) fn separator(
         )
         // A horizontal Separator's box is as tall as its label and no
         // taller: the line is an absolute child (separator.rs:79-84). The
-        // padding leaves something to point at.
-        .py_1()
+        // padding leaves something to point at. A vertical one is as tall
+        // as its row: its box is `h_full` of the box that reports it
+        // (separator.rs:28), which stretches to the row.
+        .map(|separator| match kind {
+            SeparatorKind::Vertical => separator.self_stretch(),
+            _ => separator.py_1(),
+        })
         .debug_selector(move || id.into())
 }
 

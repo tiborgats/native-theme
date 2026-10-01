@@ -13,7 +13,9 @@ use gpui_component::{
     combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
     h_flex, h_resizable,
-    input::{EditorState, InputState, NumberInputEvent, OtpState, StepAction, TextareaState},
+    input::{
+        EditorState, InlineToken, InputState, NumberInputEvent, OtpState, StepAction, TextareaState,
+    },
     list::ListState,
     message_scroller::MessageScrollerState,
     resizable_panel,
@@ -21,6 +23,7 @@ use gpui_component::{
     slider::{SliderEvent, SliderState},
     table::{Column, TableEvent, TableState},
     theme::Theme,
+    time_field::TimeFieldState,
     tree::{TreeItem, TreeState},
     v_flex,
 };
@@ -371,6 +374,10 @@ pub(crate) struct Showcase {
     pub(crate) otp_state: Entity<OtpState>,
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     pub(crate) date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
+    /// The Inputs page's TimeField (spec §8.3).
+    pub(crate) time_field_state: Entity<TimeFieldState>,
+    /// The Inputs page's Input holding one inline token (spec §8.3).
+    pub(crate) token_input_state: Entity<InputState>,
     pub(crate) calendar_state: Entity<gpui_component::calendar::CalendarState>,
     pub(crate) checkbox_a: bool,
     pub(crate) checkbox_b: bool,
@@ -1355,6 +1362,19 @@ impl Showcase {
         let date_picker_state =
             cx.new(|cx| gpui_component::date_picker::DatePickerState::new(window, cx));
 
+        // Time field state, and an input holding one token: inserting it is
+        // fallible, so a refused token leaves plain text and says why.
+        let time_field_state = cx.new(|cx| TimeFieldState::new(window, cx));
+        let token_input_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            if let Err(error) =
+                state.replace_with_token(InlineToken::new("mention", "@native-theme"), window, cx)
+            {
+                eprintln!("showcase: the sample token was refused: {error:?}");
+            }
+            state
+        });
+
         // Calendar state
         let calendar_state = cx.new(|cx| gpui_component::calendar::CalendarState::new(window, cx));
 
@@ -1553,6 +1573,8 @@ impl Showcase {
             otp_state,
             color_picker_state,
             date_picker_state,
+            time_field_state,
+            token_input_state,
             calendar_state,
             checkbox_a: true,
             checkbox_b: false,

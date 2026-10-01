@@ -5,50 +5,64 @@
 # naming a widget the toolkit no longer offers, or one the showcase does show
 # after all. An exception is therefore a claim that has to stay true.
 #
-# A reason belongs to one of six kinds (spec §6a.4): a test harness, an
+# A reason belongs to one of seven kinds (spec §6a.4): a test harness, an
 # internal sub-part of a compound widget, a layout wrapper with no visual
 # surface, a widget needing a GPU pipeline the application supplies, a
-# widget native-theme models no counterpart for, or a widget that would mix
-# icon sets (v0.5.9 chrome-UX rationale §9). The egui sections name the `Ui`
+# widget native-theme models no counterpart for, a widget that would mix
+# icon sets (v0.5.9 chrome-UX rationale §9), or a widget whose state the
+# toolkit only builds fallibly, which the showcase cannot hold without a
+# panic path (v0.6.0-rc1 gpui-kit 0.7 rationale K12). The egui sections name the `Ui`
 # layout methods no page of the egui showcase calls, each with the ui.rs line
 # of egui 0.36.2 it was read at. Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
-# them -- and cites the file and line it was read at: gpui-component 0.6.6
-# (first read at 0.6.4; no file cited here changed in 0.6.6), iced_widget
-# 0.14.2, iced_aw 0.14.1.
+# them -- and cites the file and line it was read at: gpui-component 0.7.0
+# (first read at 0.6.4; the gpui section re-read at 0.7.0 on 2026-10-01),
+# iced_widget 0.14.2, iced_aw 0.14.1.
 
 # Composition slots and internal parts of gpui-component widgets. Each is a
 # piece of a parent widget, not a widget of its own, so the parent's own
 # section in the showcase is where it becomes visible.
 [gpui]
-AttachmentActions = "a composition slot of `Attachment` for action buttons (attachment.rs:614)"
-AttachmentGroup = "the container `Attachment` values are grouped in, a scrollable row (attachment.rs:712)"
+AttachmentActions = "a composition slot of `Attachment` for action buttons (attachment.rs:1162)"
+AttachmentGroup = "the container `Attachment` values are grouped in, a scrollable row (attachment.rs:1237)"
 BubbleContent = "the visible surface inside a `Bubble` (bubble.rs:153)"
-BubbleGroup = "the container consecutive `Bubble` values from one sender are grouped in (bubble.rs:254)"
-BubbleReactions = "the reaction region positioned on a `Bubble` edge (bubble.rs:307)"
+BubbleGroup = "the container consecutive `Bubble` values from one sender are grouped in (bubble.rs:258)"
+BubbleReactions = "the reaction region positioned on a `Bubble` edge (bubble.rs:311)"
 ButtonIcon = "`#[doc(hidden)]`; what `Button::icon` wraps its icon, spinner or progress in (button/button_icon.rs:5-7)"
 Caret = "the chevron a `Button`, `Select` or `Combobox` trigger draws; it renders an `Icon` and is built only by those (select.rs:39, button/button.rs, combobox.rs)"
-CrossLine = "the crosshair of a chart tooltip, built only by the charts (plot/tooltip.rs:33, chart/line_chart.rs)"
+CrossLine = "the crosshair of a chart tooltip, built only by the charts (plot/tooltip.rs:39, chart/line_chart.rs)"
 DialogAction = "the click target inside a dialog footer; it renders a bare `div` around its children and dispatches `Confirm` (dialog/footer.rs:104-133)"
 DialogContent = "the content container of a `Dialog` (dialog/content.rs:9)"
 DialogHeader = "the header section of a `Dialog` (dialog/header.rs:8-17)"
-Dot = "the value dot of a chart tooltip, built only by the charts (plot/tooltip.rs:185, chart/line_chart.rs)"
-DropdownMenuPopover = "built only by `DropdownMenu::dropdown_menu`, never by a consumer (menu/dropdown_menu.rs:30, :37)"
+Dot = "the value dot of a chart tooltip, built only by the charts (plot/tooltip.rs:191, chart/line_chart.rs)"
+DropdownMenuPopover = "built only by `DropdownMenu::dropdown_menu`, never by a consumer (menu/dropdown_menu.rs:29, :36)"
 ListSeparatorItem = "a `List` row variant; it renders a `ListItem` (list/separator_item.rs:6, :37)"
 Loading = "the skeleton rows a `List` or a `Table` draws while its delegate reports loading; `list::loading` and `table::loading` are private modules, so no consumer can build one (list/loading.rs:6, list/mod.rs:5, list/delegate.rs:5, table/delegate.rs:11)"
-MessageAvatar = "the sender identity slot beside a `Message` (message.rs:222)"
-MessageFooter = "the footer slot of a `Message` (message.rs:413)"
-MessageGroup = "the container consecutive `Message` values from one sender are grouped in (message.rs:20)"
-MessageHeader = "the header slot of a `Message` (message.rs:276)"
+MessageAvatar = "the sender identity slot beside a `Message` (message.rs:254)"
+MessageFooter = "the footer slot of a `Message` (message.rs:445)"
+MessageGroup = "the container consecutive `Message` values from one sender are grouped in (message.rs:21)"
+MessageHeader = "the header slot of a `Message` (message.rs:308)"
+QuestionnaireChoiceDescription = "secondary text inside a `QuestionnaireChoice` card (questionnaire/components.rs:1023-1032), shown where its parent is"
 SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dropdowns render (searchable_list/item.rs:11-18)"
 SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
-SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:349-360, :369; read in gpui-component 0.6.6), so under any other chosen icon theme it would show another icon theme's icon. The status bar's side-panel toggle is a Button whose `PanelLeft` comes from the chosen icon theme"
+SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:358-369, :378; read in gpui-component 0.7.0), so under any other chosen icon theme it would show another icon theme's icon. The status bar's side-panel toggle is a Button whose `PanelLeft` comes from the chosen icon theme"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
-Text = "not a text widget but a chart axis label: `plot::label::Text` is built only by `AxisText`, which the charts build for every tick (plot/label.rs:95, plot/axis.rs:99, :144, chart/mod.rs:83)"
-WindowBorder = "the window's own edge, drawn by `Root` and never constructed by the showcase, which is what the check counts as shown: `Root::new` sets `bordered: true` (root.rs:117) and `Root::render` wraps the window in `window_border()` (root.rs:605; both read in gpui-component 0.6.6). A second, nested one would call `set_client_inset` again (window_border.rs:147-149), so the showcase builds none; the inspector's Theme tab states the facts of the one `Root` draws"
+WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` root plugin and never constructed by the showcase, which is what the check counts as shown: `WindowState::decorate` wraps the window in `window_border()` (root.rs:450-458; read in gpui-component 0.7.0). A second, nested one would call `set_client_inset` again (window_border.rs:155), so the showcase builds none; the inspector's Theme tab states the facts of the one gpui-component draws"
+
+
+# A widget whose state the toolkit only builds fallibly, which the showcase
+# cannot hold without a panic path (v0.6.0-rc1 gpui-kit 0.7 rationale K12).
+Questionnaire = "it and its parts take an `Entity<QuestionnaireState>`, whose only constructor returns `Result` (gpui-base questionnaire/state.rs:40-45) while gpui builds entities infallibly (gpui-pre app.rs:2971); no `Default` or unchecked constructor exists, and upstream's own tests unwrap it (questionnaire/components.rs:1480). Shown once upstream offers an infallible constructor (docs/todo.md)"
+QuestionnaireActions = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:1246), excepted with it"
+QuestionnaireChoice = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:700), excepted with it"
+QuestionnaireChoices = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:616), excepted with it"
+QuestionnaireError = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:1160), excepted with it"
+QuestionnaireInput = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:1089), excepted with it"
+QuestionnaireItem = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:536), excepted with it"
+QuestionnaireProgress = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:377), excepted with it"
 
 # Layout and utility wrappers with no visual surface of their own, and the
 # one widget that needs a GPU pipeline the application supplies (spec §6a.3).

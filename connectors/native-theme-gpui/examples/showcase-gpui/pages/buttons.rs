@@ -252,5 +252,35 @@ impl Showcase {
                         "npm install native-theme",
                     )),
             )
+            .child(demo::heading(ui, cx, "buttons-heading-toolbar", "Toolbar & ToolbarGroup"))
+            .child(h_flex().child(demo::component_toolbar(
+                ui,
+                cx,
+                &self.icon_set_label(),
+                self.tool_items(&[
+                    ("buttons-toolbar-undo", IconName::Undo2, "Undo"),
+                    ("buttons-toolbar-redo", IconName::Redo2, "Redo"),
+                    ("buttons-toolbar-copy", IconName::Copy, "Copy"),
+                ]),
+                self.tool_items(&[
+                    ("buttons-toolbar-search", IconName::Search, "Search"),
+                    ("buttons-toolbar-maximize", IconName::Maximize, "Maximize"),
+                    ("buttons-toolbar-settings", IconName::Settings, "Settings"),
+                ]),
+            )))
+    }
+
+    /// The component Toolbar's Buttons, as `(id, icon, name)`, each icon as
+    /// the chosen icon theme gives it.
+    fn tool_items(&self, items: &[(&'static str, IconName, &'static str)]) -> Vec<demo::ToolItem> {
+        items
+            .iter()
+            .map(|(id, icon, label)| demo::ToolItem {
+                id,
+                icon: icon.clone(),
+                drawn: self.chrome_icon(icon),
+                label,
+            })
+            .collect()
     }
 }

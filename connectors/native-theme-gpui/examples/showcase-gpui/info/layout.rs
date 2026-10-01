@@ -119,6 +119,10 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
             "dashes",
             "4px dashes with 2px gaps, stroked 1px wide -- literals (separator.rs, Separator::render_dashed)",
         ),
+        SeparatorKind::Vertical => info.not_themeable(
+            "length",
+            "the height of the row it stands in: a vertical Separator is h_full (separator.rs, Separator::vertical)",
+        ),
     }
 }
 

@@ -6054,6 +6054,78 @@ fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
     }
 }
 
+/// The Buttons page's component Toolbar lays its two groups out in one row:
+/// six Buttons side by side and apart, the vertical Separator between Copy
+/// and Search as tall as the Buttons (a zero-height rule would be invisible),
+/// and the Inputs page's TimeField and token Input laid out with a size.
+#[gpui::test]
+fn the_new_widgets_lay_out(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
+    let ids = [
+        "buttons-toolbar-undo",
+        "buttons-toolbar-redo",
+        "buttons-toolbar-copy",
+        "buttons-toolbar-search",
+        "buttons-toolbar-maximize",
+        "buttons-toolbar-settings",
+    ];
+    let buttons: Vec<Bounds<Pixels>> = ids.iter().map(|id| bounds_of(&mut cx, id)).collect();
+    for (id, b) in ids.iter().zip(&buttons) {
+        assert!(
+            b.size.width > px(0.) && b.size.height > px(0.),
+            "{id} has no size: {b:?}"
+        );
+    }
+    for pair in buttons.windows(2) {
+        if let [left, right] = pair {
+            assert!(
+                left.right() <= right.left() && (left.center().y - right.center().y).abs() < px(1.),
+                "the toolbar's Buttons are not one row of separate boxes: {left:?} then {right:?}"
+            );
+        }
+    }
+    let separator = bounds_of(&mut cx, "buttons-toolbar-separator");
+    let (copy, search) = (buttons[2], buttons[3]);
+    assert!(
+        copy.right() <= separator.left() && separator.left() <= search.left(),
+        "the Separator {separator:?} is not between Copy {copy:?} and Search {search:?}"
+    );
+    assert!(
+        separator.size.height >= copy.size.height,
+        "the Separator {separator:?} is shorter than the Buttons {copy:?}"
+    );
+    show(&mut cx, &showcase, Page::Inputs);
+    for id in ["inputs-time-field", "inputs-token-input"] {
+        let b = bounds_of(&mut cx, id);
+        assert!(
+            b.size.width > px(0.) && b.size.height > px(0.),
+            "{id} has no size: {b:?}"
+        );
+    }
+}
+
+/// The Inputs page's token Input holds the one token `Showcase::new` inserts
+/// (spec §8.3): a refused token only prints a line, so this is what notices
+/// it.
+#[gpui::test]
+fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let tokens = read(&mut cx, &showcase, |this, cx| {
+        this.token_input_state
+            .read(cx)
+            .tokens()
+            .iter()
+            .map(|span| span.token().text().to_string())
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(
+        tokens,
+        ["@native-theme"],
+        "the token Input holds {tokens:?}"
+    );
+}
+
 /// Every sample whose gpui-component widget draws icons of its own says
 /// they are gpui-component's whichever icon theme is chosen (decision D1):
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
