@@ -19,7 +19,7 @@
 #
 # The hash covers the git object ids of that connector's Cargo.toml, src,
 # examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest
-# its showcase embeds): a connector that has changed has not been verified, the
+# its showcase embeds, and the egui widgets crate's Cargo.toml and src): a connector that has changed has not been verified, the
 # rule scripts/update_provenance.sh applies to the sources its screenshots came
 # from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
 # on a depth-1 checkout and needs no network.
@@ -66,8 +66,11 @@ family_of() {
 source_paths() {
     local dir="connectors/$(crate_of "$1")"
     case "$1" in
-        # No `tests` directory; the showcase embeds `mapping.toml`.
-        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/mapping.toml" ;;
+        # No `tests` directory; the showcase embeds `mapping.toml` and draws
+        # with the egui widgets crate, which depends on egui too.
+        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/mapping.toml" \
+                  connectors/native-theme-egui-widgets/Cargo.toml \
+                  connectors/native-theme-egui-widgets/src ;;
         *)    printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" ;;
     esac
 }
@@ -156,7 +159,8 @@ write_stamp() {
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
 # Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
-# mapping.toml, the manifest its showcase embeds). A connector whose sources have changed
+# mapping.toml, the manifest its showcase embeds, and the egui widgets crate's
+# Cargo.toml and src). A connector whose sources have changed
 # has not been verified, whatever this file says about the set.
 # Do not edit by hand.
 EOF
@@ -259,6 +263,14 @@ gates_egui() {
         cargo doc -p native-theme-egui --no-deps --locked
     run_gate "documentation (all features)" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-egui --no-deps --locked --all-features
+    run_gate "widgets crate: tests (no features)" \
+        cargo test -p native-theme-egui-widgets --locked --no-default-features
+    run_gate "widgets crate: tests (all features)" \
+        cargo test -p native-theme-egui-widgets --locked --all-features
+    run_gate "widgets crate: clippy" \
+        cargo clippy -p native-theme-egui-widgets --all-targets --all-features --locked -- -D warnings
+    run_gate "widgets crate: documentation" env RUSTDOCFLAGS="-D warnings" \
+        cargo doc -p native-theme-egui-widgets --no-deps --locked --all-features
     run_gate "widget coverage" python3 scripts/check_widget_coverage.py
 }
 

@@ -47,6 +47,8 @@ SOURCE_PATHS=(
     connectors/native-theme-egui/src
     connectors/native-theme-egui/examples
     connectors/native-theme-egui/mapping.toml
+    connectors/native-theme-egui-widgets/Cargo.toml
+    connectors/native-theme-egui-widgets/src
     scripts/generate_screenshots_iced.sh
     scripts/generate_screenshots_gpui.sh
     scripts/generate_screenshots_egui.sh
