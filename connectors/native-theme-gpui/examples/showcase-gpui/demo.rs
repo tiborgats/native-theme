@@ -6018,6 +6018,10 @@ pub(crate) fn card(
 /// A column of `items` small Labels, each reporting itself, `height` tall in
 /// the showcase's frame, scrolled by gpui-component's scrollbar and kept
 /// clear of it by `geometry::scrollbar_gutter`.
+///
+/// The frame is a box of its own around the scrolling viewport: framed
+/// itself, the viewport would scroll its border with the content and draw
+/// the scrollbar over the border's right edge.
 pub(crate) fn scroll_area(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6028,12 +6032,11 @@ pub(crate) fn scroll_area(
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
-    native_info(
+    let viewport = native_info(
         div()
-            .id(id)
-            .h(height)
-            .w_full()
-            .demo_frame(cx)
+            .id(SharedString::from(format!("{id}-viewport")))
+            .size_full()
+            .debug_selector(move || format!("{id}-viewport"))
             .overflow_y_scrollbar(),
         cx,
         geometry::scrollbar_gutter,
@@ -6047,14 +6050,20 @@ pub(crate) fn scroll_area(
             format!("{id}-item-{n}"),
             format!("Scrollable item #{n} - demonstrates scrollbar theming"),
         )
-    })))
-    .info(ui, id, area_info)
-    // A scroller inside the page's own takes the pointer out of the page's
-    // hit test, or a wheel turned here would scroll both (gpui-pre
-    // window.rs, HitboxBehavior::BlockMouse). On the wrapper, not the
-    // scroller: an occluding scroller would hide its wrapper's hover.
-    .occlude()
-    .debug_selector(move || id.into())
+    })));
+    div()
+        .h(height)
+        .w_full()
+        .demo_frame(cx)
+        .debug_selector(move || format!("{id}-frame"))
+        .child(viewport)
+        .info(ui, id, area_info)
+        // A scroller inside the page's own takes the pointer out of the page's
+        // hit test, or a wheel turned here would scroll both (gpui-pre
+        // window.rs, HitboxBehavior::BlockMouse). On the wrapper, not the
+        // scroller: an occluding scroller would hide its wrapper's hover.
+        .occlude()
+        .debug_selector(move || id.into())
 }
 
 /// The Accordion of the Layout page: an item per `(title, answer id,

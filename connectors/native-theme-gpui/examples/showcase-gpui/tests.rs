@@ -337,6 +337,38 @@ fn a_page_that_fits_keeps_no_scrollbar_strip(cx: &mut TestAppContext) {
 
 /// A Settings row keeps off the page's scrollbar.
 ///
+/// The Layout page's scroll area scrolls its content inside its frame: the
+/// frame stays put while the items move, and the scrolled content, as wide
+/// as the box the scrollbar is drawn at the right edge of, starts inside the
+/// frame's border on every side but the bottom (it runs on below, clipped),
+/// so the bar cannot cover the border's right edge.
+#[gpui::test]
+fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Layout);
+    let frame = bounds_of(&mut cx, "layout-scroll-area-frame");
+    let content = bounds_of(&mut cx, "layout-scroll-area-viewport");
+    let border = cx.update(|_window, cx| crate::support::demo_border_width(cx));
+    assert!(
+        content.left() >= frame.left() + border
+            && content.right() <= frame.right() - border
+            && content.top() >= frame.top() + border,
+        "the scrolled content {content:?} reaches into the frame's {border:?} border {frame:?}"
+    );
+    let first = bounds_of(&mut cx, "layout-scroll-area-item-1");
+    scroll_at(&mut cx, frame.center(), -px(60.));
+    assert_eq!(
+        bounds_of(&mut cx, "layout-scroll-area-frame"),
+        frame,
+        "the frame moved with the content"
+    );
+    assert!(
+        bounds_of(&mut cx, "layout-scroll-area-item-1").top() < first.top(),
+        "the content did not scroll"
+    );
+}
+
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
 /// (setting/page.rs:227-253, scroll/scrollable.rs:19-29) and reserves only its
 /// own `px_4`; kde-breeze's groove is 21px, wider than that, so without a
