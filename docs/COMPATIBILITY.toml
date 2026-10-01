@@ -9,14 +9,15 @@
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
 # Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
-# mapping.toml, the manifest its showcase embeds). A connector whose sources have changed
+# mapping.toml, the manifest its showcase embeds, and the egui widgets crate's
+# Cargo.toml and src). A connector whose sources have changed
 # has not been verified, whatever this file says about the set.
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "adf9619a60d70b5a0df8fbe1c74462309877bd1e"
+commit = "668683537415229d761b998429c8804bef316fb1"
 generated = "2026-10-01"
-sources = "9ebc1d12da493a89f139e981294f9e1519448e3fb7983367f82a608323ff9488"
+sources = "d96821c304774275d368c6b752a58ae7f5b21455f0bf6d97b0e39793080fc63c"
 
 [native-theme-gpui.verified]
 gpui-base = "0.7.0"
@@ -26,9 +27,9 @@ gpui-kit-assets = "0.7.0"
 gpui-pre = "0.3.7"
 
 [native-theme-iced]
-commit = "826abcdcb237fe48b1f9693a1e353be6270e472c"
-generated = "2026-09-28"
-sources = "bae6679c79de65ce25497931d4370a614109cbfd0fad83242c69b81bbafcfadb"
+commit = "668683537415229d761b998429c8804bef316fb1"
+generated = "2026-10-01"
+sources = "edff13dd8151a5080faf7f167bf544aec9e250260c3720b055b408b087e54e80"
 
 [native-theme-iced.verified]
 iced = "0.14.0"
@@ -38,9 +39,9 @@ iced_test = "0.14.0"
 iced_widget = "0.14.2"
 
 [native-theme-egui]
-commit = "826abcdcb237fe48b1f9693a1e353be6270e472c"
-generated = "2026-09-28"
-sources = "30e28386ee3adb960a4232f1aa8df2ae9fc1cdf3b597dd3a5ef92b06605c6581"
+commit = "668683537415229d761b998429c8804bef316fb1"
+generated = "2026-10-01"
+sources = "a7fe5769c7472dd23c7bfa59f517a258ea8c9df40908fa0697691cd040203f50"
 
 [native-theme-egui.verified]
 ecolor = "0.36.2"

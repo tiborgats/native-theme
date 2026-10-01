@@ -6,10 +6,10 @@
 
 # Workspace version and commit the assets were captured from.
 version = "0.6.0"
-commit = "826abcdcb237fe48b1f9693a1e353be6270e472c"
-generated = "2026-09-28"
+commit = "668683537415229d761b998429c8804bef316fb1"
+generated = "2026-10-01"
 
 # SHA-256 over the git object ids of every path that feeds the showcases
 # (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
-sources = "056038848bb4b53121ce2657fa6f7cf672ecdd1278cb790505a68bf16a06c82e"
+sources = "1c30599647148dc22f2eb96d3a913b6e6f35a794a742ce0a2c6768e768702466"
