@@ -102,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: `custom_icon_to_image_source` draws a provider's SF Symbols and Segoe glyphs in `color`; they were black and white whatever `color` was. The provider's freedesktop icons load through `FreedesktopLoader::color` too.
 - **Showcases (gpui)**: on gpui-kit 0.7.0, whose dialogs and sheets sit beside the view, the command palette's entries and the keyboard shortcuts work while a dialog or sheet has the focus (the actions are handled by a root plugin around the whole window); the capture pointer shield covers dialogs, menus and popovers, which it never covered.
 - **Development**: the visual-assets provenance stamp (`scripts/update_provenance.sh`) and the egui compatibility stamp (`scripts/update_compatibility.sh`, which now also runs its tests, clippy and docs) cover `native-theme-egui-widgets`, which the egui showcase draws with; before, a change there left both stamps fresh.
+- **Showcases (egui)**: the theme settings' drop-down rows are truncated to the drop-down's width, the whole text on hover: the icon-theme row naming why the system's theme is unavailable could carry a reader's whole error and widen the popup far past the window, where nothing in it could be clicked.
 
 ## [0.5.9] - 2026-09-25
 

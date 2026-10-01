@@ -1070,7 +1070,12 @@ fn setting<T: Clone + PartialEq>(
                         let selected = value == setting.current;
                         if row
                             .add(registry, ui, setting.row_kind, |ui| {
-                                ui.selectable_label(selected, text)
+                                // Truncated to the drop-down's width, the whole text on
+                                // hover: an icon-theme row names why the system's theme is
+                                // unavailable, which can run to a reader's whole error, and
+                                // would widen the popup past the window.
+                                ui.add(egui::Button::selectable(selected, text).truncate())
+                                    .on_hover_text(text)
                             })
                             .clicked()
                         {

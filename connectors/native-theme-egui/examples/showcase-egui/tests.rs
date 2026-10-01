@@ -3379,12 +3379,26 @@ fn every_rendered_character_is_in_the_installed_fonts() {
         .flat_map(|t| t.chars())
         .filter(|c| !c.is_control())
         .collect();
+    // Each character has a glyph in a face of the Body family's chain, read from the faces'
+    // own character maps. Not `Fonts::has_glyph`: it reports a character missing when the
+    // face that has it also holds epaint's replacement glyph, `◻`
+    // (`epaint/src/text/font.rs:719-722`), as DejaVu Sans does where it is the substitute.
     let font = egui::TextStyle::Body.resolve(&harness.ctx.global_style());
     let missing: Vec<char> = harness.ctx.fonts_mut(|fonts| {
+        use skrifa::MetadataProvider as _;
+        let definitions = fonts.definitions();
+        let faces: Vec<skrifa::FontRef<'_>> = definitions
+            .families
+            .get(&font.family)
+            .into_iter()
+            .flatten()
+            .filter_map(|key| definitions.font_data.get(key))
+            .filter_map(|data| skrifa::FontRef::from_index(&data.font, data.index).ok())
+            .collect();
         chars
             .iter()
             .copied()
-            .filter(|c| !fonts.has_glyph(&font, *c))
+            .filter(|c| !faces.iter().any(|face| face.charmap().map(*c).is_some()))
             .collect()
     });
     assert!(
