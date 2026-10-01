@@ -2128,11 +2128,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: size, weight and line height on the Label (demo::type_line)",
     ),
     (
-        "",
-        "text_scale.display",
-        "gpui: size, weight and line height on the Label (demo::type_line)",
-    ),
-    (
         "basic.typography.section_heading",
         "text_scale.section_heading",
         "gpui: size, weight and line height on the Label (demo::type_line)",

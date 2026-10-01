@@ -1546,17 +1546,9 @@ states = ["Dialog title"]
 sample = { text = "glyph" }
 
 [[element]]
-id = "basic.typography.display"
-name = "Text"
-parent = "basic.typography.dialog_title"
-leaves = ["text_scale.display", "defaults.font.family", "defaults.font.color"]
-states = ["Display"]
-sample = { text = "glyph" }
-
-[[element]]
 id = "basic.typography.monospace"
 name = "Text"
-parent = "basic.typography.display"
+parent = "basic.typography.dialog_title"
 leaves = ["defaults.line_height", "defaults.mono_font", "defaults.mono_font.color"]
 states = ["Monospace"]
 sample = { text = "glyph" }

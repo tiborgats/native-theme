@@ -2344,7 +2344,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
     (
         "Typography",
         &[
-            ("Label (typography)", 5),
+            ("Label (typography)", 4),
             ("Link", 1),
             ("Label (monospace)", 1),
         ],

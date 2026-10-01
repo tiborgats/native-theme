@@ -8200,10 +8200,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 text("Dialog title").role(&ts.dialog_title, resolved, a11y)
             ),
             tagged(
-                "basic.typography.display",
-                text("Display").role(&ts.display, resolved, a11y)
-            ),
-            tagged(
                 "basic.typography.monospace",
                 text("Monospace")
                     .themed(mono, resolved, a11y)
@@ -15053,7 +15049,6 @@ mod tests {
             "Body",
             "Section heading",
             "Dialog title",
-            "Display",
             "Monospace",
             "Day",
             "Week",

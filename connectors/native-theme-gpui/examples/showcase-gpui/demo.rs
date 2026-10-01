@@ -8060,7 +8060,6 @@ pub(crate) enum TypeRole {
     Body,
     SectionHeading,
     DialogTitle,
-    Display,
     Monospace,
 }
 
@@ -8100,7 +8099,6 @@ pub(crate) fn type_line(
                 font.color,
             ),
             TypeRole::DialogTitle => (entry(&r.text_scale.dialog_title), &font.family, font.color),
-            TypeRole::Display => (entry(&r.text_scale.display), &font.family, font.color),
             TypeRole::Monospace => (
                 lined(&r.defaults.mono_font),
                 &r.defaults.mono_font.family,

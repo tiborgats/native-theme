@@ -207,7 +207,6 @@ const LISTED: &[(&str, &str)] = &[
         "basic.typography.section_heading",
     ),
     ("basic-type-dialog-title", "basic.typography.dialog_title"),
-    ("basic-type-display", "basic.typography.display"),
     ("basic-type-monospace", "basic.typography.monospace"),
     ("basic-heading-icons", "basic.icons.heading"),
     ("basic-icon-copy", "basic.icons.copy"),

@@ -1096,7 +1096,6 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
             "Dialog title",
             "basic.typography.dialog_title",
         ),
-        (TextRole::Display, "Display", "basic.typography.display"),
     ] {
         typography_line(reg, ui, Some(role), text, id);
     }

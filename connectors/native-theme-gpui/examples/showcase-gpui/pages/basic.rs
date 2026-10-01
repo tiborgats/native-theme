@@ -109,7 +109,7 @@ const TYPE_LINES_ABOVE_LINK: [(&str, TypeRole, &str); 2] = [
     ("basic-type-caption", TypeRole::Caption, "Caption"),
     ("basic-type-body", TypeRole::Body, "Body"),
 ];
-const TYPE_LINES_BELOW_LINK: [(&str, TypeRole, &str); 4] = [
+const TYPE_LINES_BELOW_LINK: [(&str, TypeRole, &str); 3] = [
     (
         "basic-type-section-heading",
         TypeRole::SectionHeading,
@@ -120,7 +120,6 @@ const TYPE_LINES_BELOW_LINK: [(&str, TypeRole, &str); 4] = [
         TypeRole::DialogTitle,
         "Dialog title",
     ),
-    ("basic-type-display", TypeRole::Display, "Display"),
     ("basic-type-monospace", TypeRole::Monospace, "Monospace"),
 ];
 

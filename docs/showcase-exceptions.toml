@@ -383,8 +383,6 @@ keys = [
     "catppuccin-mocha:basic.typography.dialog_title.y",
     "kde-breeze:basic.typography.dialog_title.y",
     "kde-breeze:basic.typography.dialog_title.h",
-    "kde-breeze:basic.typography.display.y",
-    "adwaita:basic.typography.display.h",
     "adwaita:basic.typography.monospace.y",
     "adwaita:basic.typography.monospace.h",
     "catppuccin-mocha:basic.typography.monospace.h",
@@ -629,7 +627,6 @@ keys = [
     "adwaita:basic.segmented.heading.w",
     "adwaita:basic.typography.heading.w",
     "adwaita:basic.typography.section_heading.w",
-    "adwaita:basic.typography.display.w",
     "adwaita:basic.separator.heading.w",
 ]
 
