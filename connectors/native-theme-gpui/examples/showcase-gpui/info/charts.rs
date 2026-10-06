@@ -63,7 +63,7 @@ fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/styled.rs:197",
+            "gpui-component/styled.rs:190",
         ))
         .color(claim(
             "tooltip label",
@@ -96,19 +96,19 @@ pub fn bar_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/bar_chart.rs:821",
+            "gpui-component/chart/bar_chart.rs:842",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/bar_chart.rs:791",
+            "gpui-component/chart/bar_chart.rs:812",
         ))
         .color(claim(
             "grid",
             "chart_grid",
             t.chart_grid,
-            "gpui-component/chart/bar_chart.rs:857",
+            "gpui-component/chart/bar_chart.rs:878",
         ))
         .not_themeable(
             "colour source",
@@ -147,19 +147,19 @@ pub fn line_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/line_chart.rs:406",
+            "gpui-component/chart/line_chart.rs:427",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/line_chart.rs:393",
+            "gpui-component/chart/line_chart.rs:414",
         ))
         .color(claim(
             "grid",
             "chart_grid",
             t.chart_grid,
-            "gpui-component/chart/mod.rs:419",
+            "gpui-component/chart/mod.rs:493",
         ))
         .not_themeable(
             "colour source",
@@ -205,19 +205,19 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/area_chart.rs:416",
+            "gpui-component/chart/area_chart.rs:437",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/area_chart.rs:403",
+            "gpui-component/chart/area_chart.rs:424",
         ))
         .color(claim(
             "grid",
             "chart_grid",
             t.chart_grid,
-            "gpui-component/chart/mod.rs:419",
+            "gpui-component/chart/mod.rs:493",
         ))
         .not_themeable(
             "colour source",
@@ -312,31 +312,31 @@ pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
             "bullish candles",
             "chart_bullish",
             t.chart_bullish,
-            "gpui-component/chart/candlestick_chart.rs:227",
+            "gpui-component/chart/candlestick_chart.rs:249",
         ))
         .color(claim(
             "bearish candles",
             "chart_bearish",
             t.chart_bearish,
-            "gpui-component/chart/candlestick_chart.rs:228",
+            "gpui-component/chart/candlestick_chart.rs:250",
         ))
         .color(claim(
             "axis labels",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/chart/candlestick_chart.rs:294",
+            "gpui-component/chart/candlestick_chart.rs:316",
         ))
         .color(claim(
             "axis line",
             "border",
             t.border,
-            "gpui-component/chart/candlestick_chart.rs:286",
+            "gpui-component/chart/candlestick_chart.rs:308",
         ))
         .color(claim(
             "grid",
             "border",
             t.border,
-            "gpui-component/chart/candlestick_chart.rs:304",
+            "gpui-component/chart/candlestick_chart.rs:326",
         ))
         .not_themeable(
             "candle colours",

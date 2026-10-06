@@ -598,7 +598,7 @@ impl RenderOnce for Checkbox {
 /// one requests `true`; a checked one does nothing. The mark is a dot
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
 /// circle (:1220); where the theme states no dot size (macOS publishes none),
-/// it is gpui-component's own check glyph (radio.rs:242).
+/// it is gpui-component's own check glyph (radio.rs:239).
 pub struct Radio {
     parts: Parts,
     position: Option<(usize, usize)>,

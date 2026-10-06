@@ -917,9 +917,9 @@ fn apply_inner(
     // not wait for the next input event. The theme is written through
     // `Theme::global_mut` and `sync_base`, which refresh nothing -- upstream
     // leaves the refresh to such a caller (gpui-component
-    // src/theme/mod.rs:448-449), where its own `Theme::change` refreshes every
-    // window (`:314`) -- and `refresh_windows` schedules every window (gpui-pre
-    // src/app.rs:1156).
+    // src/theme/mod.rs:468-469), where its own `Theme::change` refreshes every
+    // window (`:334`) -- and `refresh_windows` schedules every window (gpui-pre
+    // src/app.rs:1237).
     cx.refresh_windows();
 }
 
@@ -1000,8 +1000,8 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `src/theme/schema.rs:643-677`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
 /// them to `ThemeColor::dark()` / `light()` (`:691-699`, `:1079-1083`) and
-/// ends in `sync_base` (`theme/mod.rs:313`), whose `cx.set_global` of
-/// `gpui_base::Theme` (`:453-458`) is the one write of it; its notification
+/// ends in `sync_base` (`theme/mod.rs:333`), whose `cx.set_global` of
+/// `gpui_base::Theme` (`:473-478`) is the one write of it; its notification
 /// reaches the base-theme observer. Writes only when a field differs; the
 /// styled theme has no upstream observer, so the write triggers no rebuild.
 /// After `apply` the connector is the sole writer of these 12 fields: a value
@@ -1026,11 +1026,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:1770-1772`), delivered
-/// after the pending mark is removed (`:1927-1931`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1863-1865`), delivered
+/// after the pending mark is removed (`:2020-2024`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2192-2204`)
+/// The subscription activates through a deferred effect (`src/app.rs:2330-2342`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next

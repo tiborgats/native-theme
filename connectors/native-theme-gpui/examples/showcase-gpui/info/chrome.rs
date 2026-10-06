@@ -247,7 +247,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 "menu bg",
                 "popover",
                 t.popover,
-                "gpui-component/styled.rs:197",
+                "gpui-component/styled.rs:190",
             ))
             .color(claim("hovered item", "accent", t.accent, "showcase"))
             .color(claim("menu separator", "border", t.border, "showcase"))
@@ -290,20 +290,20 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu bg",
         "popover",
         t.popover,
-        "gpui-component/styled.rs:197",
+        "gpui-component/styled.rs:190",
     ))
-    // POPOVER_RING_INK, a literal 0.1 (styled.rs:26).
+    // POPOVER_RING_INK, a literal 0.1 (styled.rs:28).
     .color(claim(
         "menu edge ring, at 10%",
         "foreground",
         t.foreground.alpha(0.1),
-        "gpui-component/styled.rs:35",
+        "gpui-component/styled.rs:37",
     ))
     .color(claim(
         "menu item text",
         "foreground",
         t.foreground,
-        "gpui-component/menu/menu_item.rs:107",
+        "gpui-component/menu/menu_item.rs:104",
     ))
     .color(claim(
         "menu item hover",
@@ -321,7 +321,7 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu separator",
         "border",
         t.border,
-        "gpui-component/menu/popup_menu.rs:1253",
+        "gpui-component/menu/popup_menu.rs:1257",
     ))
     .config(
         "menu border-radius",
@@ -711,13 +711,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:995",
+                "gpui-component/button/button.rs:1007",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1172",
+                "gpui-component/button/button.rs:1184",
             ),
         ),
         GhostContent::Icon => (
@@ -725,13 +725,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:995",
+                "gpui-component/button/button.rs:1007",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1172",
+                "gpui-component/button/button.rs:1184",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -739,13 +739,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:995",
+                "gpui-component/button/button.rs:1007",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1172",
+                "gpui-component/button/button.rs:1184",
             ),
         ),
     };
@@ -761,27 +761,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1211",
+        "gpui-component/button/button.rs:1223",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1156-1162).
+/// in dark mode (button/button.rs:1168-1174).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1159",
+            "gpui-component/button/button.rs:1171",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1157",
+            "gpui-component/button/button.rs:1169",
         )
     }
 }
@@ -790,21 +790,21 @@ fn ghost_hover(t: &Theme) -> ColorClaim {
 /// every widget styled like one: the window background in light mode, and in
 /// dark mode an Oklab mix of 30% input and 70% transparent -- `mix_oklab`'s
 /// factor is the first colour's share (theme/color.rs:44-49) -- read at
-/// theme/mod.rs:465-470. The swatch is that mix, not input at full strength.
+/// theme/mod.rs:485-490. The swatch is that mix, not input at full strength.
 pub(super) fn input_background(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "bg, 30% input mixed with 70% transparent",
             "input",
             t.input.mix_oklab(t.transparent, 0.3),
-            "gpui-component/theme/mod.rs:467",
+            "gpui-component/theme/mod.rs:487",
         )
     } else {
         claim(
             "bg",
             "background",
             t.background,
-            "gpui-component/theme/mod.rs:469",
+            "gpui-component/theme/mod.rs:489",
         )
     }
 }
@@ -827,7 +827,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "popup bg",
             "popover",
             t.popover,
-            "gpui-component/styled.rs:197",
+            "gpui-component/styled.rs:190",
         ))
         .color(claim(
             "row hover, accent at 70%",
@@ -839,7 +839,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/combobox.rs:999",
+            "gpui-component/combobox.rs:1000",
         ))
         .not_themeable(
             "font colour",
@@ -1231,55 +1231,55 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
             "surface bg",
             "popover",
             t.popover,
-            "gpui-component/command/state.rs:913",
+            "gpui-component/command/state.rs:932",
         ))
         .color(claim(
             "surface text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/command/state.rs:914",
+            "gpui-component/command/state.rs:933",
         ))
         .color(claim(
             "search divider",
             "border",
             t.border,
-            "gpui-component/command/state.rs:930",
+            "gpui-component/command/state.rs:949",
         ))
         .color(claim(
             "search icon",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:935",
+            "gpui-component/command/state.rs:954",
         ))
         .color(claim(
             "group label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:729",
+            "gpui-component/command/state.rs:748",
         ))
         .color(claim(
             "row icon",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:808",
+            "gpui-component/command/state.rs:827",
         ))
         .color(claim(
             "highlighted row",
             "accent",
             t.accent,
-            "gpui-component/command/state.rs:717",
+            "gpui-component/command/state.rs:736",
         ))
         .color(claim(
             "highlighted row text",
             "accent_foreground",
             t.accent_foreground,
-            "gpui-component/command/state.rs:718",
+            "gpui-component/command/state.rs:737",
         ))
         .color(claim(
             "empty text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/command/state.rs:868",
+            "gpui-component/command/state.rs:887",
         ))
         .not_themeable(
             "geometry",

@@ -296,7 +296,7 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
 }
 
 /// The fill of the page Button showing the current page: an outlined
-/// Default Button's `input_background()` (button/button.rs:890), the shared
+/// Default Button's `input_background()` (button/button.rs:902), the shared
 /// claim with a role that says whose fill it is.
 fn current_page_fill(t: &Theme) -> ColorClaim {
     ColorClaim {
@@ -328,25 +328,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "current page text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:980",
+                "gpui-component/button/button.rs:992",
             ))
             .color(claim(
                 "current page edge",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1032",
+                "gpui-component/button/button.rs:1044",
             ))
             .color(claim(
                 "current page hover, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:891-895",
+                "gpui-component/button/button.rs:903-907",
             ))
             .color(claim(
                 "current page pressed, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:896-900",
+                "gpui-component/button/button.rs:908-912",
             ))
             .not_themeable("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
@@ -365,7 +365,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "disabled text, at 50%",
                 "muted_foreground",
                 t.muted_foreground.opacity(0.5),
-                "gpui-component/button/button.rs:1315",
+                "gpui-component/button/button.rs:1327",
             ))
             .instance("disabled", format!("{which}: there is no page beyond it (pagination.rs, Pagination::render_nav_button)")),
         None => info,
@@ -651,7 +651,7 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                 "gpui-component/bubble.rs:241",
             ))
             .not_themeable("surface", "none: the Ghost arm drops the border, the corner radius and the padding -- border_0, the radius tokens' none, p_0 (bubble.rs, BubbleContent)"),
-        // The semantic tokens name danger destructive (theme/mod.rs:514); the
+        // The semantic tokens name danger destructive (theme/mod.rs:534); the
         // Destructive arm reads it at a share picked by the mode
         // (bubble.rs:244-249).
         BubbleKind::Destructive => {
@@ -660,14 +660,14 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                     "bg, destructive at 20% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.2),
-                    "gpui-component/theme/mod.rs:514",
+                    "gpui-component/theme/mod.rs:534",
                 )
             } else {
                 claim(
                     "bg, destructive at 10% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.1),
-                    "gpui-component/theme/mod.rs:514",
+                    "gpui-component/theme/mod.rs:534",
                 )
             };
             bubble_surface(info, t)
@@ -676,7 +676,7 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                     "text, destructive (bubble.rs:249)",
                     "danger",
                     t.danger,
-                    "gpui-component/theme/mod.rs:514",
+                    "gpui-component/theme/mod.rs:534",
                 ))
         }
     };
@@ -738,7 +738,7 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
             "scrollbar",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:401",
+            "gpui-component/theme/mod.rs:421",
         ))
         .color(claim(
             "jump button",
@@ -790,32 +790,32 @@ pub fn attachment(
             t.foreground,
             "gpui-component/attachment.rs:432",
         ));
-    // The semantic tokens name danger destructive (theme/mod.rs:514); a
+    // The semantic tokens name danger destructive (theme/mod.rs:534); a
     // failed card reads it at full strength and at 10%.
     let info = if status == AttachmentStatus::Failed {
         info.color(claim(
             "border, destructive (attachment.rs:425-426)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:514",
+            "gpui-component/theme/mod.rs:534",
         ))
         .color(claim(
             "media bg, destructive at 10% (attachment.rs:840-841)",
             "danger",
             t.danger.opacity(0.1),
-            "gpui-component/theme/mod.rs:514",
+            "gpui-component/theme/mod.rs:534",
         ))
         .color(claim(
             "status glyph, upstream's Ban, destructive (attachment.rs:800, 845-846)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:514",
+            "gpui-component/theme/mod.rs:534",
         ))
         .color(claim(
             "description, destructive (attachment.rs:1141-1142)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:514",
+            "gpui-component/theme/mod.rs:534",
         ))
         .not_themeable("failed tint", "the semantic layer renames danger to destructive, and a failed card draws its border, status glyph and description in it (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)")
     } else {

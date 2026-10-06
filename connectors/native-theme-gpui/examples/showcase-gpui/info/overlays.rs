@@ -154,7 +154,7 @@ pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleI
         "confirm button",
         "button_danger",
         t.button_danger,
-        "gpui-component/button/button.rs:969",
+        "gpui-component/button/button.rs:981",
     ))
     .not_themeable(
         "surface",
@@ -218,20 +218,20 @@ fn popover_surface(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
             "bg",
             "popover",
             t.popover,
-            "gpui-component/styled.rs:197",
+            "gpui-component/styled.rs:190",
         ))
         .color(claim(
             "text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/styled.rs:198",
+            "gpui-component/styled.rs:191",
         ))
-        // POPOVER_RING_INK, a literal 0.1 (styled.rs:26).
+        // POPOVER_RING_INK, a literal 0.1 (styled.rs:28).
         .color(claim(
             "edge ring, at 10%",
             "foreground",
             t.foreground.alpha(0.1),
-            "gpui-component/styled.rs:35",
+            "gpui-component/styled.rs:37",
         ))
         .color(claim(
             "secondary text",

@@ -41,8 +41,8 @@
 //! * a size the theme does not state keeps gpui-component's own value, named
 //!   as a constant with its upstream line.
 //!
-//! Upstream citations are verified against gpui-component 0.7.0, gpui-base
-//! 0.7.0 and gpui-pre 0.3.7.
+//! Upstream citations are verified against gpui-component 0.7.1, gpui-base
+//! 0.7.1 and gpui-pre 0.3.8.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
 /// writes it (gpui-pre-macros `derive_into_element.rs`). Written out because
@@ -168,7 +168,7 @@ fn over(base: Hsla, layer: Hsla) -> Hsla {
 /// then faded by `opacity` over `ground`. A platform that dims a disabled
 /// control by opacity fades the finished control as a whole
 /// (docs/platform-facts.md §2.1.6: libadwaita's `filter: Opacity(..)`),
-/// where gpui fades each quad on its own (gpui-pre src/window.rs:4505-4513,
+/// where gpui fades each quad on its own (gpui-pre src/window.rs:4553-4561,
 /// `paint_quad`), which would show a faded part through another.
 fn faded(ground: Hsla, under: Hsla, colour: Hsla, opacity: f32) -> Hsla {
     over(ground, over(under, colour).opacity(opacity))

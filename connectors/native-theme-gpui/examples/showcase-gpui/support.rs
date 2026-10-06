@@ -230,7 +230,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:2786-2796`). The showcase rebuilds these caches on every
+/// `src/app.rs:2924-2934`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -1160,7 +1160,7 @@ impl SearchableListItem for PresetItem {
     }
 }
 
-/// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
+/// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:750`),
 /// so the theme settings' preset switch takes a delegate: [`preset_items`],
 /// filtered as the user types.
 pub(crate) struct PresetDelegate {

@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.7.0,
-//! gpui-base 0.7.0 and gpui-pre 0.3.7.
+//! is drawn instead. Upstream citations are to gpui-component 0.7.1,
+//! gpui-base 0.7.1 and gpui-pre 0.3.8.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;
@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1283)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1295)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:98-137, 1138-1143)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1245-1249)",
+        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1257-1261)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (button.rs:1081-1086)",
+        "not reachable: only a Custom variant takes a shadow (button.rs:1093-1098)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1169-1174)",
+        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1181-1186)",
     ),
     (
         "",
@@ -555,7 +555,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font.color",
-        "not reachable: the Combobox's disabled colour lands before the caller's style (combobox.rs:997)",
+        "not reachable: the Combobox's disabled colour lands before the caller's style (combobox.rs:998)",
     ),
     // --- combo_box: a Select, and the Combobox's metrics ------------------------
     (
@@ -566,7 +566,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.arrow_icon_size_px",
-        "not reachable: the caret is the trigger's own, sized inside it (select.rs:598-599)",
+        "not reachable: the caret is the trigger's own, sized inside it (select.rs:599-600)",
     ),
     (
         "",
@@ -767,7 +767,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (switch.rs:290)",
+        "gpui: not applied — the label's line box is the track's height (switch.rs:292)",
     ),
     (
         "basic.text_inputs",
@@ -1094,12 +1094,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:2446)",
+        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:2541)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:736-739)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:748-751)",
     ),
     (
         "basic.text_area",
@@ -1139,7 +1139,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (input/input.rs:547)",
+        "not reachable: the placeholder is muted_foreground (input/input.rs:559)",
     ),
     // --- layout -------------------------------------------------------------------
     (
@@ -2079,7 +2079,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:776)",
+        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:788)",
     ),
     (
         "",

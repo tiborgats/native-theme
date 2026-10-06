@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.0,
-//! gpui-base 0.7.0 and gpui-pre 0.3.7.
+//! Upstream citations in this module are verified against gpui-component 0.7.1,
+//! gpui-base 0.7.1 and gpui-pre 0.3.8.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -187,7 +187,7 @@ pub fn to_theme_color(
         info: rgba_to_hsla(d.info_color),
         info_fg: rgba_to_hsla(d.info_text_color),
         // Upstream's `selection` is the *input* selection background
-        // (`theme_color.rs:228`, `input/input.rs:550`), which the model states
+        // (`theme_color.rs:228`, `input/input.rs:562`), which the model states
         // as `input.selection_background`; `defaults.selection_background` is
         // the row-selection colour `list_active` and `sidebar_accent` take.
         selection: rgba_to_hsla(resolved.input.selection_background),
@@ -270,7 +270,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1170, 1246, 1288` against `:1164, 1241, 1281`), so
+    // (`button/button.rs:1182, 1258, 1300` against `:1176, 1253, 1293`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -328,8 +328,8 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 /// The 28 `button*` fields gpui-component reads for `Button`
-/// (`src/button/button.rs:960-1025`) take the values the semantic fields their
-/// variant used in 0.5.1 (`0.5.1 src/button/button.rs:630-635, 924-929`), so a
+/// (`src/button/button.rs:972-1037`) take the values the semantic fields their
+/// variant used in 0.5.1 (`0.5.1 src/button/button.rs:642-647, 936-941`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
 fn assign_buttons(tc: &mut ThemeColor) {
@@ -412,8 +412,8 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // The grid line between rows and columns (`table/table.rs:203`,
     // `table/state.rs:1475`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
-    // The grid of a chart (`chart/mod.rs:419`, `chart/bar_chart.rs:857`,
-    // `chart/radar_chart.rs:485`): the model's grid-line colour, which
+    // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
+    // `chart/radar_chart.rs:507`): the model's grid-line colour, which
     // platform-facts §2.15 states as macOS `gridColor` and Material's
     // `outline-variant`, and which elsewhere inherits `defaults.border.color`
     // (`docs/inheritance-rules.toml:238`).

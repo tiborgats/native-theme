@@ -5,8 +5,8 @@
 //! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
 //! fields (see [`theme_color_to_config_colors`]).
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.0,
-//! gpui-base 0.7.0 and gpui-pre 0.3.7.
+//! Upstream citations in this module are verified against gpui-component 0.7.1,
+//! gpui-base 0.7.1 and gpui-pre 0.3.8.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};

@@ -231,19 +231,19 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "edge",
             "input",
             t.input,
-            "gpui-component/input/input.rs:776",
+            "gpui-component/input/input.rs:788",
         ))
         // Painted at a literal 85% of the style block's border
-        // (gpui-base input/base/element.rs:2998).
+        // (gpui-base input/base/element.rs:3093).
         .color(claim(
             "indent guides, border at 85%",
             "border",
             t.border.opacity(0.85),
-            "gpui-base/input/base/element.rs:2998",
+            "gpui-base/input/base/element.rs:3093",
         ))
         // Unhighlighted text is painted in the colour the element inherits
-        // (gpui-base input/base/element.rs:2449), not the style block's
-        // foreground, and Input sets none (input/input.rs:694): so the
+        // (gpui-base input/base/element.rs:2544), not the style block's
+        // foreground, and Input sets none (input/input.rs:706): so the
         // colour the showcase sets on its window.
         .color(claim(
             "unhighlighted text, inherited",
@@ -255,27 +255,27 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "caret",
             "caret",
             t.caret,
-            "gpui-component/input/input.rs:551",
+            "gpui-component/input/input.rs:563",
         ))
         .color(claim(
             "selection",
             "selection",
             t.selection,
-            "gpui-component/input/input.rs:550",
+            "gpui-component/input/input.rs:562",
         ))
         .color(claim(
             "line numbers",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/input/input.rs:547",
+            "gpui-component/input/input.rs:559",
         ))
         // The current line's number takes the style block's foreground
-        // (gpui-base input/base/element.rs:2797).
+        // (gpui-base input/base/element.rs:2892).
         .color(claim(
             "current line number",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:546",
+            "gpui-component/input/input.rs:558",
         ))
         .config(
             "mono font",

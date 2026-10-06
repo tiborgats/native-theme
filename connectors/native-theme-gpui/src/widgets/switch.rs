@@ -14,7 +14,7 @@ use native_theme::theme::ResolvedTheme;
 use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
 
 /// The space between the track and the label, which `SwitchTheme` does not
-/// state: gpui-component's own, `gap_2` (switch.rs:236).
+/// state: gpui-component's own, `gap_2` (switch.rs:238).
 const LABEL_GAP: gpui::Rems = rems(0.5);
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -155,10 +155,10 @@ impl SwitchLook {
 /// A switch whose track, thumb and states are `SwitchTheme`'s (spec §2.3),
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
-/// state. The thumb travels on gpui-component's spring (switch.rs:205-214).
+/// state. The thumb travels on gpui-component's spring (switch.rs:207-216).
 /// While focused, the track draws the focus ring in `ThemeColor::ring`
 /// (`defaults.focus_ring_color`), as gpui-component's switch does
-/// (switch.rs:269-272).
+/// (switch.rs:271-274).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Without a
 /// native theme it renders gpui-component's `Switch`.
@@ -334,7 +334,7 @@ impl RenderOnce for Switch {
                         // `defaults.line_height`, the line box the model
                         // states, centred on the track -- where
                         // gpui-component makes the line box the track's
-                        // height (switch.rs:290).
+                        // height (switch.rs:292).
                         .line_height(gpui::relative(label_line))
                         .text_size(label_size)
                         .font_weight(label_weight)

@@ -8,7 +8,7 @@ use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 
-/// The opacity a hovered Tag paints at: upstream's literal (tag.rs:265).
+/// The opacity a hovered Tag paints at: upstream's literal (tag.rs:269).
 const TAG_HOVER_OPACITY: f32 = 0.9;
 
 /// An `Alert` of `severity` at the default Size, a `banner` or not. The
@@ -580,8 +580,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4505-4512 for fills and edges, :4649 and
-    // :4698 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre window.rs:4553-4560 for fills and edges, :4697 and
+    // :4746 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| {

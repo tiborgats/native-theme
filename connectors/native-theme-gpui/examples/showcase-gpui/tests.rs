@@ -3005,7 +3005,7 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1283, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1295, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -3674,7 +3674,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
 /// `text_sm`, sizing.rs:330, without a native theme) plus the theme's button
-/// padding, or the `px_2` on either side (button/button.rs:660-662) where it
+/// padding, or the `px_2` on either side (button/button.rs:672-674) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
@@ -4000,7 +4000,7 @@ fn settle_on(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1025). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1037). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -4655,7 +4655,7 @@ fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
 /// A refined Input is filled with the platform's `input.background_color`
 /// in either mode, through `geometry::input_fill` -- not with
 /// `Theme::input_background()`, which is the window background in light mode
-/// and input mixed toward transparent in dark (theme/mod.rs:465-470) -- and
+/// and input mixed toward transparent in dark (theme/mod.rs:485-490) -- and
 /// its info shows no swatch for the fill upstream no longer paints, but the
 /// builder's geometry line. The Basic page's disabled field is filled with
 /// `input.disabled_background`.
@@ -4721,7 +4721,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1322-1326) -- in
+/// `input_background()` at half opacity (button/button.rs:1334-1338) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -4855,8 +4855,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:194-198), 4px
-/// itself included (`radius >= px(4.)`, switch.rs:194).
+/// under 4px, the track's own height from 4px up (switch.rs:196-200), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:196).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -6263,7 +6263,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
 /// Paint-level check (rationale §3.6): the fill gpui painted inside the
 /// Primary Tag at rest is the colour its info's bg claim shows. The colour
 /// gate reads the line a claim cites; this reads the frame. At rest, because
-/// a hovered Tag paints at 90% (tag.rs:265).
+/// a hovered Tag paints at 90% (tag.rs:269).
 #[gpui::test]
 fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -6378,7 +6378,7 @@ fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     })
 }
 
-/// A hovered Tag fades to 90% (tag.rs:265), and its info names the fill
+/// A hovered Tag fades to 90% (tag.rs:269), and its info names the fill
 /// that paints -- the painted value, not the token it fades.
 #[gpui::test]
 fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {

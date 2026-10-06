@@ -301,7 +301,7 @@ pub(crate) struct Showcase {
     /// Takes the focus back to the view when the focused element stops being
     /// drawn -- a page's widget whose page was left keeps its handle, and
     /// gpui would dispatch from the window's root instead (gpui-pre
-    /// window.rs:6251-6259), out of the view's handlers' reach.
+    /// window.rs:6325-6333), out of the view's handlers' reach.
     _refocus: Subscription,
 
     /// `geometry::widget_gap` of `layout`, set as each frame starts, for the

@@ -542,7 +542,7 @@ fn probed_button(
     styled(Button::new("b").child(text_probe()), s)
 }
 /// An Input whose prefix is the text probe: the prefix is the root's first
-/// child (`input/input.rs:786`), so its left edge is where the root's
+/// child (`input/input.rs:798`), so its left edge is where the root's
 /// padding ends, and it lays out one line of the root's text style.
 fn probed_input(
     s: Option<&StyleRefinement>,
@@ -597,14 +597,14 @@ fn probed_menu_row(
 }
 
 /// Upstream draws a one-pixel border round the Select and Combobox triggers
-/// (`select.rs:541`, `combobox.rs:986`, `border_1()`), which the drawn inset
+/// (`select.rs:542`, `combobox.rs:987`, `border_1()`), which the drawn inset
 /// includes; `geometry::select`/`combobox` set no border width.
 const TRIGGER_BORDER: f32 = 1.0;
 
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
-/// upstream pads each root before the refinement (`input/input.rs:763` then
-/// `:781`, `select.rs:550` then `:552`, `combobox.rs:995` then `:997`), so the
+/// upstream pads each root before the refinement (`input/input.rs:775` then
+/// `:793`, `select.rs:551` then `:553`, `combobox.rs:996` then `:998`), so the
 /// platform's side is the one drawn.
 ///
 /// The left side is measured: it is where the first child starts. At least
@@ -714,7 +714,7 @@ fn filled_combobox(
 /// title's box ends to where the trigger ends. It is the trailing slot (the
 /// caret, or a Combobox's empty slot under a custom trigger), the row's gap
 /// before it, the right padding and the border, all inside the trigger
-/// (`select.rs:563-605`, `combobox.rs:1008-1027`), so two layouts of the same
+/// (`select.rs:564-606`, `combobox.rs:1009-1028`), so two layouts of the same
 /// widget differ in it by their right padding alone.
 fn right_inset(
     cx: &mut TestAppContext,
@@ -729,8 +729,8 @@ fn right_inset(
 
 /// D2: where the theme states `combo_box.arrow_area_width`, the right padding
 /// side is measured to an arrow column, and gpui's triggers have none: the
-/// caret sits inside the padded row (`select.rs:598-599` in the row at
-/// `:563-605`, `combobox.rs:654-655` in the row at `:1008-1027`). So under
+/// caret sits inside the padded row (`select.rs:599-600` in the row at
+/// `:564-606`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
 /// kde-breeze and windows-11, which state the column and a right side of 0,
 /// the right inset a Select and a Combobox draw is upstream's own, measured
 /// on the unstyled widget. A theme that states no arrow column states its
@@ -798,7 +798,7 @@ fn select_and_combobox_keep_upstreams_right_side_beside_an_arrow_column(cx: &mut
     }
 }
 
-/// A Textarea: it renders as a multi-line `Input` (`input/textarea.rs:205-208`).
+/// A Textarea: it renders as a multi-line `Input` (`input/textarea.rs:219-222`).
 fn textarea(s: Option<&StyleRefinement>, w: &mut Window, cx: &mut Context<Harness>) -> AnyElement {
     let state = cx.new(|cx| TextareaState::new(w, cx));
     styled(Textarea::new(&state), s)
@@ -813,8 +813,8 @@ fn without_right(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, an Input with no suffix is laid
 /// out with the stated right padding side: upstream pads a single-line root
-/// (`input/input.rs:762-764`) before the refinement (`:781`), and only a
-/// suffix pads the right side again after it (`:798`). The right side has no
+/// (`input/input.rs:774-776`) before the refinement (`:793`), and only a
+/// suffix pads the right side again after it (`:810`). The right side has no
 /// child to measure it by, so it is measured as the width it adds: the
 /// Input's width under the refinement, less its width under the same
 /// refinement with a right side of 0. At least one preset states a right side
@@ -863,14 +863,14 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, a Textarea refined as
 /// `geometry::input`'s doc says -- the padding sides cleared -- draws no
-/// padding: upstream pads only a single-line root (`input/input.rs:762-764`),
+/// padding: upstream pads only a single-line root (`input/input.rs:774-776`),
 /// so a multi-line root's inset is 0, and the refinement's padding must not
 /// reach it. The inset has no child to measure it by, so it is measured as
 /// the size it adds: the Textarea's size with the padding cleared equals its
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:781`): at least
+/// Left in, the refinement's padding would reach the root (`:793`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]

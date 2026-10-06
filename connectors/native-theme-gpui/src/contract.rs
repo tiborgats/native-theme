@@ -108,7 +108,7 @@ const ROWS: &[Row] = &[
     },
     // Upstream documents `selection` as the *input* selection background
     // (`theme_color.rs:228`), and its text readers are the input editor style
-    // (`input/input.rs:550`), the text view (`text/mod.rs:52`), the touch
+    // (`input/input.rs:562`), the text view (`text/mod.rs:52`), the touch
     // handle (`touch_selection/handle.rs:96`) and the time field's selected
     // segment (`time/time_field.rs:135`). It also fills a token input's chips
     // (`input/token.rs:50-51`) and outlines a table's or list's
@@ -124,7 +124,7 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
-    // The link's own text (`link.rs:76`, `button/button.rs:1024`), which the
+    // The link's own text (`link.rs:76`, `button/button.rs:1036`), which the
     // model states as `link.font.color` -- the one font colour that inherits
     // `defaults.link_color` instead of `defaults.font.color`.
     Row {
@@ -136,8 +136,8 @@ const ROWS: &[Row] = &[
     // `link_hover` and `link_active` are upstream's hovered and pressed link
     // *text* colours ("Hover link text color", `theme_color.rs:180-181`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1170, 1246, 1288`) over the transparent fill that
-    // variant paints in every state (`:1164, 1241, 1281`). Neither native
+    // (`button/button.rs:1182, 1258, 1300`) over the transparent fill that
+    // variant paints in every state (`:1176, 1253, 1293`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
@@ -913,8 +913,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "link.hover_background",
         native: |r| r.link.hover_background,
         evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
-                   background in every state (`button/button.rs:1164` hovered, \
-                   `:1241` pressed, `:1281` selected) and the `Link` widget \
+                   background in every state (`button/button.rs:1176` hovered, \
+                   `:1253` pressed, `:1293` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
@@ -1362,15 +1362,15 @@ struct Pair {
 /// layer lands on a surface the platform did not put it on.
 ///
 /// `PopupMenu::render` calls `.popover_style(cx)`, which is
-/// `bg(theme.popover)` (`gpui-component-0.7.0/src/menu/popup_menu.rs:1476`,
-/// `styled.rs:193-199`), and upstream has no menu-surface token. The connector
+/// `bg(theme.popover)` (`gpui-component-0.7.0/src/menu/popup_menu.rs:1480`,
+/// `styled.rs:186-192`), and upstream has no menu-surface token. The connector
 /// feeds `popover` from `popover.background_color`, the token's documented
 /// meaning, but `menu.background_color` differs from it in 30 of the 32
 /// combinations. The call is hardcoded inside upstream's `render`, so there is
 /// no seam: it is on the Tier U list. It becomes measurable only where the
 /// hover layer is translucent, and both remaining pairs stay above 9:1.
 const MENU_SURFACE: &str = "upstream paints menus on the popover token \
-                            (menu/popup_menu.rs:1476) and the platform's menu \
+                            (menu/popup_menu.rs:1480) and the platform's menu \
                             background differs from its popover background";
 
 /// Upstream paints an idle tab `transparent` in every variant
@@ -1707,7 +1707,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
-    // (`button/button.rs:1164, 1241, 1281`) and takes `link_hover` and
+    // (`button/button.rs:1176, 1253, 1293`) and takes `link_hover` and
     // `link_active` as its text, so both pairs are that colour on the window.
     Pair {
         what: "hovered link text",
@@ -1770,7 +1770,7 @@ const REPORTED: &[Reported] = &[
         what: "selected text",
         why: "ThemeColor has no foreground for selected text: `selection` is a \
               highlight upstream paints under text that keeps its own colour \
-              (input/input.rs:550), while the platform pairs \
+              (input/input.rs:562), while the platform pairs \
               input.selection_background with input.selection_text_color",
         native: |r| {
             (
