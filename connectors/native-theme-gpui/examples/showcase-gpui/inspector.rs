@@ -150,13 +150,18 @@ impl Inspector {
                     // The Buttons page's Ghost, as the toolbar's buttons are.
                     .child(probe(
                         INSPECTOR_COPY,
-                        Button::new("inspector-copy")
-                            .label("Copy")
-                            .small()
-                            .custom(variants::ghost_button(cx))
-                            .on_click(move |_, _, cx| {
-                                cx.write_to_clipboard(ClipboardItem::new_string(copied.clone()))
-                            }),
+                        demo::labelled(
+                            &self.ui,
+                            cx,
+                            Button::new("inspector-copy"),
+                            "inspector-copy",
+                            "Copy",
+                        )
+                        .small()
+                        .custom(variants::ghost_button(cx))
+                        .on_click(move |_, _, cx| {
+                            cx.write_to_clipboard(ClipboardItem::new_string(copied.clone()))
+                        }),
                     )),
             )
             // A claim's value is the ThemeColor field it names, and upstream

@@ -18,6 +18,10 @@
 //! content-driven, so it proves that the refinement reaches the widget's root
 //! box and wins there, not an ordering claim.
 //!
+//! A label passed as a Button's child and refined with `geometry::button_label`
+//! is as wide as the same text refined alone, under every native preset at
+//! its own font DPI, at text scale 1 and 1.5.
+//!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
 //! side; an Input with no suffix is laid out with the stated right side; a
@@ -1009,6 +1013,60 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
                 fits(text2, control2),
                 "{preset} {widget}: at text scale 2 the text at {text2:?} is not inside the \
                  control at {control2:?}"
+            );
+        }
+    }
+}
+
+// --- The Button label ---------------------------------------------------------
+
+/// A Medium Button (upstream's default size) whose child is the text probe,
+/// refined with `s`: a label passed as the Button's child.
+fn labelled_button(
+    s: Option<&StyleRefinement>,
+    _: &mut Window,
+    _: &mut Context<Harness>,
+) -> AnyElement {
+    Button::new("b")
+        .child(styled(text_probe(), s))
+        .into_any_element()
+}
+/// The text probe refined with `s`, in a bare `div`: the width the refinement
+/// alone gives the text.
+fn bare_label(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harness>) -> AnyElement {
+    div().child(styled(text_probe(), s)).into_any_element()
+}
+
+/// Under every native preset, at its own DPI, at text scale 1 and 1.5: a
+/// label passed as a Medium Button's child and refined with
+/// `geometry::button_label` is as wide as the same text refined alone.
+/// Upstream sets the label's size on the content element
+/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:749`), which
+/// is `text_sm` at Medium and which the child's own size overrules; unstyled,
+/// the child takes that `text_sm`.
+#[gpui::test]
+fn a_buttons_child_label_takes_the_button_font(cx: &mut TestAppContext) {
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        for factor in [1.0, 1.5] {
+            let prefs = scaled_by(factor);
+            let style = geometry::button_label(Native {
+                resolved: &r,
+                accessibility: &prefs,
+            });
+            let mut width = |style: Option<StyleRefinement>, build: Build| {
+                laid_out_as(cx, preset, &r, &prefs, style, build, [TEXT])[0]
+                    .size
+                    .width
+            };
+            let u = width(None, labelled_button);
+            let s = width(Some(style.clone()), labelled_button);
+            let e = width(Some(style), bare_label);
+            assert_seam(
+                u,
+                s,
+                e,
+                &format!("{preset} button label at text scale {factor}"),
             );
         }
     }

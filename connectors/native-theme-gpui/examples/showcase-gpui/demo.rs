@@ -1149,7 +1149,7 @@ pub(crate) fn toolbar_button(
     )
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
-        None => tool_label(cx, button, tooltip),
+        None => labelled(ui, cx, button, id, tooltip),
     })
     .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -1160,35 +1160,6 @@ pub(crate) fn toolbar_button(
         button_info,
     )
     .tooltip(tip)
-}
-
-/// `button` labelled `text`, a chrome button whose icon theme has no icon
-/// for it: `text` in `button.font`'s size and weight, one line of it tall
-/// (`line_height_of`), where a native theme is installed. The Button's
-/// content sets its own text size by the Button's Size (`button_text_size`,
-/// button/button.rs, `RenderOnce for Button`: `text_sm` for a small one),
-/// which a style on the Button does not reach; the label is a child that
-/// sets its own. Without a native theme, `Button::label`.
-fn tool_label(cx: &App, button: Button, text: &'static str) -> Button {
-    let font = native_value(cx, |n| {
-        let f = &n.resolved.button.font;
-        (
-            text_size_of(&n, f),
-            line_height_of(&n, f),
-            FontWeight(f32::from(f.weight)),
-        )
-    });
-    match font {
-        Some((size, line, weight)) => button.accessibility_label(text).child(
-            div()
-                .whitespace_nowrap()
-                .text_size(size)
-                .line_height(line)
-                .font_weight(weight)
-                .child(text),
-        ),
-        None => button.label(text),
-    }
 }
 
 /// One ghost icon Button of the Buttons page's component `Toolbar`.
@@ -1277,7 +1248,7 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
     )
     .map(|button| match icon {
         Some(icon) => button.accessibility_label(label).child(icon),
-        None => tool_label(cx, button, label),
+        None => labelled(ui, cx, button, id, label),
     });
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
@@ -1380,7 +1351,7 @@ pub(crate) fn panel_toggle(
     .toggled(open)
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
-        None => tool_label(cx, button, tooltip),
+        None => labelled(ui, cx, button, id, tooltip),
     })
     .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -2934,7 +2905,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     if surface.is_some() {
         button_info = button_info.config("surface", "geometry::button_disabled's fill inside button.border.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line");
     }
-    let button = labelled(ui, refined(button, on_button.as_ref()), id, label)
+    let button = labelled(ui, cx, refined(button, on_button.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
             ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
             ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
@@ -2991,8 +2962,11 @@ pub(crate) fn button_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let group =
-        ButtonGroup::new(id).children(labels.iter().map(|&label| Button::new(label).label(label)));
+    let group = ButtonGroup::new(id).children(
+        labels
+            .iter()
+            .map(|&label| labelled(ui, cx, Button::new(label), label, label)),
+    );
     InfoExt::info(group, ui, id, info::buttons::button_group(cx.theme()))
 }
 
@@ -3008,7 +2982,13 @@ pub(crate) fn dropdown_button(
     menu: impl Fn(PopupMenu, &mut Window, &mut Context<PopupMenu>) -> PopupMenu + 'static,
 ) -> Stateful<Div> {
     let dropdown = DropdownButton::new(id)
-        .button(kind.apply(Button::new("button"), cx).label(label))
+        .button(labelled(
+            ui,
+            cx,
+            kind.apply(Button::new("button"), cx),
+            "button",
+            label,
+        ))
         .dropdown_menu(menu);
     InfoExt::info(
         dropdown,
@@ -4697,14 +4677,19 @@ pub(crate) fn action_button(
         styled,
     )
     .instance("click", about);
-    let button = native_info(
-        Button::new(id),
+    let button = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut button_info,
+        native_info(
+            Button::new(id),
+            cx,
+            geometry::button,
+            "button",
+            &mut button_info,
+        ),
+        id,
+        label,
     )
-    .label(label)
     .on_click(on_click);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
@@ -5171,14 +5156,19 @@ pub(crate) fn badge(
     label: &'static str,
 ) -> Stateful<Div> {
     let mut badge_info = info::feedback::badge(cx.theme(), count, label);
-    let target = native_info(
-        Button::new(id),
+    let target = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut badge_info,
-    )
-    .label(label);
+        native_info(
+            Button::new(id),
+            cx,
+            geometry::button,
+            "button",
+            &mut badge_info,
+        ),
+        id,
+        label,
+    );
     let badge = match count {
         Some(count) => Badge::new().count(count),
         None => Badge::new().dot(),
@@ -5265,14 +5255,19 @@ pub(crate) fn tooltip_button(
     text: &'static str,
 ) -> Stateful<Div> {
     let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, label, text);
-    let button = native_info(
-        Button::new(id),
+    let button = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut tooltip_info,
+        native_info(
+            Button::new(id),
+            cx,
+            geometry::button,
+            "button",
+            &mut tooltip_info,
+        ),
+        id,
+        label,
     )
-    .label(label)
     .tooltip(text);
     InfoExt::info(button, ui, id, tooltip_info).debug_selector(move || id.into())
 }
@@ -5304,7 +5299,7 @@ pub(crate) fn built_tooltip_button(
         "button",
         &mut tooltip_info,
     );
-    let button = labelled(ui, button, id, label);
+    let button = labelled(ui, cx, button, id, label);
     if style.is_some() {
         tooltip_info = tooltip_info.geometry("tooltip");
     }
@@ -5336,14 +5331,19 @@ pub(crate) fn notification_button(
     message: &'static str,
 ) -> Stateful<Div> {
     let mut button_info = info::feedback::notification(cx.theme(), severity, label, message);
-    let button = native_info(
-        Button::new(id),
+    let button = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut button_info,
+        native_info(
+            Button::new(id),
+            cx,
+            geometry::button,
+            "button",
+            &mut button_info,
+        ),
+        id,
+        label,
     )
-    .label(label)
     .on_click(move |_ev, window, cx| {
         let notification = match severity {
             Severity::Info => Notification::info(message),
@@ -6449,8 +6449,7 @@ pub(crate) fn collapsible(
     } else {
         "Click to expand"
     };
-    let button = Button::new(toggle)
-        .label(text)
+    let button = labelled(ui, cx, Button::new(toggle), toggle, text)
         .ghost()
         .when_some(icon.icon(), |button, icon| button.icon(icon))
         .on_click(on_toggle);
@@ -6848,14 +6847,19 @@ pub(crate) fn overlay_button(
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut button_info = info::overlays::trigger(cx.theme(), overlay, styled);
-    let button = native_info(
-        overlay.button_kind().apply(Button::new(id), cx),
+    let button = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut button_info,
+        native_info(
+            overlay.button_kind().apply(Button::new(id), cx),
+            cx,
+            geometry::button,
+            "button",
+            &mut button_info,
+        ),
+        id,
+        label,
     )
-    .label(label)
     .on_click(on_click);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
@@ -6920,7 +6924,7 @@ pub(crate) fn confirm_dialog(
             // it across the footer (gpui-base dialog.rs, DialogClose).
             h_flex().justify_end().child(
                 InfoExt::info(
-                    button.refine_style(&close_style).label("Close"),
+                    labelled(&ui, cx, button.refine_style(&close_style), "close", "Close"),
                     &ui,
                     OVERLAYS_DIALOG_CLOSE,
                     close_info,
@@ -7049,14 +7053,19 @@ pub(crate) fn popover(
 ) -> Stateful<Div> {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut popover_info = info::overlays::popover(cx.theme(), styled);
-    let trigger = native_info(
-        Button::new("overlays-popover-trigger"),
+    let trigger = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut popover_info,
-    )
-    .label("Click for Popover");
+        native_info(
+            Button::new("overlays-popover-trigger"),
+            cx,
+            geometry::button,
+            "button",
+            &mut popover_info,
+        ),
+        "overlays-popover-trigger",
+        "Click for Popover",
+    );
     let popover = native_info(
         Popover::new(id),
         cx,
@@ -7109,14 +7118,19 @@ pub(crate) fn hover_card(
 ) -> Stateful<Div> {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut card_info = info::overlays::hover_card(cx.theme(), styled);
-    let trigger = native_info(
-        ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
+    let trigger = labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut card_info,
-    )
-    .label("KDE Breeze");
+        native_info(
+            ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
+            cx,
+            geometry::button,
+            "button",
+            &mut card_info,
+        ),
+        "overlays-hover-card-trigger",
+        "KDE Breeze",
+    );
     let card = native_info(
         HoverCard::new(id),
         cx,
@@ -7182,14 +7196,19 @@ pub(crate) fn dropdown_menu(
     label: &'static str,
 ) -> Stateful<Div> {
     let mut menu_info = info::overlays::dropdown_menu(cx.theme());
-    native_info(
-        Button::new(id),
+    labelled(
+        ui,
         cx,
-        geometry::button,
-        "button",
-        &mut menu_info,
+        native_info(
+            Button::new(id),
+            cx,
+            geometry::button,
+            "button",
+            &mut menu_info,
+        ),
+        id,
+        label,
     )
-    .label(label)
     .dropdown_menu(|menu, _window, _cx| sample_menu(menu))
     .info(ui, id, menu_info)
     .debug_selector(move || id.into())
@@ -7879,40 +7898,39 @@ pub(crate) fn swatch(
 // The Basic page's own samples (Basic v3)
 // ---------------------------------------------------------------------------
 
-/// A Button's `label` as its child, in the box upstream puts its `label`
-/// in (button/button.rs, `RenderOnce for Button`: `min_w_0`,
-/// `whitespace_nowrap`, `text_ellipsis`), recording its bounds as the
-/// element `listed` of docs/showcase-elements.toml. The Button is named by
-/// the label as `Button::label` would name it.
-fn listed_label(
+/// `button` labelled `label`. Where a native theme is installed, or the label
+/// is an element of docs/showcase-elements.toml, the label is the Button's
+/// child, in the box upstream puts its own `label` in (button/button.rs,
+/// `RenderOnce for Button`: `min_w_0`, `whitespace_nowrap`, `text_ellipsis`):
+/// in `button.font` through `geometry::button_label`, because upstream sizes
+/// a `.label()` from the `Size` enum on an element no style reaches, and
+/// recording its bounds where it is listed. The Button is named by the label
+/// as `Button::label` would name it. Otherwise `Button::label`.
+pub(crate) fn labelled(
     ui: &Entity<InfoRegistry>,
+    cx: &App,
     button: Button,
-    label: &'static str,
-    listed: &'static str,
+    id: &str,
+    label: impl Into<SharedString>,
 ) -> Button {
-    button.accessibility_label(label).child(
-        div()
-            .relative()
-            .min_w_0()
-            .whitespace_nowrap()
-            .text_ellipsis()
-            .child(label)
-            .child(elements::record(ui, listed)),
-    )
-}
-
-/// `button` labelled `label`: as `Button::label` where the label is no
-/// element of docs/showcase-elements.toml, else as [`listed_label`].
-fn labelled(
-    ui: &Entity<InfoRegistry>,
-    button: Button,
-    id: &'static str,
-    label: &'static str,
-) -> Button {
-    match elements::label_of(id) {
-        Some(listed) => listed_label(ui, button, label, listed),
-        None => button.label(label),
+    let label = label.into();
+    let text = native_geometry(cx, geometry::button_label);
+    let listed = elements::label_of(id);
+    if text.is_none() && listed.is_none() {
+        return button.label(label);
     }
+    let boxed = div()
+        .relative()
+        .min_w_0()
+        .whitespace_nowrap()
+        .text_ellipsis();
+    button.accessibility_label(label.clone()).child(
+        refined(boxed, text.as_ref())
+            .child(label)
+            .when_some(listed, |this, listed| {
+                this.child(elements::record(ui, listed))
+            }),
+    )
 }
 
 /// `icon` in a box of its own size that records its bounds as the element
@@ -8008,7 +8026,7 @@ pub(crate) fn toggle_button(
         "button_checked",
         &mut button_info,
     );
-    InfoExt::info(labelled(ui, button, id, label), ui, id, button_info)
+    InfoExt::info(labelled(ui, cx, button, id, label), ui, id, button_info)
         .debug_selector(move || id.into())
 }
 
@@ -8044,11 +8062,12 @@ pub(crate) fn icon_button(
     let button = refined(
         ButtonKind::Ghost.apply(Button::new(id), cx),
         tool_button_box(cx).as_ref(),
-    )
-    .accessibility_label(name);
+    );
     let button = match icon {
-        Some(icon) => button.child(listed_icon(ui, icon, Some(listed))),
-        None => button.label(name),
+        Some(icon) => button
+            .accessibility_label(name)
+            .child(listed_icon(ui, icon, Some(listed))),
+        None => labelled(ui, cx, button, id, name),
     };
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }

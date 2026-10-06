@@ -189,14 +189,55 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         // The weight, and deliberately not the size. This refinement lands on
         // the button's outer element (`button/button.rs:733`), and GPUI
         // cascades text style to descendants: the label is a child that sets
-        // its own size from the `Size` enum (`button_text_size`,
-        // `sizing.rs:327-333`, which maps to `text_xs`/`text_sm`/`text_base`)
-        // and so would overrule a size from here -- but it sets no weight, and
-        // nothing else on that path does either, so the platform's weight
-        // arrives. A size set here would be shadowed on the label and still
-        // apply to anything else inside, which is worse than not setting it;
-        // that remainder is `content_style`, `pub(crate)` upstream (Tier U).
+        // its own size from the `Size` enum (`button_text_size`, which maps
+        // to `text_xs`/`text_sm`/`text_base`) and so would overrule a size
+        // from here -- but it sets no weight, and nothing else on that path
+        // does either, so the platform's weight arrives. A size set here would
+        // be shadowed on the label and still apply to anything else inside,
+        // which is worse than not setting it; that remainder is
+        // `content_style`, `pub(crate)` upstream (Tier U). Since 0.7.1 the
+        // size it would shadow is `text_sm` at Medium (`sizing.rs:337-343`);
+        // [`button_label`] gives a child label the platform's size.
         .font_weight(weight_of(&b.font))
+}
+
+/// The text of a `Button`'s label, passed as the button's child: `button.font`'s
+/// size and weight, and the platform's line height.
+///
+/// gpui-component sets the label's size from the `Size` enum on the content
+/// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
+/// `src/button/button.rs:749`) after the button's own refinement (`:733`), so
+/// a size given to [`button`] would be shadowed; since 0.7.1 that size is
+/// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
+/// element's children are the one public route under it (`:772`): a label
+/// passed as a child, built like upstream's own label element (`:763-771`)
+/// and refined with this. The name upstream derives from `.label()`
+/// (`:737-740`) is then given explicitly:
+///
+/// ```ignore
+/// use gpui::{ParentElement, Styled, div};
+/// use gpui_component::{StyledExt, button::Button};
+/// use native_theme_gpui::geometry;
+///
+/// Button::new("save")
+///     .refine_style(&geometry::button(n))
+///     .child(
+///         div().min_w_0().whitespace_nowrap().text_ellipsis()
+///             .refine_style(&geometry::button_label(n))
+///             .child("Save"),
+///     )
+///     .accessibility_label("Save");
+/// ```
+///
+/// It carries the line height [`button`] gives the button, so it is complete
+/// on a Button that does not take [`button`] (a `ButtonGroup`'s child). No
+/// colour: the label takes the button's state colours (idle, hovered,
+/// pressed, disabled, selected) from the root, as `.label()`'s does. Labels of
+/// Buttons that gpui-component's own widgets build are out of reach.
+#[must_use]
+pub fn button_label(n: Native<'_>) -> StyleRefinement {
+    let line = StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height));
+    with_text(line, &n.resolved.button.font, n)
 }
 
 /// `Input` root (`src/input/input.rs:778-788` → `:793`).
@@ -1179,6 +1220,27 @@ mod tests {
             );
         });
         stated.assert_each_compared();
+    }
+
+    #[test]
+    fn button_label_carries_the_button_font() {
+        for_each_case(|r, s, n| {
+            let out = button_label(n);
+            assert_text(&out, &r.button.font, s);
+            assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
+            assert_eq!(
+                out.text.color, None,
+                "the label takes the button's state colours"
+            );
+        });
+    }
+
+    #[test]
+    fn button_label_follows_the_button_font_not_the_body_font() {
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        r.button.font.size = r.defaults.font.size + 3.0;
+        let out = button_label(Native::unscaled(&r));
+        assert_eq!(out.text.font_size, abs(r.button.font.size));
     }
 
     #[test]

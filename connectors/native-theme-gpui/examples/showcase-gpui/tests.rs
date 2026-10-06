@@ -79,9 +79,10 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// through `build_with_platform` and exposes no setter
-/// (`gpui-pre-0.3.8/src/app/test_context.rs:127-139`, `:171-175`) — so gpui-component's own `IconName` SVGs resolve to nothing. The pages
-/// still lay out, which is what these tests measure; the showcase's native
-/// icons do not come from the asset source at all, they are decoded into
+/// (`gpui-pre-0.3.8/src/app/test_context.rs:127-139`, `:171-175`) — so
+/// gpui-component's own `IconName` SVGs resolve to nothing. The pages still
+/// lay out, which is what these tests measure; the showcase's native icons
+/// do not come from the asset source at all, they are decoded into
 /// `ImageSource` by the connector.
 fn open(
     cx: &mut TestAppContext,
@@ -3721,7 +3722,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
         );
         let labelled = bounds_of(&mut cx, selector);
         // In `button.font`'s size and weight where a native theme is
-        // installed (demo::tool_label), else in a Small Button's `text_sm`.
+        // installed (demo::labelled), else in a Small Button's `text_sm`.
         let font = read(&mut cx, &showcase, |_this, cx| {
             native_value(cx, |n| {
                 let f = &n.resolved.button.font;

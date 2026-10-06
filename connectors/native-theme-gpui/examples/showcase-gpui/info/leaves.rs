@@ -351,7 +351,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.font",
-        "gpui: weight by geometry::button; size not applied — the label is text_base (sizing.rs:327-333)",
+        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s size and weight (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
     ),
     (
         "",

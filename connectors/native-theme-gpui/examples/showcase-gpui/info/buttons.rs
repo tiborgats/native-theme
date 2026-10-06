@@ -532,7 +532,11 @@ pub fn button(
     } else {
         info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)")
     };
-    let info = info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm");
+    let info = if styled {
+        info.config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+    } else {
+        info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
+    };
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
         ButtonKind::Ghost => ghost_variant(info),

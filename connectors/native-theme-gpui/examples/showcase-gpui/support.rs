@@ -185,7 +185,9 @@ pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
 /// three kinds of exception, each marked where it occurs: the "Button Sizes"
 /// row, which exists to show upstream's own size scale; `ButtonGroup` and
 /// `DropdownButton` children, whose joined corners the group manages; and
-/// widgets that are not `Styled` (`OtpInput`).
+/// widgets that are not `Styled` (`OtpInput`). `ButtonGroup` and
+/// `DropdownButton` children still take `geometry::button_label` on their
+/// label; it is their frame the group manages.
 pub(crate) trait NativeStyled: Styled + Sized {
     fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
         refined(self, native_geometry(cx, build).as_ref())
