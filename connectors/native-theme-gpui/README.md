@@ -44,7 +44,7 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   reduce-motion is forwarded to GPUI; under reduce-transparency no overlay
   is drawn behind a dialog or sheet (it is transparent), and the dialog stays
   modal.
-- **Icons**: mappings from every gpui-component `IconName` (104 variants) to
+- **Icons**: mappings from every gpui-component `IconName` (106 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
   in code, so the tables are audited by hand: against 0.6.4's variant set,
@@ -53,8 +53,10 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
   from is unchanged between the two releases. It was audited again against
   0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
-  `refresh-cw` to 0.6.6's 101. The audit is repeated on every gpui-component
-  bump.
+  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`. Since 0.6.1
+  the tables end in a wildcard: an `IconName` newer than this crate maps to
+  no icon, and the test module's exhaustive list is what reports it. The
+  audit is repeated on every gpui-component bump.
 
 ## How it fits
 
@@ -68,16 +70,19 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.7.0 |
-| `gpui-base` | 0.7.0 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.7 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.7.0 |
+| `gpui-component` | 0.7.1 |
+| `gpui-base` | 0.7.1 |
+| `gpui-pre` (GPUI, named `gpui` here) | 0.3.8 |
+| `gpui-kit` (dev-dependency: the showcase) | 0.7.1 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
 *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
-stopped compiling on a fresh dependency resolution.
+stopped compiling on a fresh dependency resolution. gpui-component 0.7.1 did it
+again by adding two `IconName` variants, which the published 0.6.0 matched
+exhaustively; since 0.6.1 an `IconName` this crate does not know maps to no
+icon instead of stopping the build.
 
 **Verified** — the versions `scripts/update_compatibility.sh run` last resolved and ran
 this connector's tests, clippy, docs and the widget-coverage script against. The
@@ -97,7 +102,7 @@ the CHANGELOG.
 [dependencies]
 native-theme = "0.6"
 native-theme-gpui = "0.6"
-gpui-kit = "0.7.0"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.7.1"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
@@ -509,7 +514,7 @@ gpui-component 0.7 depends on GPUI published as the **`gpui-pre`** package:
 snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
 `0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
 arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.7" }`) so its `Hsla`, `Pixels`
+(`gpui = { package = "gpui-pre", version = "0.3.8" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types. Outside the `widgets`
 module its GPUI surface is small: colours and lengths (`Hsla`, `Rgba`,
 `Pixels`), `StyleRefinement`, images (`ImageSource`, `RenderImage`, and
@@ -534,7 +539,7 @@ conflict with any other dependency wanting a later snapshot.
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
   colours from the splitter, which gpui-base's own resizables draw (not
   gpui-component's, `Settings` or dock edges).
-- **Icons** — every gpui-component `IconName` (104 variants) in three tables
+- **Icons** — every gpui-component `IconName` (106 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names
   Material Symbols Outlined files (`StarOff` has none), the freedesktop table
@@ -550,7 +555,7 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-139-field colour map and a 104-icon gallery. It opens on the Basic page, the
+139-field colour map and a 106-icon gallery. It opens on the Basic page, the
 controls all three showcases draw — buttons, checkboxes, radio buttons, text,
 text fields, a drop-down, a slider and a progress bar — in the same order and
 states, packed onto one screen, so the three showcases' captures compare

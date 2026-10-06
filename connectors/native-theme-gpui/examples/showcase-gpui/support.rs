@@ -537,7 +537,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 104 gpui-component 0.7.0 IconName variants shown in the gallery.
+/// The 106 gpui-component 0.7.1 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -601,6 +601,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("Maximize", IconName::Maximize),
     ("MemoryStick", IconName::MemoryStick),
     ("Menu", IconName::Menu),
+    ("Mic", IconName::Mic),
     ("Minimize", IconName::Minimize),
     ("Minus", IconName::Minus),
     ("Moon", IconName::Moon),
@@ -628,6 +629,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("Settings2", IconName::Settings2),
     ("SortAscending", IconName::SortAscending),
     ("SortDescending", IconName::SortDescending),
+    ("Square", IconName::Square),
     ("SquareTerminal", IconName::SquareTerminal),
     ("Star", IconName::Star),
     ("StarFill", IconName::StarFill),

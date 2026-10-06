@@ -152,9 +152,10 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
-/// where Lucide has no equivalent (today only `StarFill`, spec §10.2); every
-/// `Some` is Lucide's own file name (`LucideLoader::new(name)` resolves it).
+/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// returns `None`. Returns `None` where Lucide has no equivalent (today only
+/// `StarFill`, spec §10.2); every `Some` is Lucide's own file name
+/// (`LucideLoader::new(name)` resolves it).
 #[must_use]
 pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
     Some(match icon {
@@ -220,6 +221,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Maximize => "maximize",
         IconName::MemoryStick => "memory-stick",
         IconName::Menu => "menu",
+        IconName::Mic => "mic",
         IconName::Minimize => "minimize",
         IconName::Minus => "minus",
         IconName::Moon => "moon",
@@ -247,6 +249,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Settings2 => "settings-2",
         IconName::SortAscending => "arrow-up-narrow-wide",
         IconName::SortDescending => "arrow-down-wide-narrow",
+        IconName::Square => "square",
         IconName::SquareTerminal => "square-terminal",
         IconName::Star => "star",
         // Lucide ships no filled star (star-fill / star-filled absent at 1.41.0);
@@ -266,6 +269,12 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::WindowMaximize => "maximize",
         IconName::WindowMinimize => "minus",
         IconName::WindowRestore => "minimize-2",
+        // An `IconName` newer than this table (upstream adds icons in patch
+        // releases) draws nothing from this set rather than another set's
+        // glyph. The test module's `variant_name` is the match without a
+        // wildcard that makes the dependency canary report the newcomer.
+        #[allow(unreachable_patterns)]
+        _ => return None,
     })
 }
 
@@ -274,9 +283,10 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
-/// where Material Symbols has no equivalent (today only `StarOff`); every
-/// `Some` is a bundled Material Symbols Outlined 24px file.
+/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// returns `None`. Returns `None` where Material Symbols has no equivalent
+/// (today only `StarOff`); every `Some` is a bundled Material Symbols Outlined
+/// 24px file.
 ///
 /// Material icon name collisions (multiple IconName variants -> same name):
 /// - ArrowUp, SortAscending -> "arrow_upward"
@@ -355,6 +365,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Maximize => "open_in_full",
         IconName::MemoryStick => "memory_alt", // close: a RAM module with pins, like Lucide's
         IconName::Menu => "menu",
+        IconName::Mic => "mic", // exact
         IconName::Minimize => "minimize",
         IconName::Minus => "remove",
         IconName::Moon => "dark_mode",
@@ -382,6 +393,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::Settings2 => "tune",
         IconName::SortAscending => "arrow_upward",
         IconName::SortDescending => "arrow_downward",
+        IconName::Square => "square", // exact
         IconName::SquareTerminal => "terminal",
         IconName::Star => "star",
         IconName::StarFill => "star_fill1", // exact
@@ -399,6 +411,12 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::WindowMaximize => "open_in_full",
         IconName::WindowMinimize => "minimize",
         IconName::WindowRestore => "close_fullscreen",
+        // An `IconName` newer than this table (upstream adds icons in patch
+        // releases) draws nothing from this set rather than another set's
+        // glyph. The test module's `variant_name` is the match without a
+        // wildcard that makes the dependency canary report the newcomer.
+        #[allow(unreachable_patterns)]
+        _ => return None,
     })
 }
 
@@ -421,11 +439,12 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 104 gpui-component 0.7.0 `IconName` variants. Returns `None`
-/// where the freedesktop icon naming specification has no name for the
-/// concept (today every variant has one, some only as a labelled `close` or
-/// `approximate` substitute: `StarOff` and `HeartOff` both take
-/// `non-starred`, the "not starred / not favourite" state).
+/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// returns `None`. Returns `None` where the freedesktop icon naming
+/// specification has no name for the concept (today every variant has one,
+/// some only as a labelled `close` or `approximate` substitute: `StarOff` and
+/// `HeartOff` both take `non-starred`, the "not starred / not favourite"
+/// state).
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
@@ -471,6 +490,7 @@ pub fn freedesktop_name_for_gpui_icon(
         IconName::Map => "find-location",    // close
         IconName::Maximize => "view-fullscreen", // exact
         IconName::Menu => "open-menu",       // exact
+        IconName::Mic => "audio-input-microphone", // exact (Icon Naming Spec, Devices)
         IconName::Minimize => "window-minimize", // exact
         IconName::Minus => "list-remove",    // exact
         IconName::Moon => "weather-clear-night", // close: dark mode toggle
@@ -487,6 +507,7 @@ pub fn freedesktop_name_for_gpui_icon(
         IconName::Settings => "preferences-system", // exact
         IconName::SortAscending => "view-sort-ascending", // exact
         IconName::SortDescending => "view-sort-descending", // exact
+        IconName::Square => "media-playback-stop", // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
         IconName::SquareTerminal => "utilities-terminal", // close
         IconName::Star => "non-starred", // close: the hollow star, the "not starred" state; `starred` is StarFill's
         IconName::StarFill => "starred", // exact: the filled "starred" state
@@ -854,6 +875,12 @@ pub fn freedesktop_name_for_gpui_icon(
                 "approved"
             }
         } // approximate
+        // An `IconName` newer than this table (upstream adds icons in patch
+        // releases) draws nothing from this set rather than another set's
+        // glyph. The test module's `variant_name` is the match without a
+        // wildcard that makes the dependency canary report the newcomer.
+        #[allow(unreachable_patterns)]
+        _ => return None,
     })
 }
 
@@ -1403,112 +1430,133 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
 mod tests {
     use super::*;
 
-    pub(super) const ALL_ICON_NAMES: &[IconName] = &[
-        IconName::ALargeSmall,
-        IconName::ArrowDown,
-        IconName::ArrowLeft,
-        IconName::ArrowRight,
-        IconName::ArrowUp,
-        IconName::Asterisk,
-        IconName::Ban,
-        IconName::Battery,
-        IconName::BatteryCharging,
-        IconName::BatteryFull,
-        IconName::BatteryLow,
-        IconName::BatteryMedium,
-        IconName::BatteryWarning,
-        IconName::Bell,
-        IconName::BookOpen,
-        IconName::Bot,
-        IconName::Building2,
-        IconName::Calendar,
-        IconName::CaseSensitive,
-        IconName::ChartPie,
-        IconName::Check,
-        IconName::ChevronDown,
-        IconName::ChevronLeft,
-        IconName::ChevronRight,
-        IconName::ChevronsUpDown,
-        IconName::ChevronUp,
-        IconName::CircleAlert,
-        IconName::CircleCheck,
-        IconName::CircleUser,
-        IconName::CircleX,
-        IconName::Close,
-        IconName::Copy,
-        IconName::Cpu,
-        IconName::Dash,
-        IconName::Delete,
-        IconName::Ellipsis,
-        IconName::EllipsisVertical,
-        IconName::ExternalLink,
-        IconName::Eye,
-        IconName::EyeOff,
-        IconName::File,
-        IconName::FileText,
-        IconName::Folder,
-        IconName::FolderClosed,
-        IconName::FolderOpen,
-        IconName::Frame,
-        IconName::GalleryVerticalEnd,
-        IconName::Github,
-        IconName::Globe,
-        IconName::HardDrive,
-        IconName::Heart,
-        IconName::HeartOff,
-        IconName::Inbox,
-        IconName::Info,
-        IconName::Inspector,
-        IconName::LayoutDashboard,
-        IconName::Loader,
-        IconName::LoaderCircle,
-        IconName::Map,
-        IconName::Maximize,
-        IconName::MemoryStick,
-        IconName::Menu,
-        IconName::Minimize,
-        IconName::Minus,
-        IconName::Moon,
-        IconName::Network,
-        IconName::Palette,
-        IconName::PanelBottom,
-        IconName::PanelBottomOpen,
-        IconName::PanelLeft,
-        IconName::PanelLeftClose,
-        IconName::PanelLeftOpen,
-        IconName::PanelRight,
-        IconName::PanelRightClose,
-        IconName::PanelRightOpen,
-        IconName::Pause,
-        IconName::Play,
-        IconName::Plus,
-        IconName::Redo,
-        IconName::Redo2,
-        IconName::RefreshCw,
-        IconName::Replace,
-        IconName::ResizeCorner,
-        IconName::RotateCw,
-        IconName::Search,
-        IconName::Settings,
-        IconName::Settings2,
-        IconName::SortAscending,
-        IconName::SortDescending,
-        IconName::SquareTerminal,
-        IconName::Star,
-        IconName::StarFill,
-        IconName::StarOff,
-        IconName::Sun,
-        IconName::ThumbsDown,
-        IconName::ThumbsUp,
-        IconName::TriangleAlert,
-        IconName::Undo,
-        IconName::Undo2,
-        IconName::User,
-        IconName::WindowClose,
-        IconName::WindowMaximize,
-        IconName::WindowMinimize,
-        IconName::WindowRestore,
-    ];
+    /// Every `IconName`, once. The macro writes the list and, from the same
+    /// identifiers, a `match` with no wildcard arm, so a variant upstream adds
+    /// stops this test module compiling — which is how the dependency canary
+    /// reports it — while the library's tables, which end in a wildcard, keep
+    /// building for applications. A variant listed twice is an unreachable
+    /// pattern, which `clippy -D warnings` rejects.
+    macro_rules! all_icon_names {
+        ($($variant:ident),* $(,)?) => {
+            pub(super) const ALL_ICON_NAMES: &[IconName] = &[$(IconName::$variant),*];
+
+            /// The variant's identifier, for failure messages (`IconName`
+            /// has no `Debug`).
+            pub(super) fn variant_name(icon: &IconName) -> &'static str {
+                match icon {
+                    $(IconName::$variant => stringify!($variant),)*
+                }
+            }
+        };
+    }
+    all_icon_names!(
+        ALargeSmall,
+        ArrowDown,
+        ArrowLeft,
+        ArrowRight,
+        ArrowUp,
+        Asterisk,
+        Ban,
+        Battery,
+        BatteryCharging,
+        BatteryFull,
+        BatteryLow,
+        BatteryMedium,
+        BatteryWarning,
+        Bell,
+        BookOpen,
+        Bot,
+        Building2,
+        Calendar,
+        CaseSensitive,
+        ChartPie,
+        Check,
+        ChevronDown,
+        ChevronLeft,
+        ChevronRight,
+        ChevronsUpDown,
+        ChevronUp,
+        CircleAlert,
+        CircleCheck,
+        CircleUser,
+        CircleX,
+        Close,
+        Copy,
+        Cpu,
+        Dash,
+        Delete,
+        Ellipsis,
+        EllipsisVertical,
+        ExternalLink,
+        Eye,
+        EyeOff,
+        File,
+        FileText,
+        Folder,
+        FolderClosed,
+        FolderOpen,
+        Frame,
+        GalleryVerticalEnd,
+        Github,
+        Globe,
+        HardDrive,
+        Heart,
+        HeartOff,
+        Inbox,
+        Info,
+        Inspector,
+        LayoutDashboard,
+        Loader,
+        LoaderCircle,
+        Map,
+        Maximize,
+        MemoryStick,
+        Menu,
+        Mic,
+        Minimize,
+        Minus,
+        Moon,
+        Network,
+        Palette,
+        PanelBottom,
+        PanelBottomOpen,
+        PanelLeft,
+        PanelLeftClose,
+        PanelLeftOpen,
+        PanelRight,
+        PanelRightClose,
+        PanelRightOpen,
+        Pause,
+        Play,
+        Plus,
+        Redo,
+        Redo2,
+        RefreshCw,
+        Replace,
+        ResizeCorner,
+        RotateCw,
+        Search,
+        Settings,
+        Settings2,
+        SortAscending,
+        SortDescending,
+        Square,
+        SquareTerminal,
+        Star,
+        StarFill,
+        StarOff,
+        Sun,
+        ThumbsDown,
+        ThumbsUp,
+        TriangleAlert,
+        Undo,
+        Undo2,
+        User,
+        WindowClose,
+        WindowMaximize,
+        WindowMinimize,
+        WindowRestore,
+    );
 
     fn same_variant(a: &IconName, b: &IconName) -> bool {
         // IconName derives neither PartialEq nor Debug (icon_named! emits Clone only).
@@ -1526,6 +1574,17 @@ mod tests {
         &[(IconName::StarOff, "Material Symbols has no star-off glyph")];
 
     #[test]
+    fn mic_and_square_map_to_the_sets_own_glyphs() {
+        assert_eq!(lucide_name_for_gpui_icon(IconName::Mic), Some("mic"));
+        assert_eq!(lucide_name_for_gpui_icon(IconName::Square), Some("square"));
+        assert_eq!(material_name_for_gpui_icon(IconName::Mic), Some("mic"));
+        assert_eq!(
+            material_name_for_gpui_icon(IconName::Square),
+            Some("square")
+        );
+    }
+
+    #[test]
     fn every_none_is_an_allowed_gap() {
         for icon in ALL_ICON_NAMES {
             if lucide_name_for_gpui_icon(icon.clone()).is_none() {
@@ -1533,7 +1592,8 @@ mod tests {
                     LUCIDE_NONE_ALLOWED
                         .iter()
                         .any(|(a, _)| same_variant(a, icon)),
-                    "an IconName has no Lucide mapping and is not in LUCIDE_NONE_ALLOWED"
+                    "{} has no Lucide mapping and is not in LUCIDE_NONE_ALLOWED",
+                    variant_name(icon)
                 );
             }
             if material_name_for_gpui_icon(icon.clone()).is_none() {
@@ -1541,7 +1601,8 @@ mod tests {
                     MATERIAL_NONE_ALLOWED
                         .iter()
                         .any(|(a, _)| same_variant(a, icon)),
-                    "an IconName has no Material mapping and is not in MATERIAL_NONE_ALLOWED"
+                    "{} has no Material mapping and is not in MATERIAL_NONE_ALLOWED",
+                    variant_name(icon)
                 );
             }
         }
@@ -1746,17 +1807,15 @@ mod tests {
         );
     }
 
-    // Issue 41: ALL_ICON_NAMES count tripwire test. `IconName` is generated by
-    // `icon_named!` from gpui-kit-assets' icons directory with no `ALL` or
-    // iterator, so the list is audited by hand against gpui-component 0.7.0's
-    // 104 files. A *removed* variant breaks the list at compile time; an
-    // *added* one is not detected here and must be caught by re-auditing on
-    // every gpui-component bump (ROADMAP: an iterable `IconName::ALL`).
+    // The count the README, the table docs and the showcase's gallery state.
+    // `variant_name` already stops this module compiling when upstream adds a
+    // variant; this fails when the list changes, as the reminder to update
+    // those counts.
     #[test]
     fn all_icon_names_count_matches_gpui_component() {
         assert_eq!(
             ALL_ICON_NAMES.len(),
-            104,
+            106,
             "ALL_ICON_NAMES count changed (got {}) -- update the list",
             ALL_ICON_NAMES.len()
         );
@@ -2524,6 +2583,20 @@ mod freedesktop_mapping_tests {
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Gnome),
             Some("view-reveal"),
         );
+    }
+
+    #[test]
+    fn mic_and_square_take_standard_names_on_every_desktop() {
+        for de in [LinuxDesktop::Kde, LinuxDesktop::Gnome] {
+            assert_eq!(
+                freedesktop_name_for_gpui_icon(IconName::Mic, de),
+                Some("audio-input-microphone"),
+            );
+            assert_eq!(
+                freedesktop_name_for_gpui_icon(IconName::Square, de),
+                Some("media-playback-stop"),
+            );
+        }
     }
 
     /// The status bar's two panel toggles are a matching pair on KDE: Breeze

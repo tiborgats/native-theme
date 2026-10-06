@@ -46,7 +46,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
                 "color",
                 "the inherited text colour unless text_color() sets one (icon.rs, Icon::into_svg)",
             )
-            .not_themeable("SVG shapes", "104 in gpui_component::IconName, a compatibility subset: gpui_kit_assets::IconName carries the whole Lucide catalogue (icon.rs, component_icon_names)")
+            .not_themeable("SVG shapes", "106 in gpui_component::IconName, a compatibility subset: gpui_kit_assets::IconName carries the whole Lucide catalogue (icon.rs, component_icon_names)")
             .instance(
                 "size",
                 "Medium: size_4, a rem (icon.rs, Icon::into_svg)",
