@@ -15,9 +15,9 @@
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "24a1bad7420476fe2a9340a685ad4f51a23752d5"
+commit = "fe0dabc73dec0b7aabd2e6461bc80dbaaa1d54de"
 generated = "2026-10-06"
-sources = "6a547612f92706838ebb8895ce5dcff0116f87680fda1ac71fcb6429e30eef5a"
+sources = "54c19069cb872c4cd02a83d80a4fc252e18bcbf0b704a5841e3ca0968047533b"
 
 [native-theme-gpui.verified]
 gpui-base = "0.7.1"
