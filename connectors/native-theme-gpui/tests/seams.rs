@@ -21,7 +21,9 @@
 //! A label passed as a Button's child and refined with `geometry::button_label`
 //! is as wide as the same text refined alone, under every native preset at
 //! its own font DPI, at text scale 1 and 1.5. So is the text inside a Toggle
-//! refined with `geometry::toggle`.
+//! refined with `geometry::toggle`, and the text of a cell in a DataTable
+//! sized with `geometry::data_table_size` whose container is refined with
+//! `geometry::table`.
 //!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
@@ -34,18 +36,19 @@
 //! Every other builder rests on the source citation in its doc comment.
 
 use gpui::{
-    AbsoluteLength, AnyElement, AppContext as _, Bounds, Context, DefiniteLength,
+    AbsoluteLength, AnyElement, App, AppContext as _, Bounds, Context, DefiniteLength,
     InteractiveElement as _, IntoElement, Length, ParentElement as _, Pixels, Render, SharedString,
     Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
 };
 use gpui_component::{
-    ActiveTheme as _, IndexPath, StyledExt as _,
+    ActiveTheme as _, IndexPath, Sizable as _, StyledExt as _,
     button::{Button, Toggle},
     combobox::{Combobox, ComboboxState},
     input::{Input, InputState, Textarea, TextareaState},
     list::ListItem,
     progress::Progress,
     select::{SearchableVec, Select, SelectItem, SelectState},
+    table::{Column, DataTable, TableDelegate, TableState},
     tooltip::Tooltip,
 };
 use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
@@ -1109,6 +1112,111 @@ fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {
             let s = width(Some(style.clone()), toggled_probe);
             let e = width(Some(style), bare_label);
             assert_seam(u, s, e, &format!("{preset} toggle at text scale {factor}"));
+        }
+    }
+}
+
+// --- The DataTable ------------------------------------------------------------
+
+/// One column, one row, whose cell is the text probe.
+struct OneCell;
+
+impl TableDelegate for OneCell {
+    fn columns_count(&self, _: &App) -> usize {
+        1
+    }
+
+    fn rows_count(&self, _: &App) -> usize {
+        1
+    }
+
+    fn column(&self, _: usize, _: &App) -> Column {
+        Column::new("c", "C")
+    }
+
+    fn render_td(
+        &mut self,
+        _: usize,
+        _: usize,
+        _: &mut Window,
+        _: &mut Context<TableState<Self>>,
+    ) -> impl IntoElement {
+        // A flex row, so the probe is as wide as its text, not the cell.
+        div().flex().child(text_probe())
+    }
+}
+
+/// A `DataTable` of [`OneCell`] at `size`, in a fixed-size container refined
+/// with `s`; the table is virtualised, so the container gives it its size.
+fn one_cell_table(
+    size: gpui_component::Size,
+    s: Option<&StyleRefinement>,
+    window: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let state = cx.new(|cx| TableState::new(OneCell, window, cx));
+    styled(
+        div()
+            .size(px(300.))
+            .child(DataTable::new(&state).with_size(size)),
+        s,
+    )
+}
+
+/// The one-cell table at upstream's default `Size::Medium`.
+fn medium_table(
+    s: Option<&StyleRefinement>,
+    window: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    one_cell_table(gpui_component::Size::Medium, s, window, cx)
+}
+
+/// The one-cell table at `geometry::data_table_size` of the installed native
+/// theme.
+fn native_table(
+    s: Option<&StyleRefinement>,
+    window: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let size = cx
+        .native_theme()
+        .and_then(|nt| nt.native(cx))
+        .map(geometry::data_table_size)
+        .expect("the native theme is installed");
+    one_cell_table(size, s, window, cx)
+}
+
+/// Under every native preset, at its own DPI, at text scale 1 and 1.5: the
+/// text of a cell in a `DataTable` sized with `geometry::data_table_size`,
+/// whose container is refined with `geometry::table`, is as wide as the same
+/// text refined alone. A `Size::Size` cell sets no text size of its own
+/// (`table_cell_size`, `sizing.rs:323-333`), so it inherits the container's;
+/// at `Size::Medium` the cell is `text_sm` and the text takes that.
+#[gpui::test]
+fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        for factor in [1.0, 1.5] {
+            let prefs = scaled_by(factor);
+            let style = geometry::table(Native {
+                resolved: &r,
+                accessibility: &prefs,
+            });
+            let mut width = |style: Option<StyleRefinement>, build: Build| {
+                laid_out_as(cx, preset, &r, &prefs, style, build, [TEXT])[0]
+                    .size
+                    .width
+            };
+            let u = width(Some(style.clone()), medium_table);
+            let s = width(Some(style.clone()), native_table);
+            let e = width(Some(style), bare_label);
+            assert_seam(
+                u,
+                s,
+                e,
+                &format!("{preset} data table cell at text scale {factor}"),
+            );
         }
     }
 }

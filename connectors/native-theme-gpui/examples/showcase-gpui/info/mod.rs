@@ -267,6 +267,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     ("spinner_size", "spinner.diameter"),
     (
+        "data_table_size",
+        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size)",
+    ),
+    (
         "icon_size_toolbar",
         "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
     ),

@@ -4019,10 +4019,18 @@ pub(crate) fn data_table(
         let delegate = state.read(cx).delegate();
         (delegate.rows.len(), delegate.columns.len())
     };
+    // What `native_value` and `.native` apply the builders under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     DataTable::new(state)
+        .with_size(native_value(cx, geometry::data_table_size).unwrap_or_default())
         .stripe(true)
         .bordered(true)
-        .info(ui, id, info::data::data_table(cx.theme(), rows, columns))
+        .info(
+            ui,
+            id,
+            info::data::data_table(cx.theme(), rows, columns, styled),
+        )
+        .native(cx, geometry::table)
         .h(height)
         // gpui's scroll listeners run in the bubble phase and stop at no one,
         // so without this the page under the table scrolls by the same delta

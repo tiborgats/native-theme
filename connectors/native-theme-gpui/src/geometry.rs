@@ -808,6 +808,25 @@ pub fn spinner_size(n: Native<'_>) -> Size {
     Size::Size(px(n.resolved.spinner.diameter))
 }
 
+/// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
+/// Medium row height where the theme states none.
+///
+/// Under `Size::Size` gpui-component sets the row height verbatim
+/// (`src/sizing.rs:57-64`) and the cells no text size (`:323-333`), so they
+/// inherit — refine the table's container with [`table`] and they take
+/// `list.item_font`. The Medium cell padding stands (`:89-94`). At
+/// `Size::Medium` the cells are `text_sm` since 0.7.1: 0.875 of the platform
+/// font.
+#[must_use]
+pub fn data_table_size(n: Native<'_>) -> Size {
+    Size::Size(
+        n.resolved
+            .list
+            .row_height
+            .map_or_else(|| Size::Medium.table_row_height(), px),
+    )
+}
+
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
 /// `defaults.icon_sizes.toolbar` where a platform states no toolbar-specific size.
 #[must_use]
@@ -1267,6 +1286,29 @@ mod tests {
             assert_eq!(out.corner_radii, Default::default());
             assert_eq!(out.border_widths, Default::default());
         });
+    }
+
+    #[test]
+    fn data_table_size_falls_back_to_upstream_medium() {
+        let mut stated = 0;
+        let mut unstated = 0;
+        for_each_case(|r, _, n| {
+            let expected = match r.list.row_height {
+                Some(h) => {
+                    stated += 1;
+                    px(h)
+                }
+                None => {
+                    unstated += 1;
+                    Size::Medium.table_row_height()
+                }
+            };
+            assert!(matches!(data_table_size(n), Size::Size(h) if h == expected));
+        });
+        assert!(
+            stated > 0 && unstated > 0,
+            "both branches must be exercised"
+        );
     }
 
     #[test]

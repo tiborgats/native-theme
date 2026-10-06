@@ -48,9 +48,11 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
 }
 
 /// The striped, bordered `DataTable`: its frame and fill. Its rows report
-/// themselves (`data_table_row`).
-pub fn data_table(t: &Theme, rows: usize, columns: usize) -> WidgetInfo {
-    WidgetInfo::new("DataTable")
+/// themselves (`data_table_row`). `styled` where a native theme is installed,
+/// so the table takes `geometry::data_table_size` and its container
+/// `geometry::table`.
+pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("DataTable")
         .variant("striped, bordered")
         .color(claim(
             "frame",
@@ -65,10 +67,20 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize) -> WidgetInfo {
             "gpui-component/table/data_table.rs:167",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
-        .not_themeable("geometry", "DataTable is not Styled (table/data_table.rs: DataTable impls \
+        .not_themeable(
+            "geometry",
+            "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
-                         geometry::table goes to the declarative Table below")
-        .not_themeable("row height", "per Size, but Size::Size(px) is an escape hatch that returns the pixel value verbatim (sizing.rs, table_row_height) while table_cell_padding has no Size::Size arm and stays on the Medium edges this demo already uses -- so DataTable::with_size(Size::Size(px(list.row_height))) would carry the platform's row height and change nothing else. list.row_height is modelled; nothing applies it here yet")
+                         geometry::table goes to the declarative Table below",
+        );
+    let info = if styled {
+        info.config("row height", "list.row_height through geometry::data_table_size as Size::Size, which table_row_height returns verbatim; upstream's Medium 32px where the theme states none (sizing.rs, table_row_height)")
+            .config("text", "list.item_font through geometry::table on the table's container; a Size::Size cell sets no size of its own and inherits it (sizing.rs, table_cell_size), where a Medium cell is text_sm")
+    } else {
+        info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
+            .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
+    };
+    info.config("keyboard focus", "a Tab-focused DataTable takes `ring` and the focus ring (table/data_table.rs:176-179)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
 }
