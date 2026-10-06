@@ -36,8 +36,9 @@
 //! the actions hosted around the whole window; `speech.rs` the synthetic
 //! audio input and the silent recognizer the Inputs page's SpeechWaveform
 //! runs on; `tests.rs` the self-tests; and `support.rs` the sample content,
-//! helpers, icon loading and delegates the pages share. Within a file, section-divider blocks (`// ─────`)
-//! separate one widget category, page or view from the next.
+//! helpers, icon loading and delegates the pages share. Within a file,
+//! section-divider blocks (`// ─────`) separate one widget category, page or
+//! view from the next.
 
 mod app;
 mod chrome;

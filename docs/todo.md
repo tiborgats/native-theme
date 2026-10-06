@@ -1356,6 +1356,10 @@ What is still open on the iced side:
       0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in
       the gap analysis, `button.rs:360`, `switch.rs:136-146`,
       `checkbox.rs:195-199`).
+- [ ] A mechanical check of the library's prose `file:line` citations against
+      the locked registry sources (the showcase's colour claims have one,
+      `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
+      mapped 1237 of them by script (v0.6.1 spec, Appendix A).
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
@@ -1622,7 +1626,7 @@ the gap — closing it is a change, and each wants its own decision.
       Carousel, the charts and the plot tooltip at once. Decide first whether
       a *theme* should carry motion at all, or whether this belongs with the
       accessibility preferences.
-- [ ] **A `DataTable` can take the platform's row height today.** `Size::Size(px)`
+- [x] **A `DataTable` can take the platform's row height today.** `Size::Size(px)`
       returns the pixel value verbatim from `table_row_height`
       (`sizing.rs:57-65`), and `table_cell_padding` has *no* `Size::Size` arm
       (`:67-95`), so it falls to the same Medium edges a default table already
@@ -1633,6 +1637,9 @@ the gap — closing it is a change, and each wants its own decision.
       maps it to `v * 0.2` and the private `as_f32` returns the raw pixels
       where the enum arms return 0..3, so anything ordering sizes numerically
       misreads it.
+      **Done in v0.6.1:** `geometry::data_table_size`. Since gpui-component
+      0.7.1 the same `Size::Size` is also what keeps the cells from `text_sm`
+      (`sizing.rs:323-333`).
 - [ ] **There is no ambient `font.weight`.** The `geometry::` builders that
       carry a font spec already carry the weight with it — `with_text` sets
       `font_weight` alongside the size (`geometry.rs:80-83`), which covers
@@ -1721,6 +1728,10 @@ the gap — closing it is a change, and each wants its own decision.
       `spinner.diameter` -- the circle applies the caller's refinement last,
       so a `.size()` from the model would reach it exactly. Worth a survey of
       every `Size` consumer before leaning on it anywhere.
+      0.7.1 (2026-10): `button_text_size` is `text_sm` at Medium
+      (`sizing.rs:337-343`), so a `.label()` is 0.875 of the platform font;
+      `geometry::button_label` on a child label carries `button.font`
+      (v0.6.1).
 - [ ] **A gate the audit broke, and what that says about the others.** Writing
       `(select.rs, Caret::render)` into a note made `Caret` a "shown" widget
       in `check_widget_coverage.py`, because the gpui side read string
@@ -1818,7 +1829,7 @@ the gap — closing it is a change, and each wants its own decision.
       the view background rather than the window's, and that is dropped. `geometry::list` lands on the element around the rows, which
       is exactly where a fill belongs, and carries only the border
       (`geometry.rs:362-369`). One `.bg()` would carry it. Found 2026-09-22.
-- [ ] **A `geometry::toggle`.** A `Toggle` applies the caller's refinement
+- [x] **A `geometry::toggle`.** A `Toggle` applies the caller's refinement
       last (`button/toggle.rs:215`) *and* folds it into its checked style
       (`:207-212`, gpui-base `toggle.rs:91-101`), so `segmented_control`'s
       `segment_height`, padding, font and -- on a checked toggle --
@@ -1826,6 +1837,9 @@ the gap — closing it is a change, and each wants its own decision.
       an unchecked toggle's hover is out of reach (Tier U: it is set with
       `.hover()` on the base element). Found 2026-09-22 from a panel that
       called the whole thing Tier U.
+      **Done in v0.6.1:** `geometry::toggle` carries the text alone:
+      `button.font`'s size and weight and the platform's line height, over the
+      `text_sm` gpui-component 0.7.1 sets on a Medium `Toggle`.
 - [ ] **`Switch::color` is a receiver nothing feeds.** `switch.checked_background`
       is modelled and every preset states it; `ThemeColor` has no field for
       it, which is what `colors.rs`'s Issue 51 note and the contract's
@@ -2493,6 +2507,8 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       names the ones its chrome shows (`info::chrome::icon_set_select`).
       Found in the final review of the v0.5.9 showcase-app work
       (2026-09-23).
+      Added since: `SpeechButton`'s Mic / Square (`src/speech/button.rs:96-100`,
+      0.7.1).
 - [ ] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -2510,6 +2526,16 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
         which tab is drawn selected.
       - The item above on the resizable group's missing Widget Info names
         three `resizable_panel()`s; there are two now.
+- [ ] PR: Button: let the caller's text size reach the label —
+      `button_text_size` on the content element (`button/button.rs:749`)
+      shadows a size set on the button; honouring the instance style's text
+      size there, or a public `content_style`, would retire the child-label
+      pattern of `geometry::button_label`.
+- [ ] PR: ColorSelect: apply the caller's refinement to the framed field
+      (`color_picker.rs:488` lands on the wrapper; the field is
+      `render_field`, `:762-813`).
+- [ ] PR: DataTable: `Styled`, or a text-size setter, so the cell size need
+      not go through `Size::Size`.
 
 ---
 

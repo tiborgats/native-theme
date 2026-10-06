@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **native-theme-gpui**: `geometry::button_label`, `geometry::toggle` and `geometry::data_table_size`; `Mic` and `Square` in the Lucide, Material and freedesktop tables.
+- **native-theme**: the bundled Lucide and Material sets carry `mic` and `square`.
+- **Showcases (gpui)**: the Inputs page shows `ColorSelect` and `SpeechWaveform`.
+
+### Changed
+
+- **native-theme-gpui**: requires gpui-component, gpui-base and gpui-kit 0.7.1 and gpui-pre 0.3.8 (MSRV unchanged, 1.95.0). The three `IconName` tables return `None` for a variant newer than the connector, instead of failing to compile.
+
+### Fixed
+
+- **native-theme-gpui**: 0.6.0 does not build against gpui-component 0.7.1, which added `IconName::Mic` and `IconName::Square`; 0.6.1 does. A Button's label, a Toggle's text and DataTable cells can be drawn at the platform's font size again, which gpui-component 0.7.1 shrank to 0.875 of it at `Size::Medium` (through `geometry::button_label`, `geometry::toggle` and `geometry::data_table_size`).
+
 ## [0.6.0] - 2026-10-01
 
 ### Added

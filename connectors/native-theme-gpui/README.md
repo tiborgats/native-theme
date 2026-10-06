@@ -193,15 +193,26 @@ the `geometry` module is a pure function of `Native<'_>` (the four layout
 accessors, of a `LayoutTheme`):
 
 ```rust,ignore
-use gpui_component::StyledExt;
+use gpui::{ParentElement, Styled, div};
+use gpui_component::{StyledExt, button::Button};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 
-let button = Button::new("save").label("Save");
 let button = match cx.native_theme().and_then(|t| t.native(cx)) {
-    Some(n) => button.refine_style(&geometry::button(n)),
-    None => button,          // before `apply`: upstream's geometry
+    Some(n) => Button::new("save")
+        .refine_style(&geometry::button(n))
+        .child(
+            div().min_w_0().whitespace_nowrap().text_ellipsis()
+                .refine_style(&geometry::button_label(n))
+                .child("Save"),
+        )
+        .accessibility_label("Save"),
+    None => Button::new("save").label("Save"), // before `apply`: upstream's geometry
 };
 ```
+
+The label goes in as the button's child: gpui-component sizes a `.label()`
+on an inner element after the button's refinement, `text_sm` at
+`Size::Medium`, and `button_label` gives the child the platform's size.
 
 Text sizes carry the accessibility text-scaling factor; widths, paddings,
 radii and icon sizes do not (that is what the platform toolkit does).
@@ -248,7 +259,9 @@ test over every preset and mode says so.
 
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
-| `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
+| `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element — `button_label` reaches it on a child label; the outline/ghost/link/text variants take the native border too) |
+| `button_label` | `button.font` size and weight, `defaults.line_height` | the label passed as a `Button`'s child |
+| `toggle` | `button.font` size and weight, `defaults.line_height` | `Toggle` |
 | `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:774-776`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
@@ -266,6 +279,7 @@ test over every preset and mode says so.
 | `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font` | declarative `Table` |
+| `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated | `DataTable::with_size`; with `table` on the container for the cell text |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |

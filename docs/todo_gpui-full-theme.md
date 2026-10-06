@@ -69,7 +69,12 @@ caller's `StyleRefinement` after its own geometry (`geometry::<widget>` +
 `refine_style`), **S** = the widget honours `Size::Size(px)`, **B** = a
 widget-specific builder takes the value; "upstream" = an inner element the
 caller's style cannot reach, listed with the line that makes it so (spec §14).
-The remaining upstream items are the v0.6.2 PR list in `ROADMAP.md`.
+The remaining upstream items are the v0.6.3 PR list in `ROADMAP.md`.
+
+v0.6.1 (gpui-component 0.7.1): the button's label size reaches a Button through
+a child label (`geometry::button_label`), a `Toggle`'s text through
+`geometry::toggle`, and a `DataTable`'s row height and cell text through
+`geometry::data_table_size` + `geometry::table`.
 
 
 ## 2 -- Why the gap exists

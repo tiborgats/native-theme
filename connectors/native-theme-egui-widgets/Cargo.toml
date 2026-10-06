@@ -35,7 +35,7 @@ system-fonts   = ["native-theme-egui/system-fonts"]
 # egui and native-theme are reached through the connector's re-exports
 # (`native_theme_egui::egui`, `native_theme_egui::native_theme`), so the graph
 # holds one copy of each and this crate names no version of either.
-native-theme-egui = { version = "0.6.0", path = "../native-theme-egui", default-features = false }
+native-theme-egui = { version = "0.6.1", path = "../native-theme-egui", default-features = false }
 
 [dev-dependencies]
 # T7 finds egui's published sources through `cargo metadata`, as
