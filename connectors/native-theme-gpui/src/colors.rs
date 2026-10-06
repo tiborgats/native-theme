@@ -1201,7 +1201,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.7.0 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.7.1 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();

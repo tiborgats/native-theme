@@ -90,7 +90,7 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// `ThemeColor` has 139 fields (gpui-component 0.7.0
+/// `ThemeColor` has 139 fields (gpui-component 0.7.1
 /// `src/theme/theme_color.rs:59-343`) and `ThemeConfigColors` 140: the same
 /// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
 /// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,

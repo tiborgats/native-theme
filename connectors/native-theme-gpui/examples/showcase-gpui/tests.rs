@@ -78,8 +78,8 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 /// One thing `main` has that a test window cannot: the asset source.
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
-/// and exposes no setter (`gpui-pre-0.3.5/src/app/test_context.rs:132-136`)
-/// — so gpui-component's own `IconName` SVGs resolve to nothing. The pages
+/// through `build_with_platform` and exposes no setter
+/// (`gpui-pre-0.3.8/src/app/test_context.rs:127-139`, `:171-175`) — so gpui-component's own `IconName` SVGs resolve to nothing. The pages
 /// still lay out, which is what these tests measure; the showcase's native
 /// icons do not come from the asset source at all, they are decoded into
 /// `ImageSource` by the connector.
@@ -3673,7 +3673,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// shows its tooltip's text as its label, never another icon theme's icon
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
-/// `text_sm`, sizing.rs:330, without a native theme) plus the theme's button
+/// `text_sm`, sizing.rs:340, without a native theme) plus the theme's button
 /// padding, or the `px_2` on either side (button/button.rs:672-674) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
@@ -6177,7 +6177,7 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
-/// (gpui-component 0.7.0): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.7.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's
 /// and a Combobox's caret, a DatePicker's Calendar, a Calendar's month
 /// buttons, the command palette's Search, a Dialog's and a Sheet's close

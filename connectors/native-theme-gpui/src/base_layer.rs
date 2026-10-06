@@ -122,7 +122,7 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
 /// `gpui_kit::base::h_resizable` / `v_resizable`), which install no renderer
 /// (gpui-base `src/resizable/resize_handle.rs:309-336`) — the splitter's
 /// colours at that 1 px width, not `splitter.divider_width`, the hover colour
-/// only while the handle is dragged. They do not reach gpui-component 0.7.0's
+/// only while the handle is dragged. They do not reach gpui-component 0.7.1's
 /// `h_resizable` / `v_resizable`, which install gpui-component's own
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:27-30, 93, 104-111`), nor `Settings`'

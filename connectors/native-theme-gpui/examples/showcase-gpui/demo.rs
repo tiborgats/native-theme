@@ -221,7 +221,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.7.0 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.7.1 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -1204,7 +1204,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.7.0's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.7.1's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap and padding sides the theme states, and no fallback or edge,
 /// since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a

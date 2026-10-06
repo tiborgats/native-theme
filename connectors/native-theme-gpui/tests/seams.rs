@@ -446,7 +446,7 @@ seam!(
 /// (`src/tooltip.rs:126-132`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.7/src/elements/text.rs:656-663`). The item's minimum is
+/// width (`gpui-pre-0.3.8/src/elements/text.rs:656-663`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]

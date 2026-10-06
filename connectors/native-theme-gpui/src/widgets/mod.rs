@@ -5,7 +5,7 @@
 //! spinner from sizes and alpha blends of its own, which no `ThemeColor` field
 //! or `StyleRefinement` reaches: the indicator in rems per `Size`
 //! (`checkbox.rs:219-224`), the switch's track and thumb in pixels
-//! (`switch.rs:186-193`), the slider's rail as its fill at 0.2
+//! (`switch.rs:186-195`), the slider's rail as its fill at 0.2
 //! (`slider.rs:290`), the progress bar's track likewise
 //! (`progress/progress.rs:135`), and the spinner as a turning icon
 //! (`spinner.rs:25`). The controls here are built the way gpui-component

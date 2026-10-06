@@ -1,4 +1,4 @@
-//! Per-widget geometry for gpui-component 0.7.0 widgets (spec §9).
+//! Per-widget geometry for gpui-component 0.7.1 widgets (spec §9).
 //!
 //! Every builder is a pure function of a [`Native`] view (the four layout
 //! accessors, of a `LayoutTheme`) and returns a
@@ -381,7 +381,7 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
 
 /// The layers of gpui's `shadow_md`, which upstream gives a tooltip
 /// (`src/tooltip.rs:119`), as (y offset, blur radius, spread radius) in
-/// pixels (gpui-pre-macros 0.3.7 `src/styles.rs:445-448`).
+/// pixels (gpui-pre-macros 0.3.8 `src/styles.rs:445-448`).
 const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 
 /// The element an application passes to `Tooltip::element`
@@ -461,7 +461,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
 /// dialog to what is left of the viewport *after* applying this style -- in
-/// 0.7.0 the view's height less twice the `lg` spacing token and the layer's
+/// 0.7.1 the view's height less twice the `lg` spacing token and the layer's
 /// offset (`:576-584`), set by `max_h` at `:682`, after the refinement at
 /// `:677`.
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
@@ -564,7 +564,7 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 }
 
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
-/// content surface (`:172-177`), which 0.7.0 nests in a column that also
+/// content surface (`:172-177`), which 0.7.1 nests in a column that also
 /// holds the optional footer (`:167-168`).
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
@@ -590,8 +590,9 @@ fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
 }
 
-/// `Checkbox` (`src/checkbox.rs:270-285` → `:283`); the indicator is inner,
-/// Tier U.
+/// `Checkbox` (`src/checkbox.rs:270-282` → `:283`); the indicator is inner,
+/// Tier U. The text size replaces upstream's `input_text_size` (`:275-278`:
+/// XSmall `text_xs`, Small and Medium `text_sm`, Large `text_base`).
 ///
 /// No colour, although upstream does label the row with `foreground` (`:274`)
 /// before this refinement: a `Checkbox::label` is wrapped in a div that sets
@@ -605,8 +606,9 @@ pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     with_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
 }
 
-/// `Radio` (`src/radio.rs:210-225` → `:223`): [`checkbox`]'s metrics, and the
-/// colour [`checkbox`] cannot take.
+/// `Radio` (`src/radio.rs:210-222` → `:223`): [`checkbox`]'s metrics, and the
+/// colour [`checkbox`] cannot take. The text size replaces upstream's
+/// `input_text_size` (`:219-222`), the same ladder as [`checkbox`]'s.
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the row with `foreground` (`:212`) before applying this refinement, and its
@@ -1693,7 +1695,7 @@ mod tests {
                 assert_eq!(
                     r.checkbox.font.color, r.defaults.text_color,
                     "{at}: this preset states a checkbox label text colour \
-                     that gpui-component 0.7.0 gives no route for \
+                     that gpui-component 0.7.1 gives no route for \
                      (checkbox.rs:331-336) -- record it as a Tier U candidate; \
                      do NOT carry it in the builder, it would displace the \
                      disabled colour (checkbox.rs:252-256)"
@@ -1701,7 +1703,7 @@ mod tests {
                 assert_eq!(
                     r.combo_box.font.color, r.defaults.text_color,
                     "{at}: this preset states a combo box text colour that \
-                     gpui-component 0.7.0 gives no route for \
+                     gpui-component 0.7.1 gives no route for \
                      (combobox.rs:991 -> :998) -- record it as a Tier U \
                      candidate; do NOT carry it in the builder, it would \
                      displace the disabled colour (input/input.rs:99-103)"

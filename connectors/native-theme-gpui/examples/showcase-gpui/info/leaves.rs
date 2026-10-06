@@ -662,7 +662,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (styled.rs:175-190)",
+        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (styled.rs:179-184, focus_ring_style, which hands it to focus_style, :250-298)",
     ),
     (
         "",

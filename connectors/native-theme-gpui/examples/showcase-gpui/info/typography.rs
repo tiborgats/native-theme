@@ -242,7 +242,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-base/input/base/element.rs:3093",
         ))
         // Unhighlighted text is painted in the colour the element inherits
-        // (gpui-base input/base/element.rs:2544), not the style block's
+        // (gpui-base input/base/element.rs:2542), not the style block's
         // foreground, and Input sets none (input/input.rs:706): so the
         // colour the showcase sets on its window.
         .color(claim(

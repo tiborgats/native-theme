@@ -477,10 +477,10 @@ pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
 /// alias `.SystemUIFont`, "used to identify the system UI font, which varies
-/// based on platform" (gpui-pre 0.3.7 `src/text_system.rs` line 1295): gpui's
+/// based on platform" (gpui-pre 0.3.8 `src/text_system.rs` line 1295): gpui's
 /// macOS text system maps it to `.AppleSystemUIFont` through
-/// `font_name_with_fallbacks` (gpui-pre 0.3.7 `src/text_system.rs` lines 1420–1430,
-/// gpui-pre-macos 0.3.7 `src/text_system.rs` line 282) and looks that up among
+/// `font_name_with_fallbacks` (gpui-pre 0.3.8 `src/text_system.rs` lines 1420–1430,
+/// gpui-pre-macos 0.3.8 `src/text_system.rs` line 282) and looks that up among
 /// its memory fonts first, then in the system source (lines 286–289), so Core
 /// Text supplies its own system UI font. Every other family, and every
 /// family elsewhere, is passed as stated: fontdb-style databases file the
@@ -501,7 +501,7 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
 /// the font every native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
-/// list of its own, `.ZedMono` first (gpui-pre 0.3.7 `src/text_system.rs`
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.8 `src/text_system.rs`
 /// lines 255-266, 370-379), not the platform's. The platform is asked once
 /// per family and the answer kept, so a caller may ask every frame.
 #[must_use]

@@ -731,29 +731,32 @@ pub fn collapsible_toggle(t: &Theme, open: bool, label: &str, icon: &SampleIcon)
 /// The `Carousel`, drawn while gpui's `reduce_motion` is as given.
 pub fn carousel(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Carousel");
-    // Carousel::render hands its focus overlay to focus_ring_style
-    // (carousel/carousel.rs:201), which only tints the border where the
-    // theme turns the ring off (styled.rs:182-184) and otherwise also draws
-    // the ring outside it at FOCUS_RING_OPACITY, 0.5 (styled.rs:12, :186-190).
+    // Carousel::render hands its focus overlay, which has a 1px border
+    // (carousel/carousel.rs:198), to focus_ring_style (:201), whose
+    // focus_style (styled.rs:183, :250-298) tints the border and draws the
+    // ring outside it at FOCUS_RING_OPACITY, 0.5, where the theme turns the
+    // ring on (styled.rs:12, :258-262). Where it is off, a bordered element
+    // only has its border tinted (:269-271), and the 1px ring line a
+    // borderless one gets instead (:273-297) does not apply to this overlay.
     let info = if t.focus_ring {
         info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/styled.rs:187",
+            "gpui-component/styled.rs:259",
         ))
         .color(claim(
             "focus ring, ring at 50%",
             "ring",
             t.ring.alpha(0.5),
-            "gpui-component/styled.rs:189",
+            "gpui-component/styled.rs:261",
         ))
     } else {
         info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/styled.rs:183",
+            "gpui-component/styled.rs:270",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))

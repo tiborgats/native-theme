@@ -419,7 +419,7 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
         )),
     };
     let info = info
-        .not_themeable("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs, shimmer_highlight_color)")
+        .not_themeable("highlight", "the text colour mixed with background (light) or foreground (dark) -- or with the other one where the text's lightness is within 0.1 of it, as the Default and Reverse kinds' foreground text is in a dark theme -- at 75%/60% peak (shimmer.rs:14, :448-454, shimmer_highlight_color)")
         .not_themeable("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs, ShimmerText::render)")
         .not_themeable("sweep", "2s by default, a literal rather than a motion token (shimmer.rs, ShimmerStyle)")
         .instance("animation", if reduce_motion {

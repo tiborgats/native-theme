@@ -1,6 +1,6 @@
 //! The showcase's actions, hosted around the whole window.
 //!
-//! gpui-base 0.7.0's `Root` mounts the view and, beside it, one overlay per
+//! gpui-base 0.7.1's `Root` mounts the view and, beside it, one overlay per
 //! registered plugin (gpui-base root.rs, `Root::render`); gpui-component's
 //! `WindowState` draws dialogs, sheets and notifications there. An action
 //! dispatched from inside one of them walks only its own ancestors

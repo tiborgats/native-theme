@@ -446,7 +446,7 @@ pub fn switch(
             "focus ring, ring at 50% alpha",
             "ring",
             t.ring.alpha(0.5),
-            "gpui-component/styled.rs:189",
+            "gpui-component/styled.rs:261",
         ))
     };
     let info = if disabled {
@@ -771,7 +771,7 @@ pub fn native_switch(
         )),
     };
     // While focused the track draws the focus ring in `ring` at 50% alpha
-    // (gpui-component styled.rs:189), `ring` being the connector's
+    // (gpui-component styled.rs:261), `ring` being the connector's
     // `defaults.focus_ring_color`; a disabled switch takes no focus.
     let info = if disabled {
         info
@@ -1223,7 +1223,7 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "focus ring, ring at 50% alpha",
             "ring",
             t.ring.alpha(0.5),
-            "gpui-component/styled.rs:189",
+            "gpui-component/styled.rs:261",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("segment radius", "half the theme's radius (time/time_field.rs, TimeField)")

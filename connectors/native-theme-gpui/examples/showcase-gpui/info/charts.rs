@@ -54,7 +54,7 @@ enum Guide {
     None,
 }
 
-/// What a chart paints under the pointer: gpui-component 0.7.0's charts are
+/// What a chart paints under the pointer: gpui-component 0.7.1's charts are
 /// interactive by default (chart/bar_chart.rs, BarChart::interactive), so the
 /// hovered point gets a tooltip on the popover surface and the `guide`.
 fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {
@@ -70,7 +70,8 @@ fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {
             "muted_foreground",
             t.muted_foreground,
             "gpui-component/plot/tooltip.rs:545",
-        ));
+        ))
+        .not_themeable("draw-in", "on first paint the data draws in over 1000ms on easeOutQuart (theme/mod.rs, PLOT_APPEAR and plot_appear_easing), and the tooltip waits for it; skipped under reduced motion, which this connector forwards from the platform (gpui-base plot/appear.rs and motion/presence.rs); the page replays it on every visit");
     match guide {
         Guide::Dashed => info.color(claim(
             "guide line, dashed: border mixed 80% toward foreground",
@@ -298,7 +299,8 @@ pub fn pie_chart(t: &Theme) -> WidgetInfo {
 /// `chart_bearish` by its own open and close.
 pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
     // Upstream's rule: a candle is bullish only where it closes above its
-    // open (chart/candlestick_chart.rs:343).
+    // open (chart/candlestick_chart.rs:368, inside the draw-in reveal,
+    // :340-342).
     let days = |bullish: bool| -> String {
         let days: Vec<&str> = SAMPLE_OHLC
             .iter()

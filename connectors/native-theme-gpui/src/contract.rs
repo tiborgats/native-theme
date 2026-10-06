@@ -371,7 +371,7 @@ const ROWS: &[Row] = &[
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:278`,
     // `table/state.rs:1579, :1819`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.7.0 beyond a schema fallback (`theme/schema.rs:972, 1010`),
+    // reader in 0.7.1 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -1362,7 +1362,7 @@ struct Pair {
 /// layer lands on a surface the platform did not put it on.
 ///
 /// `PopupMenu::render` calls `.popover_style(cx)`, which is
-/// `bg(theme.popover)` (`gpui-component-0.7.0/src/menu/popup_menu.rs:1480`,
+/// `bg(theme.popover)` (`gpui-component-0.7.1/src/menu/popup_menu.rs:1480`,
 /// `styled.rs:186-192`), and upstream has no menu-surface token. The connector
 /// feeds `popover` from `popover.background_color`, the token's documented
 /// meaning, but `menu.background_color` differs from it in 30 of the 32
@@ -1374,7 +1374,7 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
                             background differs from its popover background";
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.7.0/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
+/// (`gpui-component-0.7.1/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
@@ -1433,7 +1433,7 @@ fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 83 sites outside `theme/` in 0.7.0) and the surfaces
+/// alone has 86 sites outside `theme/` in 0.7.1) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -1632,7 +1632,7 @@ const PAIRS: &[Pair] = &[
     // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
-    // `tokens.tab`, which nothing in 0.7.0 reads, keeps its row but takes no
+    // `tokens.tab`, which nothing in 0.7.1 reads, keeps its row but takes no
     // part here.
     Pair {
         what: "tab label",
@@ -1865,7 +1865,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.7.0 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.7.1 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -1888,7 +1888,7 @@ const INERT_SURFACES: &[(&str, &str)] = &[
     (
         "sidebar primary button label",
         "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.7.0",
+         outside theme/ in 0.7.1",
     ),
 ];
 
@@ -2051,7 +2051,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.0 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.1 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

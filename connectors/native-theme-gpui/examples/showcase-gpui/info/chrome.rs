@@ -397,7 +397,7 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component 0.7.0's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component 0.7.1's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .not_themeable(
             "edge",
