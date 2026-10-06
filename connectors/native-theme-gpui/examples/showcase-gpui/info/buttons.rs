@@ -656,10 +656,16 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
 }
 
 /// The notes every Toggle and ToggleGroup the showcase builds shares: all
-/// are at the default Size.
-pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme) -> WidgetInfo {
-    info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
-        .not_themeable("size", "min_w_8 / h_8 at the default Size -- rems, so the platform's font -- and settable: the refinement comes last, so segmented_control.segment_height, its padding and its font would reach a Toggle through the geometry::toggle nobody has written (button/toggle.rs, Toggle::render)")
+/// are at the default Size, and take `geometry::toggle` where `styled`.
+pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
+    let info = info
+        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable("size", "min_w_8 / h_8 at the default Size, upstream's own: the model states no flat-button frame (button/toggle.rs, Toggle::render)");
+    if styled {
+        info.config("text", "button.font's size and weight through geometry::toggle, which lands after the text_sm a Medium Toggle sets on itself (button/toggle.rs, Toggle::render)")
+    } else {
+        info
+    }
 }
 
 /// The hovered colours of an unchecked Toggle, of either variant.
@@ -693,7 +699,7 @@ pub(super) fn toggle_checked(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         t.accent_foreground,
         "gpui-component/button/toggle.rs:156",
     ))
-    .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: there is no geometry::toggle -- our gap")
+    .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: geometry::toggle carries the Toggle's text alone")
 }
 
 /// The unchecked fill of a Ghost Toggle.
@@ -703,8 +709,9 @@ fn ghost_toggle_fill(info: WidgetInfo) -> WidgetInfo {
 
 /// A `Toggle`, `checked` or not, showing its icon where `drawn`, and its
 /// icon's name as its label where the chosen icon theme has none; `icon`
-/// says which.
-pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool) -> WidgetInfo {
+/// says which. `styled` where a native theme is installed, so the Toggle
+/// takes `geometry::toggle`.
+pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool, styled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Toggle").variant(match (drawn, checked) {
         (true, true) => "Ghost, checked",
         (true, false) => "Ghost",
@@ -716,15 +723,19 @@ pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool) -> WidgetInfo
     } else {
         ghost_toggle_fill(toggle_hover(info, t))
     };
-    toggle_notes(info, t).instance("icon", icon).instance(
-        "click",
-        "checks or unchecks it; the showcase keeps the state",
-    )
+    toggle_notes(info, t, styled)
+        .instance("icon", icon)
+        .instance(
+            "click",
+            "checks or unchecks it; the showcase keeps the state",
+        )
 }
 
 /// A `ToggleGroup` of unchecked Toggles, which report through the group.
-pub fn toggle_group(t: &Theme) -> WidgetInfo {
-    toggle_notes(ghost_toggle_fill(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t)), t)
+/// `styled` where a native theme is installed, so each Toggle takes
+/// `geometry::toggle`.
+pub fn toggle_group(t: &Theme, styled: bool) -> WidgetInfo {
+    toggle_notes(ghost_toggle_fill(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t)), t, styled)
         .not_themeable("gap", "gap_2 between the toggles -- a rem, so the platform's font; only a segmented group drops it (button/toggle.rs, ToggleGroup::segmented)")
         .instance("toggles", "Left, Center and Right, none checked. ToggleGroup::child takes a Toggle, not an element a target could wrap, so they report through the group (button/toggle.rs, ToggleGroup::child)")
 }

@@ -3011,36 +3011,46 @@ pub(crate) fn toggle(
     checked: bool,
     on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut toggle_info = info::buttons::toggle(
+        cx.theme(),
+        icon.shown(),
+        icon.note("the Toggle shows the icon's name as its label instead"),
+        checked,
+        styled,
+    );
     let toggle = match icon.icon() {
         Some(drawn) => Toggle::new(id).icon(drawn),
         None => Toggle::new(id).label(icon_name),
     };
-    toggle
+    native_info(toggle, cx, geometry::toggle, "toggle", &mut toggle_info)
         .checked(checked)
         .on_click(on_click)
-        .info(
-            ui,
-            id,
-            info::buttons::toggle(
-                cx.theme(),
-                icon.shown(),
-                icon.note("the Toggle shows the icon's name as its label instead"),
-                checked,
-            ),
-        )
+        .info(ui, id, toggle_info)
         .debug_selector(move || id.into())
 }
 
-/// A `ToggleGroup` of unchecked Toggles reading `labels`.
+/// A `ToggleGroup` of unchecked Toggles reading `labels`, each refined by
+/// `geometry::toggle`.
 pub(crate) fn toggle_group(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut group_info = info::buttons::toggle_group(cx.theme(), styled);
+    if styled {
+        group_info = group_info.geometry("toggle");
+    }
     ToggleGroup::new(id)
-        .children(labels.iter().map(|&label| Toggle::new(label).label(label)))
-        .info(ui, id, info::buttons::toggle_group(cx.theme()))
+        .children(
+            labels
+                .iter()
+                .map(|&label| Toggle::new(label).label(label).native(cx, geometry::toggle)),
+        )
+        .info(ui, id, group_info)
 }
 
 /// A `Clipboard` copying `value`.

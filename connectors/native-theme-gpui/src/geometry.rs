@@ -240,6 +240,20 @@ pub fn button_label(n: Native<'_>) -> StyleRefinement {
     with_text(line, &n.resolved.button.font, n)
 }
 
+/// `Toggle` (`src/button/toggle.rs:174-179` → `:214`): [`button_label`]'s
+/// text — `button.font`'s size and weight and the platform's line height.
+///
+/// gpui-component sets `text_sm` on a `Size::Medium` Toggle's root before
+/// the caller's refinement (0.875 of the platform font since 0.7.1), so this
+/// size wins. Only the text: a `Toggle` is `Ghost` by default (`:15-16`), a
+/// flat button, and the model states no flat-button frame, so upstream's own
+/// stands. The platform's segmented control is the segmented `TabBar`, not a
+/// `ToggleGroup`.
+#[must_use]
+pub fn toggle(n: Native<'_>) -> StyleRefinement {
+    button_label(n)
+}
+
 /// `Input` root (`src/input/input.rs:778-788` → `:793`).
 ///
 /// Height by the control-height rule (module doc), through `h`. The rule is
@@ -1241,6 +1255,18 @@ mod tests {
         r.button.font.size = r.defaults.font.size + 3.0;
         let out = button_label(Native::unscaled(&r));
         assert_eq!(out.text.font_size, abs(r.button.font.size));
+    }
+
+    #[test]
+    fn toggle_is_the_button_labels_text() {
+        for_each_case(|_, _, n| {
+            let out = toggle(n);
+            assert_eq!(out, button_label(n));
+            assert_eq!(out.size.height, None);
+            assert_eq!(out.padding, Default::default());
+            assert_eq!(out.corner_radii, Default::default());
+            assert_eq!(out.border_widths, Default::default());
+        });
     }
 
     #[test]

@@ -20,7 +20,8 @@
 //!
 //! A label passed as a Button's child and refined with `geometry::button_label`
 //! is as wide as the same text refined alone, under every native preset at
-//! its own font DPI, at text scale 1 and 1.5.
+//! its own font DPI, at text scale 1 and 1.5. So is the text inside a Toggle
+//! refined with `geometry::toggle`.
 //!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
@@ -39,7 +40,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme as _, IndexPath, StyledExt as _,
-    button::Button,
+    button::{Button, Toggle},
     combobox::{Combobox, ComboboxState},
     input::{Input, InputState, Textarea, TextareaState},
     list::ListItem,
@@ -1068,6 +1069,46 @@ fn a_buttons_child_label_takes_the_button_font(cx: &mut TestAppContext) {
                 e,
                 &format!("{preset} button label at text scale {factor}"),
             );
+        }
+    }
+}
+
+// --- The Toggle ---------------------------------------------------------------
+
+/// A Medium Toggle (upstream's default size) refined with `s`, whose child is
+/// the text probe.
+fn toggled_probe(
+    s: Option<&StyleRefinement>,
+    _: &mut Window,
+    _: &mut Context<Harness>,
+) -> AnyElement {
+    styled(Toggle::new("t").child(text_probe()), s)
+}
+
+/// Under every native preset, at its own DPI, at text scale 1 and 1.5: the
+/// text inside a Medium Toggle refined with `geometry::toggle` is as wide as
+/// the same text refined alone. Upstream sets `text_sm` on a Medium Toggle's
+/// root (`button/toggle.rs:174-179`) before the caller's refinement (`:214`);
+/// unrefined, the text takes that `text_sm`.
+#[gpui::test]
+fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        for factor in [1.0, 1.5] {
+            let prefs = scaled_by(factor);
+            let style = geometry::toggle(Native {
+                resolved: &r,
+                accessibility: &prefs,
+            });
+            let mut width = |style: Option<StyleRefinement>, build: Build| {
+                laid_out_as(cx, preset, &r, &prefs, style, build, [TEXT])[0]
+                    .size
+                    .width
+            };
+            let u = width(None, toggled_probe);
+            let s = width(Some(style.clone()), toggled_probe);
+            let e = width(Some(style), bare_label);
+            assert_seam(u, s, e, &format!("{preset} toggle at text scale {factor}"));
         }
     }
 }
