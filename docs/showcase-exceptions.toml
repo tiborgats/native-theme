@@ -17,9 +17,9 @@
 # of egui 0.36.2 it was read at. Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
-# them -- and cites the file and line it was read at: gpui-component 0.7.0
-# (first read at 0.6.4; the gpui section re-read at 0.7.0 on 2026-10-01),
-# iced_widget 0.14.2, iced_aw 0.14.1.
+# them -- and cites the file and line it was read at: gpui-component 0.7.1
+# (first read at 0.6.4; the gpui section re-read at 0.7.0 on 2026-10-01 and
+# re-pointed to 0.7.1 on 2026-10-06), iced_widget 0.14.2, iced_aw 0.14.1.
 
 # Composition slots and internal parts of gpui-component widgets. Each is a
 # piece of a parent widget, not a widget of its own, so the parent's own
@@ -49,6 +49,7 @@ SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dr
 SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
 SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:358-369, :378; read in gpui-component 0.7.0), so under any other chosen icon theme it would show another icon theme's icon. The status bar's side-panel toggle is a Button whose `PanelLeft` comes from the chosen icon theme"
+SpeechButton = "it would mix icon themes: it draws gpui-component's own `Mic` or `Square`, chosen as it renders with no setter (speech/button.rs:96-100; read in gpui-component 0.7.1), so under any other chosen icon theme it would show another icon theme's icon; without a recognizer it renders an empty element (:78-79). The Inputs page drives its SpeechState from a Button of the showcase's own"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
 WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` root plugin and never constructed by the showcase, which is what the check counts as shown: `WindowState::decorate` wraps the window in `window_border()` (root.rs:450-458; read in gpui-component 0.7.0). A second, nested one would call `set_client_inset` again (window_border.rs:155), so the showcase builds none; the inspector's Theme tab states the facts of the one gpui-component draws"

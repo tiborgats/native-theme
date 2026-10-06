@@ -1178,6 +1178,26 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret)"))
 }
 
+/// A `SpeechWaveform` over the showcase's synthetic input.
+pub fn speech_waveform(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("SpeechWaveform")
+        .color(claim(
+            "bars, capturing",
+            "primary",
+            t.primary,
+            "gpui-component/speech/waveform.rs:93",
+        ))
+        .color(claim(
+            "bars, idle",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/speech/waveform.rs:95",
+        ))
+        .instance("signal", "the showcase's own synthetic level envelope (speech.rs), no microphone; nothing is recognised")
+        .not_themeable("size", "96px wide and 12 / 16 / 20 / 24px tall per Size, literals (speech/waveform.rs, DEFAULT_WIDTH and SpeechWaveform::height)")
+        .not_themeable("motion", "one bar per 80ms of audio, scrolling while capturing; the bars stand still under reduced motion (speech/level.rs, LEVEL_INTERVAL; speech/waveform.rs, SpeechWaveform::render)")
+}
+
 /// A `DatePicker`.
 pub fn date_picker(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("DatePicker")

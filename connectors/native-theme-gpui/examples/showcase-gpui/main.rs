@@ -33,9 +33,10 @@
 //! chrome and the helpers that build a widget with its info; `info/` what
 //! each widget reports; `inspector.rs` the inspector; `elements.rs` the
 //! elements the three showcases share and the `--dump-layout` dump; `host.rs`
-//! the actions hosted around the whole window; `tests.rs` the self-tests; and
-//! `support.rs` the sample content, helpers, icon loading and delegates
-//! the pages share. Within a file, section-divider blocks (`// ─────`)
+//! the actions hosted around the whole window; `speech.rs` the synthetic
+//! audio input and the silent recognizer the Inputs page's SpeechWaveform
+//! runs on; `tests.rs` the self-tests; and `support.rs` the sample content,
+//! helpers, icon loading and delegates the pages share. Within a file, section-divider blocks (`// ─────`)
 //! separate one widget category, page or view from the next.
 
 mod app;
@@ -46,6 +47,7 @@ mod host;
 mod info;
 mod inspector;
 mod pages;
+mod speech;
 mod support;
 
 use std::time::Duration;

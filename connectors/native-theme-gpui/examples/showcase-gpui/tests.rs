@@ -14,7 +14,7 @@ use gpui::{
 use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use crate::app::{
     AppColorMode, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode, SetPreset,
@@ -8899,4 +8899,48 @@ fn a_leaf_value_reads_as_the_showcases_agreed() {
             );
         }
     }
+}
+
+#[gpui::test]
+fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppContext) {
+    use crate::speech::{SilentRecognizer, SyntheticAudio};
+    use gpui_component::speech::{SpeechState, SpeechStatus};
+
+    let audio = SyntheticAudio::default();
+    let blocks = audio.blocks.clone();
+    let state = cx.update(|cx| {
+        cx.new(|cx| {
+            SpeechState::new(cx)
+                .recognizer(SilentRecognizer)
+                .input(audio)
+                .system_fallback(false)
+        })
+    });
+
+    cx.update(|cx| state.update(cx, |s, cx| s.start(cx)));
+    cx.executor().advance_clock(Duration::from_secs(1));
+    cx.run_until_parked();
+    cx.read(|cx| {
+        let s = state.read(cx);
+        assert!(
+            s.status().is_capturing(),
+            "the silent recognizer reports ready"
+        );
+        assert!(
+            s.levels().next().is_some(),
+            "no level in a second of synthetic audio"
+        );
+    });
+
+    cx.update(|cx| state.update(cx, |s, cx| s.stop(cx)));
+    cx.run_until_parked();
+    assert_eq!(cx.read(|cx| state.read(cx).status()), SpeechStatus::Idle);
+    let delivered = blocks.get();
+    cx.executor().advance_clock(Duration::from_secs(1));
+    cx.run_until_parked();
+    assert_eq!(
+        blocks.get(),
+        delivered,
+        "the synthetic input kept running after stop"
+    );
 }

@@ -40,6 +40,12 @@ impl Showcase {
             this.rating_value = *value;
             cx.notify();
         });
+        let speech_label = if self.speech_state.read(cx).status().is_capturing() {
+            "Stop"
+        } else {
+            "Listen"
+        };
+        let speech_state = self.speech_state.clone();
 
         v_flex()
             .gap_5()
@@ -294,6 +300,30 @@ impl Showcase {
             .child(
                 demo::color_select(ui, cx, "inputs-color-select", &self.color_select_state)
                     .self_start(),
+            )
+            .child(demo::heading(
+                ui,
+                cx,
+                "inputs-heading-speech-waveform",
+                "SpeechWaveform",
+            ))
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_center()
+                    .child(demo::action_button(
+                        ui,
+                        cx,
+                        "inputs-speech-toggle",
+                        speech_label,
+                        "starts the synthetic input, or stops it",
+                        move |_, _, cx| speech_state.update(cx, |s, cx| s.toggle(cx)),
+                    ))
+                    .child(demo::speech_waveform(
+                        ui,
+                        cx,
+                        "inputs-speech-waveform",
+                        &self.speech_state,
+                    )),
             )
             .child(demo::heading(
                 ui,

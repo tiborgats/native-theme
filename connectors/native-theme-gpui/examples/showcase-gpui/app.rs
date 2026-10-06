@@ -21,6 +21,7 @@ use gpui_component::{
     resizable_panel,
     select::{SearchableVec, SelectEvent, SelectState},
     slider::{SliderEvent, SliderState},
+    speech::SpeechState,
     table::{Column, TableEvent, TableState},
     theme::Theme,
     time_field::TimeFieldState,
@@ -52,6 +53,7 @@ use crate::chrome;
 use crate::elements;
 use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
+use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DialogIcons, EDITOR_SAMPLE, IconEntry, IconSource,
     PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate, SharedDialogIcons,
@@ -375,6 +377,9 @@ pub(crate) struct Showcase {
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     /// The Inputs page's ColorSelect, empty until a colour is picked.
     pub(crate) color_select_state: Entity<ColorPickerState>,
+    /// The Inputs page's SpeechWaveform: a synthetic input and a recognizer
+    /// that hears nothing. It runs until Stop, whichever page is shown.
+    pub(crate) speech_state: Entity<SpeechState>,
     pub(crate) date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
     /// The Inputs page's TimeField (spec §8.3).
     pub(crate) time_field_state: Entity<TimeFieldState>,
@@ -1360,6 +1365,12 @@ impl Showcase {
             ColorPickerState::new(window, cx).default_value(gpui::hsla(0.6, 0.8, 0.5, 1.0))
         });
         let color_select_state = cx.new(|cx| ColorPickerState::new(window, cx));
+        let speech_state = cx.new(|cx| {
+            SpeechState::new(cx)
+                .recognizer(SilentRecognizer)
+                .input(SyntheticAudio::default())
+                .system_fallback(false)
+        });
 
         // Date picker state
         let date_picker_state =
@@ -1576,6 +1587,7 @@ impl Showcase {
             otp_state,
             color_picker_state,
             color_select_state,
+            speech_state,
             date_picker_state,
             time_field_state,
             token_input_state,

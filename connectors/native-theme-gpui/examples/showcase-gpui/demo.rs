@@ -79,6 +79,7 @@ use gpui_component::{
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem},
     skeleton::Skeleton,
     slider::{Slider, SliderState},
+    speech::{SpeechState, SpeechWaveform},
     spinner::Spinner,
     status_bar::StatusBar,
     stepper::{Stepper, StepperItem},
@@ -3955,6 +3956,18 @@ pub(crate) fn color_select(
         id,
         info::inputs::color_select(cx.theme(), state.read(cx).value().is_some()),
     )
+}
+
+/// A `SpeechWaveform` over `state`, upstream's own: its size and colours are
+/// literals and theme tokens it reads itself, so no geometry builder reaches
+/// it. gpui redraws the window when `state` notifies, once per new level.
+pub(crate) fn speech_waveform(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SpeechState>,
+) -> Stateful<Div> {
+    SpeechWaveform::new(state).info(ui, id, info::inputs::speech_waveform(cx.theme()))
 }
 
 /// A `TimeField` over `state` (spec §8.3), upstream's own: the theme states
