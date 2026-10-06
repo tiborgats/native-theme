@@ -288,6 +288,16 @@ impl Showcase {
             .child(demo::heading(
                 ui,
                 cx,
+                "inputs-heading-color-select",
+                "ColorSelect",
+            ))
+            .child(
+                demo::color_select(ui, cx, "inputs-color-select", &self.color_select_state)
+                    .self_start(),
+            )
+            .child(demo::heading(
+                ui,
+                cx,
                 "inputs-heading-date-picker",
                 "DatePicker",
             ))

@@ -34,7 +34,7 @@ use gpui_component::{
     chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
     checkbox::Checkbox,
     clipboard::Clipboard,
-    color_picker::{ColorPicker, ColorPickerState},
+    color_picker::{ColorPicker, ColorPickerState, ColorSelect},
     combobox::{Combobox, ComboboxState},
     command::{Command, CommandGroup, CommandItem, CommandState},
     date_picker::{DatePicker, DatePickerState},
@@ -3938,6 +3938,23 @@ pub(crate) fn color_picker(
     ColorPicker::new(state)
         .label(label)
         .info(ui, id, info::inputs::color_picker(cx.theme()))
+}
+
+/// A `ColorSelect` over `state`, upstream's own: its framed field is an
+/// inner element that sizes itself from the Input ladder, so no geometry
+/// builder reaches it. gpui redraws the window when `state` notifies, so the
+/// panel follows a pick without a subscription.
+pub(crate) fn color_select(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<ColorPickerState>,
+) -> Stateful<Div> {
+    ColorSelect::new(state).placeholder("Pick a color").info(
+        ui,
+        id,
+        info::inputs::color_select(cx.theme(), state.read(cx).value().is_some()),
+    )
 }
 
 /// A `TimeField` over `state` (spec §8.3), upstream's own: the theme states

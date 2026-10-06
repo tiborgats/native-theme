@@ -6179,15 +6179,15 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
 /// (gpui-component 0.7.1): a DropdownButton's caret, a Clipboard's Copy, a
-/// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's
-/// and a Combobox's caret, a DatePicker's Calendar, a Calendar's month
-/// buttons, the command palette's Search, a Dialog's and a Sheet's close
-/// button, a Settings page's search and reset, a Pagination's arrows, the
-/// MessageScroller's jump button, an Alert's and a Notification's severity
-/// icon, a Spinner's Loader, the Marker's spinner, an Accordion's chevrons,
-/// the Carousel's controls, the Breadcrumb's separators, the Editor's
-/// fold buttons, and an Attachment's status glyph (Ban when failed, a
-/// Spinner while uploading or processing).
+/// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
+/// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
+/// Calendar's month buttons, the command palette's Search, a Dialog's and a
+/// Sheet's close button, a Settings page's search and reset, a Pagination's
+/// arrows, the MessageScroller's jump button, an Alert's and a
+/// Notification's severity icon, a Spinner's Loader, the Marker's spinner,
+/// an Accordion's chevrons, the Carousel's controls, the Breadcrumb's
+/// separators, the Editor's fold buttons, and an Attachment's status glyph
+/// (Ban when failed, a Spinner while uploading or processing).
 #[gpui::test]
 fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
     use crate::demo::{ButtonKind, MarkerKind, Severity, SheetSide, SpinnerKind};
@@ -6208,6 +6208,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Checkbox", inputs::checkbox(&t, "label", true, false)),
         ("Rating", inputs::rating(&t, 3, false)),
         ("Select", inputs::select(&t, None)),
+        ("ColorSelect", inputs::color_select(&t, false)),
         ("DatePicker", inputs::date_picker(&t)),
         ("Calendar", inputs::calendar(&t)),
         ("preset Combobox", chrome::preset_combobox(&t, None)),

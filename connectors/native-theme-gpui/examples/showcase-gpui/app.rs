@@ -373,6 +373,8 @@ pub(crate) struct Showcase {
     pub(crate) slider_state: Entity<SliderState>,
     pub(crate) otp_state: Entity<OtpState>,
     pub(crate) color_picker_state: Entity<ColorPickerState>,
+    /// The Inputs page's ColorSelect, empty until a colour is picked.
+    pub(crate) color_select_state: Entity<ColorPickerState>,
     pub(crate) date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
     /// The Inputs page's TimeField (spec §8.3).
     pub(crate) time_field_state: Entity<TimeFieldState>,
@@ -1357,6 +1359,7 @@ impl Showcase {
         let color_picker_state = cx.new(|cx| {
             ColorPickerState::new(window, cx).default_value(gpui::hsla(0.6, 0.8, 0.5, 1.0))
         });
+        let color_select_state = cx.new(|cx| ColorPickerState::new(window, cx));
 
         // Date picker state
         let date_picker_state =
@@ -1572,6 +1575,7 @@ impl Showcase {
             slider_state,
             otp_state,
             color_picker_state,
+            color_select_state,
             date_picker_state,
             time_field_state,
             token_input_state,

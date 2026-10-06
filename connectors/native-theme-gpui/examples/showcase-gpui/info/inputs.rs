@@ -1130,6 +1130,54 @@ pub fn color_picker(t: &Theme) -> WidgetInfo {
         .not_themeable("palette grid", "the rows under the featured swatches are gpui-component's own colour scales, not the platform's (color_picker.rs, color_palettes)")
 }
 
+/// A `ColorSelect`, empty until a colour is `picked`.
+pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("ColorSelect")
+        .color(input_background(t))
+        .color(claim(
+            "border",
+            "input",
+            t.input,
+            "gpui-component/color_picker.rs:773",
+        ))
+        .color(claim(
+            "caret",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/color_picker.rs:812",
+        ))
+        .color(claim(
+            "focused border",
+            "ring",
+            t.ring,
+            "gpui-component/color_picker.rs:778",
+        ));
+    let info = if picked {
+        info.color(claim(
+            "text",
+            "foreground",
+            t.foreground,
+            "gpui-component/input/input.rs:105",
+        ))
+        .instance("swatch", "the picked colour, edged in it darkened by 30% (color_picker.rs, ColorPickerButton::render_field)")
+    } else {
+        info.color(claim(
+            "placeholder",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/color_picker.rs:806",
+        ))
+        .color(claim(
+            "swatch edge",
+            "input",
+            t.input,
+            "gpui-component/color_picker.rs:786",
+        ))
+    };
+    info.not_themeable("frame", "the field is an inner element that sets its own height, padding and text size from the Input ladder (color_picker.rs, ColorPickerButton::render_field); a refinement lands on the outer wrapper and reaches only its width, so no geometry builder is applied")
+        .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret)"))
+}
+
 /// A `DatePicker`.
 pub fn date_picker(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("DatePicker")
