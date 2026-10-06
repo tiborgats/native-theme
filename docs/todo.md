@@ -1360,6 +1360,12 @@ What is still open on the iced side:
       the locked registry sources (the showcase's colour claims have one,
       `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
       mapped 1237 of them by script (v0.6.1 spec, Appendix A).
+- [ ] Make the layout-dump gate deterministic: `--dump-layout` records the
+      Widget Info and status-bar readout of the element under the pointer
+      (`chrome.info.*`, `chrome.status_bar.shown`), so a before/after
+      comparison differs with where the pointer sat (v0.6.1 had to filter
+      those keys); park the pointer outside the window during a dump, or
+      leave those keys out of the dump.
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
@@ -1612,6 +1618,12 @@ What is still open on the iced side:
       radii, five others). The audit of the Widget Info panels is complete:
       every "Not themeable" entry, colour claim and config line has now been
       read against the source that paints it.
+- [ ] Two focus claims hold only while `Theme::focus_ring` is on — the
+      Switch panel's ring and the DataTable panel's keyboard-focus line: with
+      it off a bordered element's border is tinted instead
+      (`styled.rs:269-271`). Every bundled preset turns it on
+      (focus_ring_width > 0), so nothing is false today; branch the claims as
+      the Carousel panel does if a preset ever states 0.
 
 ##### What the audit turned up that is ours to fix
 

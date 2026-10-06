@@ -1151,6 +1151,12 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
             "ring",
             t.ring,
             "gpui-component/color_picker.rs:778",
+        ))
+        .color(claim(
+            "focus ring, ring at 50% alpha",
+            "ring",
+            t.ring.alpha(0.5),
+            "gpui-component/styled.rs:261",
         ));
     let info = if picked {
         info.color(claim(

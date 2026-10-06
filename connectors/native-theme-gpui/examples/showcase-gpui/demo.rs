@@ -7954,6 +7954,8 @@ pub(crate) fn swatch(
 /// a `.label()` from the `Size` enum on an element no style reaches, and
 /// recording its bounds where it is listed. The Button is named by the label
 /// as `Button::label` would name it. Otherwise `Button::label`.
+/// `id` is also the label key of docs/showcase-elements.toml: an `id` that
+/// is not listed there gets no bounds record, by design.
 pub(crate) fn labelled(
     ui: &Entity<InfoRegistry>,
     cx: &App,

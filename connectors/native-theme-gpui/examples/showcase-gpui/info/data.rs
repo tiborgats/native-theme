@@ -71,13 +71,11 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
             "geometry",
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
-                         what reaches it is the text geometry::table gives its container, \
-                         which the Size::Size cells inherit, and the row height through \
-                         geometry::data_table_size",
+                         a theme reaches it only through its Size and the text its \
+                         container gives the cells",
         );
     let info = if styled {
-        info.config("row height", "list.row_height through geometry::data_table_size as Size::Size, which table_row_height returns verbatim; upstream's Medium 32px where the theme states none (sizing.rs, table_row_height)")
-            .config("text", "list.item_font through geometry::table on the table's container; a Size::Size cell sets no size of its own and inherits it (sizing.rs, table_cell_size), where a Medium cell is text_sm")
+        info.geometry("data_table_size").geometry("table")
     } else {
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
