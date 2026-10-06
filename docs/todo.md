@@ -1453,7 +1453,11 @@ What is still open on the iced side:
       a `rems()` or a `text_base()` upstream is already the platform's size.
       Six Button panels had called their label size Tier U when it is
       `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
-      the platform's body text. The `Headings` panel listed px figures that
+      the platform's body text.
+      0.7.1 (2026-10): no longer true of a Medium Button label —
+      `button_text_size` is `text_sm` at Medium (`sizing.rs:337-343`); see the
+      `Size::Size(px)` item below and `geometry::button_label` (v0.6.1).
+      The `Headings` panel listed px figures that
       were its rem ladder at a 16px rem, which no bundled preset produces. A
       `Buttons with Icons` panel listed its icon colour as not themeable when
       it follows the button's own text token, and its icon size is rems too.
