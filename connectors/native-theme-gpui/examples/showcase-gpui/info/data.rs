@@ -71,7 +71,9 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
             "geometry",
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
-                         geometry::table goes to the declarative Table below",
+                         what reaches it is the text geometry::table gives its container, \
+                         which the Size::Size cells inherit, and the row height through \
+                         geometry::data_table_size",
         );
     let info = if styled {
         info.config("row height", "list.row_height through geometry::data_table_size as Size::Size, which table_row_height returns verbatim; upstream's Medium 32px where the theme states none (sizing.rs, table_row_height)")
