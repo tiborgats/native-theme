@@ -327,7 +327,7 @@ enum IconChoice {
 /// an animated indicator -- `native_theme::icons::load_icon_indicator`, and
 /// for a freedesktop set `FreedesktopLoader::load_indicator` of the icon
 /// theme the icons come from (Breeze's is `process-working`) -- that
-/// indicator is drawn, at `spinner.diameter`: the monochrome bundled sets
+/// indicator is drawn, at the Size's diameter: the monochrome bundled sets
 /// (Material, Lucide) tinted `spinner.fill_color`, a freedesktop icon in its
 /// own colours (its `currentColor`, where it sets no colour of its own,
 /// `defaults.text_color`). Frames play at the indicator's own frame
@@ -339,12 +339,13 @@ enum IconChoice {
 ///
 /// **An arc for a set without one** (`SfSymbols`, `SegoeIcons`, an icon
 /// feature that is off, or `icon_set(None)`): `spinner.fill_color` at
-/// `spinner.stroke_width`, its outer edge `spinner.diameter` across, sweeping
-/// 240° and turning a turn a second; under reduced motion it stands still.
+/// `spinner.stroke_width`, its outer edge the Size's diameter across,
+/// sweeping 240° and turning a turn a second; under reduced motion it stands
+/// still.
 ///
 /// At Medium the widget is drawn the same with the
-/// `native-theme-egui-widgets` and iced connectors' spinners. Without a native theme it renders
-/// gpui-component's `Spinner` at the same [`Size`].
+/// `native-theme-egui-widgets` and iced connectors' spinners. Without a
+/// native theme it renders gpui-component's `Spinner` at the same [`Size`].
 pub struct Spinner {
     id: ElementId,
     label: Option<SharedString>,

@@ -223,7 +223,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:414",
+                "native-theme-gpui/widgets/spinner.rs:415",
             ))
         } else {
             info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
@@ -305,10 +305,10 @@ pub fn progress_circle(
 /// theme, and, where the `widgets` feature is off, under one too (with it,
 /// `native_spinner` describes the theme-drawn one). A Medium one takes
 /// `geometry::spinner_size` where a native theme is installed, whose line is
-/// recorded where `demo::spinner` applies it; `styled` is whether it did. It is drawn while gpui's
-/// `reduce_motion` is as given. Its colour is `native`'s
-/// `spinner.fill_color`, which `demo::spinner` hands `Spinner::color`, where
-/// a native theme is installed.
+/// recorded where `demo::spinner` applies it; `styled` is whether it did. It
+/// is drawn while gpui's `reduce_motion` is as given. Its colour is
+/// `native`'s `spinner.fill_color`, which `demo::spinner` hands
+/// `Spinner::color`, where a native theme is installed.
 pub fn spinner(
     t: &Theme,
     kind: SpinnerKind,
