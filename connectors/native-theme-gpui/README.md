@@ -89,7 +89,7 @@ this connector's tests, clippy, docs and the widget-coverage script against. The
 script writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against gpui-base 0.7.1, gpui-component 0.7.1, gpui-kit 0.7.1, gpui-kit-assets 0.7.1 and gpui-pre 0.3.8 on 2026-10-06.
+Verified against gpui-base 0.7.1, gpui-component 0.7.1, gpui-kit 0.7.1, gpui-kit-assets 0.7.1 and gpui-pre 0.3.8 on 2026-10-08.
 <!-- compat:end -->
 
 **After that** — newer releases are tested nightly by the dependency canary
