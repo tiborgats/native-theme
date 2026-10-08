@@ -7,10 +7,10 @@
 // hicolor, loose files and pixmaps never stand in for a missing icon.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::num::NonZeroU32;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::IconData;
 use crate::icons::{has_theme_index, icon_base_dirs};
@@ -158,10 +158,109 @@ fn first_in_chain(
         .find_map(|theme| lookup(theme).filter(|path| is_in_theme_dir(path, theme, bases)))
 }
 
+/// The file name endings freedesktop-icons 0.4.0 tries for a name in a
+/// theme directory: `.svg`, `.png` and `.xmp` (sic,
+/// `freedesktop-icons-0.4.0/src/theme/mod.rs:107-150`), and `.xpm`, the
+/// extension the Icon Theme Specification names.
+const ICON_FILE_ENDINGS: [&str; 4] = [".svg", ".png", ".xmp", ".xpm"];
+
+/// Every name an icon file in `theme`'s directories under `bases` could be
+/// found by: the file name of each `.svg`, `.png`, `.xmp` or `.xpm` file at
+/// any depth, without that ending.
+///
+/// freedesktop-icons builds a theme's candidates as `<base>/<theme>/
+/// <index.theme section>/<name>.<ending>`, and [`first_in_chain`] keeps a
+/// candidate only inside `<base>/<theme>`, so every file it can return for
+/// `theme` lies under one of the directories walked here: the set is a
+/// superset of the names it can find there, and a name missing from it
+/// cannot be found in `theme`. Symlinked directories are followed, as
+/// freedesktop-icons' path joins follow them, each directory once by its
+/// canonical path, so a link cycle ends; a directory that cannot be
+/// canonicalized or read is skipped.
+fn theme_icon_stems(theme: &str, bases: &[PathBuf]) -> HashSet<String> {
+    let mut stems = HashSet::new();
+    let mut visited: HashSet<PathBuf> = HashSet::new();
+    let mut pending: Vec<PathBuf> = bases.iter().map(|base| base.join(theme)).collect();
+    while let Some(dir) = pending.pop() {
+        let Ok(canonical) = std::fs::canonicalize(&dir) else {
+            continue;
+        };
+        if !visited.insert(canonical) {
+            continue;
+        }
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let is_dir = match entry.file_type() {
+                Ok(kind) if kind.is_symlink() => path.is_dir(),
+                Ok(kind) => kind.is_dir(),
+                Err(_) => path.is_dir(),
+            };
+            if is_dir {
+                pending.push(path);
+            } else if let Some(stem) = entry.file_name().to_str().and_then(|file| {
+                ICON_FILE_ENDINGS
+                    .iter()
+                    .find_map(|ending| file.strip_suffix(ending))
+            }) {
+                stems.insert(stem.to_string());
+            }
+        }
+    }
+    stems
+}
+
+/// [`theme_icon_stems`] over [`icon_base_dirs`], kept per theme name for
+/// the life of the process, as [`cached_theme_chain`] keeps the chains.
+fn cached_theme_icon_stems(theme: &str) -> Arc<HashSet<String>> {
+    type Stems = Mutex<HashMap<String, Arc<HashSet<String>>>>;
+    static STEMS: OnceLock<Stems> = OnceLock::new();
+    let known_stems = STEMS.get_or_init(Stems::default);
+    if let Ok(known) = known_stems.lock()
+        && let Some(stems) = known.get(theme)
+    {
+        return Arc::clone(stems);
+    }
+    let stems = Arc::new(theme_icon_stems(theme, icon_base_dirs()));
+    if let Ok(mut known) = known_stems.lock() {
+        known.insert(theme.to_string(), Arc::clone(&stems));
+    }
+    stems
+}
+
+/// The themes of `chain`, in order, that may have an icon called `name`:
+/// those whose [`theme_icon_stems`] (from `stems`) contain it. A name with
+/// a `/` reaches below the directory a stem is read from, so for it every
+/// theme is kept.
+fn themes_that_may_have(
+    name: &str,
+    chain: &[String],
+    mut stems: impl FnMut(&str) -> Arc<HashSet<String>>,
+) -> Vec<String> {
+    if name.contains('/') {
+        return chain.to_vec();
+    }
+    chain
+        .iter()
+        .filter(|theme| stems(theme).contains(name))
+        .cloned()
+        .collect()
+}
+
 /// Look `name` up at `size` in the themes of `chain` (see
 /// [`theme_chain`] and [`first_in_chain`]).
+///
+/// freedesktop-icons is asked only for the themes whose files include
+/// `name` (see [`themes_that_may_have`]): asked for a name a theme lacks,
+/// it re-reads every `index.theme` and searches the theme's parents,
+/// `hicolor`, the base dirs and `/usr/share/pixmaps`, testing three
+/// endings per directory, a search [`first_in_chain`] then discards, which
+/// cost 13-24 ms per miss against 0.05-0.4 ms per hit.
 fn lookup_in_chain(name: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
-    first_in_chain(chain, icon_base_dirs(), |theme| {
+    let themes = themes_that_may_have(name, chain, cached_theme_icon_stems);
+    first_in_chain(&themes, icon_base_dirs(), |theme| {
         freedesktop_icons::lookup(name)
             .with_theme(theme)
             .with_size(size)
@@ -185,6 +284,16 @@ fn lookup_in_chain(name: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
 /// (see [`theme_chain`]); the symbolic pass searches the whole chain
 /// before the plain pass starts. `None` when `theme` is not installed.
 fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
+    find_icon_with(name, theme, size, lookup_in_chain)
+}
+
+/// [`find_icon`], with `lookup_in_chain` looking a name up in the chain.
+fn find_icon_with(
+    name: &str,
+    theme: &str,
+    size: u16,
+    lookup_in_chain: impl Fn(&str, u16, &[String]) -> Option<PathBuf>,
+) -> Option<(PathBuf, bool)> {
     let chain = cached_theme_chain(theme)?;
     // First try: symbolic variant (e.g., "edit-copy-symbolic")
     // Symbolic icons are always single-frame, avoiding sprite sheets
@@ -839,6 +948,101 @@ mod tests {
         assert_eq!(fx.find("split", "fork"), Some(deep));
     }
 
+    /// `name` looked up over `theme`'s chain as [`lookup_in_chain`] does,
+    /// with the fixture's stem index and [`Fixture::freedesktop_icons_lookup`]
+    /// as the library; the themes the library was asked for go to `asked`.
+    fn find_indexed(
+        fx: &Fixture,
+        name: &str,
+        theme: &str,
+        asked: &mut Vec<String>,
+    ) -> Option<PathBuf> {
+        let chain = theme_chain(theme, &fx.bases)?;
+        let candidates =
+            themes_that_may_have(name, &chain, |t| Arc::new(theme_icon_stems(t, &fx.bases)));
+        first_in_chain(&candidates, &fx.bases, |t| {
+            asked.push(t.to_string());
+            fx.freedesktop_icons_lookup(name, t)
+        })
+    }
+
+    #[test]
+    fn chain_lookup_never_asks_a_theme_without_the_name() {
+        let fx = Fixture::new("indexed-miss");
+        let mut asked = Vec::new();
+        assert_eq!(find_indexed(&fx, "nowhere", "child", &mut asked), None);
+        assert!(asked.is_empty(), "asked {asked:?}");
+        fx.add_icon("hicolor", "hicolor-only");
+        assert_eq!(find_indexed(&fx, "hicolor-only", "child", &mut asked), None);
+        assert!(asked.is_empty(), "asked {asked:?}");
+    }
+
+    #[test]
+    fn chain_lookup_asks_only_the_themes_with_the_name() {
+        let fx = Fixture::new("indexed-hit");
+        let grand = fx.add_icon("grand", "grand-only");
+        let mut asked = Vec::new();
+        assert_eq!(
+            find_indexed(&fx, "grand-only", "child", &mut asked),
+            Some(grand)
+        );
+        assert_eq!(asked, ["grand"]);
+        let parent = fx.add_icon("parent", "both");
+        fx.add_icon("grand", "both");
+        let mut asked = Vec::new();
+        let found = find_indexed(&fx, "both", "child", &mut asked);
+        assert_eq!(found, Some(parent));
+        assert_eq!(found, fx.find("both", "child"));
+        assert_eq!(asked, ["parent"]);
+    }
+
+    #[test]
+    fn chain_lookup_asks_every_theme_for_a_name_with_a_separator() {
+        let fx = Fixture::new("indexed-separator");
+        let mut asked = Vec::new();
+        assert_eq!(find_indexed(&fx, "actions/x", "child", &mut asked), None);
+        assert_eq!(asked, ["child", "parent", "grand"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn theme_icon_stems_walk_nested_and_linked_dirs() {
+        use std::os::unix::fs::symlink;
+        let fx = Fixture::new("stems");
+        let child = fx.icons("child");
+        fx.add_icon("child", "flat");
+        std::fs::create_dir_all(child.join("16x16/apps/deeper")).unwrap();
+        std::fs::write(child.join("16x16/apps/deeper/nested.png"), "").unwrap();
+        std::fs::write(child.join("actions/pixmap.xpm"), "").unwrap();
+        std::fs::write(child.join("actions/upstream.xmp"), "").unwrap();
+        std::fs::write(child.join("actions/notes.txt"), "").unwrap();
+        std::fs::write(child.join("actions/backup.svg.bak"), "").unwrap();
+        std::fs::write(child.join("icon-theme.cache"), "").unwrap();
+        let elsewhere = fx.root.join("elsewhere");
+        std::fs::create_dir_all(elsewhere.join("linked")).unwrap();
+        std::fs::write(elsewhere.join("linked/via-dir.svg"), "").unwrap();
+        std::fs::write(elsewhere.join("target.svg"), "").unwrap();
+        symlink(elsewhere.join("linked"), child.join("linked")).unwrap();
+        symlink(
+            elsewhere.join("target.svg"),
+            child.join("actions/via-file.svg"),
+        )
+        .unwrap();
+        symlink(&child, child.join("actions/loop")).unwrap();
+        symlink("..", child.join("16x16/up")).unwrap();
+        symlink(child.join("missing"), child.join("dangling")).unwrap();
+        std::fs::write(fx.root.join("home/.icons/child/actions/home.svg"), "").unwrap();
+        let mut stems: Vec<String> = theme_icon_stems("child", &fx.bases).into_iter().collect();
+        stems.sort();
+        assert_eq!(
+            stems,
+            [
+                "flat", "home", "nested", "pixmap", "upstream", "via-dir", "via-file"
+            ]
+        );
+        assert!(theme_icon_stems("no-such-theme", &fx.bases).is_empty());
+    }
+
     #[test]
     fn theme_chain_terminates_on_a_cycle() {
         let fx = Fixture::new("cycle");
@@ -964,6 +1168,91 @@ mod tests {
             "{}",
             path.display()
         );
+    }
+
+    /// [`lookup_in_chain`] before the stem index: freedesktop-icons asked
+    /// for every theme of the chain.
+    fn lookup_in_chain_unfiltered(name: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
+        first_in_chain(chain, icon_base_dirs(), |theme| {
+            freedesktop_icons::lookup(name)
+                .with_theme(theme)
+                .with_size(size)
+                .force_svg()
+                .find()
+        })
+    }
+
+    /// Over the installed Breeze and Adwaita themes, the indexed lookup
+    /// returns exactly what asking freedesktop-icons for every theme of the
+    /// chain returns: for every name an `IconRole` maps to, the spinner's
+    /// names, a spread of the theme's own names, names no theme has, and
+    /// each of those with `-symbolic`.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn indexed_lookup_matches_the_unfiltered_lookup_on_installed_themes() {
+        const SIZES: [u16; 4] = [16, 22, 24, 32];
+        let mut checked = 0;
+        for theme in ["breeze", "breeze-dark", "Adwaita"] {
+            if !has_theme_index(theme, icon_base_dirs()) {
+                eprintln!("skipped {theme}: not installed");
+                continue;
+            }
+            let mut names: std::collections::BTreeSet<String> = IconRole::ALL
+                .iter()
+                .filter_map(|role| icon_name(*role, IconSet::Freedesktop))
+                .chain(["process-working", "process-working-symbolic"])
+                .map(str::to_string)
+                .collect();
+            let mut own: Vec<String> = theme_icon_stems(theme, icon_base_dirs())
+                .into_iter()
+                .collect();
+            own.sort();
+            let step = own.len().div_ceil(300).max(1);
+            names.extend(own.into_iter().step_by(step));
+            names.extend((0..20).map(|i| format!("nt-test-missing-{i}")));
+            let symbolic: Vec<String> = names.iter().map(|n| format!("{n}-symbolic")).collect();
+            names.extend(symbolic);
+            let names: Vec<String> = names.into_iter().collect();
+            let mismatches: Vec<String> = std::thread::scope(|scope| {
+                let workers: Vec<_> = SIZES
+                    .iter()
+                    .map(|&size| {
+                        let names = &names;
+                        scope.spawn(move || {
+                            names
+                                .iter()
+                                .filter_map(|name| {
+                                    let new = find_icon(name, theme, size);
+                                    let old = find_icon_with(
+                                        name,
+                                        theme,
+                                        size,
+                                        lookup_in_chain_unfiltered,
+                                    );
+                                    (new != old).then(|| {
+                                        format!("{theme} {name}@{size}: {new:?} != {old:?}")
+                                    })
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                    })
+                    .collect();
+                workers
+                    .into_iter()
+                    .flat_map(|worker| worker.join().unwrap())
+                    .collect()
+            });
+            assert!(mismatches.is_empty(), "{mismatches:#?}");
+            eprintln!(
+                "{theme}: {} names x {} sizes compared",
+                names.len(),
+                SIZES.len()
+            );
+            checked += 1;
+        }
+        if checked == 0 {
+            eprintln!("skipped: none of breeze, breeze-dark, Adwaita is installed");
+        }
     }
 
     #[test]
