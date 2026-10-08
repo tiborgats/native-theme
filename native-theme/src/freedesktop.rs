@@ -177,6 +177,11 @@ const ICON_FILE_ENDINGS: [&str; 4] = [".svg", ".png", ".xmp", ".xpm"];
 /// freedesktop-icons' path joins follow them, each directory once by its
 /// canonical path, so a link cycle ends; a directory that cannot be
 /// canonicalized or read is skipped.
+///
+/// Two cases fall outside the superset: a directory that can be entered
+/// but not listed, and a case-insensitive filesystem (where `Name.SVG`
+/// answers for `name.svg`), could each hide a file the unfiltered lookup
+/// would find.
 fn theme_icon_stems(theme: &str, bases: &[PathBuf]) -> HashSet<String> {
     let mut stems = HashSet::new();
     let mut visited: HashSet<PathBuf> = HashSet::new();
@@ -214,6 +219,10 @@ fn theme_icon_stems(theme: &str, bases: &[PathBuf]) -> HashSet<String> {
 
 /// [`theme_icon_stems`] over [`icon_base_dirs`], kept per theme name for
 /// the life of the process, as [`cached_theme_chain`] keeps the chains.
+///
+/// An icon added to an installed theme while the process runs is therefore
+/// not found until it restarts, where freedesktop-icons alone re-checked
+/// the filesystem on every lookup.
 fn cached_theme_icon_stems(theme: &str) -> Arc<HashSet<String>> {
     type Stems = Mutex<HashMap<String, Arc<HashSet<String>>>>;
     static STEMS: OnceLock<Stems> = OnceLock::new();
@@ -256,8 +265,10 @@ fn themes_that_may_have(
 /// `name` (see [`themes_that_may_have`]): asked for a name a theme lacks,
 /// it re-reads every `index.theme` and searches the theme's parents,
 /// `hicolor`, the base dirs and `/usr/share/pixmaps`, testing three
-/// endings per directory, a search [`first_in_chain`] then discards, which
-/// cost 13-24 ms per miss against 0.05-0.4 ms per hit.
+/// endings per directory, a search [`first_in_chain`] then discards: a
+/// missing name's load took 47-66 ms against 0.02-0.07 ms for a hit
+/// (medians of 20 `FreedesktopLoader` loads in a dev build, on Breeze and
+/// Adwaita).
 fn lookup_in_chain(name: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
     let themes = themes_that_may_have(name, chain, cached_theme_icon_stems);
     first_in_chain(&themes, icon_base_dirs(), |theme| {
