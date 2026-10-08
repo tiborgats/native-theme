@@ -1189,6 +1189,7 @@ mod tests {
     /// each of those with `-symbolic`.
     #[cfg(target_os = "linux")]
     #[test]
+    #[ignore = "slow (~30-50 s): compares the indexed lookup with freedesktop-icons' unfiltered one on the installed icon themes; run with --ignored"]
     fn indexed_lookup_matches_the_unfiltered_lookup_on_installed_themes() {
         const SIZES: [u16; 4] = [16, 22, 24, 32];
         let mut checked = 0;
