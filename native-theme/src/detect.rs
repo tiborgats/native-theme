@@ -167,6 +167,65 @@ pub fn detect_is_dark() -> bool {
     detect_is_dark_inner()
 }
 
+/// The longest pause between two polls of a running command.
+#[cfg(target_os = "linux")]
+const POLL_INTERVAL_CAP: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// The pauses between polls of a running command: 1 ms, doubling up to
+/// [`POLL_INTERVAL_CAP`], so a command that exits in a few milliseconds is
+/// seen to exit within a few milliseconds, and a slow one costs a poll per
+/// 50 ms.
+#[cfg(target_os = "linux")]
+fn poll_intervals() -> impl Iterator<Item = std::time::Duration> {
+    std::iter::successors(Some(std::time::Duration::from_millis(1)), |pause| {
+        Some(pause.saturating_mul(2).min(POLL_INTERVAL_CAP))
+    })
+}
+
+/// Run `program` with `args`, waiting up to `timeout` for it to exit.
+///
+/// Returns its stdout when it exits successfully; `None` when it cannot be
+/// spawned, exits unsuccessfully or outlives `timeout`, in which case it
+/// is killed. The command is polled at [`poll_intervals`].
+#[cfg(target_os = "linux")]
+fn run_with_timeout(program: &str, args: &[&str], timeout: std::time::Duration) -> Option<String> {
+    use std::io::Read;
+    use std::time::Instant;
+
+    let start = Instant::now();
+    let mut child = std::process::Command::new(program)
+        .args(args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+
+    let mut intervals = poll_intervals();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                let mut buf = String::new();
+                if let Some(mut stdout) = child.stdout.take() {
+                    let _ = stdout.read_to_string(&mut buf);
+                }
+                return Some(buf);
+            }
+            Ok(Some(_)) => return None,
+            Ok(None) => {
+                let elapsed = start.elapsed();
+                if elapsed >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                let pause = intervals.next().unwrap_or(POLL_INTERVAL_CAP);
+                std::thread::sleep(pause.min(timeout.saturating_sub(elapsed)));
+            }
+            Err(_) => return None,
+        }
+    }
+}
+
 /// Run a gsettings command with a 2-second timeout.
 ///
 /// Spawns `gsettings` with the given arguments, waits up to 2 seconds
@@ -177,42 +236,12 @@ pub fn detect_is_dark() -> bool {
 /// prevent gsettings from blocking indefinitely when D-Bus is unresponsive.
 #[cfg(target_os = "linux")]
 fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
-    use std::io::Read;
-    use std::time::{Duration, Instant};
-
-    let start = Instant::now();
-    let timeout = SUBPROCESS_TIMEOUT;
-    let mut child = std::process::Command::new("gsettings")
-        .args(args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .ok()?;
-
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                let mut buf = String::new();
-                if let Some(mut stdout) = child.stdout.take() {
-                    let _ = stdout.read_to_string(&mut buf);
-                }
-                let trimmed = buf.trim().to_string();
-                return if trimmed.is_empty() {
-                    None
-                } else {
-                    Some(trimmed)
-                };
-            }
-            Ok(Some(_)) => return None,
-            Ok(None) => {
-                if start.elapsed() >= timeout {
-                    let _ = child.kill();
-                    return None;
-                }
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            Err(_) => return None,
-        }
+    let out = run_with_timeout("gsettings", args, SUBPROCESS_TIMEOUT)?;
+    let trimmed = out.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
     }
 }
 
@@ -222,47 +251,17 @@ fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
 /// or the output does not contain a valid positive `Xft.dpi` value.
 #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn read_xft_dpi() -> Option<f32> {
-    use std::io::Read;
-    use std::time::{Duration, Instant};
-
-    let start = Instant::now();
-    let timeout = SUBPROCESS_TIMEOUT;
-    let mut child = std::process::Command::new("xrdb")
-        .arg("-query")
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .ok()?;
-
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                let mut buf = String::new();
-                if let Some(mut stdout) = child.stdout.take() {
-                    let _ = stdout.read_to_string(&mut buf);
-                }
-                // Parse "Xft.dpi:\t96" from multi-line output
-                for line in buf.lines() {
-                    if let Some(rest) = line.strip_prefix("Xft.dpi:")
-                        && let Ok(dpi) = rest.trim().parse::<f32>()
-                        && dpi > 0.0
-                    {
-                        return Some(dpi);
-                    }
-                }
-                return None;
-            }
-            Ok(Some(_)) => return None,
-            Ok(None) => {
-                if start.elapsed() >= timeout {
-                    let _ = child.kill();
-                    return None;
-                }
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            Err(_) => return None,
+    let out = run_with_timeout("xrdb", &["-query"], SUBPROCESS_TIMEOUT)?;
+    // Parse "Xft.dpi:\t96" from multi-line output
+    for line in out.lines() {
+        if let Some(rest) = line.strip_prefix("Xft.dpi:")
+            && let Ok(dpi) = rest.trim().parse::<f32>()
+            && dpi > 0.0
+        {
+            return Some(dpi);
         }
     }
+    None
 }
 
 /// Detect physical DPI from display hardware via `xrandr`.
@@ -276,37 +275,8 @@ fn read_xft_dpi() -> Option<f32> {
 /// (X resources) before calling this.
 #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn detect_physical_dpi() -> Option<f32> {
-    use std::io::Read;
-    use std::time::{Duration, Instant};
-
-    let start = Instant::now();
-    let timeout = SUBPROCESS_TIMEOUT;
-    let mut child = std::process::Command::new("xrandr")
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .ok()?;
-
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                let mut buf = String::new();
-                if let Some(mut stdout) = child.stdout.take() {
-                    let _ = stdout.read_to_string(&mut buf);
-                }
-                return parse_xrandr_dpi(&buf);
-            }
-            Ok(Some(_)) => return None,
-            Ok(None) => {
-                if start.elapsed() >= timeout {
-                    let _ = child.kill();
-                    return None;
-                }
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            Err(_) => return None,
-        }
-    }
+    let out = run_with_timeout("xrandr", &[], SUBPROCESS_TIMEOUT)?;
+    parse_xrandr_dpi(&out)
 }
 
 /// Parse DPI from xrandr output.
@@ -1063,5 +1033,94 @@ mod detection_context_tests {
         let _ = ctx.linux_desktop();
         ctx.invalidate_linux_desktop();
         let _ = ctx.linux_desktop(); // re-reads without panic
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod subprocess_tests {
+    use super::*;
+    use std::path::PathBuf;
+    use std::time::{Duration, Instant};
+
+    /// Whether `program` is an executable file in a `$PATH` directory.
+    fn on_path(program: &str) -> bool {
+        std::env::var_os("PATH")
+            .is_some_and(|path| std::env::split_paths(&path).any(|dir| dir.join(program).is_file()))
+    }
+
+    #[test]
+    fn poll_intervals_double_from_1_ms_up_to_50_ms() {
+        let intervals: Vec<Duration> = poll_intervals().take(10).collect();
+        let expected: Vec<Duration> = [1, 2, 4, 8, 16, 32, 50, 50, 50, 50]
+            .into_iter()
+            .map(Duration::from_millis)
+            .collect();
+        assert_eq!(intervals, expected);
+    }
+
+    #[test]
+    fn run_with_timeout_returns_stdout_of_a_successful_command() {
+        if !on_path("echo") {
+            eprintln!("skipped: echo is not installed");
+            return;
+        }
+        let out = run_with_timeout("echo", &["hi"], SUBPROCESS_TIMEOUT);
+        assert_eq!(out.as_deref().map(str::trim), Some("hi"));
+    }
+
+    #[test]
+    fn run_with_timeout_returns_none_for_a_failing_command() {
+        if !on_path("false") {
+            eprintln!("skipped: false is not installed");
+            return;
+        }
+        assert_eq!(run_with_timeout("false", &[], SUBPROCESS_TIMEOUT), None);
+    }
+
+    #[test]
+    fn run_with_timeout_returns_none_for_a_missing_program() {
+        assert_eq!(
+            run_with_timeout("nt-test-no-such-program", &[], SUBPROCESS_TIMEOUT),
+            None
+        );
+    }
+
+    /// A command that exits at once costs well under the old 50 ms poll.
+    #[test]
+    fn run_with_timeout_returns_soon_after_the_command_exits() {
+        if !on_path("true") {
+            eprintln!("skipped: true is not installed");
+            return;
+        }
+        let start = Instant::now();
+        assert_eq!(
+            run_with_timeout("true", &[], SUBPROCESS_TIMEOUT).as_deref(),
+            Some("")
+        );
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(40), "took {elapsed:?}");
+    }
+
+    #[test]
+    fn run_with_timeout_kills_a_command_that_outlives_the_timeout() {
+        if !on_path("sleep") {
+            eprintln!("skipped: sleep is not installed");
+            return;
+        }
+        let seconds = format!("5.{}", std::process::id());
+        let start = Instant::now();
+        let out = run_with_timeout("sleep", &[&seconds], Duration::from_millis(100));
+        let elapsed = start.elapsed();
+        assert_eq!(out, None);
+        assert!(elapsed < Duration::from_secs(1), "took {elapsed:?}");
+        let cmdline = format!("sleep\0{seconds}\0");
+        let still_running: Vec<PathBuf> = std::fs::read_dir("/proc")
+            .unwrap()
+            .flatten()
+            .map(|entry| entry.path().join("cmdline"))
+            .filter(|path| std::fs::read(path).is_ok_and(|bytes| bytes == cmdline.as_bytes()))
+            .collect();
+        assert!(still_running.is_empty(), "not killed: {still_running:?}");
     }
 }
