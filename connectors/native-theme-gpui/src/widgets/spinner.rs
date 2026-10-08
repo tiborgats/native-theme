@@ -15,6 +15,7 @@ use gpui::{
 };
 use gpui_base::Progress as BaseProgress;
 use gpui_component::plot::shape::{Arc, ArcData};
+use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
 use native_theme::icons::{FreedesktopLoader, colorize_monochrome_svg, load_icon_indicator};
 use native_theme::theme::{
@@ -24,10 +25,33 @@ use native_theme::theme::{
 use super::{color, length, native};
 use crate::icons::{to_image_source, with_spin_animation};
 
+/// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
+/// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
+/// rem (gpui-component 0.7.1 `src/icon.rs:188-192`, `Icon::with_size`). A
+/// size other than Medium keeps that ratio to Medium, anchored at
+/// `spinner.diameter`.
+const XSMALL_RATIO: f32 = 0.75;
+/// Small to Medium: `size_3p5` to `size_4` (gpui-component 0.7.1
+/// `src/icon.rs:190-191`).
+const SMALL_RATIO: f32 = 0.875;
+/// Large to Medium: `size_6` to `size_4` (gpui-component 0.7.1
+/// `src/icon.rs:191-192`).
+const LARGE_RATIO: f32 = 1.5;
+
 /// What a spinner paints, from `SpinnerTheme` (spec §2.6).
+///
+/// The diameter depends on the [`Size`]: Medium is `spinner.diameter`, the
+/// platform's spinner; XSmall, Small and Large are `spinner.diameter` × 0.75,
+/// × 0.875 and × 1.5, gpui-component's own spinner ladder (`size_3`,
+/// `size_3p5`, `size_4`, `size_6`; gpui-component 0.7.1 `src/icon.rs:188-192`)
+/// re-anchored at the platform's Medium, so the sizes keep upstream's
+/// proportions and the platform's size; `Size::Size(px)` is `px`. None is
+/// less than `spinner.min_diameter`. The stroke is `spinner.stroke_width` at
+/// every size.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SpinnerLook {
-    /// The indicator's size: `spinner.diameter`, and no less than
+    /// The indicator's size: `spinner.diameter` for Medium, scaled for the
+    /// other sizes ([`SpinnerLook::of_size`]), and no less than
     /// `min_diameter`.
     pub diameter: Pixels,
     /// `spinner.stroke_width`: the arc's stroke.
@@ -38,13 +62,27 @@ pub struct SpinnerLook {
 }
 
 impl SpinnerLook {
-    /// The look of a spinner, or `None` when a length the theme gives is not
-    /// finite.
+    /// The look of a Medium spinner, or `None` when a length the theme gives
+    /// is not finite.
     #[must_use]
     pub fn of(resolved: &ResolvedTheme) -> Option<Self> {
+        Self::of_size(resolved, Size::Medium)
+    }
+
+    /// The look of a spinner of `size`, or `None` when a length the theme
+    /// gives, or a `Size::Size`, is not finite and non-negative.
+    #[must_use]
+    pub fn of_size(resolved: &ResolvedTheme, size: Size) -> Option<Self> {
         let s = &resolved.spinner;
-        let diameter = length(s.diameter)?;
+        let medium = length(s.diameter)?;
         let min = length(s.min_diameter)?;
+        let diameter = match size {
+            Size::Size(own) => length(f32::from(own))?,
+            Size::XSmall => px(f32::from(medium) * XSMALL_RATIO),
+            Size::Small => px(f32::from(medium) * SMALL_RATIO),
+            Size::Medium => medium,
+            Size::Large => px(f32::from(medium) * LARGE_RATIO),
+        };
         Some(Self {
             diameter: diameter.max(min),
             stroke: length(s.stroke_width)?,
@@ -273,8 +311,17 @@ enum IconChoice {
     Set(Option<IconSet>, Option<SharedString>),
 }
 
-/// An indeterminate spinner `spinner.diameter` across, on gpui-base's
-/// headless `Progress` (a progress indicator with no value).
+/// An indeterminate spinner, `spinner.diameter` across at `Size::Medium`, on
+/// gpui-base's headless `Progress` (a progress indicator with no value).
+///
+/// **Every size is the platform's.** The spinner is [`Sizable`]: Medium, the
+/// default, is `spinner.diameter`; XSmall, Small and Large are
+/// `spinner.diameter` × 0.75, × 0.875 and × 1.5, the ratios of
+/// gpui-component's own spinner sizes to its Medium (gpui-component 0.7.1
+/// `src/icon.rs:188-192`, `Icon::with_size`), so `.small()` and `.large()`
+/// draw the same indicator smaller and larger; `Size::Size(px)` is `px`.
+/// None is less than `spinner.min_diameter` ([`SpinnerLook::of_size`]). The
+/// arc's stroke stays `spinner.stroke_width` at every size.
 ///
 /// **The icon set's indicator first.** Where the application's icon set has
 /// an animated indicator -- `native_theme::icons::load_icon_indicator`, and
@@ -295,13 +342,14 @@ enum IconChoice {
 /// `spinner.stroke_width`, its outer edge `spinner.diameter` across, sweeping
 /// 240° and turning a turn a second; under reduced motion it stands still.
 ///
-/// The widget is drawn the same with the `native-theme-egui-widgets` and
-/// iced connectors' spinners. Without a native theme it renders
-/// gpui-component's `Spinner`.
+/// At Medium the widget is drawn the same with the
+/// `native-theme-egui-widgets` and iced connectors' spinners. Without a native theme it renders
+/// gpui-component's `Spinner` at the same [`Size`].
 pub struct Spinner {
     id: ElementId,
     label: Option<SharedString>,
     icons: IconChoice,
+    size: Size,
 }
 
 impl Spinner {
@@ -312,6 +360,7 @@ impl Spinner {
             id: id.into(),
             label: None,
             icons: IconChoice::System,
+            size: Size::Medium,
         }
     }
 
@@ -349,18 +398,25 @@ impl Spinner {
     }
 }
 
+impl Sizable for Spinner {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+}
+
 impl RenderOnce for Spinner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let Some((look, fill, text)) = native(cx).and_then(|n| {
             let r = n.resolved;
             Some((
-                SpinnerLook::of(r)?,
+                SpinnerLook::of_size(r, self.size)?,
                 r.spinner.fill_color,
                 r.defaults.text_color,
             ))
         }) else {
             return div()
-                .child(gpui_component::spinner::Spinner::new())
+                .child(gpui_component::spinner::Spinner::new().with_size(self.size))
                 .into_any_element();
         };
         let reduce = cx.reduce_motion();
@@ -371,7 +427,7 @@ impl RenderOnce for Spinner {
         let found = set.and_then(|set| {
             let colour = indicator_colour(set, fill, text);
             // Rasterized for the window's pixels: the size is finite and
-            // non-negative (`SpinnerLook::of`), and the cast saturates.
+            // non-negative (`SpinnerLook::of_size`), and the cast saturates.
             let size = (f32::from(look.diameter) * window.scale_factor())
                 .ceil()
                 .max(1.) as u32;

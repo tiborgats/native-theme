@@ -4945,6 +4945,15 @@ impl SpinnerKind {
             Self::Large => "Large",
         }
     }
+
+    /// The `Size` this kind is drawn at.
+    pub(crate) fn size(self) -> Size {
+        match self {
+            Self::Small => Size::Small,
+            Self::Medium => Size::Medium,
+            Self::Large => Size::Large,
+        }
+    }
 }
 
 /// The icon set a theme-drawn Spinner draws its indicator from, as the
@@ -4968,30 +4977,29 @@ pub(crate) fn spinner(
     kind: SpinnerKind,
     icons: &SpinnerIcons,
 ) -> Stateful<Div> {
-    // The theme states one spinner, `spinner.*`: the Medium one is drawn
-    // from it; Small and Large stay gpui-component's, sizes of its own.
+    // The theme states one spinner, `spinner.*`: every size is drawn from
+    // it, Medium at its diameter and Small and Large at gpui-component's own
+    // ratios to that (`widgets::SpinnerLook::of_size`).
     #[cfg(feature = "widgets")]
-    if kind == SpinnerKind::Medium
-        && let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx))
-    {
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::Spinner::new(id)
+            .with_size(kind.size())
             .icon_set(icons.set)
             .icon_theme(icons.theme.clone())
             .info(
                 ui,
                 id,
-                info::feedback::native_spinner(r, cx.reduce_motion(), icons),
+                info::feedback::native_spinner(r, kind, cx.reduce_motion(), icons),
             )
             .debug_selector(move || id.into());
     }
     #[cfg(not(feature = "widgets"))]
     let _ = icons;
     let (size, styled) = match kind {
-        SpinnerKind::Small => (Size::Small, false),
-        SpinnerKind::Large => (Size::Large, false),
+        SpinnerKind::Small | SpinnerKind::Large => (kind.size(), false),
         SpinnerKind::Medium => match native_value(cx, geometry::spinner_size) {
             Some(size) => (size, true),
-            None => (Size::Medium, false),
+            None => (kind.size(), false),
         },
     };
     let native = cx.native_theme().and_then(|nt| nt.native(cx));

@@ -359,7 +359,7 @@ role, and paints every part from the theme leaf that states it:
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps | a rail of its fill at 20% alpha, a thumb of its own size |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width | a track of its fill at 20% alpha |
-| `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
+| `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
 | `TabBar`, `Tab` | `tab.*`: the bar, an unselected tab's fill and label, the hover in place of that fill, the selected tab's fill, label and `tab.border` outline (the selected tab only, rounded on its top corners), sizes, padding, the gap between tabs (`item_gap`) and font | an idle tab painted transparent, and a primary underline or a frame of its own on the selected one |
 | `Separator` | a line `separator.line_width` thick in `separator.line_color` | a line a literal 1px thick |
 

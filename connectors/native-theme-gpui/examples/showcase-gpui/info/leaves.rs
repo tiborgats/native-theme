@@ -1827,7 +1827,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "spinner.diameter_px",
-        "gpui: the indicator's size (SpinnerLook)",
+        "gpui: the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::of_size)",
     ),
     (
         "",
@@ -1837,7 +1837,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "spinner.min_diameter_px",
-        "gpui: the floor under the indicator's size (SpinnerLook)",
+        "gpui: the floor under the indicator's size, at every Size (SpinnerLook::of_size)",
     ),
     (
         "",

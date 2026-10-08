@@ -4354,6 +4354,51 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     }
 }
 
+/// Under a native theme the Feedback page's Small, Medium and Large Spinners
+/// are all the connector's theme-drawn widget, one look at three sizes:
+/// `SpinnerLook::of_size`'s diameters, which strictly increase.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContext) {
+    use crate::demo::SpinnerKind;
+    use native_theme_gpui::widgets::SpinnerLook;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Feedback);
+        let r = read(&mut cx, &showcase, |_, cx| {
+            cx.native_theme().and_then(|nt| nt.resolved(cx)).cloned()
+        });
+        assert!(r.is_some(), "{preset}: no native theme is installed");
+        let Some(r) = r else { return };
+        let mut widths = Vec::new();
+        for (id, kind) in [
+            (FEEDBACK_SPINNER_SMALL, SpinnerKind::Small),
+            ("feedback-spinner-medium", SpinnerKind::Medium),
+            ("feedback-spinner-large", SpinnerKind::Large),
+        ] {
+            let width = bounds_of(&mut cx, id).size.width;
+            let look = SpinnerLook::of_size(&r, kind.size());
+            assert_eq!(
+                Some(width),
+                look.map(|look| look.diameter),
+                "{preset}: {id} is not SpinnerLook::of_size's diameter"
+            );
+            let info = settle_on(&mut cx, &showcase, id);
+            assert!(
+                info.as_ref()
+                    .is_some_and(|i| i.to_text().contains("native_theme_gpui::widgets::Spinner")),
+                "{preset}: {id} is not the theme-drawn widgets::Spinner: {info:?}"
+            );
+            widths.push(width);
+        }
+        assert!(
+            widths.windows(2).all(|w| w[0] < w[1]),
+            "{preset}: the spinners' widths do not increase: {widths:?}"
+        );
+    }
+}
+
 /// The Basic List shows three of its eight rows: its box is three rows and
 /// its frame tall, so the rest scroll.
 #[gpui::test]

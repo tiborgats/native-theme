@@ -380,6 +380,48 @@ fn a_progress_bar_and_a_spinner_paint_their_themes() {
     }
 }
 
+/// Every Size draws the platform's spinner: Medium at `spinner.diameter`,
+/// the others at gpui-component's own ladder anchored there, none below
+/// `spinner.min_diameter`.
+#[test]
+fn a_spinner_of_every_size_is_the_platforms() {
+    use gpui_component::Size;
+    for (preset, mode) in PRESETS {
+        let r = resolved(preset, mode);
+        let s = &r.spinner;
+        let at = |size| SpinnerLook::of_size(&r, size).expect("finite");
+        let (xsmall, small, medium, large) = (
+            at(Size::XSmall),
+            at(Size::Small),
+            at(Size::Medium),
+            at(Size::Large),
+        );
+        assert_eq!(Some(medium), SpinnerLook::of(&r), "{preset}");
+        assert!(xsmall.diameter <= small.diameter, "{preset}");
+        assert!(small.diameter <= medium.diameter, "{preset}");
+        assert!(medium.diameter <= large.diameter, "{preset}");
+        assert_eq!(
+            small.diameter,
+            px((s.diameter * 0.875).max(s.min_diameter)),
+            "{preset}"
+        );
+        assert_eq!(
+            large.diameter,
+            px((s.diameter * 1.5).max(s.min_diameter)),
+            "{preset}"
+        );
+        assert_eq!(
+            at(Size::Size(px(10.))).diameter,
+            px(10_f32.max(s.min_diameter)),
+            "{preset}"
+        );
+        for look in [xsmall, small, large] {
+            assert_eq!(look.stroke, px(s.stroke_width), "{preset}");
+            assert_eq!(look.color, c(s.fill_color), "{preset}");
+        }
+    }
+}
+
 #[test]
 fn a_tab_bar_paints_tab_theme() {
     for (preset, mode) in PRESETS {
@@ -582,6 +624,15 @@ fn a_length_that_is_not_finite_falls_back() {
     assert!(SliderLook::of(&r, false).is_none());
     assert!(ProgressBarLook::of(&r).is_none());
     assert!(SpinnerLook::of(&r).is_none());
+    for size in [
+        gpui_component::Size::XSmall,
+        gpui_component::Size::Small,
+        gpui_component::Size::Medium,
+        gpui_component::Size::Large,
+        gpui_component::Size::Size(px(10.)),
+    ] {
+        assert!(SpinnerLook::of_size(&r, size).is_none(), "{size:?}");
+    }
 }
 
 // ---------------------------------------------------------------------------

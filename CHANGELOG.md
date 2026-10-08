@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: `geometry::button_label`, `geometry::toggle` and `geometry::data_table_size`; `Mic` and `Square` in the Lucide, Material and freedesktop tables.
 - **native-theme**: the bundled Lucide and Material sets carry `mic` and `square`.
 - **Showcases (gpui)**: the Inputs page shows `ColorSelect` and `SpeechWaveform`.
+- **native-theme-gpui**: `widgets::Spinner` takes a `Size` (it is `Sizable`), drawing the platform's indicator at every size: gpui-component's own spinner ladder (× 0.75, × 0.875, × 1.5 for XSmall, Small, Large) anchored at `spinner.diameter`, never below `spinner.min_diameter`; `SpinnerLook::of_size` is that look.
 
 ### Changed
 
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **native-theme-gpui**: 0.6.0 does not build against gpui-component 0.7.1, which added `IconName::Mic` and `IconName::Square`; 0.6.1 does. A Button's label, a Toggle's text and DataTable cells can be drawn at the platform's font size again, which gpui-component 0.7.1 shrank to 0.875 of it at `Size::Medium` (through `geometry::button_label`, `geometry::toggle` and `geometry::data_table_size`).
+- **Showcases (gpui)**: the Feedback page's Spinner row draws its three sizes with the platform's look; Small and Large were gpui-component's Lucide `Loader` beside the Medium platform indicator.
 
 ## [0.6.0] - 2026-10-01
 

@@ -182,23 +182,37 @@ pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo
         .instance("label", label.to_string())
 }
 
-/// A theme-drawn `widgets::Spinner` (spec §2.6), drawn while gpui's
-/// `reduce_motion` is as given.
+/// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind`, drawn while
+/// gpui's `reduce_motion` is as given.
 #[cfg(feature = "widgets")]
 pub fn native_spinner(
     r: &ResolvedTheme,
+    kind: SpinnerKind,
     reduce_motion: bool,
     icons: &crate::demo::SpinnerIcons,
 ) -> WidgetInfo {
     use native_theme::theme::IconSet;
+    use native_theme_gpui::widgets::SpinnerLook;
     let s = &r.spinner;
-    let info = WidgetInfo::new("Spinner").variant("Medium").config(
-        "size",
+    let drawn = SpinnerLook::of_size(r, kind.size()).map(|look| f32::from(look.diameter));
+    let drawn = drawn.map_or_else(String::new, |d| format!("{d}px across: "));
+    let ratio = |ratio: &str, name: &str| {
         format!(
+            "{drawn}spinner.diameter ({}px) {ratio}, gpui-component's own {name} ratio to its Medium (icon.rs, Icon::with_size), no less than spinner.min_diameter ({}px)",
+            s.diameter, s.min_diameter
+        )
+    };
+    let size = match kind {
+        SpinnerKind::Small => ratio("× 0.875", "Small"),
+        SpinnerKind::Medium => format!(
             "spinner.diameter: {}px across (at least spinner.min_diameter, {}px)",
             s.diameter, s.min_diameter
         ),
-    );
+        SpinnerKind::Large => ratio("× 1.5", "Large"),
+    };
+    let info = WidgetInfo::new("Spinner")
+        .variant(kind.name())
+        .config("size", size);
     if icons.indicator {
         let set = icons.set.map_or("none", |set| set.name());
         let tinted = matches!(icons.set, Some(IconSet::Material | IconSet::Lucide));
@@ -209,7 +223,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:358",
+                "native-theme-gpui/widgets/spinner.rs:414",
             ))
         } else {
             info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
@@ -223,7 +237,7 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:51"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:89"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
@@ -287,9 +301,11 @@ pub fn progress_circle(
         .not_themeable("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs, ProgressCircle::render_circle stroke_width)")
 }
 
-/// A `Spinner` of `kind`. A Medium one takes `geometry::spinner_size` where
-/// a native theme is installed, whose line is recorded where `demo::spinner`
-/// applies it; `styled` is whether it did. It is drawn while gpui's
+/// gpui-component's `Spinner` of `kind`: every kind's without a native
+/// theme, and, where the `widgets` feature is off, under one too (with it,
+/// `native_spinner` describes the theme-drawn one). A Medium one takes
+/// `geometry::spinner_size` where a native theme is installed, whose line is
+/// recorded where `demo::spinner` applies it; `styled` is whether it did. It is drawn while gpui's
 /// `reduce_motion` is as given. Its colour is `native`'s
 /// `spinner.fill_color`, which `demo::spinner` hands `Spinner::color`, where
 /// a native theme is installed.
