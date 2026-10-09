@@ -3,9 +3,9 @@
 //! GetSysColor per-widget colors, accessibility from UISettings and SystemParametersInfoW,
 //! icon sizes from GetSystemMetricsForDpi, WinUI3 spacing defaults, and geometry
 //! metrics from UISettings (WinRT) and Win32 APIs. Every system metric is read
-//! in logical pixels (see [`logical_system_metric`]), and the fonts are read at
+//! in logical pixels (see `logical_system_metric`), and the fonts are read at
 //! 96 DPI and reported with a `font_dpi` of 96, so their points resolve to
-//! logical pixels too (see [`LOGICAL_DPI`]).
+//! logical pixels too (see `LOGICAL_DPI`).
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};

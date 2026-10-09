@@ -1,13 +1,15 @@
 //! Runtime theme change watching.
 //!
+//! Requires the `watch` feature.
+//!
 //! This module provides the public API for monitoring OS theme changes at
 //! runtime. Call [`on_theme_change()`](crate::watch::on_theme_change) with a callback to start watching;
-//! the returned [`ThemeSubscription`](crate::watch::ThemeSubscription) keeps the watcher alive via RAII semantics
+//! the returned [`ThemeSubscription`] keeps the watcher alive via RAII semantics
 //! -- dropping it stops the watcher and joins the background thread.
 //!
 //! # RAII ownership model
 //!
-//! [`ThemeSubscription`](crate::watch::ThemeSubscription) is an RAII guard. Dropping it stops the watcher and
+//! [`ThemeSubscription`] is an RAII guard. Dropping it stops the watcher and
 //! joins the background thread. You **must** bind it to a variable -- if
 //! you discard the return value, the watcher is dropped immediately and
 //! no events are ever delivered.
@@ -38,7 +40,7 @@
 //!
 //! # Signal-only events
 //!
-//! [`ThemeChangeEvent`](crate::watch::ThemeChangeEvent) carries no theme data. When you receive an event,
+//! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
 //! re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
 //! to get the updated theme.
 //!

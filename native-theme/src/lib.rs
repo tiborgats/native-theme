@@ -90,8 +90,6 @@ pub mod color;
 pub mod detect;
 /// Error types for theme operations.
 pub mod error;
-/// Font matching, and the platform's own typeface for a family (feature
-/// `system-fonts`).
 pub mod fonts;
 /// GNOME portal theme reader.
 ///
@@ -134,9 +132,6 @@ pub mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
-/// Runtime theme change watching.
-///
-/// Requires the `watch` feature.
 #[cfg(feature = "watch")]
 pub mod watch;
 

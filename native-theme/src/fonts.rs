@@ -1,6 +1,6 @@
 //! Font matching, and the platform's own typeface for a family.
 //!
-//! [`select_face`](crate::fonts::select_face) is the one matcher — CSS Fonts Module Level 4 §5.1
+//! [`select_face`] is the one matcher — CSS Fonts Module Level 4 §5.1
 //! "Localized name matching" and §5.2 "Matching font styles" over a list of
 //! face descriptions — and needs no font database, so it is compiled
 //! unconditionally. Behind the `system-fonts` feature, `system_face` runs
