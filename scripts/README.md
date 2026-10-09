@@ -260,6 +260,30 @@ Requires jq.
 ./scripts/check_features.sh
 ```
 
+## check_docsrs.py
+
+Documents one workspace crate the way docs.rs will, before it is published:
+reads the crate's `[package.metadata.docs.rs]` through `cargo metadata` and
+runs `cargo +nightly rustdoc -p <crate> --lib --locked` with its features
+(`all-features`, `features`, `no-default-features`), its `cargo-args`, its
+`rustc-args` as `RUSTFLAGS`, `DOCS_RS=1`, and `--cfg docsrs -D warnings` plus
+its `rustdoc-args`, once for each target: `default-target` (else the first of
+`targets`, else x86_64-unknown-linux-gnu) and then every other listed one,
+into `target/docsrs`. A metadata key it does not know, a missing nightly
+toolchain or a target whose nightly standard library is not installed fails
+the check. Exits 0 when every target documented cleanly, 1 otherwise.
+`scripts/check_release.sh` runs it for every workspace crate (the gpui
+connector soft, as in its other sections). It does not reproduce the
+dependency versions docs.rs resolves for the published package, nor docs.rs's
+build limits.
+
+Requires Python 3 and the nightly toolchain with the crates' docs.rs targets
+(`rustup +nightly target add x86_64-apple-darwin x86_64-pc-windows-msvc`).
+
+```sh
+python3 scripts/check_docsrs.py native-theme
+```
+
 ## check_widget_coverage.py
 
 Checks that every widget the toolkits offer is rendered by the matching

@@ -695,6 +695,28 @@ run_check "docs (native-theme-egui-widgets, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: docs.rs emulation
+#
+# docs.rs documents a crate only after it is published, so a docs.rs failure
+# would otherwise first be seen after the tag, with the version already on
+# crates.io. scripts/check_docsrs.py documents each crate the way docs.rs will:
+# nightly rustdoc on the library, with the features and targets of its
+# `[package.metadata.docs.rs]`, `DOCS_RS=1` and `--cfg docsrs`, plus
+# `-D warnings`. The section above documents with the stable toolchain and the
+# workspace's own features, which is not that configuration. A missing nightly
+# toolchain or target fails the check rather than skipping it: a gate nobody
+# runs is not a gate. The gpui connector is soft, as in every section above.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "docs.rs emulation"
+for crate in $WORKSPACE_CRATES; do
+    if [ "$crate" = "native-theme-gpui" ]; then
+        run_check_soft "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
+    else
+        run_check "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
+    fi
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
 #
 # `cargo package` builds each tarball and compiles it as if it had been
