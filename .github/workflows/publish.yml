@@ -157,10 +157,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: bash scripts/check_features.sh
 
+  # docs.rs documents a crate only after it is published, so its build is
+  # emulated here first: nightly rustdoc with each crate's
+  # `[package.metadata.docs.rs]` features and targets, DOCS_RS=1,
+  # --cfg docsrs and -D warnings (scripts/check_docsrs.py, which
+  # scripts/check_release.sh runs too).
+  docsrs:
+    name: docs.rs emulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install system dependencies (gpui)
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: x86_64-apple-darwin, x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: Document every crate as docs.rs will
+        run: |
+          python3 --version
+          for crate in $(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))'); do
+            python3 -I scripts/check_docsrs.py "$crate"
+          done
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    needs: [ci, system-icons, features]
+    needs: [ci, system-icons, features, docsrs]
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable

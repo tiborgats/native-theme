@@ -273,7 +273,8 @@ into `target/docsrs`. A metadata key it does not know, a missing nightly
 toolchain or a target whose nightly standard library is not installed fails
 the check. Exits 0 when every target documented cleanly, 1 otherwise.
 `scripts/check_release.sh` runs it for every workspace crate (the gpui
-connector soft, as in its other sections). It does not reproduce the
+connector soft, as in its other sections), and `publish.yml` runs it for
+every crate before it publishes anything (the gpui connector included). It does not reproduce the
 dependency versions docs.rs resolves for the published package, nor docs.rs's
 build limits.
 
