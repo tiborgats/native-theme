@@ -57,9 +57,9 @@ and egui connectors need Rust 1.95.
 ## Icon sets
 
 <p align="center">
-  <img src="native-theme/docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  <img src="native-theme/docs/assets/spinner-material.gif" alt="Material spinner">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="native-theme/docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+  <img src="native-theme/docs/assets/spinner-lucide.gif" alt="Lucide spinner">
 </p>
 
 Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appropriate glyphs:

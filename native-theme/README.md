@@ -115,9 +115,9 @@ Cached, does not run the full theme-reader pipeline.
 ## Icon sets
 
 <p align="center">
-  <img src="docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  <img src="docs/assets/spinner-material.gif" alt="Material spinner">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+  <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner">
 </p>
 
 Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:

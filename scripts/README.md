@@ -29,8 +29,9 @@ SVG icons into `native-theme/docs/assets/`. Each GIF shows the spinner centered
 on a styled card background (24 rotation frames, 42ms/frame).
 
 Also supports `--theme-switching` mode to assemble pre-captured PNG frames into
-an animated theme-switching GIF. Callers pass the explicit per-connector output
-path via `--theme-switching-output`.
+an animated theme-switching GIF, each frame at its captured size (the size of
+the screenshots beside it; frames of differing sizes are refused). Callers pass
+the explicit per-connector output path via `--theme-switching-output`.
 
 Requires: Python 3, Pillow, ImageMagick 7
 

@@ -258,12 +258,15 @@ def generate_spinner_gif(spinner_name, config, output_dir, tmpdir):
     return True
 
 
-def assemble_theme_switching_gif(frame_dir, output_path, width=600, hold_ms=2000):
+def assemble_theme_switching_gif(frame_dir, output_path, hold_ms=2000):
     """Assemble pre-captured PNG frames into an animated theme-switching GIF.
 
-    Reads all frame-*.png files from the frame directory (sorted),
-    resizes each to the target width maintaining aspect ratio,
-    converts to RGB with white background, and saves as a looping GIF.
+    Reads all frame-*.png files from the frame directory (sorted), keeps
+    each at its captured size, the size of the screenshots beside it, so
+    the README shows the window as large as it is (a reader's browser
+    scales both to its column alike), converts to RGB with white
+    background, and saves as a looping GIF. Frames of differing sizes are
+    refused rather than scaled to one another.
     """
     frame_paths = sorted(glob.glob(os.path.join(frame_dir, "frame-*.png")))
     if not frame_paths:
@@ -275,10 +278,10 @@ def assemble_theme_switching_gif(frame_dir, output_path, width=600, hold_ms=2000
     gif_frames = []
     for path in frame_paths:
         img = Image.open(path).convert("RGBA")
-        # Resize to target width, maintaining aspect ratio
-        ratio = width / img.width
-        new_size = (width, int(img.height * ratio))
-        img = img.resize(new_size, Image.Resampling.LANCZOS)
+        if gif_frames and img.size != gif_frames[0].size:
+            print(f"  ERROR: {os.path.basename(path)} is {img.size[0]}x{img.size[1]}, "
+                  f"the first frame {gif_frames[0].size[0]}x{gif_frames[0].size[1]}")
+            return False
         # Convert to RGB with white background (no GIF transparency,
         # per Phase 36-02 decision)
         rgb_frame = Image.new("RGB", img.size, (255, 255, 255))

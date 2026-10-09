@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **native-theme**: the documentation of the `windows` module, which docs.rs builds for its Windows target, no longer links to two private items, and the `fonts` and `watch` modules are documented in one place (their own file), so their links resolve in the same scope on stable and on the nightly rustdoc docs.rs uses, which reported their explicit targets as redundant; the `watch` summary is no longer shown twice.
+- **READMEs**: the theme-switching GIFs are assembled at the captured window's size, as the screenshots are, instead of being scaled to 600 px wide, and the spinner GIFs are shown at their own 200×120 instead of 80 px high.
 
 ## [0.6.1] - 2026-10-09
 
