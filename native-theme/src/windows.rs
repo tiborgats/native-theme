@@ -146,8 +146,10 @@ fn logfont_to_fontspec_raw(
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_all_system_fonts() -> AllFonts {
-    let mut ncm = NONCLIENTMETRICSW::default();
-    ncm.cbSize = std::mem::size_of::<NONCLIENTMETRICSW>() as u32;
+    let mut ncm = NONCLIENTMETRICSW {
+        cbSize: std::mem::size_of::<NONCLIENTMETRICSW>() as u32,
+        ..Default::default()
+    };
 
     let success = unsafe {
         SystemParametersInfoForDpi(
@@ -370,8 +372,10 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
     let high_contrast = {
         use ::windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
         use ::windows::Win32::UI::WindowsAndMessaging::*;
-        let mut hc = HIGHCONTRASTW::default();
-        hc.cbSize = std::mem::size_of::<HIGHCONTRASTW>() as u32;
+        let mut hc = HIGHCONTRASTW {
+            cbSize: std::mem::size_of::<HIGHCONTRASTW>() as u32,
+            ..Default::default()
+        };
         let success = unsafe {
             SystemParametersInfoW(
                 SPI_GETHIGHCONTRAST,

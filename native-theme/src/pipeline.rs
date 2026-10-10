@@ -403,22 +403,21 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 /// println!("Platform preset: {}", preset.name);
 /// assert!(!preset.name.contains("-live"));
 /// ```
-#[allow(unreachable_code)]
 #[must_use]
 pub fn platform_preset_name() -> PlatformPreset {
     #[cfg(target_os = "macos")]
     {
-        return PlatformPreset {
+        PlatformPreset {
             name: "macos-sonoma",
             is_live: true,
-        };
+        }
     }
     #[cfg(target_os = "windows")]
     {
-        return PlatformPreset {
+        PlatformPreset {
             name: "windows-11",
             is_live: true,
-        };
+        }
     }
     #[cfg(target_os = "linux")]
     {

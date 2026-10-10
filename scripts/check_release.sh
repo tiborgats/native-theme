@@ -471,6 +471,21 @@ for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
     fi
 done
 
+# clippy on the platform code: a Linux clippy run never sees the macOS and
+# Windows branches, so lints in them (8 on macOS, 11 on Windows, found
+# 2026-10-11) went unnoticed. Clippy builds no binary, so windows-msvc needs
+# only its standard library, no linker.
+for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
+    if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
+        print_info "skipped clippy ($target): target not installed (rustup target add $target)"
+        continue
+    fi
+    run_check "clippy, all features ($target)" \
+        cargo clippy --target "$target" -p native-theme --all-targets --all-features -- -D warnings
+    run_check "clippy, no default features ($target)" \
+        cargo clippy --target "$target" -p native-theme --all-targets --no-default-features -- -D warnings
+done
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: formatting
 # ─────────────────────────────────────────────────────────────────────────────

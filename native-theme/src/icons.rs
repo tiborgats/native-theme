@@ -1205,31 +1205,29 @@ mod load_icon_tests {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod load_system_icon_by_name_tests {
-    use super::*;
-
     #[test]
     #[cfg(feature = "material-icons")]
     fn system_icon_by_name_material() {
-        let result = MaterialLoader::new("content_copy").load();
+        let result = super::MaterialLoader::new("content_copy").load();
         assert!(
             result.is_some(),
             "content_copy should be found in Material set"
         );
-        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+        assert!(matches!(result.unwrap(), super::IconData::Svg(_)));
     }
 
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn system_icon_by_name_lucide() {
-        let result = LucideLoader::new("copy").load();
+        let result = super::LucideLoader::new("copy").load();
         assert!(result.is_some(), "copy should be found in Lucide set");
-        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+        assert!(matches!(result.unwrap(), super::IconData::Svg(_)));
     }
 
     #[test]
     #[cfg(feature = "material-icons")]
     fn system_icon_by_name_unknown_returns_none() {
-        let result = MaterialLoader::new("nonexistent_xyz").load();
+        let result = super::MaterialLoader::new("nonexistent_xyz").load();
         assert!(result.is_none(), "nonexistent name should return None");
     }
 
@@ -1238,7 +1236,7 @@ mod load_system_icon_by_name_tests {
         // On Linux, SfSymbols set is not available (cfg-gated to macOS)
         #[cfg(not(target_os = "macos"))]
         {
-            let result = SfSymbolsLoader::new("doc.on.doc").load();
+            let result = super::SfSymbolsLoader::new("doc.on.doc").load();
             assert!(
                 result.is_none(),
                 "SF Symbols should return None on non-macOS"

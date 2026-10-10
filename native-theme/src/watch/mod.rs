@@ -250,14 +250,14 @@ pub fn on_theme_change(
     {
         #[cfg(feature = "macos")]
         {
-            return macos::watch_macos(callback);
+            macos::watch_macos(callback)
         }
         #[cfg(not(feature = "macos"))]
         {
             let _ = callback;
-            return Err(crate::Error::WatchUnavailable {
+            Err(crate::Error::WatchUnavailable {
                 reason: "enable the 'macos' feature for macOS theme watching",
-            });
+            })
         }
     }
 
@@ -265,14 +265,14 @@ pub fn on_theme_change(
     {
         #[cfg(feature = "windows")]
         {
-            return windows::watch_windows(callback);
+            windows::watch_windows(callback)
         }
         #[cfg(not(feature = "windows"))]
         {
             let _ = callback;
-            return Err(crate::Error::WatchUnavailable {
+            Err(crate::Error::WatchUnavailable {
                 reason: "enable the 'windows' feature for Windows theme watching",
-            });
+            })
         }
     }
 

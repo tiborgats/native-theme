@@ -296,7 +296,7 @@ impl AccessibilityPreferences {
     #[cfg(not(target_os = "linux"))]
     pub fn from_system() -> Self {
         let waker = std::task::Waker::noop();
-        let mut cx = std::task::Context::from_waker(&waker);
+        let mut cx = std::task::Context::from_waker(waker);
         let mut fut = std::pin::pin!(pipeline::accessibility_from_system_inner());
         match fut.as_mut().poll(&mut cx) {
             std::task::Poll::Ready(prefs) => prefs,
@@ -679,7 +679,7 @@ impl SystemTheme {
     #[cfg(not(target_os = "linux"))]
     pub fn from_system() -> crate::Result<Self> {
         let waker = std::task::Waker::noop();
-        let mut cx = std::task::Context::from_waker(&waker);
+        let mut cx = std::task::Context::from_waker(waker);
         let mut fut = std::pin::pin!(pipeline::from_system_inner());
         match fut.as_mut().poll(&mut cx) {
             std::task::Poll::Ready(result) => result,

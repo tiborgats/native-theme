@@ -197,8 +197,10 @@ fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
 
     unsafe {
-        let mut sii = SHSTOCKICONINFO::default();
-        sii.cbSize = mem::size_of::<SHSTOCKICONINFO>() as u32;
+        let mut sii = SHSTOCKICONINFO {
+            cbSize: mem::size_of::<SHSTOCKICONINFO>() as u32,
+            ..Default::default()
+        };
 
         SHGetStockIconInfo(siid, SHGSI_ICON | SHGSI_LARGEICON, &mut sii).ok()?;
 

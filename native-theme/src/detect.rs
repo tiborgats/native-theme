@@ -466,7 +466,6 @@ fn read_kde_force_font_dpi() -> Option<f32> {
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching.
-#[allow(unreachable_code)]
 fn detect_is_dark_inner() -> bool {
     #[cfg(target_os = "linux")]
     {
@@ -550,10 +549,9 @@ fn detect_is_dark_inner() -> bool {
             use objc2_foundation::NSUserDefaults;
             let defaults = NSUserDefaults::standardUserDefaults();
             let key = objc2_foundation::ns_string!("AppleInterfaceStyle");
-            if let Some(value) = defaults.stringForKey(key) {
-                return value.to_string().eq_ignore_ascii_case("dark");
-            }
-            return false;
+            defaults
+                .stringForKey(key)
+                .is_some_and(|value| value.to_string().eq_ignore_ascii_case("dark"))
         }
         #[cfg(not(feature = "macos"))]
         {
@@ -565,7 +563,7 @@ fn detect_is_dark_inner() -> bool {
                 let val = String::from_utf8_lossy(&output.stdout);
                 return val.trim().eq_ignore_ascii_case("dark");
             }
-            return false;
+            false
         }
     }
 
@@ -583,10 +581,12 @@ fn detect_is_dark_inner() -> bool {
                 return false;
             };
             let luma = 0.299 * (fg.R as f32) + 0.587 * (fg.G as f32) + 0.114 * (fg.B as f32);
-            return luma > 128.0;
+            luma > 128.0
         }
         #[cfg(not(feature = "windows"))]
-        return false;
+        {
+            false
+        }
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -645,7 +645,6 @@ pub fn detect_reduced_motion() -> bool {
 /// Inner detection logic for [`prefers_reduced_motion()`].
 ///
 /// Separated from the public function to allow caching.
-#[allow(unreachable_code)]
 fn detect_reduced_motion_inner() -> bool {
     #[cfg(target_os = "linux")]
     {
@@ -665,10 +664,12 @@ fn detect_reduced_motion_inner() -> bool {
         {
             let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace();
             // Direct semantics: true = reduce motion preferred (no inversion needed)
-            return workspace.accessibilityDisplayShouldReduceMotion();
+            workspace.accessibilityDisplayShouldReduceMotion()
         }
         #[cfg(not(feature = "macos"))]
-        return false;
+        {
+            false
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -679,13 +680,15 @@ fn detect_reduced_motion_inner() -> bool {
                 return false;
             };
             // AnimationsEnabled has INVERTED semantics: false => reduced motion preferred
-            return match settings.AnimationsEnabled() {
+            match settings.AnimationsEnabled() {
                 Ok(enabled) => !enabled,
                 Err(_) => false,
-            };
+            }
         }
         #[cfg(not(feature = "windows"))]
-        return false;
+        {
+            false
+        }
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]

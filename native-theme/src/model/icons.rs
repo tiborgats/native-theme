@@ -590,16 +590,15 @@ pub fn detect_icon_theme() -> crate::Result<String> {
 }
 
 /// [`detect_icon_theme()`]'s outcome in the form the detection cache keeps.
-#[allow(unreachable_code)]
 pub(crate) fn detect_icon_theme_outcome() -> Result<String, IconThemeFailure> {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
-        return Ok("sf-symbols".to_string());
+        Ok("sf-symbols".to_string())
     }
 
     #[cfg(target_os = "windows")]
     {
-        return Ok("segoe-fluent".to_string());
+        Ok("segoe-fluent".to_string())
     }
 
     #[cfg(target_os = "linux")]

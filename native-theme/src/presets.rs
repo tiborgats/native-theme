@@ -284,15 +284,14 @@ pub(crate) fn list_presets() -> &'static [PresetInfo] {
 /// Detect the current platform tag for preset filtering.
 ///
 /// Returns a string like "linux-kde", "linux", "windows", or "macos".
-#[allow(unreachable_code)]
 fn detect_platform() -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        return "macos";
+        "macos"
     }
     #[cfg(target_os = "windows")]
     {
-        return "windows";
+        "windows"
     }
     #[cfg(target_os = "linux")]
     {
