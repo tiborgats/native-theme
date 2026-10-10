@@ -89,8 +89,10 @@ kind of milestone and the estimate for the rest.
 
 - NEVER invent a value. A finding that changes a preset value, a platform constant or a
   `platform-facts.md` row must cite an upstream source; without one it is dropped.
-- No runtime panics, no `unsafe` (the maintainer-approved Core Text block in the macOS module
-  is the only exception). A fix that needs either stops and asks.
+- No runtime panics, no new `unsafe`. native-theme is `#![deny(unsafe_code)]`; the platform
+  FFI already allowed (44 `unsafe` blocks on 2026-10-11, in `macos.rs`, `sficons.rs`,
+  `watch/macos.rs`, `watch/windows.rs`, `windows.rs`, `winicons.rs`) is reviewed for
+  soundness in M4, not extended. A fix that needs a panic or more `unsafe` stops and asks.
 - Connectors follow theme data; a connector ignoring a resolved value is a bug, never a
   question.
 - Never mix icon themes or sets; an icon not found returns `None`.
@@ -371,7 +373,7 @@ No review agents; the session does it inline. Cost: small.
 
 use std::time::{Duration, Instant};
 
-use native_theme::theme::{ColorMode, IconRole, Theme};
+use native_theme::theme::{ColorMode, Theme};
 
 fn median<T>(runs: usize, mut f: impl FnMut() -> T) -> Duration {
     let mut times: Vec<Duration> = (0..runs)
@@ -403,7 +405,11 @@ fn presets_parse_and_resolve() {
 fn system_readers() {
     let start = Instant::now();
     let first = native_theme::SystemTheme::from_system();
-    println!("timing from_system cold: {:?} (ok: {})", start.elapsed(), first.is_ok());
+    println!(
+        "timing from_system cold: {:?} (ok: {})",
+        start.elapsed(),
+        first.is_ok()
+    );
     let warm = median(5, native_theme::SystemTheme::from_system);
     println!("timing from_system warm: {warm:?}");
     let prefs = median(5, native_theme::AccessibilityPreferences::from_system);
@@ -415,12 +421,15 @@ fn system_readers() {
 #[ignore = "timing probe; run with --ignored --nocapture"]
 fn bundled_icons() {
     let all = median(11, || {
-        IconRole::ALL
+        native_theme::theme::IconRole::ALL
             .iter()
             .filter_map(|role| native_theme::icons::MaterialLoader::new(*role).load())
             .count()
     });
-    println!("timing material, all {} roles: {all:?}", IconRole::ALL.len());
+    println!(
+        "timing material, all {} roles: {all:?}",
+        native_theme::theme::IconRole::ALL.len()
+    );
 }
 
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -429,16 +438,22 @@ fn bundled_icons() {
 fn freedesktop_icons() {
     for theme in ["breeze", "breeze-dark", "Adwaita"] {
         let start = Instant::now();
-        let cold = IconRole::ALL
+        let cold = native_theme::theme::IconRole::ALL
             .iter()
-            .filter_map(|role| native_theme::icons::FreedesktopLoader::new(*role).theme(theme).load())
+            .filter_map(|role| {
+                native_theme::icons::FreedesktopLoader::new(*role)
+                    .theme(theme)
+                    .load()
+            })
             .count();
         let cold_time = start.elapsed();
         let warm = median(11, || {
-            IconRole::ALL
+            native_theme::theme::IconRole::ALL
                 .iter()
                 .filter_map(|role| {
-                    native_theme::icons::FreedesktopLoader::new(*role).theme(theme).load()
+                    native_theme::icons::FreedesktopLoader::new(*role)
+                        .theme(theme)
+                        .load()
                 })
                 .count()
         });
@@ -682,7 +697,9 @@ anything extra.
 - [ ] **Step 1: Inventory (Haiku `locate`).** For each crate in scope, list every `pub` item
   reachable from the crate root with its signature (rustdoc JSON on the docs.rs emulation
   toolchain from `scripts/check_docsrs.py`, or grep of `pub` items); save to the session's
-  scratchpad as `inventory-<crate>.md`. For a connector, add a timing step to its
+  scratchpad as `inventory-<crate>.md`; and the crate's pedantic and nursery lint hits
+  (M0 Step 5's command with `-p <crate>`), each reviewer given the lines for its files as
+  hints, never as findings by themselves. For a connector, add a timing step to its
   `tests/timings.rs` (create the file) that times `from_preset(key, is_dark …)` for every
   bundled preset in both modes, and record it in the ledger's *Baseline*.
 - [ ] **Step 2: Review + verify (one Workflow).** Regions × region reviewer → verifier, plus
@@ -708,7 +725,8 @@ anything extra.
   attempts at the same gate, the session takes the task over or re-specifies it.
 - [ ] **Step 8: Close — stop point B.** `./scripts/check_release.sh` (only the known stale
   assets warning), both cross-target clippy commands from M0 Step 3, `cargo semver-checks`
-  for every crate touched (result recorded), the timing test re-run (no path slower than its
+  for every crate touched (result recorded; then `rm -rf target/semver-checks`, the tool's
+  own build directory), the timing test re-run (no path slower than its
   baseline beyond the noise floor), ledger statuses updated and committed, the project
   memory updated, `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
 
@@ -730,7 +748,7 @@ anything extra.
 |--------|-------|-----------------|
 | R1 Linux readers | `native-theme/src/kde/{mod,colors,fonts,metrics}.rs`, `gnome/mod.rs` | Review Focus 1: malformed and missing `kdeglobals`, no portal, no gsettings. |
 | R2 detection and watching | `native-theme/src/detect.rs`, `watch/{mod,kde,gnome,macos,windows}.rs` | Review Focus 1 and 3: every subprocess has a timeout and is reaped; watcher threads stop when the handle drops; the macOS and Windows watchers read as carefully as the Linux ones. |
-| R3 macOS and Windows readers | `native-theme/src/{macos,windows}.rs` | Review Focus 3: every `cfg` branch; FFI results checked; the Core Text block is the only `unsafe`. |
+| R3 macOS and Windows readers | `native-theme/src/{macos,windows}.rs` | Review Focus 3: every `cfg` branch; FFI results checked; each of the `unsafe` blocks in `macos.rs`, `sficons.rs`, `windows.rs`, `winicons.rs` and the two platform watchers: its safety invariant stated and upheld (buffer sizes, `cbSize`, handle cleanup on every path). |
 | R4 icons and fonts | `native-theme/src/{icons,freedesktop,winicons,sficons,rasterize,spinners,fonts}.rs`, `model/{icons,bundled,icon_sizes,animated}.rs`, `native-theme-build/src/*.rs` | Review Focus 2: every cache's bound and lifetime; icon misses cost; no icon-set mixing on any fallback path; `native-theme-build` errors name the offending TOML line. |
 | API | crates `native-theme` (icons, fonts, watch, detect surfaces), `native-theme-build` | One loader pattern across five icon loaders; watch API's shutdown semantics. |
 
