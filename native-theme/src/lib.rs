@@ -271,8 +271,9 @@ impl AccessibilityPreferences {
     /// Read the OS accessibility preferences without resolving a theme.
     ///
     /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE
-    /// `kdeglobals`, GNOME portal + gsettings) and takes its accessibility
-    /// block; `reduce_motion` is additionally read through
+    /// `kdeglobals`, GNOME portal + gsettings, macOS `NSWorkspace`, Windows
+    /// `UISettings`) and takes its accessibility block, blocking on it with
+    /// `pollster::block_on`; `reduce_motion` is additionally read through
     /// [`crate::detect::detect_reduced_motion`] on every platform. Fields no
     /// reader supplies keep their defaults. Never fails: with no reader or a
     /// failing reader the defaults are returned.
@@ -280,28 +281,8 @@ impl AccessibilityPreferences {
     /// Use it on the preset path, where accessibility is orthogonal to the
     /// theme choice (a user with large text wants it under a preset too).
     #[must_use]
-    #[cfg(target_os = "linux")]
     pub fn from_system() -> Self {
         pollster::block_on(pipeline::accessibility_from_system_inner())
-    }
-
-    /// Read the OS accessibility preferences without resolving a theme (non-Linux).
-    ///
-    /// The macOS reader (`NSWorkspace`) and the Windows reader (`UISettings`)
-    /// fill the accessibility block on their platforms; `reduce_motion` is
-    /// additionally read through [`crate::detect::detect_reduced_motion`].
-    /// The inner future has no `.await` points off Linux, so a noop-waker
-    /// single poll suffices, as in [`SystemTheme::from_system`].
-    #[must_use]
-    #[cfg(not(target_os = "linux"))]
-    pub fn from_system() -> Self {
-        let waker = std::task::Waker::noop();
-        let mut cx = std::task::Context::from_waker(waker);
-        let mut fut = std::pin::pin!(pipeline::accessibility_from_system_inner());
-        match fut.as_mut().poll(&mut cx) {
-            std::task::Poll::Ready(prefs) => prefs,
-            std::task::Poll::Pending => Self::default(),
-        }
     }
 }
 
@@ -632,15 +613,17 @@ impl SystemTheme {
     /// resolve -> validate -> [`SystemTheme`] with both light and dark
     /// [`ResolvedTheme`] variants.
     ///
+    /// On every platform `pollster::block_on` drives the async implementation
+    /// that [`from_system_async`](Self::from_system_async) awaits.
+    ///
     /// # Platform Behavior
     ///
     /// - **macOS:** with the `macos` feature, reads both light and dark
     ///   variants via NSAppearance and merges them with the `macos-sonoma`
     ///   preset; the active mode comes from [`detect::detect_is_dark`].
-    /// - **Linux:** Uses `pollster::block_on` to drive the async inner
-    ///   implementation, which handles portal D-Bus calls when the `portal`
-    ///   feature is enabled. Without a reader for the detected desktop
-    ///   (feature disabled, or a desktop with no reader), returns the
+    /// - **Linux:** the async implementation handles portal D-Bus calls when
+    ///   the `portal` feature is enabled. Without a reader for the detected
+    ///   desktop (feature disabled, or a desktop with no reader), returns the
     ///   `adwaita` preset resolved in the detected light/dark mode.
     /// - **Windows:** with the `windows` feature, reads the active variant and
     ///   merges it with the `windows-11` preset.
@@ -663,26 +646,8 @@ impl SystemTheme {
     /// let _icon_theme = &sys.icon_theme;
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
-    #[cfg(target_os = "linux")]
     pub fn from_system() -> crate::Result<Self> {
         pollster::block_on(pipeline::from_system_inner())
-    }
-
-    /// Load the OS theme synchronously (non-Linux).
-    ///
-    /// On macOS and Windows the async inner has zero `.await` points, so a
-    /// noop-waker single-poll is sufficient -- no async runtime needed.
-    #[cfg(not(target_os = "linux"))]
-    pub fn from_system() -> crate::Result<Self> {
-        let waker = std::task::Waker::noop();
-        let mut cx = std::task::Context::from_waker(waker);
-        let mut fut = std::pin::pin!(pipeline::from_system_inner());
-        match fut.as_mut().poll(&mut cx) {
-            std::task::Poll::Ready(result) => result,
-            std::task::Poll::Pending => Err(crate::Error::PlatformUnsupported {
-                platform: "unexpected async suspension",
-            }),
-        }
     }
 
     /// Async version of [`from_system()`](Self::from_system).

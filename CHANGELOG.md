@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **native-theme**: the `material` preset is now `material-3`.
+- **native-theme**: `SystemTheme::from_system()` and `AccessibilityPreferences::from_system()` block on `pollster` on macOS and Windows as they do on Linux, so `pollster` is a dependency on every platform; the single poll that answered `PlatformUnsupported` ("unexpected async suspension") if a reader ever awaited is gone.
 
 ### Fixed
 

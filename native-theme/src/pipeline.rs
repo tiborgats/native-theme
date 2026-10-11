@@ -670,8 +670,7 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 /// immediately (no `.await` points).
 ///
 /// Called by:
-/// - `from_system()` via `pollster::block_on` on Linux, noop-waker single-poll
-///   on non-Linux.
+/// - `from_system()` via `pollster::block_on`.
 /// - `from_system_async()` via `.await`.
 ///
 /// Delegates platform detection to [`select_reader`]: when a reader is
