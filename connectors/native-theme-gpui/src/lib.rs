@@ -57,7 +57,7 @@
 //! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`]; `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
 //! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
 //! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
-//! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md:1108`); [`is_high_contrast`] reads it | its own colours, if they should change |
+//! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md`, the item "the gpui connector reads `AccessibilityPreferences::high_contrast`"); [`is_high_contrast`] reads it | its own colours, if they should change |
 //!
 //! # Theme Field Coverage
 //!
@@ -268,7 +268,9 @@ pub fn to_theme(
 /// preferences to honour them under a preset: accessibility is orthogonal to
 /// the theme choice, and a user with large text wants it under a preset too.
 /// On a preset switch, `native_theme::detect::accessibility_preferences()` is
-/// the cached reading, free after any system read;
+/// the cached reading: the first call after a system read may still run the
+/// reduced-motion detection (about 3 ms measured on one KDE machine), and
+/// every later call returns the cached block in nanoseconds;
 /// [`AccessibilityPreferences::from_system()`] runs the platform reader each
 /// time.
 ///

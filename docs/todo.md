@@ -8,7 +8,8 @@ upstream crate (gpui-kit, iced, egui, libadwaita, Breeze). Find a milestone's it
 `grep -n '^- \[ \] \[v0.7.0\]' docs/todo.md`. Sections: Core API, Toolkit Connectors,
 Post-1.0, Deferred (pre-1.0); items keep their order inside a section. Closed items move
 to [`archive/todo_closed.md`](archive/todo_closed.md). A `docs/todo.md:N` citation
-elsewhere refers to this file before 2026-10-11's reordering.
+elsewhere refers to this file at `51bebb0d` or earlier (`git show 51bebb0d:docs/todo.md`):
+the file was pruned on 2026-10-11, not reordered.
 
 ---
 

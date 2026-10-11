@@ -652,7 +652,9 @@ pub fn detect_reduced_motion() -> bool {
 /// [`invalidate_caches()`], the first call runs the reader itself.
 /// `reduce_motion` is additionally [`prefers_reduced_motion()`], as
 /// `from_system` adds [`detect_reduced_motion()`]. [`invalidate_caches()`]
-/// clears it.
+/// clears it. A reader that fails is not reported: its default preferences
+/// stay cached until the next invalidation, as a failure to detect the icon
+/// theme does.
 ///
 /// For a preset switch, where the OS preferences apply under the preset and
 /// the reader has usually just run. The theme watcher does not report most
@@ -796,7 +798,9 @@ impl DetectionContext {
     /// also [`prefers_reduced_motion()`](Self::prefers_reduced_motion).
     /// Call
     /// [`invalidate_accessibility_preferences()`](Self::invalidate_accessibility_preferences)
-    /// to force a re-read.
+    /// to force a re-read of the reader's block; the reduced-motion floor
+    /// stays cached until [`invalidate_reduced_motion()`](Self::invalidate_reduced_motion)
+    /// or [`invalidate_caches()`](crate::detect::invalidate_caches) is called.
     #[must_use]
     pub fn accessibility_preferences(&self) -> crate::AccessibilityPreferences {
         let mut prefs = self.reader_accessibility_with(|| {

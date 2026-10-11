@@ -241,7 +241,9 @@ COSMIC is used as the running example below because it is the closest real case:
 
    Return `ReaderOutput::Single` if the platform reports only the active mode —
    the pipeline fills the other variant from the preset — or `ReaderOutput::Dual`
-   if it reports both, as macOS does.
+   if it reports both, as macOS does. `Dual`'s `is_dark` is the OS's active
+   appearance, which the reader reads uncached (the macOS reader calls
+   `detect::detect_is_dark()`).
 3. **Widget metrics:** If the platform has well-defined widget sizing constants,
    add a `populate_widget_sizing(&mut ThemeMode)` function next to the reader.
    See `native-theme/src/kde/metrics.rs` for the pattern.

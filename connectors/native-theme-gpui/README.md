@@ -176,8 +176,10 @@ variant.
   is explicit because some presets (`solarized`, `gruvbox`) have ambiguous
   lightness. Pass `&AccessibilityPreferences::default()` for no scaling, or
   `native_theme::detect::accessibility_preferences()` to honour the OS
-  preferences under a preset: the cached reading, free after any system read,
-  for a preset switch. `AccessibilityPreferences::from_system()` reads them
+  preferences under a preset: the cached reading, for a preset switch (the
+  first call after a system read may still run the reduced-motion detection,
+  about 3 ms measured on one KDE machine; every later call returns the cached
+  block in nanoseconds). `AccessibilityPreferences::from_system()` reads them
   afresh, running the platform reader each time.
 - **`from_system()`** — the OS theme as `(theme, resolved, is_dark)` without
   installing it.

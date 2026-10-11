@@ -118,7 +118,7 @@
 //! |------|-----------------------|--------------------------|
 //! | `text_scaling_factor` | nothing on its own: a `Theme` is a palette, with no text size | each text size, through [`font_size()`], [`mono_font_size()`] or [`scaled_text_size()`] ([`AccessibilityPreferences::scaled`]) |
 //! | `reduce_motion` | `Spinner::view` (feature `spinner`) holds the spinner still when passed `true` | the flag to `Spinner::view` and to its own animations |
-//! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/todo.md:1173`) | the flag where it draws translucent surfaces |
+//! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/archive/todo_closed.md`, the item "`to_theme` takes no `AccessibilityPreferences`") | the flag where it draws translucent surfaces |
 //! | `high_contrast` | nothing | its own colours, if they should change |
 //!
 //! # Font Configuration
