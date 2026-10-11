@@ -348,7 +348,10 @@ let label = scaled_text_size(resolved.button.font.size, &accessibility);
 ```
 
 With a preset there is no OS reading; pass
-`&native_theme_iced::AccessibilityPreferences::default()`, which scales by 1.
+`&native_theme_iced::AccessibilityPreferences::default()`, which scales by 1,
+or `native_theme::detect::accessibility_preferences()` to honour the OS
+preferences under the preset (the cached reading, free after any system read;
+`AccessibilityPreferences::from_system()` runs the platform reader each time).
 The other two preferences, reduced transparency and reduced motion, have no
 receiver in iced's theme; read them from `AccessibilityPreferences` where your
 application draws translucent surfaces or animates.

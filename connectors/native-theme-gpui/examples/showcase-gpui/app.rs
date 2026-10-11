@@ -1676,20 +1676,22 @@ impl Showcase {
     /// The accessibility preferences a theme is installed with: `os`, the
     /// OS's as read for this install, with the ones the user set in the
     /// Preferences sheet put over them (`PreferenceOverrides`). A preference
-    /// the user set stays; one the user did not follows the OS, read again
-    /// at every install.
+    /// the user set stays; one the user did not follows the OS.
     fn install_preferences(cx: &App, os: AccessibilityPreferences) -> AccessibilityPreferences {
         demo::PreferenceOverrides::of(cx).over(os)
     }
 
-    /// The OS's accessibility preferences, read now; in the self-tests, the
-    /// ones `os_preferences_for_test` holds, where it holds any.
+    /// The OS's accessibility preferences as last read, from the detection
+    /// cache that the last system read filled and a reload clears
+    /// (`reload_system_theme`), so a preset switch runs no platform reader;
+    /// in the self-tests, the ones `os_preferences_for_test` holds, where it
+    /// holds any.
     fn os_preferences(&self) -> AccessibilityPreferences {
         #[cfg(test)]
         if let Some(prefs) = &self.os_preferences_for_test {
             return prefs.clone();
         }
-        AccessibilityPreferences::from_system()
+        native_theme::detect::accessibility_preferences()
     }
 
     /// Install `system`, the desktop's own theme as `SystemTheme::from_system`

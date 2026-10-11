@@ -1,5 +1,5 @@
 //! Wall-clock timings of the paths the code review measures: preset parsing, resolution,
-//! the system reader, the accessibility reader and icon loading. Ignored by default; run on
+//! the system reader, the accessibility reader and its cache, and icon loading. Ignored by default; run on
 //! the release profile, before and after a perf fix:
 //!
 //! `cargo test -p native-theme --release --all-features --test timings -- --ignored --nocapture --test-threads=1`
@@ -54,6 +54,13 @@ fn system_readers() {
     println!("timing from_system warm: {warm:?}");
     let prefs = median(5, native_theme::AccessibilityPreferences::from_system);
     println!("timing accessibility: {prefs:?}");
+    native_theme::detect::invalidate_caches();
+    let _ = native_theme::SystemTheme::from_system();
+    let start = Instant::now();
+    let _ = native_theme::detect::accessibility_preferences();
+    let first = start.elapsed();
+    let cached = median(5, native_theme::detect::accessibility_preferences);
+    println!("timing accessibility cached, after from_system: first {first:?}, then {cached:?}");
 }
 
 #[cfg(feature = "material-icons")]

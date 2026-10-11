@@ -683,7 +683,7 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated fallback.
 pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     if let Some((reader, preset)) = select_reader().await {
-        return read_through_pipeline(reader.as_ref(), preset).await;
+        return read_through_pipeline(reader.as_ref(), preset, crate::detect::system()).await;
     }
 
     // Preset-only fallback paths — no reader available for this
@@ -721,12 +721,16 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
 }
 
 /// Run `reader` and feed its output through [`run_pipeline`] onto `preset`,
-/// in the color mode the reader reports as OS-active.
+/// in the color mode the reader reports as OS-active. The reader's
+/// accessibility block is stored in `detection`, so
+/// [`crate::detect::accessibility_preferences`] need not run it again.
 async fn read_through_pipeline(
     reader: &dyn crate::reader::ThemeReader,
     preset: &str,
+    detection: &crate::detect::DetectionContext,
 ) -> crate::Result<SystemTheme> {
     let result = reader.read().await?;
+    detection.store_reader_accessibility(result.accessibility.clone());
     let is_dark = match &result.output {
         ReaderOutput::Single { is_dark, .. } | ReaderOutput::Dual { is_dark, .. } => *is_dark,
     };
@@ -739,25 +743,30 @@ async fn read_through_pipeline(
 }
 
 /// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
-/// runs the same platform reader `from_system_inner` would run and returns its
-/// accessibility block without merging or resolving a theme. Where no reader
-/// is available (or it fails) the defaults are used. `reduce_motion` is OR-ed
-/// with [`crate::detect::detect_reduced_motion`], a floor for the cases where
-/// no reader supplies it and it stays at its default: Linux outside KDE and
+/// [`reader_accessibility`], with `reduce_motion` OR-ed with
+/// [`crate::detect::detect_reduced_motion`], a floor for the cases where no
+/// reader supplies it and it stays at its default: Linux outside KDE and
 /// GNOME, and macOS or Windows builds without their reader feature. A reader's
 /// own `true` is never downgraded (spec §11.2).
 pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
-    let mut prefs = match select_reader().await {
+    let mut prefs = reader_accessibility().await;
+    if !prefs.reduce_motion {
+        prefs.reduce_motion = crate::detect::detect_reduced_motion();
+    }
+    prefs
+}
+
+/// Runs the same platform reader `from_system_inner` would run and returns its
+/// accessibility block without merging or resolving a theme. Where no reader
+/// is available (or it fails) the defaults are used.
+pub(crate) async fn reader_accessibility() -> crate::AccessibilityPreferences {
+    match select_reader().await {
         Some((reader, _preset)) => match reader.read().await {
             Ok(result) => result.accessibility,
             Err(_) => crate::AccessibilityPreferences::default(),
         },
         None => crate::AccessibilityPreferences::default(),
-    };
-    if !prefs.reduce_motion {
-        prefs.reduce_motion = crate::detect::detect_reduced_motion();
     }
-    prefs
 }
 
 // =============================================================================
@@ -1219,13 +1228,50 @@ mod pipeline_tests {
 
     #[test]
     fn dual_reader_mode_follows_is_dark() {
-        let st =
-            pollster::block_on(read_through_pipeline(&DarkDualReader, "macos-sonoma")).unwrap();
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(read_through_pipeline(
+            &DarkDualReader,
+            "macos-sonoma",
+            &detection,
+        ))
+        .unwrap();
         assert_eq!(
             st.mode,
             crate::ColorMode::Dark,
             "a Dual reader reporting is_dark must give SystemTheme::mode Dark"
         );
+    }
+
+    /// A reader reporting a text-scaling factor of 1.5, standing in for any
+    /// platform reader.
+    struct ScaledTextReader;
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for ScaledTextReader {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            let mut reader = reader_from_preset("adwaita");
+            reader.accessibility.text_scaling_factor = 1.5;
+            Ok(reader)
+        }
+    }
+
+    #[test]
+    fn the_system_read_fills_the_accessibility_cache() {
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(read_through_pipeline(
+            &ScaledTextReader,
+            "adwaita",
+            &detection,
+        ))
+        .unwrap();
+        let runs = std::cell::Cell::new(0);
+        let cached = detection.reader_accessibility_with(|| {
+            runs.set(runs.get() + 1);
+            crate::AccessibilityPreferences::default()
+        });
+        assert_eq!(runs.get(), 0, "the cache was empty after the system read");
+        assert_eq!(cached, st.accessibility);
+        assert_eq!(cached.text_scaling_factor, 1.5);
     }
 
     // --- Phase 93-04 G4: Theme.icon_theme + three-tier precedence ---

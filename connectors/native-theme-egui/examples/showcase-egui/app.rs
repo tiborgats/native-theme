@@ -501,7 +501,7 @@ impl App {
                 let prefs = settings
                     .prefs
                     .clone()
-                    .unwrap_or_else(AccessibilityPreferences::from_system);
+                    .unwrap_or_else(native_theme::detect::accessibility_preferences);
                 from_preset(name, false, &prefs).map(|(atlas, _)| (atlas, None))
             }
         }

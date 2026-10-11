@@ -107,7 +107,10 @@
 //! widget's font, a `text_scale` role), and [`font_size()`] and
 //! [`mono_font_size()`] are that for the default fonts; a factor that is not
 //! finite and positive is ignored. With a preset there is no OS reading:
-//! `AccessibilityPreferences::default()` scales by one.
+//! `AccessibilityPreferences::default()` scales by one, and
+//! `native_theme::detect::accessibility_preferences()` gives the OS's under
+//! the preset, cached; `AccessibilityPreferences::from_system()` runs the
+//! platform reader each time.
 //!
 //! # What each flag does
 //!

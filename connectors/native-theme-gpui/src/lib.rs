@@ -264,10 +264,13 @@ pub fn to_theme(
 /// The theme's display name is the preset's `name` field (`"Dracula"` for
 /// `"dracula"`), not the name passed in.
 ///
-/// Pass `&AccessibilityPreferences::default()` for no scaling, or
-/// `&AccessibilityPreferences::from_system()` to honour the OS preferences
-/// under a preset: accessibility is orthogonal to the theme choice, and a
-/// user with large text wants it under a preset too.
+/// Pass `&AccessibilityPreferences::default()` for no scaling, or the OS
+/// preferences to honour them under a preset: accessibility is orthogonal to
+/// the theme choice, and a user with large text wants it under a preset too.
+/// On a preset switch, `native_theme::detect::accessibility_preferences()` is
+/// the cached reading, free after any system read;
+/// [`AccessibilityPreferences::from_system()`] runs the platform reader each
+/// time.
 ///
 /// # Errors
 ///

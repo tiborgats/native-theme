@@ -142,7 +142,7 @@ pub fn system_is_dark() -> bool {
 }
 
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
-/// [`prefers_reduced_motion()`], or
+/// [`prefers_reduced_motion()`], [`accessibility_preferences()`], or
 /// [`system_icon_theme()`](crate::theme::system_icon_theme) re-queries the OS; a
 /// cached failure to detect the icon theme is cleared too.
 ///
@@ -642,6 +642,30 @@ pub fn detect_reduced_motion() -> bool {
     detect_reduced_motion_inner()
 }
 
+/// The OS accessibility preferences (cached): what
+/// [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system)
+/// reads, without running the platform reader again.
+///
+/// The cache holds the accessibility block of the last platform reader run:
+/// [`SystemTheme::from_system`](crate::SystemTheme::from_system) and
+/// `from_system_async` fill it, and where neither has run since the last
+/// [`invalidate_caches()`], the first call runs the reader itself.
+/// `reduce_motion` is additionally [`prefers_reduced_motion()`], as
+/// `from_system` adds [`detect_reduced_motion()`]. [`invalidate_caches()`]
+/// clears it.
+///
+/// For a preset switch, where the OS preferences apply under the preset and
+/// the reader has usually just run. The theme watcher does not report most
+/// accessibility changes (a text-scaling or high-contrast change on GNOME, the
+/// macOS accessibility flags, the text scale on Windows), so nothing clears
+/// the cache when they change; where the current setting matters more than
+/// the cost, read [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system),
+/// which runs the reader every time.
+#[must_use]
+pub fn accessibility_preferences() -> crate::AccessibilityPreferences {
+    system().accessibility_preferences()
+}
+
 /// Inner detection logic for [`prefers_reduced_motion()`].
 ///
 /// Separated from the public function to allow caching.
@@ -702,7 +726,8 @@ fn detect_reduced_motion_inner() -> bool {
 /// Process-wide detection cache.
 ///
 /// Provides "cache on first read" semantics for OS detection queries
-/// (`is_dark`, `reduced_motion`, `icon_theme`, `linux_desktop`) and
+/// (`is_dark`, `reduced_motion`, `accessibility_preferences`, `icon_theme`,
+/// `linux_desktop`) and
 /// per-field invalidation for watchers that need fresh data.
 ///
 /// Obtain the process-wide instance via [`system()`].
@@ -714,6 +739,7 @@ fn detect_reduced_motion_inner() -> bool {
 pub struct DetectionContext {
     is_dark: ArcSwapOption<bool>,
     reduced_motion: ArcSwapOption<bool>,
+    reader_accessibility: ArcSwapOption<crate::AccessibilityPreferences>,
     icon_theme: ArcSwapOption<Result<String, crate::model::icons::IconThemeFailure>>,
     #[cfg(target_os = "linux")]
     linux_desktop: ArcSwapOption<LinuxDesktop>,
@@ -721,10 +747,11 @@ pub struct DetectionContext {
 
 impl DetectionContext {
     /// Create an empty context with no cached values.
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             is_dark: ArcSwapOption::empty(),
             reduced_motion: ArcSwapOption::empty(),
+            reader_accessibility: ArcSwapOption::empty(),
             icon_theme: ArcSwapOption::empty(),
             #[cfg(target_os = "linux")]
             linux_desktop: ArcSwapOption::empty(),
@@ -760,6 +787,44 @@ impl DetectionContext {
         let value = detect_reduced_motion_inner();
         self.reduced_motion.store(Some(Arc::new(value)));
         value
+    }
+
+    /// The OS accessibility preferences (cached), as
+    /// [`accessibility_preferences()`](crate::detect::accessibility_preferences)
+    /// describes: the platform reader's accessibility block, run on the
+    /// first call unless a system read stored it, with `reduce_motion`
+    /// also [`prefers_reduced_motion()`](Self::prefers_reduced_motion).
+    /// Call
+    /// [`invalidate_accessibility_preferences()`](Self::invalidate_accessibility_preferences)
+    /// to force a re-read.
+    #[must_use]
+    pub fn accessibility_preferences(&self) -> crate::AccessibilityPreferences {
+        let mut prefs = self.reader_accessibility_with(|| {
+            pollster::block_on(crate::pipeline::reader_accessibility())
+        });
+        if !prefs.reduce_motion {
+            prefs.reduce_motion = self.prefers_reduced_motion();
+        }
+        prefs
+    }
+
+    /// The cached reader accessibility block, with `read` run where
+    /// nothing is cached.
+    pub(crate) fn reader_accessibility_with(
+        &self,
+        read: impl FnOnce() -> crate::AccessibilityPreferences,
+    ) -> crate::AccessibilityPreferences {
+        if let Some(prefs) = self.reader_accessibility.load().as_deref() {
+            return prefs.clone();
+        }
+        let prefs = read();
+        self.store_reader_accessibility(prefs.clone());
+        prefs
+    }
+
+    /// Store the accessibility block a platform reader just returned.
+    pub(crate) fn store_reader_accessibility(&self, prefs: crate::AccessibilityPreferences) {
+        self.reader_accessibility.store(Some(Arc::new(prefs)));
     }
 
     /// The current icon theme name (cached), or why none was detected.
@@ -826,6 +891,11 @@ impl DetectionContext {
         self.reduced_motion.store(None);
     }
 
+    /// Clear the cached accessibility preferences.
+    pub fn invalidate_accessibility_preferences(&self) {
+        self.reader_accessibility.store(None);
+    }
+
     /// Clear the cached icon theme, or the cached failure to detect one.
     pub fn invalidate_icon_theme(&self) {
         self.icon_theme.store(None);
@@ -841,6 +911,7 @@ impl DetectionContext {
     pub fn invalidate_all(&self) {
         self.invalidate_is_dark();
         self.invalidate_reduced_motion();
+        self.invalidate_accessibility_preferences();
         self.invalidate_icon_theme();
         #[cfg(target_os = "linux")]
         self.invalidate_linux_desktop();
@@ -1021,6 +1092,54 @@ mod detection_context_tests {
         ctx.invalidate_all();
         let theme = ctx.icon_theme_with(|| Ok("breeze".to_string()));
         assert_eq!(theme.ok().as_deref(), Some("breeze"));
+    }
+
+    fn scaled_by(text_scaling_factor: f32) -> crate::AccessibilityPreferences {
+        crate::AccessibilityPreferences {
+            text_scaling_factor,
+            ..crate::AccessibilityPreferences::default()
+        }
+    }
+
+    #[test]
+    fn a_second_accessibility_read_does_not_run_the_reader() {
+        let ctx = DetectionContext::new();
+        let runs = std::cell::Cell::new(0);
+        let read = || {
+            runs.set(runs.get() + 1);
+            scaled_by(1.5)
+        };
+        assert_eq!(ctx.reader_accessibility_with(read), scaled_by(1.5));
+        assert_eq!(ctx.reader_accessibility_with(read), scaled_by(1.5));
+        assert_eq!(runs.get(), 1, "the second call ran the reader");
+    }
+
+    #[test]
+    fn a_stored_accessibility_block_is_returned_until_invalidated() {
+        let ctx = DetectionContext::new();
+        let runs = std::cell::Cell::new(0);
+        let read = || {
+            runs.set(runs.get() + 1);
+            scaled_by(1.25)
+        };
+        ctx.store_reader_accessibility(scaled_by(2.0));
+        assert_eq!(ctx.reader_accessibility_with(read), scaled_by(2.0));
+        assert_eq!(runs.get(), 0, "a stored block ran the reader");
+        ctx.invalidate_all();
+        assert_eq!(ctx.reader_accessibility_with(read), scaled_by(1.25));
+        assert_eq!(runs.get(), 1);
+        ctx.invalidate_accessibility_preferences();
+        assert_eq!(ctx.reader_accessibility_with(read), scaled_by(1.25));
+        assert_eq!(runs.get(), 2);
+    }
+
+    #[test]
+    fn accessibility_preferences_caches_result() {
+        let ctx = DetectionContext::new();
+        assert_eq!(
+            ctx.accessibility_preferences(),
+            ctx.accessibility_preferences()
+        );
     }
 
     #[cfg(target_os = "linux")]

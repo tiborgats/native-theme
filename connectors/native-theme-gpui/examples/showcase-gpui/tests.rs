@@ -1393,7 +1393,7 @@ fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
 /// at `dpi`, or at the host's DPI where it is `None`, with the text scaled by
 /// `text_scale`: the point sizes it states become pixels at that DPI, as they
 /// do on the platform whose DPI it is. The accessibility preferences are
-/// otherwise the defaults, not the host's: `AccessibilityPreferences::from_system`,
+/// otherwise the defaults, not the host's: `native_theme::detect::accessibility_preferences`,
 /// which the showcase's own preset path reads, would scale the text by
 /// whatever the desktop the test runs on is set to (native-theme-gpui
 /// lib.rs, `to_theme`).

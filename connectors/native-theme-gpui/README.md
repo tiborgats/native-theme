@@ -141,9 +141,9 @@ theme to upstream's default.
 ### Light and dark under a preset
 
 ```rust,ignore
-use native_theme_gpui::{AccessibilityPreferences, apply, from_preset};
+use native_theme_gpui::{apply, from_preset};
 
-let prefs = AccessibilityPreferences::from_system();
+let prefs = native_theme::detect::accessibility_preferences();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);
@@ -175,8 +175,10 @@ variant.
 - **`from_preset(name, is_dark, &prefs)`** — load a bundled preset. `is_dark`
   is explicit because some presets (`solarized`, `gruvbox`) have ambiguous
   lightness. Pass `&AccessibilityPreferences::default()` for no scaling, or
-  `AccessibilityPreferences::from_system()` to honour the OS preferences under a
-  preset.
+  `native_theme::detect::accessibility_preferences()` to honour the OS
+  preferences under a preset: the cached reading, free after any system read,
+  for a preset switch. `AccessibilityPreferences::from_system()` reads them
+  afresh, running the platform reader each time.
 - **`from_system()`** — the OS theme as `(theme, resolved, is_dark)` without
   installing it.
 - **`to_theme(&resolved, "Display Name", is_dark, &prefs)`** — the underlying
