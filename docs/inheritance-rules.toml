@@ -330,7 +330,7 @@ gnome    = "preset"
 
 [per_platform."list.background_color"]
 fallback = "defaults.background_color"
-macos    = "defaults.background_color"
+macos    = "preset"                      # controlBackgroundColor (platform-facts §2.15)
 windows  = "defaults.background_color"
 kde      = "preset"
 gnome    = "preset"
@@ -352,7 +352,7 @@ gnome    = "preset"
 # Disabled state (docs/platform-facts.md §2.1.6, `disabled_opacity`): a
 # consumer paints the `disabled_*` colours AND fades the widget by its
 # `disabled_opacity`. A platform uses one of the two, and its preset makes the
-# other an identity: KDE and Windows state `defaults.disabled_opacity = 1.0`;
+# other an identity: KDE, macOS and Windows state `defaults.disabled_opacity = 1.0`;
 # GNOME states no `disabled_*` fill (None = the enabled colour) and its
 # enabled text colours as the disabled ones. A widget without a
 # `disabled_opacity` of its own (menu, list, link) fades by

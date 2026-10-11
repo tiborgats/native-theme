@@ -238,7 +238,7 @@ const ROWS: &[Row] = &[
     // --- macOS 12-15 (macos-monterey; the reader states no sizes) ---
     row(MacosMonterey, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(MacosMonterey, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
-    row(MacosMonterey, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
+    row(MacosMonterey, "input", all(2.0), &[1196, 1197], "2; 2 top / 2 bottom (API, the macOS 14.8.9 probe)"),
     row(MacosMonterey, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
     row(MacosMonterey, "checkbox", NONE, &[1216, 1217], "(none)"),
     row(MacosMonterey, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
@@ -261,7 +261,7 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(24.0), 1389)]),
     row(MacosMonterey, "popover", NONE, &[1412, 1413], "(none)"),
     row(MacosMonterey, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
-    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
+    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1552, 1557], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
         .with(&[("arrow_area_width", None, 1554)]),
     row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
     row(MacosMonterey, "card", NONE, &[1592, 1593], "(none)"),
@@ -800,7 +800,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(MacosMonterey, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
     field(MacosMonterey, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
     field(MacosMonterey, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
-    field(MacosMonterey, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
+    field(MacosMonterey, "slider.track_height", Px(4.0), 1292, "macOS 14-15: NSSlider 4 (API)"),
     field(MacosMonterey, "slider.thumb_diameter", Px(20.0), 1293, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
     field(MacosMonterey, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
     field(MacosMonterey, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),

@@ -272,7 +272,7 @@ the file was pruned on 2026-10-11, not reordered.
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
       `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:116-117`,
-      `:539-540`) with a `line_width_px = 0.5` border (`:74`, `:497`). Research first, from
+      `:569-570`) with a `line_width_px = 0.5` border (`:74`, `:527`). Research first, from
       source or measurement with citations, what the 22 and 16 measure — the
       outer box with its border, and the text's line box or its glyph height —
       then correct platform-facts' derivation of each cell and, from it, the
@@ -286,6 +286,10 @@ the file was pruned on 2026-10-11, not reordered.
       (`:1557`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
+      M2a Step 8 (2026-10-11) took the text input's row from the probe too:
+      the title rect sits 2 below the top and 2 above the bottom of the
+      21-tall field on macOS 14.8.9 (`docs/platform-facts.md:1197`), from the
+      outer edge again, so its border's share is open as the other two's.
 
 ### Presets: a spinner stroke width platform-facts does not give
 
@@ -294,7 +298,7 @@ the file was pruned on 2026-10-11, not reordered.
       states **(none)** for the other three (`docs/platform-facts.md:1535`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
-      (`native-theme/src/presets/macos-monterey.toml:358`, `:782`;
+      (`native-theme/src/presets/macos-monterey.toml:376`, `:833`;
       `native-theme/src/presets/kde-breeze.toml:371`, `:773`;
       `native-theme/src/presets/adwaita.toml:351`, `:726`). Run the
       `preset-validator` agent over the three presets against §2.23. The
@@ -322,19 +326,19 @@ the file was pruned on 2026-10-11, not reordered.
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
-      (`native-theme/src/presets/macos-monterey.toml:181-193`, `:604-616`;
+      (`native-theme/src/presets/macos-monterey.toml:187-201`, `:640-654`;
       `native-theme/src/presets/windows-11.toml:209-222`, `:706-719`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
-      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:191`),
+      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:197`),
       a fallback the same file lists among its wrong safety nets, a text
-      colour for "a semi-transparent UI control" (`:468-470`), and the egui
+      colour for "a semi-transparent UI control" (`:499-501`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
       and radio boxes and slider rails with it
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
-      `native-theme/src/presets/macos-monterey.toml:191`, `:614`) and not on
+      `native-theme/src/presets/macos-monterey.toml:199`, `:652`) and not on
       Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:220`,
       `:717`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
@@ -894,7 +898,7 @@ model, the platform presets and the three connectors
       `scrollbar.track_color` (`connectors/native-theme-egui/src/mapping.md:432`,
       `connectors/native-theme-egui/src/style/base.rs:202`), which
       `macos-monterey` states transparent, the overlay scroll bar's clear track
-      (`native-theme/src/presets/macos-monterey.toml:187`, `:610`). egui 0.36.2
+      (`native-theme/src/presets/macos-monterey.toml:193`, `:646`). egui 0.36.2
       also fills a `ProgressBar`'s track (`egui/src/widgets/progress_bar.rs:140`)
       and `Frame::canvas` (`egui/src/containers/frame.rs:231`) with it, so on
       macOS a plain `ProgressBar` outside the progress-bar role, and an app's
@@ -2110,7 +2114,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `spinner.stroke_width` | macOS, KDE, GNOME (none) (§2.23) | macos-monterey, kde-breeze, adwaita 2 |
       | `combo_box.min_height` | KDE (none); GNOME a derivation, "← button min-height (24+pad)" (§2.24) | kde-breeze 32, adwaita 34 |
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
-      | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-monterey 17 |
+      | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1569`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |

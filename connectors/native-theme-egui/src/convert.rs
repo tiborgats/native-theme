@@ -254,12 +254,11 @@ pub fn to_margin(
 /// `round(button_padding − width) + width` per side (`egui/src/widget_style.rs:163-165`,
 /// `epaint/src/margin.rs:117-119`), so a fractional padding or width moves an edge by at
 /// most half a point. It is exact only where the preset's padding is the platform's
-/// inside-the-border padding: `macos-monterey`'s vertical text-input padding is derived as
-/// outer minus content, `(22 − 16) / 2` (`docs/platform-facts.md:1197`), which already
-/// contains the border, and its push-button and combo-box paddings, 1 top / 3 bottom, are the
-/// title's offsets from the bezel's outer edge (`:1172`, `:1557`), where the border's share is
+/// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
+/// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) are the title's offsets from the control's
+/// outer edge (`docs/platform-facts.md:1172`, `:1197`, `:1557`), where the border's share is
 /// still open, so there each of those controls comes out one line width per side taller than
-/// the platform's until platform-facts corrects those cells (`docs/todo.md`).
+/// the platform's until platform-facts settles those cells (`docs/todo.md`).
 ///
 /// The width is `clamp_length(finite_or(line_width, 0.0))`: a non-finite width adds nothing
 /// — egui's own padding already holds egui's own stroke, so adding nothing is egui's value

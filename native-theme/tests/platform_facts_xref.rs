@@ -253,3 +253,23 @@ fn all_platform_presets_load_and_have_both_variants() {
         );
     }
 }
+
+/// The macOS sizes the OS probe settled (M2a Steps 7 and 8): each preset
+/// states the number its version's platform-facts cell gives.
+#[test]
+fn macos_probe_sizes_match_platform_facts() {
+    let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
+    // §2.17 (:1419-1420): NSSplitView's thick divider, 9 wide and clear
+    assert!(line(1419).contains("NSSplitView divider: 9 **(API)**"));
+    assert!(line(1420).contains("clear for the `.thick` style"));
+    // §2.3 (:1170) and §2.4 (:1195): the push button and the text field on 14-15
+    assert!(line(1170).contains("macOS 14–15: NSButton intrinsic: 20 **(API)**"));
+    assert!(line(1195).contains("macOS 14–15: NSTextField intrinsic: 21 **(API)**"));
+    let theme = Theme::preset("macos-monterey").unwrap();
+    for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
+        assert_eq!(v.splitter.divider_width, Some(9.0));
+        assert_eq!(v.splitter.divider_color, Some(Rgba::TRANSPARENT));
+        assert_eq!(v.button.min_height, Some(20.0));
+        assert_eq!(v.input.min_height, Some(21.0));
+    }
+}
