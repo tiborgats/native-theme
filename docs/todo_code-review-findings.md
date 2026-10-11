@@ -3493,7 +3493,7 @@ I checked the whole scope (lines 1401–1647), with no gaps. Step 1's version ma
 
 ## M2c — iOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the iOS 26 gap waits for M1's stop point A; Step 7 not started. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the iOS 26 gap waits for M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (4137fded). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 `ios.toml` names no iOS version; its colours are the flat-generation (iOS 13–18) palette exactly (HIG `color.json` as captured
 2025-06-07, WebKit's `platform/ios-18` baselines), and its fonts and Dynamic Type sizes are unchanged in iOS 26. iOS 26 (Liquid
@@ -3559,378 +3559,378 @@ Step 6 triage: 8 drop, 27 fix, 19 maintainer (version gap, after M1 stop point A
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Light) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, light) Note: systemBlue. Matches iOS 13-18. iOS 26 changed it to #0088ff. WebKit baselines agree (LT18/LT26 L12-16).
 **Verdict:** CONFIRMED — Archived HIG color.json (2025-06-07) iOS Blue Light alt R-0,G-122,B-255; current color.json 'System colors' Blue light R-0,G-136,B-255, corroborated by WebKit de320ba3 LayoutTests/platform/ios/.../system-color-for-css-value-expected.txt:13 rgb(0,136,255) vs platform/ios-18 :13 rgb(0,122,255); only the iOS 26 value differs from the cell. Confirmed value: iOS 18 #007aff (= cell); iOS 26 #0088ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E2), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-02 · bug · S2 · native-theme/src/presets/ios.toml:14
 **Claim:** `defaults.muted_color` (): the cell says #8e8e93; flat iOS 18: rgba(60,60,67,0.6); on white #8a8a8e; Liquid Glass iOS 26: rgba(60,60,67,0.6); on white #8a8a8e.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L144-L148 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L144-L148 Note: The macOS column maps muted to secondaryLabelColor, and iOS secondaryLabelColor is unchanged from 18 to 26. The preset uses systemGray instead (HIG gray table), which is a different role.
 **Verdict:** CONFIRMED — Both expected.txt files :144-148 read -apple-system-secondary-label rgba(60,60,67,0.6) light (dark rgba(235,235,245,0.6)); compositing on #ffffff gives #8a8a8e, and secondaryLabel is the macOS-column mapping for muted_color (platform-facts.md:1052), so the cell's #8e8e93 (systemGray) is the wrong role. Confirmed value: secondaryLabel rgba(60,60,67,0.6) → #8a8a8e on white, iOS 18 and iOS 26.
 **Triage:** fix — muted_color maps to secondaryLabel (platform-facts.md:1052, the macOS mapping); the cell is systemGray. Same at iOS 18 and 26.
-**Status:** open
+**Status:** fixed in Step 7 (E2), 4137fded
 
 #### M2c-03 · bug · S2 · native-theme/src/presets/ios.toml:17
 **Claim:** `defaults.danger_color` (): the cell says #ff3b30; flat iOS 18: #ff3b30; Liquid Glass iOS 26: #ff383c.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Red, Light) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Red, light) Note: systemRed. Matches iOS 13-18. iOS 26 changed it to #ff383c (WebKit L126-130 agrees).
 **Verdict:** CONFIRMED — Archived HIG iOS Red Light R-255,G-59,B-48; current HIG Red light R-255,G-56,B-60, matching WebKit platform/ios expected.txt:127 rgb(255,56,60); systemRed is the mapping at platform-facts.md:1080. Confirmed value: iOS 18 #ff3b30 (= cell); iOS 26 #ff383c.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E2), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-04 · bug · S2 · native-theme/src/presets/ios.toml:19
 **Claim:** `defaults.warning_color` (): the cell says #ff9500; flat iOS 18: #ff9500; Liquid Glass iOS 26: #ff8d28.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Orange, Light) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Orange, light) Note: systemOrange. Matches iOS 13-18. iOS 26 changed it to #ff8d28 (WebKit L96-100 agrees).
 **Verdict:** CONFIRMED — Archived HIG iOS Orange Light R-255,G-149,B-0; current HIG Orange light R-255,G-141,B-40, matching WebKit platform/ios expected.txt:97 rgb(255,141,40); systemOrange is the mapping at platform-facts.md:1082. Confirmed value: iOS 18 #ff9500 (= cell); iOS 26 #ff8d28.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E2), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-05 · bug · S2 · native-theme/src/presets/ios.toml:23
 **Claim:** `defaults.info_color` (): the cell says #007aff; flat iOS 18: #007aff; Liquid Glass iOS 26: #0088ff.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Light) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, light) Note: systemBlue, as in the macOS column. iOS 26 changed it to #0088ff.
 **Verdict:** CONFIRMED — Same Blue values as index 0 (HIG archived/current, WebKit expected.txt:13); systemBlue is the mapping at platform-facts.md:1086. Confirmed value: iOS 18 #007aff (= cell); iOS 26 #0088ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E2), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-06 · bug · S2 · native-theme/src/presets/ios.toml:29
 **Claim:** `defaults.focus_ring_color` (): the cell says #007aff; flat iOS 18: #007aff (systemBlue); Liquid Glass iOS 26: #0088ff (systemBlue).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L936-L943 ; https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Light) [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L1027-L1034 ; https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, light) Note: WebKit's iOS focus ring is systemBlueColor. The preset matches iOS 18 but not iOS 26.
 **Verdict:** CONFIRMED — RenderThemeIOS.mm 31adf9d1:936-943 and de320ba3:1027-1034 set the focus ring to UIColor systemBlueColor (with a FIXME that it should be keyboardFocusIndicatorColor), and systemBlue is #0088ff in iOS 26 per HIG and WebKit expected.txt:13. Confirmed value: systemBlue: iOS 18 #007aff (= cell); iOS 26 #0088ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E2), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-07 · bug · S2 · native-theme/src/presets/ios.toml:30
 **Claim:** `defaults.disabled_text_color` (): the cell says #c7c7cc; flat iOS 18: tertiaryLabel rgba(60,60,67,0.298); on white #c5c5c7; Liquid Glass iOS 26: tertiaryLabel rgba(60,60,67,0.298); on white #c5c5c7.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L996-L1003 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L983-L984 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: UIKit has no disabled-text colour. The only primary source is WebKit's iOS disabled button text, which is tertiaryLabelColor (WebKit tag). The preset uses systemGray3.
 **Verdict:** PLAUSIBLE — html.css 31adf9d1:996-1003 and de320ba3:979-986 (inside the iOS-family #else) set disabled button/select color to -apple-system-tertiary-label, read as rgba(60,60,67,0.298) at expected.txt:180-184 in both versions, but this is WebKit's form-control styling and UIKit has no disabledControlTextColor equivalent, so mapping it to the row needs a UIKit measurement; note also the WebKit button sits on opaque-secondary-fill-disabled, not white. Confirmed value: WebKit iOS disabled button/select text = tertiaryLabel rgba(60,60,67,0.298) → #c5c5c7 on white.
 **Triage:** fix — PLAUSIBLE: WebKit's iOS html.css draws disabled controls in tertiaryLabel (a UIKit colour), identical at iOS 18 and 26; the cell #c7c7cc / #3a3a3c is systemGray3 with no source. Fixed with the (WebKit) tag platform-facts.md accepts.
-**Status:** open
+**Status:** fixed in Step 7 (E2), 4137fded
 
 #### M2c-08 · bug · native-theme/src/presets/ios.toml:34
 **Claim:** `defaults.line_height` (): the cell says 1.2; flat iOS 18: 1.294 (Body 17 pt / leading 22); Liquid Glass iOS 26: 1.294 (Body 17 pt / leading 22).
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Body) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Body) Note: HIG Body leading is unchanged. The preset's 1.2 matches neither. The macOS column uses SF Pro font metrics (1.19), a different method.
 **Verdict:** PLAUSIBLE — Both typography.json versions' 'iOS, iPadOS Dynamic Type sizes / Large (default)' table read Body Regular 17 / 22, but platform-facts.md:1030 and :997 define line_height from font metrics for Apple (SF Pro 1.19, treating HIG per-style leading as a guideline), so 1.2 vs 1.294 depends on the HIG leading vs the UIFont lineHeight that UIKit lays out with, which needs a measurement. Confirmed value: HIG Body 17 pt / leading 22 (ratio 1.294), unchanged iOS 18 → 26.
 **Triage:** drop — platform-facts.md:1030 defines line_height from font metrics for Apple, not from the HIG leading; the cell follows that rule.
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-09 · bug · S2 · native-theme/src/presets/ios.toml:40
 **Claim:** `defaults.border.color` (): the cell says #c6c6c8; flat iOS 18: separator rgba(60,60,67,0.29); on white #c6c6c8; Liquid Glass iOS 26: separator rgba(60,60,67,0.12); on white #e8e8e8.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: The preset is exactly separatorColor composited on white at iOS 18. iOS 26 lowered the alpha to 0.12. UIKit opaqueSeparatorColor has no published RGB; WebKit composites separatorColor itself (RenderThemeIOS.mm:1162).
 **Verdict:** CONFIRMED — expected.txt:156-160 reads separator rgba(60,60,67,0.29) in platform/ios-18 and rgba(60,60,67,0.12) in platform/ios (dark 0.6 → 0.5), separatorColor is the mapping at platform-facts.md:1051, and the white composites compute to #c6c6c8 and #e8e8e8; only iOS 26 differs from the cell. Confirmed value: iOS 18 separator rgba(60,60,67,0.29) → #c6c6c8 (= cell); iOS 26 rgba(60,60,67,0.12) → #e8e8e8 on white.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 separator on white is the cell's #c6c6c8; iOS 26 lowered the alpha to 0.12. iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E3), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-10 · bug · native-theme/src/presets/ios.toml:44
 **Claim:** `defaults.border.opacity` (): the cell says 0.15; flat iOS 18: 0.29 (separator alpha); Liquid Glass iOS 26: 0.12 (separator alpha).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: iOS line opacity is the separatorColor alpha, over 60,60,67 rather than the label colour. The preset's 0.15 matches neither version.
 **Verdict:** REJECTED — The separator alphas 0.29 / 0.12 (expected.txt:157 in each file) are read correctly, but they are the alpha of the separator's own base rgb(60,60,67), while platform-facts.md:946 and :997 define border.opacity as the share of the text colour (#000000, ios.toml:12) folded into border.color; as that share, #c6c6c8 on white is about 0.22 (iOS 18) and #e8e8e8 about 0.09 (iOS 26), so 0.29/0.12 do not belong in this field as claimed.
 **Triage:** drop — REJECTED: border.opacity is the text colour's share in a line (platform-facts.md:946, :997), not the separator's alpha. The preset's 0.15 is wrong on its own grounds (validator finding below).
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-11 · bug · S2 · native-theme/src/presets/ios.toml:66
 **Claim:** `text_scale.caption.line_height_pt` (): the cell says 14.4; flat iOS 18: 16; Liquid Glass iOS 26: 16.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Caption 1 leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Caption 1 leading) Note: The preset uses size x 1.2.
 **Verdict:** CONFIRMED — Archived (2025-05-23) and current typography.json, iOS Large (default) table: Caption 1 Regular 12 / 16; the cell's 14.4 is just 12 × 1.2. Confirmed value: 16 (Caption 1, 12 pt / leading 16), iOS 18 and iOS 26.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-12 · bug · S2 · native-theme/src/presets/ios.toml:69
 **Claim:** `text_scale.section_heading.size_pt` (): the cell says 15.0; flat iOS 18: 17; Liquid Glass iOS 26: 17.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline) Note: Mapped as in the macOS column: .headline becomes iOS Headline. Subhead (15, Regular, leading 20) is the alternative.
 **Verdict:** CONFIRMED — Both typography.json versions read Headline Semibold 17 / 22 in iOS Large (default), and .headline is the style platform-facts.md:1436 maps section_heading to on macOS; the same rows also contradict the cell's weight 700 (Semibold = 600) and line_height_pt 18 (ios.toml:70-71). Confirmed value: 17 (Headline, Semibold, leading 22), iOS 18 and iOS 26.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-13 · bug · S2 · native-theme/src/presets/ios.toml:70
 **Claim:** `text_scale.section_heading.weight` (): the cell says 700; flat iOS 18: 600 (Semibold); Liquid Glass iOS 26: 600 (Semibold).
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline) Note: No iOS text style is Bold (700) at the default size. Subhead is Regular.
 **Verdict:** CONFIRMED — Both the archived (2025-05-23) and the live (read 2026-10-11) HIG typography.json give Headline = Semibold, 17/22, in the iOS Large (default) table; the role mapping follows §2.19's macOS column (section_heading = .headline), since platform-facts has no iOS column. Confirmed value: 600 (Semibold), iOS 18 and iOS 26.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-14 · bug · S2 · native-theme/src/presets/ios.toml:71
 **Claim:** `text_scale.section_heading.line_height_pt` (): the cell says 18.0; flat iOS 18: 22; Liquid Glass iOS 26: 22.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline leading) Note: The preset uses size x 1.2. Subhead's leading would be 20.
 **Verdict:** CONFIRMED — HIG JSON Large (default): Headline leading 22 in both snapshots; note that ios.toml:69 size_pt 15 also disagrees with Headline's 17, which the claim does not cover. Confirmed value: 22 (both).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-15 · bug · S2 · native-theme/src/presets/ios.toml:74
 **Claim:** `text_scale.dialog_title.size_pt` (): the cell says 22.0; flat iOS 18: 28; Liquid Glass iOS 26: 28.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Title 1) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Title 1) Note: Mapped as in the macOS column: .title1 becomes iOS Title 1. The preset's 22 equals iOS Title 2 (22, Regular, leading 28).
 **Verdict:** CONFIRMED — HIG JSON Large (default): Title 1 is Regular 28/34 in both snapshots; dialog_title = .title1 per §2.19's macOS column, and ios.toml's 22 is the macOS title1 size. Confirmed value: 28 (both).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-16 · bug · S2 · native-theme/src/presets/ios.toml:76
 **Claim:** `text_scale.dialog_title.line_height_pt` (): the cell says 26.4; flat iOS 18: 34; Liquid Glass iOS 26: 34.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Title 1 leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Title 1 leading) Note: The preset uses size x 1.2. Title 2's leading would be 28.
 **Verdict:** CONFIRMED — HIG JSON Large (default): Title 1 leading 34 in both snapshots; the cell 26.4 is 22×1.2, computed rather than sourced. Confirmed value: 34 (both).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-17 · bug · S2 · native-theme/src/presets/ios.toml:81
 **Claim:** `text_scale.display.line_height_pt` (): the cell says 40.8; flat iOS 18: 41; Liquid Glass iOS 26: 41.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Large Title leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Large Title leading) Note: The preset uses size x 1.2.
 **Verdict:** CONFIRMED — HIG JSON Large (default): Large Title is 34/41 in both snapshots; the cell 40.8 is 34×1.2, computed. Confirmed value: 41 (both).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E4), 4137fded
 
 #### M2c-18 · bug · S2 · native-theme/src/presets/ios.toml:84
 **Claim:** `button.background_color` (): the cell says #e5e5ea; flat iOS 18: opaque-secondary-fill #e9e9ea; Liquid Glass iOS 26: opaque-secondary-fill #e9e9ea.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L895 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L84-L88 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L885 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L84-L88 Note: The value is WebKit's iOS HTML button fill (WebKit tag); UIKit publishes no button fill RGB. The preset uses systemGray5.
 **Verdict:** PLAUSIBLE — The value is read correctly: html.css 31adf9d:895 and de320ba:885 set the iOS HTML button background to -apple-system-opaque-secondary-fill, and expected.txt:85 gives rgb(233,233,234) for both iOS 18 and iOS 26; but this is WebKit's own styling of web-content buttons (11px system-ui at :890/:880), not UIButton, so the mapping needs a UIKit source or a measurement.
 **Triage:** fix — PLAUSIBLE: WebKit's iOS button fill is opaque-secondary-fill (iOS 18 = iOS 26); the cell has no source. (WebKit)-tagged.
-**Status:** open
+**Status:** fixed in Step 7 (E5), 4137fded
 
 #### M2c-19 · bug · S2 · native-theme/src/presets/ios.toml:93
 **Claim:** `button.disabled_text_color` (): the cell says #c7c7cc; flat iOS 18: tertiaryLabel rgba(60,60,67,0.298); on white #c5c5c7; Liquid Glass iOS 26: tertiaryLabel rgba(60,60,67,0.298); on white #c5c5c7.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L996-L1003 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L983-L984 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: Same source as line 30 (WebKit tag).
 **Verdict:** PLAUSIBLE — The value is read correctly: html.css 31adf9d:1001 and de320ba:984 set disabled HTML buttons to -apple-system-tertiary-label, which is rgba(60,60,67,0.298) at expected.txt:181 in both baselines, ≈#c5c5c7 on white; but it is WebKit's web-button styling, not UIButton's disabled state.
 **Triage:** fix — PLAUSIBLE: WebKit's iOS html.css draws disabled controls in tertiaryLabel (a UIKit colour), identical at iOS 18 and 26; the cell #c7c7cc / #3a3a3c is systemGray3 with no source. Fixed with the (WebKit) tag platform-facts.md accepts.
-**Status:** open
+**Status:** fixed in Step 7 (E5), 4137fded
 
 #### M2c-20 · bug · S2 · native-theme/src/presets/ios.toml:97
 **Claim:** `button.font.color` (): the cell says #000000; flat iOS 18: #007aff (systemBlue); Liquid Glass iOS 26: #0088ff (systemBlue).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L891 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L881 Note: WebKit draws iOS button text in the tint colour (systemBlue), not the label colour (WebKit tag). No UIKit document gives this.
 **Verdict:** PLAUSIBLE — html.css 31adf9d:891 and de320ba:881 set the iOS HTML button colour to -apple-system-blue, which is rgb(0,122,255) in ios-18 expected.txt:13 and rgb(0,136,255) in ios expected.txt:13 (the iOS 26 hex comes from there, not from html.css:881); this is a proxy from WebKit form controls, not a UIButton source.
 **Triage:** fix — PLAUSIBLE: an iOS button's label is the tint (systemBlue) in WebKit's iOS html.css; the cell's black / white has no source. (WebKit)-tagged; the iOS 26 blue follows the version-gap decision.
-**Status:** open
+**Status:** fixed in Step 7 (E5), 4137fded
 
 #### M2c-21 · bug · native-theme/src/presets/ios.toml:135
 **Claim:** `slider.thumb_diameter_px` (): the cell says 28.0; flat iOS 18: 16; Liquid Glass iOS 26: 24 x 16 (not round).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L562 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3881 Note: These are WebKit's HTML range thumb sizes only. UISlider's thumb size is not published, so a probe should decide.
 **Verdict:** REJECTED — RenderThemeIOS.mm 31adf9d:562 is kDefaultSliderThumbSize=16, applied at :659-660 to WebKit's HTML <input type=range> thumb; RenderThemeCocoa.mm de320ba:3881 sliderThumbSize {24,16} is WebKit's form-control-refresh metric, which has no iOS/Mac conditional (the track at :3875-3879 has one); both are web-content control sizes, not UISlider's thumb.
 **Triage:** drop — REJECTED: 16 and 24 x 16 are WebKit's HTML range thumb, not UISlider; the cell 28 has no source either (stays unverifiable).
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-22 · bug · S2 · native-theme/src/presets/ios.toml:143
 **Claim:** `progress_bar.track_height_px` (): the cell says 4.0; flat iOS 18: 4; Liquid Glass iOS 26: 8.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L718 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3770 Note: WebKit iOS progress bar thickness (WebKit tag). The preset matches iOS 18; the iOS 26 refreshed painter uses 8.
 **Verdict:** REJECTED — The iOS 18 value, barBlockSize 4 at RenderThemeIOS.mm 31adf9d:718, equals the cell; the iOS 26 value, 8.f at RenderThemeCocoa.mm de320ba:3770, belongs to paintProgressBarForVectorBasedControls, WebKit's <progress> refresh shared by macOS and iOS (gated by the internal FormControlRefreshEnabled setting, UnifiedWebPreferences.yaml:2489-2497), not UIProgressView.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value 4 equals the cell; the iOS 26 8 is WebKit's form-control-refresh <progress> (verdicts split: REJECTED at index 21 as not UIKit, CONFIRMED at 48 as WebKit), so the iOS 26 value is (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E9), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-23 · bug · S2 · native-theme/src/presets/ios.toml:185
 **Claim:** `separator.line_color` (): the cell says #c6c6c8; flat iOS 18: separator rgba(60,60,67,0.29); on white #c6c6c8; Liquid Glass iOS 26: separator rgba(60,60,67,0.12); on white #e8e8e8.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: Same as line 40: matches iOS 18, not iOS 26.
 **Verdict:** CONFIRMED — -apple-system-separator is ios-18 expected.txt:157 rgba(60,60,67,0.29) and ios expected.txt:157 rgba(60,60,67,0.12), the UIColor.separator test baselines; only iOS 26 differs from the cell, and opaqueSeparator is not in the file. Confirmed value: iOS 18: rgba(60,60,67,0.29) ≈ #c6c6c8 (equals the cell); iOS 26: rgba(60,60,67,0.12) ≈ #e8e8e8 on white.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E10), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-24 · bug · S2 · native-theme/src/presets/ios.toml:192
 **Claim:** `switch.unchecked_background` (): the cell says #c6c6c8; flat iOS 18: rgba(120,120,128,0.16); on white #e9e9eb; Liquid Glass iOS 26: tertiaryLabel rgba(60,60,67,0.298) over canvas; #c5c5c7.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L276-L279 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L281-L294 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: WebKit switch off-track colour (WebKit tag). The iOS 18 value is cited from main's non-refreshed path, because the iOS-18-era tag painted switches only in the internal SDK. The preset matches neither version.
 **Verdict:** PLAUSIBLE — RenderThemeCocoa.mm de320ba:277 hardcodes the off colour as rgba(120,120,128,41/255) ≈ #e9e9eb, and under form-control refresh (:282-295) it is tertiaryLabel composited over the canvas ≈ #c5c5c7, which is 1 unit from the cell #c6c6c8; :269's FIXME says UIKit does not expose _switchOffColor, so these are WebKit's approximations of UISwitch and need a measurement.
 **Triage:** fix — PLAUSIBLE: WebKit's classic iOS switch off-track is rgba(120,120,128,0.16 / 0.32), not the cell's separator grey; iOS 26 replaces it (version gap).
-**Status:** open
+**Status:** fixed in Step 7 (E11), 4137fded
 
 #### M2c-25 · bug · S2 · native-theme/src/presets/ios.toml:199
 **Claim:** `switch.track_width_px` (): the cell says 51.0; flat iOS 18: 51; Liquid Glass iOS 26: 70.86 (31 x 64/28).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L668-L669 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L417-L418 Note: WebKit tag. 51x31 before the refresh, which matches the preset. The Liquid Glass switch is an ideal 64x28 shape scaled to a height of 31 (applied at :4515-4537).
 **Verdict:** PLAUSIBLE — RenderThemeIOS.mm@31adf9d L668-669 gives 51x31 (so iOS 18 matches the cell), and RenderThemeCocoa.mm@de320ba L417-418 gives logicalRefreshedSwitchWidth = 31*64/28, but that only holds under ENABLE(FORM_CONTROL_REFRESH) with formControlRefreshEnabled(); the same source's own native proportion is idealSwitchSize {64, 28}, and 70.86 is WebKit keeping its old 31 pt height, so the UISwitch width needs a measurement. Confirmed value: iOS 18: 51 (same as the cell); iOS 26 (WebKit refreshed switch): 31*64/28 = 70.86.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value equals the cell; the iOS 26 Liquid Glass switch is WebKit's rescaling, (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E11), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-26 · bug · S2 · native-theme/src/presets/ios.toml:201
 **Claim:** `switch.thumb_diameter_px` (): the cell says 27.0; flat iOS 18: 27 (31 minus a 2 pt margin each side); Liquid Glass iOS 26: 39.86 x 26.57 capsule.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L746-L771 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L423 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L598-L612 Note: WebKit tag. The pre-refresh value matches (the source comment says 'Values chosen for consistency with UIKit'). The iOS 26 thumb is not round.
 **Verdict:** PLAUSIBLE — RenderThemeCocoa.mm@de320ba L766-771 gives thumbLength = 31 - 2*2 = 27 for the classic switch, and L423 (6:7 height ratio on iOS) plus L600-609 (idealThumbWidth 36 / 64) give 39.86 x 26.57 at WebKit's 31 pt height; at the source's ideal 64x28 track that is 36 x 24, and it is a capsule, not a circle, so a 'diameter' row needs a measurement and a mapping decision. Confirmed value: iOS 18: 27 (same as the cell); iOS 26 WebKit refreshed thumb: 39.86 x 26.57 capsule.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value equals the cell; the iOS 26 Liquid Glass switch is WebKit's rescaling, (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E11), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-27 · bug · S2 · native-theme/src/presets/ios.toml:258
 **Claim:** `defaults.accent_color` (): the cell says #0a84ff; flat iOS 18: #0a84ff; Liquid Glass iOS 26: #0091ff.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Dark) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, dark) Note: systemBlue in dark mode. Matches iOS 13-18. iOS 26 changed it to #0091ff.
 **Verdict:** CONFIRMED — The archived HIG color.json (20250607) has alt 'R-10,G-132,B-255' for ios-default-systembluedark, and the live color.json (read 2026-10-11, change log 'June 9, 2025: Updated system color values') has 'R-0,G-145,B-255' for colors-unified-blue-dark; WebKit's ios/ and ios-18/ system-color expectations agree (rgb(0,145,255) vs rgb(10,132,255)). Confirmed value: iOS 18 dark #0a84ff (same as the cell); iOS 26 dark #0091ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E14), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-28 · bug · S2 · native-theme/src/presets/ios.toml:262
 **Claim:** `defaults.muted_color` (): the cell says #8e8e93; flat iOS 18: rgba(235,235,245,0.6); on black #8d8d93; Liquid Glass iOS 26: rgba(235,235,245,0.6); on black #8d8d93.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L144-L148 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L144-L148 Note: Same as line 14.
 **Verdict:** PLAUSIBLE — Both expectation files L144-148 read rgba(235,235,245,0.6) dark, and the macOS column maps muted_color to secondaryLabelColor (platform-facts.md:1052), but the cell #8e8e93 (systemGray dark, rgb(142,142,147) in both files L36-40) is only 1/255 away from the composite, and that composite holds only over pure black, not over the dark surface #1c1c1e. Confirmed value: secondaryLabel dark rgba(235,235,245,0.6) on iOS 18 and 26; over #000000 = #8d8d93.
 **Triage:** fix — muted_color maps to secondaryLabel (platform-facts.md:1052, the macOS mapping); the cell is systemGray. Same at iOS 18 and 26.
-**Status:** open
+**Status:** fixed in Step 7 (E14), 4137fded
 
 #### M2c-29 · bug · S2 · native-theme/src/presets/ios.toml:265
 **Claim:** `defaults.danger_color` (): the cell says #ff453a; flat iOS 18: #ff453a; Liquid Glass iOS 26: #ff4245.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Red, Dark) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Red, dark) Note: systemRed in dark mode. iOS 26 changed it to #ff4245.
 **Verdict:** CONFIRMED — The archived HIG JSON alt for ios-default-systemreddark is 'R-255,G-69,B-58', and the live JSON's colors-unified-red-dark is 'R-255,G-66,B-69'; WebKit's ios/ expectation also reads rgb(255,66,69). Confirmed value: iOS 18 dark #ff453a (same as the cell); iOS 26 dark #ff4245.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E14), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-30 · bug · S2 · native-theme/src/presets/ios.toml:267
 **Claim:** `defaults.warning_color` (): the cell says #ff9f0a; flat iOS 18: #ff9f0a; Liquid Glass iOS 26: #ff9230.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Orange, Dark) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Orange, dark) Note: systemOrange in dark mode. iOS 26 changed it to #ff9230.
 **Verdict:** CONFIRMED — The archived HIG JSON alt for ios-default-systemorangedark is 'R-255,G-159,B-10', and the live JSON's colors-unified-orange-dark is 'R-255,G-146,B-48'; WebKit's ios/ expectation also reads rgb(255,146,48). Confirmed value: iOS 18 dark #ff9f0a (same as the cell); iOS 26 dark #ff9230.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E14), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-31 · bug · S2 · native-theme/src/presets/ios.toml:271
 **Claim:** `defaults.info_color` (): the cell says #0a84ff; flat iOS 18: #0a84ff; Liquid Glass iOS 26: #0091ff.
 **Evidence:** [flat] https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Dark) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, dark) Note: systemBlue in dark mode.
 **Verdict:** CONFIRMED — info_color maps to systemBlue (platform-facts.md:1086, macOS column), and the HIG JSON alts are 'R-10,G-132,B-255' (archive 20250607) and 'R-0,G-145,B-255' (live, 2026-10-11). Confirmed value: iOS 18 dark #0a84ff (same as the cell); iOS 26 dark #0091ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E14), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-32 · bug · S2 · native-theme/src/presets/ios.toml:277
 **Claim:** `defaults.focus_ring_color` (): the cell says #0a84ff; flat iOS 18: #0a84ff (systemBlue); Liquid Glass iOS 26: #0091ff (systemBlue).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L936-L943 ; https://web.archive.org/web/20250607225442/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (iOS system colors, Blue, Dark) [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L1027-L1034 ; https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json (read 2026-10-11; System colors, Blue, dark) Note: Same as line 29.
 **Verdict:** CONFIRMED — RenderThemeIOS::systemFocusRingColor uses [UIColor systemBlueColor] at 31adf9d L936-943 and at de320ba L1027-1034, with a FIXME saying it should use keyboardFocusIndicatorColor, which is WebKit's choice rather than UIKit's; the blue values are as in index 26. Confirmed value: systemBlue: iOS 18 dark #0a84ff (same as the cell); iOS 26 dark #0091ff.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E14), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-33 · bug · S2 · native-theme/src/presets/ios.toml:278
 **Claim:** `defaults.disabled_text_color` (): the cell says #3a3a3c; flat iOS 18: tertiaryLabel rgba(235,235,245,0.298); on black #464649; Liquid Glass iOS 26: tertiaryLabel rgba(235,235,245,0.298); on black #464649.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L996-L1003 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L983-L984 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: Same as line 30. The preset uses systemGray4 dark.
 **Verdict:** PLAUSIBLE — html.css (31adf9d L996-1003, de320ba L979-986, inside the WTF_PLATFORM_IOS_FAMILY #else branch) colours disabled buttons and selects -apple-system-tertiary-label, and both expectation files L180-184 read rgba(235,235,245,0.298), but this is WebKit's form-control styling, not a UIKit disabled-text API, so the mapping needs confirmation. Confirmed value: tertiaryLabel dark rgba(235,235,245,0.298); over #000000 = #464649 (iOS 18 and 26).
 **Triage:** fix — PLAUSIBLE: WebKit's iOS html.css draws disabled controls in tertiaryLabel (a UIKit colour), identical at iOS 18 and 26; the cell #c7c7cc / #3a3a3c is systemGray3 with no source. Fixed with the (WebKit) tag platform-facts.md accepts.
-**Status:** open
+**Status:** fixed in Step 7 (E14), 4137fded
 
 #### M2c-34 · bug · native-theme/src/presets/ios.toml:282
 **Claim:** `defaults.line_height` (): the cell says 1.2; flat iOS 18: 1.294 (Body 17 pt / leading 22); Liquid Glass iOS 26: 1.294 (Body 17 pt / leading 22).
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Body) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Body) Note: Same as line 34.
 **Verdict:** PLAUSIBLE — Both typography.json files list Body Regular 17/22 in the iOS Large (default) table, but platform-facts.md:1030 rejects the HIG per-style leadings for macOS as 'design guidelines, not API values' and uses SF Pro font metrics (1.19), while :996 accepts a type ramp for Windows, so which convention iOS follows is a decision (the cell's 1.2 matches neither). Confirmed value: HIG iOS Large (default) Body 17 pt / leading 22 = 1.294 (archive 20250523 and live 2026-10-11).
 **Triage:** drop — platform-facts.md:1030 defines line_height from font metrics for Apple, not from the HIG leading; the cell follows that rule.
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-35 · bug · native-theme/src/presets/ios.toml:288
 **Claim:** `defaults.border.color` (): the cell says #38383a; flat iOS 18: separator rgba(84,84,88,0.6); on black #323235; Liquid Glass iOS 26: separator rgba(84,84,88,0.5); on black #2a2a2c.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: The preset's #38383a matches neither composite. It may be UIKit opaqueSeparatorColor in dark mode, which has no primary RGB.
 **Verdict:** PLAUSIBLE — Both expectation files L156-160 read these alphas, and the arithmetic over #000000 is right, but the composite depends on the background (not the #1c1c1e surface), and the HIG also lists an 'Opaque separator' role, so separator vs opaqueSeparator for border.color is a mapping decision. Confirmed value: separator dark: iOS 18 rgba(84,84,88,0.6) = #323235 over black; iOS 26 rgba(84,84,88,0.5) = #2a2a2c over black.
 **Triage:** drop — The cell #38383a is UIKit's opaqueSeparator dark, as the light #c6c6c8 is opaqueSeparator light; the claim compared it with the translucent separator.
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-36 · bug · native-theme/src/presets/ios.toml:292
 **Claim:** `defaults.border.opacity` (): the cell says 0.15; flat iOS 18: 0.6 (separator alpha); Liquid Glass iOS 26: 0.5 (separator alpha).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: Dark-mode separator alpha over 84,84,88.
 **Verdict:** REJECTED — The expectation files do give the separator alphas 0.6 (ios-18) and 0.5 (ios), but platform-facts.md:946 and :997 define border.opacity as the text colour's share in a line, and iOS's separator is rgba(84,84,88,a), not the white label colour at alpha a, so its alpha is not that share (by that definition, #323235 over black is about 0.2 white).
 **Triage:** drop — REJECTED: border.opacity is the text colour's share in a line (platform-facts.md:946, :997), not the separator's alpha. The preset's 0.15 is wrong on its own grounds (validator finding below).
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-37 · bug · S2 · native-theme/src/presets/ios.toml:314
 **Claim:** `text_scale.caption.line_height_pt` (): the cell says 14.4; flat iOS 18: 16; Liquid Glass iOS 26: 16.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Caption 1 leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Caption 1 leading) Note: Same as line 66.
 **Verdict:** CONFIRMED — Both the archived (2025-05-23) and live (read 2026-10-11) HIG typography.json, section 'iOS, iPadOS Dynamic Type sizes', tab 'Large (default)', give Caption 1 as Regular, 12, leading 16; ios.toml:314 has 14.4 (12 × 1.2). Confirmed value: 16 (Caption 1, 12 pt Regular, Large (default)), iOS 18 and iOS 26.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-38 · bug · S2 · native-theme/src/presets/ios.toml:317
 **Claim:** `text_scale.section_heading.size_pt` (): the cell says 15.0; flat iOS 18: 17; Liquid Glass iOS 26: 17.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline) Note: Same as line 69.
 **Verdict:** CONFIRMED — Both JSON versions give Headline 17 pt in the iOS Large (default) tab; this assumes section_heading maps to .headline, as the macOS column of platform-facts §2.19 (line 1436) does. Confirmed value: 17 (Headline, Large (default)), iOS 18 and iOS 26.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-39 · bug · S2 · native-theme/src/presets/ios.toml:318
 **Claim:** `text_scale.section_heading.weight` (): the cell says 700; flat iOS 18: 600 (Semibold); Liquid Glass iOS 26: 600 (Semibold).
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline) Note: Same as line 70.
 **Verdict:** CONFIRMED — Both JSON versions list the iOS Headline weight as Semibold; platform-facts.md line 85 already says 'iOS .headline is SemiBold', while ios.toml:318 has 700. Confirmed value: 600 (Semibold).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-40 · bug · S2 · native-theme/src/presets/ios.toml:319
 **Claim:** `text_scale.section_heading.line_height_pt` (): the cell says 18.0; flat iOS 18: 22; Liquid Glass iOS 26: 22.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Headline leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Headline leading) Note: Same as line 71.
 **Verdict:** CONFIRMED — Both JSON versions give iOS Headline leading 22 at Large (default); ios.toml:319 has 18.0. Confirmed value: 22.
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-41 · bug · S2 · native-theme/src/presets/ios.toml:322
 **Claim:** `text_scale.dialog_title.size_pt` (): the cell says 22.0; flat iOS 18: 28; Liquid Glass iOS 26: 28.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Title 1) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Title 1) Note: Same as line 74.
 **Verdict:** CONFIRMED — Both JSON versions give iOS Title 1 as 28 pt Regular, leading 34; this holds under the macOS §2.19 mapping dialog_title = .title1 (line 1437). ios.toml's 22 equals iOS Title 2 (22/28), so if iOS meant Title 2 instead, only the line height (28) would differ. Confirmed value: 28 (Title 1).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-42 · bug · S2 · native-theme/src/presets/ios.toml:324
 **Claim:** `text_scale.dialog_title.line_height_pt` (): the cell says 26.4; flat iOS 18: 34; Liquid Glass iOS 26: 34.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Title 1 leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Title 1 leading) Note: Same as line 76.
 **Verdict:** CONFIRMED — Both JSON versions give iOS Title 1 leading 34 at Large (default), under the same .title1 mapping as index 40. Confirmed value: 34 (Title 1 leading).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-43 · bug · S2 · native-theme/src/presets/ios.toml:329
 **Claim:** `text_scale.display.line_height_pt` (): the cell says 40.8; flat iOS 18: 41; Liquid Glass iOS 26: 41.
 **Evidence:** [flat] https://web.archive.org/web/20250523115548/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (Large (default); Large Title leading) [Liquid Glass] https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json (read 2026-10-11; Large (default); Large Title leading) Note: Same as line 81.
 **Verdict:** CONFIRMED — Both JSON versions give iOS Large Title 34 pt Regular, leading 41 at Large (default); the live JSON adds an emphasized weight of Bold. Confirmed value: 41 (Large Title leading).
 **Triage:** fix — CONFIRMED against the HIG Dynamic Type table, Large (default), identical in the 2025-05 and 2026-10 copies; the cell is the macOS size or size x 1.2.
-**Status:** open
+**Status:** fixed in Step 7 (E16), 4137fded
 
 #### M2c-44 · bug · S2 · native-theme/src/presets/ios.toml:332
 **Claim:** `button.background_color` (): the cell says #2c2c2e; flat iOS 18: opaque-secondary-fill #262629; Liquid Glass iOS 26: opaque-secondary-fill #262629.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L895 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L84-L88 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L885 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L84-L88 Note: Same as line 84. The preset uses systemGray5 dark.
 **Verdict:** PLAUSIBLE — Verified: html.css@31adf9d1 L895 and @de320ba3 L885 set `background-color: -apple-system-opaque-secondary-fill` for iOS, and both expected.txt files (L84-88) give dark rgb(38,38,41) = #262629. But this is WebKit's stylesheet for HTML `<button>` in Safari, not UIKit's UIButton, so mapping it to the native iOS button row needs a UIKit source or a measurement.
 **Triage:** fix — PLAUSIBLE: WebKit's iOS button fill is opaque-secondary-fill (iOS 18 = iOS 26); the cell has no source. (WebKit)-tagged.
-**Status:** open
+**Status:** fixed in Step 7 (E17), 4137fded
 
 #### M2c-45 · bug · S2 · native-theme/src/presets/ios.toml:341
 **Claim:** `button.disabled_text_color` (): the cell says #3a3a3c; flat iOS 18: tertiaryLabel rgba(235,235,245,0.298); on black #464649; Liquid Glass iOS 26: tertiaryLabel rgba(235,235,245,0.298); on black #464649.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L996-L1003 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L983-L984 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: Same as line 30.
 **Verdict:** PLAUSIBLE — Verified: html.css@31adf9d1 L1001 and @de320ba3 L984 give the disabled button `color: -apple-system-tertiary-label`, and the expected.txt files (L183-184) give dark rgba(235,235,245,0.298). Two problems: this is WebKit's HTML-control styling, not UIKit, and the '#464649 on black' composite uses the wrong backdrop, because the same rule paints the disabled button with -apple-system-opaque-secondary-fill-disabled (RenderThemeIOS.mm@de320ba3 L1148: secondarySystemFillColor, opaque, 0.75), not black.
 **Triage:** fix — PLAUSIBLE: WebKit's iOS html.css draws disabled controls in tertiaryLabel (a UIKit colour), identical at iOS 18 and 26; the cell #c7c7cc / #3a3a3c is systemGray3 with no source. Fixed with the (WebKit) tag platform-facts.md accepts.
-**Status:** open
+**Status:** fixed in Step 7 (E17), 4137fded
 
 #### M2c-46 · bug · S2 · native-theme/src/presets/ios.toml:345
 **Claim:** `button.font.color` (): the cell says #ffffff; flat iOS 18: #0a84ff (systemBlue); Liquid Glass iOS 26: #0091ff (systemBlue).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L891 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/css/html.css#L881 Note: Same as line 97.
 **Verdict:** PLAUSIBLE — Verified: html.css@31adf9d1 L891 and @de320ba3 L881 give the iOS `<button>` `color: -apple-system-blue`, which is dark rgb(10,132,255) = #0a84ff in ios-18 expected.txt L15-16 and rgb(0,145,255) = #0091ff in ios expected.txt L15-16. These are UIKit systemBlue values that WebKit reads through UIColor, but assigning them as button text comes from WebKit's HTML stylesheet, not a UIKit source.
 **Triage:** fix — PLAUSIBLE: an iOS button's label is the tint (systemBlue) in WebKit's iOS html.css; the cell's black / white has no source. (WebKit)-tagged; the iOS 26 blue follows the version-gap decision.
-**Status:** open
+**Status:** fixed in Step 7 (E17), 4137fded
 
 #### M2c-47 · bug · S2 · native-theme/src/presets/ios.toml:347
 **Claim:** `input.background_color` (): the cell says #1c1c1e; flat iOS 18: #000000 (Canvas = systemBackgroundColor); Liquid Glass iOS 26: #000000 (Canvas = systemBackgroundColor).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/css/html.css#L463 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L6-L10 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L1127 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L6-L10 Note: WebKit tag. The preset's #1c1c1e is the elevated-level or secondary background, not the base level.
 **Verdict:** PLAUSIBLE — Verified: html.css@31adf9d1 L463 (and @de320ba3 L414) set `input { background-color: Canvas }`, RenderThemeIOS.mm@de320ba3 L1127 maps Canvas to systemBackgroundColor, and expected.txt L9 gives dark rgb(0,0,0). This is Safari's HTML `<input>`, not UITextField, so it does not establish the native text field fill.
 **Triage:** fix — PLAUSIBLE: an iOS input's background is Canvas = systemBackground (#000000 dark), not #1c1c1e.
-**Status:** open
+**Status:** fixed in Step 7 (E18), 4137fded
 
 #### M2c-48 · bug · native-theme/src/presets/ios.toml:383
 **Claim:** `slider.thumb_diameter_px` (): the cell says 28.0; flat iOS 18: 16; Liquid Glass iOS 26: 24 x 16 (not round).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L562 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3881 Note: Same as line 135.
 **Verdict:** PLAUSIBLE — Verified: RenderThemeIOS.mm@31adf9d1 L562 has kDefaultSliderThumbSize = 16, and RenderThemeCocoa.mm@de320ba3 L3881 has sliderThumbSize {24,16}, used when FormControlRefreshEnabled is on (UnifiedWebPreferences.yaml@de320ba3 L2489-2497: default true, WebCore false). Both are WebKit's own drawing of HTML `<input type=range>`, not UISlider's thumb, and the iOS 26 thumb is not round, so it cannot fill thumb_diameter as it stands.
 **Triage:** drop — As index 20 (dark twin): WebKit's HTML range thumb, not UISlider.
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-49 · bug · S2 · native-theme/src/presets/ios.toml:391
 **Claim:** `progress_bar.track_height_px` (): the cell says 4.0; flat iOS 18: 4; Liquid Glass iOS 26: 8.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L718 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3770 Note: Same as line 143.
 **Verdict:** CONFIRMED — Both constants read as cited; the 8 is WebKit's Liquid Glass path, drawn only when formControlRefreshEnabled (L3757), so the cell 4.0 holds for iOS 18 and differs from WebKit's iOS 26 bar. Confirmed value: iOS 18: 4 (RenderThemeIOS.mm@31adf9d1 L718 barBlockSize = 4.0f); iOS 26: 8 (RenderThemeCocoa.mm@de320ba3 L3770 barBlockSize = 8.f, radii 4).
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value 4 equals the cell; the iOS 26 8 is WebKit's form-control-refresh <progress> (verdicts split: REJECTED at index 21 as not UIKit, CONFIRMED at 48 as WebKit), so the iOS 26 value is (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E21), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-50 · bug · native-theme/src/presets/ios.toml:433
 **Claim:** `separator.line_color` (): the cell says #38383a; flat iOS 18: separator rgba(84,84,88,0.6); on black #323235; Liquid Glass iOS 26: separator rgba(84,84,88,0.5); on black #2a2a2c.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L156-L160 Note: Same as line 288.
 **Verdict:** PLAUSIBLE — The token values hold (ios-18 expected.txt L159 rgba(84,84,88,0.6), ios expected.txt L159 rgba(84,84,88,0.5); over black #323235 and #2a2a2c), but the cell #38383a looks like the opaque separator token, which WebKit does not dump, and the translucent separator's on-screen colour depends on the background, so mapping it to the row needs a decision or a measurement.
 **Triage:** drop — The cell #38383a is UIKit's opaqueSeparator dark, as the light #c6c6c8 is opaqueSeparator light; the claim compared it with the translucent separator.
-**Status:** open
+**Status:** dropped (Step 6 triage); no change in Step 7
 
 #### M2c-51 · bug · S2 · native-theme/src/presets/ios.toml:440
 **Claim:** `switch.unchecked_background` (): the cell says #38383a; flat iOS 18: rgba(120,120,128,0.32); on black #262629; Liquid Glass iOS 26: tertiaryLabel rgba(235,235,245,0.298) over canvas; #464649.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L276-L279 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L281-L294 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt#L180-L184 Note: Same as line 192.
 **Verdict:** PLAUSIBLE — RenderThemeCocoa.mm@de320ba3 L279 gives offDarkColor SRGBA{120,120,128,82} (over black #272729 with alpha 82/255, not #262629), and L283-294 replace it on iOS with tertiaryLabel composited over Canvas (expected.txt L183 rgba(235,235,245,0.298), about #464649 over black); the colours are WebKit's approximation, since L269 says UIKit does not expose _switchOffColor, and the iOS 26 one applies only when formControlRefreshEnabled.
 **Triage:** fix — PLAUSIBLE: WebKit's classic iOS switch off-track is rgba(120,120,128,0.16 / 0.32), not the cell's separator grey; iOS 26 replaces it (version gap).
-**Status:** open
+**Status:** fixed in Step 7 (E23), 4137fded
 
 #### M2c-52 · bug · S2 · native-theme/src/presets/ios.toml:445
 **Claim:** `switch.disabled_thumb_color` (): the cell says #ffffff; flat iOS 18: white; Liquid Glass iOS 26: Color::darkGray (disabled, dark mode).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L763 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L483-L488 Note: WebKit tag. The iOS 26 painter greys a disabled thumb in dark mode. The RGB of Color::darkGray was not read.
 **Verdict:** CONFIRMED — liquidGlassSwitchThumbColor returns white in light mode and, on IOS_FAMILY in dark mode, darkGray when disabled, read as cited; the Liquid Glass path is gated by formControlRefreshEnabled. Confirmed value: iOS 18: white (L763 thumbColor = Color::white, no disabled change to the thumb); iOS 26 dark disabled: Color::darkGray = SRGBA{128,128,128} #808080 (L483-488; Color.h@de320ba3 L178).
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 26 changed it; the preset matches the iOS 18 (flat) generation. Which iOS version `ios` names is M1 T1/T2's question.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E23), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-53 · bug · S2 · native-theme/src/presets/ios.toml:447
 **Claim:** `switch.track_width_px` (): the cell says 51.0; flat iOS 18: 51; Liquid Glass iOS 26: 70.86 (31 x 64/28).
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/31adf9d1605fad1fb548e86d36384161a2a060b4/Source/WebCore/rendering/ios/RenderThemeIOS.mm#L668-L669 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L417-L418 Note: Same as line 199.
 **Verdict:** PLAUSIBLE — 51 holds (RenderThemeIOS.mm@31adf9d1 L669 is in the !USE(APPLE_INTERNAL_SDK) fallback; RenderThemeCocoa.mm@de320ba3 L216 has logicalSwitchWidth = 51.f), but the iOS 26 70.86 is WebKit rescaling idealSwitchSize {64,28} (L417) to keep its 31pt CSS height (L418), so the switch's own ideal track is 64x28, and which width is right for the row needs a measurement.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value equals the cell; the iOS 26 Liquid Glass switch is WebKit's rescaling, (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E23), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 #### M2c-54 · bug · S2 · native-theme/src/presets/ios.toml:449
 **Claim:** `switch.thumb_diameter_px` (): the cell says 27.0; flat iOS 18: 27; Liquid Glass iOS 26: 39.86 x 26.57 capsule.
 **Evidence:** [flat] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L746-L771 [Liquid Glass] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L423 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L598-L612 Note: Same as line 201.
 **Verdict:** PLAUSIBLE — Flat 27 holds (L776-777: 31 - 2x2 margin); the iOS 26 39.86x26.57 comes from the same height-31 rescale (L598-612: idealThumbWidth 36/64 of the track width, L423: height 6/7 of the track height), so at the ideal 64x28 size the thumb is 36x24, and the row's value needs a measurement.
 **Triage:** maintainer (version gap, after M1 stop point A) — iOS 18 value equals the cell; the iOS 26 Liquid Glass switch is WebKit's rescaling, (WebKit)-only.
-**Status:** open
+**Status:** decided by D8: ios.toml (ios-13) keeps the iOS 13-18 value, cited in Step 7 (E23), 4137fded; the iOS 26 value is Step 17's input (ios-26)
 
 ### Step 4 — preset-validator
 
@@ -3971,28 +3971,28 @@ No value has been changed, and none is suggested. Each gap needs an authoritativ
 **Evidence:** None of the ~400 values in ios.toml traces to a platform-facts row; the only source is the general comment on line 2. All researcher differs-row 'line' numbers below are ios.toml lines, because no facts row exists. Remediation: add an iOS section to platform-facts.md with cited HIG/UIKit sources (or cite per value) before changing values.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** maintainer (version gap, after M1 stop point A) — `ios` has no facts column (D5 keeps it a look, not a platform). Whether it gets one, or its values cite their sources inline as material.toml's do, is part of the T1/T2 question.
-**Status:** open
+**Status:** fixed in Step 7 (E1-E26): no facts column (D5); each sourced value cites its source in the preset, the header names the sources and says an uncommented value has none, 4137fded
 
 #### M2c-P02 · bug · S2 · native-theme/src/presets/ios.toml:191
 **Claim:** `light/dark switch.checked_background (unset)` (other): preset (unset; resolves to accent #007aff / #0a84ff), facts  (inheritance-rules.toml:250).
 **Evidence:** Inconsistent within the preset. The on-track is not stated, so it inherits blue accent, while hover_checked_background (193 #2d8a47 / 441 #25813c) and disabled_checked_background (195 #34c75980 / 443 #30d15880) are green shades of success_color. The preset should state checked_background with a cited source; no value is suggested here.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** maintainer, with M2c-P01 — the on-track inherits the blue accent while its hover and disabled states are green; Step 2 found no source for any checked switch colour (ios.toml:193, :195 unverifiable), so nothing can be stated from a source yet.
-**Status:** open
+**Status:** fixed in Step 7 (E11, E23): the on track is systemGreen, RenderThemeCocoa.mm@de320ba3:271-275, :333, 4137fded
 
 #### M2c-P03 · bug · S2 · native-theme/src/presets/ios.toml:33
 **Claim:** `light/dark defaults.disabled_opacity` (other): preset 0.3 (lines 33, 281), facts one disabled mechanism per platform; the other is an identity (platform-facts.md:992; inheritance-rules.toml:352-359).
 **Evidence:** The preset sets both disabled_opacity = 0.3 and full disabled_* colours, so consumers apply both. Without an iOS facts row it is unclear which mechanism iOS uses.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** defer — the preset states both a disabled opacity and disabled colours; docs/platform-facts.md:992 says one mechanism per platform; with no iOS column, which one iOS uses is the M2c-P01 question.
-**Status:** open
+**Status:** deferred to docs/todo.md:483-500 (Disabled: presets that state both mechanisms); no change in Step 7
 
 #### M2c-P04 · bug · S2 · native-theme/src/presets/ios.toml:44
 **Claim:** `light/dark defaults.border.opacity` (other): preset 0.15 (lines 44, 292), facts opacity is the text colour's share, already folded into border.color (platform-facts.md:997).
 **Evidence:** 0.15 does not reproduce border.color = #c6c6c8 (light) or #38383a (dark) under this definition. The preset contradicts itself, separately from the researcher-reported alpha change.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — 0.15 does not reproduce the preset's own border colours under platform-facts.md:997; with M2c-09 dropped, the value is set to what the colours give or left to the M2c-P01 decision (S2).
-**Status:** open
+**Status:** fixed in Step 7 (E3, E15): 0.22, the share that reproduces the preset's own border colours, 4137fded
 
 <details><summary>Preset keys that depend on a <i>differs</i> row</summary>
 
@@ -4479,6 +4479,58 @@ U47 No published value. On todo.md:2317-2322.
 Working files: /tmp/claude-1000/-home-tibi-Rust-native-theme/a0421ea2-02c5-43d6-8b7a-682d83a2e8e4/scratchpad/m2-src/ios-preset/ (hig/, wb/, uikit/, wk-old/, wk-main/, wk-lt/).
 
 </details>
+
+### Step 7 — fix and close (2026-10-11)
+
+`ios.toml` stays the flat look of iOS 13-18 (D8; it becomes `ios-13` in Step 16). 28 *fix*
+findings fixed, M2c-P02 fixed, M2c-P01 ruled and done, 19 iOS 26 findings passed to Step 17, 8
+dropped, 1 deferred. Commit `4137fded` (the preset and, since each moves the other's gate, the iced tripwire with it).
+
+- **Values changed** (light / dark): `muted_color` secondaryLabel `#3c3c4399` / `#ebebf599`;
+  `disabled_text_color` and `button.disabled_text_color` tertiaryLabel `#3c3c434c` / `#ebebf54c`
+  (WebKit's disabled button and select, html.css@31adf9d1:996-1003); the text scale from the HIG
+  Dynamic Type table, Large (default): caption leading 16, section heading Headline 17 pt
+  Semibold leading 22, dialog title Title 1 28 pt leading 34, display leading 41;
+  `button.background_color` opaqueSecondaryFill `#e9e9ea` / `#262629` and `button.font.color`
+  systemBlue `#007aff` / `#0a84ff` (html.css@31adf9d1:895, :891); dark `input.background_color`
+  `#000000` (Canvas = systemBackground, html.css:463, RenderThemeIOS.mm@31adf9d1:1024);
+  `switch.unchecked_background` `#78788029` / `#78788052` and the new `switch.checked_background`
+  systemGreen `#34c759` / `#30d158` (RenderThemeCocoa.mm@de320ba3:271-279, :333);
+  `border.opacity` 0.22 (the share reproducing the preset's own border colours,
+  platform-facts.md:946, :997). Translucent UIKit colours are stated with their alpha, as
+  `material-3.toml` states its alpha tokens; each comment gives the composite too.
+- **M2c-P01:** iOS gets no facts column (D5). The preset cites each sourced value in a comment
+  (the 28 fixes, the 19 iOS 18 values kept, the 51 *same* rows) and its header defines the
+  short source names, states "covers iOS 13-18, verified on iOS 18", and says an uncommented
+  value has no primary source (the 225 *unverifiable* rows).
+- **M2c-P02:** WebKit's iOS switch draws its on track in systemGreen unless the page sets
+  `accent-color` (RenderThemeCocoa.mm@de320ba3:271-275, :320, :333), so the inherited blue
+  accent was wrong; the hover and disabled checked tracks (green, uncited) stay.
+- **Left as they were (unverifiable, common rule):** the keys copying an old hex (the
+  validator's *depends* rows), among them the `disabled_background` copies, the other
+  per-widget `disabled_text_color` copies, dark `checkbox.unchecked_background`.
+- **Open question 1 of the Step 7 brief (two dependent keys with a WebKit line the research did
+  not take), answered by option (b), fixed in `4137fded`:** `button.active_text_color` systemBlue
+  `#007aff` / `#0a84ff` (html.css@31adf9d1:900-906: on iOS `button:active` keeps
+  `color: -apple-system-blue`; ios-18 expected.txt:13 / :15), was `#000000` / `#ffffff`, ruled
+  U16 unverifiable in Step 2; `combo_box.disabled_text_color` tertiaryLabel `#3c3c434c` /
+  `#ebebf54c` (html.css@31adf9d1:996-1003: `select:disabled` takes
+  `color: -apple-system-tertiary-label`; ios-18 expected.txt:181 / :183), was `#c7c7cc` /
+  `#3a3a3c`, ruled U31. Both lines were re-read at 31adf9d1 before the change. The button's
+  text is now blue at rest, when pressed and (by inheritance, below) on hover.
+- **Controller ruling, iced tripwire:** the translucent light `muted_color`, which
+  `input.placeholder_color` inherits, makes iced's `readable()` substitute the ios/light label
+  too, so `SECONDARY_LABEL_SUBSTITUTED` is 32 and `SECONDARY_LABEL_AS_STATED` empty
+  (connectors/native-theme-iced/src/contract/derived.rs), the DERIVED prose says so, and the test
+  is renamed `readable_substitution_of_the_secondary_label_matches_the_declared_count`, 4137fded.
+- **Controller ruling, gpui hovered button label:** the two unsourced `button.hover_text_color`
+  lines (`#000000` / `#ffffff`) are deleted, so the value inherits the sourced systemBlue
+  `button.font.color` (docs/inheritance-rules.toml:160) and gpui's hovered label no longer
+  contrasts worse than the preset's own, 4137fded.
+- **docs/todo.md:1832-1837** (iOS sizes unsourced) is now partly answered: the 44 pt
+  `min_height` of button, input and combo box (HIG accessibility, hit target) and
+  `layout.container_margin` 8 (UIKit `directionalLayoutMargins`) have sources; the rest stands.
+- Gates: `cargo test -p native-theme --test platform_facts_xref` (6 passed), `--lib documented_sizes` (10 passed), `--test preset_loading` (14 passed), `cargo test -p native-theme`, `-p native-theme-iced`, `-p native-theme-gpui --lib` all green; `./scripts/check_release.sh --commit` 79 of 79 checks passed (exit 0). The first run failed on the iced tripwire (hard) and the gpui hovered-button-label pair (soft); both were fixed by the controller rulings above. The `preset-validator` agent was not run by the implementer (no subagents); the controller runs it.
 
 ## M2d — Material 3 and Material 3 Expressive
 
