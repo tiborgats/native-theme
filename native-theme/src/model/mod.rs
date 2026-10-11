@@ -1962,4 +1962,132 @@ nonexistent_field = "#ff0000"
             "expected >=25 widgets in WidgetFieldInfo, got {widget_count}"
         );
     }
+
+    // === docs/property-registry.toml key sets against the inventory ===
+    //
+    // The registry lists every property per table by its serialized TOML key;
+    // the inventory records the same keys from the structs. Types stay
+    // hand-kept and are not compared. `[theme_variant]` is skipped: `Theme`
+    // and `ThemeMode` do not register in the inventory.
+
+    #[test]
+    fn property_registry_keys_match_derive_inventory() {
+        use std::collections::BTreeSet;
+
+        let registry: toml::Table = include_str!("../../../docs/property-registry.toml")
+            .parse()
+            .expect("docs/property-registry.toml is valid TOML");
+
+        let struct_fields = |names: &[&'static str]| -> BTreeSet<String> {
+            names
+                .iter()
+                .filter_map(|name| field_info_entry(name))
+                .flat_map(|fields| fields.iter().map(|f| (*f).to_string()))
+                .collect()
+        };
+        let table_keys = |value: Option<&toml::Value>| -> Option<BTreeSet<String>> {
+            value
+                .and_then(|v| v.as_table())
+                .map(|t| t.keys().cloned().collect())
+        };
+
+        // `Border` is one table for both border structs; its comments say
+        // which keys belong to defaults and which to widget borders.
+        const STRUCTURES: &[(&str, &[&str])] = &[
+            ("Font", &["FontSpec"]),
+            ("Border", &["DefaultsBorderSpec", "WidgetBorderSpec"]),
+            ("IconSizes", &["IconSizes"]),
+            ("TextScaleEntry", &["TextScaleEntry"]),
+        ];
+        const STRUCT_TABLES: &[(&str, &[&str])] = &[
+            ("defaults", &["ThemeDefaults"]),
+            ("text_scale", &["TextScale"]),
+            ("layout", &["LayoutTheme"]),
+        ];
+        const SKIPPED_TABLES: &[&str] = &["theme_variant"];
+
+        fn compare(
+            drift: &mut Vec<String>,
+            table: &str,
+            registry: Option<BTreeSet<String>>,
+            code: &BTreeSet<String>,
+        ) {
+            let Some(registry) = registry else {
+                drift.push(format!("[{table}] is missing"));
+                return;
+            };
+            for key in registry.difference(code) {
+                drift.push(format!("[{table}] {key}: in the registry, not in the code"));
+            }
+            for key in code.difference(&registry) {
+                drift.push(format!("[{table}] {key}: in the code, not in the registry"));
+            }
+        }
+
+        let mut drift: Vec<String> = Vec::new();
+
+        let structures = registry
+            .get("_structures")
+            .and_then(|v| v.as_table())
+            .expect("[_structures] exists");
+        for name in structures.keys() {
+            if !STRUCTURES.iter().any(|(n, _)| n == name) {
+                drift.push(format!(
+                    "[_structures.{name}] maps to no struct in the test"
+                ));
+            }
+        }
+        for (name, structs) in STRUCTURES {
+            let code = struct_fields(structs);
+            assert!(!code.is_empty(), "no FieldInfo entry for {structs:?}");
+            compare(
+                &mut drift,
+                &format!("_structures.{name}"),
+                table_keys(structures.get(*name)),
+                &code,
+            );
+        }
+
+        for (table, structs) in STRUCT_TABLES {
+            let code = struct_fields(structs);
+            assert!(!code.is_empty(), "no FieldInfo entry for {structs:?}");
+            compare(&mut drift, table, table_keys(registry.get(*table)), &code);
+        }
+
+        let mut widget_count = 0usize;
+        for info in inventory::iter::<crate::resolve::WidgetFieldInfo>() {
+            widget_count += 1;
+            let code: BTreeSet<String> =
+                info.field_names.iter().map(|f| (*f).to_string()).collect();
+            compare(
+                &mut drift,
+                info.widget_name,
+                table_keys(registry.get(info.widget_name)),
+                &code,
+            );
+        }
+        assert!(
+            widget_count >= 25,
+            "expected >=25 widgets, got {widget_count}"
+        );
+
+        for table in registry.keys() {
+            let known = table == "_structures"
+                || SKIPPED_TABLES.contains(&table.as_str())
+                || STRUCT_TABLES.iter().any(|(t, _)| t == table)
+                || inventory::iter::<crate::resolve::WidgetFieldInfo>()
+                    .any(|info| info.widget_name == table);
+            if !known {
+                drift.push(format!(
+                    "[{table}] is in the registry, but no widget or struct"
+                ));
+            }
+        }
+
+        assert!(
+            drift.is_empty(),
+            "docs/property-registry.toml diverges from the derive inventory:\n{}",
+            drift.join("\n")
+        );
+    }
 }

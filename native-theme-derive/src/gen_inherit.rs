@@ -24,9 +24,10 @@ use crate::parse::{BorderInheritanceKind, FieldMeta, InheritMeta, LayerMeta};
 pub(crate) fn gen_inherit(
     opt_name: &Ident,
     fields: &[FieldMeta],
-    _layer: &LayerMeta,
+    layer: &LayerMeta,
 ) -> TokenStream {
     let stmts = gen_inherit_stmts(fields);
+    let submissions = gen_uniform_submissions(opt_name, fields, layer);
 
     quote! {
         impl #opt_name {
@@ -36,7 +37,38 @@ pub(crate) fn gen_inherit(
                 #stmts
             }
         }
+
+        #submissions
     }
+}
+
+/// One `inventory::submit!` into `crate::resolve::UniformInheritanceInfo`
+/// per field with `inherit_from`, so the drift test can compare each
+/// `[uniform]` rule's source. Skipped under `#[theme_layer(skip_inventory)]`,
+/// like the widget registry.
+fn gen_uniform_submissions(
+    opt_name: &Ident,
+    fields: &[FieldMeta],
+    layer: &LayerMeta,
+) -> TokenStream {
+    if layer.skip_inventory {
+        return TokenStream::new();
+    }
+
+    let widget_name = widget_name_from_ident(opt_name);
+    let submissions = fields.iter().filter_map(|f| {
+        let source = f.inherit_from.as_ref()?;
+        let field_str = f.ident.to_string();
+        Some(quote! {
+            inventory::submit!(crate::resolve::UniformInheritanceInfo {
+                widget_name: #widget_name,
+                field: #field_str,
+                inherit_from: #source,
+            });
+        })
+    });
+
+    quote! { #(#submissions)* }
 }
 
 /// Generate inheritance assignment statements.

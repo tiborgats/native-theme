@@ -3,9 +3,10 @@
 # Derived from docs/platform-facts.md Chapter 2 (§2.1–§2.28).
 # Property names match the platform-facts.md table first-column entries exactly.
 #
-# Each widget lists ALL fields from its platform-facts table. A Rust test
-# should verify every field in this file exists in the corresponding struct,
-# and every field in the struct exists in this file.
+# Each widget lists ALL fields from its platform-facts table. The test
+# `property_registry_keys_match_derive_inventory` (native-theme/src/model/mod.rs)
+# verifies every key in this file exists in the corresponding struct, and
+# every serialized field of the struct exists in this file.
 #
 # Source: docs/platform-facts.md  (2026-04-06 snapshot)
 # Struct: native-theme/src/model/
@@ -120,20 +121,12 @@ focus_ring_offset_px         = "f32"
 # §2.1.6 Global Geometry (border.* fields are inside the Border sub-struct)
 border                       = "border"
 disabled_opacity             = "f32"
-# §2.1.7 Accessibility
-text_scaling_factor          = "f32"
-reduce_motion                = "bool"
-high_contrast                = "bool"
-reduce_transparency          = "bool"
+# §2.1.7 Accessibility: OS-detected, not TOML theme data; lives on
+# AccessibilityPreferences (native-theme/src/lib.rs), not ThemeDefaults.
 # §2.1.8 Icon Sizes
 icon_sizes                   = "icon_sizes"
 # §2.1.9 Icon Theme
 icon_theme                   = "string"
-# NOTE: defaults.spacing (ThemeSpacing T-shirt scale xxs..xxl) exists in
-# the code but is NOT a platform theme property. All platform spacing
-# values are captured as direct per-widget fields in §2.3–§2.28, and as
-# layout container defaults in [layout] (§2.20). The T-shirt scale should
-# be removed from the code. See todo_v0.5.5.md Spacing Design Analysis.
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.19 Text Scale (TextScale)

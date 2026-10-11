@@ -1305,7 +1305,7 @@ What is still open on the iced side:
 - [ ] `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
       zero) and `material` `#1c1b1f1f`, so on those four combinations a disabled
       box is effectively absent — the same shape as the button item below.
-- [ ] `checkbox.indicator_color` inherited `defaults.text_color` until v0.5.9,
+- [x] `checkbox.indicator_color` inherited `defaults.text_color` until v0.5.9,
       against `platform-facts.md` §2.5 (on-accent on all four platforms);
       corrected to `defaults.accent_text_color`. The test that ties
       `docs/inheritance-rules.toml` to the proc-macro attributes
@@ -1314,6 +1314,9 @@ What is still open on the iced side:
       published rule file can drift from the code with no test noticing. Add a
       target-level assertion, then audit the other rules against
       platform-facts the way this one was found.
+      Done 2026-10-11: `uniform_rules_all_accounted_for` compares every rule's
+      source with the derive's recorded `inherit_from`; the platform-facts
+      audit of the other rules is not done.
 - [ ] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
       zero, so a disabled button has no fill at all. Found 2026-09-21 while
       measuring translucent state colours; for `preset-validator` to judge
