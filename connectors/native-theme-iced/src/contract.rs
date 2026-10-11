@@ -3643,6 +3643,12 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 #[cfg(feature = "widgets")]
 const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-monterey"];
 
+/// The combinations whose platform states a translucent button fill:
+/// `controlColor` is `#ffffff3f` in darkAqua
+/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408).
+#[cfg(feature = "widgets")]
+const TRANSLUCENT_BUTTON_FILL: [&str; 1] = ["macos-monterey/dark"];
+
 #[cfg(feature = "widgets")]
 #[test]
 fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme::Result<()> {
@@ -3651,6 +3657,10 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     let no_link_hover = combinations
         .iter()
         .filter(|c| LINK_HOVER_NONE.contains(&c.key))
+        .count();
+    let translucent_fill = combinations
+        .iter()
+        .filter(|c| TRANSLUCENT_BUTTON_FILL.contains(&c.label().as_str()))
         .count();
     for c in &combinations {
         let stated_none = LINK_HOVER_NONE.contains(&c.key);
@@ -3686,6 +3696,19 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         ];
         let base = to_color(r.button.background_color);
         let link_base = to_color(r.link.background_color);
+        let declared_translucent = TRANSLUCENT_BUTTON_FILL.contains(&c.label().as_str());
+        if declared_translucent != (base.a < 1.0) {
+            failures.push(format!(
+                "{}: button.background_color is {}, and the platform states {}",
+                c.label(),
+                show(base),
+                if declared_translucent {
+                    "a translucent one"
+                } else {
+                    "an opaque one"
+                }
+            ));
+        }
 
         for (name, layer) in layers {
             let label = format!("{}: {name}", c.label());
@@ -3815,16 +3838,17 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     );
     assert_eq!(
         opaque_bases,
-        combinations.len() * 4,
+        (combinations.len() - translucent_fill) * 4,
         "property (b) runs only over an opaque button.background_color, which \
-         every preset states as a six-digit hex; a translucent one would stop \
-         the property running"
+         every combination outside TRANSLUCENT_BUTTON_FILL states; another \
+         translucent one would stop the property running there"
     );
     assert!(
         opaque_layers >= combinations.len() * 2,
         "property (c) needs an opaque layer: button.background_color and \
-         defaults.text_color are opaque in every preset, so it must run at \
-         least twice per combination, not {opaque_layers} times over {}",
+         defaults.text_color are opaque in most combinations (macOS states \
+         labelColor, and its dark button fill, with alpha), so it must run \
+         at least twice per combination, not {opaque_layers} times over {}",
         combinations.len()
     );
     assert!(

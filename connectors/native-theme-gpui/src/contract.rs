@@ -673,8 +673,9 @@ const ROWS: &[Row] = &[
 /// anything. The two agree bit for bit where `base` is opaque -- the same two
 /// products, added in the same order -- and
 /// `every_preset_states_an_opaque_button_fill` shows that is every
-/// combination, so the translucent-base arm is the general rule rather than a
-/// tolerance introduced to make a row pass.
+/// combination outside [`TRANSLUCENT_BUTTON_FILL`], whose layers over that
+/// fill are opaque, so the translucent-base arm is the general rule rather
+/// than a tolerance introduced to make a row pass.
 fn over(layer: Hsla, base: Hsla) -> Hsla {
     if layer.a >= 1.0 {
         return layer;
@@ -1137,27 +1138,61 @@ fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<
     Ok(())
 }
 
-/// Every preset paints its buttons on an opaque fill.
+/// The combinations whose platform states a translucent button fill:
+/// `controlColor` is `#ffffff3f` in darkAqua
+/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408).
+const TRANSLUCENT_BUTTON_FILL: [&str; 1] = ["macos-monterey/dark"];
+
+/// Every preset paints its buttons on an opaque fill, except the combinations
+/// in [`TRANSLUCENT_BUTTON_FILL`].
 ///
 /// `over` keeps the base's alpha where the base is opaque, which is the arm
 /// the four filled-button rows take and the only one that agrees bit for bit
 /// with the `Hsla::blend` the connector calls. A translucent idle fill would
 /// move those rows onto the general arm, where agreement is no longer exact,
-/// so the assumption is asserted rather than remembered.
+/// so the assumption is asserted rather than remembered. A declared
+/// combination's hover and pressed layers must be opaque: `over` then returns
+/// the layer itself, and those rows stay exact over the translucent fill.
 #[test]
 fn every_preset_states_an_opaque_button_fill() -> crate::Result<()> {
     let combinations = combinations()?;
-    let translucent: Vec<String> = combinations
-        .iter()
-        .filter(|c| native_button_fill(&c.resolved).a < 1.0)
-        .map(|c| format!("{}: {}", c.label(), show(native_button_fill(&c.resolved))))
-        .collect();
+    let mut failures = Vec::new();
+    for c in &combinations {
+        let r = &c.resolved;
+        let fill = native_button_fill(r);
+        let declared = TRANSLUCENT_BUTTON_FILL.contains(&c.label().as_str());
+        if declared != (fill.a < 1.0) {
+            failures.push(format!(
+                "{}: the button fill is {}, and TRANSLUCENT_BUTTON_FILL {} it",
+                c.label(),
+                show(fill),
+                if declared { "lists" } else { "does not list" }
+            ));
+        }
+        if declared {
+            for (what, layer) in [
+                (
+                    "button.hover_background",
+                    rgba_to_hsla(r.button.hover_background),
+                ),
+                ("the pressed fill", native_pressed_fill(r, c.is_dark)),
+            ] {
+                if layer.a < 1.0 {
+                    failures.push(format!(
+                        "{}: {what} is {}, a translucent layer over the translucent \
+                         fill, which takes `over`'s general arm",
+                        c.label(),
+                        show(layer)
+                    ));
+                }
+            }
+        }
+    }
     assert!(
-        translucent.is_empty(),
-        "{} combination(s) state a translucent button fill, which the \
-         filled-button rows composite onto:\n{}",
-        translucent.len(),
-        translucent.join("\n")
+        failures.is_empty(),
+        "{} button-fill assumption(s) broken:\n{}",
+        failures.len(),
+        failures.join("\n")
     );
     Ok(())
 }
@@ -1902,8 +1937,8 @@ fn pair_ratio(fg: Hsla, bg: Hsla, surface: Hsla) -> f32 {
 /// ratio it emits is not worse than the ratio the platform's own fields give.
 ///
 /// Not AA: a good many of the measured pairs sit below it -- the run prints
-/// how many and which -- and they are not all errors: macOS ships `#34c759`
-/// with white text at about 2.2:1 and Apple uses it. A connector that
+/// how many and which -- and they are not all errors: the `ios` preset states
+/// `#34c759` with white text (`ios.toml:47-48`), about 2.2:1. A connector that
 /// asserted AA would be asserting
 /// that every platform meets AA, and "fixing" the ones that do not would mean
 /// inventing values the platform did not give. Those pairs are printed
