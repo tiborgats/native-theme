@@ -5632,6 +5632,7 @@ dependencies = [
  "toml 1.1.5+spec-1.1.0",
  "unicase",
  "windows 0.62.2",
+ "windows-version",
  "zbus",
 ]
 

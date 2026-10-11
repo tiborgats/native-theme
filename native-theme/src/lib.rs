@@ -233,7 +233,7 @@ pub(crate) use model::{
     ThemeMode, ToolbarTheme, TooltipTheme, TransformAnimation, WidgetBorderSpec, WindowTheme,
     bundled_icon_by_name, bundled_icon_svg,
 };
-pub use pipeline::{DiagnosticEntry, PlatformPreset};
+pub use pipeline::{DiagnosticEntry, PlatformPreset, VersionMatch};
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 pub use resolve::ResolutionContext;
@@ -461,8 +461,15 @@ pub struct SystemTheme {
     pub dark: ResolvedTheme,
     /// Data for replaying the pipeline on overlay (replaces light_variant/dark_variant).
     pub(crate) overlay_source: OverlaySource,
-    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-monterey").
+    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-tahoe").
     pub preset: String,
+    /// How the running OS version relates to the generation of
+    /// [`preset`](Self::preset): `None` where the platform has no generation
+    /// table (Linux, whose readers read the installed style) or no reader ran.
+    /// On macOS 27 under `macos-tahoe`, which no preset of its own covers yet,
+    /// it is `Some(VersionMatch::PresetOlder)`; on Windows 10 under
+    /// `windows-11`, `Some(VersionMatch::PresetNewer)`.
+    pub version_match: Option<VersionMatch>,
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`):
@@ -612,6 +619,7 @@ impl SystemTheme {
             dark: resolved_dark,
             overlay_source: self.overlay_source.clone(),
             preset: self.preset.clone(),
+            version_match: self.version_match,
             icon_set: self.icon_set,
             icon_theme: self.icon_theme.clone(),
             light_icon_theme: self.light_icon_theme.clone(),
@@ -637,14 +645,19 @@ impl SystemTheme {
     /// # Platform Behavior
     ///
     /// - **macOS:** with the `macos` feature, reads both light and dark
-    ///   variants via NSAppearance and merges them with the `macos-monterey`
-    ///   preset; the active mode comes from [`detect::detect_is_dark`].
+    ///   variants via NSAppearance and merges them with the preset of the
+    ///   running version's generation, `macos-monterey` on 12 to 15 and
+    ///   `macos-tahoe` on 26 and later ([`version_match`](Self::version_match)
+    ///   reports macOS 27 as `PresetOlder`); the active mode comes from
+    ///   [`detect::detect_is_dark`].
     /// - **Linux:** the async implementation handles portal D-Bus calls when
     ///   the `portal` feature is enabled. Without a reader for the detected
     ///   desktop (feature disabled, or a desktop with no reader), returns the
     ///   `adwaita` preset resolved in the detected light/dark mode.
     /// - **Windows:** with the `windows` feature, reads the active variant and
-    ///   merges it with the `windows-11` preset.
+    ///   merges it with the `windows-11` preset, the one Windows generation
+    ///   ([`version_match`](Self::version_match) reports Windows 10 as
+    ///   `PresetNewer`).
     /// - **Other platforms:** Returns `Error::PlatformUnsupported`.
     ///
     /// # Errors
@@ -678,6 +691,49 @@ impl SystemTheme {
     /// same as [`from_system()`](Self::from_system).
     pub async fn from_system_async() -> crate::Result<Self> {
         pipeline::from_system_inner().await
+    }
+
+    /// Load the OS theme over a chosen generation's preset: the platform
+    /// reader runs as in [`from_system()`](Self::from_system), and its values
+    /// merge over `preset` instead of the running version's generation.
+    ///
+    /// `preset` must be a generation of the running platform: `macos-monterey`
+    /// or `macos-tahoe` on macOS, `windows-11` on Windows. Any other name, and
+    /// any name on a platform without generations (Linux, whose readers read
+    /// the installed style), is `Error::UnknownPreset`.
+    ///
+    /// The result is a hybrid, not the older OS's look: the chosen
+    /// generation's geometry and design colours under the running OS's
+    /// colours, fonts and accessibility settings, which the reader reads live
+    /// (on macOS 26 with `macos-monterey`, `NSColor` gives macOS 26's
+    /// colours). [`version_match`](Self::version_match) reports the chosen
+    /// generation against the running OS: `PresetOlder` for an older one,
+    /// `PresetNewer` for a newer one.
+    ///
+    /// # Errors
+    ///
+    /// - `Error::UnknownPreset` for a name that is not a generation of the
+    ///   running platform.
+    /// - `Error::FeatureDisabled` on macOS or Windows when the `macos` /
+    ///   `windows` feature is not enabled.
+    /// - `Error::ReaderFailed` if the platform reader cannot access theme data.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Keep the Monterey-to-Sequoia look on a Mac running macOS 26.
+    /// let sys = native_theme::SystemTheme::from_system_with_preset("macos-monterey")?;
+    /// assert_eq!(sys.preset, "macos-monterey");
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    pub fn from_system_with_preset(preset: &str) -> crate::Result<Self> {
+        pollster::block_on(pipeline::from_system_with_preset_inner(preset))
+    }
+
+    /// Async version of
+    /// [`from_system_with_preset()`](Self::from_system_with_preset).
+    pub async fn from_system_with_preset_async(preset: &str) -> crate::Result<Self> {
+        pipeline::from_system_with_preset_inner(preset).await
     }
 }
 
@@ -728,6 +784,7 @@ mod system_theme_tests {
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
             preset: "catppuccin-mocha".into(),
+            version_match: None,
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
             light_icon_theme: None,
@@ -771,6 +828,7 @@ mod system_theme_tests {
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
             preset: "catppuccin-mocha".into(),
+            version_match: None,
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
             light_icon_theme: Some("lucide".into()),
@@ -814,6 +872,7 @@ mod system_theme_tests {
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
             preset: "catppuccin-mocha".into(),
+            version_match: None,
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
             light_icon_theme: Some("lucide".into()),

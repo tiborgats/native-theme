@@ -277,6 +277,28 @@ many have since drifted, as the archive's [README](README.md) warns.
       (`_md-sys-color.scss:110`, `:51`; `_md-ref-palette.scss:73`, `:77`).
       `material-3.toml` states `slider.thumb_color` so in both variants.
 
+### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
+
+- [x] [v0.7.0] Add `SystemTheme::from_system_with_preset(name)` and its async twin
+      (M1-T1-04 in `docs/todo_code-review-findings.md`): the platform reader
+      runs as in `from_system()`, and its values merge over the named preset
+      instead of the running generation's, so an application, or its user,
+      can keep `macos-monterey`'s look on macOS 26 with the OS's colours,
+      fonts, DPI and accessibility. Today the only way to an older
+      generation is `Theme::preset(name)`, which reads nothing from the OS.
+      The name is checked against the generation table's rows for the
+      running platform (M1-T1-01), not only `PresetInfo.platforms`, and
+      `Error::UnknownPreset` answers any other. The rustdoc says what a pin
+      gives: the older generation's geometry over the running OS's colours,
+      fonts and accessibility (on macOS 26, `NSColor` gives Tahoe's
+      colours), a hybrid rather than the old OS's look, reported as
+      `PresetOlder` by the version match. The accessibility path needs no
+      counterpart: it reads no preset. Implement after M1-T1-01 and
+      `macos-tahoe` (M2a Step 9) land; until a platform has a second
+      generation there is nothing to choose.
+      Done in M2a Step 10a (2026-10-11): `SystemTheme::from_system_with_preset` and
+      `from_system_with_preset_async`.
+
 ---
 
 ## Toolkit Connectors

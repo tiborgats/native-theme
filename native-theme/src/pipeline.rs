@@ -136,6 +136,7 @@ pub(crate) fn run_pipeline(
         dark,
         overlay_source,
         preset: preset_name.to_string(),
+        version_match: None,
         icon_set,
         icon_theme,
         light_icon_theme,
@@ -224,6 +225,16 @@ pub enum DiagnosticEntry {
         /// Human-readable description of what is lost.
         impact: &'static str,
     },
+    /// The running OS version and the preset of its generation (macOS and
+    /// Windows, with their reader feature).
+    OsGeneration {
+        /// The running OS version: macOS `major.minor.patch`, Windows `10.0.build`.
+        version: String,
+        /// The preset of that version's generation.
+        preset: &'static str,
+        /// How the version relates to the preset's generation.
+        version_match: VersionMatch,
+    },
 }
 
 impl DiagnosticEntry {
@@ -243,6 +254,7 @@ impl DiagnosticEntry {
             | Self::ToolMissing { name, .. } => name,
             Self::ConfigFound { name, .. } | Self::ConfigMissing { name, .. } => name,
             Self::FeatureEnabled(feature) | Self::FeatureDisabled { feature, .. } => feature,
+            Self::OsGeneration { .. } => "OS version",
         }
     }
 
@@ -263,6 +275,7 @@ impl DiagnosticEntry {
             Self::ConfigMissing { .. } => "not found",
             Self::FeatureEnabled(_) => "enabled",
             Self::FeatureDisabled { .. } => "disabled",
+            Self::OsGeneration { version, .. } => version.as_str(),
         }
     }
 
@@ -278,6 +291,11 @@ impl DiagnosticEntry {
             Self::ConfigFound { path, .. } | Self::ConfigMissing { path, .. } => {
                 Some(path.display().to_string())
             }
+            Self::OsGeneration {
+                preset,
+                version_match,
+                ..
+            } => Some(format!("{preset}, {version_match}")),
             _ => None,
         }
     }
@@ -306,6 +324,11 @@ impl fmt::Display for DiagnosticEntry {
             Self::FeatureDisabled { feature, impact } => {
                 write!(f, "{feature} support: disabled ({impact})")
             }
+            Self::OsGeneration {
+                version,
+                preset,
+                version_match,
+            } => write!(f, "OS version: {version} ({preset}, {version_match})"),
         }
     }
 }
@@ -329,6 +352,243 @@ impl fmt::Display for PlatformPreset {
     }
 }
 
+// =============================================================================
+// OS generations (M1-T1-01)
+// =============================================================================
+
+/// How the running OS version relates to the generation of the preset the
+/// pipeline merged the platform reader's output over
+/// ([`SystemTheme::version_match`](crate::SystemTheme::version_match)).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum VersionMatch {
+    /// The running version lies between the first version of the preset's
+    /// generation and the newest version its values were verified on.
+    Exact,
+    /// The running OS is newer than any version the preset was verified on:
+    /// the preset may carry an older look than the OS draws (macOS 27 under
+    /// `macos-tahoe`).
+    PresetOlder,
+    /// The running OS predates the preset's generation: the preset carries a
+    /// newer look than the OS draws (Windows 10 under `windows-11`).
+    PresetNewer,
+}
+
+impl VersionMatch {
+    /// A short label: `"exact"`, `"preset older than the OS"` or
+    /// `"preset newer than the OS"`.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Exact => "exact",
+            Self::PresetOlder => "preset older than the OS",
+            Self::PresetNewer => "preset newer than the OS",
+        }
+    }
+}
+
+impl fmt::Display for VersionMatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// An OS version as the generation tables compare it: macOS
+/// `major.minor.patch`, Windows `10.0.build`.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct OsVersion {
+    pub(crate) major: u32,
+    pub(crate) minor: u32,
+    pub(crate) build: u32,
+}
+
+impl OsVersion {
+    #[cfg_attr(
+        not(any(
+            all(target_os = "macos", feature = "macos"),
+            all(target_os = "windows", feature = "windows")
+        )),
+        allow(dead_code)
+    )]
+    pub(crate) const fn new(major: u32, minor: u32, build: u32) -> Self {
+        Self {
+            major,
+            minor,
+            build,
+        }
+    }
+}
+
+impl fmt::Display for OsVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.build)
+    }
+}
+
+/// One visual generation of a platform: the preset that carries its look,
+/// the first OS version of that look, and the newest version its values were
+/// verified on.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Generation {
+    pub(crate) preset: &'static str,
+    pub(crate) first: OsVersion,
+    pub(crate) last_verified: OsVersion,
+}
+
+/// A platform's generations, oldest first; never empty, `oldest` being a field.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct GenerationTable {
+    pub(crate) oldest: Generation,
+    /// The newer generations, in ascending order of `first`.
+    pub(crate) newer: &'static [Generation],
+    /// Every row's preset, oldest first: the names
+    /// [`SystemTheme::from_system_with_preset`](crate::SystemTheme::from_system_with_preset)
+    /// accepts on the platform.
+    pub(crate) keys: &'static [&'static str],
+}
+
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+impl GenerationTable {
+    /// The rows, oldest first.
+    fn rows(&self) -> impl Iterator<Item = Generation> + '_ {
+        std::iter::once(self.oldest).chain(self.newer.iter().copied())
+    }
+
+    /// The row whose preset is `preset`.
+    fn row(&self, preset: &str) -> Option<Generation> {
+        self.rows().find(|g| g.preset == preset)
+    }
+}
+
+/// macOS. `macos-monterey`: the look from macOS 12, whose AppKit release notes
+/// end the accent highlight of a clicked button (M2a Step 7, plan D8), verified
+/// on 14.8.9 and 15.7.9 by the OS probe; `macos-tahoe`: Liquid Glass from 26
+/// (M2a Step 1's version map), verified on 26.6.2 (`docs/evidence/os-probe/
+/// 2026-10-11-run-38129819806`). Apple's generations change at a major version,
+/// so [`macos_generation`] compares majors. macOS 27 refines Liquid Glass and
+/// gets no row until a preset is verified on it (plan D4): it maps to
+/// `macos-tahoe`, reported as [`VersionMatch::PresetOlder`].
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) const MACOS_GENERATIONS: GenerationTable = GenerationTable {
+    oldest: Generation {
+        preset: "macos-monterey",
+        first: OsVersion::new(12, 0, 0),
+        last_verified: OsVersion::new(15, 0, 0),
+    },
+    newer: &[Generation {
+        preset: "macos-tahoe",
+        first: OsVersion::new(26, 0, 0),
+        last_verified: OsVersion::new(26, 0, 0),
+    }],
+    keys: &["macos-monterey", "macos-tahoe"],
+};
+
+/// Windows. `windows-11`: the Fluent / WinUI 3 look from build 22000 (21H2;
+/// M2b Step 1's version map), verified on build 26200 (25H2, the OS probe's
+/// `windows-11-arm` image). Windows 10 has no preset of its own (M2b Step 7,
+/// plan D9: a documented limit): it gets `windows-11`, reported as
+/// [`VersionMatch::PresetNewer`].
+#[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+pub(crate) const WINDOWS_GENERATIONS: GenerationTable = GenerationTable {
+    oldest: Generation {
+        preset: "windows-11",
+        first: OsVersion::new(10, 0, 22000),
+        last_verified: OsVersion::new(10, 0, 26200),
+    },
+    newer: &[],
+    keys: &["windows-11"],
+};
+
+/// How `running` relates to `row`'s generation.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn version_match(row: &Generation, running: OsVersion) -> VersionMatch {
+    if running < row.first {
+        VersionMatch::PresetNewer
+    } else if running > row.last_verified {
+        VersionMatch::PresetOlder
+    } else {
+        VersionMatch::Exact
+    }
+}
+
+/// The generation of `running` in `table`: the newest row whose first version
+/// is not newer than `running`, or the oldest row where `running` predates
+/// them all; with how `running` relates to it.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn preset_for_version(
+    table: &GenerationTable,
+    running: OsVersion,
+) -> (PlatformPreset, VersionMatch) {
+    let row = table
+        .newer
+        .iter()
+        .rev()
+        .find(|g| g.first <= running)
+        .copied()
+        .unwrap_or(table.oldest);
+    (
+        PlatformPreset { name: row.preset },
+        version_match(&row, running),
+    )
+}
+
+/// `running` reduced to its major version, the macOS table's granularity.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) fn macos_major(running: OsVersion) -> OsVersion {
+    OsVersion::new(running.major, 0, 0)
+}
+
+/// The macOS generation of a running macOS version, by its major version.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) fn macos_generation(running: OsVersion) -> (PlatformPreset, VersionMatch) {
+    preset_for_version(&MACOS_GENERATIONS, macos_major(running))
+}
+
+/// The Windows generation of a running Windows build.
+#[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+pub(crate) fn windows_generation(running: OsVersion) -> (PlatformPreset, VersionMatch) {
+    preset_for_version(&WINDOWS_GENERATIONS, running)
+}
+
 /// Map a Linux desktop environment to its matching platform preset.
 ///
 /// This is the single source of truth for the DE-to-preset mapping used
@@ -350,8 +610,10 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 /// The preset is the merge base in the OS-first pipeline: the platform
 /// reader's output is merged over it.
 ///
-/// - macOS -> `PlatformPreset { name: "macos-monterey" }`
-/// - Windows -> `PlatformPreset { name: "windows-11" }`
+/// - macOS -> the running version's generation: `macos-monterey` on 12 to 15,
+///   `macos-tahoe` on 26 and later; `macos-monterey` without the `macos`
+///   feature, which reads the version
+/// - Windows -> `PlatformPreset { name: "windows-11" }`, the one Windows generation
 /// - Linux KDE -> `PlatformPreset { name: "kde-breeze" }`
 /// - Linux other/GNOME -> `PlatformPreset { name: "adwaita" }`
 /// - Unknown platform -> `PlatformPreset { name: "adwaita" }`
@@ -367,15 +629,27 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 /// ```
 #[must_use]
 pub fn platform_preset_name() -> PlatformPreset {
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    {
+        macos_generation(crate::macos::os_version()).0
+    }
+    // Without the reader feature the version cannot be read: the oldest
+    // generation's preset.
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
     {
         PlatformPreset {
-            name: "macos-monterey",
+            name: MACOS_GENERATIONS.oldest.preset,
         }
     }
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", feature = "windows"))]
     {
-        PlatformPreset { name: "windows-11" }
+        windows_generation(crate::windows::os_version()).0
+    }
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    {
+        PlatformPreset {
+            name: WINDOWS_GENERATIONS.oldest.preset,
+        }
     }
     #[cfg(target_os = "linux")]
     {
@@ -402,8 +676,12 @@ pub fn platform_preset_name() -> PlatformPreset {
 /// - **Linux:** Reports detected desktop environment, `gsettings`
 ///   availability, `XDG_CURRENT_DESKTOP` value, and KDE config file
 ///   presence (when the `kde` feature is enabled).
-/// - **macOS:** Reports whether the `macos` feature is enabled.
-/// - **Windows:** Reports whether the `windows` feature is enabled.
+/// - **macOS:** Reports whether the `macos` feature is enabled and, with it,
+///   the running version and its generation's preset
+///   ([`DiagnosticEntry::OsGeneration`]).
+/// - **Windows:** Reports whether the `windows` feature is enabled and, with
+///   it, the running version and its generation's preset
+///   ([`DiagnosticEntry::OsGeneration`]).
 /// - **Other:** Reports that no platform detection is available.
 ///
 /// # Examples
@@ -502,7 +780,16 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         diagnostics.push(DiagnosticEntry::Platform("macOS"));
 
         #[cfg(feature = "macos")]
-        diagnostics.push(DiagnosticEntry::FeatureEnabled("macOS theme detection"));
+        {
+            diagnostics.push(DiagnosticEntry::FeatureEnabled("macOS theme detection"));
+            let running = crate::macos::os_version();
+            let (preset, version_match) = macos_generation(running);
+            diagnostics.push(DiagnosticEntry::OsGeneration {
+                version: running.to_string(),
+                preset: preset.name,
+                version_match,
+            });
+        }
 
         #[cfg(not(feature = "macos"))]
         diagnostics.push(DiagnosticEntry::FeatureDisabled {
@@ -516,7 +803,16 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         diagnostics.push(DiagnosticEntry::Platform("Windows"));
 
         #[cfg(feature = "windows")]
-        diagnostics.push(DiagnosticEntry::FeatureEnabled("Windows theme detection"));
+        {
+            diagnostics.push(DiagnosticEntry::FeatureEnabled("Windows theme detection"));
+            let running = crate::windows::os_version();
+            let (preset, version_match) = windows_generation(running);
+            diagnostics.push(DiagnosticEntry::OsGeneration {
+                version: running.to_string(),
+                preset: preset.name,
+                version_match,
+            });
+        }
 
         #[cfg(not(feature = "windows"))]
         diagnostics.push(DiagnosticEntry::FeatureDisabled {
@@ -562,15 +858,42 @@ fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<
     })
 }
 
+/// The platform reader [`select_reader`] picked, the preset its output merges
+/// over, and how the running OS version relates to that preset's generation.
+pub(crate) struct SelectedReader {
+    /// The platform reader.
+    pub(crate) reader: Box<dyn crate::reader::ThemeReader>,
+    /// The platform preset [`run_pipeline`] merges the reader's output over.
+    pub(crate) preset: &'static str,
+    /// `None` where the platform has no generation table (Linux).
+    pub(crate) version_match: Option<VersionMatch>,
+}
+
+impl SelectedReader {
+    /// A reader of a platform without a generation table (Linux).
+    #[cfg_attr(
+        not(all(target_os = "linux", any(feature = "kde", feature = "portal"))),
+        allow(dead_code)
+    )]
+    fn unversioned(reader: Box<dyn crate::reader::ThemeReader>, preset: &'static str) -> Self {
+        Self {
+            reader,
+            preset,
+            version_match: None,
+        }
+    }
+}
+
 /// Platform + DE + feature cascade that picks the appropriate
 /// [`crate::reader::ThemeReader`] impl for the current system.
 ///
 /// Returns `None` when no reader is available and the caller must fall back
 /// to a preset-only pipeline (non-KDE/GNOME Linux, unsupported platforms, or
-/// platforms whose reader feature is disabled). When `Some`, the companion
-/// `&'static str` is the platform preset name that should be passed to
-/// [`run_pipeline`] — the reader and the preset are tied because the preset
-/// is chosen from the detected DE.
+/// platforms whose reader feature is disabled). When `Some`, the
+/// [`SelectedReader`] names the platform preset to pass to [`run_pipeline`] —
+/// the reader and the preset are tied because the preset is chosen from the
+/// detected DE on Linux and from the running version's generation on macOS
+/// and Windows ([`preset_for_version`]).
 ///
 /// Per plan 94-03 §G8: the `Box<dyn ThemeReader>` trait object is object-safe
 /// only because the trait carries a `#[async_trait::async_trait]` annotation
@@ -578,12 +901,17 @@ fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<
 #[allow(unreachable_code)]
 #[allow(clippy::unnecessary_wraps)] // Option is part of the public contract.
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated dispatch.
-async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> {
+async fn select_reader() -> Option<SelectedReader> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
         {
-            return Some((Box::new(crate::macos::MacosReader), "macos-monterey"));
+            let (preset, matched) = macos_generation(crate::macos::os_version());
+            return Some(SelectedReader {
+                reader: Box::new(crate::macos::MacosReader),
+                preset: preset.name,
+                version_match: Some(matched),
+            });
         }
         #[cfg(not(feature = "macos"))]
         return None;
@@ -593,7 +921,12 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
     {
         #[cfg(feature = "windows")]
         {
-            return Some((Box::new(crate::windows::WindowsReader), "windows-11"));
+            let (preset, matched) = windows_generation(crate::windows::os_version());
+            return Some(SelectedReader {
+                reader: Box::new(crate::windows::WindowsReader),
+                preset: preset.name,
+                version_match: Some(matched),
+            });
         }
         #[cfg(not(feature = "windows"))]
         return None;
@@ -605,17 +938,26 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
         match de {
             #[cfg(all(feature = "kde", feature = "portal"))]
             LinuxDesktop::Kde => {
-                return Some((Box::new(crate::gnome::GnomePortalKdeReader), "kde-breeze"));
+                return Some(SelectedReader::unversioned(
+                    Box::new(crate::gnome::GnomePortalKdeReader),
+                    "kde-breeze",
+                ));
             }
             #[cfg(all(feature = "kde", not(feature = "portal")))]
             LinuxDesktop::Kde => {
-                return Some((Box::new(crate::kde::KdeReader), "kde-breeze"));
+                return Some(SelectedReader::unversioned(
+                    Box::new(crate::kde::KdeReader),
+                    "kde-breeze",
+                ));
             }
             #[cfg(not(feature = "kde"))]
             LinuxDesktop::Kde => return None,
             #[cfg(feature = "portal")]
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                return Some((Box::new(crate::gnome::GnomeReader), "adwaita"));
+                return Some(SelectedReader::unversioned(
+                    Box::new(crate::gnome::GnomeReader),
+                    "adwaita",
+                ));
             }
             #[cfg(not(feature = "portal"))]
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => return None,
@@ -636,14 +978,16 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
                     if let Some(detected) = crate::gnome::detect_portal_backend().await {
                         return match detected {
                             #[cfg(feature = "kde")]
-                            LinuxDesktop::Kde => {
-                                Some((Box::new(crate::gnome::GnomePortalKdeReader), "kde-breeze"))
-                            }
+                            LinuxDesktop::Kde => Some(SelectedReader::unversioned(
+                                Box::new(crate::gnome::GnomePortalKdeReader),
+                                "kde-breeze",
+                            )),
                             #[cfg(not(feature = "kde"))]
                             LinuxDesktop::Kde => None,
-                            LinuxDesktop::Gnome => {
-                                Some((Box::new(crate::gnome::GnomeReader), "adwaita"))
-                            }
+                            LinuxDesktop::Gnome => Some(SelectedReader::unversioned(
+                                Box::new(crate::gnome::GnomeReader),
+                                "adwaita",
+                            )),
                             // detect_portal_backend only returns Kde or Gnome;
                             // any future extension falls back to Adwaita preset.
                             _ => None,
@@ -654,7 +998,10 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
                 #[cfg(feature = "kde")]
                 {
                     if crate::kde::kdeglobals_path().exists() {
-                        return Some((Box::new(crate::kde::KdeReader), "kde-breeze"));
+                        return Some(SelectedReader::unversioned(
+                            Box::new(crate::kde::KdeReader),
+                            "kde-breeze",
+                        ));
                     }
                 }
                 return None;
@@ -682,8 +1029,15 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 #[allow(unreachable_code)]
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated fallback.
 pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
-    if let Some((reader, preset)) = select_reader().await {
-        return read_through_pipeline(reader.as_ref(), preset, crate::detect::system()).await;
+    if let Some(selected) = select_reader().await {
+        let mut theme = read_through_pipeline(
+            selected.reader.as_ref(),
+            selected.preset,
+            crate::detect::system(),
+        )
+        .await?;
+        theme.version_match = selected.version_match;
+        return Ok(theme);
     }
 
     // Preset-only fallback paths — no reader available for this
@@ -742,6 +1096,90 @@ async fn read_through_pipeline(
     run_pipeline(result, preset, mode)
 }
 
+/// [`crate::SystemTheme::from_system_with_preset`]'s body: `preset` must be a
+/// generation of the running platform's table (M1-T1-04).
+#[allow(unreachable_code)]
+#[allow(clippy::needless_return)]
+// Explicit returns clarify cfg-gated dispatch.
+// Without the reader feature the name is never read: the feature error comes first.
+#[cfg_attr(
+    any(
+        all(target_os = "macos", not(feature = "macos")),
+        all(target_os = "windows", not(feature = "windows"))
+    ),
+    allow(unused_variables)
+)]
+pub(crate) async fn from_system_with_preset_inner(preset: &str) -> crate::Result<SystemTheme> {
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    {
+        return pinned_pipeline(
+            &MACOS_GENERATIONS,
+            macos_major(crate::macos::os_version()),
+            preset,
+            &crate::macos::MacosReader,
+            crate::detect::system(),
+        )
+        .await;
+    }
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    {
+        return pinned_pipeline(
+            &WINDOWS_GENERATIONS,
+            crate::windows::os_version(),
+            preset,
+            &crate::windows::WindowsReader,
+            crate::detect::system(),
+        )
+        .await;
+    }
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "macos",
+            needed_for: "macOS theme detection",
+        });
+    }
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "windows",
+            needed_for: "Windows theme detection",
+        });
+    }
+    // No generation table: Linux, whose readers read the installed style.
+    Err(crate::Error::UnknownPreset {
+        name: preset.to_string(),
+        known: &[],
+    })
+}
+
+/// Run `reader` through the pipeline onto `preset`, a row of `table`, and
+/// report that row's generation against `running`.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+async fn pinned_pipeline(
+    table: &GenerationTable,
+    running: OsVersion,
+    preset: &str,
+    reader: &dyn crate::reader::ThemeReader,
+    detection: &crate::detect::DetectionContext,
+) -> crate::Result<SystemTheme> {
+    let Some(row) = table.row(preset) else {
+        return Err(crate::Error::UnknownPreset {
+            name: preset.to_string(),
+            known: table.keys,
+        });
+    };
+    let mut theme = read_through_pipeline(reader, row.preset, detection).await?;
+    theme.version_match = Some(version_match(&row, running));
+    Ok(theme)
+}
+
 /// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
 /// [`reader_accessibility`], with `reduce_motion` OR-ed with
 /// [`crate::detect::detect_reduced_motion`], a floor for the cases where no
@@ -761,7 +1199,7 @@ pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPre
 /// is available (or it fails) the defaults are used.
 pub(crate) async fn reader_accessibility() -> crate::AccessibilityPreferences {
     match select_reader().await {
-        Some((reader, _preset)) => match reader.read().await {
+        Some(selected) => match selected.reader.read().await {
             Ok(result) => result.accessibility,
             Err(_) => crate::AccessibilityPreferences::default(),
         },
@@ -1242,6 +1680,49 @@ mod pipeline_tests {
         );
     }
 
+    #[test]
+    fn a_pinned_older_generation_reports_preset_older() {
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(super::pinned_pipeline(
+            &super::MACOS_GENERATIONS,
+            super::OsVersion::new(26, 0, 0),
+            "macos-monterey",
+            &DarkDualReader,
+            &detection,
+        ))
+        .unwrap();
+        assert_eq!(st.preset, "macos-monterey");
+        assert_eq!(st.version_match, Some(super::VersionMatch::PresetOlder));
+        // with_overlay keeps the match (M1-T1-01 change 2)
+        let overlaid = st
+            .with_overlay(&Theme::from_toml("name = \"overlay\"").unwrap())
+            .unwrap();
+        assert_eq!(overlaid.version_match, st.version_match);
+    }
+
+    #[test]
+    fn a_pinned_name_outside_the_table_is_unknown() {
+        let detection = crate::detect::DetectionContext::new();
+        let result = pollster::block_on(super::pinned_pipeline(
+            &super::MACOS_GENERATIONS,
+            super::OsVersion::new(26, 0, 0),
+            "kde-breeze",
+            &DarkDualReader,
+            &detection,
+        ));
+        assert!(matches!(
+            result,
+            Err(crate::Error::UnknownPreset { known, .. }) if known == super::MACOS_GENERATIONS.keys
+        ));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_has_no_generation_to_pin() {
+        let result = pollster::block_on(super::from_system_with_preset_inner("adwaita"));
+        assert!(matches!(result, Err(crate::Error::UnknownPreset { .. })));
+    }
+
     /// A reader reporting a text-scaling factor of 1.5, standing in for any
     /// platform reader.
     struct ScaledTextReader;
@@ -1569,23 +2050,22 @@ mod theme_reader_trait_tests {
     }
 
     /// `select_reader()` exists, is async, and returns an
-    /// `Option<(Box<dyn ThemeReader>, &'static str)>`.
+    /// `Option<SelectedReader>`.
     ///
-    /// On each platform with an available backend we expect `Some((_, preset))`;
+    /// On each platform with an available backend we expect `Some(selected)`;
     /// on platforms without one (non-Linux/macOS/Windows, or Linux with no
     /// compiled-in backend, or Linux-other-DE without portal) we expect `None`.
     ///
-    /// The companion `&'static str` is the platform preset name that `run_pipeline`
+    /// The selected reader carries the platform preset name that `run_pipeline`
     /// should use — kept in the same return type because the preset is chosen
     /// from the DE detected by `select_reader` (KDE -> kde-breeze, GNOME ->
-    /// adwaita, macOS -> macos-monterey, Windows -> windows-11).
+    /// adwaita, macOS -> the running version's generation, Windows -> windows-11).
     #[test]
     fn select_reader_returns_platform_specific_impl() {
         // Call select_reader and observe the Option. The structural invariant
         // is that the function exists, is callable from a sync context via
-        // `pollster::block_on`, and returns the (reader, preset) tuple.
-        let picked: Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> =
-            pollster::block_on(super::select_reader());
+        // `pollster::block_on`, and returns the selected reader and its preset.
+        let picked: Option<super::SelectedReader> = pollster::block_on(super::select_reader());
 
         // Every cfg branch borrows `picked` (via `&picked`) rather than moving
         // it, so the final `drop(picked)` consumes it uniformly on all
@@ -1596,8 +2076,10 @@ mod theme_reader_trait_tests {
                 picked.is_some(),
                 "select_reader must return Some on macOS+macos"
             );
-            if let Some((_reader, preset)) = &picked {
-                assert_eq!(*preset, "macos-monterey");
+            if let Some(selected) = &picked {
+                let (preset, matched) = super::macos_generation(crate::macos::os_version());
+                assert_eq!(selected.preset, preset.name);
+                assert_eq!(selected.version_match, Some(matched));
             }
         }
         #[cfg(all(target_os = "windows", feature = "windows"))]
@@ -1606,8 +2088,10 @@ mod theme_reader_trait_tests {
                 picked.is_some(),
                 "select_reader must return Some on windows+windows"
             );
-            if let Some((_reader, preset)) = &picked {
-                assert_eq!(*preset, "windows-11");
+            if let Some(selected) = &picked {
+                let (preset, matched) = super::windows_generation(crate::windows::os_version());
+                assert_eq!(selected.preset, preset.name);
+                assert_eq!(selected.version_match, Some(matched));
             }
         }
         #[cfg(all(target_os = "linux", feature = "kde", feature = "portal"))]
@@ -1615,11 +2099,13 @@ mod theme_reader_trait_tests {
             // On linux+kde+portal, select_reader returns Some(GnomePortalKdeReader, "kde-breeze")
             // whenever the active DE is KDE; for non-KDE DEs it may legitimately
             // return None (preset fallback). Assert the tuple shape regardless.
-            if let Some((_reader, preset)) = &picked {
+            if let Some(selected) = &picked {
                 assert!(
-                    *preset == "kde-breeze" || *preset == "adwaita",
-                    "select_reader on linux must return a known platform preset, got: {preset}"
+                    selected.preset == "kde-breeze" || selected.preset == "adwaita",
+                    "select_reader on linux must return a known platform preset, got: {}",
+                    selected.preset
                 );
+                assert_eq!(selected.version_match, None);
             }
         }
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -1630,5 +2116,130 @@ mod theme_reader_trait_tests {
             );
         }
         drop(picked);
+    }
+}
+
+/// The generation tables (M1-T1-01): pure functions of the version, tested on
+/// every platform; CI's macOS and Windows legs run the readers against them.
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod generation_tests {
+    use super::*;
+
+    /// The macOS preset of a running major version, as `select_reader` picks it.
+    fn macos_preset_for_version(major: u32) -> &'static str {
+        macos_generation(OsVersion::new(major, 0, 0)).0.name
+    }
+
+    #[test]
+    fn macos_preset_follows_the_os_generation() {
+        assert_eq!(macos_preset_for_version(12), "macos-monterey");
+        assert_eq!(macos_preset_for_version(14), "macos-monterey");
+        assert_eq!(macos_preset_for_version(15), "macos-monterey");
+        assert_eq!(macos_preset_for_version(26), "macos-tahoe");
+        // macOS 27 until a macos-golden-gate preset exists (D4)
+        assert_eq!(macos_preset_for_version(27), "macos-tahoe");
+        assert_eq!(
+            macos_generation(OsVersion::new(27, 0, 1)).1,
+            VersionMatch::PresetOlder
+        );
+    }
+
+    #[test]
+    fn macos_versions_inside_a_generation_match_exactly() {
+        for v in [
+            OsVersion::new(12, 0, 0),
+            OsVersion::new(14, 8, 9),
+            OsVersion::new(15, 7, 9),
+            OsVersion::new(26, 6, 2),
+        ] {
+            assert_eq!(macos_generation(v).1, VersionMatch::Exact, "{v}");
+        }
+        // Big Sur began the look, before Monterey's change to a clicked button
+        assert_eq!(
+            macos_generation(OsVersion::new(11, 7, 10)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetNewer
+            )
+        );
+    }
+
+    #[test]
+    fn windows_preset_follows_the_build() {
+        // Windows 10 22H2: no preset of its own (M2b Step 7, D9)
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 19045)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetNewer
+            )
+        );
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 22000)).1,
+            VersionMatch::Exact
+        );
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 26200)).1,
+            VersionMatch::Exact
+        );
+        // 26H2 (26300): newer than the build the preset was verified on
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 26300)).1,
+            VersionMatch::PresetOlder
+        );
+    }
+
+    #[test]
+    fn every_table_is_ordered_and_lists_its_keys() {
+        for table in [MACOS_GENERATIONS, WINDOWS_GENERATIONS] {
+            let rows: Vec<Generation> = table.rows().collect();
+            let keys: Vec<&str> = rows.iter().map(|g| g.preset).collect();
+            assert_eq!(keys, table.keys);
+            for g in &rows {
+                assert!(g.first <= g.last_verified, "{}", g.preset);
+            }
+            for (older, newer) in rows.iter().zip(rows.iter().skip(1)) {
+                assert!(
+                    older.last_verified < newer.first,
+                    "{} / {}",
+                    older.preset,
+                    newer.preset
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_generation_is_a_bundled_preset_of_its_platform() {
+        for (table, platform) in [
+            (MACOS_GENERATIONS, "macos"),
+            (WINDOWS_GENERATIONS, "windows"),
+        ] {
+            for key in table.keys {
+                assert!(crate::Theme::preset(key).is_ok(), "{key}");
+                let offered = crate::Theme::list_presets()
+                    .iter()
+                    .any(|p| p.key == *key && p.platforms.contains(&platform));
+                assert!(offered, "{key} is not offered on {platform}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_diagnostic_names_the_version_and_its_preset() {
+        let entry = DiagnosticEntry::OsGeneration {
+            version: OsVersion::new(27, 0, 1).to_string(),
+            preset: "macos-tahoe",
+            version_match: VersionMatch::PresetOlder,
+        };
+        assert_eq!(entry.name(), "OS version");
+        assert_eq!(entry.status(), "27.0.1");
+        assert_eq!(
+            entry.to_string(),
+            "OS version: 27.0.1 (macos-tahoe, preset older than the OS)"
+        );
     }
 }

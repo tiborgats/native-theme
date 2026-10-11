@@ -14,7 +14,7 @@ use objc2_app_kit::{
     NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
-use objc2_foundation::{NSDictionary, NSNumber, NSString};
+use objc2_foundation::{NSDictionary, NSNumber, NSProcessInfo, NSString};
 
 /// Convert an NSColor to sRGB and extract RGBA components.
 ///
@@ -141,6 +141,20 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
     Some(NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay)
+}
+
+/// The running macOS version, from `NSProcessInfo.operatingSystemVersion`
+/// (a safe binding in objc2-foundation 0.3.2), for the generation table.
+/// AppKit's components are never negative; one that were would read as 0.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+pub(crate) fn os_version() -> crate::pipeline::OsVersion {
+    let v = NSProcessInfo::processInfo().operatingSystemVersion();
+    let part = |n: isize| u32::try_from(n).unwrap_or_default();
+    crate::pipeline::OsVersion::new(
+        part(v.majorVersion),
+        part(v.minorVersion),
+        part(v.patchVersion),
+    )
 }
 
 /// Read accessibility flags from NSWorkspace.
@@ -934,6 +948,15 @@ mod tests {
             defaults.text_selection_background,
             nscolor_to_rgba(&NSColor::selectedTextBackgroundColor(), &srgb)
         );
+    }
+
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn from_system_reports_the_running_generation() {
+        let sys = crate::SystemTheme::from_system().unwrap();
+        let (preset, matched) = crate::pipeline::macos_generation(super::os_version());
+        assert_eq!(sys.preset, preset.name);
+        assert_eq!(sys.version_match, Some(matched));
     }
 
     #[cfg(all(target_os = "macos", feature = "macos"))]

@@ -22,7 +22,7 @@ targets = [
 [features]
 kde = ["dep:configparser"]
 portal = ["dep:ashpd", "ashpd/async-io", "dep:zbus"]
-windows = ["dep:windows"]
+windows = ["dep:windows", "dep:windows-version"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
 linux-kde = ["kde"]
 linux-portal = ["portal"]
@@ -68,6 +68,7 @@ objc2-foundation = { version = "0.3.2", optional = true, features = [
     "NSRunLoop",
     "NSOperation",
     "block2",
+    "NSProcessInfo",
 ] }
 objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "NSColor",
@@ -127,6 +128,7 @@ windows = { version = "0.62.2", optional = true, default-features = false, featu
     "Win32_System_Com",
     "Win32_System_Threading",
 ] }
+windows-version = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
 pollster = "1.0"

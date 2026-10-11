@@ -625,25 +625,19 @@ model, the platform presets and the three connectors
       for the progress bar (and for the text field, check box, drop-down,
       segmented control and expander), as `docs/platform-facts.md`'s macOS cells give.
 
-### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
+### macOS 27 Golden Gate: no preset of its own yet
 
-- [ ] [v0.7.0] Add `SystemTheme::from_system_with_preset(name)` and its async twin
-      (M1-T1-04 in `docs/todo_code-review-findings.md`): the platform reader
-      runs as in `from_system()`, and its values merge over the named preset
-      instead of the running generation's, so an application, or its user,
-      can keep `macos-monterey`'s look on macOS 26 with the OS's colours,
-      fonts, DPI and accessibility. Today the only way to an older
-      generation is `Theme::preset(name)`, which reads nothing from the OS.
-      The name is checked against the generation table's rows for the
-      running platform (M1-T1-01), not only `PresetInfo.platforms`, and
-      `Error::UnknownPreset` answers any other. The rustdoc says what a pin
-      gives: the older generation's geometry over the running OS's colours,
-      fonts and accessibility (on macOS 26, `NSColor` gives Tahoe's
-      colours), a hybrid rather than the old OS's look, reported as
-      `PresetOlder` by the version match. The accessibility path needs no
-      counterpart: it reads no preset. Implement after M1-T1-01 and
-      `macos-tahoe` (M2a Step 9) land; until a platform has a second
-      generation there is nothing to choose.
+- [ ] [1.0] When GitHub offers a non-preview macOS 27 runner image (today only the
+      `xcode-27` preview, actions/runner-images #14404), run the OS probe on it and
+      check, row by row as M2a did for 26, whether 27 changes a value the model
+      carries. If it does, build `macos-golden-gate` (D8's key: Apple's codename for
+      27) with a row in `pipeline.rs`'s `MACOS_GENERATIONS`; if not, raise
+      `macos-tahoe`'s `last_verified` to 27. Until then a Mac on 27 gets
+      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (plan
+      D4). The preview probe already differs from 26.6.2 in the segmented
+      control's width (98 against 91), the stepper's height (24 against 26),
+      `underPageBackgroundColor` and the text field's render fill
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
 
 ### material-3: the screenshot names and the display name
 
