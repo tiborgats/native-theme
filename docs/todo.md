@@ -568,7 +568,7 @@ model, the platform presets and the three connectors
       `defaults.border.shadow_enabled` (true) where `docs/platform-facts.md`
       §2.10 gives no shadow on any platform. Correct §2.10 and the presets
       from these sources.
-      Windows part done in M2b Step 7 (<commit>): §2.10's track colour and radius
+      Windows part done in M2b Step 7 (eff33489): §2.10's track colour and radius
       cite WinUI and windows-11 states them; the shadow is still open.
 
 ### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
