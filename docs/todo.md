@@ -295,8 +295,8 @@ the file was pruned on 2026-10-11, not reordered.
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml:358`, `:782`;
-      `native-theme/src/presets/kde-breeze.toml:281`, `:589`;
-      `native-theme/src/presets/adwaita.toml:348`, `:719`). Run the
+      `native-theme/src/presets/kde-breeze.toml:371`, `:773`;
+      `native-theme/src/presets/adwaita.toml:351`, `:726`). Run the
       `preset-validator` agent over the three presets against §2.23. The
       field is required in `ResolvedSpinnerTheme` — every preset must resolve
       it — so removing the value needs a decision in the model first: make
@@ -835,6 +835,23 @@ model, the platform presets and the three connectors
       `docs/inheritance-rules.toml:489` and the `[Colors:Complementary]`
       description at `docs/platform-facts.md:605` follow. The text colour
       is settled either way: `ForegroundNormal` is the same in both sets.
+
+### Presets: adwaita's list header and slider thumb
+
+- [ ] [v0.7.0] Since M2e fix round 2 adwaita leaves `list.header_background`
+      and `slider.thumb_color` to inheritance (`defaults.surface_color`,
+      `#ffffff` / `#1d1d20`). `list.header_background`: the GNOME cell of
+      `docs/platform-facts.md:1387` names "columnview header" but no colour;
+      at libadwaita 1.10.0 the header's buttons are transparent
+      (`_column-view.scss:12-13`) over the column view's `.view` fill,
+      `--view-bg-color` (`_column-view.scss:72-76`, `_views.scss:1-4`).
+      State that in the cell, then decide whether the preset states it.
+      `slider.thumb_color`: the GNOME cell of `docs/platform-facts.md:1291`
+      says ← `defaults.surface_color`, but libadwaita 1.10.0 fills the slider
+      with `$slider_color` = `color-mix(in srgb, white 80%,
+      var(--view-bg-color))` (`_scale.scss:50`, `_colors.scss:288`), a light
+      grey on the dark `#1d1d20` where the preset resolves `#1d1d20`.
+      Correct the cell, then the preset follows.
 
 ---
 

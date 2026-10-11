@@ -104,7 +104,9 @@ size_pt =20.0
 weight = 800
 
 [light.window]
-# no inactive_title_bar_*: platform-facts.md:1153-1154 (§2.2), (none), libadwaita's :backdrop state
+# platform-facts.md:1153 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #fafafb (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :32)
+inactive_title_bar_background = "#fafafb"
+# no inactive_title_bar_text_color: platform-facts.md:1154 (§2.2), (none), libadwaita's :backdrop state
 
 [light.window.title_bar_font]
 color = "#2e3436"
@@ -136,7 +138,8 @@ color = "#2e3436"
 background_color = "#ffffff"
 placeholder_color = "#929595"
 min_height_px = 34.0
-caret_color = "#3584e4"
+# platform-facts.md:1192 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+caret_color = "#2e3436"
 hover_border_color = "#3584e4"
 focus_border_color = "#3584e4"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
@@ -472,7 +475,10 @@ size_pt =20.0
 weight = 800
 
 [dark.window]
-inactive_title_bar_background = "#303034"
+# platform-facts.md:1147 (§2.2): headerbar fills --headerbar-bg-color = headerbar_bg_color #2e2e32 (libadwaita 1.10.0 _header-bar.scss:3, _colors.scss:103)
+title_bar_background = "#2e2e32"
+# platform-facts.md:1153 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #222226 (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :95)
+inactive_title_bar_background = "#222226"
 # no inactive_title_bar_text_color: platform-facts.md:1154 (§2.2), (none), libadwaita's :backdrop state
 
 [dark.window.title_bar_font]
@@ -505,7 +511,8 @@ color = "#ffffff"
 background_color = "#303034"
 placeholder_color = "#8b8b8b"
 min_height_px = 34.0
-caret_color = "#78aeed"
+# platform-facts.md:1192 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+caret_color = "#ffffff"
 hover_border_color = "#3584e4"
 focus_border_color = "#3584e4"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
@@ -745,7 +752,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.card]
-
+# platform-facts.md:1587 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
+background_color = "#ffffff14"
 
 [dark.card.border]
 corner_radius_px = 12.0

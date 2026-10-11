@@ -305,7 +305,7 @@ fallback = "defaults.text_color"
 macos    = "preset"
 windows  = "defaults.text_color"
 kde      = "defaults.focus_ring_color"
-gnome    = "defaults.accent_color"
+gnome    = "input.font.color"  # currentColor (libadwaita 1.10.0 _entries.scss:11); adwaita states it
 
 [per_platform."scrollbar.track_color"]
 fallback = "defaults.background_color"
