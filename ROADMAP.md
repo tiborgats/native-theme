@@ -44,12 +44,14 @@ Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archiv
 
 ## v0.7.0 — Whole-codebase review
 
-The release after v0.6.1 is 0.7.0: the review's design phase accepted two
+The release after v0.6.1 is 0.7.0: the review's design phase accepted three
 breaking changes ([`docs/todo_code-review-plan.md`](docs/todo_code-review-plan.md), D1):
 
 - the `-live` preset tier is removed: the platform readers merge over the
   platform preset, and `Theme::preset("…-live")`, `PlatformPreset::is_live`
   and `PlatformPreset::live_name()` are gone;
+- the `material` preset is now `material-3`, and `Theme::preset("material")`
+  returns `UnknownPreset`;
 - the connectors' `from_system` returns a named result struct instead of a
   tuple, and their accessors take the model's field names.
 
