@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Development**: `scripts/check_docsrs.py` documents a crate the way docs.rs will (nightly rustdoc with the crate's `[package.metadata.docs.rs]` features and targets, `DOCS_RS=1`, `--cfg docsrs`, `-D warnings`), and `scripts/check_release.sh` and the crates.io workflow run it for every workspace crate, so a docs.rs failure stops a release before the tag instead of appearing after the crates are published.
 
+### Changed
+
+- **native-theme**: the `material` preset is now `material-3`.
+
 ### Fixed
 
 - **native-theme**: the documentation of the `windows` module, which docs.rs builds for its Windows target, no longer links to two private items, and the `fonts` and `watch` modules are documented in one place (their own file), so their links resolve in the same scope on stable and on the nightly rustdoc docs.rs uses, which reported their explicit targets as redundant; the `watch` summary is no longer shown twice.

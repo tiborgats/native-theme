@@ -14848,7 +14848,7 @@ mod tests {
     /// are through `native_theme_gpui::geometry` and the platform's own are.
     #[test]
     fn basic_controls_take_the_stated_minimum_sizes() {
-        for preset in ["kde-breeze", "adwaita", "material"] {
+        for preset in ["kde-breeze", "adwaita", "material-3"] {
             let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
@@ -14924,7 +14924,7 @@ mod tests {
 
     /// The Basic page's column rule, the gpui and egui pages' too: five
     /// columns under a preset whose widest fixed-width control fits a fifth
-    /// of the page, four under material (its drop-down is 210 wide), three
+    /// of the page, four under material-3 (its drop-down is 210 wide), three
     /// where not even four fit; each arrangement holds every group once, a
     /// column's groups in reading order.
     #[test]
@@ -14933,7 +14933,7 @@ mod tests {
             ("kde-breeze", 979.0, 5),
             ("adwaita", 979.0, 5),
             ("catppuccin-mocha", 976.0, 5),
-            ("material", 976.0, 4),
+            ("material-3", 976.0, 4),
             ("kde-breeze", 400.0, 3),
         ] {
             let mut state = State::default();
@@ -15075,7 +15075,7 @@ mod tests {
     /// three rows of the list, each `list.row_height` or its content.
     #[test]
     fn basic_composites_take_the_stated_sizes() {
-        for preset in ["kde-breeze", "material", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "adwaita"] {
             let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
@@ -15195,7 +15195,7 @@ mod tests {
         for (preset, is_dark) in [
             ("kde-breeze", false),
             ("kde-breeze", true),
-            ("material", true),
+            ("material-3", true),
         ] {
             let resolved = match native_theme_iced::from_preset(preset, is_dark) {
                 Ok((_, resolved)) => resolved,
@@ -15239,7 +15239,7 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("showcase-iced-spinner-{}", std::process::id()));
         let pi = std::f32::consts::PI;
-        for preset in ["kde-breeze", "material", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "adwaita"] {
             let resolved = match native_theme_iced::from_preset(preset, false) {
                 Ok((_, resolved)) => resolved,
                 Err(error) => panic!("{preset}: {error}"),
@@ -15597,15 +15597,15 @@ mod tests {
     }
 
     /// The Basic page never needs sideways scrolling under the presets and
-    /// modes the captures take (kde-breeze, material, catppuccin-mocha and
+    /// modes the captures take (kde-breeze, material-3, catppuccin-mocha and
     /// adwaita, light and dark): laid out in the page area of a 1280 x 720
     /// window, every element ends inside the page's scroll area, and the page
     /// has the columns its rule counts from the content panel's width. It may
-    /// be taller than its area (material is): it then scrolls, and the test
+    /// be taller than its area (material-3 is): it then scrolls, and the test
     /// reports by how much.
     #[test]
     fn the_basic_page_fits_the_window_across() {
-        for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
             for dark in [false, true] {
                 let mut state = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),

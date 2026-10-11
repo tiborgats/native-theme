@@ -22,7 +22,7 @@ use super::*;
 /// one whose sizes all differ from it.
 const PRESETS: [(&str, ColorMode); 2] = [
     ("kde-breeze", ColorMode::Light),
-    ("material", ColorMode::Dark),
+    ("material-3", ColorMode::Dark),
 ];
 
 fn resolved(preset: &str, mode: ColorMode) -> ResolvedTheme {
@@ -126,14 +126,14 @@ fn the_checkbox_look_is_the_presets_values() {
         Some(px(2.)),
         "Breeze's check pen (docs/platform-facts.md:1221)"
     );
-    let md = CheckboxLook::of(&resolved("material", ColorMode::Dark), false, false).unwrap();
+    let md = CheckboxLook::of(&resolved("material-3", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
     // The radio is `checkbox.radio_indicator_width` across where stated
-    // (material's 20, docs/platform-facts.md:1222), the checkbox's elsewhere.
+    // (material-3's 20, docs/platform-facts.md:1222), the checkbox's elsewhere.
     let radio = |preset: &str| {
         CheckboxLook::radio(&resolved(preset, ColorMode::Dark), false, false).map(|l| l.indicator)
     };
-    assert_eq!(radio("material"), Some(px(20.)));
+    assert_eq!(radio("material-3"), Some(px(20.)));
     assert_eq!(radio("kde-breeze"), Some(kbl.indicator));
     assert_eq!(
         md.mark_stroke,
@@ -595,7 +595,7 @@ fn selected_tab_carries_the_stated_indicator(
 fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| {
             div()
                 .w(px(200.))
@@ -603,7 +603,7 @@ fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
                 .into_any_element()
         }),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     let line = bounds(cx, "native-separator");
     assert_eq!(line.size.height, px(r.separator.line_width));
     assert_eq!(line.size.width, px(200.));
@@ -738,10 +738,10 @@ fn the_indicator_is_the_stated_size(cx: &mut TestAppContext) {
 fn the_radio_indicator_is_the_stated_size(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| Radio::new("r").label("A").into_any_element()),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     assert_eq!(r.checkbox.radio_indicator_width, Some(20.));
     let b = bounds(cx, "native-checkbox-indicator");
     assert_eq!(b.size.width, px(20.));
@@ -770,7 +770,7 @@ fn a_selected_radio_draws_the_stated_dot(cx: &mut TestAppContext) {
 fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| {
             Switch::new("s")
                 .label("On")
@@ -778,7 +778,7 @@ fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
                 .into_any_element()
         }),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     let s = &r.switch;
     let track = bounds(cx, "native-switch-track");
     assert_eq!(track.size.width, px(s.track_width));

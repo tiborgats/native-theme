@@ -204,7 +204,7 @@ of the element properties it excepts.
     reason = "..."
     keys = [
         "chrome.splitter.w",
-        "material:basic.expander.details.header.y",
+        "material-3:basic.expander.details.header.y",
     ]
 
     [[parity.group]]
@@ -237,7 +237,7 @@ The key is `[<run>@][<preset>[/<variant>]:]<element id>.<property>`:
 
 The preset is a file name of native-theme/src/presets/ without `.toml`. Two
 keys for the same element property whose scopes overlap (`x.w` and
-`material:x.w`; `hover@x.w` and `material:x.w`) are an error, so at most one
+`material-3:x.w`; `hover@x.w` and `material-3:x.w`) are an error, so at most one
 exception holds for a difference; so is a key naming no element, property,
 preset, variant or run. An exception whose scope the run compared but that
 matched no difference is listed at the end, so a stale one is seen.

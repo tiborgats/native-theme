@@ -185,7 +185,7 @@ disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
 `expander.arrow_icon_size`, and the title.
 
 `toggler` lays its track out twice its height, so a platform whose track is
-not — material's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
+not — material-3's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
 states. `native_theme_iced::switch(&resolved, on, on_toggle)` is a switch at
 `switch.track_width` × `.track_height` with its thumb at `.thumb_diameter`
 (`.unchecked_thumb_diameter` while off, where stated),

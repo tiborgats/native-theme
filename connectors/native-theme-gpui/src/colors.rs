@@ -1447,7 +1447,7 @@ mod tests {
         let presets = [
             "catppuccin-latte",
             "adwaita",
-            "material",
+            "material-3",
             "solarized",
             "gruvbox",
         ];

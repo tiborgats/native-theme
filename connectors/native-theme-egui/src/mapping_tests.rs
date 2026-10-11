@@ -898,7 +898,7 @@ const PAIRS: [(&str, &str); 8] = [
     ("adwaita", "macos-sonoma"),
     ("adwaita", "windows-11"),
     ("macos-sonoma", "windows-11"),
-    ("material", "catppuccin-mocha"),
+    ("material-3", "catppuccin-mocha"),
     ("dracula", "solarized"),
 ];
 

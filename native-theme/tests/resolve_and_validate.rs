@@ -88,7 +88,7 @@ fn preset_unknown_preset_returns_err() {
 
 #[test]
 fn overlay_accent_change_re_derives_widget_fields() {
-    let theme = Theme::preset("material").unwrap();
+    let theme = Theme::preset("material-3").unwrap();
     let mut variant = theme.dark.clone().unwrap();
     let original_accent = variant.defaults.accent_color.unwrap();
 

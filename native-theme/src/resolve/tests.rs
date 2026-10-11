@@ -2291,8 +2291,8 @@ fn resolve_completeness_minimal_variant() {
 /// then verifies resolve() can reconstruct them.
 #[test]
 fn resolve_completeness_from_preset() {
-    let spec = crate::Theme::preset("material").unwrap();
-    let mut v = spec.dark.expect("material should have dark variant");
+    let spec = crate::Theme::preset("material-3").unwrap();
+    let mut v = spec.dark.expect("material-3 should have dark variant");
 
     clear_derived_fields(&mut v);
 

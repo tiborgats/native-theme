@@ -248,7 +248,7 @@ pub struct ResolvedTheme {
 /// ```
 /// use native_theme::theme::{ColorMode, Theme};
 ///
-/// let theme = Theme::preset("material")?;
+/// let theme = Theme::preset("material-3")?;
 /// let r = theme.resolve(ColorMode::Light)?;
 /// assert_eq!(r.icon_theme.as_deref(), Some("material"));
 /// assert!(r.icon_theme_explicit);

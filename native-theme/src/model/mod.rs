@@ -288,7 +288,7 @@ pub struct Theme {
     /// ```
     /// use native_theme::theme::{Theme, IconSet};
     ///
-    /// let theme = Theme::preset("material")?;
+    /// let theme = Theme::preset("material-3")?;
     /// assert_eq!(theme.icon_set, Some(IconSet::Material));
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
@@ -446,7 +446,7 @@ impl Theme {
     /// use native_theme::theme::{ColorMode, Theme};
     ///
     /// // Theme-level `icon_theme` (tier 2) — applies to both modes.
-    /// let material = Theme::preset("material")?;
+    /// let material = Theme::preset("material-3")?;
     /// let r = material.resolve(ColorMode::Dark)?;
     /// assert_eq!(r.icon_theme.as_deref(), Some("material"));
     /// assert!(r.icon_theme_explicit);
@@ -668,7 +668,7 @@ impl Theme {
     ///
     /// Platform presets are included where their platform tag matches:
     /// kde-breeze on KDE, adwaita on Linux, windows-11 on Windows,
-    /// macos-sonoma on macOS, ios on macOS and iOS. `material` and the
+    /// macos-sonoma on macOS, ios on macOS and iOS. `material-3` and the
     /// community themes are always included.
     ///
     /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,
@@ -678,8 +678,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// let presets = native_theme::theme::Theme::list_presets_for_platform();
-    /// // On Linux KDE: kde-breeze, adwaita, material and all community themes
-    /// // On Windows: windows-11, material and all community themes
+    /// // On Linux KDE: kde-breeze, adwaita, material-3 and all community themes
+    /// // On Windows: windows-11, material-3 and all community themes
     /// assert!(!presets.is_empty());
     /// ```
     #[must_use]
@@ -1346,7 +1346,7 @@ accent_color = "#ff0000"
     #[test]
     fn native_theme_serde_toml_round_trip() {
         // Load a preset, serialize to TOML, deserialize back, and verify equality
-        let theme = Theme::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material-3").expect("material-3 preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
         let theme2 = Theme::from_toml(&toml_str).expect("should deserialize");
         assert_eq!(theme, theme2, "round-trip should preserve Theme");
@@ -1356,9 +1356,9 @@ accent_color = "#ff0000"
 
     #[test]
     fn resolve_material_uses_theme_level_icon_theme() {
-        // material.toml has `icon_theme = "material"` at the root (tier 2).
+        // material-3.toml has `icon_theme = "material"` at the root (tier 2).
         // The resolver must fill `icon_theme = "material"` for both modes.
-        let theme = Theme::preset("material").unwrap();
+        let theme = Theme::preset("material-3").unwrap();
         for mode in [ColorMode::Light, ColorMode::Dark] {
             let r = theme.resolve(mode).unwrap();
             assert_eq!(
@@ -1644,12 +1644,12 @@ primay_bg = "#0078d7"
     #[test]
     fn lint_toml_preset_has_no_warnings() {
         // Spot-check one preset for lint cleanliness via round-trip
-        let theme = Theme::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material-3").expect("material-3 preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
         let warnings = Theme::lint_toml(&toml_str).expect("should parse");
         assert!(
             warnings.is_empty(),
-            "material preset should have no lint warnings, got: {warnings:?}"
+            "material-3 preset should have no lint warnings, got: {warnings:?}"
         );
     }
 

@@ -123,7 +123,7 @@ dbus-send (D-Bus), Python 3, Pillow
 
 ## generate_gifs_theme_switching.sh
 
-Captures four preset/variant pairs (kde-breeze dark, material light,
+Captures four preset/variant pairs (kde-breeze dark, material-3 light,
 catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
 Each frame passes `capture_window.sh`'s check.
@@ -341,7 +341,7 @@ and samples taken, rounded to the pixel grid (R-snap), a text run's width within
 (R-glyph). Every other difference must be listed with a reason in the
 `[parity]` section of `docs/showcase-exceptions.toml`, in `[[parity.group]]`
 entries that each state a `reason` once for their `keys`; a key may be scoped
-to a preset (`material:<id>.<property>`), a preset in one variant
+to a preset (`material-3:<id>.<property>`), a preset in one variant
 (`adwaita/dark:...`) or a run (`hover@...`, `menu@...`). A dump directory
 holds the dumps directly or one subdirectory down; `hover=DIR` or `menu=DIR`
 names the run it is (a bare `DIR` is the `rest` run). Exits 0 when clean, 1 on

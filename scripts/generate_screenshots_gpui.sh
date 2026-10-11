@@ -32,8 +32,8 @@ DELAY=3
 THEMES=(
     "kde-breeze:dark:freedesktop:breeze-dark"
     "kde-breeze:light:freedesktop:breeze"
-    "material:dark:material:"
-    "material:light:material:"
+    "material-3:dark:material:"
+    "material-3:light:material:"
     "catppuccin-mocha:dark:lucide:"
     "catppuccin-mocha:light:lucide:"
 )

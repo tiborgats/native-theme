@@ -581,7 +581,7 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
 ///
 /// iced's `Toggler` lays its track out as twice its height
 /// (`iced_widget` 0.14.2 `src/toggler.rs:287`) and has no width setter, so
-/// every platform whose track is not twice its height -- material's 52 by 32,
+/// every platform whose track is not twice its height -- material-3's 52 by 32,
 /// adwaita's 46 by 26 -- would get a wider track than it states. This switch
 /// is a button and two containers instead, coloured by
 /// [`styles::toggler()`] for the toggler status each button status stands
@@ -1295,7 +1295,7 @@ mod tests {
         for (preset, drawn) in [
             ("kde-breeze", true),
             ("adwaita", true),
-            ("material", true),
+            ("material-3", true),
             ("windows-11", false),
         ] {
             let r = make_resolved_preset(preset, false);

@@ -178,7 +178,7 @@ pub(crate) const BASIC_GROUPS: [BasicGroup; 20] = [
 /// the page's five, four and three columns (docs/showcase-elements.toml, the
 /// Basic page): four columns end the other four with the fifth's groups,
 /// three put the fourth's too, balanced by the groups' heights under the
-/// material preset, the tallest.
+/// material-3 preset, the tallest.
 pub(crate) const BASIC_FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
     &[4, 5, 6],

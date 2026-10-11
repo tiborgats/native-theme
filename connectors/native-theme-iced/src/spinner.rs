@@ -308,7 +308,7 @@ mod tests {
     #[cfg(feature = "material-icons")]
     #[test]
     fn material_draws_its_frames_in_the_spinner_colour() -> native_theme::Result<()> {
-        let (_, resolved) = crate::from_preset("material", true)?;
+        let (_, resolved) = crate::from_preset("material-3", true)?;
         let spinner = Spinner::new(&resolved, IconSet::Material, None);
         let Some(anim) = load_icon_indicator(IconSet::Material) else {
             panic!("material-icons is on, yet Material has no indicator");

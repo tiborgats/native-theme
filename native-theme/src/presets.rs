@@ -1,7 +1,7 @@
 //! Bundled theme presets and TOML serialization API.
 //!
 //! Provides 16 user-facing built-in presets embedded at compile time:
-//! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material,
+//! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material-3,
 //! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
 //! Solarized, Tokyo Night, One Dark), plus 4 internal live presets
 //! (no colours or font families: geometry, metrics and sizes, used by the
@@ -24,7 +24,7 @@ const PRESET_ENTRIES: &[(&str, &str)] = &[
     ("adwaita", include_str!("presets/adwaita.toml")),
     ("windows-11", include_str!("presets/windows-11.toml")),
     ("macos-sonoma", include_str!("presets/macos-sonoma.toml")),
-    ("material", include_str!("presets/material.toml")),
+    ("material-3", include_str!("presets/material-3.toml")),
     ("ios", include_str!("presets/ios.toml")),
     // Community presets
     (
@@ -71,7 +71,7 @@ const PRESET_NAMES: &[&str] = &[
     "adwaita",
     "windows-11",
     "macos-sonoma",
-    "material",
+    "material-3",
     "ios",
     "catppuccin-latte",
     "catppuccin-frappe",
@@ -100,7 +100,7 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("windows-11-live", "Windows 11"),
     ("macos-sonoma", "macOS Sonoma"),
     ("macos-sonoma-live", "macOS Sonoma"),
-    ("material", "Material"),
+    ("material-3", "Material"),
     ("ios", "iOS"),
     ("catppuccin-latte", "Catppuccin Latte"),
     ("catppuccin-frappe", "Catppuccin Frappe"),
@@ -126,7 +126,7 @@ pub struct PresetInfo {
     /// Human-readable display name (e.g. `"Catppuccin Mocha"`, `"KDE Breeze"`).
     pub display_name: &'static str,
     /// Target platform tags (e.g. `&["linux-kde"]`). Empty for presets offered
-    /// on every platform (`material` and the community themes).
+    /// on every platform (`material-3` and the community themes).
     pub platforms: &'static [&'static str],
     /// Whether the preset provides only a light variant (no dark variant).
     pub light_only: bool,
@@ -163,7 +163,7 @@ const PRESET_INFOS: &[PresetInfo] = &[
         light_only: false,
     },
     PresetInfo {
-        key: "material",
+        key: "material-3",
         display_name: "Material",
         platforms: &[],
         light_only: false,
@@ -470,7 +470,7 @@ accent_color = "#00ff00"
             ("ios", IconSet::SfSymbols),
             ("adwaita", IconSet::Freedesktop),
             ("kde-breeze", IconSet::Freedesktop),
-            ("material", IconSet::Material),
+            ("material-3", IconSet::Material),
         ];
         for (name, expected) in cases {
             let theme = preset(name).unwrap();
@@ -896,10 +896,10 @@ accent_color = "#00ff00"
                 "community preset '{name}' should always be in filtered list"
             );
         }
-        // material is cross-platform, always present
+        // material-3 is cross-platform, always present
         assert!(
-            filtered.iter().any(|info| info.key == "material"),
-            "material should always be in filtered list"
+            filtered.iter().any(|info| info.key == "material-3"),
+            "material-3 should always be in filtered list"
         );
     }
 

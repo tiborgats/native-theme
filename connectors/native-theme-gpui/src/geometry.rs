@@ -1462,7 +1462,7 @@ mod tests {
 
     /// `link` carries the link's text size and weight, and removes upstream's
     /// resting underline exactly where `link.underline_enabled` is false
-    /// (material states it false, the others true).
+    /// (material-3 states it false, the others true).
     #[test]
     fn a_link_is_underlined_exactly_where_the_platform_underlines_it() {
         let mut seen = [false, false];

@@ -3584,10 +3584,10 @@ fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> 
     // The entry in the table above runs on windows-11, where `tab` states the
     // same color for an idle and for a selected tab, so a fallback onto the
     // wrong one of the two would pass it. No bundled preset states them
-    // differently any more (material's active tab is marked by an indicator,
+    // differently any more (material-3's active tab is marked by an indicator,
     // not a fill: docs/platform-facts.md §2.11), so the selected fill is set
     // apart here, to the preset's accent, and the copy is proved on that.
-    let mut resolved = native_theme::theme::Theme::preset("material")?
+    let mut resolved = native_theme::theme::Theme::preset("material-3")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     resolved.tab.active_background = resolved.defaults.accent_color;
@@ -3603,7 +3603,7 @@ fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> 
     );
 
     resolved.tab.hover_background = None;
-    let theme = crate::to_theme(&resolved, "material");
+    let theme = crate::to_theme(&resolved, "material-3");
     assert_eq!(
         fill(styles::aw::tab_bar(&resolved)(&theme, AwStatus::Hovered).tab_label_background),
         Ok(idle),

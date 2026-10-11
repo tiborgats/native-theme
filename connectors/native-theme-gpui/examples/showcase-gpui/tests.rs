@@ -480,7 +480,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["material", "windows-11"] {
+    for preset in ["material-3", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
         let native = read(&mut cx, &showcase, |_this, cx| {
             let b = |f: fn(&native_theme::theme::ResolvedWidgetBorder) -> f32| {
@@ -2296,7 +2296,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
 }
 
 /// The splitter's line takes a margin of neither panel: where the theme
-/// states it wider than the handle's own 1px line (material, 4px), the side
+/// states it wider than the handle's own 1px line (material-3, 4px), the side
 /// panel keeps that strip clear, so its content ends where the line starts,
 /// and the line reaches no further into the content panel than the handle's
 /// own line does.
@@ -2304,7 +2304,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
 fn the_splitter_line_keeps_off_both_panels(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let slack = device_pixel(&mut cx);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         let line = bounds_of(&mut cx, CHROME_SPLITTER_LINE);
         let side = bounds_of(&mut cx, CHROME_SIDE_PANEL);
@@ -2439,7 +2439,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     use native_theme::color::Rgba;
     use native_theme_gpui::ResolvedTheme;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let expect = |cx: &mut VisualTestContext, pick: fn(&ResolvedTheme) -> Rgba| {
@@ -2475,7 +2475,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 r.progress_bar.track_color
             }),
         ] {
-            // A transparent leaf paints no box (material's unchecked box has
+            // A transparent leaf paints no box (material-3's unchecked box has
             // no container, docs/platform-facts.md §2.5).
             let want = expect(&mut cx, pick).filter(|c| !c.is_transparent());
             assert_eq!(
@@ -2494,7 +2494,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let (header, arrow, card_padding) = read(&mut cx, &showcase, |_, cx| {
@@ -2552,12 +2552,12 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
 /// filled with `tab.background_color` and outlined in nothing, and nothing
 /// in the row is painted in the accent that upstream's Underline bar marks
 /// it with, under a preset whose unselected tab differs from its bar
-/// (kde-breeze) and one whose does not (material).
+/// (kde-breeze) and one whose does not (material-3).
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let (active, idle, edge) = read(&mut cx, &showcase, |_, cx| {
@@ -4114,7 +4114,7 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
 
 /// The Basic page's column rule, the iced and egui showcases' too: under a
 /// preset whose widest fixed-width control fits a fifth of the page, five
-/// columns; under material, whose drop-down is 210 wide, four; and each
+/// columns; under material-3, whose drop-down is 210 wide, four; and each
 /// arrangement holds every group once, a column's groups in reading order.
 #[test]
 fn the_basic_page_counts_its_columns_from_the_theme() {
@@ -4137,7 +4137,7 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
         ("kde-breeze", 979.0, 5),
         ("adwaita", 979.0, 5),
         ("catppuccin-mocha", 976.0, 5),
-        ("material", 976.0, 4),
+        ("material-3", 976.0, 4),
     ] {
         let r = resolved(preset);
         assert!(r.is_ok(), "{r:?}");
@@ -4173,14 +4173,14 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
 }
 
 /// The Basic page lays its groups out as the three showcases do: under
-/// kde-breeze five columns, under material four, left to right, each a stack
+/// kde-breeze five columns, under material-3 four, left to right, each a stack
 /// of its groups in order, every group its heading over its controls, and
 /// every control the page shows drawn.
 #[gpui::test]
 fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
     use crate::pages::basic::{BASIC_GROUPS, basic_arrangement};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for (preset, count) in [("material", 4), ("kde-breeze", 5)] {
+    for (preset, count) in [("material-3", 4), ("kde-breeze", 5)] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let mut previous_left = None;
@@ -4294,7 +4294,7 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let r = read(&mut cx, &showcase, |_, cx| {
@@ -4363,7 +4363,7 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
     use crate::demo::SpinnerKind;
     use native_theme_gpui::widgets::SpinnerLook;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Feedback);
         let r = read(&mut cx, &showcase, |_, cx| {
@@ -4435,13 +4435,13 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
 /// The Basic page never needs sideways scrolling under the Linux presets the
 /// captures take, in both modes: every control ends inside the scroll area,
 /// and the page lays out the columns its rule counts from the content
-/// panel's width. It may be taller than the scroll area (material is), and
+/// panel's width. It may be taller than the scroll area (material-3 is), and
 /// then scrolls, at rest at the top; the test reports by how much.
 #[gpui::test]
 fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
     use crate::pages::basic::basic_column_count;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         for mode in ["Light", "Dark"] {
             run_menu_item(&mut cx, "Theme", mode);
@@ -4572,11 +4572,11 @@ fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
 /// wide in `splitter.divider_color`; a menu title under the pointer fills
 /// with `menu.hover_background`, opens its menu, and a row of it runs its
 /// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
-/// Under material dark, whose splitter is wider than upstream's 1px line.
+/// Under material-3 dark, whose splitter is wider than upstream's 1px line.
 #[gpui::test]
 fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "material");
+    use_preset(&mut cx, &showcase, "material-3");
     run_menu_item(&mut cx, "Theme", "Dark");
     show(&mut cx, &showcase, Page::Basic);
     let stated =

@@ -1910,10 +1910,10 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 /// The Basic page's check boxes and radio buttons, and the rows they sit in, are as tall as the
 /// indicator the theme states or their label, not a push button's `button.min_height`: the
 /// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
-/// material 18 under 40).
+/// material-3 18 under 40).
 #[test]
 fn basic_checkbox_and_radio_rows_fit_the_indicator() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -1984,10 +1984,10 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
 /// field is filled with `input.disabled_background` at `input.disabled_opacity`, its frame
 /// built in the disabled cell; and
 /// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
-/// (kde-breeze states it, material does not).
+/// (kde-breeze states it, material-3 does not).
 #[test]
 fn the_basic_page_applies_the_per_call_leaves() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2035,7 +2035,7 @@ fn the_basic_page_applies_the_per_call_leaves() {
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // kde-breeze states it; material's outlined field has no disabled container
+        // kde-breeze states it; material-3's outlined field has no disabled container
         // (docs/platform-facts.md §2.4), so it keeps its enabled fill (`None`, the enabled
         // background). egui fades the disabled field by `input.disabled_opacity` on top
         // (docs/platform-facts.md §2.1.6): 1.0 on both.
@@ -2381,7 +2381,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         named,
         "the controls are listed per group, in order"
     );
-    for (preset, expected) in [("kde-breeze", 5), ("material", 4), (TEST_PRESET, 5)] {
+    for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), (TEST_PRESET, 5)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2457,7 +2457,7 @@ fn the_basic_page_has_every_group_in_its_column() {
                 }
             }
         }
-        // The list's rows, which a page that scrolls may show only in part (material's).
+        // The list's rows, which a page that scrolls may show only in part (material-3's).
         if harness.state().page_scrolls {
             continue;
         }
@@ -2504,11 +2504,11 @@ fn the_basic_page_has_every_group_in_its_column() {
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
 /// both modes, under the four presets the captures compare: every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
-/// be taller than its area (material is): it then scrolls, and the test reports it.
+/// be taller than its area (material-3 is): it then scrolls, and the test reports it.
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
-    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);

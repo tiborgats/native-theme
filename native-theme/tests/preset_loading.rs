@@ -326,7 +326,7 @@ fn preset_names_are_correct() {
         has_key("macos-sonoma"),
         "list_presets() missing 'macos-sonoma'"
     );
-    assert!(has_key("material"), "list_presets() missing 'material'");
+    assert!(has_key("material-3"), "list_presets() missing 'material-3'");
     assert!(has_key("ios"), "list_presets() missing 'ios'");
     assert!(
         has_key("catppuccin-latte"),
@@ -353,4 +353,11 @@ fn preset_names_are_correct() {
         "list_presets() missing 'tokyo-night'"
     );
     assert!(has_key("one-dark"), "list_presets() missing 'one-dark'");
+}
+
+#[test]
+fn material_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("material-3").is_ok());
+    assert!(Theme::preset("material").is_err());
+    assert!(Theme::list_presets().iter().any(|p| p.key == "material-3"));
 }

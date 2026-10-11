@@ -76,7 +76,7 @@ impl Platform {
             Platform::Gnome => "adwaita",
             Platform::Macos => "macos-sonoma",
             Platform::Windows => "windows-11",
-            Platform::Material => "material",
+            Platform::Material => "material-3",
         }
     }
 
@@ -311,7 +311,7 @@ const ROWS: &[Row] = &[
     row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
     row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0")
         .with(&[("arrow_gap", Some(30.0), 1614), ("content_indent", Some(16.0), 1615)]),
-    // --- Material (material; no reader, no -live preset) ---
+    // --- Material (material-3; no reader, no -live preset) ---
     row(Material, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
     row(Material, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
     row(Material, "input", all(15.0), &[1196, 1197], "outlined field 16 from the edge, less the 1 outline; the same down"),
@@ -1164,7 +1164,7 @@ fn every_field_citation_names_its_platform_facts_row() {
 /// Platform-facts gives no desktop platform's text-scale line height, so no
 /// desktop preset states one and the resolver computes it from
 /// `defaults.line_height` (E5). Material's typescale states each style's line
-/// height (platform-facts §2.19), so the material preset states them.
+/// height (platform-facts §2.19), so the material-3 preset states them.
 #[test]
 fn native_presets_state_no_text_scale_line_height() {
     let mut failures = Vec::new();

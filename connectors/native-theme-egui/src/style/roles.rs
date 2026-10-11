@@ -1226,7 +1226,7 @@ mod tests {
         ("kde-breeze", ColorMode::Dark),
         ("windows-11", ColorMode::Light),
         ("macos-sonoma", ColorMode::Dark),
-        ("material", ColorMode::Light),
+        ("material-3", ColorMode::Light),
         ("catppuccin-mocha", ColorMode::Dark),
     ];
 
@@ -1484,7 +1484,7 @@ mod tests {
             let (c, base, t, notes) = cell(preset, mode, Role::Checkbox);
             let k = &t.checkbox;
             let w = &c.visuals.widgets;
-            // The one note a preset may cause here: material's unchecked box has no
+            // The one note a preset may cause here: material-3's unchecked box has no
             // container (docs/platform-facts.md §2.5), a transparent fill written as given.
             let transparent_box = k.unchecked_background.is_some_and(|c| c.a == 0);
             assert!(

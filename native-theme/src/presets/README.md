@@ -25,7 +25,7 @@ often without a source, and are still being audited (`docs/todo.md`,
 Table B); the color-scheme presets state many of them too.
 
 Files: `kde-breeze.toml`, `macos-sonoma.toml`, `windows-11.toml`,
-`adwaita.toml`, `material.toml`, `ios.toml`, and the community presets
+`adwaita.toml`, `material-3.toml`, `ios.toml`, and the community presets
 (`catppuccin-*.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
 `one-dark.toml`, `solarized.toml`, `tokyo-night.toml`).
 
@@ -59,7 +59,7 @@ Files: `kde-breeze-live.toml`, `macos-sonoma-live.toml`,
 | `kde-breeze-live.toml` | KDE Breeze base for the KDE reader |
 | `macos-sonoma.toml` | macOS Sonoma standalone theme |
 | `macos-sonoma-live.toml` | macOS Sonoma base for the macOS reader |
-| `material.toml` | Material Design standalone theme |
+| `material-3.toml` | Material Design standalone theme |
 | `nord.toml` | Nord color scheme |
 | `one-dark.toml` | One Dark color scheme |
 | `solarized.toml` | Solarized color scheme |
