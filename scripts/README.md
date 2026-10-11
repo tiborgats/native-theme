@@ -162,7 +162,9 @@ Full pre-release asset pipeline. Triggers the CI screenshots workflow for
 macOS/Windows, generates all local Linux assets while CI runs, then downloads
 the CI artifacts into the correct per-connector `docs/assets/` directory
 based on artifact name, and finally writes `docs/assets/PROVENANCE.toml`
-through `update_provenance.sh`. Refuses to start while HEAD is unpushed or a path
+through `update_provenance.sh`, with the OS versions the CI jobs recorded
+beside their captures (`<os>-os-version.txt` in each artifact, copied to a
+temporary directory, never into `docs/`). Refuses to start while HEAD is unpushed or a path
 the assets depend on has uncommitted changes, because the captures must come
 from the commit CI builds.
 
@@ -187,7 +189,11 @@ that feeds the showcases (crate manifests and sources, presets, icon
 bundles, the egui connector's `mapping.toml`, the egui widgets crate,
 `Cargo.lock`, the capture
 scripts, the screenshots workflow) into
-`docs/assets/PROVENANCE.toml`. `check` recomputes the hash at HEAD and exits
+`docs/assets/PROVENANCE.toml`; `write DIR` also records, as `macos_version`
+and `windows_version`, every distinct OS version in DIR's sidecars
+(`<toolkit>-macos.txt`, `<toolkit>-windows.txt`: `sw_vers -productVersion`
+and `[System.Environment]::OSVersion.Version` on the screenshot runners),
+empty without them. No gate checks the versions against a preset's range yet. `check` recomputes the hash at HEAD and exits
 non-zero with a message when the stamp is missing or the sources differ;
 `scripts/check_release.sh` and the crates.io workflow's CI gate call it, so a
 release whose assets were captured from other sources is refused. Docs-only
@@ -196,6 +202,7 @@ uncommitted changes; `hash` prints the current value.
 
 ```sh
 ./scripts/update_provenance.sh check
+./scripts/update_provenance.sh write DIR
 ```
 
 ## update_compatibility.sh

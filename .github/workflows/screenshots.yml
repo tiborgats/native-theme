@@ -10,14 +10,23 @@ jobs:
   screenshots:
     strategy:
       fail-fast: false
+      # The macOS entries name macos-26, the image `macos-latest` resolves to in
+      # GitHub's runner-images list (README, read 2026-10-11), so a move of
+      # `macos-latest` cannot change the captures unnoticed. It is not macOS 14:
+      # `macos-14` retires on 2026-11-02. Which macOS the `macos-sonoma`
+      # captures may claim is M2a's to settle (docs/todo_code-review-plan.md).
+      # Windows stays on `windows-latest`, Windows Server 2025 in the same list,
+      # whose one Windows 11 image is arm64 (`windows-11-arm`); which Windows
+      # the `windows-11` captures may claim is M2b's. Each job records its
+      # runner's OS version beside its captures (below).
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: iced
             # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: gpui
             features: ""
@@ -30,7 +39,7 @@ jobs:
             os_name: windows
             toolkit: gpui
             features: ""
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: egui
             # Every connector feature, as the capture scripts build it.
@@ -128,6 +137,25 @@ jobs:
         run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
         shell: bash
 
+      # The runner's OS version, uploaded with the captures as
+      # `<os_name>-os-version.txt`; scripts/generate_assets_release.sh copies it
+      # out of the run and scripts/update_provenance.sh writes it into
+      # docs/assets/PROVENANCE.toml (`macos_version`, `windows_version`).
+      - name: Record the OS version (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          version="$(sw_vers -productVersion)"
+          echo "macOS $version"
+          printf '%s\n' "$version" > "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt"
+
+      - name: Record the OS version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = [System.Environment]::OSVersion.Version.ToString()
+          Write-Output "Windows $version"
+          Set-Content -Path "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt" -Value $version
+
       # `--screenshot` opens the window at the showcases' default 1280 x 720
       # and exits non-zero, with the measured and the expected size, unless
       # the capture is of that window: each showcase's OS capture is the
@@ -171,4 +199,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: screenshots-${{ matrix.toolkit }}-${{ matrix.os_name }}
-          path: connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png
+          path: |
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt

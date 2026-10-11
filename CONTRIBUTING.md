@@ -204,7 +204,8 @@ per-crate READMEs resolve on GitHub, on crates.io, and offline.
 
 Regeneration cannot be forgotten: `generate_assets_release.sh` ends by writing
 `docs/assets/PROVENANCE.toml`, which records the workspace version, the
-commit, and a hash over the git object ids of every path that feeds the
+commit, the OS versions of the CI runners that captured the macOS and Windows
+screenshots, and a hash over the git object ids of every path that feeds the
 showcases (crate sources, presets, icon bundles, `Cargo.lock`, the capture
 scripts, the screenshots workflow). `scripts/check_release.sh` recomputes that
 hash at HEAD; a mismatch is a warning while the CHANGELOG entry for the
