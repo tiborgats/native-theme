@@ -174,6 +174,16 @@ Design-level choices are captured in files under `docs/`:
 - [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS Sonoma/Tahoe, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
 - [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
 - [`docs/inheritance-rules.toml`](docs/inheritance-rules.toml) — widget-field inheritance rules driving the resolution pipeline
+- [`docs/todo.md`](docs/todo.md) — the open items and follow-ups
+
+A change too large for one entry there gets a plan: `docs/todo_<topic>-plan.md`,
+usually with a `-rationale.md` (why each decision was taken) and a `-spec.md`
+(what to build) beside it. The `docs/todo_*.md` files in `docs/` are the live
+plans. Archiving is every plan's last task: once it is implemented, the plan,
+its rationale and its spec move to [`docs/archive/`](docs/archive/), keeping
+their names, and the index table in
+[`docs/archive/README.md`](docs/archive/README.md) gains their row;
+`scripts/check_release.sh` warns about an archived file the table does not name.
 
 Do not invent platform-native values. When the authoritative reference is
 silent, flag it explicitly rather than guessing.
