@@ -1158,7 +1158,8 @@ pub(crate) async fn from_system_with_preset_inner(preset: &str) -> crate::Result
             needed_for: "Windows theme detection",
         });
     }
-    // No generation table: Linux, whose readers read the installed style.
+    // No generation table, so no OS generations to choose between: Linux,
+    // whose readers read the installed style, BSD and other platforms.
     Err(crate::Error::UnknownPreset {
         name: preset.to_string(),
         known: &[],
@@ -1738,8 +1739,10 @@ mod pipeline_tests {
             Some(crate::Error::UnknownPreset { known: [], .. })
         ));
         assert!(
-            err.is_some_and(|e| e.to_string().contains("no platform presets")),
-            "pinning a preset on Linux says the platform has no platform presets"
+            err.is_some_and(|e| e
+                .to_string()
+                .contains("no OS generations to choose between")),
+            "pinning a preset on Linux says the platform has no OS generations to choose between"
         );
     }
 

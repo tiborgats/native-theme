@@ -395,10 +395,11 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 /// its text `popover_foreground` (`:115`) and its fill `tokens.popover`
 /// (`:114`, `:116`), which this connector fills from `popover.font.color` and
 /// `popover.background_color`, and its border `border` (`:118`), from
-/// `defaults.border.color` -- all before this refinement. 16 of the 32
+/// `defaults.border.color` -- all before this refinement. 18 of the 34
 /// bundled preset/mode combinations state a different text colour for a
 /// tooltip than for a popover, and more a different fill: kde-breeze's
-/// tooltip is `#f7f7f7` on a white popover, adwaita's dark on a light one.
+/// tooltip is `#f7f7f7` on an `#eff0f1` popover, adwaita's dark on a light
+/// one.
 ///
 /// The edge is `tooltip.border.line_width` wide, over upstream's `border_1`
 /// (`:117`). The drop shadow is upstream's `shadow_md` (`:119`) where

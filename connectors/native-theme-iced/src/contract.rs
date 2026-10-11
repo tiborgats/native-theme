@@ -3900,8 +3900,10 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         opaque_layers >= combinations.len() * 2,
         "property (c) needs opaque layers: button.background_color and \
          defaults.text_color are opaque in most combinations, though not in \
-         every one (macOS states labelColor, and its dark button fill, with \
-         alpha), so the floor is an aggregate, on average two opaque layers \
+         every one (macos-monterey and macos-tahoe state labelColor with \
+         alpha in both modes, windows-11 light its text color, and every \
+         TRANSLUCENT_BUTTON_FILL combination its button fill), so the floor \
+         is an aggregate, on average two opaque layers \
          per combination, and it ran {opaque_layers} times over {} \
          combinations",
         combinations.len()

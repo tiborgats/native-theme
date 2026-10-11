@@ -348,9 +348,9 @@ fn assign_buttons(tc: &mut ThemeColor) {
     // layer's alpha and keeps the *base's* alpha (`gpui-pre` color.rs:58-70,
     // reached through `:580-593`), where source-over would give the result
     // `layer.a + base.a * (1 - layer.a)`. The two agree whenever the base or
-    // the layer is opaque; windows-11's `button.background_color` is not
-    // (WinUI's `ControlFillColorDefault`, `#ffffffb3`), but its layers are.
-    // The Windows reader's `COLOR_BTNFACE` is opaque (`Rgba::rgb`).
+    // the layer is opaque. Translucent bases (`TRANSLUCENT_BUTTON_FILL`: windows-11,
+    // macos-monterey dark, macos-tahoe; the reader's `COLOR_BTNFACE` is opaque) get
+    // opaque layers, except macos-tahoe's derived pressed one (docs/todo.md, M6).
     tc.button_hover = tc.button.blend(tc.secondary_hover);
     tc.button_active = tc.button.blend(tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;

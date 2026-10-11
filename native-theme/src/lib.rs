@@ -703,8 +703,10 @@ impl SystemTheme {
     ///
     /// `preset` must be a generation of the running platform: `macos-monterey`
     /// or `macos-tahoe` on macOS, `windows-11` on Windows. Any other name, and
-    /// any name on a platform without generations (Linux, whose readers read
-    /// the installed style), is `Error::UnknownPreset`.
+    /// any name on a platform without a generation table (Linux, whose readers
+    /// read the installed style, BSD and other platforms), is
+    /// `Error::UnknownPreset`, where [`from_system()`](Self::from_system) may
+    /// return `Error::PlatformUnsupported` (BSD and other platforms).
     ///
     /// The result is a hybrid, not the older OS's look: the chosen
     /// generation's geometry and design colours under the running OS's
@@ -717,7 +719,8 @@ impl SystemTheme {
     /// # Errors
     ///
     /// - `Error::UnknownPreset` for a name that is not a generation of the
-    ///   running platform.
+    ///   running platform, and for any name on a platform without a
+    ///   generation table.
     /// - `Error::FeatureDisabled` on macOS or Windows when the `macos` /
     ///   `windows` feature is not enabled.
     /// - `Error::ReaderFailed` if the platform reader cannot access theme data.

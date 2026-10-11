@@ -903,7 +903,7 @@ struct NoReceiver {
     stated_none: &'static [(&'static str, &'static str)],
 }
 
-/// Why kde-breeze, adwaita, macos-monterey and windows-11 leave
+/// Why kde-breeze, adwaita, macos-monterey, macos-tahoe and windows-11 leave
 /// `link.hover_background` transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
                                link hover background for macOS, KDE and GNOME, \
@@ -1452,7 +1452,7 @@ struct Pair {
 /// `bg(theme.popover)` (`gpui-component-0.7.1/src/menu/popup_menu.rs:1480`,
 /// `styled.rs:186-192`), and upstream has no menu-surface token. The connector
 /// feeds `popover` from `popover.background_color`, the token's documented
-/// meaning, but `menu.background_color` differs from it in 30 of the 32
+/// meaning, but `menu.background_color` differs from it in 25 of the 34
 /// combinations. The call is hardcoded inside upstream's `render`, so there is
 /// no seam: it is on the Tier U list. It becomes measurable only where the
 /// hover layer is translucent, and both remaining pairs stay above 9:1.

@@ -77,8 +77,9 @@ pub enum Error {
     UnknownPreset {
         /// The requested preset name.
         name: String,
-        /// Available preset names: empty where the platform has no platform
-        /// presets (`from_system_with_preset` on Linux).
+        /// Available preset names: empty where the platform has no OS
+        /// generations to choose between (`from_system_with_preset` on Linux,
+        /// BSD and other platforms without a generation table).
         known: &'static [&'static str],
     },
 
@@ -161,7 +162,7 @@ impl fmt::Display for Error {
             Error::UnknownPreset { name, known: [] } => {
                 write!(
                     f,
-                    "unknown preset \"{name}\": this platform has no platform presets"
+                    "unknown preset \"{name}\": this platform has no OS generations to choose between"
                 )
             }
             Error::UnknownPreset { name, known } => {
@@ -486,7 +487,7 @@ mod tests {
         };
         assert_eq!(
             err.to_string(),
-            "unknown preset \"adwaita\": this platform has no platform presets"
+            "unknown preset \"adwaita\": this platform has no OS generations to choose between"
         );
     }
 
