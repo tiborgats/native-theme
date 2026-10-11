@@ -1598,6 +1598,8 @@ M3–M8 cites these instead of reporting them again.
   macOS-leg test `from_system().mode == detect_is_dark()` (M1-T6-01, "Test macOS (macos)"), the strict-panic steps of
   every crate (gpui's, which may fail softly, passed too), the static parity job, MSRV, the feature combinations. The
   screenshot sidecars and the asset-run changes still run first on the next `generate_assets_release.sh`.
+- **CI on M2's fixes (2026-10-12):** PR #3 at `6d1416d5`, 32 of 32 checks green, so the version-aware macOS preset
+  selection and the `macos-tahoe` / `macos-monterey` / `ios-13` presets passed the macOS and Windows test legs.
 - **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
   "Not in a git repository" and skips its git checks, the tag check among them.
 
