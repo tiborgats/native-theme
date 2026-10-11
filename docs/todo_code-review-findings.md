@@ -3676,8 +3676,11 @@ accent and its shades).
   Mica page updated 2026-07-17 by its `updated_at`; the page itself shows "Last updated" 2026-07-22), text, button fill and text, input text, tooltip (V2–V8). Translucent brushes are
   stated as the resource gives them: text `#000000e4`, muted `#0000009e` / `#ffffffc5`, disabled `#0000005c` /
   `#ffffff5d`, surface `#ffffffb3` / `#ffffff0d`, button fill `#ffffffb3` / `#ffffff0f`, unchecked check box and
-  switch `#00000006` / `#00000019`, check-box border `#00000072` / `#ffffff8b` (V4–V7, V9, V13, W3), and every
-  copy of the old text and disabled colours takes its control's own WinUI brush. R-I1: a hover fill that replaces
+  switch `#00000006` / `#00000019`, check-box border `#00000072` / `#ffffff8b` (V4–V7, V9, V13, W3), and the
+  text colours that copied the old text and disabled colours take their control's own WinUI brush; the soft fills
+  that still copied them (the input's hover border, the off switch's hover and disabled tracks, the slider's
+  disabled track) took theirs in fix round 2, and the inactive title-bar text (`#1a1a1a99` / `#ffffff99`) still
+  copies the old text colour, kept with a ❓ (W2). R-I1: a hover fill that replaces
   the rest fill is flattened over the window colour, button and segmented control `#f6f6f6`
   (249 × 128/255 + 243 × 127/255 = 246.0) and dark `#323232` (255 × 21/255 + 32 × 234/255 = 50.4); facts :1179
   gives the derivation, and the layer-or-replacement question is in docs/todo.md for M5–M7. By the controller's
@@ -3719,6 +3722,29 @@ accent and its shades).
   `tab.active_background` and `AccentFillColorDefault` (`SystemAccentColorDark1` / `Light2`, not the accent).
   Also for M3: the link's `disabled_text_color` still follows `HyperlinkButtonForegroundDisabled`, while its hover
   follows the inline `Hyperlink`.
+- **Step 7b, fix round 2** (the preset-validator's third pass, `validator-windows-11-after-step7b.md`: B1, B2,
+  W1–W3; the task review `review-M2b-7b.md`: I1, m1–m7; WinUI lines re-read at microsoft-ui-xaml 8463f45):
+  `defaults.border.color` is `CardStrokeColorDefault` as the resource gives it, `#0000000f` / `#00000019`
+  (Common_themeresources_any.xaml:250, :46; it was the composite `#e5e5e5` and an unsourced dark `#454545`), and
+  `border.opacity` its alpha, 0.059 / 0.098 (facts :1051, :1116), which closes the 0.14 and dark-border todo
+  entries (B1). `splitter.hover_color` keeps `#e5e5e5` / `#454545` with a ❓: WinUI 3 has no draggable divider
+  (facts :1419), for M3. `input.background_color` is `TextControlBackground` = `ControlFillColorDefault`,
+  `#ffffffb3` / `#ffffff0f` (TextBox_themeresources.xaml:130, :23), and facts :1186 gives it beside
+  `COLOR_WINDOW` (B2); facts :1029 gives `TextFillColorPrimary` beside `UISettings(Foreground)` (W1). The soft
+  values that copied replaced colours take their WinUI resources (W2): the input's hover border is its rest
+  border, since `TextControlBorderBrushPointerOver` is the rest brush (TextBox_themeresources.xaml:135, :134);
+  the off switch's hover `ToggleSwitchFillOffPointerOver` = `ControlAltFillColorTertiary` flattened over the
+  window, `#e5e5e5` (243 × 240/255 = 228.7) / `#2a2a2a` (255 × 11/255 + 32 × 244/255 = 41.6), its disabled track
+  `ControlAltFillColorDisabled` `#ffffff00` (ToggleSwitch_themeresources.xaml:136, :138; :16, :18); the slider's
+  disabled track `ControlStrongFillColorDisabled` `#00000051` / `#ffffff3f` (Slider_themeresources.xaml:127, :23).
+  The combo box's hover is `ComboBoxBackgroundPointerOver` = `ControlFillColorSecondary` flattened as the button's,
+  `#f6f6f6` / `#323232` (ComboBox_themeresources.xaml:243, :33; m6). Facts :1625 and inheritance-rules.toml:367
+  name the inline `Hyperlink` (W3). The preset header names the flattened pressed fill (m3); gpui's
+  `LINK_HOVER_NONE` doc and iced's hovered-button message are corrected (m4, m5). docs/todo.md gains, for M7, the
+  transparent sidebar over eframe's default `clear_color` (I1, with gpui's root background for M6), windows-11 in
+  the `extreme_bg_color` entry (m1), and, for M3, the switch's off-track outline `ToggleSwitchStrokeOff`, which
+  the model has no field for (m2). m7 (gpui `muted_bg` now 8.9 % from the text alpha) is noted, no change. A
+  column check of the facts diff finds only Windows cells changed (:1029, :1051, :1116, :1186, :1625). Commit: 9ac11178.
 
 ## M2c — iOS
 
