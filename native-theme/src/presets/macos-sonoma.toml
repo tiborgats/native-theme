@@ -315,8 +315,9 @@ disabled_background = "#e8e8ed80"
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ~3 (measured); horizontal ~8–10 is a range, not stated
-padding_vertical_px = 3.0
+# platform-facts.md:1552, :1557 (§2.24): 1 top / 3 bottom (API, macOS 14.8.9 probe); horizontal ~8–10 is a range, not stated
+padding_top_px = 1.0
+padding_bottom_px = 3.0
 [light.segmented_control]
 segment_height_px = 24.0
 separator_width_px = 1.0
@@ -681,8 +682,9 @@ disabled_background = "#3a3a3c80"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ~3 (measured); horizontal ~8–10 is a range, not stated
-padding_vertical_px = 3.0
+# platform-facts.md:1552, :1557 (§2.24): 1 top / 3 bottom (API, macOS 14.8.9 probe); horizontal ~8–10 is a range, not stated
+padding_top_px = 1.0
+padding_bottom_px = 3.0
 [dark.segmented_control]
 segment_height_px = 24.0
 separator_width_px = 1.0

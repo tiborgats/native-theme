@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: the `macos-sonoma` preset's split-view divider is AppKit's default, the thick one: 9 wide (it was 6, a GNUstep value) and clear, as `NSSplitView.dividerColor` is for that style (it took the border colour).
 - **native-theme**: the `macos-sonoma` preset's push button is 20 high, AppKit's `intrinsicContentSize` on macOS 14 (it was 22), with its title 1 below the bezel's top and 3 above its bottom, where AppKit's title rect puts it (it was 3 and 3); the macOS reader's button height follows.
 - **native-theme**: the `macos-sonoma` preset's slider knob is 20 across, as macOS 14 draws it (it was 21); the macOS reader's knob follows.
+- **native-theme**: the `macos-sonoma` preset's drop-down places its title 1 below the bezel's top and 3 above its bottom, where AppKit's pop-up button puts it (it was 3 and 3).
 
 ## [0.6.1] - 2026-10-09
 

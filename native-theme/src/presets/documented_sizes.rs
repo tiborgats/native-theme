@@ -264,7 +264,7 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(24.0), 1389)]),
     row(MacosSonoma, "popover", NONE, &[1412, 1413], "(none)"),
     row(MacosSonoma, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
-    row(MacosSonoma, "combo_box", [Some(3.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; ~3 (measured)")
+    row(MacosSonoma, "combo_box", [Some(1.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
         .with(&[("arrow_area_width", None, 1554)]),
     row(MacosSonoma, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
     row(MacosSonoma, "card", NONE, &[1592, 1593], "(none)"),
