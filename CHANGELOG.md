@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **READMEs**: the theme-switching GIFs are assembled at the captured window's size, as the screenshots are, instead of being scaled to 600 px wide, and the spinner GIFs are shown at their own 200×120 instead of 80 px high.
 - **native-theme**: the `ios` preset takes what iOS 13-18 draw where a source gives it: the section heading (17 pt Semibold), dialog title (28 pt) and every text-scale line height from Apple's Dynamic Type table; muted text in `secondaryLabel` and disabled text in `tertiaryLabel` (a disabled select's too); a button's fill, its blue text (pressed and hovered too) and the switch's green on track and grey off track as WebKit draws them on iOS; and the dark text field's fill in `systemBackground`. Each value with a source cites it in the file, whose header states the iOS versions it covers (13-18) and was verified on (18).
 - **native-theme**: the `macos-sonoma` preset's split-view divider is AppKit's default, the thick one: 9 wide (it was 6, a GNUstep value) and clear, as `NSSplitView.dividerColor` is for that style (it took the border colour).
+- **native-theme**: the `macos-sonoma` preset's push button is 20 high, AppKit's `intrinsicContentSize` on macOS 14 (it was 22), with its title 1 below the bezel's top and 3 above its bottom, where AppKit's title rect puts it (it was 3 and 3); the macOS reader's button height follows.
 
 ## [0.6.1] - 2026-10-09
 

@@ -240,7 +240,7 @@ const ROWS: &[Row] = &[
         .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
     // --- macOS (macos-sonoma, macos_widget_defaults) ---
     row(MacosSonoma, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(MacosSonoma, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
+    row(MacosSonoma, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
     row(MacosSonoma, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
     row(MacosSonoma, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
     row(MacosSonoma, "checkbox", NONE, &[1216, 1217], "(none)"),

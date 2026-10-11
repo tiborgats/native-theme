@@ -254,9 +254,9 @@ pub fn to_margin(
 /// `round(button_padding − width) + width` per side (`egui/src/widget_style.rs:163-165`,
 /// `epaint/src/margin.rs:117-119`), so a fractional padding or width moves an edge by at
 /// most half a point. It is exact only where the preset's padding is the platform's
-/// inside-the-border padding: `macos-sonoma`'s vertical button padding is derived as outer
-/// minus content, `(22 − 16) / 2` (`docs/platform-facts.md:1172`), which already contains
-/// the border, so there the button comes out one line width per side taller than the
+/// inside-the-border padding: `macos-sonoma`'s vertical text-input padding is derived as
+/// outer minus content, `(22 − 16) / 2` (`docs/platform-facts.md:1197`), which already
+/// contains the border, so there the field comes out one line width per side taller than the
 /// platform's until platform-facts corrects that derivation (`docs/todo.md`).
 ///
 /// The width is `clamp_length(finite_or(line_width, 0.0))`: a non-finite width adds nothing

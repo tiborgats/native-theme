@@ -279,6 +279,10 @@ the file was pruned on 2026-10-11, not reordered.
       preset. Until then a connector that adds the border's width to the
       stated padding, as the egui connector does, counts that border twice,
       one border width too much on each side of those macOS controls.
+      M2a Step 7 (2026-10-11) settled the button's row from the OS probe:
+      AppKit's title rect sits 1 below the 20-tall bezel's top and 3 above
+      its bottom (`docs/platform-facts.md:1172`); the text input, menu, tab
+      and list rows remain.
 
 ### Presets: a spinner stroke width platform-facts does not give
 

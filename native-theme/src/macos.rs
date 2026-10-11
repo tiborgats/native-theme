@@ -312,7 +312,7 @@ pub(crate) fn macos_widget_defaults() -> crate::ThemeMode {
     use crate::model::border::WidgetBorderSpec;
     crate::ThemeMode {
         button: crate::ButtonTheme {
-            min_height: Some(22.0), // NSButton regular control size
+            min_height: Some(20.0), // platform-facts.md:1170 (§2.3): NSButton intrinsicContentSize
             // platform-facts.md:1171 (§2.3): ~8 (WebKit); the legacy HIG 12 is
             // inter-button spacing (platform-facts.md:195)
             border: Some(WidgetBorderSpec {
@@ -818,7 +818,7 @@ mod tests {
         let wv = macos_widget_defaults();
         assert_eq!(
             wv.button.min_height,
-            Some(22.0),
+            Some(20.0),
             "NSButton regular control size"
         );
         assert_eq!(

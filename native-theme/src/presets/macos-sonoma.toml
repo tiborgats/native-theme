@@ -64,7 +64,8 @@ panel_px = 20.0
 [light.button]
 background_color = "#e8e8ed"
 min_width_px = 64.0
-min_height_px = 22.0
+# platform-facts.md:1170 (§2.3): NSButton intrinsicContentSize 20 (macOS 14.8.9 probe)
+min_height_px = 20.0
 icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.3 macOS)
 hover_background = "#e0e0e5"
@@ -78,9 +79,10 @@ disabled_background = "#e8e8ed80"
 
 
 [light.button.border]
-# platform-facts.md:1171-1172 (§2.3): NSButton ~8 (WebKit); 3 (measured)
+# platform-facts.md:1171-1172 (§2.3): NSButton ~8 (WebKit); 1 top / 3 bottom (API, macOS 14.8.9 probe)
 padding_horizontal_px = 8.0
-padding_vertical_px = 3.0
+padding_top_px = 1.0
+padding_bottom_px = 3.0
 
 [light.button.font]
 color = "#1d1d1f"
@@ -427,7 +429,8 @@ panel_px = 20.0
 [dark.button]
 background_color = "#3a3a3c"
 min_width_px = 64.0
-min_height_px = 22.0
+# platform-facts.md:1170 (§2.3): NSButton intrinsicContentSize 20 (macOS 14.8.9 probe)
+min_height_px = 20.0
 icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.3 macOS)
 hover_background = "#444446"
@@ -441,9 +444,10 @@ disabled_background = "#3a3a3c80"
 
 
 [dark.button.border]
-# platform-facts.md:1171-1172 (§2.3): NSButton ~8 (WebKit); 3 (measured)
+# platform-facts.md:1171-1172 (§2.3): NSButton ~8 (WebKit); 1 top / 3 bottom (API, macOS 14.8.9 probe)
 padding_horizontal_px = 8.0
-padding_vertical_px = 3.0
+padding_top_px = 1.0
+padding_bottom_px = 3.0
 
 [dark.button.font]
 color = "#ffffff"
