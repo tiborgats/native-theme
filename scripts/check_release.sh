@@ -17,11 +17,12 @@
 # Modes:
 #   (no argument)  the full run: every section below. Required on the last
 #                  commit of every fix phase and before the release commit.
-#   --commit       the per-commit subset: skips the release-only sections
-#                  (docs.rs emulation, packaging, semver checks, security
-#                  audit, outdated dependencies, and the visual-asset and
-#                  compatibility stamp checks), each printing "skipped
-#                  (--commit mode)", and names them in the final summary.
+#   --commit       the per-commit subset: skips the release-only checks
+#                  (the release-tag check, docs.rs emulation, packaging,
+#                  semver checks, security audit, outdated dependencies, and
+#                  the visual-asset and compatibility stamp checks), each
+#                  printing "skipped (--commit mode)", and names them in the
+#                  final summary.
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
@@ -34,9 +35,9 @@ Usage: scripts/check_release.sh [--commit]
                  every fix phase and before the release commit
   --commit       the per-commit subset: every lint, check, test, docs,
                  widget-coverage, showcase-parity and archive-index gate; skips
-                 docs.rs emulation, packaging, semver checks, the security
-                 audit, outdated dependencies, and the visual-asset and
-                 compatibility stamp checks
+                 the release-tag check, docs.rs emulation, packaging, semver
+                 checks, the security audit, outdated dependencies, and the
+                 visual-asset and compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -307,15 +308,17 @@ else
         print_ok "Working tree clean"
     fi
 
-    if git tag --list | grep -q "^v${CURRENT_VERSION}$"; then
+    if [[ $COMMIT_MODE ]]; then
+        print_skipped "Release tag check"
+    elif git tag --list | grep -q "^v${CURRENT_VERSION}$"; then
         print_warn "Tag v${CURRENT_VERSION} already exists in git"
     else
         print_ok "Tag v${CURRENT_VERSION} not yet created"
     fi
 fi
 
-check_and_install_tool "cargo-audit" "cargo-audit" "Security vulnerability scanner"
-check_and_install_tool "cargo-outdated" "cargo-outdated" "Outdated-dependency checker"
+[[ $COMMIT_MODE ]] || check_and_install_tool "cargo-audit" "cargo-audit" "Security vulnerability scanner"
+[[ $COMMIT_MODE ]] || check_and_install_tool "cargo-outdated" "cargo-outdated" "Outdated-dependency checker"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: source hygiene
