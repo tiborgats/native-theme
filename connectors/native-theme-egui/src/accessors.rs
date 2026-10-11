@@ -604,9 +604,10 @@ mod tests {
     /// is returned unchanged (T13 (d) repeats it).
     #[test]
     fn scaled_text_size_ignores_a_factor_that_is_not_finite_and_positive() {
-        let prefs = |f: f32| AccessibilityPreferences {
-            text_scaling_factor: f,
-            ..AccessibilityPreferences::default()
+        let prefs = |f: f32| {
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = f;
+            prefs
         };
         assert_eq!(scaled_text_size(10.0, &prefs(1.5)), 15.0);
         for f in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {

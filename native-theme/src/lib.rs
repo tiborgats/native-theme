@@ -251,8 +251,10 @@ pub use resolve::ResolutionContext;
 ///
 /// A single copy lives on [`SystemTheme`], shared across light and dark
 /// variants. These are runtime values detected from the OS -- not stored
-/// in TOML presets.
+/// in TOML presets. Outside this crate, start from
+/// [`AccessibilityPreferences::DEFAULT`] (or `default()`) and set fields.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct AccessibilityPreferences {
     /// Text scaling factor (1.0 = no scaling). Multiply font sizes by
     /// this factor when honoring the user's preference for larger text.
@@ -267,16 +269,20 @@ pub struct AccessibilityPreferences {
 
 impl Default for AccessibilityPreferences {
     fn default() -> Self {
-        Self {
-            text_scaling_factor: 1.0,
-            reduce_motion: false,
-            high_contrast: false,
-            reduce_transparency: false,
-        }
+        Self::DEFAULT
     }
 }
 
 impl AccessibilityPreferences {
+    /// No text scaling and no flag set: what [`Default::default`] returns,
+    /// usable in a `const` or `static`.
+    pub const DEFAULT: Self = Self {
+        text_scaling_factor: 1.0,
+        reduce_motion: false,
+        high_contrast: false,
+        reduce_transparency: false,
+    };
+
     /// Read the OS accessibility preferences without resolving a theme.
     ///
     /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE

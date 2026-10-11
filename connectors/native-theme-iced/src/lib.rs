@@ -1309,10 +1309,9 @@ mod tests {
     }
 
     fn scaled_prefs(text_scaling_factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = text_scaling_factor;
+        prefs
     }
 
     // === to_theme tests ===

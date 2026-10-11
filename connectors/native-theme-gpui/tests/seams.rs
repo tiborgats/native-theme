@@ -56,10 +56,9 @@ use native_theme::{AccessibilityPreferences, ResolutionContext};
 use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, to_theme};
 
 fn scaled_by(factor: f32) -> AccessibilityPreferences {
-    AccessibilityPreferences {
-        text_scaling_factor: factor,
-        ..AccessibilityPreferences::default()
-    }
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
+    prefs
 }
 
 /// The text scale the seam tests run at.

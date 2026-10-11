@@ -15744,13 +15744,12 @@ mod tests {
         };
         let button_line = line_of(resolved.button.font.size * factor);
         let body_line = resolved.defaults.font.size * factor * resolved.defaults.line_height;
+        let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+        accessibility.text_scaling_factor = factor;
         let state = State {
             current_theme: theme,
             current_resolved: resolved,
-            accessibility: native_theme_iced::AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..native_theme_iced::AccessibilityPreferences::default()
-            },
+            accessibility,
             active_tab: Tab::Buttons,
             ..State::default()
         };

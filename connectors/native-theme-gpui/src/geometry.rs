@@ -1083,10 +1083,9 @@ mod tests {
             .expect("resolves")
     }
     fn scaled(factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = factor;
+        prefs
     }
     fn len(v: f32) -> Option<Length> {
         Some(px(v).into())

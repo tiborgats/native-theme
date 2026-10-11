@@ -1422,10 +1422,8 @@ fn use_preset_scaled(
                 ..native_theme::ResolutionContext::for_tests()
             })
             .expect("the preset resolves");
-        let prefs = native_theme::AccessibilityPreferences {
-            text_scaling_factor: text_scale,
-            ..native_theme::AccessibilityPreferences::default()
-        };
+        let mut prefs = native_theme::AccessibilityPreferences::default();
+        prefs.text_scaling_factor = text_scale;
         native_theme_gpui::apply(
             native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
             &resolved,
@@ -4826,10 +4824,8 @@ fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestApp
 /// Set the text-scaling factor the connector lays controls out at, and draw
 /// the frame that follows.
 fn scale_text(cx: &mut VisualTestContext, factor: f32) {
-    let prefs = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: factor,
-        ..Default::default()
-    };
+    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
     cx.run_until_parked();
     draw(cx);
@@ -6595,12 +6591,11 @@ fn installed_preferences(
 fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
-    let os = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.25,
-        reduce_motion: false,
-        high_contrast: true,
-        reduce_transparency: true,
-    };
+    let mut os = native_theme_gpui::AccessibilityPreferences::default();
+    os.text_scaling_factor = 1.25;
+    os.reduce_motion = false;
+    os.high_contrast = true;
+    os.reduce_transparency = true;
     cx.update(|_window, cx| {
         let ui = showcase.read(cx).info_ui.clone();
         crate::demo::change_preferences(&ui, cx, |overrides| {
@@ -6613,12 +6608,11 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
         });
     });
     cx.run_until_parked();
-    let chosen = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.75,
-        reduce_motion: true,
-        high_contrast: false,
-        reduce_transparency: os.reduce_transparency,
-    };
+    let mut chosen = native_theme_gpui::AccessibilityPreferences::default();
+    chosen.text_scaling_factor = 1.75;
+    chosen.reduce_motion = true;
+    chosen.high_contrast = false;
+    chosen.reduce_transparency = os.reduce_transparency;
     assert_eq!(
         installed_preferences(&mut cx, &showcase).map(|p| (
             p.text_scaling_factor,
@@ -6667,12 +6661,11 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
 fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
-    let changed = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        reduce_motion: true,
-        high_contrast: true,
-        reduce_transparency: true,
-    };
+    let mut changed = native_theme_gpui::AccessibilityPreferences::default();
+    changed.text_scaling_factor = 1.5;
+    changed.reduce_motion = true;
+    changed.high_contrast = true;
+    changed.reduce_transparency = true;
     assert_ne!(
         installed_preferences(&mut cx, &showcase).as_ref(),
         Some(&changed),
@@ -7714,12 +7707,11 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
 #[gpui::test]
 fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let prefs = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        reduce_motion: false,
-        high_contrast: true,
-        reduce_transparency: false,
-    };
+    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
+    prefs.reduce_motion = false;
+    prefs.high_contrast = true;
+    prefs.reduce_transparency = false;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
     cx.run_until_parked();
     let items = read(&mut cx, &showcase, crate::chrome::status_environment);
@@ -8115,12 +8107,7 @@ fn the_palette_reports_itself(cx: &mut TestAppContext) {
 fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let unset = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.0,
-        reduce_motion: false,
-        high_contrast: false,
-        reduce_transparency: false,
-    };
+    let unset = native_theme_gpui::AccessibilityPreferences::DEFAULT;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&unset, cx));
     cx.run_until_parked();
     assert!(

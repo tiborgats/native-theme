@@ -46,10 +46,8 @@ fn the_atlas_reports_what_the_builder_was_given() {
         widget_gap: Some(6.0),
         ..LayoutTheme::default()
     };
-    let prefs = AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        ..AccessibilityPreferences::default()
-    };
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
     let atlas = ThemeAtlas::builder("Mixed", &light, &dark)
         .layout(&layout)
         .accessibility(&prefs)
@@ -1672,10 +1670,8 @@ mod t18_accessors {
     fn t18_e_the_text_accessors_return_their_leaves_scaled() {
         let t = resolved("windows-11", ColorMode::Dark);
         for factor in [1.0_f32, 2.0] {
-            let prefs = AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..AccessibilityPreferences::default()
-            };
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = factor;
             let s = |size: f32| scaled_text_size(size, &prefs);
             let roles = [
                 (TextRole::Caption, &t.text_scale.caption),
@@ -2150,11 +2146,8 @@ mod t18_constructors {
         } else {
             ColorMode::Dark
         };
-        sys.accessibility = AccessibilityPreferences {
-            text_scaling_factor: factor,
-            reduce_motion: !sys.accessibility.reduce_motion,
-            ..sys.accessibility.clone()
-        };
+        sys.accessibility.text_scaling_factor = factor;
+        sys.accessibility.reduce_motion = !sys.accessibility.reduce_motion;
         sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
             native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
@@ -2444,11 +2437,10 @@ mod t13_accessibility {
     }
 
     fn scaled_prefs() -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: 2.0,
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 2.0;
+        prefs.reduce_motion = true;
+        prefs
     }
 
     /// T13 (a): every text size the atlas writes is `scaled_text_size` of the theme's size — the
@@ -2540,10 +2532,8 @@ mod t13_accessibility {
     /// keep egui's defaults (`egui/src/style.rs:1440`; `ScrollAnimation::default`).
     #[test]
     fn t13c_reduced_motion_stops_every_animation() {
-        let reduced = AccessibilityPreferences {
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        };
+        let mut reduced = AccessibilityPreferences::default();
+        reduced.reduce_motion = true;
         for (key, light, dark) in presets() {
             let plain = ThemeAtlas::builder(key, &light, &dark).build();
             let still = ThemeAtlas::builder(key, &light, &dark)
@@ -2573,16 +2563,12 @@ mod t13_accessibility {
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {
-            let prefs = AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..AccessibilityPreferences::default()
-            };
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = factor;
             assert_eq!(scaled_text_size(13.0, &prefs), 13.0, "factor {factor}");
         }
-        let prefs = AccessibilityPreferences {
-            text_scaling_factor: 1.5,
-            ..AccessibilityPreferences::default()
-        };
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 1.5;
         assert_eq!(scaled_text_size(12.0, &prefs), 18.0);
     }
 
@@ -2624,10 +2610,8 @@ mod t13_accessibility {
     /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
     #[test]
     fn t5_line_spacing_and_slider_expansion_at_factor_two() {
-        let prefs = AccessibilityPreferences {
-            text_scaling_factor: 2.0,
-            ..AccessibilityPreferences::default()
-        };
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 2.0;
         let hack = match &egui::FontDefinitions::default()
             .font_data
             .get("Hack")

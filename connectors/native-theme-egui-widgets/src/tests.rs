@@ -669,10 +669,8 @@ fn the_switch_rings_its_track() {
 #[test]
 fn reduced_motion_holds_still() {
     let t = kde();
-    let prefs = AccessibilityPreferences {
-        reduce_motion: true,
-        ..AccessibilityPreferences::default()
-    };
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
     let ctx = installed(&t, &prefs);
     let mut on = false;
     let (out, r) = click(&ctx, |ui| ui.add(Switch::new(&mut on)));

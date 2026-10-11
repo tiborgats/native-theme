@@ -722,20 +722,13 @@ pub struct Native<'a> {
     pub accessibility: &'a AccessibilityPreferences,
 }
 
-static UNSCALED: AccessibilityPreferences = AccessibilityPreferences {
-    text_scaling_factor: 1.0,
-    reduce_motion: false,
-    high_contrast: false,
-    reduce_transparency: false,
-};
-
 impl<'a> Native<'a> {
     /// Unscaled, no reductions: for the preset path and tests.
     #[must_use]
     pub fn unscaled(resolved: &'a ResolvedTheme) -> Self {
         Self {
             resolved,
-            accessibility: &UNSCALED,
+            accessibility: &AccessibilityPreferences::DEFAULT,
         }
     }
 }
@@ -1188,10 +1181,9 @@ mod tests {
     }
 
     fn scaled(factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = factor;
+        prefs
     }
 
     #[test]
@@ -1689,10 +1681,9 @@ mod apply_tests {
     }
 
     fn prefs(reduce_motion: bool) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            reduce_motion,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.reduce_motion = reduce_motion;
+        prefs
     }
 
     /// The dark catppuccin preset, with the precondition every observer test
@@ -1966,11 +1957,9 @@ mod apply_tests {
         let (theme, resolved) =
             from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
         cx.update(|cx| apply(theme, &resolved, &prefs, cx));
-        let scaled = AccessibilityPreferences {
-            text_scaling_factor: 1.5,
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        };
+        let mut scaled = AccessibilityPreferences::default();
+        scaled.text_scaling_factor = 1.5;
+        scaled.reduce_motion = true;
         cx.update(|cx| apply_accessibility(&scaled, cx));
         cx.update(|cx| {
             let styled = GpuiTheme::global(cx);

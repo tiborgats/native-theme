@@ -2795,10 +2795,9 @@ fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
-    harness.state_mut().settings.prefs = Some(AccessibilityPreferences {
-        reduce_motion: true,
-        ..AccessibilityPreferences::default()
-    });
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    harness.state_mut().settings.prefs = Some(prefs);
     harness.state_mut().install(&ctx);
     harness
         .state_mut()
