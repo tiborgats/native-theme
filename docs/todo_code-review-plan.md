@@ -247,6 +247,25 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   `icon_theme = "material"`) is a different thing and keeps its name. No alias for the old
   preset key (pre-1.0); a CHANGELOG line.
 
+- **D8 — presets named by the first version of their look; iOS gets two (maintainer,
+  2026-10-11).** A preset's key is the vendor's name for the first OS version whose look it
+  carries (the rule `presets/README.md` already states, M1-T1-03). So:
+  - `ios` becomes `ios-13` (the flat palette with its dark variant, unchanged from iOS 13
+    to 18 per M2c) and `ios-26` is added (Liquid Glass; Apple numbered the release after 18
+    as 26, so there is no iOS 19), built from sourced values only; iOS 27 is a refinement
+    and waits, as macOS 27 does (D4). Steps in *M2c only* below.
+  - `macos-sonoma` is checked against the same rule: M2a's version map puts it in the
+    generation Big Sur (11) began. M2a Step 7 reads Apple's AppKit release notes for 11,
+    12, 13 and 14 for control-appearance changes; the key becomes the first version from
+    which the preset's values hold (`macos-big-sur` if none of them changed a value the
+    model carries), its header stating which versions were verified (14, and 15 after the
+    probe). A rename, if any, is one commit in M2a Step 7 with a CHANGELOG line.
+  - `windows-11`, `macos-tahoe`, `material-3` already follow it.
+- **D9 — the probe run and macOS 27 (maintainer, 2026-10-11).** `os-probe.yml` is on `main`
+  (dispatch-only, `77cb7f2f`), and the run is dispatched on `v0.7.0-rc1`; the `xcode-27`
+  (macOS 27 preview) image is measured now, and a `macos-golden-gate` preset still waits for
+  GitHub's non-preview image (D4). Windows 10 is decided after the probe: if `windows-2022`'s
+  OS-drawn values match `windows-2025`'s, `windows-11` covers 10 and says so.
 ---
 
 ## The finding ledger
@@ -704,6 +723,22 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
   `.github/workflows/screenshots.yml` next to the `macos-sonoma` entries (:141-142), and the
   showcases' theme menus list the new preset. The CI run is the maintainer's (the next
   `generate_assets_release.sh`); until then the stale-assets warning stands.
+
+### M2c only: `ios-13` and `ios-26` (D8)
+
+Runs after M2c's Steps 1–6 (done) and M1's stop point A (done).
+
+- [ ] **Step 16: Rename.** `ios.toml` → `ios-13.toml` (`git mv`), its `PRESET_ENTRIES` /
+  `PRESET_NAMES` entry, every use of the preset key (as the `material-3` rename did, M1 F2:
+  a gate test that `ios-13` loads and `ios` does not), its header naming iOS 13–18 and the
+  versions its values were verified on; CHANGELOG `[Unreleased]` under the breaking changes.
+- [ ] **Step 17: `ios-26`.** `ios-26.toml` from M2c's iOS 26 values, each with its source
+  (HIG JSON, UIKit documentation, WebKit's iOS rendering, the **(WebKit)** tag); a value with
+  no primary source stays unset, never copied from `ios-13` unless a source shows it
+  unchanged. `preset-validator` reports no unsourced value.
+- [ ] **Step 18: Documentation and screenshots.** The presets README and the crate README
+  (both are looks for desktop apps, D5), the showcases' theme menus, `screenshots.yml`; the
+  capture run is the maintainer's.
 
 ### M2d only: the two Material presets (D6)
 

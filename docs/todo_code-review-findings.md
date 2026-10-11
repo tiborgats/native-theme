@@ -1565,6 +1565,11 @@ M3–M8 cites these instead of reporting them again.
   draws a never-shown window is unknown until the first CI run. `workflow_dispatch` is offered only for a workflow on the
   default branch, so the run needs the workflow on `main` first (or another trigger): the maintainer's call. The run must
   happen before 2026-11-02 (`macos-14` unsupported).
+- **Maintainer, 2026-10-11 (plan D8, D9):** iOS presets `ios-13` (the present `ios`) and `ios-26`
+  (named by the first version of each look; there is no iOS 19); `macos-sonoma` checked against the same rule in M2a
+  Step 7 (Big Sur began its generation); the probe dispatched on `v0.7.0-rc1` (run 38129819806, `os-probe.yml` put on
+  `main` as `77cb7f2f`, draft PR #3 opened so CI runs on the branch); `xcode-27` measured now, a `macos-golden-gate`
+  preset only after a non-preview image; Windows 10 decided after the probe.
 - **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
   "Not in a git repository" and skips its git checks, the tag check among them.
 
