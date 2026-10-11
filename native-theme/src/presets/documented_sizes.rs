@@ -15,7 +15,7 @@
 //! of its own.
 //!
 //! Presets that platform-facts does not cover (the colour schemes, and the
-//! `ios` platform preset, which no platform-facts column documents) state
+//! `ios-13` platform preset, which no platform-facts column documents) state
 //! none of these sizes: nothing cites a source for them, so the toolkit's own
 //! stand. The Material column counts a material-web or Compose implementation
 //! constant cited at a pinned line, which its cells tag **(impl)**, as
@@ -646,7 +646,7 @@ fn every_citation_names_its_platform_facts_row() {
 }
 
 /// Presets that platform-facts does not cover: the colour schemes, and the
-/// `ios` platform preset, which no platform-facts column documents.
+/// `ios-13` platform preset, which no platform-facts column documents.
 const UNSOURCED_PRESETS: [&str; 11] = [
     "catppuccin-latte",
     "catppuccin-frappe",
@@ -658,7 +658,7 @@ const UNSOURCED_PRESETS: [&str; 11] = [
     "one-dark",
     "solarized",
     "tokyo-night",
-    "ios",
+    "ios-13",
 ];
 
 /// A preset platform-facts does not cover cites no source for a size, so it

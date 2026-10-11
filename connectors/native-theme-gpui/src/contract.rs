@@ -1943,8 +1943,8 @@ fn pair_ratio(fg: Hsla, bg: Hsla, surface: Hsla) -> f32 {
 /// ratio it emits is not worse than the ratio the platform's own fields give.
 ///
 /// Not AA: a good many of the measured pairs sit below it -- the run prints
-/// how many and which -- and they are not all errors: the `ios` preset states
-/// `#34c759` with white text (`ios.toml:47-48`), about 2.2:1. A connector that
+/// how many and which -- and they are not all errors: the `ios-13` preset states
+/// `#34c759` with white text (`ios-13.toml:52-53`), about 2.2:1. A connector that
 /// asserted AA would be asserting
 /// that every platform meets AA, and "fixing" the ones that do not would mean
 /// inventing values the platform did not give. Those pairs are printed

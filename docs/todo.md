@@ -536,7 +536,7 @@ the file was pruned on 2026-10-11, not reordered.
       `button/internal/_shared.scss:141-150`) follow it. macos-monterey
       (0.3, and `disabledControlTextColor` colours; PF §2.1.6 says the
       measured ≈0.25–0.3 is the text colour's alpha, "not global opacity",
-      and the research found no source for bezel dimming), ios (0.3) and
+      and the research found no source for bezel dimming), ios-13 (0.3) and
       the community presets (catppuccin ×4, dracula, gruvbox, nord,
       one-dark, solarized, tokyo-night: 0.5) state both a disabled opacity
       below 1 and disabled colours, so a disabled control is dimmed twice.
@@ -2025,7 +2025,7 @@ the gap — closing it is a change, and each wants its own decision.
         `lineEditSizeFromContents` expands by `LineEdit_FrameWidth` = 6 on
         both axes, and QLineEdit's own margins were not read.
       - **iOS.** Platform-facts has no iOS column, so no iOS size is
-        sourced: `ios.toml`'s `bar_height_px = 44.0` is unsourced, and so is
+        sourced: `ios-13.toml`'s `bar_height_px = 44.0` is unsourced, and so is
         every other size in it (the 44 `min_height` of button, input and
         combo box, the 44 `row_height` of menu and list, tooltip
         `max_width` 300, the dialog bounds 270/560/140/600, the layout

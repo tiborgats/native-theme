@@ -694,7 +694,7 @@ impl Theme {
     ///
     /// Platform presets are included where their platform tag matches:
     /// kde-breeze on KDE, adwaita on Linux, windows-11 on Windows,
-    /// macos-monterey on macOS, ios on macOS and iOS. `material-3` and the
+    /// macos-monterey on macOS, ios-13 on macOS and iOS. `material-3` and the
     /// community themes are always included.
     ///
     /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,

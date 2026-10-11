@@ -21,25 +21,25 @@ where `docs/platform-facts.md` gives it for its platform: KDE, GNOME, macOS,
 Windows or Material, whose column counts a material-web or Compose
 implementation constant cited at a pinned line as documented, as the KDE and
 GNOME columns count a Breeze or libadwaita source constant. The color-scheme
-presets, and the `ios` platform preset, which has no platform-facts column,
+presets, and the `ios-13` platform preset, which has no platform-facts column,
 state none (`documented_sizes.rs` checks both). An
 unstated gated size resolves to `None` and the toolkit's own applies. The
 presets' other sizes (`min_height_px`, `max_width_px`, …) are stated,
 often without a source, and are still being audited (`docs/todo.md`,
 Table B); the color-scheme presets state many of them too.
 
-`material-3` and `ios` have no reader: `SystemTheme::from_system()` never
+`material-3` and `ios-13` have no reader: `SystemTheme::from_system()` never
 selects them, and an application chooses them as a look.
 `material-3` is a look for any platform, and `list_presets_for_platform()`
 offers it on every one; its icons are the bundled Material Symbols, which
-load with the `material-icons` feature. `ios` is a look for desktop apps on
+load with the `material-icons` feature. `ios-13` is a look for desktop apps on
 macOS: its icons are SF Symbols, which load only on macOS (with
 `system-icons`). `list_presets_for_platform()` offers it on macOS and iOS and
-`Theme::preset("ios")` loads it anywhere, but off macOS, iOS included, its
+`Theme::preset("ios-13")` loads it anywhere, but off macOS, iOS included, its
 icons are `None`, never another set's.
 
 Files: `kde-breeze.toml`, `macos-monterey.toml`, `windows-11.toml`,
-`adwaita.toml`, `material-3.toml`, `ios.toml`, and the community presets
+`adwaita.toml`, `material-3.toml`, `ios-13.toml`, and the community presets
 (`catppuccin-*.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
 `one-dark.toml`, `solarized.toml`, `tokyo-night.toml`).
 
@@ -58,9 +58,9 @@ presets keep their style names, `kde-breeze` and `adwaita`, and their
 headers name the style version they pin (Breeze v6.7.5, libadwaita
 1.10.0, checked in the code review's M2e on 2026-10-11), since the KDE
 and GNOME readers read the installed style, and the style, not the
-desktop's version, is the generation. `ios` is not named by its version yet: it becomes `ios-<N>` once
-its values are checked against iOS `<N>`, and keeps its key if they match no
-single version.
+desktop's version, is the generation. The iOS preset follows the rule as well: `ios-13` carries the flat
+look iOS 13 introduced, unchanged to iOS 18, its header naming the version its
+values were verified on.
 
 ## Preset file listing
 
@@ -73,7 +73,7 @@ single version.
 | `catppuccin-mocha.toml` | Catppuccin Mocha color scheme |
 | `dracula.toml` | Dracula color scheme |
 | `gruvbox.toml` | Gruvbox color scheme |
-| `ios.toml` | iOS/iPadOS standalone theme |
+| `ios-13.toml` | iOS standalone theme, the flat look of iOS 13 to 18 |
 | `kde-breeze.toml` | KDE Breeze standalone theme |
 | `macos-monterey.toml` | macOS standalone theme, Monterey (12) to Sequoia (15) |
 | `material-3.toml` | Material Design standalone theme |

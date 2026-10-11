@@ -1775,7 +1775,7 @@ mod tests {
     /// The combinations whose preset states a combo box text colour of its own,
     /// which gpui-component 0.7.1 gives no route for (Tier U): an iOS select's
     /// text is systemBlue (WebKit html.css@31adf9d1:1099).
-    const STATED_COMBO_TEXT: [&str; 2] = ["ios/light", "ios/dark"];
+    const STATED_COMBO_TEXT: [&str; 2] = ["ios-13/light", "ios-13/dark"];
 
     /// `geometry::checkbox` and `geometry::combobox` carry no colour although
     /// upstream paints both from `foreground`: the route is blocked past the

@@ -1369,7 +1369,7 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// (native-theme `detect.rs`, `detect_system_font_dpi`), the others at 96.
 /// A native preset is only offered on its own platform, so macos-monterey
 /// resolved on a 96 DPI Linux host is not a configuration the showcase
-/// shows; ios is offered on macOS too (its `platforms` are `macos` and
+/// shows; ios-13 is offered on macOS too (its `platforms` are `macos` and
 /// `ios`), so it is resolved at 72. A colour-scheme preset, offered
 /// everywhere (no `platforms`), keeps the host's DPI (`None`), as
 /// `ResolutionContext::from_system` reads it.
@@ -1490,7 +1490,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         "kde-breeze",
         "adwaita",
         "macos-monterey",
-        "ios",
+        "ios-13",
         "windows-11",
     ] {
         assert!(

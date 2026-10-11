@@ -328,7 +328,7 @@ fn preset_names_are_correct() {
         "list_presets() missing 'macos-monterey'"
     );
     assert!(has_key("material-3"), "list_presets() missing 'material-3'");
-    assert!(has_key("ios"), "list_presets() missing 'ios'");
+    assert!(has_key("ios-13"), "list_presets() missing 'ios-13'");
     assert!(
         has_key("catppuccin-latte"),
         "list_presets() missing 'catppuccin-latte'"
@@ -375,6 +375,16 @@ fn macos_preset_is_named_by_its_generation() {
             .iter()
             .any(|p| p.key == "macos-monterey")
     );
+}
+
+#[test]
+fn ios_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("ios-13").is_ok());
+    assert!(matches!(
+        Theme::preset("ios"),
+        Err(Error::UnknownPreset { .. })
+    ));
+    assert!(Theme::list_presets().iter().any(|p| p.key == "ios-13"));
 }
 
 #[test]

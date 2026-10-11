@@ -2,7 +2,7 @@
 //!
 //! Provides 16 user-facing built-in presets embedded at compile time:
 //! 6 platform (kde-breeze, adwaita, windows-11, macos-monterey, material-3,
-//! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
+//! ios-13) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
 //! Solarized, Tokyo Night, One Dark), and functions for
 //! loading themes from TOML strings and files.
 
@@ -26,7 +26,7 @@ const PRESET_ENTRIES: &[(&str, &str)] = &[
         include_str!("presets/macos-monterey.toml"),
     ),
     ("material-3", include_str!("presets/material-3.toml")),
-    ("ios", include_str!("presets/ios.toml")),
+    ("ios-13", include_str!("presets/ios-13.toml")),
     // Community presets
     (
         "catppuccin-latte",
@@ -59,7 +59,7 @@ const PRESET_NAMES: &[&str] = &[
     "windows-11",
     "macos-monterey",
     "material-3",
-    "ios",
+    "ios-13",
     "catppuccin-latte",
     "catppuccin-frappe",
     "catppuccin-macchiato",
@@ -84,7 +84,7 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("windows-11", "Windows 11"),
     ("macos-monterey", "macOS Sonoma"),
     ("material-3", "Material"),
-    ("ios", "iOS"),
+    ("ios-13", "iOS"),
     ("catppuccin-latte", "Catppuccin Latte"),
     ("catppuccin-frappe", "Catppuccin Frappe"),
     ("catppuccin-macchiato", "Catppuccin Macchiato"),
@@ -152,7 +152,7 @@ const PRESET_INFOS: &[PresetInfo] = &[
         light_only: false,
     },
     PresetInfo {
-        key: "ios",
+        key: "ios-13",
         display_name: "iOS",
         platforms: &["macos", "ios"],
         light_only: false,
@@ -300,7 +300,7 @@ fn detect_platform() -> &'static str {
 
 /// Returns preset info appropriate for the current platform.
 ///
-/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, ios)
+/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, ios-13)
 /// are only included on their native platform. Community themes are always included.
 pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     let platform = detect_platform();
@@ -450,7 +450,7 @@ accent_color = "#00ff00"
         let cases: &[(&str, IconSet)] = &[
             ("windows-11", IconSet::SegoeIcons),
             ("macos-monterey", IconSet::SfSymbols),
-            ("ios", IconSet::SfSymbols),
+            ("ios-13", IconSet::SfSymbols),
             ("adwaita", IconSet::Freedesktop),
             ("kde-breeze", IconSet::Freedesktop),
             ("material-3", IconSet::Material),

@@ -1044,7 +1044,7 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
                 "defaults.text_color is white, the color iced_aw paints",
             ),
             ("windows-11/dark", "the same"),
-            ("ios/dark", "the same"),
+            ("ios-13/dark", "the same"),
         ],
     },
 ];

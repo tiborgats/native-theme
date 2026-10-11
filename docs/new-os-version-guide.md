@@ -20,7 +20,7 @@ first OS version:
 |---|---|---|
 | macOS | Apple's codename | `macos-monterey` |
 | Windows | Microsoft's version number | `windows-11` |
-| iOS | the iOS version number | `ios-<N>` (today's `ios` is renamed once its values are checked against one iOS version; it keeps its key if they match none) |
+| iOS | the iOS version number | `ios-13` (the flat look of iOS 13 to 18) |
 | Material | the design version | `material-3` |
 | KDE, GNOME | the style, not the desktop | `kde-breeze`, `adwaita` |
 

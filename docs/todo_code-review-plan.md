@@ -744,7 +744,9 @@ Runs after M2c's Steps 1–6 (done) and M1's stop point A (done).
   unchanged. `preset-validator` reports no unsourced value.
 - [ ] **Step 18: Documentation and screenshots.** The presets README and the crate README
   (both are looks for desktop apps, D5), the showcases' theme menus, `screenshots.yml`; the
-  capture run is the maintainer's.
+  capture run is the maintainer's. At that asset run (Step 16's rename, D8, as M2a Step 12 has
+  it for macOS): the display name and the TOML `name` of `ios-13` become "iOS 13" (they stay
+  "iOS" until that run; ruled 2026-10-11).
 
 ### M2d only: the two Material presets (D6)
 
