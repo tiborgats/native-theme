@@ -8,7 +8,7 @@ rules are there (*The finding ledger*). Branch `v0.6.2-rc1`, from `main` at `928
 | M | Status |
 |---|--------|
 | M0 | done (2026-10-11) |
-| M1 | decisions done (2026-10-11), fix phase in progress |
+| M1 | done (2026-10-11) |
 | M2a–M2e | not started |
 | M3–M9 | not started |
 
@@ -129,6 +129,31 @@ tokens of proposals and verdicts) and wrote this section. The maintainer's cap f
 +2000k; the Workflow's budget hook did not pick the cap up (`budget.total` was unset), so
 the run was not capped mechanically and stayed under it by its size.
 
+The fix phase (Steps 6–7, subagent-driven: one `implement` agent on Opus per task or
+batch, a task reviewer on Opus, scoped re-reviews on Sonnet, a whole-branch review on
+Opus, one fix wave), output tokens from the agents' transcripts:
+
+| Stage | Agents | Output tokens | Cache reads |
+|-------|-------:|--------------:|------------:|
+| Implementers (10 dispatches, 3 of them with a fix round) | 10 | 391k (20k–70k each; the two-task and fix-round dispatches 49k–70k) | 127M |
+| Task reviewers | 10 | 128k (6k–22k each) | 25M |
+| Scoped re-reviews (Sonnet) | 3 | 4k | 0.2M |
+| Whole-branch review | 1 | 37k | 21M |
+| Fix wave after it | 1 | 24k | 5.6M |
+| Fix phase total | 25 | 584k | 179M |
+
+M1 in all: about 1.02M output tokens in agents (435k review Workflow + 584k fix phase),
+plus the orchestrating session's own. The Workflow's and the Agent tool's own "subagent
+tokens" figures (1.73M for the Workflow, 3.6M summed over the fix-phase agents) count
+more than output and are not comparable with these. Wall clock: the Workflow 20 min; the
+fix phase about 9 hours, almost all of it the per-commit gate (`check_release.sh --commit`,
+29 min on cold builds, 11–12 min warm) run 14 times, one build at a time.
+
+Estimate for M3 (10 review agents + fixes), revised: the review Workflow about 300k–500k
+output tokens (Opus region reviewers read more code than M1's design reviewers but write
+less); a fix phase of 10–15 tasks about 600k; so M3 about 1.0–1.2M against the plan's
++2500k cap, the wall clock bounded by the gate, not by the agents.
+
 Estimate for the code milestones from these figures: a region reviewer reading 2.5k lines
 at Opus `high` is likely 25k–40k output tokens (the critics read about that much code
 checking claims), a verifier 15k–25k; a 10-agent review phase about 300k–500k output
@@ -138,7 +163,7 @@ opens; the Haiku context maps keep it bounded.
 
 ## M1 — Design review
 
-**Status:** review, critique and decisions done 2026-10-11 (Steps 1–4); fix plan and fix phase below.
+**Status:** done 2026-10-11 (Steps 1–7; stop point B at 92e15311).
 
 **Decisions (Step 4).** Rounds 1–6 (24 proposals) were put to the maintainer one by one in
 AskUserQuestion rounds of four, the critic-amended form first; every answer took that form.
@@ -328,7 +353,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** Adopt the rule in presets/README.md and the guide now. Write each header's 'covers' and 'verified on' lines only from that platform's M2 Step 1 version map and Step 2 checks, at that part's close. macos-sonoma says 14-15 only if M2a confirms D4's condition. Until then a header names the generation and states no range, so no version claim is invented. Keep no windows-10, with the reason recorded once M2b Step 1 records Windows 10's support status.
 
 **Decision:** adopt the rule now, headers at each M2 part's close (round 1): the rule into presets/README.md and new-os-version-guide.md in M1; each header's 'covers' and 'verified on' lines from that part's sourced version map.
-**Status:** M1 fix phase (rule); headers in M2a–M2e
+**Status:** fixed in a85d1fe0 (the rule in presets/README.md and new-os-version-guide.md; fe5f4cea gated the style-version sentence on M2e's check); headers at the M2 parts' closes
 
 ### M1-T1-04 · no API break · Pinning an older generation on a newer OS: from_system_with_preset
 
@@ -359,7 +384,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** (1) Record it now as a docs/todo.md entry. Implement only after P0 and macos-tahoe (M2a Step 9) land, not in M1's fix phase. (2) The rustdoc must say what a pin gives: the older generation's geometry over the running OS's colours, fonts and accessibility (on macOS 26, NSColor gives Tahoe colours). That is a hybrid, not the old OS's look, and it is reported as PresetOlder through P0's match. (3) Validate the name against P0's table rows for the running platform, not only PresetInfo.platforms.
 
 **Decision:** adopt after macos-tahoe lands (round 1): recorded on docs/todo.md in M1; implemented after M1-T1-01 and M2a Step 9, the rustdoc stating the hybrid result.
-**Status:** scheduled: after M2a Step 9; docs/todo.md entry in M1
+**Status:** docs/todo.md entry added in a85d1fe0; implementation after M2a Step 9
 
 ### M1-T2-01 · no API break · README states what ios and material are; ios named by its version after M2c
 
@@ -390,7 +415,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** README sentence for ios: it is a look for desktop apps on macOS, and its SF Symbols load only on macOS (SfSymbolsLoader is cfg(target_os="macos")). It is offered on macOS and iOS by list_presets_for_platform, but on iOS and elsewhere its icons are None and are never substituted. For material: its Material Symbols icons load with the material-icons feature. Rename to ios-<N> only after M2c Step 2, with no alias; if no single version matches, the header says so and the key stays. Fix the line citations.
 
 **Decision:** adopt with the critic's wording (round 2): README sentences now (SF Symbols load only on macOS; icons None elsewhere, never substituted; material's icons with the material-icons feature); `ios` → `ios-<N>` only after M2c Step 2, no alias.
-**Status:** M1 fix phase (READMEs); rename in M2c
+**Status:** fixed in a85d1fe0 (README sentences); the `ios-<N>` rename in M2c
 
 *Reviewer D-A notes:* Read-only review; no build or test run. Verified in the cargo registry, not by running: objc2-foundation 0.3.2's `NSProcessInfo::processInfo()` and `operatingSystemVersion()` are safe methods (src/generated/NSProcessInfo.rs:78, :135) behind its `NSProcessInfo` feature, which native-theme does not enable yet (native-theme/Cargo.toml:62-70); windows-version 0.1.7 (repository microsoft/windows-rs) exposes a safe `OsVersion::current()` over `RtlGetVersion` (src/lib.rs:38-53). The Windows 10/11 build boundary is deliberately not stated: M2b sources it. Counts verified with grep: platform-facts.md lines mentioning Sonoma 4, Sequoia 3, Tahoe 4, Windows 10/Win10 6; `macos-sonoma` appears in 37 files outside target/ and the archive, 13 lines in presets.rs and 9 in pipeline.rs; the presets directory holds 22 entries (20 TOML + README.md + documented_sizes.rs). Two things the plan may want to know: (1) Step 9's premise that the live base omits the fields the reader provides is false for the geometry `macos_widget_defaults()` and `winui3_widget_sizing()` hardcode in Rust, which the pipeline merges over the live preset (pipeline.rs:51-52), so without P2 a `macos-tahoe-live.toml` cannot change those fields; (2) `platform_preset_name()` returns `adwaita` on an iOS target (pipeline.rs:427-434) while `detect_platform()` returns `ios` (presets.rs:307-309), a small inconsistency P1's table removes. P2 changes reader code M4 reviews; per the plan's rule it should land before M4 or M4 reads the readers after it. Question for the maintainer: does the `-live` suffix convention stay the way a generation's live twin is found (four places rely on it), or should P1's table carry both names explicitly?
 
@@ -434,7 +459,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** 1) Add a public Theme::resolve_with(mode, &ResolutionContext) (resolve_in renamed or wrapped) and rewrite the doc at mod.rs:442-445 to point to it. 2) Fix the double detection separately: run_pipeline (pipeline.rs:70-73) builds its context without running system_font_dpi when the reader returned a font_dpi. lib.rs:559-572 stays untouched. 3) Build one context per call in egui ext.rs:192-193, icons.rs:576-581 and plugin.rs:336. 4) Correct the problem statement: on the ledger machine the chain is file reads then xrdb; xrandr does not run.
 
 **Decision:** adopt with the critic's changes (round 2): public `Theme::resolve_with(mode, &ResolutionContext)` and the doc rewrite; the pipeline skips DPI detection when the reader supplied `font_dpi`; egui builds one context per call at its three sites; the problem statement corrected (xrandr does not run when Xft.dpi is set).
-**Status:** M1 fix phase
+**Status:** fixed in bd12be93 (`resolve_with` public, the pipeline reuses the reader's DPI, egui one context per call; measured `resolve_with` 21–34 µs against `resolve` 1.28–3.50 ms); correction to the Problem text: on the ledger machine the chain is file reads then `xrdb`, and `xrandr` runs only when `Xft.dpi` is unset
 
 ### M1-T3-02 · no API break · Theme → ThemeMode → Resolved with Option fields: keep it
 
@@ -494,7 +519,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** 1) Do not regenerate property-registry.toml. Add one bidirectional test: its widget and _structures key sets equal the WidgetFieldInfo/FieldInfo inventory that already exists (resolve/mod.rs:22-45). Types stay hand-kept. This needs no macro change, and the comments stay. 2) Make the test land with the fix it immediately forces: remove the four stale accessibility keys and the stale spacing note from [defaults]. 3) For inheritance-rules.toml, do only what todo.md:1311 asks: emit each inherit_from target into inventory and compare [uniform] targets, replacing the hand-kept lists at inheritance.rs:675-798. 4) Cite the todo entry as the item, not as new work.
 
 **Decision:** adopt the critic's check-not-generate form (round 2): a bidirectional key-set test of property-registry.toml against the `WidgetFieldInfo`/`FieldInfo` inventory, the four stale `[defaults]` keys and the spacing note removed, `inherit_from` targets emitted and `[uniform]` targets compared (docs/todo.md:1307-1314).
-**Status:** M1 fix phase
+**Status:** fixed in 890edc88 (key-set test both ways, the four stale keys removed, `[uniform]` targets compared: 67 from the derive, 4 from the border inventory, 15 hand-kept); new finding for M3 R2: `[uniform] list.alternate_row_background = "list.background_color"` is stated in inheritance-rules.toml but applied by no code (the old test listed it as implemented)
 
 ### M1-T4-01 · api-break · The -live tier changes no value: remove it
 
@@ -525,7 +550,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** 1) Present it at stop point A as an amendment to D4 (no macos-tahoe-live) and to D3's object list. The maintainer approves it explicitly, and the D1 version consequence is stated. 2) If approved, land it before M2a Steps 8-12 so no new twin is built. 3) Correct the history to 4195245a for the active-variant base. 4) Keep the 'Reader-provided fields' README section as documentation of the readers, add the missing cost items above, and close docs/todo.md:2579-2580 and the preset half of :2594-2600.
 
 **Decision:** adopt (round 2): remove the `-live` tier before M2a Steps 8–12; D3's object list and D4 amended (no `macos-tahoe-live`); the README's reader-provided-fields list kept as reader documentation; docs/todo.md:2579-2580 and the preset half of :2594-2600 closed. Breaking change accepted: under D1 the release is 0.7.0 and under D0 the branch becomes `v0.7.0-rc1`.
-**Status:** M1 fix phase
+**Status:** fixed in 19860fbc (breaking; `cargo semver-checks` reports the two removed items, the D1 evidence); D3 and D4 amended in 752c76fe; branch renamed v0.7.0-rc1
 
 ### M1-T5-01 · no API break · Machine-readable facts for Chapter 2, keyed by platform and OS version
 
@@ -556,7 +581,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** 1) Now, before M2a Step 8: add a ruling to platform-facts.md Conventions that a version-tagged value in a cell (e.g. 'macOS 14: X · macOS 26: Y') belongs to the preset of that version, not to a usage context, so the one-number rule reads per preset. 2) Make the gate's Platform enum preset-keyed (MacosSonoma, MacosTahoe, Material3, Material3Expressive) with hand rows per preset. 3) Do not migrate to a facts TOML in M1 or M2. Append the OS-version axis and these findings to the existing docs/todo.md:2343-2350 entry, as its own rationale, spec and plan after M2. 4) Correct the counts to 90 padding rows and 776 citations.
 
 **Decision:** adopt the critic's minimal form (round 3): a version ruling in platform-facts.md Conventions (a version-tagged value belongs to that version's preset) and a preset-keyed gate in documented_sizes.rs, both before M2a Step 8; the facts-TOML migration stays on docs/todo.md:2343 with the OS-version axis and these findings appended, for its own rationale/spec/plan after M2.
-**Status:** M1 fix phase
+**Status:** fixed in a3942afe (the ruling, a `NativePreset`-keyed gate, the todo entry appended); recount by the implementer: the gate has 95 padding rows (90 `row()` plus 5 toolbar rows), `platform-facts.md:N` citations 784 before F3 and 602 after
 
 *Reviewer D-B notes:* Verified counts: live preset lines 439+379+447+472 = 1737 (wc); the key/value comparison of each -live file against its regular preset used Python tomllib over flattened keys (comments ignored); property-registry versus struct comparison used a regex over widgets/mod.rs with serde renames applied, widget tables only (the defaults, text_scale and theme_variant tables were not compared). The xrdb timing is a Python subprocess spawn on the maintainer's machine, 11 runs, not a trace of resolve itself; the 1 ms poll explanation of the 3.4 and 5.2 ms jumps is inferred from detect.rs:179-229 and the ledger, not measured with strace. Context-map corrections: `ResolutionContext::from_system` is at resolve/context.rs:77; `ThemeMode` at model/mod.rs:107; a second full+live merge site exists at lib.rs:559-572; scripts/check_widget_coverage.py checks showcase widget coverage, not platform facts. T4's recommendation is breaking (preset names and two public items), so it needs D1 triage; a question for the maintainer: does any external consumer call `Theme::preset("…-live")` or read `PlatformPreset::is_live`? No cargo was run; no files were edited.
 
@@ -589,7 +614,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Cost check:** About right. It misses three things. Two exhaustive patterns, lib.rs:374 and gnome/mod.rs:537 (`Dual { light, dark }`), need `..`. The pipeline.rs:18 and lib.rs:330-335 docs need updating. The new test runs only on the macOS CI leg. The `Dual { light, .. }` arms in kde/windows/gnome are unaffected. The reader should call the uncached detect_is_dark(), not system_is_dark(), so a re-read after a watch event is fresh.
 
 **Decision:** adopt (round 3): `is_dark` on `ReaderOutput::Dual`, filled by the macOS reader from the uncached `detect_is_dark()`, the pipeline deriving `mode` from it for both variants; the two exhaustive patterns and the docs updated; a macOS-leg test.
-**Status:** M1 fix phase
+**Status:** fixed in fabb8faf; the macOS-leg test has not run yet (CI's macOS leg runs it first)
 
 ### M1-T6-02 · no API break · Sync/async split: keep it; drive both sync entry points with pollster
 
@@ -618,7 +643,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Cost check:** About right. The two cfg-split pairs of functions also collapse to one each, so their doc comments merge. pipeline.rs:725-727 needs a doc update. pollster has no transitive deps. A future Pending would then block rather than error, the same behaviour as on Linux.
 
 **Decision:** adopt (round 3): pollster on every target; the two noop pollers and the 'unexpected async suspension' arm deleted.
-**Status:** M1 fix phase
+**Status:** fixed in 497081dd
 
 ### M1-T6-03 · api-break · Accessibility flags: text scale belongs in resolution; the others need named receivers
 
@@ -649,7 +674,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** Adopt only the core method now: AccessibilityPreferences::text_scale_factor()/scaled(size) per todo:2087 (an existing entry, so this is not a new finding), with the connectors calling it. Put the motion/transparency receiver table in the connector docs. Send high contrast to M2 as proposed. Do not move text scale into ResolutionContext in M1. Instead add an M2 check: does GNOME's xrdb Xft.dpi already include text-scaling-factor, and does KDE's forceFontDPI already cover it? Revisit at stop point A only if M2 shows the factor is not already in font_dpi.
 
 **Decision:** adopt the critic's form (round 3): only the core method `AccessibilityPreferences::text_scale_factor()` / `scaled()` now (docs/todo.md:2087, with M1-T7-01), connectors calling it; a motion/transparency receiver table in the connector docs; high contrast decided in M2 (M2b Windows, M2e GNOME); M2e checks whether KDE's `forceFontDPI` and GNOME's `Xft.dpi` already carry the text scale before resolve-time scaling is revisited.
-**Status:** M1 fix phase (method, docs); M2 questions appended to the plan
+**Status:** method fixed in 25d69ceb (with M1-T7-01), receiver tables in the three crate docs; the M2 questions are in the plan's M2b and M2e rows
 
 ### M1-T6-04 · no API break · Reduced motion has two sources that disagree on KDE
 
@@ -711,7 +736,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** Do not cache AccessibilityPreferances::from_system itself. Add a separate cached accessor (e.g. detect::accessibility(), a DetectionContext field filled by from_system_inner and on first call, cleared by invalidate_caches), as prefers_reduced_motion sits beside detect_reduced_motion. Point the preset-switch paths in the connectors' docs and the showcases at it, and leave from_system fresh.
 
 **Decision:** adopt the critic's form (round 4): a separate cached accessor filled by `from_system_inner` and on first call, cleared by `invalidate_caches`; `AccessibilityPreferences::from_system` stays a fresh read; connector docs and the showcases use the cached one on preset switches.
-**Status:** M1 fix phase
+**Status:** fixed in f33bf288 (`detect::accessibility_preferences()`, about 50 ns cached against 5.2 ms fresh, 3.2 ms on the first call after a system read) and bb91f562 (the egui showcase clears the caches on its watcher and reload paths)
 
 ### M1-T6-06 · no API break · Icons: keep the five loader types; add one runtime-set builder
 
@@ -843,7 +868,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** Adopt the `AccessibilityPreferences::text_scale_factor()` method, citing todo:2086-2088 and correcting it to three copies. Adopt the switch of iced and gpui to core's colouriser as the existing entry docs/todo.md:476-490, citing that entry as the item instead of presenting it as a new finding, and move their test cases into core. `ResolvedWidgetBorder::padding_outside()` is optional: if adopted, document that iced gains egui's non-finite filtering. Drop `Rgba::over`: each connector keeps its own composite, and egui's parity tolerance stays.
 
 **Decision:** adopt the critic's form (round 5): the text-scale method (docs/todo.md:2086, corrected to three copies) in M1 with M1-T6-03; iced and gpui switch to core's colouriser with their test cases moved into core (docs/todo.md:476-490) in M5 and M6; composites stay per toolkit; `padding_outside()` optional; no `Rgba::over`.
-**Status:** M1 fix phase (method); M5, M6 (colouriser)
+**Status:** text-scale method fixed in 25d69ceb (docs/todo.md entry closed); the colouriser switch scheduled M5 (iced) and M6 (gpui)
 
 ### M1-T7-02 · no API break · Spinner cycle position and arc constants stated once in core
 
@@ -992,7 +1017,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) Delete the stale agent file locally, with no commit since it is untracked. (2) Rename the accessors to the model's field names, gated by scripts/check_connector_parity.py with a reasoned exceptions list. (3) Give a named `#[non_exhaustive]` struct only to `from_system` and `SystemThemeExt`, where the fields are detected outputs. Keep `from_preset` returning (theme, resolved), since its mode and preferences are inputs. Whether that struct is core's generic or one per connector is decided at triage. (4) Present the whole proposal as a D1 item for the maintainer's approval, bundled with the other breaking changes.
 
 **Decision:** adopt the critic's form (round 5): a named `#[non_exhaustive]` result struct for `from_system` and `SystemThemeExt` only (core generic or per connector: decided at M5's triage), accessors renamed to the model's field names, `scripts/check_connector_parity.py` in check_release.sh with a reasoned exception list; `from_preset` keeps `(theme, resolved)`; the stale agent file deleted (untracked, in M1). Breaking, bundled with M1-T4-01 into 0.7.0. Lands across all three connectors in M5's fix phase, before M6's review.
-**Status:** scheduled: M5 (all three connectors); agent file deleted in M1
+**Status:** the stale agent file deleted 2026-10-11 (untracked); the struct, renames and parity script scheduled M5
 
 ### M1-T7-07 · no API break · Widget Info: three designs for one panel; generate iced's later
 
@@ -1116,7 +1141,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) Add `check_showcase_parity.py --check-list` and `--self-test` to check_release.sh and ci.yml now: no display needed, seconds to run. (2) Add the dump-and-compare step to generate_assets_release.sh only after todo:1363 is fixed. Scope it to the rest run of the three captured presets. The comparator already only reports exceptions that go unused, so a partial run cannot fail on adwaita, hover or menu keys. (3) Budget one exceptions refresh for its first run.
 
 **Decision:** adopt the critic's form (round 6): `--check-list` and `--self-test` gated in check_release.sh and ci.yml now; the dump-and-compare step in generate_assets_release.sh after docs/todo.md:1363 is fixed, scoped to the rest run of the three captured presets, one exceptions refresh budgeted.
-**Status:** M1 fix phase (static modes); M8 R3 (dump step)
+**Status:** static modes gated in c89c672d; the dump-and-compare step M8 R3
 
 ### M1-T9-01 · no API break · Each release gate traces to a mistake that happened: keep
 
@@ -1176,7 +1201,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) Record the OS version for both platforms (sw_vers / Windows build into a sidecar, then into PROVENANCE.toml). (2) Pin only the macOS entries to versioned labels, chosen from what GitHub lists when the change is made. (3) Windows stays record-only. M2b decides what the windows-11 captures may claim, never assumed. (4) The range check is a soft warning and lands only once M2 supplies the preset ranges (D4). (5) Correct the plan's known-gap sentence at :19-24 in the same commit.
 
 **Decision:** adopt the critic's form (round 6): record the runner OS version on both platforms (a sidecar, then PROVENANCE.toml fields); pin only the macOS matrix entries to the versioned labels GitHub lists at the time; Windows record-only, M2b decides what the captures may claim; the range check a soft warning once M2 supplies preset ranges; the plan's known-gap sentence corrected.
-**Status:** M1 fix phase (files); the CI run is the maintainer's
+**Status:** fixed in 48fe01cf and 51bebb0d (macOS entries pinned to macos-26 with the README and issue #13518 cited, OS-version sidecars on both platforms, two PROVENANCE.toml fields); the first CI run is the maintainer's
 
 ### M1-T9-03 · no API break · Three gates exist on one side only: panic lints, MSRV, semver, canary
 
@@ -1207,7 +1232,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) egui-widgets clippy and test in the canary: adopt as proposed. (2) The strict list in CI's clippy job, gpui with continue-on-error. Correct the problem statement: the gap is the lints beyond unwrap and expect. (3) semver-checks as a soft check: time it on the first run, then put it in the release-only part if proposal 5 is adopted. (4) MSRV stays CI-only.
 
 **Decision:** adopt the critic's form (round 6): egui-widgets in the canary; the strict-panic list in CI's clippy job (gpui with continue-on-error); `cargo semver-checks` as a soft check in check_release.sh, timed on its first run and placed in the release-only part under M1-T9-04; MSRV stays CI-only.
-**Status:** M1 fix phase
+**Status:** fixed in c89c672d (egui-widgets in the canary; the strict-panic list in scripts/check_strict_panic.sh shared by the script and CI; `cargo semver-checks` soft in the release-only part, 4m 18s cold for six crates)
 
 ### M1-T9-04 · no API break · check_release.sh has one mode: 37 minutes before every commit
 
@@ -1238,7 +1263,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) The subset keeps cross-target clippy and checks, docs and widget coverage. It skips only packaging, docs.rs emulation, the security audit, outdated-deps and the two stamp checks. (2) The full run stays mandatory on the last commit of every fix phase and before the release commit. (3) Before deciding, take the per-check times from one existing run's output to show the saving. (4) The maintainer approves changing the rule at stop point A; agents do not.
 
 **Decision:** adopt the critic's subset (round 6; the maintainer approved changing the every-commit rule): `--commit` keeps every lint, check, test, docs and widget-coverage gate and skips only packaging, docs.rs emulation, the security audit, outdated-deps and the two stamp checks; the full run stays mandatory on the last commit of every fix phase and before the release commit; per-check times from the next full run recorded; CONTRIBUTING, the plan's constraint and the memory rule updated.
-**Status:** M1 fix phase, first task
+**Status:** fixed in 0d2276e2; the subset measured 29m 06s on cold builds against the full run's 37m 22s; a full run on warm builds took 9m 45s (2026-10-11, the close gate)
 
 ### M1-T10-01 · no API break · docs/todo.md: closed items stay, nothing marks priority or next
 
@@ -1269,7 +1294,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) Move the closed sections and done boxes to a docs/archive file instead of deleting them, so the append-only rule holds. (2) Agents propose the milestone tags; the maintainer approves them at stop point A. (3) Keep the rest as proposed: split Post-1.0/Deferred, add a header, add links from ROADMAP and CONTRIBUTING.
 
 **Decision:** adopt with the critic's changes (round 7, under the maintainer's blanket approval): closed sections and done boxes move to a docs/archive file (not deleted); every open item gets a milestone tag proposed by the session; Post-1.0/Deferred split into the two it is; a header on how the file is ordered; ROADMAP and CONTRIBUTING link it.
-**Status:** M1 fix phase
+**Status:** fixed in e038eff5 (45 closed items moved to docs/archive/todo_closed.md; 164 open items tagged: 21 `[v0.7.0]`, 89 `[1.0]`, 2 `[post-1.0]`, 52 `[upstream]`; about 25 tags the implementer was unsure of are listed in its report, all `[1.0]` by the rule)
 
 ### M1-T10-02 · no API break · The archive index lags and the archive rule is only in memory
 
@@ -1300,7 +1325,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** The soft check expands the brace notation, or the index rows are written one file each. Everything else as proposed.
 
 **Decision:** adopt with the critic's change (round 7, blanket approval): CONTRIBUTING states where live and archived plans live and the archiving rule; the four missing index rows added; a soft check in check_release.sh that expands the index's brace notation.
-**Status:** M1 fix phase
+**Status:** fixed in c89c672d (the archive-index check) and c4a0c040 (CONTRIBUTING, the four index rows)
 
 ### M1-T10-03 · no API break · The memory index carries superseded project-status entries
 
@@ -1331,7 +1356,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** Also fix :60 and :45's stale path, and move the :54 archive rule to Workflow. The maintainer approves or makes the edit; it is not an agent edit.
 
 **Decision:** adopt (round 7, blanket approval; the maintainer approved the edit): the memory index's Project Status collapses to one current-state line plus one line per open thread; :60 and :45 corrected; the archive rule moved to Workflow; topic files untouched.
-**Status:** M1 (memory file, outside the repository)
+**Status:** done 2026-10-11 (the memory index rewritten; outside the repository)
 
 *Reviewer D-E notes:* Limits of this reading: (1) The 84-check count is the ledger's; the script has 23 run_check call sites, the rest come from per-crate loops (7 crates), so the counts agree. (2) The Widget Info claim counts are proxies (lines in the info modules citing `.rs:NNN`): gpui 782, iced 101, egui 7; egui's claims may live in connectors/native-theme-egui/mapping.toml, which I did not read, so the egui figure is not a measure of its gate depth. (3) I ran scripts/check_widget_coverage.py read-only (it calls `cargo metadata`, no build) to get the shown/excepted counts. (4) I did not read the archive beyond the showcase-app rationale sections the map named and the archive README; I did not read the whole todo, only its headings, counts and the entries the map cited. (5) One premise in the plan's own text deserves the maintainer's eye: todo_code-review-plan.md:21-22 says the Sonoma screenshots are taken on a macOS 26 runner citing screenshots.yml:63, but that line is a comment about another repository's run; the repository records no runner version at all. The T9 pinning proposal treats the version as unknown, not as 26. No D0-D7 decision is contradicted; the subset-mode proposal (T9) touches the maintainer's every-commit rule and is offered with its counted cost for a veto. Question for the maintainer: is docs/todo.md meant to be read by contributors (then CONTRIBUTING should link it) or only by the maintainer and agents?
 
@@ -1348,7 +1373,7 @@ later milestones are listed in the plan's milestone sections (*Scheduled from M1
 `docs/todo.md:N` citations in the entries above refer to the file at `a7b3a4cb`, before
 F13 reorders it.
 
-- [ ] **F1 · M1-T9-04 · `check_release.sh --commit`.** `scripts/check_release.sh` gains a
+- [x] **F1 · M1-T9-04 · `check_release.sh --commit`.** `scripts/check_release.sh` gains a
   `--commit` flag that skips the packaging, docs.rs-emulation, security-audit,
   outdated-deps and stamp-check sections and prints the skipped sections by name;
   `CONTRIBUTING.md:17-30`, the plan's Global Constraints line and the memory rule say when
@@ -1356,8 +1381,8 @@ F13 reorders it.
   before any other fix and names what it skipped; the full run is unchanged in what it
   runs; the subset's wall-clock recorded here. Commit: `chore(release-check): a --commit
   subset for per-commit runs; the full run stays for fix-phase ends and releases`.
-- [ ] **F2 · D6 · `material` → `material-3`.** As the plan's M1 Step 7 task, with its test.
-- [ ] **F3 · M1-T4-01 · remove the `-live` tier.** Delete the four `-live` TOML files;
+- [x] **F2 · D6 · `material` → `material-3`.** As the plan's M1 Step 7 task, with its test.
+- [x] **F3 · M1-T4-01 · remove the `-live` tier.** Delete the four `-live` TOML files;
   `presets.rs` (PRESET_INFOS live entries, their tests), `pipeline.rs` (the live merge,
   `is_live`/`live_name`, `select_reader`'s names), `lib.rs` (the re-export, the
   `live_preset` field, `with_overlay`, the test fixtures), `documented_sizes.rs` (the live
@@ -1370,25 +1395,25 @@ F13 reorders it.
   reports the removal (recorded as D1's evidence; then `rm -rf target/semver-checks`).
   Commit: `refactor(presets)!: the -live preset tier is gone; readers merge over the
   platform preset`.
-- [ ] **F4 · M1-T5-01 · version ruling and preset-keyed gate.** A ruling paragraph in
+- [x] **F4 · M1-T5-01 · version ruling and preset-keyed gate.** A ruling paragraph in
   `platform-facts.md`'s Conventions; `documented_sizes.rs`'s `Platform` enum keyed by preset
   (variants named by preset, rows unchanged); `docs/todo.md:2343` appended with the
   OS-version axis. Gate: `cargo test -p native-theme` and `--test platform_facts_xref`
   pass. Commit: `docs(platform-facts): a version-tagged cell belongs to that version's
   preset; the size gate is keyed by preset`.
-- [ ] **F5 · M1-T6-01 · `is_dark` on `Dual`.** `lib.rs` enum and its two exhaustive
+- [x] **F5 · M1-T6-01 · `is_dark` on `Dual`.** `lib.rs` enum and its two exhaustive
   patterns (`lib.rs`, `gnome/mod.rs`), `pipeline.rs` deriving `mode` from the flag,
   `macos.rs` filling it from the uncached `detect_is_dark()`, docs, the test constructions.
   Gate: a pure test with a fake `Dual` reader asserting `mode` follows `is_dark` fails
   before and passes after; a `cfg(target_os = "macos")` test `from_system().mode ==
   detect_is_dark()`; both cross-target clippy runs clean. Commit: `fix(native-theme): a
   dual-variant reader reports the active mode; a dark Mac no longer starts light`.
-- [ ] **F6 · M1-T6-02 · pollster everywhere.** `Cargo.toml` (pollster to `[dependencies]`),
+- [x] **F6 · M1-T6-02 · pollster everywhere.** `Cargo.toml` (pollster to `[dependencies]`),
   `lib.rs` (the two noop pollers and the error arm deleted), `pipeline.rs` doc. Gate:
   cross-target clippy clean on both targets; `cargo tree -p native-theme --target
   x86_64-apple-darwin -e normal | grep pollster`; tests pass. Commit: `refactor(native-theme):
   the sync entry points block on pollster on every platform`.
-- [ ] **F7 · M1-T3-01 · `Theme::resolve_with`.** `model/mod.rs` (public `resolve_with`,
+- [x] **F7 · M1-T3-01 · `Theme::resolve_with`.** `model/mod.rs` (public `resolve_with`,
   the doc at :442-445 rewritten), `resolve/context.rs` (a constructor taking a known
   `font_dpi`), `pipeline.rs:70-73` (reuses the reader's DPI), egui `ext.rs`, `icons.rs`,
   `plugin.rs` (one context per call), `tests/timings.rs` (a `resolve_with` row), CHANGELOG.
@@ -1397,7 +1422,7 @@ F13 reorders it.
   `for_tests()` context far below `resolve()` (recorded, not asserted). Commit:
   `feat(native-theme): Theme::resolve_with takes the caller's context; the pipeline reuses
   the reader's DPI`.
-- [ ] **F8 · M1-T3-03 · registry check.** A test comparing `docs/property-registry.toml`'s
+- [x] **F8 · M1-T3-03 · registry check.** A test comparing `docs/property-registry.toml`'s
   widget and `_structures` key sets with the `WidgetFieldInfo`/`FieldInfo` inventory both
   ways; the four stale `[defaults]` keys and the spacing note removed; the derive emits
   each `inherit_from` target and the `[uniform]` test compares targets instead of the
@@ -1406,7 +1431,7 @@ F13 reorders it.
   `[uniform]` target entry closed. Commit: `test(native-theme): the property registry's keys
   are checked against the derive inventory, and uniform-inheritance targets against the
   macro`.
-- [ ] **F9 · M1-T6-03 + M1-T7-01 · the text-scale guard in core.**
+- [x] **F9 · M1-T6-03 + M1-T7-01 · the text-scale guard in core.**
   `AccessibilityPreferences::text_scale_factor()` and `scaled(size)` in `lib.rs`; iced,
   gpui and egui call them; a receiver table (reduced motion, reduced transparency, high
   contrast: what the connector applies, what the application forwards) in each connector's
@@ -1414,19 +1439,19 @@ F13 reorders it.
   infinity give 1.0; 2.0 gives 2.0); the connectors' existing text-scale tests pass
   unchanged; net deletion in the connectors. Commit: `refactor: the text-scale guard lives
   once in core; the connectors call it`.
-- [ ] **F10 · M1-T6-05 · a cached accessibility accessor.** `detect.rs` (a
+- [x] **F10 · M1-T6-05 · a cached accessibility accessor.** `detect.rs` (a
   `DetectionContext` field, a public cached getter, `invalidate_caches` clears it),
   `pipeline.rs` fills it from `from_system_inner`; connector README snippets and the
   showcases' preset-switch paths use it. Gate: a test that a second call does not run the
   reader; `tests/timings.rs` gains the cached call; tests pass. Commit: `feat(native-theme):
   a cached accessibility accessor for preset switches; from_system stays a fresh read`.
-- [ ] **F11 · docs · M1-T1-03, M1-T2-01, M1-T1-04, D1.** The naming rule in
+- [x] **F11 · docs · M1-T1-03, M1-T2-01, M1-T1-04, D1.** The naming rule in
   `presets/README.md` and `new-os-version-guide.md`; the `ios` and `material` sentences in
   `native-theme/README.md` and `presets/README.md`; a `docs/todo.md` entry for
   `from_system_with_preset`; ROADMAP renumbered for 0.7.0; CHANGELOG. Gate: docs only;
   `cargo test --doc -p native-theme`. Commit: `docs: platform presets are named by
   generation; what the ios and material presets are; the roadmap renumbered for 0.7.0`.
-- [ ] **F12 · gates · M1-T8-02, M1-T9-03, M1-T10-02, M1-T9-02.** `check_release.sh`
+- [x] **F12 · gates · M1-T8-02, M1-T9-03, M1-T10-02, M1-T9-02.** `check_release.sh`
   (`check_showcase_parity.py --check-list` and `--self-test`; `cargo semver-checks` soft,
   timed; the archive-index check expanding brace notation), `ci.yml` (the parity static
   modes, the strict-panic lint list with gpui `continue-on-error`), `dependency-canary.yml`
@@ -1436,17 +1461,81 @@ F13 reorders it.
   (where plans live, the archiving rule), `docs/archive/README.md` (four rows). Gate:
   `./scripts/check_release.sh --commit` passes with the new checks; the YAML parses; the
   archive check reports nothing missing. Two or three commits.
-- [ ] **F13 · M1-T10-01 · `docs/todo.md`.** Closed sections and done boxes move to a new
+- [x] **F13 · M1-T10-01 · `docs/todo.md`.** Closed sections and done boxes move to a new
   `docs/archive/todo_closed.md` with their decision text; every open item gets a milestone
   tag (`[v0.7.0]`, `[1.0]`, `[post-1.0]`, `[upstream]`); *Post-1.0 / Deferred* split;
   a header on the ordering; ROADMAP and CONTRIBUTING link the file. Gate: no `- [x]` left
   in `docs/todo.md`, every one present in the archive file; every open item tagged
   (a grep count equals the open-item count). Commit: `docs(todo): closed items archived,
   open items tagged by milestone, the deferred section split`.
-- [ ] **F14 · M1-T10-03 · the memory index** (outside the repository, no commit).
-- [ ] **Close (stop point B).** The full `./scripts/check_release.sh`, both cross-target
+- [x] **F14 · M1-T10-03 · the memory index** (outside the repository, no commit).
+- [x] **Close (stop point B).** The full `./scripts/check_release.sh`, both cross-target
   clippy commands, `cargo semver-checks` for `native-theme` (recorded), the timing probe
   re-run, the ledger's statuses, the project memory, `~/.claude/scripts/sweep-target.sh`.
+
+### Close (stop point B, 2026-10-11)
+
+- Fix phase: 22 commits on `v0.7.0-rc1`, 752c76fe..92e15311 (19 task commits F1–F13 and
+  their fix rounds, then the whole-branch review's fix wave of three commits: cfde0718
+  docs, 7869be89 CHANGELOG, 92e15311 the `--commit` guards). F14 is outside the repository.
+- Gates on the last commit: `./scripts/check_release.sh --commit` 72 checks, 72 ✅ (11m
+  39s, warm builds); the full `./scripts/check_release.sh` 97 checks, 93 ✅, 2 ⚠️ (the
+  v0.6.1 tag exists until the version bump; the planned semver break in `native-theme`:
+  `PlatformPreset::is_live` and `live_name()` removed), 2 ❌ expected (visual assets stale
+  since M0's baseline; the compatibility stamp stale because the text-scale change touched
+  connector sources; both are refreshed by the release's asset run); 10m 53s. The four
+  cross-target clippy runs are part of both modes and passed. `cargo semver-checks` ran
+  inside the full run for six crates (4m 18s cold, 2m 20s–4m warm): `native-theme` needs
+  a major bump, the five others pass; `target/semver-checks` removed afterwards.
+- Timing probe (release profile, after F7 and F10): `Theme::resolve` 1.29–1.30 ms per
+  preset and mode (M0: 1.30–1.50 ms, with 3.4 ms jumps; none this run), `resolve_with` on
+  a prebuilt context 22 µs, `SystemTheme::from_system` warm 2.0 ms (M0: 3.6–8.3 ms),
+  `AccessibilityPreferences::from_system` 5.2 ms (M0: 8.4–12.2 ms), the cached accessor
+  3.2 ms on its first call after a system read, then 50 ns; freedesktop `breeze-dark` cold
+  251 ms / warm 1.8 ms, `Adwaita` 18.6 / 2.6 ms (within M0's spread). No path is slower
+  than its baseline.
+- Reviews: every task had a spec-and-quality review; 4 of 10 dispatches needed one fix
+  round (F9+F10, F4+F11, F12 with two findings, and the whole-branch wave); no round went
+  past 1; no finding was parked. The deferred minors the whole-branch review triaged as
+  "wait" are listed below by task, assigned to M2a, M2b, M2c, M2d, M3, M4, M6 or M8; the
+  ones it required before merge are in the fix wave.
+- Known-unrun code: the macOS-leg test `from_system().mode == detect_is_dark()` (F5), the
+  CI changes (the parity job, the strict-panic steps, the canary's egui-widgets lines, the
+  screenshot sidecars and `macos-26` pin) and the provenance scripts' sidecar path run
+  first on the maintainer's next CI dispatch and asset run.
+- New findings for later milestones, recorded here: `[uniform] list.alternate_row_background`
+  is documented but applied by no code (M3 R2); KDE's reduce-motion now differs between
+  `SystemTheme.accessibility` (reader only) and the cached accessor (reader OR gsettings)
+  until M1-T6-04 lands (M4); the strict-panic CI steps lint `native-theme` with the Linux
+  feature set only (M4/M8); `run_pipeline` still takes `mode` beside the reader output's
+  `is_dark` (M4).
+- The `m2-research` branch (worktree `../native-theme-m2`, M2 Steps 1–6) is merged after
+  this stop point, per the plan's D7.
+
+### Deferred minors and rulings of the fix phase
+
+Copied from the fix phase's working ledger (git-excluded, deleted at close). A reviewer of
+M3–M8 cites these instead of reporting them again.
+
+| F3 | its gate vs the Close step | `cargo semver-checks` is slow and unmeasured | Ruling: semver-checks runs once at Close for native-theme, not per task — cost if wrong: D1's evidence is recorded at Close instead of at F3 |
+| all | brief format | the SDD task-brief script needs "Task N" headings the fix plan lacks | Ruling: briefs hand-assembled from the ledger's F entries plus the decided proposals — cost if wrong: none beyond the controller's time |
+| all | models | D2: Opus for everything but design judgment | Ruling: implementers on the `implement` agent (Opus, per CLAUDE.md), task reviewers on Opus, re-reviews on Sonnet for small fix diffs — cost if wrong: a review seat too cheap for a subtle diff |
+| F5+F6, F9+F10, F4+F11 | small same-area tasks | batched per the skill's batching rule | Ruling: one dispatch, two commits each — cost if wrong: one review covers two tasks |
+- F1: review clean (Approved, spec ✅). minor (deferred): commit mode still runs check_and_install_tool for cargo-audit/cargo-outdated (blocks on `read` without stdin if absent; a `[[ $COMMIT_MODE ]] ||` guard would fix); CONTRIBUTING's "In full, it runs" list lacks the docs.rs emulation (pre-existing); scripts/README.md wording "clippy, fmt, clippy". Controller verified the commit author and the absence of any AI trailer (git log).
+- F2: implementer DONE_WITH_CONCERNS, commit 85937d75; gate test RED→GREEN; workspace 2325 tests pass; subset 71 ✅ 0 ❌. Ruling: the preset's display `name = "Material"` stays until M2d rewrites the file (a preset field, M2d's) — cost if wrong: menus say "Material" for one more milestone. docs/todo.md:790-812's `material.toml` path mention left (historical citation; F13 keeps item text). Review dispatched (Opus).
+- F2: review Approved (spec ✅). Important (plan-caused): README links to linux-material-*.png go stale at the next asset run. Ruling: no change to the commit; the follow-up is written into the plan's M2d Step 15 (links renamed, old PNGs removed, display names set at that asset run) and F11 appends the docs/todo.md entry — cost if wrong: one asset run with stale README images. minor (deferred): display name still "Material" (ruled: M2d); docs/todo.md open items citing material.toml (F11 corrects them); gate test accepts any Err (brief-verbatim; left).
+- F3: implementer DONE_WITH_CONCERNS, commit 19860fbc; gate test RED→GREEN; workspace 2322 pass; subset 71 ✅ 0 ❌; a throwaway test confirmed the four twins were no-ops before deletion. Ruling: documented_sizes.rs keeps the reader-constants-over-preset check (only the -live half went) — the brief asked to keep every static check, and M1-T1-02 relies on it until M2a/M2b; cost if wrong: none. new-os-version-guide.md edited minimally (told maintainers to edit deleted files): accepted. Review dispatched (Opus).
+- F3: review Approved (spec ✅, no Important). minor (deferred): open docs/todo.md items :53, :365, :2262 describe the tier in the present tense (F11 corrects); ragged doc wraps in the three contract.rs headers; `full_preset` local name in run_pipeline/with_overlay; a never-None `if let` in documented_sizes.rs live_variant; a dangling README citation in the closed todo entry.
+- F5+F6: review Approved (spec ✅ both, no Important). minor (deferred): pollster dev-dependency now redundant (Cargo.toml:132); a lib.rs test fixture pairs mode Dark with Dual{is_dark:false}; the pure test covers only is_dark:true (add the false→Light case); run_pipeline still takes `mode` beside the output's is_dark (follow-up, out of scope); a test doc names Linux only. Risk for the maintainer: the macOS-leg test (macos.rs:622-635) has never run; CI's macOS (macos) leg runs it first.
+- F7: review Approved (spec ✅, no Important). ⚠️ resolved by the controller: the ledger's M1-T3-01 wording correction ("then xrandr") is written at close in the entry's Status line. minor (deferred): CHANGELOG overstates when xrdb runs (feature-gated, only without forceFontDPI) and mixes Added/Changed; context.rs font_dpi field doc says "replaces" (now nothing is detected first); the doctest builds from ..for_tests(); the unit test compares button_order with the environment.
+- F8: implementer DONE_WITH_CONCERNS, commit 890edc88; key-set test RED on exactly the four stale keys → GREEN; native-theme + derive suites pass; parity --check-list passes; subset 71 ✅ 0 ❌. New finding (for the project ledger, M3 R2): `[uniform] list.alternate_row_background = "list.background_color"` is stated in inheritance-rules.toml but applied by no code; the old test listed it as implemented. Ruling: kept as a "documented only" entry in the test; whether it stays in [uniform] or gets implemented is M3's (resolution region) — cost if wrong: one rule stays unimplemented one milestone longer. F11 re-opens the undone half of the todo entry and corrects two registry notes (brief extended). Review dispatched (Opus).
+- F8: review Approved (spec ✅, no Important; neither test can pass vacuously, 86 rules covered). minor (deferred): the todo note overclaims (F11 fixes); the uniform failure message says "implementation" for hand-kept rules; stale comments gen_inherit.rs:34 ("~55 rules") and inheritance.rs:798 ("rule lists above"); no_inheritance test could use the new inventory; the Border union cannot detect a key moving between the two border specs.
+- F9+F10: review: F9 Approved; F10 Needs fixes — I1 (Important): the egui showcase's rebuild_atlas preset branch reads the cache but the watcher closure and ReloadTheme reach the same path without clearing it. Fix round 1/5 dispatched to the original implementer (FIX_BASE f33bf288). minor (deferred): "free after any system read" overstated in gpui README:179, gpui lib.rs:271, iced README:353 (first call runs the reduced-motion detection, 3.2 ms); invalidate_accessibility_preferences() doc says "force a re-read" but the reduced-motion floor stays cached; check-then-store race window now a whole reader run (same pattern as the other fields); accessibility_preferences_caches_result test runs the real reader (weak); one gpui test changed in form only; gpui reduce_motion row incomplete (the off-switch); CHANGELOG quotes one machine's timings.
+- F4+F11: review: F4 Approved (no line of platform-facts.md moved, the enum rename verified by normalised comparison); F11 Needs fixes — Important #1: presets/README.md:57-58 and new-os-version-guide.md:32-34 claim the style presets' headers already name their pinned style version (false until M2e). Fix round 1/5 dispatched to the original implementer (FIX_BASE a85d1fe0). minor (deferred): the rule sentence lacks Material's no-OS-version exception; todo entry :822 "look" vs "geometry"; platform-facts Conventions lost three blank lines and the ruling is one ~700-char line; native-theme/README.md:53 omits the system-icons feature condition.
+- F12: review: (a) and (b) Approved; (c) Needs fixes — Important 1: the macos-14 retirement date in screenshots.yml:14-16 cites no source (source: actions/runner-images #13518); Important 2: generate_assets_release.sh assigns TMPDIR then mktemp's OS_VERSIONS inside it when TMPDIR is exported, deleted before use. Fix round 1/5 dispatched to the original implementer (FIX_BASE 48fe01cf). minor (deferred): an empty SEMVER_CRATES list passes silently; the native-theme feature list copied into ci.yml; CI's strict steps run under -Dwarnings while the local run does not; the Windows 11 arm64 wording (two images, not one); CONTRIBUTING wording; egui-widgets rows filed under v0.6.0 on outside evidence; temp dirs leak on failure (no EXIT trap); the tag-exists warning in every subset run. Watch on the first CI runs: the parity job's python3-pil, the strict-panic native-theme step, the sidecar files in each artifact.
+- F13: review Approved (spec ✅, every gate re-run by the reviewer: 45 moved verbatim in order, 164/164 tagged once, nothing reordered). minor (deferred): the header's citation baseline should name the commit (51bebb0d) and say "pruned"; the header's upstream list lacks iced_aw, cosmic-text, gpui; the archive flattens #### / ##### nesting (name the parent in "Closed items from" headings); commit-message line count off by two.
+- All tasks F1–F14 complete. Final whole-branch review dispatched (Opus; Ruling: Opus rather than Fable for the milestone's whole-branch review — the plan's D2 reserves Fable for the close-out review after the last milestone and for design judgment; this diff is volume — cost if wrong: a subtler reviewer might catch more).
+- Final review (Opus, 336k tokens): Ready "With fixes". Important 1: F9's two rustdoc citations of docs/todo.md broken by F13's move; Important 2: CHANGELOG files the material-3 rename as Changed, not Breaking (ROADMAP says two breaks). Must-fix minors: the "free after any system read" wording ×3, detect.rs:781 doc, the F13 header baseline commit, the F7 CHANGELOG entry, the one-machine timings label, the "dark icon theme" phrase, the F1 commit-mode install prompt (+ the tag warning). All rulings agreed. One fix wave dispatched (implement/Opus) with brief task-FINAL-brief.md, FIX_BASE e038eff5. Ruling: broken citations are re-pointed by item text, not line number — cost if wrong: a reader greps instead of jumping; Ruling: the preset rename is listed as a third breaking change — cost if wrong: none.
 
 ## M2a — macOS
 

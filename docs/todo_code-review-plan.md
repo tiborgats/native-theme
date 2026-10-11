@@ -532,29 +532,29 @@ critics, about +2000k.
 
 ### Steps
 
-- [ ] **Step 1: Context (Haiku `locate`).** Per topic, the files and archived rationale
+- [x] **Step 1: Context (Haiku `locate`).** Per topic, the files and archived rationale
   sections that record the current decision, with `file:line`; saved to the scratchpad.
-- [ ] **Step 2: Review + critique (one Workflow).** Each design reviewer (Fable 5.1 at xhigh, D2) writes, per
+- [x] **Step 2: Review + critique (one Workflow).** Each design reviewer (Fable 5.1 at xhigh, D2) writes, per
   topic, one or more *proposals*: current design (cited), the problem (evidence: a bug, a
   measured cost, a user-visible limit, a maintenance cost in lines or steps), at least two
   alternatives including "keep it", a recommendation, its cost (files and lines touched,
   new dependencies), whether it breaks the API, and what it unblocks. Each critic (Opus 5.5 at high,
   fresh context) argues for the current design, checks the evidence, and gives a verdict:
   *adopt*, *adopt with changes* (which), or *keep*.
-- [ ] **Step 3: Ledger.** Proposals and verdicts into the ledger's *M1* section, numbered
+- [x] **Step 3: Ledger.** Proposals and verdicts into the ledger's *M1* section, numbered
   `M1-T1-01`….
-- [ ] **Step 4: Decisions.** Design choices are the maintainer's: every proposal the critic
+- [x] **Step 4: Decisions.** Design choices are the maintainer's: every proposal the critic
   did not reject goes to the maintainer in AskUserQuestion rounds (up to four per round),
   each with the recommendation first. Record the answers.
-- [ ] **Step 5: Commit the ledger — stop point A.** `docs: design review findings and
+- [x] **Step 5: Commit the ledger — stop point A.** `docs: design review findings and
   decisions`. Record the measured cost in *Calibration*.
-- [ ] **Step 6: Plan the adopted changes.** A change that fits in a few tasks gets them in
+- [x] **Step 6: Plan the adopted changes.** A change that fits in a few tasks gets them in
   the ledger, with gates, as in the milestone template's Step 6. A larger one (for example
   version-aware preset selection, or a machine-readable facts file) gets
   `docs/todo_<topic>-{rationale,spec,plan}.md`, written as earlier releases' were, and an
   entry on `docs/todo.md`; the maintainer schedules it, and the plan's later milestones note
   which of their regions it rewrites (those regions are reviewed after it lands).
-- [ ] **Step 7: Fix and close — stop point B.** The small changes as in the template's
+- [x] **Step 7: Fix and close — stop point B.** The small changes as in the template's
   Steps 7–8 (the task list F1–F14, with gates, is in the ledger's M1 section, *Fix plan*),
   and the D6 rename:
 
