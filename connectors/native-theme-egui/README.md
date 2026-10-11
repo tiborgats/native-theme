@@ -381,6 +381,8 @@ its popup and rows.
 
 ### Windows
 
+The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Server 2025 (build 26100): GitHub has no x64 Windows 11 image. On that image the OS reports the same metrics, fonts and system colours as Windows 11 25H2 (build 26200), except the animation and drop-shadow settings, which are off on Server.
+
 ![Windows 11 Light](docs/assets/windows-windows-11-light.png)
 ![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 

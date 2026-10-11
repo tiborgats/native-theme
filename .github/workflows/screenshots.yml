@@ -19,10 +19,14 @@ jobs:
       # 2026-10-11). The `macos-monterey` captures show that preset (its header says
       # which macOS versions it covers, 12 to 15) drawn on the runner's macOS 26, which
       # each job records beside its captures (below).
-      # Windows stays on `windows-latest`, Windows Server 2025 in the same list,
-      # whose one Windows 11 image is arm64 (`windows-11-arm`); which Windows
-      # the `windows-11` captures may claim is M2b's. Each job records its
-      # runner's OS version beside its captures (below).
+      # The Windows entries name windows-2025 (Windows Server 2025, build 26100),
+      # the image `windows-latest` resolves to; GitHub's one Windows 11 image is
+      # arm64 (`windows-11-arm`). The `windows-11` captures claim the preset drawn
+      # on Windows Server 2025, whose metrics, fonts and system colours the OS
+      # probe found equal to Windows 11 25H2's, the animation and drop-shadow
+      # settings aside (docs/evidence/os-probe/2026-10-11-run-38129819806; M2b,
+      # docs/todo_code-review-findings.md). Each job records its runner's OS
+      # version beside its captures (below).
       matrix:
         include:
           - os: macos-26
@@ -34,12 +38,12 @@ jobs:
             os_name: macos
             toolkit: gpui
             features: ""
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: iced
             # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: gpui
             features: ""
@@ -48,7 +52,7 @@ jobs:
             toolkit: egui
             # Every connector feature, as the capture scripts build it.
             features: --all-features
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: egui
             features: --all-features

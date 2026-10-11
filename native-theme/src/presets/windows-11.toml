@@ -1,4 +1,12 @@
 # Windows 11 Fluent Design theme
+# Covers: Windows 11, 21H2 (build 22000) to 26H2 (26300), the Fluent / WinUI 3 generation
+#   (docs/todo_code-review-findings.md, M2b Step 1). The Windows reader merges over it on
+#   Windows 10 too, which has no preset of its own: on Windows Server 2022 (20348, the Windows 10
+#   era) the OS reported what Server 2025 did, except the default accent, #0078d7 against #0078d4;
+#   no Windows 10 client was measured.
+# Verified on: the WinUI 3 values at microsoft-ui-xaml 8463f45 (the same files in WinAppSDK 2.5.1
+#   and 1.8.12); the OS-reported values on Windows 11 25H2 (26200) and Windows Server 2025 (26100),
+#   docs/evidence/os-probe/2026-10-11-run-38129819806.
 # Source: WinUI3 XAML theme resources, Fluent Design System
 name = "Windows 11"
 icon_set = "segoe-fluent"
@@ -15,9 +23,10 @@ muted_color = "#717171"
 shadow_color = "#00000018"
 
 danger_color = "#c42b1c"
+# platform-facts.md:1081-1087 (§2.1.4): InfoBar *SeverityIconForeground = TextFillColorInverse #FFFFFF
 danger_text_color = "#ffffff"
 warning_color = "#9d5d00"
-warning_text_color = "#1a1a1a"
+warning_text_color = "#ffffff"
 success_color = "#0f7b0f"
 success_text_color = "#ffffff"
 info_color = "#0078d4"
@@ -26,7 +35,8 @@ info_text_color = "#ffffff"
 selection_background = "#0078d4"
 selection_text_color = "#ffffff"
 link_color = "#005a9e"
-focus_ring_color = "#0078d4"
+# platform-facts.md:1104 (§2.1.5): SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuter #E4000000
+focus_ring_color = "#000000e4"
 disabled_text_color = "#c5c5c5"
 accent_text_color = "#ffffff"
 
@@ -34,7 +44,8 @@ accent_text_color = "#ffffff"
 disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
-focus_ring_offset_px = 0.0
+# platform-facts.md:1106 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
+focus_ring_offset_px = 1.0
 
 
 [light.defaults.border]
@@ -55,7 +66,8 @@ size_pt =10.5
 weight = 400
 
 [light.defaults.icon_sizes]
-toolbar_px = 20.0
+# platform-facts.md:1132 (§2.1.8): AppBarButtonContentHeight = 16
+toolbar_px = 16.0
 small_px = 16.0
 large_px = 32.0
 dialog_px = 22.0
@@ -82,8 +94,8 @@ min_width_px = 64.0
 min_height_px = 32.0
 icon_text_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.3 Windows)
-# Fluent SubtleFillColorSecondary overlay on bg
-hover_background = "#0000000a"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #80F9F9F9, replacing the rest fill
+hover_background = "#f9f9f980"
 hover_text_color = "#1a1a1a"
 active_text_color = "#1a1a1a"
 disabled_text_color = "#c5c5c5"
@@ -162,6 +174,8 @@ padding_bottom_px = 8.0
 
 [light.tooltip.font]
 color = "#ffffff"
+# platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
+size_pt = 9.0
 [light.scrollbar]
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
@@ -174,6 +188,10 @@ thumb_hover_color = "#a0a0a0"
 thumb_active_color = "#787878"
 
 [light.slider]
+# platform-facts.md:1290-1291 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #72000000;
+# the outer thumb, SliderOuterThumbBackground = ControlSolidFillColorDefault #FFFFFF
+track_color = "#00000072"
+thumb_color = "#ffffff"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
@@ -188,15 +206,20 @@ disabled_track_color = "#71717150"
 disabled_thumb_color = "#ffffff80"
 
 [light.progress_bar]
+# platform-facts.md:1302 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #72000000
+track_color = "#00000072"
 track_height_px = 1.0
 min_width_px = 100.0
 
 [light.progress_bar.border]
 # platform-facts.md:1308 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
 line_width_px = 0.0
+# platform-facts.md:1305 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
+corner_radius_px = 1.5
 
 [light.tab]
-min_width_px = 64.0
+# platform-facts.md:1316 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
+min_width_px = 100.0
 min_height_px = 32.0
 # platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
 item_gap_px = 0.0
@@ -216,6 +239,8 @@ padding_vertical_px = 3.0
 # platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
 row_height_px = 23.0
 icon_text_gap_px = 12.0
+# platform-facts.md:1242 (§2.6): SM_CXSMICON 16
+icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
 # Fluent SubtleFillColorSecondary
 hover_background = "#0000000a"
@@ -231,6 +256,10 @@ padding_top_px = 4.0
 padding_bottom_px = 5.0
 [light.list]
 alternate_row_background = "#f9f9f9"
+# platform-facts.md:1383-1384 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
+# ListViewItemForegroundSelected = TextFillColorPrimary #E4000000
+selection_background = "#00000009"
+selection_text_color = "#000000e4"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
 # Fluent SubtleFillColorSecondary
@@ -259,6 +288,10 @@ padding_vertical_px = 0.0
 
 [light.sidebar]
 background_color = "#ebebeb"
+# platform-facts.md:1336-1337 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
+# NavigationViewItemForegroundSelected = TextFillColorPrimary #E4000000
+selection_background = "#00000009"
+selection_text_color = "#000000e4"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
 # Fluent SubtleFillColorSecondary
 hover_background = "#0000000a"
@@ -267,7 +300,8 @@ hover_background = "#0000000a"
 [light.sidebar.font]
 color = "#1a1a1a"
 [light.popover]
-background_color = "#ffffff"
+# platform-facts.md:1405 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #F9F9F9
+background_color = "#f9f9f9"
 
 
 [light.popover.font]
@@ -290,6 +324,7 @@ hover_color = "#e5e5e5"
 
 [light.switch]
 unchecked_background = "#c5c5c5"
+# platform-facts.md:1473 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #FFFFFF
 thumb_background = "#ffffff"
 # platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #9E000000
 unchecked_thumb_background = "#0000009e"
@@ -345,6 +380,8 @@ min_diameter_px = 16.0
 stroke_width_px = 4.0
 
 [light.combo_box]
+# platform-facts.md:1545 (§2.24): ComboBoxBackground = ControlFillColorDefault #B3FFFFFF
+background_color = "#ffffffb3"
 min_height_px = 32.0
 min_width_px = 64.0
 arrow_icon_size_px =12.0
@@ -371,8 +408,8 @@ separator_width_px = 1.0
 active_background = "#0078d4"
 # Use defaults.accent_text_color
 active_text_color = "#ffffff"
-# soft_option: Use button hover pattern
-hover_background = "#0000000a"
+# soft_option: the button's hover fill (platform-facts.md:1179)
+hover_background = "#f9f9f980"
 
 
 [light.card]
@@ -407,9 +444,9 @@ padding_vertical_px = 0.0
 
 [light.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)
-# COLOR_INACTIVECAPTION -- default Windows 11 light
+# no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
+# and return #bfcddb and #000000 on Windows 11 25H2 (platform-facts.md:1153-1154, OS probe)
 inactive_title_bar_background = "#f1f1f1"
-# COLOR_INACTIVECAPTIONTEXT -- default Windows 11 light
 inactive_title_bar_text_color = "#1a1a1a99"
 
 # === Dark variant ===
@@ -423,18 +460,20 @@ muted_color = "#9a9a9a"
 shadow_color = "#00000040"
 
 danger_color = "#ff99a4"
-danger_text_color = "#1a1a1a"
+# platform-facts.md:1081-1087 (§2.1.4): InfoBar *SeverityIconForeground = TextFillColorInverse #E4000000
+danger_text_color = "#000000e4"
 warning_color = "#fce100"
-warning_text_color = "#1a1a1a"
+warning_text_color = "#000000e4"
 success_color = "#6ccb5f"
-success_text_color = "#1a1a1a"
+success_text_color = "#000000e4"
 info_color = "#60cdff"
-info_text_color = "#1a1a1a"
+info_text_color = "#000000e4"
 
 selection_background = "#0078d4"
 selection_text_color = "#ffffff"
 link_color = "#60cdff"
-focus_ring_color = "#0078d4"
+# platform-facts.md:1104 (§2.1.5): SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuter #FFFFFF
+focus_ring_color = "#ffffff"
 disabled_text_color = "#454545"
 accent_text_color = "#000000"
 
@@ -442,7 +481,8 @@ accent_text_color = "#000000"
 disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
-focus_ring_offset_px = 0.0
+# platform-facts.md:1106 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
+focus_ring_offset_px = 1.0
 
 
 [dark.defaults.border]
@@ -463,7 +503,8 @@ size_pt =10.5
 weight = 400
 
 [dark.defaults.icon_sizes]
-toolbar_px = 20.0
+# platform-facts.md:1132 (§2.1.8): AppBarButtonContentHeight = 16
+toolbar_px = 16.0
 small_px = 16.0
 large_px = 32.0
 dialog_px = 22.0
@@ -490,8 +531,8 @@ min_width_px = 64.0
 min_height_px = 32.0
 icon_text_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.3 Windows)
-# Fluent SubtleFillColorSecondary overlay on bg
-hover_background = "#ffffff0f"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #15FFFFFF, replacing the rest fill
+hover_background = "#ffffff15"
 hover_text_color = "#ffffff"
 active_text_color = "#ffffff"
 disabled_text_color = "#454545"
@@ -570,6 +611,8 @@ padding_bottom_px = 8.0
 
 [dark.tooltip.font]
 color = "#ffffff"
+# platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
+size_pt = 9.0
 [dark.scrollbar]
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
@@ -582,6 +625,10 @@ thumb_hover_color = "#a0a0a0"
 thumb_active_color = "#787878"
 
 [dark.slider]
+# platform-facts.md:1290-1291 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #8BFFFFFF;
+# the outer thumb, SliderOuterThumbBackground = ControlSolidFillColorDefault #454545
+track_color = "#ffffff8b"
+thumb_color = "#454545"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
@@ -596,15 +643,20 @@ disabled_track_color = "#9a9a9a50"
 disabled_thumb_color = "#2d2d2d80"
 
 [dark.progress_bar]
+# platform-facts.md:1302 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #8BFFFFFF
+track_color = "#ffffff8b"
 track_height_px = 1.0
 min_width_px = 100.0
 
 [dark.progress_bar.border]
 # platform-facts.md:1308 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
 line_width_px = 0.0
+# platform-facts.md:1305 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
+corner_radius_px = 1.5
 
 [dark.tab]
-min_width_px = 64.0
+# platform-facts.md:1316 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
+min_width_px = 100.0
 min_height_px = 32.0
 # platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
 item_gap_px = 0.0
@@ -624,6 +676,8 @@ padding_vertical_px = 3.0
 # platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
 row_height_px = 23.0
 icon_text_gap_px = 12.0
+# platform-facts.md:1242 (§2.6): SM_CXSMICON 16
+icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
 # Fluent SubtleFillColorSecondary
 hover_background = "#ffffff0f"
@@ -639,6 +693,10 @@ padding_top_px = 4.0
 padding_bottom_px = 5.0
 [dark.list]
 alternate_row_background = "#262626"
+# platform-facts.md:1383-1384 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
+# ListViewItemForegroundSelected = TextFillColorPrimary #FFFFFF
+selection_background = "#ffffff0f"
+selection_text_color = "#ffffff"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
 # Fluent SubtleFillColorSecondary
@@ -667,6 +725,10 @@ padding_vertical_px = 0.0
 
 [dark.sidebar]
 background_color = "#272727"
+# platform-facts.md:1336-1337 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
+# NavigationViewItemForegroundSelected = TextFillColorPrimary #FFFFFF
+selection_background = "#ffffff0f"
+selection_text_color = "#ffffff"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
 # Fluent SubtleFillColorSecondary
 hover_background = "#ffffff0f"
@@ -675,7 +737,8 @@ hover_background = "#ffffff0f"
 [dark.sidebar.font]
 color = "#ffffff"
 [dark.popover]
-background_color = "#2d2d2d"
+# platform-facts.md:1405 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #2C2C2C
+background_color = "#2c2c2c"
 
 
 [dark.popover.font]
@@ -698,7 +761,8 @@ hover_color = "#454545"
 
 [dark.switch]
 unchecked_background = "#454545"
-thumb_background = "#ffffff"
+# platform-facts.md:1473 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #000000
+thumb_background = "#000000"
 # platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #C5FFFFFF
 unchecked_thumb_background = "#ffffffc5"
 track_width_px = 40.0
@@ -753,6 +817,8 @@ min_diameter_px = 16.0
 stroke_width_px = 4.0
 
 [dark.combo_box]
+# platform-facts.md:1545 (§2.24): ComboBoxBackground = ControlFillColorDefault #0FFFFFFF
+background_color = "#ffffff0f"
 min_height_px = 32.0
 min_width_px = 64.0
 arrow_icon_size_px =12.0
@@ -779,8 +845,8 @@ separator_width_px = 1.0
 active_background = "#0078d4"
 # Use defaults.accent_text_color
 active_text_color = "#000000"
-# soft_option: Use button hover pattern
-hover_background = "#ffffff0f"
+# soft_option: the button's hover fill (platform-facts.md:1179)
+hover_background = "#ffffff15"
 
 
 [dark.card]
@@ -815,9 +881,9 @@ padding_vertical_px = 0.0
 
 [dark.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)
-# COLOR_INACTIVECAPTION -- default Windows 11 dark
+# no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
+# (platform-facts.md:1153-1154); the OS probe read light mode only
 inactive_title_bar_background = "#2b2b2b"
-# COLOR_INACTIVECAPTIONTEXT -- default Windows 11 dark
 inactive_title_bar_text_color = "#ffffff99"
 
 

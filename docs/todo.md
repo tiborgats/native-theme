@@ -568,6 +568,8 @@ model, the platform presets and the three connectors
       `defaults.border.shadow_enabled` (true) where `docs/platform-facts.md`
       §2.10 gives no shadow on any platform. Correct §2.10 and the presets
       from these sources.
+      Windows part done in M2b Step 7 (<commit>): §2.10's track colour and radius
+      cite WinUI and windows-11 states them; the shadow is still open.
 
 ### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
 
@@ -601,6 +603,20 @@ model, the platform presets and the three connectors
       "Material 3 Expressive" for the second Material preset; the menus say
       "Material" until then. Nothing is renamed before
       (`docs/todo_code-review-plan.md`, M2d Step 15).
+
+### windows-11: a border opacity with no source
+
+- [ ] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
+      variants (light `:56`, dark `:493`), and `docs/platform-facts.md:1116`
+      gives Windows no multiplier: WinUI 3 states each stroke role as a colour
+      with its own alpha. M2b-P07 (`docs/todo_code-review-findings.md`) was
+      deferred to the *Border opacity* entry, which closed on 2026-09-28
+      (`docs/archive/todo_closed.md:181-231`) saying "the windows-11 (0.14) …
+      values have no source; nothing reads them", so no open item owned the
+      value. For M3: remove the key from both variants if the resolved theme
+      can do without it (`ResolvedDefaultsBorder::opacity` is an `f32`,
+      `native-theme/src/model/border.rs:232`), or mark it **(preset)** ❓ in the
+      preset as the facts row does.
 
 ---
 
@@ -1793,7 +1809,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `scrollbar.min_thumb_length` | Windows `SM_CYVTHUMB` (§2.8) | windows-11 17; the reader's testable build states 40 |
       | `slider.tick_mark_length` | GNOME (none), no ticks (§2.9) | adwaita 4 |
       | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-monterey 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
-      | `tab.min_width` | macOS, Windows (none); GNOME "none" (§2.11) | macos-monterey, windows-11, adwaita 64 |
+      | `tab.min_width` | macOS (none); GNOME "none" (§2.11) | macos-monterey, adwaita 64 (windows-11 states WinUI's 100 since M2b Step 7, §2.11) |
       | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | done 2026-09-24: kde-breeze's 28 and adwaita's 34 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. Value mismatches: the macOS reader's 9 against platform-facts' and the preset's 6; the Windows reader's 4 against platform-facts' and the preset's 1 |
       | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
