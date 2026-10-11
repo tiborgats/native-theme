@@ -145,7 +145,8 @@ thumb_active_color = "#50505090"
 
 [light.slider]
 track_height_px = 5.0
-thumb_diameter_px = 21.0
+# platform-facts.md:1293 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
+thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly darker surface
@@ -510,7 +511,8 @@ thumb_active_color = "#b0b0b090"
 
 [dark.slider]
 track_height_px = 5.0
-thumb_diameter_px = 21.0
+# platform-facts.md:1293 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
+thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly brighter surface

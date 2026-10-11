@@ -804,7 +804,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(MacosSonoma, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
     field(MacosSonoma, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
     field(MacosSonoma, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
-    field(MacosSonoma, "slider.thumb_diameter", Px(21.0), 1293, "NSSlider knob: 21"),
+    field(MacosSonoma, "slider.thumb_diameter", Px(20.0), 1293, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
     field(MacosSonoma, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
     field(MacosSonoma, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
     field(MacosSonoma, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
