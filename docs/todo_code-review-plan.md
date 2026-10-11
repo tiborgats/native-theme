@@ -164,7 +164,12 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
     steps (the `cargo-semver-checks` install, `cargo machete`, `cargo tree`, the ledger) run
     beside them in the background;
   - M2's Steps 1–6 of every part may run alongside M1 (they build nothing and need no M1
-    decision); what M2 does with a version gap, and Steps 8–15, wait for M1's stop point A;
+    decision); what M2 does with a version gap, and Steps 8–15, wait for M1's stop point A.
+    They run in a second session on Opus (D2), not in M1's Fable session, in a git worktree
+    on a temporary local branch `m2-research` from `v0.6.2-rc1`
+    (`git worktree add ../native-theme-m2 -b m2-research v0.6.2-rc1`; no `target/` needed,
+    nothing is built), writing only the ledger's M2a–M2e sections; after M1's stop point A
+    the branch is merged into `v0.6.2-rc1`, then the worktree and the branch are removed;
   - M5, M6 and M7's review phases may run as one Workflow, after M3's and M4's fixes landed;
   - never in parallel: fix tasks (one `target/`, `check_release.sh` per commit), and a
     review with the previous milestone's fix phase (it would read code about to change).
