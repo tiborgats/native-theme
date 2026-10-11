@@ -36,7 +36,6 @@ fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> 
 #[derive(Default)]
 struct PerWidgetColors {
     placeholder: Option<crate::Rgba>,
-    selection_inactive: Option<crate::Rgba>,
     alternate_row: Option<crate::Rgba>,
     header_foreground: Option<crate::Rgba>,
     grid_color: Option<crate::Rgba>,
@@ -59,7 +58,6 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let control_bg = NSColor::controlBackgroundColor();
     let separator_c = NSColor::separatorColor();
     let secondary_label = NSColor::secondaryLabelColor();
-    let shadow_c = NSColor::shadowColor();
     let alt_sel_text = NSColor::alternateSelectedControlTextColor();
     let system_red = NSColor::systemRedColor();
     let system_orange = NSColor::systemOrangeColor();
@@ -67,6 +65,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let system_blue = NSColor::systemBlueColor();
     let sel_content_bg = NSColor::selectedContentBackgroundColor();
     let sel_text = NSColor::selectedTextColor();
+    let sel_text_bg = NSColor::selectedTextBackgroundColor();
     let link_c = NSColor::linkColor();
     let focus_c = NSColor::keyboardFocusIndicatorColor();
     let disabled_text = NSColor::disabledControlTextColor();
@@ -93,7 +92,9 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
             ..Default::default()
         },
         muted_color: nscolor_to_rgba(&secondary_label, &srgb),
-        shadow_color: nscolor_to_rgba(&shadow_c, &srgb),
+        // shadow_color is not read: NSColor.shadowColor is an opaque black, while the
+        // shadow AppKit draws is NSShadow's default, black at 1/3, which the preset
+        // states (platform-facts.md:1053).
         danger_color: nscolor_to_rgba(&system_red, &srgb),
         danger_text_color: label,
         warning_color: nscolor_to_rgba(&system_orange, &srgb),
@@ -103,8 +104,12 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         info_color: nscolor_to_rgba(&system_blue, &srgb),
         info_text_color: label,
         selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
-        selection_text_color: nscolor_to_rgba(&sel_text, &srgb),
+        // platform-facts.md:1056, :1058-1059: alternateSelectedControlTextColor on a
+        // selection; selectedTextBackgroundColor and selectedTextColor for selected text
+        selection_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
         selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
+        text_selection_background: nscolor_to_rgba(&sel_text_bg, &srgb),
+        text_selection_color: nscolor_to_rgba(&sel_text, &srgb),
         link_color: nscolor_to_rgba(&link_c, &srgb),
         focus_ring_color: nscolor_to_rgba(&focus_c, &srgb),
         disabled_text_color: nscolor_to_rgba(&disabled_text, &srgb),
@@ -120,7 +125,6 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
 
     let per_widget = PerWidgetColors {
         placeholder: nscolor_to_rgba(&placeholder_c, &srgb),
-        selection_inactive: nscolor_to_rgba(&unemph_sel_bg, &srgb),
         alternate_row,
         header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
         grid_color: nscolor_to_rgba(&grid_c, &srgb),
@@ -303,108 +307,6 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
     )
 }
 
-/// Return per-widget defaults populated from macOS HIG sizes.
-///
-/// Values based on AppKit intrinsic content sizes and Apple Human Interface
-/// Guidelines for standard control dimensions.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-pub(crate) fn macos_widget_defaults() -> crate::ThemeMode {
-    use crate::model::border::WidgetBorderSpec;
-    crate::ThemeMode {
-        button: crate::ButtonTheme {
-            min_height: Some(20.0), // platform-facts.md:1170 (§2.3): NSButton intrinsicContentSize
-            // platform-facts.md:1171 (§2.3): ~8 (WebKit); the legacy HIG 12 is
-            // inter-button spacing (platform-facts.md:195)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(8.0),
-                padding_right: Some(8.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        checkbox: crate::CheckboxTheme {
-            indicator_width: Some(14.0), // NSButton switch type
-            label_gap: Some(4.0),
-            ..Default::default()
-        },
-        input: crate::InputTheme {
-            min_height: Some(22.0), // NSTextField regular
-            // platform-facts.md:1196 (§2.4)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(4.0),
-                padding_right: Some(4.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        scrollbar: crate::ScrollbarTheme {
-            groove_width: Some(15.0), // NSScroller legacy style
-            thumb_width: Some(7.0),   // Overlay style
-            ..Default::default()
-        },
-        slider: crate::SliderTheme {
-            track_height: Some(5.0),    // platform-facts.md:1292 (§2.9): NSSlider
-            thumb_diameter: Some(20.0), // platform-facts.md:1293 (§2.9): NSSlider knob
-            ..Default::default()
-        },
-        progress_bar: crate::ProgressBarTheme {
-            track_height: Some(6.0), // NSProgressIndicator regular
-            ..Default::default()
-        },
-        tab: crate::TabTheme {
-            min_height: Some(24.0), // NSTabView
-            // platform-facts.md:1318 (§2.11)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(12.0),
-                padding_right: Some(12.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        menu: crate::MenuTheme {
-            row_height: Some(22.0), // Standard menu item
-            // platform-facts.md:1235 (§2.6)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(12.0),
-                padding_right: Some(12.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        tooltip: crate::TooltipTheme {
-            // platform-facts.md:1257-1258 (§2.7)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(4.0),
-                padding_right: Some(4.0),
-                padding_top: Some(4.0),
-                padding_bottom: Some(4.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        list: crate::ListTheme {
-            row_height: Some(24.0), // NSTableView row
-            // platform-facts.md:1390 (§2.15)
-            border: Some(WidgetBorderSpec {
-                padding_left: Some(4.0),
-                padding_right: Some(4.0),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        toolbar: crate::ToolbarTheme {
-            bar_height: Some(38.0), // platform-facts.md:1351 (§2.13): NSToolbar
-            item_gap: Some(8.0),    // platform-facts.md:1352 (§2.13): AppKit
-            ..Default::default()
-        },
-        splitter: crate::SplitterTheme {
-            divider_width: Some(9.0), // NSSplitView divider
-            ..Default::default()
-        },
-        ..Default::default()
-    }
-}
-
 /// Per-widget font and text scale data passed to [`build_theme`].
 ///
 /// Collected once (appearance-independent) and applied to both variants.
@@ -427,28 +329,33 @@ fn build_theme(
     dark_defaults: crate::ThemeDefaults,
     widget_fonts: &WidgetFontData,
 ) -> crate::Theme {
-    let widget_defaults = macos_widget_defaults();
-
-    let mut light_variant = widget_defaults.clone();
-    light_variant.defaults = light_defaults;
-    light_variant.menu.font = Some(widget_fonts.menu_font.clone());
-    light_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
-    light_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
-
-    let mut dark_variant = widget_defaults;
-    dark_variant.defaults = dark_defaults;
-    dark_variant.menu.font = Some(widget_fonts.menu_font.clone());
-    dark_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
-    dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
+    // The reader states only what macOS reports; the generation's design sizes
+    // come from its preset (M1-T1-02).
+    let variant = |defaults: crate::ThemeDefaults| crate::ThemeMode {
+        defaults,
+        menu: crate::MenuTheme {
+            font: Some(widget_fonts.menu_font.clone()),
+            ..Default::default()
+        },
+        tooltip: crate::TooltipTheme {
+            font: Some(widget_fonts.tooltip_font.clone()),
+            ..Default::default()
+        },
+        window: crate::WindowTheme {
+            title_bar_font: Some(widget_fonts.title_bar_font.clone()),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     crate::Theme {
         name: "macOS".into(),
-        light: Some(light_variant),
-        dark: Some(dark_variant),
+        light: Some(variant(light_defaults)),
+        dark: Some(variant(dark_defaults)),
         layout: crate::LayoutTheme::default(),
         icon_set: Some(crate::IconSet::SfSymbols),
         // macOS uses the same icon theme ("sf-symbols") for both variants; the
-        // Theme-level field is populated via the merged macos-monterey preset.
+        // Theme-level field is populated via the merged generation preset.
         icon_theme: None,
     }
 }
@@ -546,7 +453,6 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
     // Apply per-widget colors (appearance-dependent, per variant).
     if let (Some(v), Some(pw)) = (&mut theme.light, light_pw) {
         v.input.placeholder_color = pw.placeholder;
-        v.input.selection_background = pw.selection_inactive;
         v.list.alternate_row_background = pw.alternate_row;
         if let Some(color) = pw.header_foreground {
             v.list.header_font.get_or_insert_default().color = Some(color);
@@ -558,7 +464,6 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
     }
     if let (Some(v), Some(pw)) = (&mut theme.dark, dark_pw) {
         v.input.placeholder_color = pw.placeholder;
-        v.input.selection_background = pw.selection_inactive;
         v.list.alternate_row_background = pw.alternate_row;
         if let Some(color) = pw.header_foreground {
             v.list.header_font.get_or_insert_default().color = Some(color);
@@ -813,30 +718,27 @@ mod tests {
         assert_eq!(dark.defaults.accent_color, Some(red));
     }
 
+    /// The reader states only what macOS reports (M1-T1-02): `build_theme`
+    /// carries the read colours and fonts and no design constant.
     #[test]
-    fn macos_widget_defaults_spot_check() {
-        let wv = macos_widget_defaults();
-        assert_eq!(
-            wv.button.min_height,
-            Some(20.0),
-            "NSButton regular control size"
+    fn build_theme_states_no_design_constants() {
+        let theme = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
         );
-        assert_eq!(
-            wv.scrollbar.groove_width,
-            Some(15.0),
-            "NSScroller legacy style"
-        );
-        assert_eq!(
-            wv.checkbox.indicator_width,
-            Some(14.0),
-            "NSButton switch type"
-        );
-        assert_eq!(
-            wv.slider.thumb_diameter,
-            Some(20.0),
-            "NSSlider circular knob"
-        );
-        assert_eq!(wv.slider.track_height, Some(5.0), "NSSlider track");
+        for variant in [theme.light.as_ref(), theme.dark.as_ref()] {
+            let mut rest = variant.unwrap().clone();
+            rest.defaults = crate::ThemeDefaults::default();
+            rest.menu.font = None;
+            rest.tooltip.font = None;
+            rest.window.title_bar_font = None;
+            assert_eq!(
+                rest,
+                crate::ThemeMode::default(),
+                "build_theme states a value macOS did not report"
+            );
+        }
     }
 
     #[test]
@@ -1007,6 +909,43 @@ mod tests {
             defaults.border.color.is_some(),
             "defaults.border.color should be read from NSColor.separatorColor"
         );
+    }
+
+    // === The NSColor mapping (platform-facts.md:1053, :1056, :1058-1059, :1193) ===
+
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn read_appearance_colors_maps_selection_and_shadow_as_platform_facts_names() {
+        let srgb = NSColorSpace::sRGBColorSpace();
+        let (defaults, _) = super::read_appearance_colors();
+        assert_eq!(
+            defaults.shadow_color, None,
+            "NSColor.shadowColor is not the drawn shadow (platform-facts.md:1053)"
+        );
+        assert_eq!(
+            defaults.selection_text_color,
+            nscolor_to_rgba(&NSColor::alternateSelectedControlTextColor(), &srgb)
+        );
+        assert_eq!(
+            defaults.text_selection_color,
+            nscolor_to_rgba(&NSColor::selectedTextColor(), &srgb)
+        );
+        assert_eq!(
+            defaults.text_selection_background,
+            nscolor_to_rgba(&NSColor::selectedTextBackgroundColor(), &srgb)
+        );
+    }
+
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn read_macos_leaves_the_text_field_selection_to_inheritance() {
+        let result = super::read_macos().unwrap();
+        assert!(matches!(
+            &result.output,
+            crate::ReaderOutput::Dual { light, dark, .. }
+                if light.input.selection_background.is_none()
+                    && dark.input.selection_background.is_none()
+        ));
     }
 
     // === Plan 94-03 (G8): MacosReader ThemeReader impl ===

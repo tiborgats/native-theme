@@ -119,9 +119,10 @@ Xcode Interface Builder measurements
 
 **Files to update:**
 
-- `native-theme/src/macos.rs` -- the `macos_widget_defaults()` function and the
-  `MacosReader` reader (`read_appearance_colors()` holds the `NSColor` mappings)
-- `native-theme/src/presets/macos-monterey.toml` -- bundled preset data (a new visual
+- `native-theme/src/macos.rs` -- the `MacosReader` reader, which states only what macOS
+  reports (`read_appearance_colors()` holds the `NSColor` mappings) and no design size
+- `native-theme/src/presets/macos-monterey.toml` -- bundled preset data, AppKit's sizes
+  included (a new visual
   generation gets a preset of its own, named as
   [A new generation, a new preset](#a-new-generation-a-new-preset) says)
 
@@ -138,13 +139,12 @@ Xcode Interface Builder measurements
 1. Review Apple HIG for the new macOS version at
    <https://developer.apple.com/design/human-interface-guidelines/>.
 2. Review AppKit release notes for changed/deprecated `NSColor` names.
-3. Measure updated control sizes in Xcode Interface Builder if HIG does not
-   provide exact values.
-4. Update constants in `macos_widget_defaults()` in `native-theme/src/macos.rs`.
-5. If semantic color names changed, update the NSColor mappings in
+3. Measure updated control sizes with the OS probe (`tools/os-probe`, dispatched
+   through `.github/workflows/os-probe.yml`) where the HIG gives no exact value.
+4. If semantic color names changed, update the NSColor mappings in
    `read_appearance_colors()`, which `MacosReader` calls.
-6. Update the preset TOML file, or create the new generation's preset.
-7. Test on the target macOS version: `cargo test -p native-theme --features macos`.
+5. Update the preset TOML file, or create the new generation's preset.
+6. Test on the target macOS version: `cargo test -p native-theme --features macos`.
 
 **Note:** The macOS module is unconditionally compiled. The `build_theme` tests run
 cross-platform using hardcoded fallback values, so basic testing works on any OS.

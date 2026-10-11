@@ -2092,14 +2092,14 @@ the gap — closing it is a change, and each wants its own decision.
       | `menu.row_height` | KDE (none), sizes to font (§2.6) | done 2026-09-24: kde-breeze's 28 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `menu.row_height` | Windows per context: touch 31, mouse 23 (§2.6) | done 2026-09-24: windows-11 and the reader state the mouse context's 23, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `tooltip.max_width` | KDE "(none) — preset: 300"; GNOME "(none) — preset: 360" (§2.7) | kde-breeze 300, adwaita 360 |
-      | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 16 / overlay 7 (§2.8) | adwaita 12, macos-monterey 16. The macOS reader states 15, which matches neither context |
-      | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-monterey 7 and the reader's 7; windows-11 6 against the API value |
+      | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 15 / overlay 16 (§2.8, the macOS 14.8.9 probe) | adwaita 12; macos-monterey 16, the overlay context's, which it states. The macOS reader's fixed 15 (the legacy context's) went in M2a Step 8a; the reader reads no `scrollerWidth` for the user's style (M4) |
+      | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-monterey 7 (the macOS reader's 7 went in M2a Step 8a); windows-11 6 against the API value |
       | `scrollbar.min_thumb_length` | Windows `SM_CYVTHUMB` (§2.8) | windows-11 17 |
       | `slider.tick_mark_length` | GNOME (none), no ticks (§2.9) | adwaita 4 |
       | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-monterey 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
       | `tab.min_width` | macOS (none); GNOME "none" (§2.11) | macos-monterey, adwaita 64 (windows-11 states WinUI's 100 since M2b Step 7, §2.11) |
       | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | done 2026-09-24: kde-breeze's 28 and adwaita's 34 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. Value mismatches: the macOS reader's 9 against platform-facts' and the preset's 6 |
+      | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. (The macOS mismatch closed: AppKit's 9 in facts and preset since M2a Step 7, the reader's constant gone in Step 8a) |
       | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
       | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-monterey 8, windows-11 6 |
       | `layout.window_margin` | Windows (none) (§2.20) | windows-11 10 |

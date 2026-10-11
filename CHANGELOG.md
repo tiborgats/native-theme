@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-egui**: `from_preset` resolves both variants on one `ResolutionContext`.
 - **native-theme**: the Windows reader no longer states WinUI 3's design sizes and radii; they come from the windows-11 preset alone, so on Windows the splitter divider is 1 px, the preset's and docs/platform-facts.md §2.17's, instead of 4.
 - **native-theme**: the `kde-breeze` and `adwaita` presets name the style version their values were checked against: Breeze v6.7.5 (Plasma 6.7, KDE Frameworks 6.31.0) and libadwaita 1.10.0 (GNOME 51).
+- **native-theme**: the macOS reader no longer states AppKit's design sizes; they come from the macOS preset alone, as the Windows reader's do, so on macOS the scroll bar's groove is the preset's overlay width, 16, where the reader stated the legacy 15. It no longer reads `NSColor.shadowColor`, an opaque black, as the drop-shadow colour, so the preset's `NSShadow` default applies; it reads a selection's text colour from `alternateSelectedControlTextColor` (white), as `docs/platform-facts.md` names it, where it read `selectedTextColor` (black in light mode), which now gives the selected text's colour beside `selectedTextBackgroundColor`; and the text field's selection takes those text-selection colours instead of `unemphasizedSelectedContentBackgroundColor`.
 
 ### Fixed
 

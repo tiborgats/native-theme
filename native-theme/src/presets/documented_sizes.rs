@@ -40,14 +40,13 @@
 //! pipeline applies its constants to the active variant only and takes the
 //! inactive variant from the full preset, which the static resolution covers.
 //! The live resolution here applies the constants to each variant in turn, as
-//! the pipeline does when that variant is the active one. The macOS reader
-//! fills both variants. GNOME's reader states no sizes, the Windows reader
-//! only the OS's system metrics, which no row here covers, and Material has
-//! no reader, so only their static resolution is checked.
+//! the pipeline does when that variant is the active one. GNOME's reader
+//! states no sizes, the Windows and macOS readers only what the OS reports,
+//! which no row here covers, and Material has no reader, so only their static
+//! resolution is checked.
 //!
-//! This lives inside the crate because the reader constants
-//! (`kde_metrics::populate_widget_sizing`, `macos::macos_widget_defaults`)
-//! are `pub(crate)`.
+//! This lives inside the crate because the KDE reader's constants
+//! (`kde_metrics::populate_widget_sizing`) are `pub(crate)`.
 
 use crate::model::border::ResolvedPadding;
 use crate::resolve::ResolutionContext;
@@ -101,8 +100,10 @@ impl NativePreset {
                 crate::kde_metrics::populate_widget_sizing(&mut v);
                 Some(v)
             }
-            NativePreset::Adwaita | NativePreset::Material3 | NativePreset::Windows11 => None,
-            NativePreset::MacosMonterey => Some(crate::macos::macos_widget_defaults()),
+            NativePreset::Adwaita
+            | NativePreset::Material3
+            | NativePreset::Windows11
+            | NativePreset::MacosMonterey => None,
         }
     }
 }
@@ -234,7 +235,7 @@ const ROWS: &[Row] = &[
     row(Adwaita, "card", NONE, &[1592, 1593], "(none), app-defined"),
     row(Adwaita, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
         .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
-    // --- macOS (macos-monterey, macos_widget_defaults) ---
+    // --- macOS 12-15 (macos-monterey; the reader states no sizes) ---
     row(MacosMonterey, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(MacosMonterey, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
     row(MacosMonterey, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
