@@ -8,6 +8,7 @@
 
 use std::time::{Duration, Instant};
 
+use native_theme::ResolutionContext;
 use native_theme::theme::{ColorMode, Theme};
 
 fn median<T>(runs: usize, mut f: impl FnMut() -> T) -> Duration {
@@ -32,6 +33,10 @@ fn presets_parse_and_resolve() {
         let light = median(21, || theme.resolve(ColorMode::Light));
         let dark = median(21, || theme.resolve(ColorMode::Dark));
         println!("timing preset {key}: parse {parse:?}, resolve light {light:?}, dark {dark:?}");
+        let ctx = ResolutionContext::for_tests();
+        let light = median(21, || theme.resolve_with(ColorMode::Light, &ctx));
+        let dark = median(21, || theme.resolve_with(ColorMode::Dark, &ctx));
+        println!("timing preset {key}: resolve_with for_tests() light {light:?}, dark {dark:?}");
     }
 }
 

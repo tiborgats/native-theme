@@ -84,7 +84,7 @@ impl Combination {
     }
 }
 
-/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:663`) — sixteen — in both modes:
+/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:689`) — sixteen — in both modes:
 /// the 32 combinations. One atlas per preset,
 /// carrying both variants, built with no plan and `AccessibilityPreferences::default()`.
 fn combinations() -> Vec<Combination> {

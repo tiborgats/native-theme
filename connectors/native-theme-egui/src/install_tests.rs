@@ -2423,7 +2423,7 @@ mod t13_accessibility {
         AccessibilityPreferences, ResolvedTheme, Role, RoleVariant, ThemeAtlas, scaled_text_size,
     };
 
-    /// Every bundled preset (`native-theme/src/model/mod.rs:663`), both variants resolved.
+    /// Every bundled preset (`native-theme/src/model/mod.rs:689`), both variants resolved.
     fn presets() -> Vec<(&'static str, ResolvedTheme, ResolvedTheme)> {
         NativeTheme::list_presets()
             .iter()

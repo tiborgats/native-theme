@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **native-theme**: `Theme::resolve_with(mode, &ResolutionContext)` resolves with a context the caller built, with the icon-theme tiering `Theme::resolve` gives, and reads nothing from the system; `Theme::resolve` builds `ResolutionContext::from_system()` on every call, which on Linux reads configuration files and runs `xrdb -query` for the font DPI. `SystemTheme::from_system()` no longer detects the font DPI a second time after the platform reader supplied it, and `native_theme_egui::from_preset` resolves both variants on one context.
 - **Development**: `scripts/check_docsrs.py` documents a crate the way docs.rs will (nightly rustdoc with the crate's `[package.metadata.docs.rs]` features and targets, `DOCS_RS=1`, `--cfg docsrs`, `-D warnings`), and `scripts/check_release.sh` and the crates.io workflow run it for every workspace crate, so a docs.rs failure stops a release before the tag instead of appearing after the crates are published.
 
 ### Changed

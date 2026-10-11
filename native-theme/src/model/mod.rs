@@ -428,10 +428,14 @@ impl Theme {
     /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
     /// fired (value came from TOML) versus tier 3 (runtime detection).
     ///
-    /// Uses [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
-    /// for DPI and button-order. For custom contexts, construct the
-    /// variant manually and call
-    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved).
+    /// Builds its inputs with
+    /// [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
+    /// on every call, which reads the environment and configuration files
+    /// and, on Linux, may run `xrdb -query` (and `xrandr` where `Xft.dpi`
+    /// is unset) to detect the font DPI. To resolve several variants or
+    /// themes with one detection, or with inputs of your own, build the
+    /// context once and call
+    /// [`resolve_with`](Self::resolve_with).
     ///
     /// # Errors
     ///
@@ -458,12 +462,34 @@ impl Theme {
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn resolve(&self, mode: ColorMode) -> crate::Result<Resolved> {
-        self.resolve_in(mode, &crate::resolve::ResolutionContext::from_system())
+        self.resolve_with(mode, &crate::resolve::ResolutionContext::from_system())
     }
 
     /// [`resolve`](Self::resolve) with the resolution-time inputs of `ctx`,
-    /// whose `icon_theme` is tier 3.
-    pub(crate) fn resolve_in(
+    /// whose `icon_theme` is tier 3. It reads nothing from the system: the
+    /// font DPI, button order and detected icon theme are `ctx`'s.
+    ///
+    /// # Errors
+    ///
+    /// As [`resolve`](Self::resolve).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::resolve::ResolutionContext;
+    /// use native_theme::theme::{ColorMode, Theme};
+    ///
+    /// // One context for both variants; 72 DPI makes a point a pixel.
+    /// let ctx = ResolutionContext { font_dpi: 72.0, ..ResolutionContext::for_tests() };
+    /// let breeze = Theme::preset("kde-breeze")?;
+    /// let light = breeze.resolve_with(ColorMode::Light, &ctx)?;
+    /// let dark = breeze.resolve_with(ColorMode::Dark, &ctx)?;
+    /// assert_eq!(light.variant.defaults.font.size, 10.0); // `size_pt = 10.0`
+    /// assert_eq!(light.icon_theme.as_deref(), Some("breeze"));
+    /// assert_eq!(dark.icon_theme.as_deref(), Some("breeze-dark"));
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    pub fn resolve_with(
         &self,
         mode: ColorMode,
         ctx: &crate::resolve::ResolutionContext,
@@ -1412,7 +1438,7 @@ accent_color = "#ff0000"
             "detected-theme".to_string()
         ));
         let r = adwaita_without_icon_theme()
-            .resolve_in(ColorMode::Light, &ctx)
+            .resolve_with(ColorMode::Light, &ctx)
             .unwrap();
         assert_eq!(r.icon_theme.as_deref(), Some("detected-theme"));
         assert!(
@@ -1431,7 +1457,7 @@ accent_color = "#ff0000"
             },
         ));
         let r = adwaita_without_icon_theme()
-            .resolve_in(ColorMode::Light, &ctx)
+            .resolve_with(ColorMode::Light, &ctx)
             .expect("a failed icon-theme detection must not fail resolution");
         assert_eq!(r.icon_theme, None);
         assert!(!r.icon_theme_explicit);

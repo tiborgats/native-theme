@@ -570,17 +570,15 @@ mod tests {
     /// `material-icons` test uses it, so it is compiled with that feature alone.
     #[cfg(feature = "material-icons")]
     fn two_variant_atlas() -> ThemeAtlas {
+        use native_theme::ResolutionContext;
         use native_theme::theme::{ColorMode, Theme};
-        let light = Theme::preset("adwaita")
-            .unwrap()
-            .resolve(ColorMode::Light)
-            .unwrap()
-            .variant;
-        let dark = Theme::preset("adwaita")
-            .unwrap()
-            .resolve(ColorMode::Dark)
+        let adwaita = Theme::preset("adwaita").unwrap();
+        let ctx = ResolutionContext::for_tests();
+        let light = adwaita
+            .resolve_with(ColorMode::Light, &ctx)
             .unwrap()
             .variant;
+        let dark = adwaita.resolve_with(ColorMode::Dark, &ctx).unwrap().variant;
         assert_ne!(light.defaults.text_color, dark.defaults.text_color);
         ThemeAtlas::builder("adwaita", &light, &dark).build()
     }

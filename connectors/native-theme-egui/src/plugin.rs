@@ -333,7 +333,10 @@ mod tests {
     fn theme_with(width: f32, offset: f32) -> crate::ResolvedTheme {
         let mut theme = native_theme::theme::Theme::preset("kde-breeze")
             .expect("a bundled preset")
-            .resolve(crate::ColorMode::Light)
+            .resolve_with(
+                crate::ColorMode::Light,
+                &native_theme::ResolutionContext::for_tests(),
+            )
             .expect("the light variant resolves")
             .variant;
         theme.defaults.focus_ring_width = width;

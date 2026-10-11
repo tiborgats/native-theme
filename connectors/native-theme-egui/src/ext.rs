@@ -120,7 +120,7 @@ impl NativeThemeUiExt for egui::Ui {
 }
 
 use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
-use native_theme::{AccessibilityPreferences, Result, SystemTheme};
+use native_theme::{AccessibilityPreferences, ResolutionContext, Result, SystemTheme};
 
 /// Compile an atlas from one resolved variant. Pure mapping; borrows; never touches the OS.
 ///
@@ -148,18 +148,19 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// egui's default base.
 ///
 /// The atlas carries **both** of the preset's variants — `ColorMode::Light` into the light
-/// `Style`, `ColorMode::Dark` into the dark one, each through `Theme::resolve`
-/// (`native-theme/src/model/mod.rs:460`), whose `pick_variant` cross-fallback serves a
-/// one-variant preset (`:372-377`) and whose resolution is `ThemeMode::resolve_system`'s
-/// (`:482`; `native-theme/src/resolve/mod.rs:266-267`) — for
+/// `Style`, `ColorMode::Dark` into the dark one, each through `Theme::resolve_with`
+/// (`native-theme/src/model/mod.rs:492`), whose `pick_variant` cross-fallback serves a
+/// one-variant preset (`:372-377`), on the one `ResolutionContext::from_system()` the call
+/// builds, so that the resolution is `ThemeMode::resolve_system`'s (`:508`;
+/// `native-theme/src/resolve/mod.rs:266-267`) and the system is read once — for
 /// the reason [`SystemThemeExt::to_egui_atlas`] gives: under `ThemePreference::System` egui
 /// selects between its two styles every pass, so a preset compiled into one scheme would
 /// leave the other scheme wrong. This is the one deviation from
 /// `native_theme_gpui::from_preset`, which compiles the `is_dark` variant only.
 ///
 /// The icon set is those two `Resolved`s' `icon_set`, a theme-level value they share
-/// (`native-theme/src/model/mod.rs:478-480`); the icon theme
-/// is each variant's own `Resolved::icon_theme`, `Theme::resolve(ColorMode::Light)`'s for
+/// (`native-theme/src/model/mod.rs:504-506`); the icon theme
+/// is each variant's own `Resolved::icon_theme`, `Theme::resolve_with(ColorMode::Light, ..)`'s for
 /// the light scheme and `ColorMode::Dark`'s for the dark one: [`ThemeAtlas::icon_set`](crate::ThemeAtlas::icon_set),
 /// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme).
 ///
@@ -179,7 +180,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// (`connectors/native-theme-gpui/src/lib.rs:272-276`).
 ///
 /// # Errors
-/// Propagates `Theme::preset` and `Theme::resolve` failures.
+/// Propagates `Theme::preset` and `Theme::resolve_with` failures.
 #[must_use = "this builds the styles; it does not install them"]
 pub fn from_preset(
     name: &str,
@@ -187,14 +188,15 @@ pub fn from_preset(
     prefs: &AccessibilityPreferences,
 ) -> Result<(ThemeAtlas, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
-    // Both variants, each through `Theme::resolve`, whose `pick_variant` cross-fallback serves
-    // a one-variant preset (`native-theme/src/model/mod.rs:372-377`).
-    let light = spec.resolve(ColorMode::Light)?;
-    let dark = spec.resolve(ColorMode::Dark)?;
+    // Both variants on one context, each through `Theme::resolve_with`, whose `pick_variant`
+    // cross-fallback serves a one-variant preset (`native-theme/src/model/mod.rs:372-377`).
+    let ctx = ResolutionContext::from_system();
+    let light = spec.resolve_with(ColorMode::Light, &ctx)?;
+    let dark = spec.resolve_with(ColorMode::Dark, &ctx)?;
     let mut builder = ThemeAtlas::builder(&spec.name, &light.variant, &dark.variant)
         .layout(&spec.layout)
         .accessibility(prefs)
-        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:478-480`)
+        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:504-506`)
         .icon_set(light.icon_set);
     if let Some(icon_theme) = light.icon_theme.as_deref() {
         builder = builder.icon_theme(egui::Theme::Light, icon_theme);

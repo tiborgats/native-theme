@@ -56,12 +56,15 @@ pub(crate) fn run_pipeline(
 
     // Build ONE resolution-time context for this theme-build. The reader
     // may have supplied an authoritative font_dpi (e.g. KDE forceFontDPI);
-    // when it does we override ctx.font_dpi. button_order + icon_theme
-    // come from the from_system() defaults (platform-detected).
-    let mut ctx = crate::resolve::ResolutionContext::from_system();
-    if let Some(dpi) = font_dpi {
-        ctx.font_dpi = dpi;
-    }
+    // when it does, the context takes it and no DPI detection runs again.
+    // button_order + icon_theme are platform-detected as from_system()'s.
+    let ctx = match font_dpi {
+        Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(
+            dpi,
+            crate::model::icons::system_icon_theme(),
+        ),
+        None => crate::resolve::ResolutionContext::from_system(),
+    };
 
     // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
     //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)

@@ -81,8 +81,15 @@ impl ResolutionContext {
     /// [`from_system`](Self::from_system), with `detected` as the outcome
     /// of the icon theme's detection.
     pub(crate) fn with_detected_icon_theme(detected: crate::Result<String>) -> Self {
+        Self::with_font_dpi(crate::detect::system_font_dpi(), detected)
+    }
+
+    /// [`from_system`](Self::from_system) with a `font_dpi` already known,
+    /// such as the one a platform reader detected: no DPI detection runs.
+    /// `detected` is the outcome of the icon theme's detection.
+    pub(crate) fn with_font_dpi(font_dpi: f32, detected: crate::Result<String>) -> Self {
         Self {
-            font_dpi: crate::detect::system_font_dpi(),
+            font_dpi,
             button_order: crate::resolve::inheritance::platform_button_order(),
             icon_theme: detected.ok().map(Cow::Owned),
         }
@@ -106,3 +113,31 @@ impl ResolutionContext {
 
 // Intentionally NO `impl Default for ResolutionContext`.
 // See module-level doc comment for the signal-intent rationale.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_font_dpi_is_its_arguments() {
+        // The pipeline's constructor when the reader supplied a DPI: the
+        // context holds that DPI and the given icon-theme outcome, plus
+        // the platform's button order; no DPI detection replaces either.
+        let ctx = ResolutionContext::with_font_dpi(
+            123.3,
+            Err(crate::Error::PlatformUnsupported {
+                platform: "the test's failing detection",
+            }),
+        );
+        assert_eq!(ctx.font_dpi, 123.3);
+        assert!(ctx.icon_theme.is_none());
+        assert_eq!(
+            ctx.button_order,
+            crate::resolve::inheritance::platform_button_order()
+        );
+
+        let ctx = ResolutionContext::with_font_dpi(144.0, Ok("detected-theme".to_string()));
+        assert_eq!(ctx.font_dpi, 144.0);
+        assert_eq!(ctx.icon_theme.as_deref(), Some("detected-theme"));
+    }
+}
