@@ -12,7 +12,7 @@ use crate::demo::{self, Registry};
 const ROWS: [(&str, &str); 4] = [
     ("kde-breeze", "KDE"),
     ("adwaita", "GNOME"),
-    ("macos-sonoma", "macOS"),
+    ("macos-monterey", "macOS"),
     ("windows-11", "Windows"),
 ];
 

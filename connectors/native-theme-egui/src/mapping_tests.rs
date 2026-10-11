@@ -596,7 +596,7 @@ const HOSTILE: [f32; 6] = [
 const PER_LEAF: [&str; 2] = ["kde-breeze", "adwaita"];
 
 /// Mutated all at once, and walked through `dnd_drop_zone`.
-const PLATFORM: [&str; 4] = ["kde-breeze", "adwaita", "macos-sonoma", "windows-11"];
+const PLATFORM: [&str; 4] = ["kde-breeze", "adwaita", "macos-monterey", "windows-11"];
 
 const MODES: [ColorMode; 2] = [ColorMode::Light, ColorMode::Dark];
 
@@ -893,11 +893,11 @@ fn t4b_every_hostile_visuals_survives_egui_s_own_disable_assert() {
 /// and two community pairs.
 const PAIRS: [(&str, &str); 8] = [
     ("kde-breeze", "adwaita"),
-    ("kde-breeze", "macos-sonoma"),
+    ("kde-breeze", "macos-monterey"),
     ("kde-breeze", "windows-11"),
-    ("adwaita", "macos-sonoma"),
+    ("adwaita", "macos-monterey"),
     ("adwaita", "windows-11"),
-    ("macos-sonoma", "windows-11"),
+    ("macos-monterey", "windows-11"),
     ("material-3", "catppuccin-mocha"),
     ("dracula", "solarized"),
 ];

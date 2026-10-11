@@ -313,13 +313,13 @@ impl fmt::Display for DiagnosticEntry {
 /// Structured information about the platform's default preset.
 ///
 /// Returned by [`platform_preset_name()`]. The `name` field is the
-/// user-facing preset name (e.g. `"macos-sonoma"`), the preset the OS-first
+/// user-facing preset name (e.g. `"macos-monterey"`), the preset the OS-first
 /// pipeline merges the platform reader's output over.
 ///
 /// `Display` returns the user-facing name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlatformPreset {
-    /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-sonoma").
+    /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-monterey").
     pub name: &'static str,
 }
 
@@ -350,7 +350,7 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 /// The preset is the merge base in the OS-first pipeline: the platform
 /// reader's output is merged over it.
 ///
-/// - macOS -> `PlatformPreset { name: "macos-sonoma" }`
+/// - macOS -> `PlatformPreset { name: "macos-monterey" }`
 /// - Windows -> `PlatformPreset { name: "windows-11" }`
 /// - Linux KDE -> `PlatformPreset { name: "kde-breeze" }`
 /// - Linux other/GNOME -> `PlatformPreset { name: "adwaita" }`
@@ -370,7 +370,7 @@ pub fn platform_preset_name() -> PlatformPreset {
     #[cfg(target_os = "macos")]
     {
         PlatformPreset {
-            name: "macos-sonoma",
+            name: "macos-monterey",
         }
     }
     #[cfg(target_os = "windows")]
@@ -583,7 +583,7 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
     {
         #[cfg(feature = "macos")]
         {
-            return Some((Box::new(crate::macos::MacosReader), "macos-sonoma"));
+            return Some((Box::new(crate::macos::MacosReader), "macos-monterey"));
         }
         #[cfg(not(feature = "macos"))]
         return None;
@@ -1176,7 +1176,7 @@ mod pipeline_tests {
     fn test_dual_variant_uses_both_from_reader() {
         // Simulate macOS-style dual-variant reader: both variants provided.
         // The pipeline should use BOTH reader variants (merged with preset).
-        let full = Theme::preset("macos-sonoma").unwrap();
+        let full = Theme::preset("macos-monterey").unwrap();
         let custom_light_accent = Rgba::rgb(42, 100, 200);
         let custom_dark_accent = Rgba::rgb(200, 50, 50);
 
@@ -1198,7 +1198,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "macos-sonoma", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "macos-monterey", crate::ColorMode::Light).unwrap();
 
         // Both variants should reflect the reader's custom accents (merged).
         assert_eq!(
@@ -1218,7 +1218,7 @@ mod pipeline_tests {
     #[async_trait::async_trait]
     impl crate::reader::ThemeReader for DarkDualReader {
         async fn read(&self) -> crate::Result<ReaderResult> {
-            let mut reader = reader_from_preset("macos-sonoma");
+            let mut reader = reader_from_preset("macos-monterey");
             if let ReaderOutput::Dual { is_dark, .. } = &mut reader.output {
                 *is_dark = true;
             }
@@ -1231,7 +1231,7 @@ mod pipeline_tests {
         let detection = crate::detect::DetectionContext::new();
         let st = pollster::block_on(read_through_pipeline(
             &DarkDualReader,
-            "macos-sonoma",
+            "macos-monterey",
             &detection,
         ))
         .unwrap();
@@ -1578,7 +1578,7 @@ mod theme_reader_trait_tests {
     /// The companion `&'static str` is the platform preset name that `run_pipeline`
     /// should use — kept in the same return type because the preset is chosen
     /// from the DE detected by `select_reader` (KDE -> kde-breeze, GNOME ->
-    /// adwaita, macOS -> macos-sonoma, Windows -> windows-11).
+    /// adwaita, macOS -> macos-monterey, Windows -> windows-11).
     #[test]
     fn select_reader_returns_platform_specific_impl() {
         // Call select_reader and observe the Option. The structural invariant
@@ -1597,7 +1597,7 @@ mod theme_reader_trait_tests {
                 "select_reader must return Some on macOS+macos"
             );
             if let Some((_reader, preset)) = &picked {
-                assert_eq!(*preset, "macos-sonoma");
+                assert_eq!(*preset, "macos-monterey");
             }
         }
         #[cfg(all(target_os = "windows", feature = "windows"))]

@@ -470,7 +470,7 @@ mod tests {
         }
         // The platform's bundled preset, both modes.
         let preset = if cfg!(target_os = "macos") {
-            "macos-sonoma"
+            "macos-monterey"
         } else {
             "windows-11"
         };

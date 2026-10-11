@@ -1,4 +1,9 @@
-# macOS Sonoma theme
+# macOS Monterey theme: AppKit's Big Sur-era look as it stands from macOS 12 Monterey, whose AppKit
+# release notes end the accent-colour highlight of a clicked push button.
+# Covers: macOS 12 Monterey to 15 Sequoia. No AppKit release note for 13 or 14 changes a value this
+# preset carries, and Apple published none for 15.
+# Verified on: macOS 14 (docs/platform-facts.md's sources and the OS probe on 14.8.9) and macOS 15
+# (the OS probe on 15.7.9), docs/evidence/os-probe/2026-10-11-run-38129819806/.
 # Source: Apple Human Interface Guidelines, NSColor system colors
 name = "macOS Sonoma"
 icon_set = "sf-symbols"

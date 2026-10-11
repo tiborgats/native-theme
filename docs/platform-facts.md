@@ -39,7 +39,7 @@ a default for these.
 | ❌     | Incorrect — disproved; see inline note for the correct information. |
 
 #### Version-tagged values
-A cell that tags its values with OS versions ("macOS 14: X · macOS 26: Y") states one value per version, and each value belongs to the preset of that version's generation (`macos-sonoma`, and a later `macos-tahoe`), not to a usage context. The cell-reading rules (one number is stated, a per-context value only for a matching context; [unstated-sizes spec §1.4](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) therefore read per preset: a preset states the one number its own version carries, and a value tagged for another version says nothing about it. The size gate (`native-theme/src/presets/documented_sizes.rs`) keys its rows by preset for the same reason.
+A cell that tags its values with OS versions ("macOS 14: X · macOS 26: Y") states one value per version, and each value belongs to the preset of that version's generation (`macos-monterey`, and a later `macos-tahoe`), not to a usage context. The cell-reading rules (one number is stated, a per-context value only for a matching context; [unstated-sizes spec §1.4](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) therefore read per preset: a preset states the one number its own version carries, and a value tagged for another version says nothing about it. The size gate (`native-theme/src/presets/documented_sizes.rs`) keys its rows by preset for the same reason.
 
 ---
 

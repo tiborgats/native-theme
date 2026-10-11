@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
-- **native-theme**: the `-live` presets are gone: `kde-breeze-live`, `adwaita-live`, `macos-sonoma-live` and `windows-11-live` (`Theme::preset` now returns `UnknownPreset` for them), with `PlatformPreset::is_live` and `PlatformPreset::live_name()`. The platform readers merge over the platform preset (`kde-breeze`, `adwaita`, `macos-sonoma`, `windows-11`). Every key of a `-live` file stated its platform preset's value, so the layer changed no resolved value.
+- **native-theme**: the `-live` presets are gone: `kde-breeze-live`, `adwaita-live`, `macos-sonoma-live` and `windows-11-live` (`Theme::preset` now returns `UnknownPreset` for them), with `PlatformPreset::is_live` and `PlatformPreset::live_name()`. The platform readers merge over the platform preset (`kde-breeze`, `adwaita`, `macos-monterey`, `windows-11`). Every key of a `-live` file stated its platform preset's value, so the layer changed no resolved value.
 - **native-theme**: the `material` preset is now `material-3`: `Theme::preset("material")` returns `UnknownPreset`, with no alias.
+- **native-theme**: the `macos-sonoma` preset is now `macos-monterey`, named by the first macOS version whose look it carries: Monterey (12), whose AppKit release notes end the accent-colour highlight of a clicked button; it covers macOS 12 to 15. `Theme::preset("macos-sonoma")` returns `UnknownPreset`, with no alias.
 
 ### Added
 
@@ -31,10 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: the documentation of the `windows` module, which docs.rs builds for its Windows target, no longer links to two private items, and the `fonts` and `watch` modules are documented in one place (their own file), so their links resolve in the same scope on stable and on the nightly rustdoc docs.rs uses, which reported their explicit targets as redundant; the `watch` summary is no longer shown twice.
 - **READMEs**: the theme-switching GIFs are assembled at the captured window's size, as the screenshots are, instead of being scaled to 600 px wide, and the spinner GIFs are shown at their own 200×120 instead of 80 px high.
 - **native-theme**: the `ios` preset takes what iOS 13-18 draw where a source gives it: the section heading (17 pt Semibold), dialog title (28 pt) and every text-scale line height from Apple's Dynamic Type table; muted text in `secondaryLabel` and disabled text in `tertiaryLabel` (a disabled select's too); a button's fill, its blue text (pressed and hovered too) and the switch's green on track and grey off track as WebKit draws them on iOS; and the dark text field's fill in `systemBackground`. Each value with a source cites it in the file, whose header states the iOS versions it covers (13-18) and was verified on (18).
-- **native-theme**: the `macos-sonoma` preset's split-view divider is AppKit's default, the thick one: 9 wide (it was 6, a GNUstep value) and clear, as `NSSplitView.dividerColor` is for that style (it took the border colour).
-- **native-theme**: the `macos-sonoma` preset's push button is 20 high, AppKit's `intrinsicContentSize` on macOS 14 (it was 22), with its title 1 below the bezel's top and 3 above its bottom, where AppKit's title rect puts it (it was 3 and 3); the macOS reader's button height follows.
-- **native-theme**: the `macos-sonoma` preset's slider knob is 20 across, as macOS 14 draws it (it was 21); the macOS reader's knob follows.
-- **native-theme**: the `macos-sonoma` preset's drop-down places its title 1 below the bezel's top and 3 above its bottom, where AppKit's pop-up button puts it (it was 3 and 3).
+- **native-theme**: the `macos-monterey` preset's split-view divider is AppKit's default, the thick one: 9 wide (it was 6, a GNUstep value) and clear, as `NSSplitView.dividerColor` is for that style (it took the border colour).
+- **native-theme**: the `macos-monterey` preset's push button is 20 high, AppKit's `intrinsicContentSize` on macOS 14 (it was 22), with its title 1 below the bezel's top and 3 above its bottom, where AppKit's title rect puts it (it was 3 and 3); the macOS reader's button height follows.
+- **native-theme**: the `macos-monterey` preset's slider knob is 20 across, as macOS 14 draws it (it was 21); the macOS reader's knob follows.
+- **native-theme**: the `macos-monterey` preset's drop-down places its title 1 below the bezel's top and 3 above its bottom, where AppKit's pop-up button puts it (it was 3 and 3).
 
 ## [0.6.1] - 2026-10-09
 

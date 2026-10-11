@@ -39,7 +39,7 @@ and egui connectors need Rust 1.95.
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
 - **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies. Your UI code reads from this.
-- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-sonoma`). Load with `Theme::preset("name")`.
+- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
 ## See it in action

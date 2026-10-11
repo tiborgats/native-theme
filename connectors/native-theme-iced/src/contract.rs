@@ -3641,7 +3641,7 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 /// (docs/platform-facts.md:1626, §2.28: macOS, KDE and GNOME), which they
 /// express as fully transparent.
 #[cfg(feature = "widgets")]
-const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-sonoma"];
+const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-monterey"];
 
 #[cfg(feature = "widgets")]
 #[test]

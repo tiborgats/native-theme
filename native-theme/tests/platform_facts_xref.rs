@@ -166,12 +166,12 @@ fn windows_11_matches_platform_facts() {
 }
 
 #[test]
-fn macos_sonoma_matches_platform_facts() {
-    let theme = Theme::preset("macos-sonoma").unwrap();
+fn macos_monterey_matches_platform_facts() {
+    let theme = Theme::preset("macos-monterey").unwrap();
     let light = theme
         .light
         .as_ref()
-        .expect("macos-sonoma should have light variant");
+        .expect("macos-monterey should have light variant");
 
     // Font: documented as "SF Pro, 13pt, Regular (400)" in platform-facts.md
     assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
@@ -205,7 +205,7 @@ fn macos_sonoma_matches_platform_facts() {
 
 #[test]
 fn dark_variants_use_same_font_as_light() {
-    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"] {
+    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-monterey"] {
         let theme = Theme::preset(preset_name).unwrap();
         let light = theme
             .light
@@ -233,7 +233,7 @@ fn dark_variants_use_same_font_as_light() {
 
 #[test]
 fn all_platform_presets_load_and_have_both_variants() {
-    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"] {
+    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-monterey"] {
         let theme = Theme::preset(preset_name)
             .unwrap_or_else(|e| panic!("Failed to load '{preset_name}': {e}"));
 

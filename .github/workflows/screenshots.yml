@@ -16,8 +16,9 @@ jobs:
       # of `macos-latest` cannot change the captures unnoticed. It is not
       # macOS 14: `macos-14` is fully unsupported from 2026-11-02, with brownouts
       # in October (https://github.com/actions/runner-images/issues/13518, read
-      # 2026-10-11). Which macOS the `macos-sonoma` captures may claim is M2a's
-      # to settle (docs/todo_code-review-plan.md).
+      # 2026-10-11). The `macos-monterey` captures show that preset (its header says
+      # which macOS versions it covers, 12 to 15) drawn on the runner's macOS 26, which
+      # each job records beside its captures (below).
       # Windows stays on `windows-latest`, Windows Server 2025 in the same list,
       # whose one Windows 11 image is arm64 (`windows-11-arm`); which Windows
       # the `windows-11` captures may claim is M2b's. Each job records its
@@ -169,8 +170,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           themes=(
-            "macos-sonoma:light:system"
-            "macos-sonoma:dark:system"
+            "macos-monterey:light:system"
+            "macos-monterey:dark:system"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"

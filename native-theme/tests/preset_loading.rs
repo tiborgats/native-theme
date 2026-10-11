@@ -323,8 +323,8 @@ fn preset_names_are_correct() {
     assert!(has_key("adwaita"), "list_presets() missing 'adwaita'");
     assert!(has_key("windows-11"), "list_presets() missing 'windows-11'");
     assert!(
-        has_key("macos-sonoma"),
-        "list_presets() missing 'macos-sonoma'"
+        has_key("macos-monterey"),
+        "list_presets() missing 'macos-monterey'"
     );
     assert!(has_key("material-3"), "list_presets() missing 'material-3'");
     assert!(has_key("ios"), "list_presets() missing 'ios'");
@@ -360,6 +360,17 @@ fn material_preset_is_named_by_its_generation() {
     assert!(Theme::preset("material-3").is_ok());
     assert!(Theme::preset("material").is_err());
     assert!(Theme::list_presets().iter().any(|p| p.key == "material-3"));
+}
+
+#[test]
+fn macos_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("macos-monterey").is_ok());
+    assert!(Theme::preset("macos-sonoma").is_err());
+    assert!(
+        Theme::list_presets()
+            .iter()
+            .any(|p| p.key == "macos-monterey")
+    );
 }
 
 #[test]

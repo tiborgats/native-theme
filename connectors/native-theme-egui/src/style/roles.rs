@@ -1225,7 +1225,7 @@ mod tests {
         ("adwaita", ColorMode::Light),
         ("kde-breeze", ColorMode::Dark),
         ("windows-11", ColorMode::Light),
-        ("macos-sonoma", ColorMode::Dark),
+        ("macos-monterey", ColorMode::Dark),
         ("material-3", ColorMode::Light),
         ("catppuccin-mocha", ColorMode::Dark),
     ];
@@ -1405,7 +1405,7 @@ mod tests {
     #[test]
     fn no_cell_changes_the_text_style_keys() {
         for role in Role::all() {
-            let (c, base, _, _) = cell("macos-sonoma", ColorMode::Dark, *role);
+            let (c, base, _, _) = cell("macos-monterey", ColorMode::Dark, *role);
             assert_eq!(c.text_styles.len(), base.text_styles.len(), "{role:?}");
             for (slot, font) in &c.text_styles {
                 assert_eq!(

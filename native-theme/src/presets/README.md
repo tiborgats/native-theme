@@ -12,7 +12,7 @@ selects a platform reader, one of the crate-internal `ThemeReader`
 implementations `KdeReader`, `GnomeReader` (and `GnomePortalKdeReader`),
 `MacosReader` and `WindowsReader`, and merges the values it reads from the
 operating system over its platform preset (`kde-breeze`, `adwaita`,
-`macos-sonoma`, `windows-11`); a field the reader does not provide keeps the
+`macos-monterey`, `windows-11`); a field the reader does not provide keeps the
 preset's value, and the resolve pipeline fills any remaining gaps.
 
 Gated sizes (padding sides, menu and list row heights, toolbar `bar_height`
@@ -38,7 +38,7 @@ macOS: its icons are SF Symbols, which load only on macOS (with
 `Theme::preset("ios")` loads it anywhere, but off macOS, iOS included, its
 icons are `None`, never another set's.
 
-Files: `kde-breeze.toml`, `macos-sonoma.toml`, `windows-11.toml`,
+Files: `kde-breeze.toml`, `macos-monterey.toml`, `windows-11.toml`,
 `adwaita.toml`, `material-3.toml`, `ios.toml`, and the community presets
 (`catppuccin-*.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
 `one-dark.toml`, `solarized.toml`, `tokyo-night.toml`).
@@ -46,7 +46,7 @@ Files: `kde-breeze.toml`, `macos-sonoma.toml`, `windows-11.toml`,
 ## Naming a platform preset
 
 One platform preset per visual generation. Its key is the vendor's own name
-for the generation's first OS version: Apple's codename (`macos-sonoma`),
+for the generation's first OS version: Apple's codename (`macos-monterey`),
 Microsoft's version number (`windows-11`), Material's design version
 (`material-3`). The file's first lines state which OS versions the preset
 covers and which versions its values were verified on, matching the version
@@ -75,7 +75,7 @@ single version.
 | `gruvbox.toml` | Gruvbox color scheme |
 | `ios.toml` | iOS/iPadOS standalone theme |
 | `kde-breeze.toml` | KDE Breeze standalone theme |
-| `macos-sonoma.toml` | macOS Sonoma standalone theme |
+| `macos-monterey.toml` | macOS standalone theme, Monterey (12) to Sequoia (15) |
 | `material-3.toml` | Material Design standalone theme |
 | `nord.toml` | Nord color scheme |
 | `one-dark.toml` | One Dark color scheme |

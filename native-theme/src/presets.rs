@@ -1,7 +1,7 @@
 //! Bundled theme presets and TOML serialization API.
 //!
 //! Provides 16 user-facing built-in presets embedded at compile time:
-//! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material-3,
+//! 6 platform (kde-breeze, adwaita, windows-11, macos-monterey, material-3,
 //! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
 //! Solarized, Tokyo Night, One Dark), and functions for
 //! loading themes from TOML strings and files.
@@ -21,7 +21,10 @@ const PRESET_ENTRIES: &[(&str, &str)] = &[
     ("kde-breeze", include_str!("presets/kde-breeze.toml")),
     ("adwaita", include_str!("presets/adwaita.toml")),
     ("windows-11", include_str!("presets/windows-11.toml")),
-    ("macos-sonoma", include_str!("presets/macos-sonoma.toml")),
+    (
+        "macos-monterey",
+        include_str!("presets/macos-monterey.toml"),
+    ),
     ("material-3", include_str!("presets/material-3.toml")),
     ("ios", include_str!("presets/ios.toml")),
     // Community presets
@@ -54,7 +57,7 @@ const PRESET_NAMES: &[&str] = &[
     "kde-breeze",
     "adwaita",
     "windows-11",
-    "macos-sonoma",
+    "macos-monterey",
     "material-3",
     "ios",
     "catppuccin-latte",
@@ -79,7 +82,7 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("kde-breeze", "KDE Breeze"),
     ("adwaita", "Adwaita"),
     ("windows-11", "Windows 11"),
-    ("macos-sonoma", "macOS Sonoma"),
+    ("macos-monterey", "macOS Sonoma"),
     ("material-3", "Material"),
     ("ios", "iOS"),
     ("catppuccin-latte", "Catppuccin Latte"),
@@ -137,7 +140,7 @@ const PRESET_INFOS: &[PresetInfo] = &[
         light_only: false,
     },
     PresetInfo {
-        key: "macos-sonoma",
+        key: "macos-monterey",
         display_name: "macOS Sonoma",
         platforms: &["macos"],
         light_only: false,
@@ -297,7 +300,7 @@ fn detect_platform() -> &'static str {
 
 /// Returns preset info appropriate for the current platform.
 ///
-/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
+/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, ios)
 /// are only included on their native platform. Community themes are always included.
 pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     let platform = detect_platform();
@@ -446,7 +449,7 @@ accent_color = "#00ff00"
         use crate::IconSet;
         let cases: &[(&str, IconSet)] = &[
             ("windows-11", IconSet::SegoeIcons),
-            ("macos-sonoma", IconSet::SfSymbols),
+            ("macos-monterey", IconSet::SfSymbols),
             ("ios", IconSet::SfSymbols),
             ("adwaita", IconSet::Freedesktop),
             ("kde-breeze", IconSet::Freedesktop),
@@ -514,7 +517,7 @@ accent_color = "#00ff00"
     #[test]
     fn platform_presets_no_derived_fields() {
         // Platform presets must not contain fields that are derived by resolve()
-        let platform_presets = &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"];
+        let platform_presets = &["kde-breeze", "adwaita", "windows-11", "macos-monterey"];
         for name in platform_presets {
             let theme = preset(name).unwrap();
             for (label, variant_opt) in [

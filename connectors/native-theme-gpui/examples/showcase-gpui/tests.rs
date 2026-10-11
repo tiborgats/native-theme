@@ -282,7 +282,7 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     // kde-breeze puts its groove beside the content; macOS overlays its
     // own, and must not lose a strip of width to it.
-    for preset in ["kde-breeze", "macos-sonoma"] {
+    for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Inputs);
         let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
@@ -1367,7 +1367,7 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// A native preset is resolved at its own platform's DPI, as the seams test
 /// does (tests/seams.rs, `NATIVE`): macOS at 72, where a point is a pixel
 /// (native-theme `detect.rs`, `detect_system_font_dpi`), the others at 96.
-/// A native preset is only offered on its own platform, so macos-sonoma
+/// A native preset is only offered on its own platform, so macos-monterey
 /// resolved on a 96 DPI Linux host is not a configuration the showcase
 /// shows; ios is offered on macOS too (its `platforms` are `macos` and
 /// `ios`), so it is resolved at 72. A colour-scheme preset, offered
@@ -1486,7 +1486,13 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         (CHROME_LABEL_ICON_THEME, PROBE_ICON_THEME),
     ];
     let presets = side_panel_presets();
-    for native in ["kde-breeze", "adwaita", "macos-sonoma", "ios", "windows-11"] {
+    for native in [
+        "kde-breeze",
+        "adwaita",
+        "macos-monterey",
+        "ios",
+        "windows-11",
+    ] {
         assert!(
             presets
                 .iter()
@@ -3110,7 +3116,7 @@ fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
 const SIDEBAR_ICON_PRESETS: [&str; 5] = [
     "kde-breeze",
     "adwaita",
-    "macos-sonoma",
+    "macos-monterey",
     "windows-11",
     "nord",
 ];
@@ -8233,16 +8239,16 @@ fn the_about_dialog_follows_a_theme_switch(cx: &mut TestAppContext) {
     draw(&mut cx);
     let breeze = gap_of(&mut cx, &showcase);
     assert_eq!(Some(gap_between(&mut cx)), breeze);
-    use_preset(&mut cx, &showcase, "macos-sonoma");
+    use_preset(&mut cx, &showcase, "macos-monterey");
     draw(&mut cx);
-    let sonoma = gap_of(&mut cx, &showcase);
+    let monterey = gap_of(&mut cx, &showcase);
     assert_ne!(
-        breeze, sonoma,
+        breeze, monterey,
         "the two presets state the same gap, so the switch proves nothing"
     );
     assert_eq!(
         Some(gap_between(&mut cx)),
-        sonoma,
+        monterey,
         "the open About dialog kept the gap of the theme it opened under"
     );
 }

@@ -97,7 +97,7 @@ fn resolved_at(preset: &str, dpi: f32) -> ResolvedTheme {
 const NATIVE: [(&str, f32); 4] = [
     ("kde-breeze", 96.0),
     ("adwaita", 96.0),
-    ("macos-sonoma", 72.0),
+    ("macos-monterey", 72.0),
     ("windows-11", 96.0),
 ];
 

@@ -902,7 +902,7 @@ struct NoReceiver {
     stated_none: &'static [(&'static str, &'static str)],
 }
 
-/// Why kde-breeze, adwaita and macos-sonoma leave `link.hover_background`
+/// Why kde-breeze, adwaita and macos-monterey leave `link.hover_background`
 /// transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
                                link hover background for macOS, KDE and GNOME";
@@ -922,7 +922,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         stated_none: &[
             ("kde-breeze", LINK_HOVER_NONE),
             ("adwaita", LINK_HOVER_NONE),
-            ("macos-sonoma", LINK_HOVER_NONE),
+            ("macos-monterey", LINK_HOVER_NONE),
         ],
     },
     NoReceiver {

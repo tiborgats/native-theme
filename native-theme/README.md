@@ -47,7 +47,7 @@ are needed to use bundled presets.
 - **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`. Safe to hand to UI code.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 16 ship today:
-  - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material-3`, `ios`
+  - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`, `material-3`, `ios`
   - *Community:* `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark`
 
   `material-3` and `ios` have no OS reader; an application chooses them as a look. `material-3` suits any platform, and its Material Symbols icons load with the `material-icons` feature. `ios` is a look for desktop apps on macOS: its SF Symbols load only on macOS, so on every other platform, iOS included, its icons are `None` and are never replaced by another set.

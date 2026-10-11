@@ -59,7 +59,7 @@ const PLATFORM_FACTS: &str = include_str!("../../../docs/platform-facts.md");
 enum NativePreset {
     KdeBreeze,
     Adwaita,
-    MacosSonoma,
+    MacosMonterey,
     Windows11,
     Material3,
 }
@@ -68,7 +68,7 @@ impl NativePreset {
     const ALL: [NativePreset; 5] = [
         NativePreset::KdeBreeze,
         NativePreset::Adwaita,
-        NativePreset::MacosSonoma,
+        NativePreset::MacosMonterey,
         NativePreset::Windows11,
         NativePreset::Material3,
     ];
@@ -77,7 +77,7 @@ impl NativePreset {
         match self {
             NativePreset::KdeBreeze => "kde-breeze",
             NativePreset::Adwaita => "adwaita",
-            NativePreset::MacosSonoma => "macos-sonoma",
+            NativePreset::MacosMonterey => "macos-monterey",
             NativePreset::Windows11 => "windows-11",
             NativePreset::Material3 => "material-3",
         }
@@ -101,7 +101,7 @@ impl NativePreset {
                 Some(v)
             }
             NativePreset::Adwaita | NativePreset::Material3 => None,
-            NativePreset::MacosSonoma => Some(crate::macos::macos_widget_defaults()),
+            NativePreset::MacosMonterey => Some(crate::macos::macos_widget_defaults()),
             NativePreset::Windows11 => {
                 let mut v = ThemeMode::default();
                 crate::windows::winui3_widget_sizing(&mut v);
@@ -170,7 +170,7 @@ const fn row(
     }
 }
 
-use NativePreset::{Adwaita, KdeBreeze, MacosSonoma, Material3, Windows11};
+use NativePreset::{Adwaita, KdeBreeze, MacosMonterey, Material3, Windows11};
 
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
@@ -238,37 +238,37 @@ const ROWS: &[Row] = &[
     row(Adwaita, "card", NONE, &[1592, 1593], "(none), app-defined"),
     row(Adwaita, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
         .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
-    // --- macOS (macos-sonoma, macos_widget_defaults) ---
-    row(MacosSonoma, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(MacosSonoma, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
-    row(MacosSonoma, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
-    row(MacosSonoma, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
-    row(MacosSonoma, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(MacosSonoma, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
+    // --- macOS (macos-monterey, macos_widget_defaults) ---
+    row(MacosMonterey, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(MacosMonterey, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
+    row(MacosMonterey, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
+    row(MacosMonterey, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
+    row(MacosMonterey, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(MacosMonterey, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
         .with(&[("row_height", Some(22.0), 1234)]),
-    row(MacosSonoma, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
-    row(MacosSonoma, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(MacosSonoma, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)")
+    row(MacosMonterey, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
+    row(MacosMonterey, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
+    row(MacosMonterey, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)")
         .with(&[("item_gap", None, 1326)]),
-    row(MacosSonoma, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    row(MacosMonterey, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
     Row {
-        preset: MacosSonoma,
+        preset: MacosMonterey,
         widget: "toolbar",
         padding: axes(0.0, 8.0),
         lines: &[1353, 1354],
         note: "8 (measured); 0",
         extra: &[("bar_height", Some(38.0), 1351), ("item_gap", Some(8.0), 1352)],
     },
-    row(MacosSonoma, "status_bar", NONE, &[1372, 1373], "(none): no window status bar"),
-    row(MacosSonoma, "list", all(4.0), &[1390, 1391], "4; 4 (measured)")
+    row(MacosMonterey, "status_bar", NONE, &[1372, 1373], "(none): no window status bar"),
+    row(MacosMonterey, "list", all(4.0), &[1390, 1391], "4; 4 (measured)")
         .with(&[("row_height", Some(24.0), 1389)]),
-    row(MacosSonoma, "popover", NONE, &[1412, 1413], "(none)"),
-    row(MacosSonoma, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
-    row(MacosSonoma, "combo_box", [Some(1.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
+    row(MacosMonterey, "popover", NONE, &[1412, 1413], "(none)"),
+    row(MacosMonterey, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
+    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
         .with(&[("arrow_area_width", None, 1554)]),
-    row(MacosSonoma, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
-    row(MacosSonoma, "card", NONE, &[1592, 1593], "(none)"),
-    row(MacosSonoma, "expander", NONE, &[1607, 1608], "(none), app-defined")
+    row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
+    row(MacosMonterey, "card", NONE, &[1592, 1593], "(none)"),
+    row(MacosMonterey, "expander", NONE, &[1607, 1608], "(none), app-defined")
         .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
     // --- Windows (windows-11, winui3_widget_sizing) ---
     row(Windows11, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
@@ -793,24 +793,24 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Adwaita, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: one slider rule"),
     field(Adwaita, "tab.active_indicator_width", Px(4.0), 1328, "_notebook.scss: inset 0 -4px"),
     // --- macOS ---
-    field(MacosSonoma, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
-    field(MacosSonoma, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
-    field(MacosSonoma, "text_scale.section_heading.size", Pt(13.0), 1436, ".headline: 13pt"),
-    field(MacosSonoma, "text_scale.section_heading.weight", Weight(700), 1436, ".headline: 700"),
-    field(MacosSonoma, "text_scale.dialog_title.size", Pt(22.0), 1437, ".title1: 22pt"),
-    field(MacosSonoma, "text_scale.dialog_title.weight", Weight(400), 1437, ".title1: 400"),
-    field(MacosSonoma, "text_scale.display.size", Pt(26.0), 1438, ".largeTitle: 26pt"),
-    field(MacosSonoma, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
-    field(MacosSonoma, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
-    field(MacosSonoma, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
-    field(MacosSonoma, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
-    field(MacosSonoma, "slider.thumb_diameter", Px(20.0), 1293, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
-    field(MacosSonoma, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
-    field(MacosSonoma, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
-    field(MacosSonoma, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
-    field(MacosSonoma, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
-    field(MacosSonoma, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
-    field(MacosSonoma, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
+    field(MacosMonterey, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
+    field(MacosMonterey, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
+    field(MacosMonterey, "text_scale.section_heading.size", Pt(13.0), 1436, ".headline: 13pt"),
+    field(MacosMonterey, "text_scale.section_heading.weight", Weight(700), 1436, ".headline: 700"),
+    field(MacosMonterey, "text_scale.dialog_title.size", Pt(22.0), 1437, ".title1: 22pt"),
+    field(MacosMonterey, "text_scale.dialog_title.weight", Weight(400), 1437, ".title1: 400"),
+    field(MacosMonterey, "text_scale.display.size", Pt(26.0), 1438, ".largeTitle: 26pt"),
+    field(MacosMonterey, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
+    field(MacosMonterey, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
+    field(MacosMonterey, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
+    field(MacosMonterey, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
+    field(MacosMonterey, "slider.thumb_diameter", Px(20.0), 1293, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
+    field(MacosMonterey, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
+    field(MacosMonterey, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
+    field(MacosMonterey, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
+    field(MacosMonterey, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
+    field(MacosMonterey, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
+    field(MacosMonterey, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
@@ -1139,7 +1139,7 @@ fn native_presets_state_no_text_scale_line_height() {
 const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 5] = [
     (KdeBreeze, Some(crate::model::ArrowSide::Leading), Some(false)),
     (Adwaita, Some(crate::model::ArrowSide::Trailing), Some(true)),
-    (MacosSonoma, Some(crate::model::ArrowSide::Leading), None),
+    (MacosMonterey, Some(crate::model::ArrowSide::Leading), None),
     (Windows11, Some(crate::model::ArrowSide::Trailing), Some(true)),
     (Material3, None, None),
 ];

@@ -461,7 +461,7 @@ pub struct SystemTheme {
     pub dark: ResolvedTheme,
     /// Data for replaying the pipeline on overlay (replaces light_variant/dark_variant).
     pub(crate) overlay_source: OverlaySource,
-    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-sonoma").
+    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-monterey").
     pub preset: String,
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
@@ -637,7 +637,7 @@ impl SystemTheme {
     /// # Platform Behavior
     ///
     /// - **macOS:** with the `macos` feature, reads both light and dark
-    ///   variants via NSAppearance and merges them with the `macos-sonoma`
+    ///   variants via NSAppearance and merges them with the `macos-monterey`
     ///   preset; the active mode comes from [`detect::detect_is_dark`].
     /// - **Linux:** the async implementation handles portal D-Bus calls when
     ///   the `portal` feature is enabled. Without a reader for the detected

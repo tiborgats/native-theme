@@ -448,7 +448,7 @@ fn build_theme(
         layout: crate::LayoutTheme::default(),
         icon_set: Some(crate::IconSet::SfSymbols),
         // macOS uses the same icon theme ("sf-symbols") for both variants; the
-        // Theme-level field is populated via the merged macos-sonoma preset.
+        // Theme-level field is populated via the merged macos-monterey preset.
         icon_theme: None,
     }
 }
@@ -947,8 +947,8 @@ mod tests {
 
     #[test]
     fn test_macos_resolve_validate() {
-        // Load macOS-sonoma preset as base (provides full color/geometry/spacing).
-        let mut base = crate::Theme::preset("macos-sonoma").unwrap();
+        // Load the macos-monterey preset as base (provides full color/geometry/spacing).
+        let mut base = crate::Theme::preset("macos-monterey").unwrap();
         // Build reader output with sample data (simulates from_macos() on real hardware).
         let reader_output = build_theme(
             sample_light_defaults(),

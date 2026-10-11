@@ -122,7 +122,7 @@ fn weight_rank(face: u16, wanted: u16) -> (u8, u16) {
 
 /// Whether `family` names the macOS system UI font: caselessly equal to
 /// "SF Pro", the name the platform documents for it
-/// (`docs/platform-facts.md:59-67`) and `macos-sonoma` states. A pure
+/// (`docs/platform-facts.md:59-67`) and `macos-monterey` states. A pure
 /// predicate, on every platform, with no font database: `system_face`'s
 /// macOS branch asks it beside its Core Text family comparison, and the
 /// gpui connector asks it alone to map the family to gpui's own alias.

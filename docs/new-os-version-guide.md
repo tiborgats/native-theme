@@ -18,7 +18,7 @@ first OS version:
 
 | Platform | The key names | Example |
 |---|---|---|
-| macOS | Apple's codename | `macos-sonoma` |
+| macOS | Apple's codename | `macos-monterey` |
 | Windows | Microsoft's version number | `windows-11` |
 | iOS | the iOS version number | `ios-<N>` (today's `ios` is renamed once its values are checked against one iOS version; it keeps its key if they match none) |
 | Material | the design version | `material-3` |
@@ -120,7 +120,7 @@ Xcode Interface Builder measurements
 
 - `native-theme/src/macos.rs` -- the `macos_widget_defaults()` function and the
   `MacosReader` reader (`read_appearance_colors()` holds the `NSColor` mappings)
-- `native-theme/src/presets/macos-sonoma.toml` -- bundled preset data (a new visual
+- `native-theme/src/presets/macos-monterey.toml` -- bundled preset data (a new visual
   generation gets a preset of its own, named as
   [A new generation, a new preset](#a-new-generation-a-new-preset) says)
 

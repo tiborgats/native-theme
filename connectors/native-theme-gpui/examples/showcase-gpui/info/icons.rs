@@ -278,7 +278,7 @@ impl FactsPlatform {
     /// theme.
     fn of_preset(preset: &str) -> Option<Self> {
         match preset {
-            "macos-sonoma" => Some(Self::MacOs),
+            "macos-monterey" => Some(Self::MacOs),
             "windows-11" => Some(Self::Windows),
             "kde-breeze" => Some(Self::Kde),
             "adwaita" => Some(Self::Gnome),

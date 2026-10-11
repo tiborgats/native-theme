@@ -331,7 +331,7 @@ pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
 /// (`egui/src/widgets/text_edit/builder.rs:715`, `:726-729`; `Frame::total_margin`,
 /// `egui/src/containers/frame.rs:327-331`), where it lays its stock frame out by the margin
 /// alone (`egui/src/widgets/text_edit/builder.rs:713`); the two agree whenever
-/// `expansion − stroke.width` is whole. With a half-point stroke (`macos-sonoma`, `ios`,
+/// `expansion − stroke.width` is whole. With a half-point stroke (`macos-monterey`, `ios`,
 /// §5.4) the total margin is half a point less than egui's stock one in every state, so the
 /// field is one point shorter than egui's own and keeps that size whether focused or not.
 #[must_use = "hand the frame to TextEdit::frame"]

@@ -10,8 +10,8 @@ set -euo pipefail
 #
 # NOTE: On macOS, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-gpui --example showcase-gpui --release -- \
-#     --theme macos-sonoma --variant light --icon-set system \
-#     --tab basic --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-sonoma-light.png
+#     --theme macos-monterey --variant light --icon-set system \
+#     --tab basic --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-monterey-light.png
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
 # macOS Sonoma and Windows 11 are captured by CI on their native runners.

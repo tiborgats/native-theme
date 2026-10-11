@@ -701,15 +701,16 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
   ```rust
   #[test]
   fn macos_preset_follows_the_os_generation() {
-      assert_eq!(macos_preset_for_version(14), "macos-sonoma");
-      assert_eq!(macos_preset_for_version(15), "macos-sonoma");
+      assert_eq!(macos_preset_for_version(12), "macos-monterey");
+      assert_eq!(macos_preset_for_version(14), "macos-monterey");
+      assert_eq!(macos_preset_for_version(15), "macos-monterey");
       assert_eq!(macos_preset_for_version(26), "macos-tahoe");
       // macOS 27 until a macos-golden-gate preset exists (D4)
       assert_eq!(macos_preset_for_version(27), "macos-tahoe");
   }
   ```
 
-  (The four cases stand with the table; a fifth asserts `PresetOlder` for 27.) CI's macOS
+  (The five cases stand with the table; a sixth asserts `PresetOlder` for 27.) CI's macOS
   legs run it on a real Mac. **Step 10a (M1-T1-04):** once two generations exist,
   `SystemTheme::from_system_with_preset(name)` and its async twin, validated against the
   table, reporting `PresetOlder`, the rustdoc stating the hybrid result (the older
@@ -717,12 +718,17 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
 - [ ] **Step 11: Documentation.** The presets README (listing, live presets), the
   `native-theme` README's preset list, `docs/new-os-version-guide.md` (macOS: a new
   generation is a new preset plus a version arm), CHANGELOG `[Unreleased]`, and the
-  `docs/todo.md` entry for macOS 27 (D4); `macos-sonoma.toml`'s header gets its 'covers'
-  and 'verified on' lines from Step 1's version map (M1-T1-03).
+  `docs/todo.md` entry for macOS 27 (D4); `macos-monterey.toml`'s header got its 'covers'
+  and 'verified on' lines in Step 7 (M1-T1-03, D8).
 - [ ] **Step 12: Screenshots.** `macos-tahoe:light:system` and `macos-tahoe:dark:system` in
-  `.github/workflows/screenshots.yml` next to the `macos-sonoma` entries (:141-142), and the
+  `.github/workflows/screenshots.yml` next to the `macos-monterey` entries (:173-174), and the
   showcases' theme menus list the new preset. The CI run is the maintainer's (the next
-  `generate_assets_release.sh`); until then the stale-assets warning stands.
+  `generate_assets_release.sh`); until then the stale-assets warning stands. At that asset
+  run (M2a Step 7's rename, D8): the captures are named after the key, so the six README
+  links to `macos-macos-sonoma-{light,dark}.png` (egui, gpui, iced READMEs) become
+  `macos-macos-monterey-*`, the old PNGs are `git rm`ed, and the display name and the TOML
+  `name` become "macOS Monterey" (they stay "macOS Sonoma" until that run, as `material-3`
+  kept "Material"; ruled 2026-10-11).
 
 ### M2c only: `ios-13` and `ios-26` (D8)
 

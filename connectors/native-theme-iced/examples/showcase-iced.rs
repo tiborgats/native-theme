@@ -12890,8 +12890,8 @@ mod tests {
             eprintln!("macos_system_font_is_in_the_font_database: not macOS, nothing to check");
             return;
         }
-        let (_, resolved) =
-            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
+            .expect("macos-monterey resolves");
         let font = &resolved.defaults.font;
         let family = native_theme_iced::system_font_family(font);
         let held = {
@@ -12922,8 +12922,8 @@ mod tests {
             eprintln!("macos_mono_font_in_the_font_database: not macOS, nothing to check");
             return;
         }
-        let (_, resolved) =
-            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
+            .expect("macos-monterey resolves");
         let mono = &resolved.defaults.mono_font;
         let family = native_theme_iced::system_font_family(mono);
         let held = {
@@ -14620,7 +14620,7 @@ mod tests {
     /// size, below its own description.
     #[test]
     fn page_and_section_titles_take_their_defined_roles() {
-        for preset in ["kde-breeze", "adwaita", "macos-sonoma", "windows-11"] {
+        for preset in ["kde-breeze", "adwaita", "macos-monterey", "windows-11"] {
             for is_dark in [false, true] {
                 let at = format!("{preset} (dark: {is_dark})");
                 let resolved = match native_theme_iced::from_preset(preset, is_dark) {
@@ -14814,14 +14814,14 @@ mod tests {
 
     /// The Basic tab's tooltip takes `tooltip.border.padding` plus the border
     /// line where the theme states all four sides alike (kde-breeze's 3,
-    /// macos-sonoma's 4), and iced's own padding where it does not: iced's
+    /// macos-monterey's 4), and iced's own padding where it does not: iced's
     /// `Tooltip::padding` is one number, and adwaita states 10 and 6,
     /// windows-11 9, 6 and 8.
     #[test]
     fn the_basic_tooltip_takes_a_uniform_stated_padding() {
         for (preset, expected) in [
             ("kde-breeze", Some(3.0 + 1.0)),
-            ("macos-sonoma", Some(4.0 + 0.5)),
+            ("macos-monterey", Some(4.0 + 0.5)),
             ("adwaita", None),
             ("windows-11", None),
         ] {
@@ -16137,7 +16137,7 @@ mod tests {
     #[test]
     fn the_page_tabs_scroll_with_no_bar_over_their_labels() {
         let mut scrolled = 0;
-        for preset in ["macos-sonoma", "kde-breeze"] {
+        for preset in ["macos-monterey", "kde-breeze"] {
             for width in [1024.0, 512.0] {
                 let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                     Ok(installed) => installed,

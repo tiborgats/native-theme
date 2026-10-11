@@ -1509,7 +1509,7 @@ fn main() {
                 #[cfg(target_os = "macos")]
                 {
                     // Whether gpui's font names hold the stated monospace
-                    // family, "SF Mono" under macos-sonoma: UNVERIFIED (egui
+                    // family, "SF Mono" under macos-monterey: UNVERIFIED (egui
                     // spec §15). Printed for Task 39's log, never asserted.
                     // In the application because a `#[gpui::test]` cannot
                     // ask: `TestAppContext::build` gives gpui's

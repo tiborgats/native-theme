@@ -289,9 +289,9 @@ the file was pruned on 2026-10-11, not reordered.
 - [ ] [1.0] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
       Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
       states **(none)** for the other three (`docs/platform-facts.md:1535`),
-      yet `macos-sonoma`, `kde-breeze` and `adwaita` each state
+      yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
-      (`native-theme/src/presets/macos-sonoma.toml:294`, `:650`;
+      (`native-theme/src/presets/macos-monterey.toml:308`, `:676`;
       `native-theme/src/presets/kde-breeze.toml:281`, `:589`;
       `native-theme/src/presets/adwaita.toml:297`, `:625`). Run the
       `preset-validator` agent over the three presets against §2.23. The
@@ -315,10 +315,10 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `docs/platform-facts.md` §2.8 measures `scrollbar.thumb_color` for
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
-      (`docs/platform-facts.md:1278`), yet neither `macos-sonoma` nor
+      (`docs/platform-facts.md:1278`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` only
-      (`native-theme/src/presets/macos-sonoma.toml:133-142`, `:489-498`;
+      (`native-theme/src/presets/macos-monterey.toml:140-150`, `:508-518`;
       `native-theme/src/presets/windows-11.toml:152-161`, `:532-541`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
@@ -330,7 +330,7 @@ the file was pruned on 2026-10-11, not reordered.
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
-      `native-theme/src/presets/macos-sonoma.toml:140`, `:496`) and not on
+      `native-theme/src/presets/macos-monterey.toml:148`, `:516`) and not on
       Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:159`,
       `:539`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
@@ -493,7 +493,7 @@ the file was pruned on 2026-10-11, not reordered.
       colour: `disabled-container-opacity` 0.12 and
       `disabled-label-text-opacity` 0.38 on the parts,
       material-web cbd34a8 `_md-comp-filled-button.scss:42-46`,
-      `button/internal/_shared.scss:141-150`) follow it. macos-sonoma
+      `button/internal/_shared.scss:141-150`) follow it. macos-monterey
       (0.3, and `disabledControlTextColor` colours; PF §2.1.6 says the
       measured ≈0.25–0.3 is the text colour's alpha, "not global opacity",
       and the research found no source for bezel dimming), ios (0.3) and
@@ -532,7 +532,7 @@ model, the platform presets and the three connectors
       Needs an upstream seam (a size or editor padding on `Textarea`).
 - [ ] [1.0] **macOS text area padding.** NSTextView's `lineFragmentPadding` is 5, but
       `textContainerInset`'s default is not stated on its documentation page, so
-      the total is not sourced and macos-sonoma states none.
+      the total is not sourced and macos-monterey states none.
 - [ ] [1.0] **KDE expander header.** `KCollapsibleGroupBox` puts its 10px arrow in the
       middle of a 20px indicator box at the widget's edge and sizes the header
       as `CT_CheckBox` (text + 2 × 2, at least 20); kde-breeze states
@@ -575,7 +575,7 @@ model, the platform presets and the three connectors
       (M1-T1-04 in `docs/todo_code-review-findings.md`): the platform reader
       runs as in `from_system()`, and its values merge over the named preset
       instead of the running generation's, so an application, or its user,
-      can keep `macos-sonoma`'s look on macOS 26 with the OS's colours,
+      can keep `macos-monterey`'s look on macOS 26 with the OS's colours,
       fonts, DPI and accessibility. Today the only way to an older
       generation is `Theme::preset(name)`, which reads nothing from the OS.
       The name is checked against the generation table's rows for the
@@ -1782,40 +1782,40 @@ the gap — closing it is a change, and each wants its own decision.
 
       | Field | Platform-facts cell | Stated by |
       |---|---|---|
-      | `button.min_width` | macOS, Windows (none); GNOME "none" (§2.3) | macos-sonoma, windows-11, adwaita 64 |
+      | `button.min_width` | macOS, Windows (none); GNOME "none" (§2.3) | macos-monterey, windows-11, adwaita 64 |
       | `button.min_height` | KDE (none), sizes to content (§2.3) | kde-breeze 32. Also Windows: platform-facts "27 (derived)" against windows-11 32 and the reader's 32, a value mismatch |
       | `input.min_height` | KDE (none) (§2.4) | kde-breeze 32 |
       | `menu.row_height` | KDE (none), sizes to font (§2.6) | done 2026-09-24: kde-breeze's 28 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `menu.row_height` | Windows per context: touch 31, mouse 23 (§2.6) | done 2026-09-24: windows-11 and the reader state the mouse context's 23, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `tooltip.max_width` | KDE "(none) — preset: 300"; GNOME "(none) — preset: 360" (§2.7) | kde-breeze 300, adwaita 360 |
-      | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 16 / overlay 7 (§2.8) | adwaita 12, macos-sonoma 16. The macOS reader states 15, which matches neither context |
-      | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-sonoma 7 and the reader's 7; windows-11 6 against the API value |
+      | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 16 / overlay 7 (§2.8) | adwaita 12, macos-monterey 16. The macOS reader states 15, which matches neither context |
+      | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-monterey 7 and the reader's 7; windows-11 6 against the API value |
       | `scrollbar.min_thumb_length` | Windows `SM_CYVTHUMB` (§2.8) | windows-11 17; the reader's testable build states 40 |
       | `slider.tick_mark_length` | GNOME (none), no ticks (§2.9) | adwaita 4 |
-      | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-sonoma 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
-      | `tab.min_width` | macOS, Windows (none); GNOME "none" (§2.11) | macos-sonoma, windows-11, adwaita 64 |
+      | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-monterey 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
+      | `tab.min_width` | macOS, Windows (none); GNOME "none" (§2.11) | macos-monterey, windows-11, adwaita 64 |
       | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | done 2026-09-24: kde-breeze's 28 and adwaita's 34 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. Value mismatches: the macOS reader's 9 against platform-facts' and the preset's 6; the Windows reader's 4 against platform-facts' and the preset's 1 |
       | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
-      | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-sonoma 8, windows-11 6 |
+      | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-monterey 8, windows-11 6 |
       | `layout.window_margin` | Windows (none) (§2.20) | windows-11 10 |
       | `layout.section_gap` | Windows, KDE (none) (§2.20) | windows-11 18, kde-breeze 18 |
-      | `dialog.min_width` / `max_width` / `min_height` / `max_height` | macOS and KDE all (none); GNOME min and max height (none), max width per context 372 / wide 600 (§2.22) | macos-sonoma and kde-breeze 320/560/140/600; adwaita min height 140, max height 600 |
+      | `dialog.min_width` / `max_width` / `min_height` / `max_height` | macOS and KDE all (none); GNOME min and max height (none), max width per context 372 / wide 600 (§2.22) | macos-monterey and kde-breeze 320/560/140/600; adwaita min height 140, max height 600 |
       | `dialog.icon_size` | Windows, KDE, GNOME (none) (§2.22) | windows-11, kde-breeze, adwaita 32 |
       | `spinner.min_diameter` | KDE, GNOME (none) (§2.23) | kde-breeze, adwaita 16 |
-      | `spinner.stroke_width` | macOS, KDE, GNOME (none) (§2.23) | macos-sonoma, kde-breeze, adwaita 2 |
+      | `spinner.stroke_width` | macOS, KDE, GNOME (none) (§2.23) | macos-monterey, kde-breeze, adwaita 2 |
       | `combo_box.min_height` | KDE (none); GNOME a derivation, "← button min-height (24+pad)" (§2.24) | kde-breeze 32, adwaita 34 |
-      | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-sonoma, kde-breeze, adwaita 120 |
-      | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-sonoma 17 |
+      | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
+      | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `segmented_control.segment_height` | Windows, GNOME (none); KDE the tab bar as proxy (§2.25) | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
-      | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-sonoma 40, kde-breeze 40 |
-      | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-sonoma 16 |
-      | `defaults.icon_sizes.large` | macOS (none) (§2.1.8) | macos-sonoma 32 |
-      | `defaults.icon_sizes.dialog` | macOS, Windows (none); GNOME "(none) — 48 (GTK3 legacy)" (§2.1.8) | macos-sonoma, windows-11, adwaita 22 |
-      | `defaults.icon_sizes.panel` | macOS, Windows, GNOME (none) (§2.1.8) | macos-sonoma, windows-11, adwaita 20 |
-      | `defaults.icon_sizes.toolbar` | macOS per context, "32pt (reg) / 24 (sm)" (§2.1.8) | macos-sonoma 24, the small mode rather than the regular default |
+      | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
+      | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
+      | `defaults.icon_sizes.large` | macOS (none) (§2.1.8) | macos-monterey 32 |
+      | `defaults.icon_sizes.dialog` | macOS, Windows (none); GNOME "(none) — 48 (GTK3 legacy)" (§2.1.8) | macos-monterey, windows-11, adwaita 22 |
+      | `defaults.icon_sizes.panel` | macOS, Windows, GNOME (none) (§2.1.8) | macos-monterey, windows-11, adwaita 20 |
+      | `defaults.icon_sizes.toolbar` | macOS per context, "32pt (reg) / 24 (sm)" (§2.1.8) | macos-monterey 24, the small mode rather than the regular default |
 
       The Icons page's Icon Sizes section already marks the unsourced icon
       sizes (panel 20, dialog 22, macOS large 32). Outside sizing, KDE's
@@ -1870,7 +1870,7 @@ the gap — closing it is a change, and each wants its own decision.
       *OS-version axis (2026-10-11, M1-T5-01 in
       `docs/todo_code-review-findings.md`):* a fact is keyed by platform and
       OS version, since a platform's next generation (`macos-tahoe` beside
-      `macos-sonoma`, two Material presets) differs from the last by version,
+      `macos-monterey`, two Material presets) differs from the last by version,
       not by cell. Until then a version-tagged cell gives each value to its
       version's preset (platform-facts.md, Conventions) and the gate keys its
       rows by preset; the ruling settles the conflict between a Tahoe value
