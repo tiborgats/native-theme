@@ -2798,6 +2798,10 @@ Found on the way (open, for the next pass):
 - `platform-facts.md:1533-1534` cite the spinner's `sizeToFit` at probe :1528 / :768, which are the
   `intrinsicContentSize` lines (the same 32 and 10); the frames are :1530 / :770.
 - The dark switch's `hover_checked_background` `#2e94ff` (macos-monterey) has no source.
+- T4 review fix round 1 (6065df6e): `MACOS_GENERATIONS` documents major version 16 (early macOS 26 betas reported
+  16 to a macOS 15 SDK build; from beta 3 `NSOperatingSystemVersion` reports 26; no source for the release; 16 maps
+  to `macos-monterey`, `PresetOlder`, pinned by a test, as are macOS 0.0.0 and Windows 28000 / 0.0.0); pinning on
+  Linux says the platform has no platform presets (same `UnknownPreset` variant).
 
 ## M2b — Windows
 
