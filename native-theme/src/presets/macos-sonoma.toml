@@ -216,6 +216,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
+# platform-facts.md:1333 (§2.12): the sidebar is NSVisualEffectView.Material.sidebar, a material
+# with no colour; this value has no source
 background_color = "#e8e8ed"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # selectedContentBackgroundColor at reduced opacity
@@ -234,9 +236,11 @@ color = "#1d1d1f"
 line_color = "#d5d5d5"
 
 [light.splitter]
-divider_width_px = 6.0
+# platform-facts.md:1419-1420 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# (macOS 14.8.9 probe), dividerColor clear
+divider_width_px = 9.0
+divider_color = "#00000000"
 # Interactive state colors (platform-facts.md section 2.17 macOS)
-# splitter.divider_color = separatorColor = border.color
 hover_color = "#d5d5d5"
 
 [light.switch]
@@ -575,6 +579,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
+# platform-facts.md:1333 (§2.12): the sidebar is NSVisualEffectView.Material.sidebar, a material
+# with no colour; this value has no source
 background_color = "#262626"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # selectedContentBackgroundColor at reduced opacity
@@ -593,9 +599,11 @@ color = "#ffffff"
 line_color = "#3d3d3d"
 
 [dark.splitter]
-divider_width_px = 6.0
+# platform-facts.md:1419-1420 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# (macOS 14.8.9 probe), dividerColor clear
+divider_width_px = 9.0
+divider_color = "#00000000"
 # Interactive state colors (platform-facts.md section 2.17 macOS)
-# splitter.divider_color = separatorColor = border.color
 hover_color = "#3d3d3d"
 
 [dark.switch]
