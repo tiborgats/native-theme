@@ -1570,6 +1570,12 @@ M3–M8 cites these instead of reporting them again.
   Step 7 (Big Sur began its generation); the probe dispatched on `v0.7.0-rc1` (run 38129819806, `os-probe.yml` put on
   `main` as `77cb7f2f`, draft PR #3 opened so CI runs on the branch); `xcode-27` measured now, a `macos-golden-gate`
   preset only after a non-preview image; Windows 10 decided after the probe.
+- **Step 3 probe run (2026-10-11):** run 38129819806, all seven jobs green; the outputs are kept in
+  `docs/evidence/os-probe/2026-10-11-run-38129819806/` (GitHub deletes artifacts after 90 days). OS versions measured:
+  macOS 14.8.9, 15.7.9, 26.6.2, 27.0.1 (preview image); Windows Server 2022 (20348), Server 2025 (26100), Windows 11
+  25H2 (26200, on `windows-11-arm`). The never-shown-window renders work: 68 PNGs per macOS image, none blank, and the
+  sizes already differ between 14 and 26 (a regular checkbox render 103 × 34 against 99 × 32). Next: M2a and M2b
+  Step 7 read these against the *differs* rows marked *maintainer (Step 3 probe)*.
 - **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
   "Not in a git repository" and skips its git checks, the tag check among them.
 
