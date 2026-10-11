@@ -107,8 +107,8 @@ pub mod kde;
 /// so the preset gate sees the values the KDE reader states.
 #[path = "kde/metrics.rs"]
 pub(crate) mod kde_metrics;
-/// Theme data model types.
-pub mod model;
+/// Theme data model types, public through [`theme`].
+mod model;
 /// Theme pipeline: reader -> preset merge -> resolve -> validate.
 pub mod pipeline;
 /// Bundled theme presets.
@@ -146,10 +146,19 @@ pub mod prelude;
 ///
 /// Core types: [`Theme`], [`ThemeMode`],
 /// [`ResolvedTheme`], [`ResolvedDefaults`].
-///
-/// Re-exports from the internal model module.
 pub mod theme {
-    pub use crate::model::*;
+    pub use crate::model::icons::detect_icon_theme;
+    pub use crate::model::widgets::*;
+    pub use crate::model::{
+        AnimatedIcon, ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder,
+        EmptyFrameListError, FontSize, FontSpec, FontStyle, FrameList, FramesData, IconData,
+        IconProvider, IconRole, IconSet, IconSizes, Resolved, ResolvedDefaults,
+        ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
+        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder,
+        TabIndicatorSide, TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode,
+        TransformAnimation, TransformData, WidgetBorderSpec, icon_name, intern_font_family,
+        system_icon_set, system_icon_theme,
+    };
     pub use crate::presets::PresetInfo;
 }
 

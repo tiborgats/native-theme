@@ -32,29 +32,29 @@ impl ColorMode {
 }
 
 /// Animated icon types (frame sequences and transforms).
-pub mod animated;
+pub(crate) mod animated;
 /// Disclosure arrow placement convention.
-pub mod arrow_side;
+pub(crate) mod arrow_side;
 /// Border specification sub-struct for widget border properties.
-pub mod border;
+pub(crate) mod border;
 /// Bundled SVG icon lookup tables.
-pub mod bundled;
+pub(crate) mod bundled;
 /// Global theme defaults shared across widgets.
-pub mod defaults;
+pub(crate) mod defaults;
 /// Dialog button ordering convention.
-pub mod dialog_order;
+pub(crate) mod dialog_order;
 /// Per-widget font specification and text scale.
-pub mod font;
+pub(crate) mod font;
 /// Per-context icon sizes.
-pub mod icon_sizes;
+pub(crate) mod icon_sizes;
 /// Icon roles, sets, and provider trait.
-pub mod icons;
+pub(crate) mod icons;
 /// Resolved (non-optional) theme types produced after resolution.
-pub mod resolved;
+pub(crate) mod resolved;
 /// Active-tab indicator placement convention.
-pub mod tab_indicator_side;
+pub(crate) mod tab_indicator_side;
 /// Per-widget struct pairs and macros.
-pub mod widgets;
+pub(crate) mod widgets;
 
 pub use animated::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,

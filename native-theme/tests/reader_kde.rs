@@ -8,7 +8,7 @@
 
 use native_theme::color::Rgba;
 use native_theme::kde::from_kde_content_pure;
-use native_theme::model::font::FontSize;
+use native_theme::theme::FontSize;
 
 // === Breeze Dark (full fixture) ===
 

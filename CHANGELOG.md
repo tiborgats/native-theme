@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: the `macos-sonoma` preset is now `macos-monterey`, named by the first macOS version whose look it carries: Monterey (12), whose AppKit release notes end the accent-colour highlight of a clicked button; it covers macOS 12 to 15. `Theme::preset("macos-sonoma")` returns `UnknownPreset`, with no alias.
 - **native-theme**: the `ios` preset is now `ios-13`, named by the first iOS version whose look it carries: the flat look with its dark variant that iOS 13 introduced and iOS 18 still draws. `Theme::preset("ios")` returns `UnknownPreset`, with no alias.
 - **native-theme**: `gnome::GnomePortalData` has no `font_dpi` field: the GNOME reader no longer reads `Xft.dpi` (see *Fixed*).
+- **native-theme**: the data-model types have one public path, `native_theme::theme`: the `model` module is private, and the sub-module paths `theme::font::FontSize`, `theme::widgets::ButtonTheme` and the like are gone (`theme::FontSize`, `theme::ButtonTheme`). `theme` lists its types by name, so docs.rs shows them on the `theme` page instead of a `pub use crate::model::*` line. `detect_icon_theme()`, reachable only as `model::icons::detect_icon_theme`, is `theme::detect_icon_theme`.
 
 ### Added
 
