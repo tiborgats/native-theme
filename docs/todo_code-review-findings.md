@@ -6343,7 +6343,8 @@ M1-T6-03. KDE and GNOME have no probe; none is cited.
   1.5. Fixed: GNOME's font DPI is 96 (gsd's `DPI_FALLBACK`; GTK on Wayland lays fonts out at 96 ×
   factor, `gdksettings-wayland.c:166-168`), in the reader and in
   `ResolutionContext::from_system()` on GNOME and Budgie. A resolve-time multiply would now be
-  single on both desktops. The KDE reader's `Xft.dpi` fallback on Wayland is the display scale
+  single on both desktops on Wayland; X11 and Xwayland clients also get the factor through the
+  toolkit's `Xft.dpi` scale factor (fix round 1, below). The KDE reader's `Xft.dpi` fallback on Wayland is the display scale
   (krdb `:333-337`), for M4 with Plasma 6.8's removal of `forceFontDPI` (docs/todo.md's
   logical-versus-physical entry).
 - **M1-T6-03 (b), GNOME high contrast:** carried, not applied. The reader sets the flag (portal
@@ -6359,6 +6360,83 @@ M1-T6-03. KDE and GNOME have no probe; none is cited.
   `preset-validator` pass on kde-breeze and adwaita is the controller's (not run by the implementer).
 - **Commits:** 6b21927a (facts rows and citations), 21a24820 (presets, headers, line citations,
   T1), 74b556c9 (C1–C14, T2).
+
+### Step 7, fix round 1 (2026-10-11)
+
+Sources: the preset-validator passes on kde-breeze and adwaita after Step 7 (K1–K5, KW1–KW5; A1,
+AW1–AW7) and the task review of Step 7 (I1, minors 1–4 and 6), each value fetched at Step 1's pins
+(Breeze v6.7.5, KF 6.31.0 — kirigami, kio, kcolorscheme, kguiaddons —, libadwaita 1.10.0, GTK
+4.24.1, gsettings-desktop-schemas 51.0, gnome-settings-daemon 51.0).
+
+- **kde-breeze.** The inactive title bar's text is `[WM] inactiveForeground`, `#707d8a` / `#a1a9b1`
+  (BreezeLight.colors:202, BreezeDark.colors:209; facts :1154) (K1); alternate rows `[Colors:View]
+  BackgroundAlternate`, `#f7f7f7` / `#1d1f22` (:114, :115; facts :1382) (K4); the light pressed
+  button's text `[Colors:Selection] ForegroundNormal` `#ffffff` (:95) (KW2). The popover's background
+  and the separator's line are no longer stated: they inherit the window colour and the border colour
+  (facts :1405, :1426; inheritance-rules.toml :328, :246) (K2, K5; the separator is named in
+  docs/todo.md's colours-with-no-source entry). The dark defaults cite BreezeDark.colors v6.7.5 line
+  by line (KW4), and the disabled comments name KColorScheme 6.31.0: `kcolorscheme.cpp` and
+  `kcolorutils.cpp` are byte-identical at v6.30.0 and v6.31.0 (KW5). KW1, KW3 (hover fills with no
+  source value or no facts row): values unchanged, appended to docs/todo.md's kde-breeze hover entry.
+- **K3, the sidebar: no one source, the ❓ branch of the ruling.** No sidebar uses
+  `[Colors:Complementary]` at KF 6.31.0. Kirigami docks a non-modal drawer in the `Window` set
+  (`templates/OverlayDrawer.qml:244`) but a non-modal `GlobalDrawer` in the `View` set
+  (`controls/GlobalDrawer.qml:337`); KIO's places panel (Dolphin, the file dialog) is transparent
+  over the window with `WindowText` (`kfileplacesview.cpp:863-866`); Breeze's QStyle gives side
+  panels no palette of their own. Facts :1333 and :1335 are ❓ with those sources (:1335 notes that
+  `ForegroundNormal` is the same in both sets); the preset keeps `#dee0e2` / `#272c31`, marked ❓;
+  docs/todo.md's new "Presets: kde-breeze's sidebar colour set" entry names the KDE reader
+  (`kde/colors.rs:173-176`, Complementary), inheritance-rules.toml:489 and facts :605 for the decision.
+- **adwaita.** Overlay scroll bars, `overlay-scrolling` `true` at gsettings-desktop-schemas 51.0
+  (:261-262) (AW3); dark `surface_color` `view_bg_color` `#1d1d20` (`_colors.scss:99`) (AW4), which
+  the dark `window.title_bar_background`, `card.background_color`, `list.header_background` and
+  `slider.thumb_color` inherit (all were `#303034`; libadwaita's own are `headerbar_bg_color`
+  `#2e2e32`, `card_bg_color` `RGB(255 255 255 / 8%)` and `$slider_color`, `_colors.scss:103`, :123,
+  :288; for the wrong-safety-net pass, ledger W6). The info colour's comment names its source, the
+  deprecated GtkInfoBar's `--accent-bg-color` (`_deprecated.scss:174`), and facts :1086 says libadwaita
+  names no info colour (AW1). `inactive_title_bar_*` are dropped where facts :1153-1154 say (none),
+  except dark's background `#303034`: after AW4 inheritance would give `#1d1d20`, not the same (AW6);
+  the dark banner sits above `[dark.defaults]`. The 15 % literal's line `_colors.scss:257` is cited in
+  facts :1051 and both border comments (minor 4).
+- **AW2 not applied.** The ruling's premise does not hold: libadwaita 1.10.0 sets an entry's caret to
+  `caret-color: currentColor` (`_entries.scss:11`; `_views.scss:21` for text views; GTK 4.24.1's
+  initial value is also `currentColor`, `gtkcssstylepropertyimpl.c:1448-1453`), so facts :1192
+  ("libadwaita `@accent_color`") and inheritance-rules.toml's `gnome = "defaults.accent_color"` for
+  `input.caret_color` are what disagree with the source. The preset's `#3584e4` / `#78aeed` are
+  unchanged. For reference, `oklab(from #3584e4 min(l, 0.5) a b)` is `#0461be` (docs/todo.md's value
+  holds) and the dark `max(l, 0.85)` clips per channel to `#81d0ff` (GTK 4.24.1 has no gamut mapping,
+  `gtkcsscolor.c:659`).
+- **platform-facts.** GNOME's four status-text cells (:1081, :1083, :1085, :1087) move to footnote ²,
+  the text on the status fill (`destructive_fg_color`, `warning_fg_color`, `success_fg_color`,
+  `_colors.scss:13`, :20, :17; `accent_fg_color`, `adw-style-manager.c:161`), and the footnote names
+  GNOME there; the preset keeps `#ffffff`; the two meanings of one model field are a docs/todo.md entry
+  for M3 (A1). Eleven GNOME cells re-pinned from libadwaita `5789add9` / GTK `bd25f1e2` to 1.10.0 /
+  4.24.1 (:1115, :1116, :1308, :1326, :1553, :1613-1616, :1639, :1640), with no value changed: the
+  cited stylesheet files are identical except `_dropdowns.scss` (a `.flat` rule added; the 16px arrow
+  moves to :14-18) and `_checks.scss` (asset names only), `gtknotebook.c`'s `anchor +=` moves to
+  :5236 and `gtktextview.c`'s margin properties to :1053-1070 and :1083-1100 (AW5). Every changed row
+  changed only its KDE or GNOME cell (a cell-by-cell compare against HEAD), and no line moved.
+- **The text-scaling factor (I1, minors 1–3).** The CHANGELOG's Fixed line and docs/todo.md's DPI
+  entry now say "once on Wayland": X11 and Xwayland clients also get the factor through the toolkit's
+  `Xft.dpi` scale factor (winit 0.30.13 `x11/util/randr.rs:41-53`, :146; gpui-pre-linux 0.3.8
+  `linux/x11/client.rs:2672-2677`; gsd `:666-668`, :742, :797-798). docs/todo.md gains two M4
+  entries: the connectors should not apply the factor winit or gpui already applied on GNOME/Budgie
+  X11, and an unrecognised desktop with a GNOME portal still reads `Xft.dpi` on the preset path
+  (`pipeline.rs:631-646`, `detect.rs:409`). `build_theme_preserves_adwaita_colors_when_no_overrides`
+  asserts `font_dpi == Some(96.0)`; the CHANGELOG's `resolve_with` line says `from_system()` runs no
+  `xrdb` on GNOME or Budgie with `portal`.
+- **Stale text (AW7, minor 6).** docs/todo.md's spinner entry points at `adwaita.toml:348`, :719; the
+  Table B segment-height row gives GNOME's 28 (facts :1569); the checkbox note says the cell reads 20;
+  property-registry.toml lists `DialogButtonOrder`'s two variants; presets/README.md is reflowed.
+- **Not changed, noticed:** docs/todo.md's same spinner sentence also points at `kde-breeze.toml:281`,
+  :589, stale before this round (now :371, :773; AW7 did not name them); facts :1115's KDE cell still
+  says "Computed with KColorScheme 6.30.0" (identical at 6.31.0).
+- **Gates:** `platform_facts_xref` (6), `documented_sizes` (10), `cargo test -p native-theme` with
+  `--features linux,kde,portal` (lib 840) and without (lib 667), the three connectors' tests (egui
+  171 + 60 + 2, iced 146 + 59 + 8 + 5, gpui 291 + 181 + 16 + 1), `./scripts/check_release.sh
+  --commit` (80 checks, 80 ✅, exit 0).
+- **Commits:** 705c5eed (facts and presets), 464c2178 (test, CHANGELOG, docs/todo.md, registry,
+  README).
 
 ## M3 — Core, part 1
 
