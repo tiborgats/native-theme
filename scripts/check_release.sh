@@ -301,7 +301,7 @@ fi
 # panic-prone lint set using type-aware analysis.
 PANIC_FOUND=0
 PANIC_HITS_ALL=""
-for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src; do
+for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src tools/os-probe/src; do
     if [ -d "$src_dir" ]; then
         HITS=$(python3 -c "
 import sys, re, glob, os
@@ -484,6 +484,10 @@ for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
         cargo clippy --target "$target" -p native-theme --all-targets --all-features -- -D warnings
     run_check "clippy, no default features ($target)" \
         cargo clippy --target "$target" -p native-theme --all-targets --no-default-features -- -D warnings
+    # The OS probe (tools/os-probe, never published) is all platform code;
+    # its crate root denies the strict panic lints, so this run holds them.
+    run_check "clippy, os-probe ($target)" \
+        cargo clippy --target "$target" -p native-theme-os-probe --all-targets -- -D warnings
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -562,6 +566,10 @@ run_check "strict-panic (native-theme-egui)" \
     cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
 run_check "strict-panic (native-theme-egui-widgets)" \
     cargo clippy -p native-theme-egui-widgets --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+# The OS probe is a binary; on Linux it is the stub, and its macOS and
+# Windows code is held by the cross-target clippy runs above.
+run_check "strict-panic (native-theme-os-probe)" \
+    cargo clippy -p native-theme-os-probe --bins -- "${STRICT_PANIC_LINTS[@]}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests

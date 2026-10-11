@@ -1,0 +1,1280 @@
+//! macOS: NSProcessInfo, NSFont, NSColor in both appearances, AppKit control
+//! sizes and cell geometry for every NSControlSize, and PNG renders of each
+//! control at regular size. The calls objc2-app-kit 0.3 marks `unsafe` are
+//! in [`ffi`]; this file has none.
+
+mod ffi;
+
+use std::cell::RefCell;
+use std::path::Path;
+
+use block2::RcBlock;
+use objc2::rc::Retained;
+use objc2::runtime::{AnyObject, Sel};
+use objc2::{ClassType, MainThreadMarker, Message, sel};
+use objc2_app_kit::{
+    NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
+    NSBezelStyle, NSBitmapImageRep, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox,
+    NSControl, NSControlSize, NSControlStateValueOff, NSControlStateValueOn, NSFont, NSMenu,
+    NSMenuItem, NSOutlineView, NSPopUpButton, NSProgressIndicator, NSProgressIndicatorStyle,
+    NSScreen, NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider,
+    NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableView,
+    NSTableViewStyle, NSTextField, NSTextView, NSView, NSWorkspace,
+};
+use objc2_foundation::{
+    NSArray, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion, NSPoint,
+    NSProcessInfo, NSRect, NSSize, NSString,
+};
+use toml::{Table, Value};
+
+use crate::out;
+
+/// Margin around each control in its render, in points, so focus rings and
+/// shadows outside the frame are kept.
+const RENDER_MARGIN: f64 = 8.0;
+
+/// Width given to the controls that stretch (text fields, sliders, progress
+/// bars) when `sizeToFit` leaves them narrower, in points.
+const STRETCH_WIDTH: f64 = 160.0;
+
+/// The two appearances: the TOML key and the NSAppearanceName.
+const APPEARANCES: [(&str, &str); 2] = [
+    ("aqua", "NSAppearanceNameAqua"),
+    ("darkAqua", "NSAppearanceNameDarkAqua"),
+];
+
+const CONTROL_SIZES: [(&str, NSControlSize); 4] = [
+    ("mini", NSControlSize::Mini),
+    ("small", NSControlSize::Small),
+    ("regular", NSControlSize::Regular),
+    ("large", NSControlSize::Large),
+];
+
+/// Fill `doc` with the macOS results; renders go under `out_dir/renders`.
+pub(crate) fn probe(doc: &mut Table, out_dir: &Path) {
+    let (os, version) = os_table();
+    out::put_table(doc, "os", os);
+    out::put_table(doc, "probe", crate::probe_table());
+
+    let mtm = MainThreadMarker::new();
+    // AppKit's views expect NSApp to exist before the first one is made.
+    let app = mtm.map(|mtm| {
+        let app = NSApplication::sharedApplication(mtm);
+        let prohibited = app.setActivationPolicy(NSApplicationActivationPolicy::Prohibited);
+        (app, prohibited)
+    });
+
+    let mut mac = Table::new();
+    out::put_table(&mut mac, "fonts", fonts_table());
+    out::put_table(&mut mac, "colors", colors_table(mtm));
+
+    match (mtm, app) {
+        (Some(mtm), Some((app, prohibited))) => {
+            let mut env = Table::new();
+            out::put(
+                &mut env,
+                "activationPolicy_prohibited_set",
+                out::boolean(prohibited),
+            );
+            out::put(
+                &mut env,
+                "effectiveAppearance",
+                out::text(app.effectiveAppearance().name().to_string()),
+            );
+            out::put_table(&mut env, "mainScreen", screen_table(mtm));
+            out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut mac, "environment", env);
+            out::put_table(&mut mac, "metrics", metrics_table(mtm));
+            out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
+        }
+        _ => {
+            let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
+            out::put(&mut mac, "environment", reason.clone());
+            out::put(&mut mac, "metrics", reason.clone());
+            out::put(&mut mac, "controls", reason);
+        }
+    }
+    out::put_table(doc, "macos", mac);
+}
+
+// ── OS ──────────────────────────────────────────────────────────────────────
+
+fn os_table() -> (Table, NSOperatingSystemVersion) {
+    let info = NSProcessInfo::processInfo();
+    let v = info.operatingSystemVersion();
+    let mut t = Table::new();
+    out::put(&mut t, "platform", out::text("macOS"));
+    out::put(
+        &mut t,
+        "version",
+        out::text(format!(
+            "{}.{}.{}",
+            v.majorVersion, v.minorVersion, v.patchVersion
+        )),
+    );
+    out::put(&mut t, "major", out::int_isize(v.majorVersion));
+    out::put(&mut t, "minor", out::int_isize(v.minorVersion));
+    out::put(&mut t, "patch", out::int_isize(v.patchVersion));
+    out::put(
+        &mut t,
+        "operatingSystemVersionString",
+        out::text(info.operatingSystemVersionString().to_string()),
+    );
+    (t, v)
+}
+
+// ── Fonts ───────────────────────────────────────────────────────────────────
+
+/// `+[NSFont xxxFontOfSize:]`.
+type FontOfSize = fn(f64) -> Retained<NSFont>;
+/// `+[NSFont userFontOfSize:]` and its fixed-pitch sibling, which may be nil.
+type UserFontOfSize = fn(f64) -> Option<Retained<NSFont>>;
+/// `+[NSFont xxxFontOfSize:weight:]`.
+type FontOfSizeWeight = fn(f64, f64) -> Retained<NSFont>;
+
+fn fonts_table() -> Table {
+    let mut t = Table::new();
+
+    let mut sizes = Table::new();
+    out::put(
+        &mut sizes,
+        "systemFontSize",
+        out::float(NSFont::systemFontSize()),
+    );
+    out::put(
+        &mut sizes,
+        "smallSystemFontSize",
+        out::float(NSFont::smallSystemFontSize()),
+    );
+    out::put(
+        &mut sizes,
+        "labelFontSize",
+        out::float(NSFont::labelFontSize()),
+    );
+    let mut per_size = Table::new();
+    for (name, size) in CONTROL_SIZES {
+        out::put(
+            &mut per_size,
+            name,
+            out::float(NSFont::systemFontSizeForControlSize(size)),
+        );
+    }
+    out::put_table(&mut sizes, "systemFontSizeForControlSize", per_size);
+    out::put_table(&mut t, "sizes", sizes);
+
+    let mut named = Table::new();
+    out::put(
+        &mut named,
+        "arguments",
+        out::text(
+            "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular",
+        ),
+    );
+    let class_fonts: [(&str, FontOfSize); 10] = [
+        ("systemFontOfSize", NSFont::systemFontOfSize),
+        ("boldSystemFontOfSize", NSFont::boldSystemFontOfSize),
+        ("labelFontOfSize", NSFont::labelFontOfSize),
+        ("messageFontOfSize", NSFont::messageFontOfSize),
+        ("menuFontOfSize", NSFont::menuFontOfSize),
+        ("menuBarFontOfSize", NSFont::menuBarFontOfSize),
+        ("toolTipsFontOfSize", NSFont::toolTipsFontOfSize),
+        ("controlContentFontOfSize", NSFont::controlContentFontOfSize),
+        ("titleBarFontOfSize", NSFont::titleBarFontOfSize),
+        ("paletteFontOfSize", NSFont::paletteFontOfSize),
+    ];
+    for (name, make) in class_fonts {
+        out::put_table(&mut named, name, font_table(&make(0.0)));
+    }
+    let user_fonts: [(&str, UserFontOfSize); 2] = [
+        ("userFontOfSize", NSFont::userFontOfSize),
+        ("userFixedPitchFontOfSize", NSFont::userFixedPitchFontOfSize),
+    ];
+    for (name, make) in user_fonts {
+        match make(0.0) {
+            Some(font) => out::put_table(&mut named, name, font_table(&font)),
+            None => out::put(&mut named, name, out::unavailable("returned nil")),
+        }
+    }
+    let system_size = NSFont::systemFontSize();
+    let monospaced: [(&str, FontOfSizeWeight); 2] = [
+        (
+            "monospacedSystemFontOfSize_weight",
+            NSFont::monospacedSystemFontOfSize_weight,
+        ),
+        (
+            "monospacedDigitSystemFontOfSize_weight",
+            NSFont::monospacedDigitSystemFontOfSize_weight,
+        ),
+    ];
+    for (name, make) in monospaced {
+        match ffi::font_weight_regular() {
+            Ok(regular) => {
+                out::put_table(&mut named, name, font_table(&make(system_size, regular)))
+            }
+            Err(reason) => out::put(&mut named, name, out::unavailable(reason)),
+        }
+    }
+    out::put_table(&mut t, "named", named);
+
+    let mut styles = Table::new();
+    match ffi::text_styles() {
+        Ok(text_styles) => {
+            for (name, style) in text_styles {
+                match ffi::preferred_font(style) {
+                    Ok(font) => out::put_table(&mut styles, name, font_table(&font)),
+                    Err(reason) => out::put(&mut styles, name, out::unavailable(reason)),
+                }
+            }
+        }
+        Err(reason) => out::put(&mut styles, "error", out::unavailable(reason)),
+    }
+    out::put_table(&mut t, "preferredFontForTextStyle", styles);
+    t
+}
+
+fn font_table(font: &NSFont) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "familyName",
+        font.familyName()
+            .map_or_else(|| out::unavailable("nil"), |n| out::text(n.to_string())),
+    );
+    out::put(&mut t, "fontName", out::text(font.fontName().to_string()));
+    out::put(&mut t, "pointSize", out::float(font.pointSize()));
+    out::put(&mut t, "weightTrait", weight_trait(font));
+    out::put(&mut t, "ascender", out::float(font.ascender()));
+    out::put(&mut t, "descender", out::float(font.descender()));
+    out::put(&mut t, "leading", out::float(font.leading()));
+    out::put(&mut t, "capHeight", out::float(font.capHeight()));
+    out::put(&mut t, "xHeight", out::float(font.xHeight()));
+    t
+}
+
+/// NSFontWeightTrait from the font descriptor's traits dictionary.
+fn weight_trait(font: &NSFont) -> Value {
+    let (traits_key, weight_key) = match ffi::font_trait_keys() {
+        Ok(keys) => keys,
+        Err(reason) => return out::unavailable(reason),
+    };
+    let descriptor = font.fontDescriptor();
+    let Some(traits) = descriptor.objectForKey(traits_key) else {
+        return out::unavailable("no NSFontTraitsAttribute");
+    };
+    let Some(dict) = traits.downcast_ref::<NSDictionary>() else {
+        return out::unavailable("NSFontTraitsAttribute is not a dictionary");
+    };
+    let key: &AnyObject = weight_key.as_ref();
+    let Some(weight) = dict.objectForKey(key) else {
+        return out::unavailable("no NSFontWeightTrait");
+    };
+    match weight.downcast_ref::<NSNumber>() {
+        Some(n) => out::float(n.doubleValue()),
+        None => out::unavailable("NSFontWeightTrait is not a number"),
+    }
+}
+
+// ── Colours ─────────────────────────────────────────────────────────────────
+
+/// `(name, selector, class method)` for an NSColor class method.
+type ColorEntry = (&'static str, Sel, fn() -> Retained<NSColor>);
+
+macro_rules! color_entries {
+    ($($name:ident),* $(,)?) => {
+        vec![$((stringify!($name), sel!($name), NSColor::$name as fn() -> Retained<NSColor>)),*]
+    };
+}
+
+/// Every no-argument NSColor class method that returns a UI or system
+/// colour (the fixed colours such as `blackColor` excepted), the deprecated
+/// ones included.
+#[allow(deprecated)]
+fn color_entries() -> Vec<ColorEntry> {
+    color_entries![
+        labelColor,
+        secondaryLabelColor,
+        tertiaryLabelColor,
+        quaternaryLabelColor,
+        quinaryLabelColor,
+        linkColor,
+        placeholderTextColor,
+        windowFrameTextColor,
+        selectedMenuItemTextColor,
+        alternateSelectedControlTextColor,
+        headerTextColor,
+        separatorColor,
+        gridColor,
+        windowBackgroundColor,
+        underPageBackgroundColor,
+        controlBackgroundColor,
+        selectedContentBackgroundColor,
+        unemphasizedSelectedContentBackgroundColor,
+        findHighlightColor,
+        textColor,
+        textBackgroundColor,
+        textInsertionPointColor,
+        selectedTextColor,
+        selectedTextBackgroundColor,
+        unemphasizedSelectedTextBackgroundColor,
+        unemphasizedSelectedTextColor,
+        controlColor,
+        controlTextColor,
+        selectedControlColor,
+        selectedControlTextColor,
+        disabledControlTextColor,
+        keyboardFocusIndicatorColor,
+        scrubberTexturedBackgroundColor,
+        systemRedColor,
+        systemGreenColor,
+        systemBlueColor,
+        systemOrangeColor,
+        systemYellowColor,
+        systemBrownColor,
+        systemPinkColor,
+        systemPurpleColor,
+        systemGrayColor,
+        systemTealColor,
+        systemIndigoColor,
+        systemMintColor,
+        systemCyanColor,
+        systemFillColor,
+        secondarySystemFillColor,
+        tertiarySystemFillColor,
+        quaternarySystemFillColor,
+        quinarySystemFillColor,
+        controlAccentColor,
+        highlightColor,
+        shadowColor,
+        controlHighlightColor,
+        controlLightHighlightColor,
+        controlShadowColor,
+        controlDarkShadowColor,
+        scrollBarColor,
+        knobColor,
+        selectedKnobColor,
+        windowFrameColor,
+        selectedMenuItemColor,
+        headerColor,
+        secondarySelectedControlColor,
+        alternateSelectedControlColor,
+    ]
+}
+
+/// `(name, selector, class method)` for an NSColor array class method.
+type ColorListEntry = (&'static str, Sel, fn() -> Retained<NSArray<NSColor>>);
+
+#[allow(deprecated)]
+fn color_list_entries() -> [ColorListEntry; 2] {
+    [
+        (
+            "alternatingContentBackgroundColors",
+            sel!(alternatingContentBackgroundColors),
+            NSColor::alternatingContentBackgroundColors,
+        ),
+        (
+            "controlAlternatingRowBackgroundColors",
+            sel!(controlAlternatingRowBackgroundColors),
+            NSColor::controlAlternatingRowBackgroundColors,
+        ),
+    ]
+}
+
+fn colors_table(mtm: Option<MainThreadMarker>) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "format",
+        out::text(
+            "#rrggbbaa in sRGB (colorUsingColorSpace: sRGBColorSpace), resolved inside NSAppearance performAsCurrentDrawingAppearance:; each selector checked with respondsToSelector: first",
+        ),
+    );
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&NSString::from_str(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        let result = RefCell::new(Table::new());
+        {
+            let block = RcBlock::new(|| {
+                *result.borrow_mut() = appearance_colors(mtm);
+            });
+            appearance.performAsCurrentDrawingAppearance(&block);
+        }
+        out::put_table(&mut t, key, result.into_inner());
+    }
+    t
+}
+
+fn appearance_colors(mtm: Option<MainThreadMarker>) -> Table {
+    let srgb = NSColorSpace::sRGBColorSpace();
+    let meta = NSColor::class().metaclass();
+    let mut t = Table::new();
+    for (name, selector, make) in color_entries() {
+        let value = if meta.responds_to(selector) {
+            color_value(&make(), &srgb)
+        } else {
+            out::unavailable(format!("NSColor does not respond to +{name} on this macOS"))
+        };
+        out::put(&mut t, name, value);
+    }
+    for (name, selector, make) in color_list_entries() {
+        let value = if meta.responds_to(selector) {
+            out::array(make().iter().map(|c| color_value(&c, &srgb)).collect())
+        } else {
+            out::unavailable(format!("NSColor does not respond to +{name} on this macOS"))
+        };
+        out::put(&mut t, name, value);
+    }
+    // The per-view caret colour docs/platform-facts.md names beside
+    // textInsertionPointColor: a new NSTextView's, which defaults to
+    // controlTextColor there.
+    let caret = match mtm {
+        Some(mtm) => color_value(&NSTextView::new(mtm).insertionPointColor(), &srgb),
+        None => out::unavailable("not on the main thread"),
+    };
+    out::put(&mut t, "NSTextView_insertionPointColor", caret);
+    t
+}
+
+fn color_value(color: &NSColor, srgb: &NSColorSpace) -> Value {
+    match color.colorUsingColorSpace(srgb) {
+        Some(c) => out::text(out::rgba_hex(
+            c.redComponent(),
+            c.greenComponent(),
+            c.blueComponent(),
+            c.alphaComponent(),
+        )),
+        None => out::text(format!(
+            "not convertible: NSColorType {} ({:?})",
+            color.r#type().0,
+            color
+        )),
+    }
+}
+
+// ── Environment ─────────────────────────────────────────────────────────────
+
+fn screen_table(mtm: MainThreadMarker) -> Table {
+    let mut t = Table::new();
+    match NSScreen::mainScreen(mtm) {
+        Some(screen) => {
+            out::put(
+                &mut t,
+                "backingScaleFactor",
+                out::float(screen.backingScaleFactor()),
+            );
+            out::put(&mut t, "frame_xywh", rect(screen.frame()));
+        }
+        None => out::put(&mut t, "screen", out::unavailable("mainScreen is nil")),
+    }
+    t
+}
+
+fn accessibility_table() -> Table {
+    let ws = NSWorkspace::sharedWorkspace();
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "accessibilityDisplayShouldIncreaseContrast",
+        out::boolean(ws.accessibilityDisplayShouldIncreaseContrast()),
+    );
+    out::put(
+        &mut t,
+        "accessibilityDisplayShouldReduceTransparency",
+        out::boolean(ws.accessibilityDisplayShouldReduceTransparency()),
+    );
+    out::put(
+        &mut t,
+        "accessibilityDisplayShouldReduceMotion",
+        out::boolean(ws.accessibilityDisplayShouldReduceMotion()),
+    );
+    out::put(
+        &mut t,
+        "accessibilityDisplayShouldDifferentiateWithoutColor",
+        out::boolean(ws.accessibilityDisplayShouldDifferentiateWithoutColor()),
+    );
+    t
+}
+
+// ── Metrics that need no window ─────────────────────────────────────────────
+
+fn metrics_table(mtm: MainThreadMarker) -> Table {
+    let mut t = Table::new();
+
+    let mut scroller = Table::new();
+    out::put(
+        &mut scroller,
+        "preferredScrollerStyle",
+        out::text(scroller_style_name(NSScroller::preferredScrollerStyle(mtm))),
+    );
+    let mut widths = Table::new();
+    for (name, size) in CONTROL_SIZES {
+        let mut per_style = Table::new();
+        for (style_name, style) in [
+            ("legacy", NSScrollerStyle::Legacy),
+            ("overlay", NSScrollerStyle::Overlay),
+        ] {
+            out::put(
+                &mut per_style,
+                style_name,
+                out::float(NSScroller::scrollerWidthForControlSize_scrollerStyle(
+                    size, style, mtm,
+                )),
+            );
+        }
+        out::put_table(&mut widths, name, per_style);
+    }
+    out::put_table(
+        &mut scroller,
+        "scrollerWidthForControlSize_scrollerStyle",
+        widths,
+    );
+    out::put_table(&mut t, "NSScroller", scroller);
+
+    let mut split = Table::new();
+    let split_view = NSSplitView::new(mtm);
+    out::put(
+        &mut split,
+        "default_dividerStyle",
+        out::text(divider_style_name(split_view.dividerStyle())),
+    );
+    out::put(
+        &mut split,
+        "default_dividerThickness",
+        out::float(split_view.dividerThickness()),
+    );
+    let mut thickness = Table::new();
+    for style in [
+        NSSplitViewDividerStyle::Thick,
+        NSSplitViewDividerStyle::Thin,
+        NSSplitViewDividerStyle::PaneSplitter,
+    ] {
+        split_view.setDividerStyle(style);
+        out::put(
+            &mut thickness,
+            &divider_style_name(style),
+            out::float(split_view.dividerThickness()),
+        );
+    }
+    out::put_table(&mut split, "dividerThickness", thickness);
+    out::put_table(&mut t, "NSSplitView", split);
+
+    let mut table = Table::new();
+    let table_view = NSTableView::new(mtm);
+    out::put(&mut table, "rowHeight", out::float(table_view.rowHeight()));
+    out::put(
+        &mut table,
+        "intercellSpacing_wh",
+        size(table_view.intercellSpacing()),
+    );
+    out::put(
+        &mut table,
+        "style",
+        out::text(table_style_name(table_view.style())),
+    );
+    out::put(
+        &mut table,
+        "effectiveStyle",
+        out::text(table_style_name(table_view.effectiveStyle())),
+    );
+    out::put_table(&mut t, "NSTableView", table);
+
+    let mut outline = Table::new();
+    let outline_view = NSOutlineView::new(mtm);
+    out::put(
+        &mut outline,
+        "indentationPerLevel",
+        out::float(outline_view.indentationPerLevel()),
+    );
+    out::put(
+        &mut outline,
+        "rowHeight",
+        out::float(outline_view.rowHeight()),
+    );
+    out::put_table(&mut t, "NSOutlineView", outline);
+
+    let mut menu_t = Table::new();
+    let menu = NSMenu::new(mtm);
+    for title in ["First item", "Second item", "Third item"] {
+        let item = NSMenuItem::new(mtm);
+        item.setTitle(&NSString::from_str(title));
+        menu.addItem(&item);
+    }
+    out::put(
+        &mut menu_t,
+        "numberOfItems",
+        out::int_isize(menu.numberOfItems()),
+    );
+    out::put(&mut menu_t, "size_wh", size(menu.size()));
+    out::put(
+        &mut menu_t,
+        "menuBarHeight",
+        out::float(menu.menuBarHeight()),
+    );
+    out::put(
+        &mut menu_t,
+        "item_height",
+        out::not_probed(
+            "NSMenuItem has no height or frame outside a displayed menu; size_wh is the three-item menu's",
+        ),
+    );
+    out::put_table(&mut t, "NSMenu", menu_t);
+    t
+}
+
+fn scroller_style_name(style: NSScrollerStyle) -> String {
+    if style == NSScrollerStyle::Legacy {
+        "legacy".to_owned()
+    } else if style == NSScrollerStyle::Overlay {
+        "overlay".to_owned()
+    } else {
+        format!("unknown ({})", style.0)
+    }
+}
+
+fn divider_style_name(style: NSSplitViewDividerStyle) -> String {
+    if style == NSSplitViewDividerStyle::Thick {
+        "thick".to_owned()
+    } else if style == NSSplitViewDividerStyle::Thin {
+        "thin".to_owned()
+    } else if style == NSSplitViewDividerStyle::PaneSplitter {
+        "paneSplitter".to_owned()
+    } else {
+        format!("unknown ({})", style.0)
+    }
+}
+
+fn table_style_name(style: NSTableViewStyle) -> String {
+    if style == NSTableViewStyle::Automatic {
+        "automatic".to_owned()
+    } else if style == NSTableViewStyle::FullWidth {
+        "fullWidth".to_owned()
+    } else if style == NSTableViewStyle::Inset {
+        "inset".to_owned()
+    } else if style == NSTableViewStyle::SourceList {
+        "sourceList".to_owned()
+    } else if style == NSTableViewStyle::Plain {
+        "plain".to_owned()
+    } else {
+        format!("unknown ({})", style.0)
+    }
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    PushButton,
+    Checkbox,
+    Radio,
+    Switch,
+    PopUpButton,
+    ComboBox,
+    TextField,
+    SearchField,
+    SegmentedControl,
+    Slider,
+    SliderTicks,
+    ProgressBar,
+    ProgressSpinning,
+    Stepper,
+}
+
+impl Kind {
+    const ALL: [Kind; 14] = [
+        Kind::PushButton,
+        Kind::Checkbox,
+        Kind::Radio,
+        Kind::Switch,
+        Kind::PopUpButton,
+        Kind::ComboBox,
+        Kind::TextField,
+        Kind::SearchField,
+        Kind::SegmentedControl,
+        Kind::Slider,
+        Kind::SliderTicks,
+        Kind::ProgressBar,
+        Kind::ProgressSpinning,
+        Kind::Stepper,
+    ];
+
+    fn name(self) -> &'static str {
+        match self {
+            Kind::PushButton => "push_button",
+            Kind::Checkbox => "checkbox",
+            Kind::Radio => "radio",
+            Kind::Switch => "switch",
+            Kind::PopUpButton => "pop_up_button",
+            Kind::ComboBox => "combo_box",
+            Kind::TextField => "text_field",
+            Kind::SearchField => "search_field",
+            Kind::SegmentedControl => "segmented_control",
+            Kind::Slider => "slider",
+            Kind::SliderTicks => "slider_ticks",
+            Kind::ProgressBar => "progress_bar",
+            Kind::ProgressSpinning => "progress_spinning",
+            Kind::Stepper => "stepper",
+        }
+    }
+
+    fn setup(self) -> &'static str {
+        match self {
+            Kind::PushButton => {
+                "NSButton, buttonType momentaryPushIn, bezelStyle push (rounded), title \"Button\""
+            }
+            Kind::Checkbox => "NSButton, buttonType switch, title \"Checkbox\"",
+            Kind::Radio => "NSButton, buttonType radio, title \"Radio\"",
+            Kind::Switch => "NSSwitch",
+            Kind::PopUpButton => "NSPopUpButton, items \"Option\", \"Other\"",
+            Kind::ComboBox => "NSComboBox, stringValue \"Option\"",
+            Kind::TextField => "NSTextField, bezeled, editable, stringValue \"Text\"",
+            Kind::SearchField => "NSSearchField, empty",
+            Kind::SegmentedControl => {
+                "NSSegmentedControl, 2 segments \"One\" \"Two\", segment 0 selected"
+            }
+            Kind::Slider => "NSSlider, horizontal, 0..100 at 50, no tick marks",
+            Kind::SliderTicks => "NSSlider, horizontal, 0..100 at 50, 5 tick marks",
+            Kind::ProgressBar => "NSProgressIndicator, style bar, determinate, 0..100 at 50",
+            Kind::ProgressSpinning => "NSProgressIndicator, style spinning",
+            Kind::Stepper => "NSStepper",
+        }
+    }
+
+    /// Controls whose width is the caller's: given `STRETCH_WIDTH` when
+    /// `sizeToFit` leaves them narrower.
+    fn stretches(self) -> bool {
+        matches!(
+            self,
+            Kind::ComboBox
+                | Kind::TextField
+                | Kind::SearchField
+                | Kind::Slider
+                | Kind::SliderTicks
+                | Kind::ProgressBar
+        )
+    }
+
+    /// Controls rendered both off and on.
+    fn has_state(self) -> bool {
+        matches!(self, Kind::Checkbox | Kind::Radio | Kind::Switch)
+    }
+}
+
+fn ns(s: &str) -> Retained<NSString> {
+    NSString::from_str(s)
+}
+
+/// Give an NSControl the control size and the system font of that size.
+fn control_common(control: &NSControl, size: NSControlSize) {
+    control.setControlSize(size);
+    control.setFont(Some(&NSFont::systemFontOfSize(
+        NSFont::systemFontSizeForControlSize(size),
+    )));
+}
+
+fn state_value(on: bool) -> isize {
+    if on {
+        NSControlStateValueOn
+    } else {
+        NSControlStateValueOff
+    }
+}
+
+fn build(kind: Kind, size: NSControlSize, on: bool, mtm: MainThreadMarker) -> Retained<NSView> {
+    match kind {
+        Kind::PushButton | Kind::Checkbox | Kind::Radio => {
+            let b = NSButton::new(mtm);
+            let (button_type, title) = match kind {
+                Kind::Checkbox => (NSButtonType::Switch, "Checkbox"),
+                Kind::Radio => (NSButtonType::Radio, "Radio"),
+                _ => (NSButtonType::MomentaryPushIn, "Button"),
+            };
+            b.setButtonType(button_type);
+            if kind == Kind::PushButton {
+                b.setBezelStyle(NSBezelStyle::Push);
+            } else {
+                b.setState(state_value(on));
+            }
+            b.setTitle(&ns(title));
+            control_common(&b, size);
+            view_of(&b)
+        }
+        Kind::Switch => {
+            let s = NSSwitch::new(mtm);
+            s.setState(state_value(on));
+            control_common(&s, size);
+            view_of(&s)
+        }
+        Kind::PopUpButton => {
+            let p = NSPopUpButton::new(mtm);
+            p.addItemWithTitle(&ns("Option"));
+            p.addItemWithTitle(&ns("Other"));
+            control_common(&p, size);
+            view_of(&p)
+        }
+        Kind::ComboBox => {
+            let c = NSComboBox::new(mtm);
+            c.setStringValue(&ns("Option"));
+            control_common(&c, size);
+            view_of(&c)
+        }
+        Kind::TextField => {
+            let f = NSTextField::new(mtm);
+            f.setBezeled(true);
+            f.setEditable(true);
+            f.setStringValue(&ns("Text"));
+            control_common(&f, size);
+            view_of(&f)
+        }
+        Kind::SearchField => {
+            let f = NSSearchField::new(mtm);
+            control_common(&f, size);
+            view_of(&f)
+        }
+        Kind::SegmentedControl => {
+            let s = NSSegmentedControl::new(mtm);
+            s.setSegmentCount(2);
+            s.setLabel_forSegment(&ns("One"), 0);
+            s.setLabel_forSegment(&ns("Two"), 1);
+            s.setSelectedSegment(0);
+            control_common(&s, size);
+            view_of(&s)
+        }
+        Kind::Slider | Kind::SliderTicks => {
+            let s = NSSlider::new(mtm);
+            s.setVertical(false);
+            s.setMinValue(0.0);
+            s.setMaxValue(100.0);
+            s.setDoubleValue(50.0);
+            if kind == Kind::SliderTicks {
+                s.setNumberOfTickMarks(5);
+            }
+            control_common(&s, size);
+            view_of(&s)
+        }
+        Kind::ProgressBar | Kind::ProgressSpinning => {
+            let p = NSProgressIndicator::new(mtm);
+            if kind == Kind::ProgressBar {
+                p.setStyle(NSProgressIndicatorStyle::Bar);
+                p.setIndeterminate(false);
+                p.setMinValue(0.0);
+                p.setMaxValue(100.0);
+                p.setDoubleValue(50.0);
+            } else {
+                p.setStyle(NSProgressIndicatorStyle::Spinning);
+            }
+            p.setControlSize(size);
+            view_of(&p)
+        }
+        Kind::Stepper => {
+            let s = NSStepper::new(mtm);
+            control_common(&s, size);
+            view_of(&s)
+        }
+    }
+}
+
+/// A retained NSView reference to any view subclass.
+fn view_of(view: &NSView) -> Retained<NSView> {
+    view.retain()
+}
+
+fn controls_table(
+    mtm: MainThreadMarker,
+    version: &NSOperatingSystemVersion,
+    out_dir: &Path,
+) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to {STRETCH_WIDTH} pt after sizeToFit when narrower; cell rects are for the control's bounds after that"
+        )),
+    );
+    out::put(
+        &mut t,
+        "keys",
+        out::text(
+            "_wh = [width, height]; _xywh = [x, y, width, height]; _tlbr = [top, left, bottom, right]; all in points",
+        ),
+    );
+    let mut setups = Table::new();
+    for kind in Kind::ALL {
+        out::put(&mut setups, kind.name(), out::text(kind.setup()));
+    }
+    out::put_table(&mut t, "setup", setups);
+    out::put(
+        &mut t,
+        "extraLarge",
+        out::not_probed(
+            "NSControlSizeExtraLarge is outside the review's sizes (mini, small, regular, large)",
+        ),
+    );
+
+    let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(800.0, 600.0));
+    let window = match ffi::offscreen_window(mtm, frame) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    let Some(content) = window.contentView() else {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable("the offscreen window has no content view"),
+        );
+        return t;
+    };
+    let backing_scale = window.backingScaleFactor();
+    out::put(
+        &mut t,
+        "window_backingScaleFactor",
+        out::float(backing_scale),
+    );
+
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        window.setAppearance(Some(&appearance));
+        let run = Run {
+            mtm,
+            content: &content,
+            appearance_key: key,
+            out_dir,
+            backing_scale,
+            // NSControlSizeLarge is macOS 11+.
+            large_available: version.majorVersion >= 11,
+        };
+        let result = RefCell::new(Table::new());
+        {
+            let block = RcBlock::new(|| {
+                *result.borrow_mut() = run.all_controls();
+            });
+            appearance.performAsCurrentDrawingAppearance(&block);
+        }
+        out::put_table(&mut t, key, result.into_inner());
+    }
+    window.setAppearance(None);
+    t
+}
+
+/// One appearance's control run.
+struct Run<'a> {
+    mtm: MainThreadMarker,
+    content: &'a NSView,
+    appearance_key: &'a str,
+    out_dir: &'a Path,
+    backing_scale: f64,
+    large_available: bool,
+}
+
+impl Run<'_> {
+    fn all_controls(&self) -> Table {
+        let mut t = Table::new();
+        for (size_name, size) in CONTROL_SIZES {
+            if size == NSControlSize::Large && !self.large_available {
+                out::put(
+                    &mut t,
+                    size_name,
+                    out::unavailable("NSControlSizeLarge needs macOS 11"),
+                );
+                continue;
+            }
+            let mut per_kind = Table::new();
+            for kind in Kind::ALL {
+                out::put_table(
+                    &mut per_kind,
+                    kind.name(),
+                    self.control(kind, size_name, size),
+                );
+            }
+            out::put_table(&mut t, size_name, per_kind);
+        }
+        t
+    }
+
+    fn control(&self, kind: Kind, size_name: &str, size: NSControlSize) -> Table {
+        let view = build(kind, size, false, self.mtm);
+        let container = self.mount(&view);
+        let mut t = measure(kind, &view);
+        fit_container(&container, &view);
+        if size == NSControlSize::Regular {
+            let state = if kind.has_state() { "-off" } else { "" };
+            let stem = format!("{}-{size_name}{state}", kind.name());
+            out::put_table(&mut t, "render", self.render(&container, &stem));
+            if kind.has_state() {
+                let on_view = build(kind, size, true, self.mtm);
+                let on_container = self.mount(&on_view);
+                on_view.setFrameSize(view.frame().size);
+                fit_container(&on_container, &on_view);
+                let stem_on = format!("{}-{size_name}-on", kind.name());
+                out::put_table(&mut t, "render_on", self.render(&on_container, &stem_on));
+                on_container.removeFromSuperview();
+            }
+        }
+        container.removeFromSuperview();
+        t
+    }
+
+    /// Put `view` in a fresh container inside the window's content view.
+    fn mount(&self, view: &NSView) -> Retained<NSView> {
+        let container = NSView::new(self.mtm);
+        container.addSubview(view);
+        self.content.addSubview(&container);
+        container
+    }
+
+    /// Render `container` at the window's backing scale and at scale 2.
+    fn render(&self, container: &NSView, stem: &str) -> Table {
+        let mut t = Table::new();
+        let dir = self.out_dir.join("renders").join(self.appearance_key);
+        if let Err(e) = std::fs::create_dir_all(&dir) {
+            out::put(
+                &mut t,
+                "error",
+                out::unavailable(format!("cannot create {}: {e}", dir.display())),
+            );
+            return t;
+        }
+        let bounds = container.bounds();
+        out::put(
+            &mut t,
+            "background",
+            out::text("transparent (only the control and its container are drawn)"),
+        );
+        out::put(&mut t, "margin", out::float(RENDER_MARGIN));
+        out::put(&mut t, "points_wh", size(bounds.size));
+        out::put(
+            &mut t,
+            "window_backingScaleFactor",
+            out::float(self.backing_scale),
+        );
+
+        let backing = match container.bitmapImageRepForCachingDisplayInRect(bounds) {
+            Some(rep) => {
+                container.cacheDisplayInRect_toBitmapImageRep(bounds, &rep);
+                self.write_png(&rep, &dir, &format!("{stem}.png"))
+            }
+            None => out::unavailable("bitmapImageRepForCachingDisplayInRect: is nil"),
+        };
+        out::put(&mut t, "backing_scale", backing);
+
+        let scale2 = match bitmap_at_scale(bounds.size, 2.0) {
+            Ok(rep) => {
+                container.cacheDisplayInRect_toBitmapImageRep(bounds, &rep);
+                self.write_png(&rep, &dir, &format!("{stem}@2x.png"))
+            }
+            Err(reason) => out::unavailable(reason),
+        };
+        out::put(&mut t, "scale_2", scale2);
+        t
+    }
+
+    fn write_png(&self, rep: &NSBitmapImageRep, dir: &Path, file: &str) -> Value {
+        let data = match ffi::png_data(rep) {
+            Ok(data) => data,
+            Err(reason) => return out::unavailable(reason),
+        };
+        let path = dir.join(file);
+        if let Err(e) = std::fs::write(&path, data) {
+            return out::unavailable(format!("cannot write {}: {e}", path.display()));
+        }
+        let mut t = Table::new();
+        out::put(
+            &mut t,
+            "file",
+            out::text(format!("renders/{}/{file}", self.appearance_key)),
+        );
+        out::put(
+            &mut t,
+            "pixels_wh",
+            out::array(vec![
+                out::int_isize(rep.pixelsWide()),
+                out::int_isize(rep.pixelsHigh()),
+            ]),
+        );
+        out::put(&mut t, "rep_size_wh", size(rep.size()));
+        Value::Table(t)
+    }
+}
+
+/// An RGBA bitmap rep of `points` at `scale` pixels per point.
+fn bitmap_at_scale(points: NSSize, scale: f64) -> Result<Retained<NSBitmapImageRep>, String> {
+    let (Some(width), Some(height)) = (
+        out::pixels(points.width, scale),
+        out::pixels(points.height, scale),
+    ) else {
+        return Err(format!(
+            "no pixel size for {} x {} pt at scale {scale}",
+            points.width, points.height
+        ));
+    };
+    let rep = ffi::rgba_bitmap(width, height)?;
+    rep.setSize(points);
+    Ok(rep)
+}
+
+fn size_to_fit(view: &NSView) {
+    let obj: &AnyObject = view.as_ref();
+    if let Some(control) = obj.downcast_ref::<NSControl>() {
+        control.sizeToFit();
+    } else if let Some(progress) = obj.downcast_ref::<NSProgressIndicator>() {
+        progress.sizeToFit();
+    }
+}
+
+/// Measure a mounted control: sizes before and after `sizeToFit`, the
+/// alignment insets, and its cell's rects for the final bounds.
+fn measure(kind: Kind, view: &NSView) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "class",
+        out::text(view.class().name().to_string_lossy()),
+    );
+    out::put(
+        &mut t,
+        "intrinsicContentSize_wh",
+        size(view.intrinsicContentSize()),
+    );
+    out::put(&mut t, "fittingSize_wh", size(view.fittingSize()));
+    size_to_fit(view);
+    let fitted = view.frame();
+    out::put(&mut t, "frame_after_sizeToFit_xywh", rect(fitted));
+    out::put(
+        &mut t,
+        "intrinsicContentSize_after_sizeToFit_wh",
+        size(view.intrinsicContentSize()),
+    );
+    if kind.stretches() && fitted.size.width < STRETCH_WIDTH {
+        view.setFrameSize(NSSize::new(STRETCH_WIDTH, fitted.size.height));
+        out::put(&mut t, "frame_widened_xywh", rect(view.frame()));
+    }
+    out::put(
+        &mut t,
+        "alignmentRectInsets_tlbr",
+        insets(view.alignmentRectInsets()),
+    );
+    out::put(
+        &mut t,
+        "alignmentRectForFrame_xywh",
+        rect(view.alignmentRectForFrame(view.frame())),
+    );
+    out::put(&mut t, "isFlipped", out::boolean(view.isFlipped()));
+
+    let obj: &AnyObject = view.as_ref();
+    if let Some(control) = obj.downcast_ref::<NSControl>() {
+        out::put(&mut t, "cell", cell_table(control, view));
+    }
+    if let Some(slider) = obj.downcast_ref::<NSSlider>() {
+        out::put(&mut t, "knobThickness", out::float(slider.knobThickness()));
+    }
+    t
+}
+
+/// The cell's sizes and rects for the control's bounds; the slider cell's
+/// bar, knob and tick-mark rects.
+fn cell_table(control: &NSControl, view: &NSView) -> Value {
+    let Some(cell) = control.cell() else {
+        return out::unavailable("no cell (not cell-based)");
+    };
+    let bounds = view.bounds();
+    let mut c = Table::new();
+    out::put(
+        &mut c,
+        "class",
+        out::text(cell.class().name().to_string_lossy()),
+    );
+    out::put(&mut c, "bounds_xywh", rect(bounds));
+    out::put(&mut c, "cellSize_wh", size(cell.cellSize()));
+    out::put(
+        &mut c,
+        "cellSizeForBounds_wh",
+        size(cell.cellSizeForBounds(bounds)),
+    );
+    out::put(
+        &mut c,
+        "drawingRectForBounds_xywh",
+        rect(cell.drawingRectForBounds(bounds)),
+    );
+    out::put(
+        &mut c,
+        "titleRectForBounds_xywh",
+        rect(cell.titleRectForBounds(bounds)),
+    );
+    out::put(
+        &mut c,
+        "imageRectForBounds_xywh",
+        rect(cell.imageRectForBounds(bounds)),
+    );
+    let cell_obj: &AnyObject = cell.as_ref();
+    if let Some(slider_cell) = cell_obj.downcast_ref::<NSSliderCell>() {
+        let flipped = view.isFlipped();
+        out::put(
+            &mut c,
+            "knobThickness",
+            out::float(slider_cell.knobThickness()),
+        );
+        out::put(&mut c, "trackRect_xywh", rect(slider_cell.trackRect()));
+        out::put(
+            &mut c,
+            "barRectFlipped_xywh",
+            rect(slider_cell.barRectFlipped(flipped)),
+        );
+        out::put(
+            &mut c,
+            "knobRectFlipped_xywh",
+            rect(slider_cell.knobRectFlipped(flipped)),
+        );
+        let ticks = slider_cell.numberOfTickMarks();
+        out::put(&mut c, "numberOfTickMarks", out::int_isize(ticks));
+        // rectOfTickMarkAtIndex: raises NSRangeException past the last tick
+        // mark, so it is asked only when one exists.
+        let tick0 = if ticks > 0 {
+            rect(slider_cell.rectOfTickMarkAtIndex(0))
+        } else {
+            out::not_probed("no tick marks")
+        };
+        out::put(&mut c, "rectOfTickMarkAtIndex_0_xywh", tick0);
+    }
+    Value::Table(c)
+}
+
+/// Place `view` at the render margin and size its container around it.
+fn fit_container(container: &NSView, view: &NSView) {
+    let frame = view.frame();
+    view.setFrameOrigin(NSPoint::new(RENDER_MARGIN, RENDER_MARGIN));
+    container.setFrame(NSRect::new(
+        NSPoint::new(0.0, 0.0),
+        NSSize::new(
+            frame.size.width + 2.0 * RENDER_MARGIN,
+            frame.size.height + 2.0 * RENDER_MARGIN,
+        ),
+    ));
+    container.layoutSubtreeIfNeeded();
+}
+
+fn size(s: NSSize) -> Value {
+    out::floats(&[s.width, s.height])
+}
+
+fn rect(r: NSRect) -> Value {
+    out::floats(&[r.origin.x, r.origin.y, r.size.width, r.size.height])
+}
+
+fn insets(i: NSEdgeInsets) -> Value {
+    out::floats(&[i.top, i.left, i.bottom, i.right])
+}
