@@ -130,6 +130,18 @@ Measured cost per milestone, and the estimate for the rest.
   research done at 1.5.0-beta01 (`19991f2c`) is re-diffed against the stable tag then. If 1.5.0 is not stable when
   Step 13 is due, the maintainer chooses between waiting and pinning the latest 1.5.0 pre-release.
 
+- **Step 3 probe built (2026-10-11):** `tools/os-probe` (`7e3ab6bc`) and `.github/workflows/os-probe.yml` (`b5bf7a59`,
+  dispatch-only; matrix `macos-14`, `macos-15`, `macos-26`, `xcode-27` (macOS 27 preview), `windows-2022`, `windows-2025`,
+  `windows-11-arm`, the last a Windows 11 25H2 client image). Its `unsafe` sits in `tools/os-probe/src/{macos,windows}/ffi.rs`
+  only; the project hook `.claude/hooks/no-runtime-panics.sh` exempts those two paths from its `unsafe` rule (maintainer,
+  2026-10-11), panic patterns still blocked. Gates: clippy clean on Linux, `x86_64-apple-darwin`, `x86_64-pc-windows-msvc`;
+  `check_release.sh` 97 checks, 94 ✅, the known stale-assets ❌. Not yet run on any OS: whether `cacheDisplayInRect:`
+  draws a never-shown window is unknown until the first CI run. `workflow_dispatch` is offered only for a workflow on the
+  default branch, so the run needs the workflow on `main` first (or another trigger): the maintainer's call. The run must
+  happen before 2026-11-02 (`macos-14` unsupported).
+- **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
+  "Not in a git repository" and skips its git checks, the tag check among them.
+
 ## M2a — macOS
 
 **Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 not started. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
