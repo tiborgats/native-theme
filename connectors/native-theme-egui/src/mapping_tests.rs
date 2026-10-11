@@ -596,7 +596,13 @@ const HOSTILE: [f32; 6] = [
 const PER_LEAF: [&str; 2] = ["kde-breeze", "adwaita"];
 
 /// Mutated all at once, and walked through `dnd_drop_zone`.
-const PLATFORM: [&str; 4] = ["kde-breeze", "adwaita", "macos-monterey", "windows-11"];
+const PLATFORM: [&str; 5] = [
+    "kde-breeze",
+    "adwaita",
+    "macos-monterey",
+    "macos-tahoe",
+    "windows-11",
+];
 
 const MODES: [ColorMode; 2] = [ColorMode::Light, ColorMode::Dark];
 
@@ -889,15 +895,19 @@ fn t4b_every_hostile_visuals_survives_egui_s_own_disable_assert() {
     });
 }
 
-/// The preset pairs T2 splices between, in both modes: the four platform presets pairwise,
+/// The preset pairs T2 splices between, in both modes: the five platform presets pairwise,
 /// and two community pairs.
-const PAIRS: [(&str, &str); 8] = [
+const PAIRS: [(&str, &str); 12] = [
     ("kde-breeze", "adwaita"),
     ("kde-breeze", "macos-monterey"),
+    ("kde-breeze", "macos-tahoe"),
     ("kde-breeze", "windows-11"),
     ("adwaita", "macos-monterey"),
+    ("adwaita", "macos-tahoe"),
     ("adwaita", "windows-11"),
+    ("macos-monterey", "macos-tahoe"),
     ("macos-monterey", "windows-11"),
+    ("macos-tahoe", "windows-11"),
     ("material-3", "catppuccin-mocha"),
     ("dracula", "solarized"),
 ];

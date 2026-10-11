@@ -245,6 +245,7 @@ fn macos_tahoe_probe_sizes_match_platform_facts() {
     assert!(line(1195).contains("macOS 26: 24 **(API)**"));
     assert!(line(1550).contains("macOS 26: 24 **(API)**"));
     assert!(line(1419).contains("macOS 26: same"));
+    assert!(line(1420).contains("macOS 26: same"));
     let theme = Theme::preset("macos-tahoe").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.button.min_height, Some(24.0));

@@ -964,7 +964,14 @@ model, the platform presets and the three connectors
       light the pressed fill equals the idle fill, so pressing shows no
       change. The gpui contract excepts macos-tahoe for both
       (`contract.rs`): `PRESSED_OVER_TRANSLUCENT` fails once (1) is fixed,
-      `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated.
+      `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated. The
+      hover fill is not affected: `macos-tahoe` states `macos-monterey`'s
+      opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
+      marked "no macOS 26 source" (`docs/platform-facts.md:1179` is ❓; the
+      inherited window colour is a wrong safety net,
+      `docs/inheritance-rules.toml:159`), so the contract's check that a
+      `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
+      for that stated value.
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -2155,19 +2162,37 @@ the gap — closing it is a change, and each wants its own decision.
       | `defaults.icon_sizes.toolbar` | macOS per context, "32pt (reg) / 24 (sm)" (§2.1.8) | macos-monterey 24, the small mode rather than the regular default |
 
       `macos-tahoe` (M2a Step 9) carries `macos-monterey`'s number, marked
-      "no macOS 26 source" in the file, in every macOS row above and wherever
-      else the model requires a number that no source gives for macOS 26:
-      `focus_ring_offset` -1, `border.corner_radius_lg` 10,
+      "no macOS 26 source" in the file, in these macOS rows above:
+      `button.min_width` 64, `scrollbar.thumb_width` 7,
+      `progress_bar.min_width` 100, `tab.min_width` 64, the dialog bounds
+      320/560/140/600, `spinner.stroke_width` 2, `combo_box.min_width` 120,
+      `combo_box.arrow_icon_size` 17 (the chevron measures 7 × 10.5 on macOS
+      26, `docs/platform-facts.md:1553`, not a square either),
+      `expander.header_height` 40 and the icon sizes small 16, large 32,
+      dialog 22 and panel 20; it makes
+      `macos-monterey`'s choice of the small toolbar mode, 24 (the cell's
+      macOS 26 tag: "same"). It does not carry `scrollbar.groove_width`:
+      macOS 26 reports `scrollerWidth` 17 in both modes
+      (`docs/platform-facts.md:1280`), which `macos-tahoe` states; and it
+      leaves `layout.container_margin` unstated. It carries the same way,
+      wherever else the model requires a number that no source gives for
+      macOS 26: `focus_ring_offset` -1, `border.corner_radius_lg` 10 (Tahoe's
+      window radii are larger per third-party measurements,
+      `docs/platform-facts.md:173`; not adopted, no API gives them),
       `border.line_width` 0.5, `border.shadow_enabled`,
       `button.icon_text_gap` and `menu.icon_text_gap` 4, `tooltip.max_width`
-      300, `scrollbar.thumb_width` 7 and `min_thumb_length` 40,
-      `tab.min_height` 24, `segmented_control.separator_width` 1,
-      `expander.arrow_icon_size` 13, `dialog.button_gap` 12 and `icon_size` 64,
-      and the link's underline and transparent fills. It carries the same
-      way, marked, five values the model would otherwise inherit from a
-      safety net known to be the wrong kind: `scrollbar.track_color`
-      (transparent), `menu.icon_size` 16, the expander's `shadow_enabled`
-      (false), the tooltip's colours and `sidebar.background_color`
+      300, `scrollbar.min_thumb_length` 40, `tab.min_height` 24,
+      `segmented_control.separator_width` 1, `expander.arrow_icon_size` 13,
+      `dialog.button_gap` 12 and `icon_size` 64, and the link's underline and
+      transparent fills. It carries the same way, marked, six values the
+      model would otherwise inherit from a safety net known to be the wrong
+      kind: `scrollbar.track_color` (transparent), `menu.icon_size` 16, the
+      expander's `shadow_enabled` (false), the tooltip's colours,
+      `sidebar.background_color` and `button.hover_background` (the inherited
+      opaque window colour would hide the translucent button on hover); and
+      two that would fall back to a value of another kind: `dialog.title_font`
+      (13 pt Bold, against the inherited regular weight) and
+      `segmented_control.active_background` (against the inherited accent)
       (`docs/todo_code-review-findings.md`, M2a Steps 8-12).
 
       The Icons page's Icon Sizes section already marks the unsourced icon

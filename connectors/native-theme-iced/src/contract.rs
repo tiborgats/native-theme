@@ -3245,6 +3245,29 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     for line in &below_aa {
         println!("{line}");
     }
+
+    // The disabled checked checkbox's mark on its fill, the range docs/todo.md
+    // quotes for the platforms' own disabled pair (printed, not asserted).
+    let disabled = checkbox::Status::Disabled { is_checked: true };
+    let mut range: Option<(f32, f32)> = None;
+    let mut measured = 0usize;
+    for pair in CHECKBOX_PAIRS.iter().filter(|p| p.what == "checkbox mark") {
+        for c in &combinations {
+            if let Ok((fg, bg, surface)) = (pair.emitted)(&c.theme, &c.resolved, disabled) {
+                let ratio = pair_ratio(fg, bg, surface);
+                measured += 1;
+                range =
+                    Some(range.map_or((ratio, ratio), |(lo, hi)| (lo.min(ratio), hi.max(ratio))));
+            }
+        }
+    }
+    if let Some((lo, hi)) = range {
+        println!(
+            "disabled checked checkbox mark on its fill: {lo:.2}-{hi:.2}:1 over {measured} of {} \
+             combinations",
+            combinations.len()
+        );
+    }
     assert!(
         failures.is_empty(),
         "{} of {} style pairs are worse than the platform's own:\n{}",

@@ -468,12 +468,8 @@ mod tests {
             themes.push(("system light".to_owned(), sys.light));
             themes.push(("system dark".to_owned(), sys.dark));
         }
-        // The platform's bundled preset, both modes.
-        let preset = if cfg!(target_os = "macos") {
-            "macos-monterey"
-        } else {
-            "windows-11"
-        };
+        // The platform's bundled preset, the running version's generation's, both modes.
+        let preset = native_theme::pipeline::platform_preset_name().name;
         for mode in [ColorMode::Light, ColorMode::Dark] {
             let t = Theme::preset(preset)
                 .unwrap()

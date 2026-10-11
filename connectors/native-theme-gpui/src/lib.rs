@@ -1614,7 +1614,7 @@ mod tests {
         assert!(focus_ring_offset(&resolved) >= 0.0);
     }
 
-    // -- Issue 26: integration tests for all 16 presets in both modes --
+    // -- Issue 26: integration tests for all 17 presets in both modes --
 
     #[test]
     fn all_presets_dark_mode_no_panic() {

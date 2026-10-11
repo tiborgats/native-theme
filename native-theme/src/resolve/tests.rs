@@ -2307,9 +2307,9 @@ fn resolve_completeness_from_preset() {
 
 #[test]
 fn validate_all_presets_pass_range_checks() {
-    // Verify no false positives: all 16 presets pass validation including range checks
+    // Verify no false positives: all 17 presets pass validation including range checks
     let presets = crate::Theme::list_presets();
-    assert!(presets.len() >= 16, "expected at least 16 presets");
+    assert!(presets.len() >= 17, "expected at least 17 presets");
 
     for info in presets {
         let name = info.key;

@@ -14620,7 +14620,13 @@ mod tests {
     /// size, below its own description.
     #[test]
     fn page_and_section_titles_take_their_defined_roles() {
-        for preset in ["kde-breeze", "adwaita", "macos-monterey", "windows-11"] {
+        for preset in [
+            "kde-breeze",
+            "adwaita",
+            "macos-monterey",
+            "macos-tahoe",
+            "windows-11",
+        ] {
             for is_dark in [false, true] {
                 let at = format!("{preset} (dark: {is_dark})");
                 let resolved = match native_theme_iced::from_preset(preset, is_dark) {

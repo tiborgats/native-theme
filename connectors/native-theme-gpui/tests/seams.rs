@@ -94,10 +94,11 @@ fn resolved_at(preset: &str, dpi: f32) -> ResolvedTheme {
 /// The native presets, each with the font DPI its platform resolves at:
 /// macOS at 72, where a point is a pixel (native-theme `detect.rs`,
 /// `detect_system_font_dpi`), the others at the 96 `for_tests` pins.
-const NATIVE: [(&str, f32); 4] = [
+const NATIVE: [(&str, f32); 5] = [
     ("kde-breeze", 96.0),
     ("adwaita", 96.0),
     ("macos-monterey", 72.0),
+    ("macos-tahoe", 72.0),
     ("windows-11", 96.0),
 ];
 

@@ -120,6 +120,10 @@ min_width_px = 64.0
 min_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1174): macos-monterey's value
 icon_text_gap_px = 4.0
+# no macOS 26 source (platform-facts.md:1179): macos-monterey's value; the inherited
+# defaults.background_color (inheritance-rules.toml:159, a wrong safety net) is the window's
+# opaque colour, which would hide the translucent button on hover
+hover_background = "#e0e0e5"
 
 [light.button.border]
 # platform-facts.md:1171-1172 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
@@ -279,6 +283,12 @@ max_height_px = 600.0
 button_gap_px = 12.0
 icon_size_px = 64.0
 
+[light.dialog.title_font]
+# no macOS 26 source (platform-facts.md:1496-1497): macos-monterey's values, the emphasized system
+# font, 13pt Bold; the inherited defaults.font would be the regular weight
+size_pt = 13.0
+weight = 700
+
 [light.link]
 # no macOS 26 source (platform-facts.md:1624-1626): macos-monterey's values
 underline_enabled = true
@@ -286,7 +296,7 @@ background_color = "#00000000"
 hover_background = "#00000000"
 
 [light.spinner]
-# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1528, :768)
+# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
 diameter_px = 32.0
 min_diameter_px = 10.0
 # no macOS 26 source (platform-facts.md:1535, (none)): macos-monterey's value
@@ -325,6 +335,12 @@ color = "#000000d8"
 segment_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1570): macos-monterey's value
 separator_width_px = 1.0
+# no macOS 26 source (platform-facts.md:1567): macos-monterey's value, selectedContentBackgroundColor,
+# whose value macOS 26 reports unchanged (probe :324); the probe's render draws the selected
+# segment black at alpha 50/255 (measured, renders/aqua/segmented_control-regular@2x.png, in a
+# window that is not key), not this colour, so the segment's fill on 26 is unconfirmed; the
+# inherited defaults.accent_color would be another colour
+active_background = "#0064e1"
 
 [light.segmented_control.border]
 # platform-facts.md:1575 (§2.25): no shadow (measured)
@@ -469,6 +485,10 @@ min_width_px = 64.0
 min_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1174): macos-monterey's value
 icon_text_gap_px = 4.0
+# no macOS 26 source (platform-facts.md:1179): macos-monterey's value; the inherited
+# defaults.background_color (inheritance-rules.toml:159, a wrong safety net) is the window's
+# opaque colour, which would hide the translucent button on hover
+hover_background = "#444446"
 
 [dark.button.border]
 # platform-facts.md:1171-1172 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
@@ -632,6 +652,12 @@ max_height_px = 600.0
 button_gap_px = 12.0
 icon_size_px = 64.0
 
+[dark.dialog.title_font]
+# no macOS 26 source (platform-facts.md:1496-1497): macos-monterey's values, the emphasized system
+# font, 13pt Bold; the inherited defaults.font would be the regular weight
+size_pt = 13.0
+weight = 700
+
 [dark.link]
 # no macOS 26 source (platform-facts.md:1624-1626): macos-monterey's values
 underline_enabled = true
@@ -639,7 +665,7 @@ background_color = "#00000000"
 hover_background = "#00000000"
 
 [dark.spinner]
-# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1528, :768)
+# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
 diameter_px = 32.0
 min_diameter_px = 10.0
 # no macOS 26 source (platform-facts.md:1535, (none)): macos-monterey's value
@@ -678,6 +704,12 @@ color = "#ffffffd8"
 segment_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1570): macos-monterey's value
 separator_width_px = 1.0
+# no macOS 26 source (platform-facts.md:1567): macos-monterey's value, selectedContentBackgroundColor,
+# whose value macOS 26 reports unchanged (probe :398); the probe's render draws the selected
+# segment white at alpha 50/255 (measured, renders/darkAqua/segmented_control-regular@2x.png, in a
+# window that is not key), not this colour, so the segment's fill on 26 is unconfirmed; the
+# inherited defaults.accent_color would be another colour
+active_background = "#0059d1"
 
 [dark.segmented_control.border]
 # platform-facts.md:1575 (§2.25): no shadow (measured)

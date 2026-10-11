@@ -1490,6 +1490,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         "kde-breeze",
         "adwaita",
         "macos-monterey",
+        "macos-tahoe",
         "ios-13",
         "windows-11",
     ] {
@@ -3113,10 +3114,11 @@ fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
 
 /// The presets the Sidebar samples' icons are checked under: every native
 /// preset and one colour-scheme preset.
-const SIDEBAR_ICON_PRESETS: [&str; 5] = [
+const SIDEBAR_ICON_PRESETS: [&str; 6] = [
     "kde-breeze",
     "adwaita",
     "macos-monterey",
+    "macos-tahoe",
     "windows-11",
     "nord",
 ];
