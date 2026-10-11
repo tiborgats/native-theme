@@ -626,7 +626,7 @@ mod tests {
         assert!(!super::uri(&rgba(2)).contains('.'));
     }
 
-    /// T9, per-scheme icon theme (`native-theme/src/presets/kde-breeze.toml:9`, `:384`).
+    /// T9, per-scheme icon theme (`native-theme/src/presets/kde-breeze.toml:16`, `:410`).
     #[test]
     fn the_icon_theme_is_per_scheme() {
         for is_dark in [false, true] {

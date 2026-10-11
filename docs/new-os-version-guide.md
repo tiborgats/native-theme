@@ -31,10 +31,10 @@ version's preset; see its Conventions). Both are written only from a
 version map and checks with sources for that platform, never guessed; until
 then the header names the generation and states no range. The style presets
 keep their style names, and their headers name the style version they pin
-(Breeze, libadwaita) only once the preset has been checked against it (M2e
-of `docs/todo_code-review-plan.md`; no header names one yet): the KDE and
-GNOME readers read the installed style, so the style, not the desktop's
-version, is the generation.
+(Breeze v6.7.5 and libadwaita 1.10.0, checked in M2e of
+`docs/todo_code-review-plan.md` on 2026-10-11): the KDE and GNOME readers
+read the installed style, so the style, not the desktop's version, is the
+generation.
 
 ---
 

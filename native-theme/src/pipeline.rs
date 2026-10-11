@@ -1477,12 +1477,12 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Light),
                 Some("breeze"),
-                "kde-breeze.toml:9 names breeze for light (active mode {mode:?})"
+                "kde-breeze.toml:16 names breeze for light (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Dark),
                 Some("breeze-dark"),
-                "kde-breeze.toml:317 names breeze-dark for dark (active mode {mode:?})"
+                "kde-breeze.toml:410 names breeze-dark for dark (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(mode),

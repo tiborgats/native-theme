@@ -25,7 +25,7 @@ DELAY=3
 
 # Linux-native presets with matching icon sets (3 themes × dark+light)
 # Format: theme:variant:icon-set. kde-breeze names its freedesktop theme per
-# variant, breeze / breeze-dark (kde-breeze.toml:9, :317); `--icon-set <theme>`
+# variant, breeze / breeze-dark (kde-breeze.toml:16, :410); `--icon-set <theme>`
 # picks that installed theme, while `freedesktop` would mean the desktop's own.
 THEMES=(
     "kde-breeze:dark:breeze-dark"

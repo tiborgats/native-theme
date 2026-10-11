@@ -2328,7 +2328,7 @@ fn t8a_named_text_styles_survive_every_seam() {
 
 /// T8 (b) — §14 item 2b: the handle a `Window` paints is the outer `Ui`'s, so a
 /// `Role::Scrollbar` scope as the first statement inside the closure does not reach it. On
-/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:178`),
+/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:204`),
 /// so egui paints the bar at full opacity (`egui/src/containers/scroll_area.rs:1483-1485`,
 /// `:1495-1497`), and only the corner radius can tell the base style from the cell (§6.8).
 #[test]

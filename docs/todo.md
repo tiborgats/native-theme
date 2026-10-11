@@ -498,6 +498,31 @@ the file was pruned on 2026-10-11, not reordered.
       `#454545` with no source ❓: WinUI 3 has no draggable divider
       (`docs/platform-facts.md:1419`); it is for M3 with the other soft
       options that have no facts row.
+      *M2e Step 7 (2026-10-11):* adwaita's `defaults.border.color` is now the
+      computed `#dcdcde` / `#434347`, and its popover outline libadwaita
+      1.10.0's `RGB(0 0 0 / 5%)`. Still without a source, each marked ❓ in
+      `adwaita.toml`'s light defaults: `text_color` `#2e3436` (libadwaita
+      1.10.0 `window_fg_color` is `RGB(0 0 6 / 80%)`, `#323237` over
+      `#fafafb`, `_colors.scss:32-33`), `warning_text_color` `#2e3436`
+      (`warning_fg_color` `RGB(0 0 0 / 80%)`, `#2e2102` over `#e5a50a`,
+      `:19-20`), `muted_color` `#929292` (`.dimmed`, and the deprecated
+      `.dim-label`, is the text at `--dim-opacity` 55 %, `#8c8c8f` over the
+      window, `_labels.scss:14`,
+      `_colors.scss:319`), `link_color` `#1b6acb` (`$link_color` is
+      `--accent-color`, `oklab(from #3584e4 min(l, 0.5) a b)`, computed
+      `#0461be`, `_colors.scss:146`, `:168-170`, `:265`), `focus_ring_color`
+      `#3584e4` (`$focus_border_color`, that accent colour at 50 %, `:307`)
+      and `shadow_color` `#00000018` (libadwaita has no one shadow colour;
+      `shade_color` is `RGB(0 0 6 / 7%)`, `:79`). The GNOME colour cells of
+      `docs/platform-facts.md` §2.1.3-§2.1.5 state no value: give them their
+      libadwaita 1.10.0 values first, then the preset. adwaita's dark
+      defaults are unchecked, and its explicit copies of the old line colour
+      (`#d5d5d5` / `#4a4a4e`: separator, splitter, checkbox) stay until their
+      rows are checked; so do kde-breeze light's widget-level `#fcfcfc`
+      on-selection colours (`menu.hover_text_color`,
+      `segmented_control.active_text_color`: `[Colors:Selection]
+      ForegroundNormal` by platform-facts §2.6 and §2.25, `#ffffff` in
+      Breeze 6.7).
 
 ### Disabled: presets that state both mechanisms
 

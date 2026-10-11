@@ -1,5 +1,12 @@
 # GNOME Adwaita theme - sourced from libadwaita CSS variables
 # Alpha/opacity colors pre-computed to solid hex values
+# Style: libadwaita 1.10.0 (c9ab1186, GNOME 51), with GTK 4.24.1 and
+# gsettings-desktop-schemas 51.0.
+# Covers: libadwaita 1.10. libadwaita 1.9 differs at least in the popover
+# outline, a 1px CSS border of RGB(0 0 0 / 14%) (_popovers.scss at 1.9.3).
+# Verified on: libadwaita 1.10.0, GTK 4.24.1 and gsettings-desktop-schemas 51.0,
+# 2026-10-11 (code review M2e), for every value that cites docs/platform-facts.md;
+# an uncited value is unchecked, and a value marked ❓ has no source.
 name = "Adwaita"
 icon_set = "freedesktop"
 icon_theme = "Adwaita"
@@ -7,28 +14,47 @@ icon_theme = "Adwaita"
 # === Light variant ===
 
 [light.defaults]
+# platform-facts.md:1048 (§2.1.3): the portal accent; libadwaita's default, blue #3584e4 (libadwaita 1.10.0 adw-accent-color.c:16, :53-54)
 accent_color = "#3584e4"
+# platform-facts.md:1046 (§2.1.3): window_bg_color #fafafb (libadwaita 1.10.0 _colors.scss:32)
 background_color = "#fafafb"
+# ❓ platform-facts.md:1047 (§2.1.3): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 text_color = "#2e3436"
+# platform-facts.md:1050 (§2.1.3): view_bg_color #ffffff (libadwaita 1.10.0 _colors.scss:36)
 surface_color = "#ffffff"
+# ❓ platform-facts.md:1052 (§2.1.3): no source for #929292 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 muted_color = "#929292"
+# ❓ platform-facts.md:1053 (§2.1.3): no source for #00000018 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 shadow_color = "#00000018"
 
+# platform-facts.md:1080 (§2.1.4): destructive_bg_color @red_3 #e01b24 (libadwaita 1.10.0 _colors.scss:12, _palette.scss:23)
 danger_color = "#e01b24"
+# platform-facts.md:1081 (§2.1.4): destructive_fg_color white (libadwaita 1.10.0 _colors.scss:13)
 danger_text_color = "#ffffff"
+# platform-facts.md:1082 (§2.1.4): warning_bg_color @yellow_5 #e5a50a (libadwaita 1.10.0 _colors.scss:19, _palette.scss:15)
 warning_color = "#e5a50a"
+# ❓ platform-facts.md:1083 (§2.1.4): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 warning_text_color = "#2e3436"
+# platform-facts.md:1084 (§2.1.4): success_bg_color @green_4 #2ec27e (libadwaita 1.10.0 _colors.scss:16, _palette.scss:9)
 success_color = "#2ec27e"
+# platform-facts.md:1085 (§2.1.4): success_fg_color white (libadwaita 1.10.0 _colors.scss:17)
 success_text_color = "#ffffff"
+# platform-facts.md:1086 (§2.1.4): libadwaita 1.10.0 states no info colour; the default accent #3584e4 (adw-accent-color.c:53-54)
 info_color = "#3584e4"
+# platform-facts.md:1087 (§2.1.4): accent_fg_color white, the text on the accent (libadwaita 1.10.0 adw-style-manager.c:161)
 info_text_color = "#ffffff"
 
+# platform-facts.md:1055 (§2.1.3): theme_selected_bg_color = accent_bg_color, #3584e4 (libadwaita 1.10.0 _compat-colors.scss:9)
 selection_background = "#3584e4"
+# platform-facts.md:1056 (§2.1.3): theme_selected_fg_color = accent_fg_color, white (libadwaita 1.10.0 _compat-colors.scss:10, adw-style-manager.c:161)
 selection_text_color = "#ffffff"
+# ❓ platform-facts.md:1054 (§2.1.3): no source for #1b6acb at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 link_color = "#1b6acb"
+# ❓ platform-facts.md:1104 (§2.1.5): no source for #3584e4 as the ring at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 focus_ring_color = "#3584e4"
 # platform-facts.md:1060 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
 disabled_text_color = "#2e3436"
+# platform-facts.md:1049 (§2.1.3): accent_fg_color white (libadwaita 1.10.0 adw-style-manager.c:161)
 accent_text_color = "#ffffff"
 
 # platform-facts.md:1115 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
@@ -39,7 +65,8 @@ focus_ring_offset_px = -2.0
 
 
 [light.defaults.border]
-color = "#d5d5d5"
+# platform-facts.md:1051 (§2.1.3): $border_color, window fg RGB(0 0 6 / 80%) at --border-opacity 15% over #fafafb (libadwaita 1.10.0 _colors.scss:32-33, :263, :318)
+color = "#dcdcde"
 corner_radius_px = 9.0
 corner_radius_lg_px = 15.0
 line_width_px = 1.0
@@ -258,6 +285,10 @@ color = "#2e3436"
 
 
 [light.popover.border]
+# platform-facts.md:1408 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+color = "#0000000d"
+# platform-facts.md:1409 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+line_width_px = 1.0
 # platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0
@@ -400,7 +431,8 @@ focus_ring_offset_px = -2.0
 
 
 [dark.defaults.border]
-color = "#4a4a4e"
+# platform-facts.md:1051 (§2.1.3): $border_color, white at --border-opacity 15% over #222226 (libadwaita 1.10.0 _colors.scss:95-96, :263, :318)
+color = "#434347"
 corner_radius_px = 9.0
 corner_radius_lg_px = 15.0
 line_width_px = 1.0
@@ -619,6 +651,10 @@ color = "#ffffff"
 
 
 [dark.popover.border]
+# platform-facts.md:1408 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+color = "#0000000d"
+# platform-facts.md:1409 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+line_width_px = 1.0
 # platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0

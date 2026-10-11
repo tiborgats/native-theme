@@ -332,7 +332,7 @@ impl ThemeAtlas {
     /// The freedesktop icon-theme name the theme names for one colour scheme, for
     /// [`icons::IconKey::icon_theme`](crate::icons::IconKey::icon_theme); pass `ctx.theme()` for the scheme egui is drawing.
     /// Per scheme because the variants differ — `kde-breeze` names `breeze` for light and
-    /// `breeze-dark` for dark (`native-theme/src/presets/kde-breeze.toml:9`, `:384`) — and
+    /// `breeze-dark` for dark (`native-theme/src/presets/kde-breeze.toml:16`, `:410`) — and
     /// egui draws either style whenever the scheme changes, so one name would be wrong for the
     /// other. On the [`from_preset`](crate::from_preset) path it is each variant's `Resolved::icon_theme`
     /// (`native-theme/src/model/resolved.rs:268`, from `Theme::resolve` of that mode); on the
