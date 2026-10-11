@@ -115,6 +115,21 @@ Measured cost per milestone, and the estimate for the rest.
 
 ## M1 — Design review
 
+### M2 decisions (2026-10-11)
+
+- **Step 3, M2a and M2b (maintainer):** the OS probe is built now on `m2-research` and run in CI before the `macos-14`
+  runner image becomes unsupported (2026-11-02), on `macos-14`, `macos-15`, `macos-26`, `windows-2022` and `windows-2025`;
+  the CI dispatch is the maintainer's. It needs `unsafe` FFI (AppKit control sizes, `GetSystemMetricsForDpi`,
+  `GetSysColor`, `SystemParametersInfoW` are `unsafe` in objc2-app-kit 0.3 and windows 0.62), so per the strict rule it
+  waits for the maintainer's answer on that before any code is written.
+- **Step 3, M2d (maintainer):** the Compose reference app is skipped: Step 2 found a token or a Compose constant for every
+  Material cell. Revisited only if Step 13 meets a detail with neither.
+- **M2d release pin (settled by logic; the maintainer may veto):** D6 asks for a *stable* release and the *same* release
+  for both presets. Only Compose Material 3 1.5.0 can satisfy both, since 1.4.0 keeps Expressive `internal`. So both
+  presets pin 1.5.0 stable. Step 13 waits for that release (Steps 13–15 wait for M1's stop point A anyway); the Step 2
+  research done at 1.5.0-beta01 (`19991f2c`) is re-diffed against the stable tag then. If 1.5.0 is not stable when
+  Step 13 is due, the maintainer chooses between waiting and pinning the latest 1.5.0 pre-release.
+
 ## M2a — macOS
 
 **Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 not started. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
