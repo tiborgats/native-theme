@@ -55,7 +55,8 @@ been checked against the platform's sources, and until then names the
 generation alone. A new generation is a new preset under its own key; a new
 OS version of the same generation updates the existing one. The style
 presets keep their style names, `kde-breeze` and `adwaita`, and their
-headers name the style version they pin, since the KDE and GNOME readers
+headers will name the style version they pin once the preset has been
+checked against it (neither does yet), since the KDE and GNOME readers
 read the installed style, and the style, not the desktop's version, is the
 generation. `ios` is not named by its version yet: it becomes `ios-<N>` once
 its values are checked against iOS `<N>`, and keeps its key if they match no
