@@ -3,9 +3,7 @@
 //! Provides 16 user-facing built-in presets embedded at compile time:
 //! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material-3,
 //! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
-//! Solarized, Tokyo Night, One Dark), plus 4 internal live presets
-//! (no colours or font families: geometry, metrics and sizes, used by the
-//! OS-first pipeline) and functions for
+//! Solarized, Tokyo Night, One Dark), and functions for
 //! loading themes from TOML strings and files.
 
 use std::borrow::Cow;
@@ -17,7 +15,7 @@ use crate::{Error, Result, Theme};
 
 /// All preset entries (name + embedded TOML source), parsed once into a HashMap.
 ///
-/// To add a new preset, add it here and (if user-facing) to [`PRESET_NAMES`].
+/// To add a new preset, add it here and to [`PRESET_NAMES`].
 const PRESET_ENTRIES: &[(&str, &str)] = &[
     // Platform presets
     ("kde-breeze", include_str!("presets/kde-breeze.toml")),
@@ -49,23 +47,9 @@ const PRESET_ENTRIES: &[(&str, &str)] = &[
     ("solarized", include_str!("presets/solarized.toml")),
     ("tokyo-night", include_str!("presets/tokyo-night.toml")),
     ("one-dark", include_str!("presets/one-dark.toml")),
-    // Internal live presets (geometry-only, not user-selectable)
-    (
-        "kde-breeze-live",
-        include_str!("presets/kde-breeze-live.toml"),
-    ),
-    ("adwaita-live", include_str!("presets/adwaita-live.toml")),
-    (
-        "macos-sonoma-live",
-        include_str!("presets/macos-sonoma-live.toml"),
-    ),
-    (
-        "windows-11-live",
-        include_str!("presets/windows-11-live.toml"),
-    ),
 ];
 
-/// All available user-facing preset names (excludes internal live presets).
+/// All available user-facing preset names.
 const PRESET_NAMES: &[&str] = &[
     "kde-breeze",
     "adwaita",
@@ -93,13 +77,9 @@ const PRESET_NAMES: &[&str] = &[
 /// per-load `String` allocation for bundled preset names.
 const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("kde-breeze", "KDE Breeze"),
-    ("kde-breeze-live", "KDE Breeze"),
     ("adwaita", "Adwaita"),
-    ("adwaita-live", "Adwaita"),
     ("windows-11", "Windows 11"),
-    ("windows-11-live", "Windows 11"),
     ("macos-sonoma", "macOS Sonoma"),
-    ("macos-sonoma-live", "macOS Sonoma"),
     ("material-3", "Material"),
     ("ios", "iOS"),
     ("catppuccin-latte", "Catppuccin Latte"),
@@ -784,87 +764,6 @@ accent_color = "#00ff00"
     // NOTE: all_presets_round_trip_exact is covered by
     // tests/preset_loading.rs::all_presets_round_trip_toml.
 
-    // === Live preset tests ===
-
-    #[test]
-    fn live_presets_loadable() {
-        let live_names = &[
-            "kde-breeze-live",
-            "adwaita-live",
-            "macos-sonoma-live",
-            "windows-11-live",
-        ];
-        for name in live_names {
-            let theme = preset(name)
-                .unwrap_or_else(|e| panic!("live preset '{name}' failed to parse: {e}"));
-
-            // Both variants must exist
-            assert!(
-                theme.light.is_some(),
-                "live preset '{name}' missing light variant"
-            );
-            assert!(
-                theme.dark.is_some(),
-                "live preset '{name}' missing dark variant"
-            );
-
-            let light = theme.light.as_ref().unwrap();
-            let dark = theme.dark.as_ref().unwrap();
-
-            // No colors
-            assert!(
-                light.defaults.accent_color.is_none(),
-                "live preset '{name}' light should have no accent"
-            );
-            assert!(
-                light.defaults.background_color.is_none(),
-                "live preset '{name}' light should have no background"
-            );
-            assert!(
-                light.defaults.text_color.is_none(),
-                "live preset '{name}' light should have no foreground"
-            );
-            assert!(
-                dark.defaults.accent_color.is_none(),
-                "live preset '{name}' dark should have no accent"
-            );
-            assert!(
-                dark.defaults.background_color.is_none(),
-                "live preset '{name}' dark should have no background"
-            );
-            assert!(
-                dark.defaults.text_color.is_none(),
-                "live preset '{name}' dark should have no foreground"
-            );
-
-            // No fonts
-            assert!(
-                light.defaults.font.family.is_none(),
-                "live preset '{name}' light should have no font family"
-            );
-            assert!(
-                light.defaults.font.size.is_none(),
-                "live preset '{name}' light should have no font size"
-            );
-            assert!(
-                light.defaults.font.weight.is_none(),
-                "live preset '{name}' light should have no font weight"
-            );
-            assert!(
-                dark.defaults.font.family.is_none(),
-                "live preset '{name}' dark should have no font family"
-            );
-            assert!(
-                dark.defaults.font.size.is_none(),
-                "live preset '{name}' dark should have no font size"
-            );
-            assert!(
-                dark.defaults.font.weight.is_none(),
-                "live preset '{name}' dark should have no font weight"
-            );
-        }
-    }
-
     #[test]
     fn list_presets_for_platform_returns_subset() {
         let all = list_presets();
@@ -901,33 +800,5 @@ accent_color = "#00ff00"
             filtered.iter().any(|info| info.key == "material-3"),
             "material-3 should always be in filtered list"
         );
-    }
-
-    #[test]
-    fn live_presets_fail_validate_standalone() {
-        let live_names = &[
-            "kde-breeze-live",
-            "adwaita-live",
-            "macos-sonoma-live",
-            "windows-11-live",
-        ];
-        for name in live_names {
-            let theme = preset(name).unwrap();
-            let mut light = theme.light.clone().unwrap();
-            light.resolve();
-            let result = light.validate();
-            assert!(
-                result.is_err(),
-                "live preset '{name}' light should fail validation standalone (missing colors/fonts)"
-            );
-
-            let mut dark = theme.dark.clone().unwrap();
-            dark.resolve();
-            let result = dark.validate();
-            assert!(
-                result.is_err(),
-                "live preset '{name}' dark should fail validation standalone (missing colors/fonts)"
-            );
-        }
     }
 }

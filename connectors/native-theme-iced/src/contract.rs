@@ -2,9 +2,8 @@
 //! and every field of a `styles::*` output, the native value each must equal,
 //! and the contrast report of spec section 7.
 //!
-//! Test-only. The rows are asserted over the sixteen presets in both modes --
-//! the four `*-live.toml` files are geometry-only merge bases and are not in
-//! `Theme::list_presets()`. The contrast report prints both ratios and asserts
+//! Test-only. The rows are asserted over the sixteen presets of
+//! `Theme::list_presets()` in both modes. The contrast report prints both ratios and asserts
 //! nothing: iced, not the connector, chooses the background a text input is
 //! painted on. The assertion lives over `styles::*`, where we control both
 //! colors.

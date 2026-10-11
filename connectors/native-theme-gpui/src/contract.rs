@@ -2,9 +2,8 @@
 //! writes, the native value it must equal or the derivation that produced it,
 //! and the contrast invariant of spec section 7.
 //!
-//! Test-only. The rows are asserted over the sixteen presets in both modes --
-//! the four `*-live.toml` files are geometry-only merge bases and are not in
-//! `Theme::list_presets()`. A row that must differ on some preset carries the
+//! Test-only. The rows are asserted over the sixteen presets of
+//! `Theme::list_presets()` in both modes. A row that must differ on some preset carries the
 //! reason in `exceptions`, and an exception that no longer describes a real
 //! difference fails just as loudly as a broken row.
 //!

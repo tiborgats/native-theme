@@ -30,17 +30,16 @@
 //! Every row is checked in both variants against two resolutions:
 //!
 //! - **static**: the platform's full preset;
-//! - **live**: the full preset, the `-live` preset merged over it, then the
-//!   reader's size constants merged over that, in `pipeline.rs`'s order.
+//! - **live**: the full preset with the reader's size constants merged over
+//!   it, in `pipeline.rs`'s order.
 //!
 //! The KDE and Windows readers return one variant (`ReaderOutput::Single`),
 //! so the real pipeline applies their constants to the active variant only
 //! and takes the inactive variant from the full preset, which the static
 //! resolution covers. The live resolution here applies the constants to each
 //! variant in turn, as the pipeline does when that variant is the active one.
-//! The macOS reader fills both variants. GNOME's reader states no sizes.
-//! Material has no reader and no `-live` preset, so only its static
-//! resolution is checked.
+//! The macOS reader fills both variants. GNOME's reader states no sizes and
+//! Material has no reader, so only their static resolution is checked.
 //!
 //! This lives inside the crate because the reader constants
 //! (`kde_metrics::populate_widget_sizing`, `windows::winui3_widget_sizing`,
@@ -80,22 +79,10 @@ impl Platform {
         }
     }
 
-    /// The `-live` preset the platform's reader merges over; `None` for a
-    /// platform no reader serves.
-    fn live_preset(self) -> Option<&'static str> {
-        match self {
-            Platform::Kde => Some("kde-breeze-live"),
-            Platform::Gnome => Some("adwaita-live"),
-            Platform::Macos => Some("macos-sonoma-live"),
-            Platform::Windows => Some("windows-11-live"),
-            Platform::Material => None,
-        }
-    }
-
-    /// The resolutions the gate checks: static, and live where the platform
-    /// has a `-live` preset.
+    /// The resolutions the gate checks: static, and live where the
+    /// platform's reader states sizes.
     fn resolutions(self) -> &'static [bool] {
-        match self.live_preset() {
+        match self.reader_constants() {
             Some(_) => &[false, true],
             None => &[false],
         }
@@ -183,7 +170,7 @@ use Platform::{Gnome, Kde, Macos, Material, Windows};
 
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
-    // --- KDE (kde-breeze, kde-breeze-live, kde_metrics) ---
+    // --- KDE (kde-breeze, kde_metrics) ---
     row(Kde, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Kde, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
     row(Kde, "input", axes(6.0, 7.0), &[1196, 1197], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
@@ -215,7 +202,7 @@ const ROWS: &[Row] = &[
     row(Kde, "card", NONE, &[1592, 1593], "(none)"),
     row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined")
         .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(20.0), 1615)]),
-    // --- GNOME (adwaita, adwaita-live; the reader states no sizes) ---
+    // --- GNOME (adwaita; the reader states no sizes) ---
     row(Gnome, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Gnome, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
     row(Gnome, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
@@ -247,7 +234,7 @@ const ROWS: &[Row] = &[
     row(Gnome, "card", NONE, &[1592, 1593], "(none), app-defined"),
     row(Gnome, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
         .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
-    // --- macOS (macos-sonoma, macos-sonoma-live, macos_widget_defaults) ---
+    // --- macOS (macos-sonoma, macos_widget_defaults) ---
     row(Macos, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
     row(Macos, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
@@ -279,7 +266,7 @@ const ROWS: &[Row] = &[
     row(Macos, "card", NONE, &[1592, 1593], "(none)"),
     row(Macos, "expander", NONE, &[1607, 1608], "(none), app-defined")
         .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
-    // --- Windows (windows-11, windows-11-live, winui3_widget_sizing) ---
+    // --- Windows (windows-11, winui3_widget_sizing) ---
     row(Windows, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Windows, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
     row(Windows, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),
@@ -311,7 +298,7 @@ const ROWS: &[Row] = &[
     row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
     row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0")
         .with(&[("arrow_gap", Some(30.0), 1614), ("content_indent", Some(16.0), 1615)]),
-    // --- Material (material-3; no reader, no -live preset) ---
+    // --- Material (material-3; no reader) ---
     row(Material, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
     row(Material, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
     row(Material, "input", all(15.0), &[1196, 1197], "outlined field 16 from the edge, less the 1 outline; the same down"),
@@ -501,15 +488,10 @@ fn static_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, Stri
     full.into_variant(mode).map_err(|e| e.to_string())
 }
 
-/// The live resolution's input, unresolved: the full preset, the `-live`
-/// preset merged over it, then the reader's size constants.
+/// The live resolution's input, unresolved: the full preset with the
+/// reader's size constants merged over it.
 fn live_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
-    let live = platform
-        .live_preset()
-        .ok_or_else(|| format!("{} has no -live preset", platform.preset()))?;
-    let mut merged = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
-    merged.merge(&Theme::preset(live).map_err(|e| e.to_string())?);
-    let mut variant = merged.into_variant(mode).map_err(|e| e.to_string())?;
+    let mut variant = static_variant(platform, mode)?;
     if let Some(reader) = platform.reader_constants() {
         variant.merge(&reader);
     }
@@ -526,11 +508,7 @@ fn gate_variant(platform: Platform, mode: ColorMode, live: bool) -> Result<Theme
 
 fn source(platform: Platform, live: bool) -> String {
     if live {
-        format!(
-            "{} + {} + reader constants",
-            platform.preset(),
-            platform.live_preset().unwrap_or("no -live preset")
-        )
+        format!("{} + reader constants", platform.preset())
     } else {
         platform.preset().to_string()
     }
@@ -665,55 +643,6 @@ fn every_citation_names_its_platform_facts_row() {
             );
         }
     }
-}
-
-/// The live resolution merges the `-live` preset under the reader constants,
-/// so a `-live` value a reader overrides never reaches the gate above. Each
-/// full preset and its `-live` twin therefore state the same sizes (the
-/// padding sides and the further fields), in both variants.
-#[test]
-fn full_and_live_presets_state_the_same_sizes() {
-    let mut failures = Vec::new();
-    for platform in Platform::ALL {
-        let Some(live_name) = platform.live_preset() else {
-            continue;
-        };
-        for mode in [ColorMode::Light, ColorMode::Dark] {
-            let variant = |name: &str| {
-                Theme::preset(name)
-                    .and_then(|t| t.into_variant(mode))
-                    .map_err(|e| format!("{name} {mode:?}: {e}"))
-            };
-            let (full, live) = match (variant(platform.preset()), variant(live_name)) {
-                (Ok(f), Ok(l)) => (f, l),
-                (f, l) => {
-                    failures.extend(f.err().into_iter().chain(l.err()));
-                    continue;
-                }
-            };
-            for widget in WIDGETS {
-                let (Some(f), Some(l)) = (stated_sizes(&full, widget), stated_sizes(&live, widget))
-                else {
-                    failures.push(format!("unknown widget `{widget}`"));
-                    continue;
-                };
-                for ((key, f), (_, l)) in f.iter().zip(&l) {
-                    if f != l {
-                        failures.push(format!(
-                            "{widget}.{key} {mode:?}: {} states {f:?}, {live_name} states {l:?}",
-                            platform.preset(),
-                        ));
-                    }
-                }
-            }
-        }
-    }
-    assert!(
-        failures.is_empty(),
-        "{} full/live disagreements:\n{}",
-        failures.len(),
-        failures.join("\n")
-    );
 }
 
 /// Presets that platform-facts does not cover: the colour schemes, and the
@@ -1172,22 +1101,21 @@ fn native_presets_state_no_text_scale_line_height() {
         if platform == Material {
             continue;
         }
-        for name in std::iter::once(platform.preset()).chain(platform.live_preset()) {
-            for mode in [ColorMode::Light, ColorMode::Dark] {
-                let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        failures.push(format!("{name} {mode:?}: {e}"));
-                        continue;
-                    }
-                };
-                for role in ["caption", "section_heading", "dialog_title", "display"] {
-                    if let Some(lh) = stated_entry(&variant, role).and_then(|e| e.line_height) {
-                        failures.push(format!(
-                            "{name} {mode:?}: states text_scale.{role}.line_height = {lh:?}, \
-                             with no source"
-                        ));
-                    }
+        let name = platform.preset();
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) => v,
+                Err(e) => {
+                    failures.push(format!("{name} {mode:?}: {e}"));
+                    continue;
+                }
+            };
+            for role in ["caption", "section_heading", "dialog_title", "display"] {
+                if let Some(lh) = stated_entry(&variant, role).and_then(|e| e.line_height) {
+                    failures.push(format!(
+                        "{name} {mode:?}: states text_scale.{role}.line_height = {lh:?}, \
+                         with no source"
+                    ));
                 }
             }
         }

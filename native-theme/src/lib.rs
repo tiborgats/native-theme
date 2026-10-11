@@ -405,7 +405,7 @@ pub(crate) struct OverlaySource {
     pub(crate) icon_set: Option<IconSet>,
     /// Shared layout from reader.
     pub(crate) layout: LayoutTheme,
-    /// The live preset name (e.g. "kde-breeze-live").
+    /// The platform preset name (e.g. "kde-breeze").
     pub(crate) preset_name: String,
     /// Resolution-time inputs captured at detection time. Replaces the
     /// old `font_dpi: Option<f32>` field; the context bundles
@@ -459,8 +459,6 @@ pub struct SystemTheme {
     pub(crate) overlay_source: OverlaySource,
     /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-sonoma").
     pub preset: String,
-    /// The live preset name used internally (e.g., "kde-breeze-live").
-    pub(crate) live_preset: String,
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`):
@@ -556,12 +554,7 @@ impl SystemTheme {
     pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
         // Reconstruct pre-resolve variants from overlay_source
         let src = &self.overlay_source;
-        let live_preset = Theme::preset(&src.preset_name)?;
-        let full_preset_name = src
-            .preset_name
-            .strip_suffix("-live")
-            .unwrap_or(&src.preset_name);
-        let full_preset = Theme::preset(full_preset_name)?;
+        let full_preset = Theme::preset(&src.preset_name)?;
 
         // Reconstruct a Theme from the type-safe ReaderOutput for merge
         let reader_as_theme = src
@@ -569,7 +562,6 @@ impl SystemTheme {
             .to_theme(&src.name, src.icon_set, &src.layout);
 
         let mut merged = full_preset.clone();
-        merged.merge(&live_preset);
         merged.merge(&reader_as_theme);
 
         // Shared across variants; read before the variants are moved out of `merged`.
@@ -615,7 +607,6 @@ impl SystemTheme {
             light: resolved_light,
             dark: resolved_dark,
             overlay_source: self.overlay_source.clone(),
-            live_preset: self.live_preset.clone(),
             preset: self.preset.clone(),
             icon_set: self.icon_set,
             icon_theme: self.icon_theme.clone(),
@@ -747,7 +738,6 @@ mod system_theme_tests {
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
-            live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
@@ -790,7 +780,6 @@ mod system_theme_tests {
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
-            live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
@@ -833,7 +822,6 @@ mod system_theme_tests {
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
             },
-            live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
@@ -874,8 +862,6 @@ mod system_theme_tests {
     fn test_platform_preset_name_kde() {
         let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("KDE"));
         assert_eq!(preset.name, "kde-breeze");
-        assert!(preset.is_live);
-        assert_eq!(preset.live_name(), "kde-breeze-live");
     }
 
     #[test]
@@ -883,8 +869,6 @@ mod system_theme_tests {
     fn test_platform_preset_name_gnome() {
         let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("GNOME"));
         assert_eq!(preset.name, "adwaita");
-        assert!(preset.is_live);
-        assert_eq!(preset.live_name(), "adwaita-live");
     }
 
     /// §11.2: `from_system()` is an extraction of the reader path, so it must

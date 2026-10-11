@@ -130,8 +130,6 @@ GTK4 source, freedesktop portal specification
   portal's and gsettings' values (accent, color scheme, contrast, fonts,
   accessibility) onto the bundled `adwaita` preset in `build_theme()` and
   `build_gnome_variant_pure()`; it holds no color or size constants
-- `native-theme/src/presets/adwaita-live.toml` -- the live pipeline's merge base:
-  the Adwaita geometry and spacing
 - `native-theme/src/presets/adwaita.toml` -- bundled preset data
 
 **What to look for:**
@@ -147,9 +145,8 @@ GTK4 source, freedesktop portal specification
 
 1. Clone or pull latest libadwaita from <https://gitlab.gnome.org/GNOME/libadwaita>.
 2. Compare CSS variable defaults with the colors in `adwaita.toml`.
-3. Compare widget sizing values with those in `adwaita.toml` and
-   `adwaita-live.toml`.
-4. Update any changed values in both files.
+3. Compare widget sizing values with those in `adwaita.toml`.
+4. Update any changed values.
 5. If the portal or gsettings keys changed, update `gnome/mod.rs`.
 6. Run the test suite: `cargo test -p native-theme --features portal`.
 
@@ -218,8 +215,7 @@ COSMIC is used as the running example below because it is the closest real case:
    add a `populate_widget_sizing(&mut ThemeMode)` function next to the reader.
    See `native-theme/src/kde/metrics.rs` for the pattern.
 4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default
-   light and dark variants. If the reader emits a live preset, add
-   `cosmic-live.toml` alongside it.
+   light and dark variants.
 5. **Register preset:** Add the entry to `PRESET_ENTRIES` in
    `native-theme/src/presets.rs`, and to `PRESET_NAMES` if it should be
    user-facing. `Theme::preset()` and `Theme::list_presets()` in
@@ -228,7 +224,7 @@ COSMIC is used as the running example below because it is the closest real case:
 6. **Update dispatch:** Add a variant to `LinuxDesktop` in
    `native-theme/src/detect.rs` if the desktop is not recognized yet, then give
    it an arm in `select_reader()` in `native-theme/src/pipeline.rs` returning
-   your reader and its live-preset name. Gate the arm on your feature flag, and
+   your reader and its preset name. Gate the arm on your feature flag, and
    keep a `#[cfg(not(feature = "..."))]` arm returning `None`.
    `SystemTheme::from_system()` and `from_system_async()` in
    `native-theme/src/lib.rs` both route through `pipeline::from_system_inner()`,

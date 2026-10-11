@@ -84,8 +84,8 @@ impl Combination {
     }
 }
 
-/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:663`) — sixteen; the four `-live`
-/// merge bases are not selectable — in both modes: the 32 combinations. One atlas per preset,
+/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:663`) — sixteen — in both modes:
+/// the 32 combinations. One atlas per preset,
 /// carrying both variants, built with no plan and `AccessibilityPreferences::default()`.
 fn combinations() -> Vec<Combination> {
     let mut out = Vec::new();

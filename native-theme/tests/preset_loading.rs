@@ -361,3 +361,15 @@ fn material_preset_is_named_by_its_generation() {
     assert!(Theme::preset("material").is_err());
     assert!(Theme::list_presets().iter().any(|p| p.key == "material-3"));
 }
+
+#[test]
+fn live_preset_tier_is_gone() {
+    for name in [
+        "kde-breeze-live",
+        "adwaita-live",
+        "macos-sonoma-live",
+        "windows-11-live",
+    ] {
+        assert!(Theme::preset(name).is_err(), "{name} still loads");
+    }
+}

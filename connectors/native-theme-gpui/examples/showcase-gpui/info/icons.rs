@@ -274,10 +274,10 @@ enum FactsPlatform {
 }
 
 impl FactsPlatform {
-    /// The platform of the native preset `preset`, full or `-live`; `None`
-    /// for any other theme.
+    /// The platform of the native preset `preset`; `None` for any other
+    /// theme.
     fn of_preset(preset: &str) -> Option<Self> {
-        match preset.strip_suffix("-live").unwrap_or(preset) {
+        match preset {
             "macos-sonoma" => Some(Self::MacOs),
             "windows-11" => Some(Self::Windows),
             "kde-breeze" => Some(Self::Kde),

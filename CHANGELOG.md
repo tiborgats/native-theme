@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- **native-theme**: the `-live` presets are gone: `kde-breeze-live`, `adwaita-live`, `macos-sonoma-live` and `windows-11-live` (`Theme::preset` now returns `UnknownPreset` for them), with `PlatformPreset::is_live` and `PlatformPreset::live_name()`. The platform readers merge over the platform preset (`kde-breeze`, `adwaita`, `macos-sonoma`, `windows-11`). Every key of a `-live` file stated its platform preset's value, so the layer changed no resolved value.
+
 ### Added
 
 - **Development**: `scripts/check_docsrs.py` documents a crate the way docs.rs will (nightly rustdoc with the crate's `[package.metadata.docs.rs]` features and targets, `DOCS_RS=1`, `--cfg docsrs`, `-D warnings`), and `scripts/check_release.sh` and the crates.io workflow run it for every workspace crate, so a docs.rs failure stops a release before the tag instead of appearing after the crates are published.

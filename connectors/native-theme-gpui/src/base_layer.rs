@@ -53,7 +53,7 @@ pub struct ScrollbarGeometry {
     /// `scrollbar.thumb_hover_color`.
     pub thumb_hover: Hsla,
     /// `scrollbar.thumb_active_color`, or `thumb_hover_color` when the theme
-    /// leaves it unset (a soft option, `None` in the `*-live` presets); upstream
+    /// leaves it unset (a soft option); upstream
     /// itself puts the hover colour in the active slot (`theme/mod.rs:440-449`).
     pub thumb_active: Hsla,
 }
@@ -195,7 +195,7 @@ mod tests {
         }
     }
 
-    /// `thumb_active_color` is a soft option (unset in the `*-live` presets); the
+    /// `thumb_active_color` is a soft option a theme may leave unset; the
     /// active thumb then takes the hover colour, upstream's own choice for that slot.
     #[test]
     fn thumb_active_falls_back_to_hover_when_unset() {

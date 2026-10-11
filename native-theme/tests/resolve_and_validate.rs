@@ -2,7 +2,7 @@
 //!
 //! Tests: idempotency, preset+merge overlay, with_overlay re-derivation,
 //! pick_variant/into_variant fallback, ThemeMode/Theme is_empty,
-//! Rgba f32 quantization, live preset sync, lint_toml on all presets,
+//! Rgba f32 quantization, lint_toml on all presets,
 //! and bundled SVG content validation.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -154,93 +154,6 @@ fn rgba_f32_quantization_behavior() {
     let arr2 = exact.to_f32_array();
     assert_eq!(arr2[0], 0.0, "0.0 should round-trip exactly");
     assert_eq!(arr2[1], 1.0, "1.0 should round-trip exactly");
-}
-
-// ---------------------------------------------------------------------------
-// Issue 8a: Live preset sync test
-// ---------------------------------------------------------------------------
-
-#[test]
-fn live_presets_geometry_matches_full_presets() {
-    let pairs = [
-        ("adwaita", "adwaita-live"),
-        ("kde-breeze", "kde-breeze-live"),
-        ("macos-sonoma", "macos-sonoma-live"),
-        ("windows-11", "windows-11-live"),
-    ];
-
-    for (full_name, live_name) in pairs {
-        let full = Theme::preset(full_name).unwrap();
-        let live = Theme::preset(live_name).unwrap();
-
-        for (label, full_var, live_var) in [
-            (
-                "light",
-                full.light.as_ref().unwrap(),
-                live.light.as_ref().unwrap(),
-            ),
-            (
-                "dark",
-                full.dark.as_ref().unwrap(),
-                live.dark.as_ref().unwrap(),
-            ),
-        ] {
-            // Geometry fields: radius, radius_lg, frame_width
-            assert_eq!(
-                full_var.defaults.border.corner_radius, live_var.defaults.border.corner_radius,
-                "{full_name} {label} radius mismatch with live"
-            );
-            assert_eq!(
-                full_var.defaults.border.corner_radius_lg,
-                live_var.defaults.border.corner_radius_lg,
-                "{full_name} {label} radius_lg mismatch with live"
-            );
-            if live_name == "windows-11-live" {
-                // The Windows reader provides it (SM_CXBORDER), and a live
-                // preset omits what its reader provides.
-                assert_eq!(
-                    live_var.defaults.border.line_width, None,
-                    "{live_name} {label} states line_width, which the reader provides"
-                );
-            } else {
-                assert_eq!(
-                    full_var.defaults.border.line_width, live_var.defaults.border.line_width,
-                    "{full_name} {label} frame_width mismatch with live"
-                );
-            }
-            // REMOVED: spacing comparison (ThemeSpacing deleted in Plan 01)
-            // Button geometry
-            assert_eq!(
-                full_var.button.min_height, live_var.button.min_height,
-                "{full_name} {label} button.min_height mismatch with live"
-            );
-            let sides = |v: &native_theme::theme::ThemeMode| {
-                v.button.border.as_ref().map(|b| {
-                    (
-                        b.padding_top,
-                        b.padding_right,
-                        b.padding_bottom,
-                        b.padding_left,
-                    )
-                })
-            };
-            assert_eq!(
-                sides(full_var),
-                sides(live_var),
-                "{full_name} {label} button padding (top, right, bottom, left) mismatch with live"
-            );
-            // Input geometry
-            assert_eq!(
-                full_var.input.min_height, live_var.input.min_height,
-                "{full_name} {label} input.min_height mismatch with live"
-            );
-            // Scrollbar
-            assert_eq!(
-                full_var.scrollbar.groove_width, live_var.scrollbar.groove_width,
-                "{full_name} {label} scrollbar.width mismatch with live"
-            );
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
