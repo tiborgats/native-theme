@@ -300,7 +300,7 @@ the file was pruned on 2026-10-11, not reordered.
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml:376`, `:833`;
       `native-theme/src/presets/kde-breeze.toml:371`, `:773`;
-      `native-theme/src/presets/adwaita.toml:351`, `:726`). Run the
+      `native-theme/src/presets/adwaita.toml:351`, `:729`). Run the
       `preset-validator` agent over the three presets against §2.23. The
       field is required in `ResolvedSpinnerTheme` — every preset must resolve
       it — so removing the value needs a decision in the model first: make
@@ -534,6 +534,12 @@ the file was pruned on 2026-10-11, not reordered.
       kde-breeze light's `button.active_text_color`, the text on the accent
       fill, is `#ffffff` (`[Colors:Selection] ForegroundNormal`,
       BreezeLight.colors:95 at v6.7.5).
+      *M2 close (2026-10-11):* ios-13's `slider.disabled_track_color`,
+      `#c7c7cc` / `#38383a`, has no source and stands out more than the
+      sourced enabled track, opaqueFill `#e4e4e5` / `#2b2b2e`
+      (`native-theme/src/presets/ios-13.toml`, `[light.slider]` and
+      `[dark.slider]`): darker than it in light, lighter in dark. For M3,
+      with the other soft-option colours that have no source.
 
 ### Disabled: presets that state both mechanisms
 
@@ -888,6 +894,37 @@ model, the platform presets and the three connectors
       on the probe images, in both appearances, and check both cells against
       the renders (found in M2a Step 8's re-audit, 2026-10-11).
 
+### OS probe: the selected segment in a key window
+
+- [ ] [v0.7.0] `segmented_control.active_background` on macOS is
+      `selectedContentBackgroundColor` (`docs/platform-facts.md:1567`), whose
+      value macOS 26 reports unchanged (probe 26 `:324`, `:398`), but the OS
+      probe renders each control in a borderless window it never orders
+      front, so never key (probe `:514`), and there the selected segment is
+      not that colour: white, and white at alpha 74/255 in dark, on macOS
+      14.8.9 and 15.7.9; black or white at alpha 50/255 on macOS 26
+      (`renders/aqua/` and `renders/darkAqua/segmented_control-regular@2x.png`
+      under `docs/evidence/os-probe/2026-10-11-run-38129819806/`, measured
+      2026-10-11). Have the probe render a segmented control with a selected
+      segment in a key window, in both appearances, on each macOS image;
+      then the facts cell follows, and `macos-monterey` and `macos-tahoe`
+      (which carries monterey's value, marked so) follow the cell (found in
+      M2a Steps 8–12, 2026-10-11).
+
+### platform-facts: the Plasma 6.8 rows cite the beta
+
+- [ ] [v0.7.0] `docs/platform-facts.md:713`, `:714` and `:1123` state Plasma
+      6.8 from its Beta 2 (plasma-workspace `v6.7.91`, `40cde89a`): no
+      `forceFontDPI`, no krdb, and `Xft.dpi` from the Xwayland scale; the
+      `kde-breeze.toml` header says Breeze's values are unchanged at Breeze
+      `v6.7.91`. `v6.8.0` was not tagged on 2026-10-11 (`git ls-remote
+      https://invent.kde.org/plasma/plasma-workspace.git refs/tags/v6.8.0`;
+      due 2026-10-14). Once it is, re-read the cited lines
+      (`c675077b` and `fe367323` in the release,
+      `startkde/plasma-setup-xwayland/main.cpp:47-58`) and Breeze's colour
+      files and kstyle at `v6.8.0`, then re-pin the three rows and the
+      header (found in M2e Step 7, 2026-10-11).
+
 ---
 
 ## Toolkit Connectors
@@ -1005,11 +1042,16 @@ model, the platform presets and the three connectors
       the two differ on 30 of the 32 preset/mode combinations (kde-breeze light:
       `#eff0f1` against `#ffffff`), so every menu is painted on the popover's
       surface. Found 2026-09-21 by running the contrast rule.
+      *Re-measured 2026-10-11 (17 presets):* 25 of the 34 differ;
+      kde-breeze, macos-monterey, macos-tahoe and material-3 in both modes
+      and ios-13 light state one colour for both, so the kde-breeze example
+      above is out of date.
 - [ ] [upstream] a foreground token for the status bar. `StatusBar` labels everything
       with `muted_foreground` (`status_bar.rs:95`) over `tokens.status_bar`;
       measured against the platform's own `status_bar.font.color` on its
       `status_bar.background_color` that is worse on 32 of the 32 preset/mode
-      combinations (nord dark: 1.69 against 9.25). Since v0.5.9
+      combinations (measured 2026-09-21, 16 presets; nord dark: 1.69 against
+      9.25). Since v0.5.9
       `geometry::status_bar` carries the platform's colour — upstream applies
       the caller's refinement after its own text colour, so it wins — but an
       application that does not use the builder gets the muted label. The
@@ -1066,8 +1108,9 @@ model, the platform presets and the three connectors
 - [ ] [upstream] `Checkbox` and `Radio` draw their unchecked border with `theme.input`
       (`checkbox.rs:238`, `radio.rs:188`), the *text input's* border colour.
       native-theme records `checkbox.unchecked_border_color` separately and the
-      two differ on 12 of the 32 preset/mode combinations — windows-11 light
-      wants `#0000005c` where the input border is `#e5e5e5ff`. The token is
+      two differ on 18 of the 34 preset/mode combinations (re-counted
+      2026-10-11) — windows-11 light wants `#00000072` where the input border
+      is `#0000000f`. The token is
       named `input`, so the connector feeds it the input border; upstream needs
       a checkbox border token.
 - [ ] [1.0] Whether any platform scales a control's corner radius with its control
@@ -1307,6 +1350,11 @@ What is still open on the iced side:
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
       platforms really keep the label, or the presets never recorded it.
+      *Re-measured 2026-10-11 (17 presets):* the hover label equals the idle
+      one in all 34 combinations; the pressed label differs in three:
+      kde-breeze light (`#ffffff` against `#232629`) and windows-11 in both
+      modes (`#0000009e` against `#000000e4`, dark `#ffffffc5` against
+      `#ffffff`).
 - [ ] [1.0] The progress bar's fill on its track is below AA on 32 of 32 (kde-breeze
       dark 1.05, adwaita light 1.21). It is the platform's own accent-on-muted
       pair, emitted exactly — an indicator, not text — but it is the first

@@ -1010,7 +1010,7 @@ fn t10_every_sink_holds_the_leafs_value() {
 }
 
 /// The §6.11 cases T10 names, on `adwaita`, the one bundled preset that states the checkbox
-/// padding (`native-theme/src/presets/adwaita.toml:160`, `:174-175`): 14 where egui draws 8;
+/// padding (`native-theme/src/presets/adwaita.toml:162`, `:176-177`): 14 where egui draws 8;
 /// pairs set apart, the mean of both; every side above half the box, `clamp_length`'s floor.
 #[test]
 fn t10_a_none_leaf_keeps_eguis_value() {

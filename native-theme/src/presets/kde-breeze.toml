@@ -508,7 +508,7 @@ weight = 400
 # from the body font.
 
 [dark.window]
-# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:208, breeze f0b1d75)
+# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:207, breeze v6.7.5)
 inactive_title_bar_background = "#202428"
 # platform-facts.md:1154 (§2.2): [WM] inactiveForeground 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
 inactive_title_bar_text_color = "#a1a9b1"

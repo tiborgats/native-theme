@@ -486,7 +486,7 @@ why_wrong     = "Win COLOR_MENUTEXT and GNOME popover.menu fg differ from defaul
 
 [wrong_safety_nets."sidebar.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
-why_wrong     = "KDE Complementary group and GNOME .sidebar fg are distinct"
+why_wrong     = "GNOME .sidebar fg and Material's drawer label are distinct; KDE's sidebar colour set is open (platform-facts.md §2.12)"
 
 [wrong_safety_nets."list.item_font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance

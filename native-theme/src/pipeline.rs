@@ -501,8 +501,9 @@ impl GenerationTable {
 /// returns 16 for compatibility with previous numbering and all existing
 /// apps", <https://eclecticlight.co/2025/06/13/is-tahoe-really-macos-26-or-16/>,
 /// 2025-06-13). From beta 3, `NSOperatingSystemVersion` reports 26 even for
-/// such a build (that page's comments, 2025-07-28; Apple Developer Forums
-/// thread 791906, <https://developer.apple.com/forums/thread/791906>). No
+/// such a build (that page's comments, 2025-07-28); Apple Developer Forums
+/// thread 791906 reports the same for the `kern.osproductversion` sysctl
+/// (<https://developer.apple.com/forums/thread/791906>). No
 /// source covers what the released OS reports. If a major version 16 is ever
 /// read, this table gives `macos-monterey` with [`VersionMatch::PresetOlder`]
 /// (no OS probe verified 16), which `generation_tests` pins.

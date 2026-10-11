@@ -1,5 +1,5 @@
 # GNOME Adwaita theme - sourced from libadwaita CSS variables
-# Alpha/opacity colors pre-computed to solid hex values
+# Colours: a cited colour libadwaita gives with alpha is stated with it or composited to solid hex, as its comment says
 # Style: libadwaita 1.10.0 (c9ab1186, GNOME 51), with GTK 4.24.1 and
 # gsettings-desktop-schemas 51.0.
 # Covers: libadwaita 1.10. libadwaita 1.9 differs at least in the popover
@@ -414,6 +414,9 @@ shadow_color = "#00000040"
 danger_color = "#c01c28"
 danger_text_color = "#ffffff"
 warning_color = "#cd9309"
+# ❓ platform-facts.md:1083 (§2.1.4): no source for #ffffff at libadwaita 1.10.0, whose
+# warning_fg_color is RGB(0 0 0 / 80%) in both schemes (_colors.scss:20; the dark block, :82-143,
+# does not redefine it) (docs/todo.md, "Presets: colours with no reproducible source")
 warning_text_color = "#ffffff"
 success_color = "#26a269"
 success_text_color = "#ffffff"
