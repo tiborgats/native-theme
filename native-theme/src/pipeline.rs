@@ -16,7 +16,8 @@ use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
 ///
 /// `ReaderOutput::Single` readers provide one variant; the pipeline
 /// fills the other from the full platform preset. `ReaderOutput::Dual`
-/// readers provide both; the pipeline uses both after merging.
+/// readers provide both; the pipeline uses both after merging. Both kinds
+/// report which variant is OS-active through `is_dark`, which decides `mode`.
 pub(crate) fn run_pipeline(
     reader: ReaderResult,
     preset_name: &str,
@@ -680,18 +681,7 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated fallback.
 pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     if let Some((reader, preset)) = select_reader().await {
-        let result = reader.read().await?;
-        let mode = match &result.output {
-            ReaderOutput::Single { is_dark, .. } => {
-                if *is_dark {
-                    crate::ColorMode::Dark
-                } else {
-                    crate::ColorMode::Light
-                }
-            }
-            ReaderOutput::Dual { .. } => crate::ColorMode::Light,
-        };
-        return run_pipeline(result, preset, mode);
+        return read_through_pipeline(reader.as_ref(), preset).await;
     }
 
     // Preset-only fallback paths — no reader available for this
@@ -726,6 +716,24 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             platform: "unsupported",
         })
     }
+}
+
+/// Run `reader` and feed its output through [`run_pipeline`] onto `preset`,
+/// in the color mode the reader reports as OS-active.
+async fn read_through_pipeline(
+    reader: &dyn crate::reader::ThemeReader,
+    preset: &str,
+) -> crate::Result<SystemTheme> {
+    let result = reader.read().await?;
+    let is_dark = match &result.output {
+        ReaderOutput::Single { is_dark, .. } | ReaderOutput::Dual { is_dark, .. } => *is_dark,
+    };
+    let mode = if is_dark {
+        crate::ColorMode::Dark
+    } else {
+        crate::ColorMode::Light
+    };
+    run_pipeline(result, preset, mode)
 }
 
 /// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
@@ -970,7 +978,7 @@ mod pipeline_tests {
     use crate::model::{LayoutTheme, Theme, ThemeMode};
     use crate::{ReaderOutput, ReaderResult};
 
-    use super::{preset_as_reader, run_pipeline};
+    use super::{preset_as_reader, read_through_pipeline, run_pipeline};
 
     /// Helper: build a ReaderResult from a preset for testing.
     fn reader_from_preset(preset_name: &str) -> ReaderResult {
@@ -979,6 +987,7 @@ mod pipeline_tests {
             output: ReaderOutput::Dual {
                 light: Box::new(preset.light.clone().unwrap_or_default()),
                 dark: Box::new(preset.dark.clone().unwrap_or_default()),
+                is_dark: false,
             },
             name: preset.name,
             icon_set: preset.icon_set,
@@ -1169,6 +1178,7 @@ mod pipeline_tests {
             output: ReaderOutput::Dual {
                 light: Box::new(light_v),
                 dark: Box::new(dark_v),
+                is_dark: false,
             },
             name: "macOS Sonoma".into(),
             icon_set: full.icon_set,
@@ -1187,6 +1197,32 @@ mod pipeline_tests {
         assert_eq!(
             st.dark.defaults.accent_color, custom_dark_accent,
             "Dual: dark variant should have reader's dark accent"
+        );
+    }
+
+    /// A dual-variant reader in dark mode, standing in for the macOS reader
+    /// on an OS set to dark: both variants from the preset, `is_dark` true.
+    struct DarkDualReader;
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for DarkDualReader {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            let mut reader = reader_from_preset("macos-sonoma");
+            if let ReaderOutput::Dual { is_dark, .. } = &mut reader.output {
+                *is_dark = true;
+            }
+            Ok(reader)
+        }
+    }
+
+    #[test]
+    fn dual_reader_mode_follows_is_dark() {
+        let st =
+            pollster::block_on(read_through_pipeline(&DarkDualReader, "macos-sonoma")).unwrap();
+        assert_eq!(
+            st.mode,
+            crate::ColorMode::Dark,
+            "a Dual reader reporting is_dark must give SystemTheme::mode Dark"
         );
     }
 

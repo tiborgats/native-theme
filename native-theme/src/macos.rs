@@ -599,6 +599,7 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
     let output = crate::ReaderOutput::Dual {
         light: Box::new(theme.light.unwrap_or_default()),
         dark: Box::new(theme.dark.unwrap_or_default()),
+        is_dark: crate::detect::detect_is_dark(),
     };
 
     Ok(crate::ReaderResult {
@@ -616,6 +617,21 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
 mod tests {
     use super::*;
     use crate::model::font::FontSize;
+
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn from_system_mode_is_the_os_appearance() {
+        let sys = crate::SystemTheme::from_system().unwrap();
+        let expected = if crate::detect::detect_is_dark() {
+            crate::ColorMode::Dark
+        } else {
+            crate::ColorMode::Light
+        };
+        assert_eq!(
+            sys.mode, expected,
+            "SystemTheme::mode must follow AppleInterfaceStyle"
+        );
+    }
 
     fn sample_widget_fonts() -> WidgetFontData {
         use crate::model::font::FontSize;

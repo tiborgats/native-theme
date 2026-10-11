@@ -333,6 +333,9 @@ pub(crate) struct ReaderResult {
 ///   The pipeline fills the inactive variant from the platform preset.
 /// - `Dual`: macOS reads both light and dark appearances in a single call.
 ///   The pipeline uses both reader-provided variants directly.
+///
+/// Both carry `is_dark`, the OS-active mode, from which the pipeline sets
+/// [`SystemTheme::mode`].
 #[derive(Clone, Debug)]
 pub(crate) enum ReaderOutput {
     /// Reader provides only the OS-active variant. The pipeline fills the
@@ -351,6 +354,8 @@ pub(crate) enum ReaderOutput {
         light: Box<ThemeMode>,
         /// The dark variant from the reader.
         dark: Box<ThemeMode>,
+        /// Whether the OS-active appearance is the dark one.
+        is_dark: bool,
     },
 }
 
@@ -371,7 +376,7 @@ impl ReaderOutput {
                     (Some(ThemeMode::clone(mode)), None)
                 }
             }
-            ReaderOutput::Dual { light, dark } => {
+            ReaderOutput::Dual { light, dark, .. } => {
                 (Some(ThemeMode::clone(light)), Some(ThemeMode::clone(dark)))
             }
         };
@@ -631,7 +636,7 @@ impl SystemTheme {
     ///
     /// - **macOS:** with the `macos` feature, reads both light and dark
     ///   variants via NSAppearance and merges them with the `macos-sonoma`
-    ///   preset.
+    ///   preset; the active mode comes from [`detect::detect_is_dark`].
     /// - **Linux:** Uses `pollster::block_on` to drive the async inner
     ///   implementation, which handles portal D-Bus calls when the `portal`
     ///   feature is enabled. Without a reader for the detected desktop
@@ -731,6 +736,7 @@ mod system_theme_tests {
                 reader_output: ReaderOutput::Dual {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
+                    is_dark: false,
                 },
                 name: Cow::Borrowed(""),
                 icon_set: None,
@@ -773,6 +779,7 @@ mod system_theme_tests {
                 reader_output: ReaderOutput::Dual {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
+                    is_dark: false,
                 },
                 name: Cow::Borrowed(""),
                 icon_set: None,
@@ -815,6 +822,7 @@ mod system_theme_tests {
                 reader_output: ReaderOutput::Dual {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
+                    is_dark: false,
                 },
                 name: Cow::Borrowed(""),
                 icon_set: None,
@@ -914,6 +922,7 @@ mod overlay_tests {
             output: ReaderOutput::Dual {
                 light: Box::new(preset.light.clone().unwrap_or_default()),
                 dark: Box::new(preset.dark.clone().unwrap_or_default()),
+                is_dark: false,
             },
             name: preset.name,
             icon_set: preset.icon_set,

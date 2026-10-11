@@ -534,7 +534,7 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
             crate::ReaderOutput::Single { mode, .. } => {
                 apply_accent(mode, &rgba);
             }
-            crate::ReaderOutput::Dual { light, dark } => {
+            crate::ReaderOutput::Dual { light, dark, .. } => {
                 apply_accent(light, &rgba);
                 apply_accent(dark, &rgba);
             }
