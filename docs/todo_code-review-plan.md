@@ -722,8 +722,13 @@ Runs after M2d's Steps 1–6 and after M1's rename task (the file is `material-3
   checks every preset value whose comment cites a token against that token's value, for
   both presets; added to `scripts/check_release.sh`. It fails on the present `material.toml`
   values for the slider (`track_height_px = 4.0` against `SliderTokens.ActiveTrackHeight`
-  16) before Step 14 and passes after. Screenshots of both presets are added to the
-  showcases' theme menus and `screenshots.yml`, with the run left to the maintainer.
+  16) before Step 14 and passes after (the file is `material-3.toml` since M1's F2).
+  Screenshots of both presets are added to the showcases' theme menus and
+  `screenshots.yml`, with the run left to the maintainer. At that asset run (M1 F2's
+  review, 2026-10-11): the screenshot scripts name their output after the preset key, so
+  the six README links to `linux-material-{light,dark}.png` (gpui, iced, egui READMEs)
+  become `linux-material-3-*`, the old PNGs are `git rm`ed, and `PRESET_DISPLAY_NAMES`
+  gets "Material 3" and "Material 3 Expressive" (the menus still say "Material" until then).
 
 ---
 
