@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `SystemTheme::from_system()` no longer detects the font DPI a second time after the platform reader supplied it.
 - **native-theme**: `SystemTheme::from_system()` and `AccessibilityPreferences::from_system()` block on `pollster` on macOS and Windows as they do on Linux, so `pollster` is a dependency on every platform; the single poll that answered `PlatformUnsupported` ("unexpected async suspension") if a reader ever awaited is gone.
 - **native-theme-egui**: `from_preset` resolves both variants on one `ResolutionContext`.
+- **native-theme**: the Windows reader no longer states WinUI 3's design sizes and radii; they come from the windows-11 preset alone, so on Windows the splitter divider is 1 px, the preset's and docs/platform-facts.md §2.17's, instead of 4.
 
 ### Fixed
 

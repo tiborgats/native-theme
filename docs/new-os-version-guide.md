@@ -77,10 +77,11 @@ WinUI3 Fluent Design specifications
 
 **Files to update:**
 
-- `native-theme/src/windows.rs` -- WinUI3 spacing constants, system metric mappings,
-  `winui3_widget_sizing()`, and `read_widget_sizing()`, which reads the system
-  metrics at 96 DPI, in logical pixels
-- `native-theme/src/presets/windows-11.toml` -- bundled preset data
+- `native-theme/src/windows.rs` -- system metric mappings and `read_widget_sizing()`,
+  which reads the system metrics at 96 DPI, in logical pixels; the reader states
+  no WinUI3 design sizes
+- `native-theme/src/presets/windows-11.toml` -- bundled preset data, WinUI3's spacing
+  and sizes included; a new Windows generation is a preset plus a table row
 
 **What to look for:**
 
@@ -94,7 +95,7 @@ WinUI3 Fluent Design specifications
 
 1. Review Windows SDK release notes for new `GetSystemMetrics` indices.
 2. Review WinUI3 Fluent Design specs for updated spacing/sizing values.
-3. Update constants in `native-theme/src/windows.rs`.
+3. Update system metric mappings in `native-theme/src/windows.rs`.
 4. Update `native-theme/src/presets/windows-11.toml`, or, for a new visual
    generation, create its preset as
    [A new generation, a new preset](#a-new-generation-a-new-preset) says.

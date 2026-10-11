@@ -36,17 +36,18 @@
 //! - **live**: the full preset with the reader's size constants merged over
 //!   it, in `pipeline.rs`'s order.
 //!
-//! The KDE and Windows readers return one variant (`ReaderOutput::Single`),
-//! so the real pipeline applies their constants to the active variant only
-//! and takes the inactive variant from the full preset, which the static
-//! resolution covers. The live resolution here applies the constants to each
-//! variant in turn, as the pipeline does when that variant is the active one.
-//! The macOS reader fills both variants. GNOME's reader states no sizes and
-//! Material has no reader, so only their static resolution is checked.
+//! The KDE reader returns one variant (`ReaderOutput::Single`), so the real
+//! pipeline applies its constants to the active variant only and takes the
+//! inactive variant from the full preset, which the static resolution covers.
+//! The live resolution here applies the constants to each variant in turn, as
+//! the pipeline does when that variant is the active one. The macOS reader
+//! fills both variants. GNOME's reader states no sizes, the Windows reader
+//! only the OS's system metrics, which no row here covers, and Material has
+//! no reader, so only their static resolution is checked.
 //!
 //! This lives inside the crate because the reader constants
-//! (`kde_metrics::populate_widget_sizing`, `windows::winui3_widget_sizing`,
-//! `macos::macos_widget_defaults`) are `pub(crate)`.
+//! (`kde_metrics::populate_widget_sizing`, `macos::macos_widget_defaults`)
+//! are `pub(crate)`.
 
 use crate::model::border::ResolvedPadding;
 use crate::resolve::ResolutionContext;
@@ -100,13 +101,8 @@ impl NativePreset {
                 crate::kde_metrics::populate_widget_sizing(&mut v);
                 Some(v)
             }
-            NativePreset::Adwaita | NativePreset::Material3 => None,
+            NativePreset::Adwaita | NativePreset::Material3 | NativePreset::Windows11 => None,
             NativePreset::MacosMonterey => Some(crate::macos::macos_widget_defaults()),
-            NativePreset::Windows11 => {
-                let mut v = ThemeMode::default();
-                crate::windows::winui3_widget_sizing(&mut v);
-                Some(v)
-            }
         }
     }
 }
@@ -270,7 +266,7 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "card", NONE, &[1592, 1593], "(none)"),
     row(MacosMonterey, "expander", NONE, &[1607, 1608], "(none), app-defined")
         .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
-    // --- Windows (windows-11, winui3_widget_sizing) ---
+    // --- Windows (windows-11; the reader states no sizes) ---
     row(Windows11, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Windows11, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
     row(Windows11, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),

@@ -203,77 +203,16 @@ fn read_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.scrollbar.min_thumb_length = Some(logical_system_metric(SM_CYVTHUMB));
     variant.defaults.focus_ring_width = Some(logical_system_metric(SM_CXFOCUSBORDER));
     variant.defaults.border.line_width = Some(logical_system_metric(SM_CXBORDER));
-    winui3_widget_sizing(variant);
 }
 
-/// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
+/// The scrollbar, focus-ring and border metrics at 96 DPI (non-Windows testable version).
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
 fn read_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
-    variant.scrollbar.min_thumb_length = Some(40.0);
+    // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:382)
+    variant.scrollbar.min_thumb_length = Some(17.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
     variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:378
-    winui3_widget_sizing(variant);
-}
-
-/// WinUI3 Fluent Design widget sizing constants (not from OS APIs).
-///
-/// Compiled on every target and feature set: both builds of
-/// `read_widget_sizing` call it, and the preset gate reads it.
-pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
-    variant.button.min_height = Some(32.0);
-    let border = variant.button.border.get_or_insert_default();
-    // platform-facts.md:1171 (§2.3): ButtonPadding=11,5,11,6
-    border.padding_left = Some(11.0);
-    border.padding_right = Some(11.0);
-    variant.checkbox.indicator_width = Some(20.0);
-    // platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
-    variant.checkbox.radio_dot_diameter = Some(12.0);
-    variant.checkbox.label_gap = Some(8.0);
-    variant.input.min_height = Some(32.0);
-    let border = variant.input.border.get_or_insert_default();
-    // platform-facts.md:1196 (§2.4): TextControlThemePadding=10,5,6,6
-    border.padding_left = Some(10.0);
-    border.padding_right = Some(6.0);
-    let border = variant.text_area.border.get_or_insert_default();
-    // platform-facts.md:1639 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
-    border.padding_left = Some(10.0);
-    border.padding_right = Some(6.0);
-    // platform-facts.md:1292-1293 (§2.9)
-    variant.slider.track_height = Some(4.0);
-    variant.slider.thumb_diameter = Some(18.0);
-    // platform-facts.md:1303 (§2.10): the groove, ProgressBarTrackHeight
-    variant.progress_bar.track_height = Some(1.0);
-    variant.tab.min_height = Some(32.0);
-    // platform-facts.md:1326 (§2.11): TabView stacks its items with no margin
-    variant.tab.item_gap = Some(0.0);
-    let border = variant.tab.border.get_or_insert_default();
-    // platform-facts.md:1318 (§2.11): without-close-button context, 8,3,8,3
-    border.padding_left = Some(8.0);
-    border.padding_right = Some(8.0);
-    // platform-facts.md:1234 (§2.6): the mouse (Narrow) context, 14 text + 4 + 5.
-    // Not SM_CYMENU, the menu bar's height (platform-facts.md:383).
-    variant.menu.row_height = Some(23.0);
-    let border = variant.menu.border.get_or_insert_default();
-    // platform-facts.md:1235 (§2.6): MenuFlyoutItemThemePadding, 11 horizontal
-    border.padding_left = Some(11.0);
-    border.padding_right = Some(11.0);
-    let border = variant.tooltip.border.get_or_insert_default();
-    // platform-facts.md:1257-1258 (§2.7): ToolTipBorderPadding=9,6,9,8
-    border.padding_left = Some(9.0);
-    border.padding_right = Some(9.0);
-    border.padding_top = Some(6.0);
-    border.padding_bottom = Some(8.0);
-    variant.list.row_height = Some(40.0);
-    let border = variant.list.border.get_or_insert_default();
-    // platform-facts.md:1390 (§2.15): DefaultListViewItemStyle Padding=16,0,12,0
-    border.padding_left = Some(16.0);
-    border.padding_right = Some(12.0);
-    // platform-facts.md:1351 (§2.13): CommandBar's default compact mode, AppBarThemeCompactHeight
-    variant.toolbar.bar_height = Some(48.0);
-    // platform-facts.md:1352 (§2.13)
-    variant.toolbar.item_gap = Some(0.0);
-    variant.splitter.divider_width = Some(4.0);
 }
 
 /// Convert a Win32 COLORREF (0x00BBGGRR) to Rgba.
@@ -486,21 +425,8 @@ fn build_theme(
     variant.menu.font = Some(fonts.menu);
     variant.status_bar.font = Some(fonts.status);
 
-    // --- Geometry (Windows 11 defaults) ---
-    variant.defaults.border.corner_radius = Some(4.0);
-    variant.defaults.border.corner_radius_lg = Some(8.0);
-    variant.defaults.border.shadow_enabled = Some(true);
-
     // --- Widget sizing ---
     read_widget_sizing(&mut variant);
-
-    // --- Dialog button order (Windows convention: primary leftmost) ---
-    //
-    // Per Microsoft Common Buttons guideline (Win7) and modern WinUI 3
-    // ContentDialog ("PrimaryButton ... Appears as the leftmost button"),
-    // Windows dialogs place the affirmative action on the LEFT of the
-    // button row. See `docs/platform-facts.md:1494, 1513-1520, 1835-1836`.
-    variant.dialog.button_order = Some(crate::model::DialogButtonOrder::PrimaryLeft);
 
     // --- DWM title bar color (WIN-02) ---
     if let Some(color) = dwm_title_bar {
@@ -1298,45 +1224,21 @@ mod tests {
         ));
     }
 
-    // === Dialog button order test ===
-
-    #[test]
-    fn build_theme_sets_dialog_primary_left() {
-        let result = light_reader();
-        let variant = reader_mode(&result);
-        assert_eq!(
-            variant.dialog.button_order,
-            Some(crate::model::DialogButtonOrder::PrimaryLeft)
-        );
-    }
-
-    // === Geometry tests ===
-
-    #[test]
-    fn build_theme_sets_geometry_defaults() {
-        let result = light_reader();
-        let variant = reader_mode(&result);
-        assert_eq!(variant.defaults.border.corner_radius, Some(4.0));
-        assert_eq!(variant.defaults.border.corner_radius_lg, Some(8.0));
-        assert_eq!(variant.defaults.border.shadow_enabled, Some(true));
-    }
-
     // === Widget sizing test ===
 
     #[test]
     fn build_theme_includes_widget_sizing() {
         let result = light_reader();
         let variant = reader_mode(&result);
-        assert_eq!(variant.button.min_height, Some(32.0));
-        assert_eq!(variant.checkbox.indicator_width, Some(20.0));
-        assert_eq!(variant.checkbox.radio_dot_diameter, Some(12.0));
-        assert_eq!(variant.tab.item_gap, Some(0.0));
-        assert_eq!(variant.input.min_height, Some(32.0));
-        assert_eq!(variant.slider.thumb_diameter, Some(18.0));
-        assert_eq!(variant.progress_bar.track_height, Some(1.0));
-        assert!(variant.scrollbar.groove_width.is_some());
-        assert_eq!(variant.menu.row_height, Some(23.0));
-        assert_eq!(variant.splitter.divider_width, Some(4.0));
+        assert_eq!(variant.scrollbar.groove_width, Some(17.0));
+        assert_eq!(variant.scrollbar.min_thumb_length, Some(17.0));
+        assert_eq!(variant.defaults.focus_ring_width, Some(1.0));
+        assert_eq!(variant.defaults.border.line_width, Some(1.0));
+        // WinUI 3's design sizes come from the windows-11 preset alone.
+        assert_eq!(variant.button.min_height, None);
+        assert_eq!(variant.splitter.divider_width, None);
+        assert_eq!(variant.menu.row_height, None);
+        assert_eq!(variant.defaults.border.corner_radius, None);
     }
 
     // === Surface and disabled_foreground tests ===
