@@ -2351,6 +2351,20 @@ the gap — closing it is a change, and each wants its own decision.
       structured form (per platform, per field, the value, its context and
       its source), every native value — not only padding and the toolbar —
       could be gated, and the Markdown tables generated from it.
+      *OS-version axis (2026-10-11, M1-T5-01 in
+      `docs/todo_code-review-findings.md`):* a fact is keyed by platform and
+      OS version, since a platform's next generation (`macos-tahoe` beside
+      `macos-sonoma`, two Material presets) differs from the last by version,
+      not by cell. Until then a version-tagged cell gives each value to its
+      version's preset (platform-facts.md, Conventions) and the gate keys its
+      rows by preset; the ruling settles the conflict between a Tahoe value
+      in Sonoma's cell and the one-number cell rule. The gate's hand tables
+      hold 95 padding rows (19 widgets × 5 presets, 90 of them `row()`
+      calls) and 90 field rows; on 2026-10-11, after the `-live` presets
+      went, 602 `platform-facts.md:N` citations sit outside `docs/archive/`
+      (the review counted 776). The migration (a schema for the seven kinds
+      of cell, section by section as M2 verifies them) gets its own
+      rationale, spec and plan after M2.
 - [x] **macOS: the Sidebar icon runs into its rail item's padding.** Under
       macos-sonoma at 96 DPI (rem 17.33px) the icon rail's items are 30px
       wide, and gpui-component's `p_2` on every side (sidebar/menu.rs:284)

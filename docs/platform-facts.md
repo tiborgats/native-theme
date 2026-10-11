@@ -3,9 +3,7 @@
 ---
 
 ### Conventions
-
 #### Value sources
-
 Every value in this document has a deterministic source. When an OS
 provides no direct API for a property, the value is measured from rendered
 controls and the source is annotated:
@@ -29,7 +27,6 @@ no API, no guideline, no rendered control to measure. The preset supplies
 a default for these.
 
 #### Table symbols
-
 | Symbol | Meaning                                                        |
 |--------|----------------------------------------------------------------|
 | `→`    | "returns / extract field" — the API on the left yields the value on the right. Example: `+systemFontOfSize:` → family means calling `+systemFontOfSize:` and reading its `family` property. |
@@ -40,6 +37,9 @@ a default for these.
 | ✅     | Verified and correct — confirmed against authoritative sources.|
 | ❓     | Uncertain — low confidence; measured or inferred, no authoritative source found. |
 | ❌     | Incorrect — disproved; see inline note for the correct information. |
+
+#### Version-tagged values
+A cell that tags its values with OS versions ("macOS 14: X · macOS 26: Y") states one value per version, and each value belongs to the preset of that version's generation (`macos-sonoma`, and a later `macos-tahoe`), not to a usage context. The cell-reading rules (one number is stated, a per-context value only for a matching context; [unstated-sizes spec §1.4](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) therefore read per preset: a preset states the one number its own version carries, and a value tagged for another version says nothing about it. The size gate (`native-theme/src/presets/documented_sizes.rs`) keys its rows by preset for the same reason.
 
 ---
 
