@@ -13,9 +13,42 @@
 #   * Sections are separated by `── Section ──` dividers.
 #   * A final summary banner reports total / pass / warn / fail / elapsed,
 #     and reprints every warning so nothing is buried above.
+#
+# Modes:
+#   (no argument)  the full run: every section below. Required on the last
+#                  commit of every fix phase and before the release commit.
+#   --commit       the per-commit subset: skips the release-only sections
+#                  (packaging, docs.rs emulation, security audit, outdated
+#                  dependencies, and the visual-asset and compatibility stamp
+#                  checks), each printing "skipped (--commit mode)", and names
+#                  them in the final summary.
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/check_release.sh [--commit]
+
+  (no argument)  the full pre-release check; required on the last commit of
+                 every fix phase and before the release commit
+  --commit       the per-commit subset: every lint, check, test, docs and
+                 widget-coverage gate; skips packaging, docs.rs emulation, the
+                 security audit, outdated dependencies, and the visual-asset
+                 and compatibility stamp checks
+  -h, --help     print this help and exit
+EOF
+}
+
+COMMIT_MODE=""
+for arg in "$@"; do
+    case "$arg" in
+        --commit) COMMIT_MODE=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -43,6 +76,7 @@ PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
 WARNINGS=()
+SKIPPED=()
 SCRIPT_START=$SECONDS
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +122,12 @@ print_fail() {
 
 print_info() {
     printf "${BLUE}${ICON_INFO}${NC} %s\n" "$1"
+}
+
+print_skipped() {
+    # $1 = section name, re-printed in the final summary
+    printf "${DIM}   skipped (--commit mode)${NC}\n"
+    SKIPPED+=("$1")
 }
 
 # Human-friendly elapsed time: "1m 23s" or "5s".
@@ -245,7 +285,11 @@ fi
 
 CURRENT_VERSION=$(grep -E '^version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
 
-printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
+else
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: environment
@@ -723,13 +767,17 @@ run_check "docs (native-theme-egui-widgets, all features)" \
 # runs is not a gate. The gpui connector is soft, as in every section above.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "docs.rs emulation"
-for crate in $WORKSPACE_CRATES; do
-    if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
-    else
-        run_check "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
-    fi
-done
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "docs.rs emulation"
+else
+    for crate in $WORKSPACE_CRATES; do
+        if [ "$crate" = "native-theme-gpui" ]; then
+            run_check_soft "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
+        else
+            run_check "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
+        fi
+    done
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
@@ -744,69 +792,81 @@ done
 # between crates, is done by .github/workflows/publish.yml on a `v*` tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Packaging"
-# cargo unpacks each packaged workspace crate into a local-registry source
-# cache (a `-<hash>` directory under $CARGO_HOME/registry/src, beside crates.io's
-# `index.crates.io-…`) and reuses that copy while the version is unchanged, so a
-# connector would be compiled against the native-theme of an earlier run and a
-# stale API would pass or fail for the wrong reason. Those copies of this
-# version's workspace crates are removed first; cargo unpacks the current
-# tarballs again. crates.io's own cache is not touched.
-WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
-find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
-    -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
-# The packages are verified in a target directory of their own, where only the
-# workspace crates are cleaned before each run: cargo reuses a registry-sourced
-# build of the same name and version without looking at its source, and the
-# dependencies stay built between runs. The workspace's own target/ is untouched.
-PKG_TARGET="target/package-verify"
-cargo clean --target-dir "$PKG_TARGET" \
-    -p native-theme-derive -p native-theme -p native-theme-build \
-    -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets >/dev/null 2>&1 || true
-run_check "package (core: derive · native-theme · build)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-iced)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-gpui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-egui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-egui-widgets)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Packaging"
+else
+    # cargo unpacks each packaged workspace crate into a local-registry source
+    # cache (a `-<hash>` directory under $CARGO_HOME/registry/src, beside crates.io's
+    # `index.crates.io-…`) and reuses that copy while the version is unchanged, so a
+    # connector would be compiled against the native-theme of an earlier run and a
+    # stale API would pass or fail for the wrong reason. Those copies of this
+    # version's workspace crates are removed first; cargo unpacks the current
+    # tarballs again. crates.io's own cache is not touched.
+    WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
+    find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
+        -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
+    # The packages are verified in a target directory of their own, where only the
+    # workspace crates are cleaned before each run: cargo reuses a registry-sourced
+    # build of the same name and version without looking at its source, and the
+    # dependencies stay built between runs. The workspace's own target/ is untouched.
+    PKG_TARGET="target/package-verify"
+    cargo clean --target-dir "$PKG_TARGET" \
+        -p native-theme-derive -p native-theme -p native-theme-build \
+        -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets >/dev/null 2>&1 || true
+    run_check "package (core: derive · native-theme · build)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
+    run_check_soft "package (native-theme-iced)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty --target-dir "$PKG_TARGET"
+    run_check_soft "package (native-theme-gpui)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
+    run_check_soft "package (native-theme-egui)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
+    run_check_soft "package (native-theme-egui-widgets)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Security audit"
-set +e
-AUDIT_OUT=$(cargo audit 2>&1)
-AUDIT_STATUS=$?
-set -e
-if [ "$AUDIT_STATUS" -eq 0 ]; then
-    print_ok "cargo audit — no advisories"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Security audit"
 else
-    # Extract "Warning:" or "Error:" lines for compact warning surfacing.
-    AUDIT_SUMMARY=$(printf "%s\n" "$AUDIT_OUT" | grep -E '^\s*(Crate|Title|ID):\s' | head -12 || true)
-    print_warn "cargo audit reported findings"
-    if [ -n "$AUDIT_SUMMARY" ]; then
-        printf "${DIM}%s${NC}\n" "$AUDIT_SUMMARY"
+    set +e
+    AUDIT_OUT=$(cargo audit 2>&1)
+    AUDIT_STATUS=$?
+    set -e
+    if [ "$AUDIT_STATUS" -eq 0 ]; then
+        print_ok "cargo audit — no advisories"
+    else
+        # Extract "Warning:" or "Error:" lines for compact warning surfacing.
+        AUDIT_SUMMARY=$(printf "%s\n" "$AUDIT_OUT" | grep -E '^\s*(Crate|Title|ID):\s' | head -12 || true)
+        print_warn "cargo audit reported findings"
+        if [ -n "$AUDIT_SUMMARY" ]; then
+            printf "${DIM}%s${NC}\n" "$AUDIT_SUMMARY"
+        fi
     fi
 fi
 
 print_section "Outdated dependencies"
-set +e
-# --depth 1 restricts to direct workspace dependencies; without it, cargo
-# outdated walks transitive deps and reports confusing duplicate-version
-# artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
-# subgraphs.
-OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
-set -e
-OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
-    | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $3 ~ /^[0-9]/ && $2 != $3 {c++} END {print c+0}')
-if [ "$OUTDATED_COUNT" -eq 0 ]; then
-    print_ok "All dependencies current"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Outdated dependencies"
 else
-    print_warn "$OUTDATED_COUNT outdated dependency/dependencies"
-    printf "${DIM}%s${NC}\n" "$OUTDATED_OUT" | head -20
+    set +e
+    # --depth 1 restricts to direct workspace dependencies; without it, cargo
+    # outdated walks transitive deps and reports confusing duplicate-version
+    # artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
+    # subgraphs.
+    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
+    set -e
+    OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
+        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $3 ~ /^[0-9]/ && $2 != $3 {c++} END {print c+0}')
+    if [ "$OUTDATED_COUNT" -eq 0 ]; then
+        print_ok "All dependencies current"
+    else
+        print_warn "$OUTDATED_COUNT outdated dependency/dependencies"
+        printf "${DIM}%s${NC}\n" "$OUTDATED_OUT" | head -20
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -820,23 +880,27 @@ fi
 # be tagged. The crates.io workflow's CI gate runs the same check on the tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Visual assets"
-set +e
-STAMP_MSG=$(bash scripts/update_provenance.sh check 2>&1)
-STAMP_STATUS=$?
-CLEAN_MSG=$(bash scripts/update_provenance.sh verify-clean 2>&1)
-CLEAN_STATUS=$?
-set -e
-if [ "$STAMP_STATUS" -eq 0 ]; then
-    print_ok "$STAMP_MSG"
-elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-    print_fail "$STAMP_MSG"
-    printf "${DIM}    CHANGELOG.md dates %s: release tree, regenerate the assets before tagging${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Visual assets"
 else
-    print_warn "$STAMP_MSG"
-fi
-if [ "$CLEAN_STATUS" -ne 0 ]; then
-    print_warn "asset sources have uncommitted changes; the stamp check compared HEAD"
-    printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$CLEAN_MSG" | tail -n +2 | head -5)"
+    set +e
+    STAMP_MSG=$(bash scripts/update_provenance.sh check 2>&1)
+    STAMP_STATUS=$?
+    CLEAN_MSG=$(bash scripts/update_provenance.sh verify-clean 2>&1)
+    CLEAN_STATUS=$?
+    set -e
+    if [ "$STAMP_STATUS" -eq 0 ]; then
+        print_ok "$STAMP_MSG"
+    elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+        print_fail "$STAMP_MSG"
+        printf "${DIM}    CHANGELOG.md dates %s: release tree, regenerate the assets before tagging${NC}\n" "$CURRENT_VERSION"
+    else
+        print_warn "$STAMP_MSG"
+    fi
+    if [ "$CLEAN_STATUS" -ne 0 ]; then
+        print_warn "asset sources have uncommitted changes; the stamp check compared HEAD"
+        printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$CLEAN_MSG" | tail -n +2 | head -5)"
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -853,17 +917,21 @@ fi
 # and the stamp, never the registry.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Compatibility claims"
-set +e
-COMPAT_MSG=$(bash scripts/update_compatibility.sh check 2>&1)
-COMPAT_STATUS=$?
-set -e
-if [ "$COMPAT_STATUS" -eq 0 ]; then
-    print_ok "$COMPAT_MSG"
-elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-    print_fail "$COMPAT_MSG"
-    printf "${DIM}    CHANGELOG.md dates %s: release tree, re-verify before tagging${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Compatibility claims"
 else
-    print_warn "$COMPAT_MSG"
+    set +e
+    COMPAT_MSG=$(bash scripts/update_compatibility.sh check 2>&1)
+    COMPAT_STATUS=$?
+    set -e
+    if [ "$COMPAT_STATUS" -eq 0 ]; then
+        print_ok "$COMPAT_MSG"
+    elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+        print_fail "$COMPAT_MSG"
+        printf "${DIM}    CHANGELOG.md dates %s: release tree, re-verify before tagging${NC}\n" "$CURRENT_VERSION"
+    else
+        print_warn "$COMPAT_MSG"
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -874,7 +942,15 @@ ELAPSED_TOTAL=$(format_elapsed "$((SECONDS - SCRIPT_START))")
 
 printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [ "$FAIL_COUNT" -eq 0 ]; then
+if [[ $COMMIT_MODE ]]; then
+    if [ "$FAIL_COUNT" -ne 0 ]; then
+        printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s per-commit subset\n" "$CURRENT_VERSION"
+    elif [ "$WARN_COUNT" -eq 0 ]; then
+        printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s per-commit subset (not a release check)\n" "$CURRENT_VERSION"
+    else
+        printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-commit subset (not a release check)\n" "$CURRENT_VERSION"
+    fi
+elif [ "$FAIL_COUNT" -eq 0 ]; then
     if [ "$WARN_COUNT" -eq 0 ]; then
         printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s ready for release\n" "$CURRENT_VERSION"
     else
@@ -894,9 +970,23 @@ if [ "$WARN_COUNT" -gt 0 ]; then
     done
 fi
 
+if [[ $COMMIT_MODE ]]; then
+    printf "\n${BOLD}Skipped (--commit mode):${NC}\n"
+    for s in "${SKIPPED[@]}"; do
+        printf "   ${DIM}%s${NC}\n" "$s"
+    done
+fi
+
 printf "${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [ "$FAIL_COUNT" -eq 0 ]; then
+if [[ $COMMIT_MODE ]]; then
+    if [ "$FAIL_COUNT" -eq 0 ]; then
+        printf "\n   The full run (${DIM}./scripts/check_release.sh${NC}) is required on the last commit of\n"
+        printf "   every fix phase and before the release commit.\n\n"
+        exit 0
+    fi
+    exit 1
+elif [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
     printf "   2. Visual assets and compatibility: if either check above warned, push, run\n"

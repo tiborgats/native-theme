@@ -16,13 +16,20 @@ Thank you for your interest in contributing.
 
 ## Pre-commit gate — `./scripts/check_release.sh`
 
-Before every commit, run the full pre-release check:
+The script has two modes. Before every commit, run the per-commit subset:
+
+```bash
+./scripts/check_release.sh --commit
+```
+
+On the last commit of every fix phase and before the release commit, run the
+full pre-release check:
 
 ```bash
 ./scripts/check_release.sh
 ```
 
-This is the canonical quality gate. It runs, in order: a TODO/FIXME and
+This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME and
 panic-pattern scan of non-test code, per-crate `cargo check --all-targets`,
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
@@ -50,6 +57,12 @@ PROVENANCE stamp and the connectors' compatibility claims
 a single-line status per check; the gpui-connector checks and the connector
 packaging are soft (`⚠`), tolerable on a WIP branch but to be resolved before
 opening a release PR; a hard failure (`❌`) exits non-zero and must be fixed.
+
+`--commit` runs every one of those checks except the release-only sections:
+packaging, the docs.rs emulation (`scripts/check_docsrs.py`), `cargo audit`,
+`cargo outdated`, and the PROVENANCE and compatibility stamp checks. Each of
+them prints `skipped (--commit mode)`, and the summary names them as skipped,
+not passed.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 strict panic lints, packaging and outdated-dependency checks CI does not run.

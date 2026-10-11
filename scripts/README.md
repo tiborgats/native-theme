@@ -237,6 +237,27 @@ There is no verb that writes the stamp without the run.
 ./scripts/update_compatibility.sh check
 ```
 
+## check_release.sh
+
+The workspace's quality gate: source hygiene, `cargo check`, the feature
+combinations, the cross-target checks and clippy, fmt, clippy, the strict
+panic lints, the tests, the connectors' other configurations, the examples,
+widget coverage and docs, then the release-only sections: the docs.rs
+emulation, packaging, `cargo audit`, `cargo outdated`, and the visual-asset
+and compatibility stamp checks. Prints one line per check and a summary;
+exits 1 on a hard failure. `CONTRIBUTING.md` lists every check.
+
+With `--commit` it runs the per-commit subset: the release-only sections are
+skipped, each printing `skipped (--commit mode)`, and the summary names them.
+The subset runs before every commit; the full run on the last commit of every
+fix phase and before the release commit. An unknown argument exits 2;
+`--help` prints the usage.
+
+```sh
+./scripts/check_release.sh --commit
+./scripts/check_release.sh
+```
+
 ## check_features.sh
 
 Checks that every workspace crate builds, without warnings, in every feature
