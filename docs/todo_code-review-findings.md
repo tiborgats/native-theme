@@ -1576,6 +1576,10 @@ M3–M8 cites these instead of reporting them again.
   25H2 (26200, on `windows-11-arm`). The never-shown-window renders work: 68 PNGs per macOS image, none blank, and the
   sizes already differ between 14 and 26 (a regular checkbox render 103 × 34 against 99 × 32). Next: M2a and M2b
   Step 7 read these against the *differs* rows marked *maintainer (Step 3 probe)*.
+- **First CI run of M1's changes (2026-10-11):** draft PR #3 (`v0.7.0-rc1` at `05f6c11d`), 32 of 32 checks green: the
+  macOS-leg test `from_system().mode == detect_is_dark()` (M1-T6-01, "Test macOS (macos)"), the strict-panic steps of
+  every crate (gpui's, which may fail softly, passed too), the static parity job, MSRV, the feature combinations. The
+  screenshot sidecars and the asset-run changes still run first on the next `generate_assets_release.sh`.
 - **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
   "Not in a git repository" and skips its git checks, the tag check among them.
 
