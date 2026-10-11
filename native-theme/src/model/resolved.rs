@@ -12,6 +12,7 @@ use crate::Rgba;
 
 /// Fully resolved per-context icon sizes where every context is guaranteed populated.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedIconSizes {
     /// Icon size for toolbar buttons.
     pub toolbar: f32,
@@ -34,6 +35,7 @@ pub struct ResolvedIconSizes {
 /// written inline in
 /// `crate::resolve::validate_helpers::require_text_scale_entry` (private).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels. A size stated in points is converted at
     /// the resolution context's
@@ -51,6 +53,7 @@ pub struct ResolvedTextScaleEntry {
 
 /// A fully resolved text scale with all four typographic roles populated.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTextScale {
     /// Caption / small label text.
     pub caption: ResolvedTextScaleEntry,
@@ -69,6 +72,7 @@ pub struct ResolvedTextScale {
 /// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
 /// Produced by the resolution/validation pipeline.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedDefaults {
     // ---- Base font ----
     /// Primary UI font.
@@ -155,6 +159,7 @@ pub struct ResolvedDefaults {
 /// Mirrors [`crate::model::ThemeMode`] but with concrete (non-Option) types
 /// for all 26 per-widget structs plus defaults and text scale.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTheme {
     /// Global defaults.
     pub defaults: ResolvedDefaults,
@@ -255,7 +260,13 @@ pub struct ResolvedTheme {
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Resolved {
+    /// The mode of the variant actually resolved: `Dark` iff the theme's
+    /// `dark` variant was used. It differs from the requested mode when the
+    /// theme lacks that variant and
+    /// [`pick_variant`](super::Theme::pick_variant) falls back to the other.
+    pub mode: super::ColorMode,
     /// The picked variant's fully-resolved visual properties.
     pub variant: ResolvedTheme,
     /// The theme's icon set. Falls back to

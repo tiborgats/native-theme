@@ -134,12 +134,6 @@ impl FontSize {
     }
 }
 
-impl Default for FontSize {
-    fn default() -> Self {
-        Self::Px(0.0)
-    }
-}
-
 /// Font specification: family name, size, weight, style, and color.
 ///
 /// All fields are optional to support partial overlays -- a FontSpec with
@@ -749,11 +743,6 @@ mod tests {
     fn raw_extracts_value() {
         assert_eq!(FontSize::Pt(10.0).raw(), 10.0);
         assert_eq!(FontSize::Px(14.0).raw(), 14.0);
-    }
-
-    #[test]
-    fn font_size_default_is_px_zero() {
-        assert_eq!(FontSize::default(), FontSize::Px(0.0));
     }
 
     // === Serde round-trip tests ===

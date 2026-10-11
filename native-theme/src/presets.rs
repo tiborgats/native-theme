@@ -105,6 +105,7 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
 /// Returned by [`Theme::list_presets()`] and [`Theme::list_presets_for_platform()`]
 /// to provide richer metadata than bare preset names.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct PresetInfo {
     /// Machine-readable preset key (e.g. `"catppuccin-mocha"`, `"kde-breeze"`).
     /// Pass this to [`Theme::preset()`] to load the preset.
@@ -114,8 +115,6 @@ pub struct PresetInfo {
     /// Target platform tags (e.g. `&["linux-kde"]`). Empty for presets offered
     /// on every platform (`material-3` and the community themes).
     pub platforms: &'static [&'static str],
-    /// Whether the preset provides only a light variant (no dark variant).
-    pub light_only: bool,
 }
 
 /// Structured metadata for all 17 user-facing presets.
@@ -128,104 +127,87 @@ const PRESET_INFOS: &[PresetInfo] = &[
         key: "kde-breeze",
         display_name: "KDE Breeze",
         platforms: &["linux-kde"],
-        light_only: false,
     },
     PresetInfo {
         key: "adwaita",
         display_name: "Adwaita",
         platforms: &["linux"],
-        light_only: false,
     },
     PresetInfo {
         key: "windows-11",
         display_name: "Windows 11",
         platforms: &["windows"],
-        light_only: false,
     },
     PresetInfo {
         key: "macos-monterey",
         display_name: "macOS Sonoma",
         platforms: &["macos"],
-        light_only: false,
     },
     PresetInfo {
         key: "macos-tahoe",
         display_name: "macOS Tahoe",
         platforms: &["macos"],
-        light_only: false,
     },
     PresetInfo {
         key: "material-3",
         display_name: "Material",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "ios-13",
         display_name: "iOS",
         platforms: &["macos", "ios"],
-        light_only: false,
     },
     // Community presets
     PresetInfo {
         key: "catppuccin-latte",
         display_name: "Catppuccin Latte",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "catppuccin-frappe",
         display_name: "Catppuccin Frappe",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "catppuccin-macchiato",
         display_name: "Catppuccin Macchiato",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "catppuccin-mocha",
         display_name: "Catppuccin Mocha",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "nord",
         display_name: "Nord",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "dracula",
         display_name: "Dracula",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "gruvbox",
         display_name: "Gruvbox",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "solarized",
         display_name: "Solarized",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "tokyo-night",
         display_name: "Tokyo Night",
         platforms: &[],
-        light_only: false,
     },
     PresetInfo {
         key: "one-dark",
         display_name: "One Dark",
         platforms: &[],
-        light_only: false,
     },
 ];
 

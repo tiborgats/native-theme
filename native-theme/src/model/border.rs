@@ -217,6 +217,7 @@ pub struct ResolvedPadding {
 /// No `Default` derive: It is constructed from a fully
 /// populated unresolved source.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedDefaultsBorder {
     /// Border color.
     pub color: Rgba,

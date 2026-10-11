@@ -59,12 +59,12 @@ pub(crate) mod widgets;
 pub use animated::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,
 };
+pub use arrow_side::ArrowSide;
 pub use border::{
     DefaultsBorderSpec, ResolvedDefaultsBorder, ResolvedPadding, ResolvedWidgetBorder,
     WidgetBorderSpec,
 };
-// G3 (Phase 93-03): demoted to pub(crate). Use the per-set loaders in `crate::icons` externally.
-pub use arrow_side::ArrowSide;
+// Crate-internal; external code uses the per-set loaders in `crate::icons`.
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
@@ -80,7 +80,7 @@ pub use resolved::{
     ResolvedTheme,
 };
 pub use tab_indicator_side::TabIndicatorSide;
-pub use widgets::*; // All 26 XxxTheme + ResolvedXxxTheme pairs
+pub use widgets::*; // 27 XxxTheme + ResolvedXxxTheme pairs: 26 per-variant widgets + LayoutTheme
 
 use std::borrow::Cow;
 
@@ -364,15 +364,29 @@ impl Theme {
     ///
     /// When `mode` is [`ColorMode::Dark`], prefers `dark` and falls back to `light`.
     /// When `mode` is [`ColorMode::Light`], prefers `light` and falls back to `dark`.
+    /// [`resolve`](Self::resolve) records the variant it took in
+    /// [`Resolved::mode`], so a fallback is visible after resolution.
     ///
     /// # Errors
     ///
     /// Returns [`Error::NoVariant`](crate::Error::NoVariant) if the theme has
     /// no variants at all.
     pub fn pick_variant(&self, mode: ColorMode) -> crate::Result<&ThemeMode> {
+        self.pick_variant_with_mode(mode)
+            .map(|(_, variant)| variant)
+    }
+
+    /// [`pick_variant`](Self::pick_variant), also returning the mode of the
+    /// variant it took (`Dark` iff `self.dark` was used).
+    pub(crate) fn pick_variant_with_mode(
+        &self,
+        mode: ColorMode,
+    ) -> crate::Result<(ColorMode, &ThemeMode)> {
+        let dark = self.dark.as_ref().map(|v| (ColorMode::Dark, v));
+        let light = self.light.as_ref().map(|v| (ColorMode::Light, v));
         match mode {
-            ColorMode::Dark => self.dark.as_ref().or(self.light.as_ref()),
-            ColorMode::Light => self.light.as_ref().or(self.dark.as_ref()),
+            ColorMode::Dark => dark.or(light),
+            ColorMode::Light => light.or(dark),
         }
         .ok_or(crate::Error::NoVariant { mode })
     }
@@ -494,7 +508,7 @@ impl Theme {
         mode: ColorMode,
         ctx: &crate::resolve::ResolutionContext,
     ) -> crate::Result<Resolved> {
-        let variant_ref = self.pick_variant(mode)?;
+        let (picked_mode, variant_ref) = self.pick_variant_with_mode(mode)?;
 
         let tier1 = variant_ref.defaults.icon_theme.clone();
         let tier2 = self.icon_theme.clone();
@@ -508,6 +522,7 @@ impl Theme {
         let variant = variant_ref.clone().into_resolved(ctx)?;
 
         Ok(Resolved {
+            mode: picked_mode,
             variant,
             icon_set,
             icon_theme,
@@ -676,7 +691,7 @@ impl Theme {
     ///
     /// Returns a static slice of [`PresetInfo`](crate::presets::PresetInfo) entries,
     /// one per bundled preset. Each entry carries the machine-readable key,
-    /// human-readable display name, target platform tags, and a `light_only` flag.
+    /// human-readable display name, and target platform tags.
     ///
     /// # Examples
     /// ```
@@ -1500,6 +1515,27 @@ accent_color = "#ff0000"
         let r = theme.resolve(ColorMode::Dark).unwrap();
         assert_eq!(r.icon_theme.as_deref(), Some("only-one"));
         assert!(r.icon_theme_explicit);
+    }
+
+    #[test]
+    fn resolve_light_only_asked_dark_reports_light_mode() {
+        let mut theme = Theme::preset("adwaita").unwrap();
+        theme.dark = None;
+        let r = theme.resolve(ColorMode::Dark).unwrap();
+        assert_eq!(r.mode, ColorMode::Light);
+    }
+
+    #[test]
+    fn resolve_reports_requested_mode_when_variant_present() {
+        let theme = Theme::preset("adwaita").unwrap();
+        assert_eq!(
+            theme.resolve(ColorMode::Dark).unwrap().mode,
+            ColorMode::Dark
+        );
+        assert_eq!(
+            theme.resolve(ColorMode::Light).unwrap().mode,
+            ColorMode::Light
+        );
     }
 
     #[test]

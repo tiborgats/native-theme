@@ -5088,10 +5088,8 @@ fn caption_text<'a>(
 /// `sidebar.font.color`.
 fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) -> text::Text<'a> {
     let resolved = &state.current_resolved;
-    let heading = ResolvedTextScaleEntry {
-        weight: HEADING_WEIGHT,
-        ..resolved.text_scale.caption.clone()
-    };
+    let mut heading = resolved.text_scale.caption.clone();
+    heading.weight = HEADING_WEIGHT;
     text(content)
         .role(&heading, resolved, &state.accessibility)
         .color(to_color(resolved.sidebar.font.color))
