@@ -271,8 +271,8 @@ the file was pruned on 2026-10-11, not reordered.
       (`docs/platform-facts.md:897-902`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
-      `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:89-90`,
-      `:457-458`) with a `line_width_px = 0.5` border (`:48`, `:416`). Research first, from
+      `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:116-117`,
+      `:539-540`) with a `line_width_px = 0.5` border (`:74`, `:497`). Research first, from
       source or measurement with citations, what the 22 and 16 measure — the
       outer box with its border, and the text's line box or its glyph height —
       then correct platform-facts' derivation of each cell and, from it, the
@@ -294,7 +294,7 @@ the file was pruned on 2026-10-11, not reordered.
       states **(none)** for the other three (`docs/platform-facts.md:1535`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
-      (`native-theme/src/presets/macos-monterey.toml:308`, `:676`;
+      (`native-theme/src/presets/macos-monterey.toml:358`, `:782`;
       `native-theme/src/presets/kde-breeze.toml:281`, `:589`;
       `native-theme/src/presets/adwaita.toml:297`, `:625`). Run the
       `preset-validator` agent over the three presets against §2.23. The
@@ -320,8 +320,9 @@ the file was pruned on 2026-10-11, not reordered.
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
       (`docs/platform-facts.md:1278`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
-      `thumb_hover_color` and `thumb_active_color` only
-      (`native-theme/src/presets/macos-monterey.toml:140-150`, `:508-518`;
+      `thumb_hover_color` and `thumb_active_color` (and macOS's the overlay
+      `track_color`) but not it
+      (`native-theme/src/presets/macos-monterey.toml:181-193`, `:604-616`;
       `native-theme/src/presets/windows-11.toml:152-161`, `:532-541`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
@@ -333,7 +334,7 @@ the file was pruned on 2026-10-11, not reordered.
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
-      `native-theme/src/presets/macos-monterey.toml:148`, `:516`) and not on
+      `native-theme/src/presets/macos-monterey.toml:191`, `:614`) and not on
       Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:159`,
       `:539`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
@@ -573,6 +574,9 @@ model, the platform presets and the three connectors
       from these sources.
       Windows part done in M2b Step 7 (eff33489): §2.10's track colour and radius
       cite WinUI and windows-11 states them; the shadow is still open.
+      macOS part done in M2a Step 7b (be69481a): macos-monterey states no shadow
+      for the progress bar (and for the text field, check box, drop-down,
+      segmented control and expander), as `docs/platform-facts.md`'s macOS cells give.
 
 ### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
 

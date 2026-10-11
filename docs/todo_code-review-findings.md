@@ -1597,7 +1597,7 @@ M3–M8 cites these instead of reporting them again.
 
 ## M2a — macOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets macOS 14 (`macos-sonoma.toml:1-3`), and 14 has had no security update since 14.8.9 (2026-08-06): Apple
 supports 27, 26 and 15 today. No source separates 15 from 14 (WebKit's pre-Tahoe tables carry no 14/15 conditional, Apple
@@ -2616,6 +2616,72 @@ come from a never-shown, never-key window.
   same rows: slider track 4 (cell 5), text-field padding 2 (cell 4), switch knob 20 with an
   outline to 22 (cell ~18), chevron about 6 × 10 (cell ~16-18), dark switch thumb α 191/255
   (cell white): Step 8 corrects both halves.
+- **Fix round 1** (review of the Step 7 commits): 6f561bcc. The push button's and pop-up
+  button's 1 top / 3 bottom are the title's offsets from the bezel's outer edge, so the
+  border's share stays open (egui caveat, docs/todo.md, facts `:1172`, `:1557`); the rename
+  gate matches `UnknownPreset`; docs/todo.md's dead `macos-sonoma.toml` path re-pointed.
+
+### Step 7b — the preset-validator's second pass (2026-10-11)
+
+The preset-validator ran on `macos-monterey.toml` after Step 7
+(`.superpowers/sdd/todo_code-review-plan/validator-macos-monterey-after-step7.md`): FAIL, 12
+blocking items (V1–V12), 9 warnings (W1–W9), 3 facts findings. Every value was checked in both
+`os-probe-macos-14/probe.toml` (14.8.9) and `os-probe-macos-15/probe.toml` (15.7.9), which
+give the same colours, font sizes and outline indentation on the same lines. The probe resolves
+NSColor per appearance with no window (`probe.toml:305`), so the never-key caveat does not touch
+the colours.
+
+- **V1–V5:** the base and control colours are the NSColor values of the APIs the facts rows name
+  (§2.1.3 `:1046-1060`, §2.3 `:1164`, `:1166`, §2.4 `:1186`, `:1188`, §2.15 `:1382`), as the probe
+  resolves them, stated with their alpha (ruling: as the API gives it, the comment giving the
+  composite). For example, the window `#ececec` / `#323232` (`:321`, `:395`), text labelColor
+  `#000000d8` / `#ffffffd8` (`:308`, `:382`), the selection `#0064e1` / `#0059d1` (`:324`,
+  `:398`). `success_color` is the G1 green `#28cd41` / `#32d74b` (`:345`, `:419`). Status text,
+  warning's too, is labelColor (`:1081-1087`, footnote ¹). The rows `:1057-1059` the validator
+  left out (inactive and text selection) are stated too. Widget keys that copied the old values
+  inherit where their row says "←", or state their own row's API (segmented control
+  `selectedContentBackgroundColor`; sidebar text labelColor, a wrong safety net).
+- **V6:** `disabled_opacity` 1.0: AppKit dims by colour, `disabledControlTextColor` at
+  63/255 = 0.247 (`:338`, `:412`); facts `:180` and `:1115` restated.
+- **V7:** `border.opacity` 0.098, `separatorColor`'s alpha 25/255 (`:319`, `:393`), and
+  `border.color` `separatorColor` as given (`#00000019` / `#ffffff19`), so the share the model
+  says is folded into the colour is; facts `:1116` sourced. The old dark `#3d3d3d` was no
+  composite of `separatorColor`.
+- **V8–V10:** tooltip text 11 pt (`toolTipsFontOfSize:`, `:98`; facts `:65` now ✅); menu icons
+  16 (`:1242`); the popover's fill and text inherit (`:1405`, `:1407`).
+- **V11:** `scrollbar.track_color` transparent (overlay, `:1277`). `spinner.fill_color`: the leading fin as drawn, `#00000052` /
+  `#ffffff52` (measured ❓, facts `:1536` corrected).
+  The facts' "system gray" is not `systemGrayColor`: the probe's renders draw black / white fins
+  at a graded alpha, the leading one 82/255 (2× renders identical on 14 and 15).
+- **V12:** `shadow_enabled = false` on the text field, check box, progress bar, drop-down,
+  segmented control and expander, whose macOS cells give no shadow.
+- **W1:** the header names what the probe verified. **W6, W7:** `input.placeholder_color`
+  placeholderTextColor (`:314`, `:388`), `list.header_font.color` headerTextColor (`:318`,
+  `:392`), `list.grid_color` gridColor (`:320`, `:394`); `checkbox.background_color` stays (its
+  row `:1206` names no API). **W8:** the dark accent is `#007aff`: `controlAccentColor` is the
+  same in both appearances on 14.8.9, 15.7.9, 26.6.2 and 27.0.1 (`:362`, `:436`), while
+  `systemBlueColor` does switch (`:346`, `:420`). **W9** closes with V6, V9 and W6.
+- **Facts:** paletteFont 11 (`:131`, was 12), controlContentFont 12 (`:109`, was 13),
+  `NSOutlineView.indentationPerLevel` 13 (`:504`, was 16).
+- **For Step 8** (added to the validator's list): W5, the segmented control's height (24 is the
+  frame; `intrinsicContentSize` and the alignment rect give 22, `probe.toml:1380-1385`); W4,
+  `scrollbar.min_thumb_length` 40 is the legacy-mode value (`:1281`) under `overlay_mode = true`;
+  W2, every soft_option state colour without a source (ruling: they stay until then), including
+  the dark accent-derived copies that still carry `#0a84ff` (text-field hover and focus borders,
+  slider disabled fill, switch hover and disabled checked tracks, list and sidebar hovers), the
+  check box's unchecked outline (`:1209` gives no value), the expander arrow ("secondary label
+  colour", now `#0000007f` / `#ffffff8c`), and the switch's off track (`#d5d5d5` / `#3d3d3d`, the
+  old border colour; `:1472` gives no value). For Step 8a (reader, nothing hardcoded): the
+  reader takes `selection_text_color` from `selectedTextColor` (`#000000` light, `:330`) where
+  `:1056` names `alternateSelectedControlTextColor` (`#ffffff`, `:317`).
+- **Test data (controller ruling):** the dark button fill, `controlColor` `#ffffff3f`
+  (`:408`), is the first translucent `button.background_color`. It stays, and iced's
+  `compositing_holds_its_four_properties_on_every_native_color` and gpui's
+  `every_preset_states_an_opaque_button_fill` declare `macos-monterey/dark` in
+  `TRANSLUCENT_BUTTON_FILL`; gpui checks that its hover and pressed layers stay opaque, so
+  `over` returns the layer and the filled-button rows stay exact. iced's card close-colour
+  exception for `macos-monterey/dark` goes (T1). Commits: be69481a (preset, test data,
+  CHANGELOG), 00d49b51 (facts).
 
 ## M2b — Windows
 
