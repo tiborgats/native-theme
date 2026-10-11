@@ -118,13 +118,13 @@ light/dark appearance):
 | `linkColor`                           | Hyperlink text                             | ✅ |
 | `placeholderTextColor`                | Input placeholder text                     | ✅ |
 | `keyboardFocusIndicatorColor`         | Focus ring around focused controls         | ✅ |
-| `underPageBackgroundColor`            | Under-page/sidebar background              | ✅ |
+| `underPageBackgroundColor`            | The area beneath the window's views, the backdrop under the app's main content ([NSColor docs](https://developer.apple.com/tutorials/data/documentation/appkit/nscolor/underpagebackgroundcolor.json), read 2026-10-11); HIG: "The background behind a document's content" ([2024-01-24 copy](https://web.archive.org/web/20240124114733/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/color.json)) | ✅ |
 | `windowFrameTextColor`                | Window title bar text                      | ✅ |
 | `textBackgroundColor`                 | Text input background                      | ✅ |
 | `textColor`                           | Text input foreground                      | ✅ |
 | `headerTextColor`                     | Table/list column header text              | ✅ |
 | `shadowColor`                         | Shadow color                               | ✅ |
-| `highlightColor`                      | Highlight overlay                          | ✅ |
+| `highlightColor`                      | The virtual light source on the screen, used by `highlight(withLevel:)` ([NSColor docs](https://developer.apple.com/tutorials/data/documentation/appkit/nscolor/highlightcolor.json), read 2026-10-11) | ✅ |
 | `findHighlightColor`                  | Find/search match highlight                | ✅ |
 | `systemRedColor`                      | Error/danger semantic color                | ✅ |
 | `systemOrangeColor`                   | Warning semantic color                     | ✅ |
