@@ -364,7 +364,7 @@ fields = [
                                        # (FIXED: resolve.rs no longer inherits from defaults.muted_color)
     "switch.track_radius",             # derived from half track height (pill shape)
     "link.underline_enabled",          # boolean convention differs per platform
-    "link.background_color",           # only Windows HyperlinkButton has a value
+    "link.background_color",           # inline links have none, WinUI's inline Hyperlink too (§2.28)
     "link.hover_background",           # only WinUI's HyperlinkButton has one; inline links none (§2.28)
     "scrollbar.overlay_mode",          # boolean: macOS/GNOME overlay, Win/KDE persistent
     "dialog.button_order",             # enum: macOS/GNOME trailing, Win/KDE leading

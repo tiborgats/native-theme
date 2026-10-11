@@ -903,8 +903,8 @@ struct NoReceiver {
     stated_none: &'static [(&'static str, &'static str)],
 }
 
-/// Why kde-breeze, adwaita and macos-monterey leave `link.hover_background`
-/// transparent.
+/// Why kde-breeze, adwaita, macos-monterey and windows-11 leave
+/// `link.hover_background` transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
                                link hover background for macOS, KDE and GNOME, \
                                nor for WinUI's inline Hyperlink, which has no \

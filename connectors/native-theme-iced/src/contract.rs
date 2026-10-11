@@ -3274,8 +3274,9 @@ fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_th
     let expected = over(raw, to_color(resolved.button.background_color));
     assert!(
         raw.a < 1.0 && expected != raw,
-        "this preset no longer states a translucent hover layer, so it no \
-         longer tests compositing: raw {}, composited {}",
+        "the fixture's hover layer, ControlFillColorSecondary #80F9F9F9 \
+         set above, no longer differs from its composite over windows-11's \
+         button fill, so it no longer tests compositing: raw {}, composited {}",
         show(raw),
         show(expected)
     );

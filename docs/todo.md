@@ -490,6 +490,14 @@ the file was pruned on 2026-10-11, not reordered.
       *M2b Step 7b (2026-10-11):* windows-11's `disabled_text_color` is now
       `TextFillColorDisabled` as the resource gives it (`#0000005c`, dark
       `#ffffff5d`); its dark `defaults.border.color` is still open.
+      *M2b fix round 2 (2026-10-11):* windows-11's `defaults.border.color` is
+      now `CardStrokeColorDefault` as the resource gives it, `#0000000f` light
+      and `#00000019` dark (Common_themeresources_any.xaml:250, :46,
+      microsoft-ui-xaml 8463f45; `docs/platform-facts.md:1051`), so its dark
+      `#454545` is closed. `splitter.hover_color` keeps the old `#e5e5e5` /
+      `#454545` with no source ❓: WinUI 3 has no draggable divider
+      (`docs/platform-facts.md:1419`); it is for M3 with the other soft
+      options that have no facts row.
 
 ### Disabled: presets that state both mechanisms
 
@@ -616,7 +624,7 @@ model, the platform presets and the three connectors
 
 ### windows-11: a border opacity with no source
 
-- [ ] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
+- [x] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
       variants (light `:70`, dark `:567`), and `docs/platform-facts.md:1116`
       gives Windows no multiplier: WinUI 3 states each stroke role as a colour
       with its own alpha. M2b-P07 (`docs/todo_code-review-findings.md`) was
@@ -627,6 +635,12 @@ model, the platform presets and the three connectors
       can do without it (`ResolvedDefaultsBorder::opacity` is an `f32`,
       `native-theme/src/model/border.rs:232`), or mark it **(preset)** ❓ in the
       preset as the facts row does.
+      *Closed by M2b fix round 2 (2026-10-11):* the opacity is
+      `CardStrokeColorDefault`'s alpha, already in the stated
+      `defaults.border.color` (`model/border.rs`: no connector multiplies by
+      it), as macos-monterey's 0.098 is: 15/255 = 0.059 light (`#0000000f`)
+      and 25/255 = 0.098 dark (`#00000019`); `docs/platform-facts.md:1116`
+      says so. It moves to the archive at the next prune.
 
 ### Hover fills: a layer or a replacement
 
@@ -645,8 +659,14 @@ model, the platform presets and the three connectors
       Step 7b (`docs/todo_code-review-findings.md`, M2b) has windows-11
       state the button's and the segmented control's hover flattened over
       the window colour, `#f6f6f6` (dark `#323232`), which composites to
-      itself, and the button's pressed fill too, `#f5f5f5` (dark `#272727`);
-      the combo box's hover and the other pressed fills have no source yet. For M5–M7: decide whether the model's
+      itself, and the button's pressed fill too, `#f5f5f5` (dark `#272727`).
+      Fix round 2 flattens the combo box's hover the same way,
+      `ComboBoxBackgroundPointerOver` = `ControlFillColorSecondary`, `#f6f6f6`
+      (dark `#323232`), and the switch's off-track hover,
+      `ToggleSwitchFillOffPointerOver` = `ControlAltFillColorTertiary`,
+      `#e5e5e5` (dark `#2a2a2a`, ToggleSwitch_themeresources.xaml:136, :16);
+      the other pressed fills have no source yet. For M5–M7: decide whether
+      the model's
       `hover_background` is a layer (C17 stays, and a preset for a replacing
       platform states the flattened result, as windows-11 now does) or a
       replacement (the connectors write it as given, and the presets for
@@ -682,6 +702,28 @@ model, the platform presets and the three connectors
       (Common_themeresources_any.xaml:329, :125), `#0067c0` / `#4cc2ff` for
       the default accent on Windows 11 25H2
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:755`, `:758`).
+      *M2b fix round 2 (2026-10-11):* `input.background_color` now states
+      `TextControlBackground` = `ControlFillColorDefault` as the resource
+      gives it, `#ffffffb3` / `#ffffff0f` (TextBox_themeresources.xaml:130,
+      :23), and `docs/platform-facts.md:1186` gives the brush beside
+      `COLOR_WINDOW`; the old dark `#2d2d2d` had no source.
+      `tab.active_background` and `button.checked_background` are still open.
+
+### windows-11: the switch's off-track outline
+
+- [ ] [v0.7.0] For M3: WinUI 3 draws the off switch's track with a stroke,
+      `ToggleSwitchStrokeOff` = `ControlStrongStrokeColorDefault`, `#72000000`
+      light and `#8BFFFFFF` dark (ToggleSwitch_themeresources.xaml:139, :19;
+      Common_themeresources_any.xaml:252, :48, microsoft-ui-xaml 8463f45),
+      over a nearly clear fill, `ToggleSwitchFillOff` =
+      `ControlAltFillColorSecondary`, `#06000000` / `#19000000`
+      (`docs/platform-facts.md:1472`). The model has no switch border colour,
+      so windows-11's off switch draws as a faint pill with no outline
+      (`#00000006` over `#f3f3f3`). Its hover and disabled strokes
+      (`ToggleSwitchStrokeOffPointerOver`, `ToggleSwitchStrokeOffDisabled`,
+      :140, :142) have no field either. Decide whether the model gains an
+      off-track border colour; M2b fix round 2 gave the off track's hover and
+      disabled fills their WinUI resources.
 
 ---
 
@@ -732,6 +774,27 @@ model, the platform presets and the three connectors
       `progress_bar.track_color` (`connectors/native-theme-egui/src/style/roles.rs:542`);
       the base mapping does not. Decide which theme colour the base
       `extreme_bg_color` takes.
+      `windows-11` states the track transparent too since M2b Step 7b, WinUI's
+      `SubtleFillColorTransparent`, `#ffffff00` in light and dark
+      (`native-theme/src/presets/windows-11.toml:211`, `:708`;
+      `docs/platform-facts.md:1277`), so the same holds there.
+- [ ] [v0.7.0] For M7: the left and right panels fill with
+      `sidebar.background_color`
+      (`connectors/native-theme-egui/src/style/frames.rs:190-193`), which
+      `windows-11` states transparent since M2b Step 7b, WinUI's docked
+      `NavigationView` pane, `#f3f3f300` / `#20202000`
+      (`native-theme/src/presets/windows-11.toml:335`, `:832`). eframe
+      0.36.2's root `Ui` "has no margin or background color"
+      (`eframe/src/epi.rs:173`), and its default `clear_color` is
+      `rgba(12, 12, 12, 180)` (`epi.rs:248-252`), so an ordinary eframe app
+      shows that near-black behind the sidebar, under windows-11 light's
+      `#000000e4` text. The egui showcase hides it: its `clear_color` returns
+      `panel_fill` (`connectors/native-theme-egui/examples/showcase-egui/app.rs:891-893`).
+      Decide whether the connector documents or supplies a `clear_color`, or
+      what a transparent panel fill means. For M6: gpui depends on the app's
+      root background the same way; gpui-base 0.7.1's `Root` paints none
+      (`gpui-base/src/root.rs:281-309`), and the gpui showcase sets one
+      (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:2227`).
 
 ### native-theme-gpui connector
 

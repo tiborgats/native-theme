@@ -8,9 +8,9 @@
 #   and 1.8.12); the OS-reported values on Windows 11 25H2 (26200) and Windows Server 2025 (26100),
 #   docs/evidence/os-probe/2026-10-11-run-38129819806.
 # Colours: what WinUI 3 draws. A brush with alpha is stated as the resource gives it (ARGB #E4000000
-#   is "#000000e4"); the defaults' comments give the composite over background_color. A hover fill
-#   that replaces the rest fill (button, segmented control) is stated flattened over
-#   background_color, because the connectors composite hover_background over the rest fill.
+#   is "#000000e4"); the defaults' comments give the composite over background_color. A hover or
+#   pressed fill that replaces the rest fill (button hover and pressed, segmented control, combo box,
+#   switch off track) is flattened over background_color: the connectors composite it over the rest fill.
 # Source: WinUI3 XAML theme resources, Fluent Design System
 name = "Windows 11"
 icon_set = "segoe-fluent"
@@ -61,13 +61,13 @@ focus_ring_width_px = 2.0
 # platform-facts.md:1106 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
 focus_ring_offset_px = 1.0
 
-
 [light.defaults.border]
-color = "#e5e5e5"
+# platform-facts.md:1051, :1116 (§2.1.3, §2.1.6): CardStrokeColorDefault #0F000000, its alpha 15/255 the opacity below; over background_color #e5e5e5
+color = "#0000000f"
 corner_radius_px = 4.0
 corner_radius_lg_px = 8.0
 line_width_px = 1.0
-opacity = 0.14
+opacity = 0.059
 shadow_enabled = true
 [light.defaults.font]
 family = "Segoe UI"
@@ -140,19 +140,19 @@ padding_bottom_px = 6.0
 # platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.input]
-background_color = "#ffffff"
+# platform-facts.md:1186 (§2.4): TextControlBackground = ControlFillColorDefault #B3FFFFFF
+background_color = "#ffffffb3"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
 # TextControlForegroundDisabled = TemporaryTextFillColorDisabled #5C010101
 # (TextBox_themeresources.xaml:141, :129 at microsoft-ui-xaml 8463f45)
 disabled_text_color = "#0101015c"
-# soft_option: Fluent TextBox hover border
-hover_border_color = "#1a1a1a1a"
+# TextControlBorderBrushPointerOver is the rest brush, TextControlElevationBorderBrush (TextBox_themeresources.xaml:135, :134 at microsoft-ui-xaml 8463f45), so the input's rest border, defaults.border.color
+hover_border_color = "#0000000f"
 # soft_option: Fluent accent-color bottom border
 focus_border_color = "#0078d4"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#f9f9f900"
-
 
 [light.input.border]
 # platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
@@ -234,8 +234,8 @@ tick_mark_length_px = 4.0
 thumb_hover_color = "#e0e0e0"
 # Fluent AccentFillColorDisabled
 disabled_fill_color = "#0078d450"
-# Fluent SliderTrackFillDisabled
-disabled_track_color = "#71717150"
+# SliderTrackFillDisabled = ControlStrongFillColorDisabled #51000000 (Slider_themeresources.xaml:127; Common_themeresources_any.xaml:227 at microsoft-ui-xaml 8463f45)
+disabled_track_color = "#00000051"
 # Fluent slider thumb disabled
 disabled_thumb_color = "#ffffff80"
 
@@ -367,7 +367,7 @@ padding_bottom_px = 17.0
 [light.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# splitter.divider_color = defaults.border.color
+# divider_color ← defaults.border.color; hover_color no source ❓: WinUI 3 has no draggable divider (platform-facts.md:1419), and #e5e5e5 is the border's old composite (M3)
 hover_color = "#e5e5e5"
 
 [light.switch]
@@ -385,12 +385,12 @@ track_radius_px = 10.0
 # soft_option interactive state colors (Windows Fluent ToggleSwitch)
 # Fluent ToggleSwitch hover on -- slightly brighter accent
 hover_checked_background = "#1a86d6"
-# Fluent ToggleSwitch hover off -- slightly darker trough
-hover_unchecked_background = "#b0b0b0"
+# ToggleSwitchFillOffPointerOver = ControlAltFillColorTertiary #0F000000 (ToggleSwitch_themeresources.xaml:136; Common_themeresources_any.xaml:235 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened over background_color: 243 × 240/255 = 228.7 → #e5e5e5
+hover_unchecked_background = "#e5e5e5"
 # Fluent ToggleSwitch disabled on -- accent at reduced opacity
 disabled_checked_background = "#0078d450"
-# Fluent ToggleSwitch disabled off -- trough at reduced opacity
-disabled_unchecked_background = "#c5c5c550"
+# ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:138; Common_themeresources_any.xaml:237)
+disabled_unchecked_background = "#ffffff00"
 # Fluent ToggleSwitch disabled knob
 disabled_thumb_color = "#ffffff80"
 
@@ -448,8 +448,8 @@ arrow_area_width_px = 38.0
 # ComboBoxForegroundDisabled = TextFillColorDisabled #5C000000
 # (ComboBox_themeresources.xaml:253 at microsoft-ui-xaml 8463f45)
 disabled_text_color = "#0000005c"
-# soft_option: Fluent ComboBox hover
-hover_background = "#0000000a"
+# ComboBoxBackgroundPointerOver = ControlFillColorSecondary #80F9F9F9 (ComboBox_themeresources.xaml:243; Common_themeresources_any.xaml:220 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened as button.hover_background (platform-facts.md:1179)
+hover_background = "#f6f6f6"
 # soft_option: Fluent ComboBox disabled
 disabled_background = "#f9f9f900"
 
@@ -558,13 +558,13 @@ focus_ring_width_px = 2.0
 # platform-facts.md:1106 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
 focus_ring_offset_px = 1.0
 
-
 [dark.defaults.border]
-color = "#454545"
+# platform-facts.md:1051, :1116 (§2.1.3, §2.1.6): CardStrokeColorDefault #19000000, its alpha 25/255 the opacity below; over background_color #1d1d1d
+color = "#00000019"
 corner_radius_px = 4.0
 corner_radius_lg_px = 8.0
 line_width_px = 1.0
-opacity = 0.14
+opacity = 0.098
 shadow_enabled = true
 [dark.defaults.font]
 family = "Segoe UI"
@@ -637,19 +637,19 @@ padding_bottom_px = 6.0
 # platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.input]
-background_color = "#2d2d2d"
+# platform-facts.md:1186 (§2.4): TextControlBackground = ControlFillColorDefault #0FFFFFFF
+background_color = "#ffffff0f"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
 # TextControlForegroundDisabled = TemporaryTextFillColorDisabled #5DFEFEFE
 # (TextBox_themeresources.xaml:34, :22 at microsoft-ui-xaml 8463f45)
 disabled_text_color = "#fefefe5d"
-# soft_option: Fluent TextBox hover border
-hover_border_color = "#ffffff1a"
+# TextControlBorderBrushPointerOver is the rest brush, TextControlElevationBorderBrush (TextBox_themeresources.xaml:28, :27 at microsoft-ui-xaml 8463f45), so the input's rest border, defaults.border.color
+hover_border_color = "#00000019"
 # soft_option: Fluent accent-color bottom border
 focus_border_color = "#0078d4"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#33333300"
-
 
 [dark.input.border]
 # platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
@@ -731,8 +731,8 @@ tick_mark_length_px = 4.0
 thumb_hover_color = "#404040"
 # Fluent AccentFillColorDisabled
 disabled_fill_color = "#0078d450"
-# Fluent SliderTrackFillDisabled
-disabled_track_color = "#9a9a9a50"
+# SliderTrackFillDisabled = ControlStrongFillColorDisabled #3FFFFFFF (Slider_themeresources.xaml:23; Common_themeresources_any.xaml:23 at microsoft-ui-xaml 8463f45)
+disabled_track_color = "#ffffff3f"
 # Fluent slider thumb disabled
 disabled_thumb_color = "#2d2d2d80"
 
@@ -863,7 +863,7 @@ padding_bottom_px = 17.0
 [dark.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# splitter.divider_color = defaults.border.color
+# divider_color ← defaults.border.color; hover_color no source ❓: WinUI 3 has no draggable divider (platform-facts.md:1419), and #454545 is the border's old value (M3)
 hover_color = "#454545"
 
 [dark.switch]
@@ -881,12 +881,12 @@ track_radius_px = 10.0
 # soft_option interactive state colors (Windows Fluent ToggleSwitch)
 # Fluent ToggleSwitch hover on -- slightly brighter accent
 hover_checked_background = "#1a86d6"
-# Fluent ToggleSwitch hover off -- slightly brighter trough
-hover_unchecked_background = "#525252"
+# ToggleSwitchFillOffPointerOver = ControlAltFillColorTertiary #0BFFFFFF (ToggleSwitch_themeresources.xaml:16; Common_themeresources_any.xaml:31 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened over background_color: 255 × 11/255 + 32 × 244/255 = 41.6 → #2a2a2a
+hover_unchecked_background = "#2a2a2a"
 # Fluent ToggleSwitch disabled on -- accent at reduced opacity
 disabled_checked_background = "#0078d450"
-# Fluent ToggleSwitch disabled off -- trough at reduced opacity
-disabled_unchecked_background = "#45454550"
+# ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:18; Common_themeresources_any.xaml:33)
+disabled_unchecked_background = "#ffffff00"
 # Fluent ToggleSwitch disabled knob
 disabled_thumb_color = "#ffffff80"
 
@@ -944,8 +944,8 @@ arrow_area_width_px = 38.0
 # ComboBoxForegroundDisabled = TextFillColorDisabled #5DFFFFFF
 # (ComboBox_themeresources.xaml:43 at microsoft-ui-xaml 8463f45)
 disabled_text_color = "#ffffff5d"
-# soft_option: Fluent ComboBox hover
-hover_background = "#ffffff0f"
+# ComboBoxBackgroundPointerOver = ControlFillColorSecondary #15FFFFFF (ComboBox_themeresources.xaml:33; Common_themeresources_any.xaml:16 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened as button.hover_background (platform-facts.md:1179)
+hover_background = "#323232"
 # soft_option: Fluent ComboBox disabled
 disabled_background = "#33333300"
 
