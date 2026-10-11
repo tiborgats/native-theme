@@ -51,8 +51,9 @@
       `CheckboxTheme` (`native-theme/src/model/widgets/mod.rs:146-188`) has one
       `hover_background` (`:170-172`), with no checked counterpart. All 16
       presets that state colours state it, in both modes (the four `*-live`
-      presets carry geometry only), yet §2.5 of platform-facts has no hover row
-      at all, so none of those 32 values is sourced there, and
+      presets, removed since in M1-T4-01, carried geometry only), yet §2.5
+      of platform-facts has no hover row at all, so none of those 32 values
+      is sourced there, and
       only `windows-11` says what its value is: "Fluent checkbox hover fill"
       (`native-theme/src/presets/windows-11.toml:130-131`), without saying for
       which box state. Native toolkits do style the checked box under the
@@ -230,7 +231,7 @@
       cannot state: `md.comp.radio-button.icon-size` is 20px
       ([material-web v2.5.0 `_md-comp-radio-button.scss:34`](https://github.com/material-components/material-web/blob/v2.5.0/tokens/versions/v0_192/_md-comp-radio-button.scss#L34))
       while `md.comp.checkbox.container-size` is 18px (`_md-comp-checkbox.scss:32`),
-      and the `material` preset's one `indicator_width_px = 18.0` makes the
+      and the `material-3` preset's one `indicator_width_px = 18.0` makes the
       radio 18; and a checked Material radio is an unfilled ring and a dot,
       both `md.sys.color.primary` (`radio/internal/_radio.scss:126-127`), not
       a filled accent disc with an on-accent dot. Neither token set has a dot
@@ -239,7 +240,7 @@
       drawn at radius 6 − 1 (`RadioButton.kt:320-323`), both implementation
       constants. `docs/platform-facts.md` has no Material column, and
       `native-theme/src/presets/documented_sizes.rs:12-15` keeps the
-      `material` preset from stating a size no platform-facts row documents,
+      `material-3` preset from stating a size no platform-facts row documents,
       so the preset states no `radio_dot_diameter` and each toolkit draws its
       own dot. Carrying Material's radio would need a radio indicator width
       and radio-specific colours (or a ring-style flag) in the model.
@@ -362,10 +363,11 @@
       (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
       `min_diameter` either (**(none)**, `docs/platform-facts.md:1534`), yet
-      `kde-breeze`, `kde-breeze-live`, `adwaita` and `adwaita-live` state
-      `min_diameter_px = 16.0` in both variants. `min_diameter` is required in
-      `ResolvedSpinnerTheme` too (`native-theme/src/model/widgets/mod.rs`,
-      `SpinnerTheme`, no `soft_option`), so the same model decision covers both
+      `kde-breeze` and `adwaita` (and their `-live` twins, until M1-T4-01
+      removed them) state `min_diameter_px = 16.0` in both variants.
+      `min_diameter` is required in `ResolvedSpinnerTheme` too
+      (`native-theme/src/model/widgets/mod.rs`, `SpinnerTheme`, no
+      `soft_option`), so the same model decision covers both
       fields; the presets keep the values until it is made.
 
 ### Presets: the scrollbar thumb colour platform-facts measures
@@ -787,7 +789,7 @@ model, the platform presets and the three connectors
 ### material: the slider thumb is the page's colour
 
 - [x] Data question for the maintainer (found 2026-09-28 on the Basic
-      pages). `material.toml` states no `slider.thumb_color` (`[light.slider]`
+      pages). `material-3.toml` states no `slider.thumb_color` (`[light.slider]`
       `:133-140`, `[dark.slider]` `:381-388`), so it resolves through
       `docs/inheritance-rules.toml:197` to `defaults.surface_color`, which
       material states as `#fffbfe` (`:13`), the same as its
@@ -797,7 +799,7 @@ model, the platform presets and the three connectors
       material light shows a gap in the track where the thumb is.
       `docs/platform-facts.md` §2.9 (`:1291`) gives `thumb_color ←
       defaults.surface_color` for macOS, Windows, KDE and GNOME, and has no
-      Material column; the preset's source line (`material.toml:2`,
+      Material column; the preset's source line (`material-3.toml:2`,
       "m3.material.io baseline color scheme") gives no slider handle colour,
       and what a Material 3 slider handle takes was not researched. Decide
       whether material states `slider.thumb_color` from a cited Material 3
@@ -809,7 +811,40 @@ model, the platform presets and the three connectors
       [tokens/versions/latest/sass/_md-comp-slider.scss:164-165](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/tokens/versions/latest/sass/_md-comp-slider.scss#L164-L165)),
       baseline primary40 `#6750a4` light and primary80 `#d0bcff` dark
       (`_md-sys-color.scss:110`, `:51`; `_md-ref-palette.scss:73`, `:77`).
-      `material.toml` states `slider.thumb_color` so in both variants.
+      `material-3.toml` states `slider.thumb_color` so in both variants.
+
+### `SystemTheme::from_system_with_preset`: an older generation over the live OS data
+
+- [ ] Add `SystemTheme::from_system_with_preset(name)` and its async twin
+      (M1-T1-04 in `docs/todo_code-review-findings.md`): the platform reader
+      runs as in `from_system()`, and its values merge over the named preset
+      instead of the running generation's, so an application, or its user,
+      can keep `macos-sonoma`'s look on macOS 26 with the OS's colours,
+      fonts, DPI and accessibility. Today the only way to an older
+      generation is `Theme::preset(name)`, which reads nothing from the OS.
+      The name is checked against the generation table's rows for the
+      running platform (M1-T1-01), not only `PresetInfo.platforms`, and
+      `Error::UnknownPreset` answers any other. The rustdoc says what a pin
+      gives: the older generation's geometry over the running OS's colours,
+      fonts and accessibility (on macOS 26, `NSColor` gives Tahoe's
+      colours), a hybrid rather than the old OS's look, reported as
+      `PresetOlder` by the version match. The accessibility path needs no
+      counterpart: it reads no preset. Implement after M1-T1-01 and
+      `macos-tahoe` (M2a Step 9) land; until a platform has a second
+      generation there is nothing to choose.
+
+### material-3: the screenshot names and the display name
+
+- [ ] At the next `scripts/generate_assets_release.sh` run, the six README
+      links to `linux-material-{light,dark}.png` (the gpui, iced and egui
+      READMEs) become `linux-material-3-*`, since the screenshot scripts name
+      their output after the preset key, and the old PNGs are removed with
+      `git rm`. The display name "Material 3" is set in
+      `PRESET_DISPLAY_NAMES` and the preset's `PresetInfo`
+      (`native-theme/src/presets.rs`) when M2d rewrites the preset, with
+      "Material 3 Expressive" for the second Material preset; the menus say
+      "Material" until then. Nothing is renamed before
+      (`docs/todo_code-review-plan.md`, M2d Step 15).
 
 ---
 
@@ -1240,7 +1275,7 @@ What is still open on the iced side:
       the platform's own choice — macOS ships `success_color = "#34c759"` with
       white text at about 2.2:1 — and the connectors must not override a
       platform. But some look like preset data errors rather than platform
-      facts, and `preset-validator` should judge them: `material` light and
+      facts, and `preset-validator` should judge them: `material-3` light and
       dark give `tab.active_text_color` and `tab.active_background` values
       that leave the label on its own fill, and `nord` dark puts
       `input.placeholder_color` at 1.36 against the field. The contrast test
@@ -1303,7 +1338,7 @@ What is still open on the iced side:
       computed with KColorScheme 6.30.0): the model's one
       `disabled_background` cannot say so.
 - [ ] `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
-      zero) and `material` `#1c1b1f1f`, so on those four combinations a disabled
+      zero) and `material-3` `#1c1b1f1f`, so on those four combinations a disabled
       box is effectively absent — the same shape as the button item below.
 - [x] `checkbox.indicator_color` inherited `defaults.text_color` until v0.5.9,
       against `platform-facts.md` §2.5 (on-accent on all four platforms);
@@ -1314,9 +1349,12 @@ What is still open on the iced side:
       published rule file can drift from the code with no test noticing. Add a
       target-level assertion, then audit the other rules against
       platform-facts the way this one was found.
-      Done 2026-10-11: `uniform_rules_all_accounted_for` compares every rule's
-      source with the derive's recorded `inherit_from`; the platform-facts
-      audit of the other rules is not done.
+      Done 2026-10-11 (890edc88): `uniform_rules_all_accounted_for` checks
+      the 86 rules' sources, 67 against the derive's recorded `inherit_from`,
+      4 against the border inventory and 15 against a hand-kept list.
+- [ ] Audit the other `docs/inheritance-rules.toml` rules against
+      platform-facts the way `checkbox.indicator_color` was found: the
+      second half of the item above, which 890edc88 left open.
 - [ ] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
       zero, so a disabled button has no fill at all. Found 2026-09-21 while
       measuring translucent state colours; for `preset-validator` to judge
@@ -2262,7 +2300,7 @@ the gap — closing it is a change, and each wants its own decision.
       e.g. what a builder does without a minimum height or a dialog bound,
       and `bar_height`'s change to `Option` is the pattern. The plan's audit
       (Table B, 2026-09-23) found these; the values are unchanged since, and
-      are the same in each `-live` twin:
+      were the same in each `-live` twin until M1-T4-01 removed them:
 
       | Field | Platform-facts cell | Stated by |
       |---|---|---|

@@ -41,7 +41,22 @@ shows `ColorSelect` and `SpeechWaveform`.
 
 Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md).
 
-## v0.6.2 — Full theme geometry in the iced connector
+## v0.7.0 — Whole-codebase review
+
+The release after v0.6.1 is 0.7.0: the review's design phase accepted two
+breaking changes ([`docs/todo_code-review-plan.md`](docs/todo_code-review-plan.md), D1):
+
+- the `-live` preset tier is removed: the platform readers merge over the
+  platform preset, and `Theme::preset("…-live")`, `PlatformPreset::is_live`
+  and `PlatformPreset::live_name()` are gone;
+- the connectors' `from_system` returns a named result struct instead of a
+  tuple, and their accessors take the model's field names.
+
+The rest of the release is the review's fixes: its design decisions, platform
+fidelity per OS version, and the code review of every crate, recorded in
+[`docs/todo_code-review-findings.md`](docs/todo_code-review-findings.md).
+
+## v0.7.1 — Full theme geometry in the iced connector
 
 v0.5.9 ships most of it. `native_theme_iced::styles` (feature `widgets`, on by
 default) replaces nineteen of iced's style functions with closures built
@@ -82,7 +97,7 @@ the upstream lines that show it, in the connector's mapping contract.
 
 Detailed design: [`docs/todo_iced-full-theme-geometry.md`](docs/todo_iced-full-theme-geometry.md).
 
-## v0.6.3 — Upstream receivers for the gpui connector
+## v0.7.2 — Upstream receivers for the gpui connector
 
 v0.5.8 delivered the connector-side geometry: every widget where
 gpui-component 0.6 and later applies the caller's `StyleRefinement` after its own
@@ -91,7 +106,7 @@ through the `geometry` module, and the base layer (scrollbar, resize handle)
 takes native values through `base_layer` with automatic re-application. What
 remains is geometry on **inner elements the caller's style cannot reach**,
 plus the tab properties `Tab`'s render overwrites in the shared style bag,
-which is upstream work. v0.6.3 is the set of PRs to gpui-kit, one concern
+which is upstream work. v0.7.2 is the set of PRs to gpui-kit, one concern
 each, framed as theming flexibility:
 
 - a styled `Theme` scrollbar-style override honoured by `base_theme()`, so
@@ -115,7 +130,7 @@ each, framed as theming flexibility:
 Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
 limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
-## Beyond v0.6
+## Beyond v0.7
 
 No milestone targets committed yet. Likely candidates:
 - slint, other connectors

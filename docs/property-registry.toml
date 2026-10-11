@@ -141,7 +141,10 @@ section_heading              = "text_scale_entry"
 dialog_title                 = "text_scale_entry"
 display                      = "text_scale_entry"
 
-# ─── Top-level ThemeVariant fields (structural, not from §2.x tables) ────
+# ─── Top-level Theme fields (structural, not from §2.x tables) ──────────
+# icon_set is a field of `Theme`, not of `ThemeMode`: one icon set for both
+# variants. The table keeps its `theme_variant` name, which
+# docs/showcase-elements.toml cites (`theme_variant.icon_set`).
 
 [theme_variant]
 icon_set                     = "enum"
@@ -406,8 +409,11 @@ line_width_px                = "f32"
 # GtkBox, StackPanel). These are the values a layout manager uses when
 # the developer does not specify explicit spacing.
 #
-# NOT YET IMPLEMENTED — struct and presets do not exist yet.
-# Currently only documented in platform-facts.md §2.20.
+# Implemented as `Theme.layout` (`LayoutTheme`, model/widgets/mod.rs): a
+# top-level [layout] table shared by both variants, not a per-variant
+# widget. Every bundled preset states it; `SystemTheme.layout` carries the
+# reader's values merged over the preset's, unresolved (a field neither
+# states stays `None`). Values: platform-facts.md §2.20.
 # No platform exposes these as user-configurable settings; all values
 # are compile-time constants or design guidelines.
 

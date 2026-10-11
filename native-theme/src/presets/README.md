@@ -28,10 +28,38 @@ presets' other sizes (`min_height_px`, `max_width_px`, …) are stated,
 often without a source, and are still being audited (`docs/todo.md`,
 Table B); the color-scheme presets state many of them too.
 
+`material-3` and `ios` have no reader: `SystemTheme::from_system()` never
+selects them, and an application chooses them as a look.
+`material-3` is a look for any platform, and `list_presets_for_platform()`
+offers it on every one; its icons are the bundled Material Symbols, which
+load with the `material-icons` feature. `ios` is a look for desktop apps on
+macOS: its icons are SF Symbols, which load only on macOS (with
+`system-icons`). `list_presets_for_platform()` offers it on macOS and iOS and
+`Theme::preset("ios")` loads it anywhere, but off macOS, iOS included, its
+icons are `None`, never another set's.
+
 Files: `kde-breeze.toml`, `macos-sonoma.toml`, `windows-11.toml`,
 `adwaita.toml`, `material-3.toml`, `ios.toml`, and the community presets
 (`catppuccin-*.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
 `one-dark.toml`, `solarized.toml`, `tokyo-night.toml`).
+
+## Naming a platform preset
+
+One platform preset per visual generation. Its key is the vendor's own name
+for the generation's first OS version: Apple's codename (`macos-sonoma`),
+Microsoft's version number (`windows-11`), Material's design version
+(`material-3`). The file's first lines state which OS versions the preset
+covers and which versions its values were verified on, matching the version
+tags of `docs/platform-facts.md`; a header states them only once they have
+been checked against the platform's sources, and until then names the
+generation alone. A new generation is a new preset under its own key; a new
+OS version of the same generation updates the existing one. The style
+presets keep their style names, `kde-breeze` and `adwaita`, and their
+headers name the style version they pin, since the KDE and GNOME readers
+read the installed style, and the style, not the desktop's version, is the
+generation. `ios` is not named by its version yet: it becomes `ios-<N>` once
+its values are checked against iOS `<N>`, and keeps its key if they match no
+single version.
 
 ## Preset file listing
 

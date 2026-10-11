@@ -50,6 +50,8 @@ are needed to use bundled presets.
   - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material-3`, `ios`
   - *Community:* `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark`
 
+  `material-3` and `ios` have no OS reader; an application chooses them as a look. `material-3` suits any platform, and its Material Symbols icons load with the `material-icons` feature. `ios` is a look for desktop apps on macOS: its SF Symbols load only on macOS, so on every other platform, iOS included, its icons are `None` and are never replaced by another set.
+
   Enumerate with `Theme::list_presets()` or `Theme::list_presets_for_platform()`.
 
 ## Common recipes

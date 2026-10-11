@@ -9,6 +9,33 @@ This guide covers the update procedure for each platform.
 
 ---
 
+## A new generation, a new preset
+
+One platform preset per visual generation. A new OS version of the same
+generation updates the platform's preset; a new visual generation gets a new
+preset beside it, whose key is the vendor's own name for the generation's
+first OS version:
+
+| Platform | The key names | Example |
+|---|---|---|
+| macOS | Apple's codename | `macos-sonoma` |
+| Windows | Microsoft's version number | `windows-11` |
+| iOS | the iOS version number | `ios-<N>` (today's `ios` is renamed once its values are checked against one iOS version; it keeps its key if they match none) |
+| Material | the design version | `material-3` |
+| KDE, GNOME | the style, not the desktop | `kde-breeze`, `adwaita` |
+
+The preset file's first lines state which OS versions it covers and which
+versions its values were verified on, matching the version tags in
+`docs/platform-facts.md` (a version-tagged cell gives each value to its
+version's preset; see its Conventions). Both are written only from a
+version map and checks with sources for that platform, never guessed; until
+then the header names the generation and states no range. The style presets
+keep their style names and name the style version they pin (Breeze,
+libadwaita) in the header: the KDE and GNOME readers read the installed
+style, so the style, not the desktop's version, is the generation.
+
+---
+
 ## KDE (Breeze)
 
 **Source:** `breezemetrics.h` from the KDE Breeze repository
@@ -66,8 +93,9 @@ WinUI3 Fluent Design specifications
 1. Review Windows SDK release notes for new `GetSystemMetrics` indices.
 2. Review WinUI3 Fluent Design specs for updated spacing/sizing values.
 3. Update constants in `native-theme/src/windows.rs`.
-4. Update `native-theme/src/presets/windows-11.toml` (or create a new preset, e.g.,
-   `windows-12.toml`, if the visual language changes significantly).
+4. Update `native-theme/src/presets/windows-11.toml`, or, for a new visual
+   generation, create its preset as
+   [A new generation, a new preset](#a-new-generation-a-new-preset) says.
 5. Test on the target Windows version: `cargo test -p native-theme --features windows`.
 
 **Note:** The Windows reader reads its system metrics (scrollbar width and thumb
@@ -90,8 +118,9 @@ Xcode Interface Builder measurements
 
 - `native-theme/src/macos.rs` -- the `macos_widget_defaults()` function and the
   `MacosReader` reader (`read_appearance_colors()` holds the `NSColor` mappings)
-- `native-theme/src/presets/macos-sonoma.toml` -- bundled preset data (or create a
-  new preset for the new macOS version)
+- `native-theme/src/presets/macos-sonoma.toml` -- bundled preset data (a new visual
+  generation gets a preset of its own, named as
+  [A new generation, a new preset](#a-new-generation-a-new-preset) says)
 
 **What to look for:**
 
@@ -111,7 +140,7 @@ Xcode Interface Builder measurements
 4. Update constants in `macos_widget_defaults()` in `native-theme/src/macos.rs`.
 5. If semantic color names changed, update the NSColor mappings in
    `read_appearance_colors()`, which `MacosReader` calls.
-6. Update or create the preset TOML file.
+6. Update the preset TOML file, or create the new generation's preset.
 7. Test on the target macOS version: `cargo test -p native-theme --features macos`.
 
 **Note:** The macOS module is unconditionally compiled. The `build_theme` tests run
