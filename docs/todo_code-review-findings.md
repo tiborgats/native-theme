@@ -307,7 +307,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** (1) Each row carries its first version and its last verified version. A running OS newer than the last verified version reports PresetOlder, so macOS 27 under macos-tahoe is reported as D4 requires ('documented as such'); without this, 27 reads as an exact match. (2) VersionMatch is #[non_exhaustive]. The SystemTheme field is Option<…> (None on Linux and on preset-only fallbacks) and survives with_overlay. (3) Drop the iOS arm from scope. Under D5 there is no iOS reader and from_system returns PlatformUnsupported there, and a live 'ios' would point at a nonexistent ios-live. At most a label fix with is_live:false. (4) The Windows 10/11 build boundary and the macOS row bounds come from M2a/M2b's version maps with citations, never stated in M1. (5) Correct the ledger's evidence on screenshots as noted. Keep Step 10's four test cases, plus one asserting PresetOlder for 27.
 
 **Decision:** adopt with the critic's changes (maintainer, 2026-10-11, round 1): rows carry first and last-verified version, `VersionMatch` is `#[non_exhaustive]` and `Option` on `SystemTheme`, no iOS arm (D5), version bounds sourced in M2a/M2b; replaces M2a Step 10's macOS-only arm.
-**Status:** scheduled: M2a, before Step 9
+**Status:** fixed in 1dca505c (M2a Step 10)
 
 ### M1-T1-02 · no API break · Readers' hardcoded generation geometry moves into the live presets
 
@@ -400,7 +400,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** (1) Record it now as a docs/todo.md entry. Implement only after P0 and macos-tahoe (M2a Step 9) land, not in M1's fix phase. (2) The rustdoc must say what a pin gives: the older generation's geometry over the running OS's colours, fonts and accessibility (on macOS 26, NSColor gives Tahoe colours). That is a hybrid, not the old OS's look, and it is reported as PresetOlder through P0's match. (3) Validate the name against P0's table rows for the running platform, not only PresetInfo.platforms.
 
 **Decision:** adopt after macos-tahoe lands (round 1): recorded on docs/todo.md in M1; implemented after M1-T1-01 and M2a Step 9, the rustdoc stating the hybrid result.
-**Status:** docs/todo.md entry added in a85d1fe0; implementation after M2a Step 9
+**Status:** fixed in 1dca505c (M2a Step 10a); docs/todo.md entry closed
 
 ### M1-T2-01 · no API break · README states what ios and material are; ios named by its version after M2c
 
@@ -1597,7 +1597,7 @@ M3–M8 cites these instead of reporting them again.
 
 ## M2a — macOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51); Steps 8a and 8 done 2026-10-11 (c1704d2f, 849ceca2). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51); Steps 8a and 8 done 2026-10-11 (c1704d2f, 849ceca2); Steps 9-12 (macos-tahoe) done 2026-10-11 (1985b13b, e114c43c, 1dca505c, 4ea7db72, 91b5b5f0); Step 7: corrections done, close gates pending. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets macOS 14 (`macos-sonoma.toml:1-3`), and 14 has had no security update since 14.8.9 (2026-08-06): Apple
 supports 27, 26 and 15 today. No source separates 15 from 14 (WebKit's pre-Tahoe tables carry no 14/15 conditional, Apple
@@ -2713,6 +2713,91 @@ for the `macos-monterey` halves.
   8 left, controlColor fill, controlTextColor text; segmented 22; list base rows controlBackgroundColor (the
   stripes are no longer inverted, validator W3 / review minor 6); W2's state colours stay, their comments
   corrected; W4's 40 stays, marked.
+
+### Steps 9–12 — `macos-tahoe` (2026-10-11)
+
+Steps 8a and 8 are in the subsection above; the Step 8 fix round (e114c43c) applied the macos-monterey
+re-audit's A–D and the T1+T2 review's R1–R5 (unsourced state colours say "no source" and the former colour they
+are; the sidebar stays a marked material; the dark slider knob's hover and disabled colours go, so they are the
+sourced knob; probe todo entries for the sidebar, title bar and list header renders).
+
+- **macos-tahoe (1985b13b, amended in 4ea7db72):** every value from a "macOS 26:" cell of `platform-facts.md`. The 32
+  required fields per variant that no source gives for macOS 26 carry `macos-monterey`'s value, each marked "no
+  macOS 26 source" (Q1 (a)); so do the values whose inherited safety net is known to be the wrong kind:
+  `scrollbar.track_color`, `menu.icon_size`, the expander's `shadow_enabled`, the tooltip's colours,
+  `sidebar.background_color`, and, in 4ea7db72, `button.hover_background` (inheritance-rules.toml:159: the inherited
+  window colour would hide the translucent button on hover). 4ea7db72 also carries `dialog.title_font` (13 pt, 700;
+  `:1496-1497` are ❓) and `segmented_control.active_background` (`#0064e1` / `#0059d1`): macOS 26 reports
+  `selectedContentBackgroundColor` unchanged (probe 26 :324, :398), but its render draws the selected segment black
+  / white at alpha 50/255 in a window that is not key, so the value stays marked as carried, not sourced. Capsule
+  knobs: the extent across the track, slider 16 and switch 20 (Q3 (a)); `combo_box.arrow_icon_size` keeps 17,
+  marked unsourced, in both presets (Q2 (a)). Registered as "macOS Tahoe"; 17 presets, 34 preset/mode combinations
+  in the connector contracts. gpui lists its light and dark in `TRANSLUCENT_BUTTON_FILL` and excepts its derived
+  pressed fill (`DERIVED_PRESSED_FILL`, M6 entry in `docs/todo.md`); its opaque-hover check holds for the carried
+  hover fill. 4ea7db72 further: the spinner citation `:1530` / `:770` (the `sizeToFit` frames), `:1551`'s macOS 26 ❓ tag,
+  the xref test reads `:1420`, Table B's macOS paragraph names the rows `macos-tahoe` carries, the native-preset
+  lists of the connector tests gain `macos-tahoe`, egui's runner fonts test takes the running generation's
+  preset, and the iced contract prints the disabled checked checkbox's range (1.07–4.02:1 over 34 combinations).
+- **Selection (1dca505c):** the generation table (`MACOS_GENERATIONS`: monterey 12–15 verified 15, tahoe 26
+  verified 26; `WINDOWS_GENERATIONS`: windows-11 from 22000 verified 26200), `VersionMatch`,
+  `SystemTheme::version_match`, `DiagnosticEntry::OsGeneration`, `from_system_with_preset` and its async twin;
+  macOS 27 is `PresetOlder` under `macos-tahoe` (D4), Windows 10 `PresetNewer` (D9), Windows 11 26H2 / 26H1
+  `PresetOlder` until a probe verifies them (Q4). M1-T1-01 and M1-T1-04 fixed there.
+- **Docs and screenshots (91b5b5f0):** the presets README, the `native-theme` and root READMEs (17 presets), the
+  new-OS-version guide (the macOS file list names `macos-tahoe.toml` and the generation table; its note no longer
+  speaks of fallback values), the macOS 27 todo entry (1dca505c); `screenshots.yml` captures `macos-tahoe` beside
+  `macos-monterey`. The run is the maintainer's: at that asset run the README links move to
+  `macos-macos-monterey-*`, the three connector READMEs gain the `macos-macos-tahoe-*` pair (Q5), and
+  `macos-monterey`'s display name becomes "macOS Monterey" (`docs/todo.md` entry).
+- **Step 7:** corrections done (923cb787..7f112d64, 849ceca2, e114c43c); its close gates (a clean
+  preset-validator report on both macOS presets after 4ea7db72, the template's Step 8) are pending.
+
+Rulings (controller, 2026-10-11):
+
+- Q1: option (a): the required fields with no macOS 26 source carry `macos-monterey`'s value, each commented "no
+  macOS 26 source; macos-monterey's value" (`corner_radius_lg` adds that Tahoe's window radii are larger per
+  third-party measurements, `platform-facts.md:173`, not adopted) and listed in the Table B todo entry; the five
+  non-required "wrong safety net" fields are carried the same way. Why: a Mac on 26 got `macos-monterey`'s value
+  for every field before, so a carried, labelled value changes nothing a user sees there while the sourced 26
+  values improve the rest; ios-26 differs (deferred), because no reader selects it.
+- Q1 extension: `button.hover_background` is a wrong safety net and is carried from `macos-monterey`, marked; by the
+  same status-quo reasoning `dialog.title_font` and `segmented_control.active_background` are carried (the latter
+  as sourced if the probe reports the API: see the 4ea7db72 note above for why it stays marked as carried).
+- Q2 (a): `combo_box.arrow_icon_size` keeps 17, marked unsourced, in both presets.
+- Q3 (a): capsule knobs are stated by their extent across the track, 16 (slider) and 20 (switch); the facts record
+  the capsule.
+- Q4: keep: Windows 11 26H2 and 26H1 report `PresetOlder` until a probe verifies them.
+- Q5: yes: the Tahoe captures go beside Monterey's in the three connector READMEs at the asset run.
+- T3 blocker (gpui pressed fill): option (a): macos-tahoe light and dark join `TRANSLUCENT_BUTTON_FILL`, the
+  mapped-field test excepts `button_active` / `button_secondary_active` on macos-tahoe (gpui's own derivation,
+  no macOS 26 source; its blend does not composite a translucent layer over a translucent base), and a
+  `docs/todo.md` entry for M6 records both connector defects.
+- Counts: 32 required fields per variant carried (not 30); 34 combinations (17 presets); the six prose
+  measurement counts re-measured from the tests' own output.
+- Native-preset lists gain `macos-tahoe` (it is a native preset).
+
+Found on the way (open, for the next pass):
+
+- The text field's dark fill on macOS 14 renders as white at alpha 13/255
+  (`renders/darkAqua/text_field-regular@2x.png` on 14.8.9), while `macos-monterey` states `textBackgroundColor`
+  `#1e1e1e`; on 26 the render is `#1e1e1e`.
+- The slider's unfilled track renders black / white at alpha 25/255 on 26 (`systemFillColor`'s value) and the
+  progress bar's track at 15/255 and 20/255; both presets inherit `defaults.muted_color` (`platform-facts.md:1290`,
+  `:1302`, pointers). A facts and preset question for both generations.
+- macOS 27 (preview) draws the text field's fill `#fffffff9` / `#171717f9` against `textBackgroundColor`'s
+  `#ffffff` / `#1e1e1e`, and widens the segmented control: input for the macOS 27 entry.
+- The checkbox's and radio's 26 render: the unchecked box is drawn at very low alpha (below 40/255 everywhere);
+  `checkbox.unchecked_background` / `border_color` stay unstated for Tahoe (W2-type).
+- `NSProcessInfo.operatingSystemVersion` and the SDK an app links against: the probe's binary, built on each
+  runner, read 26.6.2 and 27.0.1. Whether a binary linked against an older SDK reads another number (as macOS 11
+  once answered 10.16) has no source here; the macOS CI leg's `from_system_reports_the_running_generation` checks
+  the CI build only.
+- The segmented control's selected segment: the 14.8.9 render draws it white and the 26.6.2 render black / white
+  at alpha 50/255 (windows that are not key), neither `selectedContentBackgroundColor`; `platform-facts.md:1567`'s
+  14–15 cell and both presets' `active_background` rest on the API name alone.
+- `platform-facts.md:1533-1534` cite the spinner's `sizeToFit` at probe :1528 / :768, which are the
+  `intrinsicContentSize` lines (the same 32 and 10); the frames are :1530 / :770.
+- The dark switch's `hover_checked_background` `#2e94ff` (macos-monterey) has no source.
 
 ## M2b — Windows
 

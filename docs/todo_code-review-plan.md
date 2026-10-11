@@ -664,6 +664,7 @@ a part does with a version gap it finds: a new preset, a documented limit, or no
   `documented_sizes.rs` checks, a clean `preset-validator` report, then the template's
   Step 8. Screenshots of a changed preset wait for the next `generate_assets_release.sh`.
   For M2a, Step 7 comes after Steps 8–12; for M2d, after Steps 13–15.
+  M2a: corrections done (923cb787..7f112d64, 849ceca2, e114c43c, 4ea7db72); close gates pending.
 
 ### M2a only: build `macos-tahoe` (D4)
 
@@ -672,21 +673,21 @@ after M1, whose T1 decision says how the reader selects by version and T5 decisi
 `platform-facts.md` holds a second macOS version (if M1 changed neither: the Tahoe value goes
 beside the Sonoma value in the same cell, tagged with its source and "macOS 26").
 
-- [ ] **Step 8: Tahoe facts.** Every macOS row of `platform-facts.md` gets its macOS 26
+- [x] **Step 8: Tahoe facts.** Done 2026-10-11 (849ceca2; fix round e114c43c). Every macOS row of `platform-facts.md` gets its macOS 26
   value from Step 2, or a ❓ where no primary source gives one. A value unchanged since
   Sonoma is recorded as unchanged, with the source that shows it.
-- [ ] **Step 8a: Reader constants (M1-T1-02).** A one-off test diffs every field
+- [x] **Step 8a: Reader constants (M1-T1-02).** Done 2026-10-11 (c1704d2f). A one-off test diffs every field
   `macos_widget_defaults()` sets against the merged preset; each difference (scrollbar
   groove 15 vs 16, divider 9 vs 6 on 2026-10-11, `docs/todo.md` Table B) is ruled from
   `platform-facts.md`, the sourced value wins, then the function goes and the reader
   returns only what it reads from the OS. Gate: the diff test passes with no reader
   constant left; `cargo test -p native-theme`.
-- [ ] **Step 9: Presets.** `native-theme/src/presets/macos-tahoe.toml` (no `-live` twin:
+- [x] **Step 9: Presets.** Done 2026-10-11 (1985b13b, amended 4ea7db72). `native-theme/src/presets/macos-tahoe.toml` (no `-live` twin:
   M1-T4-01), written from Step 8's rows only: a value Step 8 left ❓ stays unstated, as the
   presets README's gated-size rule already requires. Registered in `PRESET_ENTRIES` /
   `PRESET_NAMES`; the `documented_sizes.rs` gate gains its preset key (M1-T5-01). Gate: `preset-validator` reports no value without a
   citation; `cargo test -p native-theme` passes (the preset tests iterate every preset).
-- [ ] **Step 10: Version-aware selection (shape: M1-T1-01).** A per-platform generation
+- [x] **Step 10: Version-aware selection (shape: M1-T1-01).** Done 2026-10-11, with Step 10a (1dca505c). A per-platform generation
   table (first version, last verified version, preset) and a pure
   `preset_for_version(table, running) -> (PlatformPreset, VersionMatch)` used by both
   `select_reader` and `platform_preset_name()`; `VersionMatch` (`#[non_exhaustive]`:
@@ -715,12 +716,12 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
   `SystemTheme::from_system_with_preset(name)` and its async twin, validated against the
   table, reporting `PresetOlder`, the rustdoc stating the hybrid result (the older
   generation's geometry over the running OS's colours, fonts and accessibility).
-- [ ] **Step 11: Documentation.** The presets README (listing, live presets), the
+- [x] **Step 11: Documentation.** Done 2026-10-11 (91b5b5f0; CHANGELOG lines with each step's commit). The presets README (listing, live presets), the
   `native-theme` README's preset list, `docs/new-os-version-guide.md` (macOS: a new
   generation is a new preset plus a version arm), CHANGELOG `[Unreleased]`, and the
   `docs/todo.md` entry for macOS 27 (D4); `macos-monterey.toml`'s header got its 'covers'
   and 'verified on' lines in Step 7 (M1-T1-03, D8).
-- [ ] **Step 12: Screenshots.** `macos-tahoe:light:system` and `macos-tahoe:dark:system` in
+- [x] **Step 12: Screenshots.** Done 2026-10-11 (91b5b5f0; the CI run is the maintainer's). `macos-tahoe:light:system` and `macos-tahoe:dark:system` in
   `.github/workflows/screenshots.yml` next to the `macos-monterey` entries (:173-174), and the
   showcases' theme menus list the new preset. The CI run is the maintainer's (the next
   `generate_assets_release.sh`); until then the stale-assets warning stands. At that asset
@@ -728,7 +729,9 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
   links to `macos-macos-sonoma-{light,dark}.png` (egui, gpui, iced READMEs) become
   `macos-macos-monterey-*`, the old PNGs are `git rm`ed, and the display name and the TOML
   `name` become "macOS Monterey" (they stay "macOS Sonoma" until that run, as `material-3`
-  kept "Material"; ruled 2026-10-11).
+  kept "Material"; ruled 2026-10-11). The same run captures `macos-tahoe`, and the three
+  connector READMEs show `macos-macos-tahoe-{light,dark}.png` beside the Monterey pair (ruled
+  2026-10-11, Q5; `docs/todo.md`, *macos-monterey and macos-tahoe: the screenshot names*).
 
 ### M2c only: `ios-13` and `ios-26` (D8)
 
