@@ -59,7 +59,7 @@ No abstractions, no invented structures.
 | `+systemFontOfSize:`                      | Body text        | SF Pro, 13pt, Regular (400) | ✅ |
 | `+boldSystemFontOfSize:`                  | Bold body        | SF Pro, 13pt, Bold (700)    | ✅ |
 | `+monospacedSystemFontOfSize:weight:`     | Monospace        | SF Mono, 13pt, Regular (400)| ✅ |
-| `+titleBarFontOfSize:`                    | Window title bar | SF Pro, 13pt, Bold (700)    | ✅ |
+| `+titleBarFontOfSize:`                    | Window title bar | SF Pro, 13pt, Bold (700)    | ✅ the OS probe: `.AppleSystemUIFaceHeadline` 13pt on macOS 14.8.9, 15.7.9, 26.6.2 and 27.0.1, its `NSFontWeightTrait` 0.4 (Bold) on 15, 26 and 27 and 0.3 (Semibold) on 14.8.9 for the same face and metrics ([probe 14 :119-121](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml#L119-L121), [probe 15 :121](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-15/probe.toml#L121)) |
 | `+menuFontOfSize:`                        | Menu items       | SF Pro, 13pt, Regular (400) | ✅ |
 | `+menuBarFontOfSize:`                     | Menu bar labels  | SF Pro, 13pt, Regular (400) | ❓ weight undocumented; no evidence of SemiBold; likely Regular like other font methods |
 | `+toolTipsFontOfSize:`                    | Tooltip text     | SF Pro, 11pt, Regular (400) | ❓ Apple API docs do not state default size; however, Leopard-era HIG states "The small system font (11 point) is the default font for help tags" (Apple's term for tooltips), strongly supporting 11pt; Cocotron defaults to 10pt; GNUstep defaults to 12pt; open-source impls disagree with each other and with the HIG |
@@ -82,7 +82,7 @@ No abstractions, no invented structures.
 | `.title1`      | 22pt        | 26pt        | Regular (400)| ✅ Apple HIG |
 | `.title2`      | 17pt        | 22pt        | Regular (400)| ✅ Apple HIG |
 | `.title3`      | 15pt        | 20pt        | Regular (400)| ✅ Apple HIG |
-| `.headline`    | 13pt        | 16pt        | Bold (700)   | ✅ Apple HIG JSON confirms Bold; emphasized weight is Heavy. WWDC 2020 Session 10175 discusses `.body`+bold→SemiBold, not `.headline` itself. iOS `.headline` is SemiBold, but macOS differs. |
+| `.headline`    | 13pt        | 16pt        | Bold (700)   | ✅ Apple HIG JSON confirms Bold; emphasized weight is Heavy. WWDC 2020 Session 10175 discusses `.body`+bold→SemiBold, not `.headline` itself. iOS `.headline` is SemiBold, but macOS differs. The OS probe: `.SFNS-Bold`, `NSFontWeightTrait` 0.3 on macOS 14.8.9 and 0.4 on 15.7.9, 26.6.2 and 27.0.1 ([probe 14 :229-231](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml#L229-L231), [probe 15 :231](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-15/probe.toml#L231)) |
 | `.subheadline` | 11pt        | 14pt        | Regular (400)| ✅ Apple HIG |
 | `.body`        | 13pt        | 16pt        | Regular (400)| ✅ Apple HIG; WWDC 2020 confirms |
 | `.callout`     | 12pt        | 15pt        | Regular (400)| ✅ Apple HIG |
