@@ -19,9 +19,12 @@ the code review would otherwise read twice. Known gaps on 2026-10-10:
 - No reader asks the OS for its version: `platform_preset_name()`
   (`native-theme/src/pipeline.rs:408-437`) returns `windows-11` on every Windows (10, 11 or
   a later one) and `macos-sonoma` on every macOS, and the CI screenshots of `macos-sonoma`
-  are taken on a macOS 26 (Tahoe) runner (`.github/workflows/screenshots.yml:63`), whose
-  Liquid Glass design changed control shapes and sizes; `platform-facts.md` records Tahoe
-  only for the window corner radius (`:173`, `:1155`).
+  are taken on the floating `macos-latest` runner label, whose macOS version the workflow
+  records nowhere (corrected 2026-10-11 by M1-T9-02: an earlier version of this sentence
+  said "a macOS 26 runner", citing `screenshots.yml:63`, which is a comment about another
+  repository's run); macOS 26 (Tahoe)'s Liquid Glass design changed control shapes and
+  sizes, and `platform-facts.md` records Tahoe only for the window corner radius (`:173`,
+  `:1155`).
 - The `ios` preset has no `platform-facts.md` column (`native-theme/src/presets/README.md`)
   and names no iOS version; iOS 26 brought Liquid Glass too.
 - The `material` preset is Material 3 as material-web implements it (M3 tokens `v0_192`);
@@ -105,7 +108,11 @@ kind of milestone and the estimate for the rest.
 - Agents updating an existing document read it first and only append.
 - Reviewers and verifiers are read-only: no Edit, no Write, no commits.
 - Every fix is its own commit, author the maintainer, no AI attribution trailer.
-- Run `./scripts/check_release.sh` before every commit that touches code.
+- Run `./scripts/check_release.sh --commit` before every commit that touches code, and the
+  full `./scripts/check_release.sh` on the last commit of every fix phase and before the
+  release commit (M1-T9-04, maintainer 2026-10-11; the subset keeps every lint, check,
+  test, docs and widget-coverage gate and skips only packaging, the docs.rs emulation, the
+  security audit, outdated-deps and the two stamp checks).
 - Build into the project's own `target/`; no extra target directory unless a step says so.
 - Breaking public-API changes need the maintainer's approval at triage (decision D1 below).
 - Nothing is pushed, tagged or published by an agent.
@@ -150,7 +157,11 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   so any accepted breaking API change makes the release 0.7.0, whatever the project's pre-1.0
   stance. `cargo semver-checks` against 0.6.1 decides mechanically. The ROADMAP's renumbering
   (iced geometry and upstream PRs move back one version) is written only after the maintainer
-  approves it.
+  approves it. **Settled 2026-10-11 (M1 stop point A):** two breaking changes accepted
+  (M1-T4-01 removes the `-live` tier, M1-T7-06 reshapes the connectors' `from_system`
+  result and renames accessors), so the release is 0.7.0, the branch is `v0.7.0-rc1`, and
+  the ROADMAP renumbering is written in M1's fix phase under the maintainer's blanket
+  approval of the same day.
 - **D2 — models and effort (maintainer, 2026-10-11).** Fable 5.1 at `xhigh` where the work is
   judgment and the volume is low: M1's design reviewers, M3–M9's API reviewers, the final
   whole-branch review at close-out, and the orchestrating session of M1 (a fresh session
@@ -174,13 +185,18 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   - never in parallel: fix tasks (one `target/`, `check_release.sh` per commit), and a
     review with the previous milestone's fix phase (it would read code about to change).
 - **D3 — preset values belong to M2, not to the code milestones.** M2 checks the six
-  platform presets (`macos-sonoma`, `windows-11`, `ios`, `material`, `kde-breeze`, `adwaita`,
-  and their `-live` bases) against `platform-facts.md` and `platform-facts.md` against the
+  platform presets (`macos-sonoma`, `windows-11`, `ios`, `material`, `kde-breeze`, `adwaita`;
+  **amended 2026-10-11, M1-T4-01:** the `-live` bases are removed in M1's fix phase, so M2
+  checks the six presets alone) against `platform-facts.md` and `platform-facts.md` against the
   platforms; M3–M9 read the code that loads and resolves them. The color-scheme presets
   (catppuccin, dracula, …) copy their upstream palettes and are out of scope.
 - **D4 — macOS presets (maintainer, 2026-10-10).** `macos-tahoe` (macOS 26, Liquid Glass) and
   its `-live` base are built in this plan (M2a Steps 8–12), and the macOS reader picks the
-  preset by the running macOS version. Sequoia (15) gets no preset of its own unless M2a
+  preset by the running macOS version. **Amended 2026-10-11 (M1):** no `-live` base
+  (M1-T4-01); the selection is M1-T1-01's shape, a per-platform generation table with each
+  row's first and last-verified version and a `VersionMatch` report, so macOS 27 under
+  `macos-tahoe` is reported as `PresetOlder`; before the preset is written, M1-T1-02 moves
+  the macOS reader's hardcoded design constants into the preset. Sequoia (15) gets no preset of its own unless M2a
   finds that a value the model carries differs from Sonoma's; `macos-sonoma` then documents
   that it covers 14–15. Golden Gate (macOS 27, released 2026-09-14) waits until GitHub offers
   a macOS 27 runner image: until then a Mac on 27 gets `macos-tahoe`, documented as such,
@@ -539,7 +555,8 @@ critics, about +2000k.
   entry on `docs/todo.md`; the maintainer schedules it, and the plan's later milestones note
   which of their regions it rewrites (those regions are reviewed after it lands).
 - [ ] **Step 7: Fix and close — stop point B.** The small changes as in the template's
-  Steps 7–8, and the D6 rename:
+  Steps 7–8 (the task list F1–F14, with gates, is in the ledger's M1 section, *Fix plan*),
+  and the D6 rename:
 
   **Task: rename the `material` preset to `material-3`.** Files: `native-theme/src/presets/material.toml` →
   `material-3.toml` (`git mv`), its entry in `PRESET_ENTRIES` / `PRESET_NAMES`
@@ -578,10 +595,10 @@ a part does with a version gap it finds: a new preset, a documented limit, or no
 | Part | Platform | Versions to map | Primary sources |
 |------|----------|-----------------|-----------------|
 | M2a | macOS | 14 Sonoma, 15 Sequoia (only: does it differ from 14?), 26 Tahoe (the `macos-tahoe` preset of D4), 27 Golden Gate (does it differ from 26?) | Apple HIG (the JSON API at `developer.apple.com/tutorials/data/design/human-interface-guidelines/*.json`, already used in `platform-facts.md`), AppKit documentation, WebKit `RenderThemeMac.mm` and its Cocoa siblings at a pinned commit, the probe (Step 3) |
-| M2b | Windows | 10 22H2, 11 (23H2–25H2), and any release after 11 | `microsoft-ui-xaml` theme resources at a pinned commit, Win32 documentation (`GetSystemMetricsForDpi`, `GetSysColor`, `NONCLIENTMETRICSW`), the Fluent 2 specification, the probe |
-| M2c | iOS (small, under D5) | which iOS version `ios.toml` matches; its colours and fonts against that version | Apple HIG (iOS), UIKit documentation (`UIColor` system colours, Dynamic Type sizes) |
+| M2b | Windows (from M1: M1-T1-02's reader constants at Step 7; M1-T6-04's choice between `UISettings.AnimationsEnabled` and `SPI_GETCLIENTAREAANIMATION` at Step 2; M1-T6-03's high-contrast decision, applied or carried, at Step 6; what the `windows-11` captures on a Windows Server runner may claim, M1-T9-02; the header's version lines, M1-T1-03) | 10 22H2, 11 (23H2–25H2), and any release after 11 | `microsoft-ui-xaml` theme resources at a pinned commit, Win32 documentation (`GetSystemMetricsForDpi`, `GetSysColor`, `NONCLIENTMETRICSW`), the Fluent 2 specification, the probe |
+| M2c | iOS (small, under D5; from M1: the `ios` → `ios-<N>` rename after Step 2, M1-T2-01) | which iOS version `ios.toml` matches; its colours and fonts against that version | Apple HIG (iOS), UIKit documentation (`UIColor` system colours, Dynamic Type sizes) |
 | M2d | Material 3 and Material 3 Expressive (D6) | the latest stable androidx Material 3 release: `MaterialTheme` and `MaterialExpressiveTheme` | Compose Material 3's generated `*Tokens.kt` and its component sources at that release's tag; material-web's `latest` token set as a cross-check; m3.material.io's spec pages; the reference app's screenshots (Step 3) where no token or constant exists |
-| M2e | KDE and GNOME (currency only) | Breeze pinned at v6.7.5, libadwaita at 1.10.0 | the latest released Breeze and libadwaita: diff each cited file between the pinned and the latest tag; only rows whose cited lines changed are re-verified |
+| M2e | KDE and GNOME (currency only; from M1, M1-T6-03: do KDE's `forceFontDPI` and GNOME's `Xft.dpi` already carry the text scale, so a resolve-time multiply would double-scale; GNOME HighContrast, applied or carried; the headers' style-version lines, M1-T1-03) | Breeze pinned at v6.7.5, libadwaita at 1.10.0 | the latest released Breeze and libadwaita: diff each cited file between the pinned and the latest tag; only rows whose cited lines changed are re-verified |
 
 ### Steps (per part)
 
@@ -639,16 +656,28 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
 - [ ] **Step 8: Tahoe facts.** Every macOS row of `platform-facts.md` gets its macOS 26
   value from Step 2, or a ❓ where no primary source gives one. A value unchanged since
   Sonoma is recorded as unchanged, with the source that shows it.
-- [ ] **Step 9: Presets.** `native-theme/src/presets/macos-tahoe.toml` and
-  `macos-tahoe-live.toml`, written from Step 8's rows only: a value Step 8 left ❓ stays
-  unstated, as the presets README's gated-size rule already requires; the `-live` base omits
-  the fields `MacosReader` provides, as `macos-sonoma-live.toml` does. Registered in
-  `PRESET_ENTRIES` / `PRESET_NAMES`. Gate: `preset-validator` reports no value without a
+- [ ] **Step 8a: Reader constants (M1-T1-02).** A one-off test diffs every field
+  `macos_widget_defaults()` sets against the merged preset; each difference (scrollbar
+  groove 15 vs 16, divider 9 vs 6 on 2026-10-11, `docs/todo.md` Table B) is ruled from
+  `platform-facts.md`, the sourced value wins, then the function goes and the reader
+  returns only what it reads from the OS. Gate: the diff test passes with no reader
+  constant left; `cargo test -p native-theme`.
+- [ ] **Step 9: Presets.** `native-theme/src/presets/macos-tahoe.toml` (no `-live` twin:
+  M1-T4-01), written from Step 8's rows only: a value Step 8 left ❓ stays unstated, as the
+  presets README's gated-size rule already requires. Registered in `PRESET_ENTRIES` /
+  `PRESET_NAMES`; the `documented_sizes.rs` gate gains its preset key (M1-T5-01). Gate: `preset-validator` reports no value without a
   citation; `cargo test -p native-theme` passes (the preset tests iterate every preset).
-- [ ] **Step 10: Version-aware selection.** `platform_preset_name()` on macOS returns
-  `macos-tahoe` on 26 and later and `macos-sonoma` before 26, from the running version
-  (`NSProcessInfo::operatingSystemVersion`; if reading it needs `unsafe`, stop and ask). The
-  mapping is a pure function of the version, so it is tested on Linux:
+- [ ] **Step 10: Version-aware selection (shape: M1-T1-01).** A per-platform generation
+  table (first version, last verified version, preset) and a pure
+  `preset_for_version(table, running) -> (PlatformPreset, VersionMatch)` used by both
+  `select_reader` and `platform_preset_name()`; `VersionMatch` (`#[non_exhaustive]`:
+  `Exact`, `PresetOlder`, `PresetNewer`) stored as an `Option` on `SystemTheme` and emitted
+  as a `DiagnosticEntry`; no iOS arm (D5). The macOS version comes from objc2-foundation's
+  safe `NSProcessInfo::operatingSystemVersion()` (its `NSProcessInfo` feature), the Windows
+  build from the `windows-version` crate's safe `OsVersion::current()` (already in
+  `Cargo.lock`); if either turns out to need `unsafe`, stop and ask. Row bounds come from
+  this part's Step 1 version map with citations, never stated without one. The mapping is a
+  pure function of the version, so it is tested on Linux:
 
   ```rust
   #[test]
@@ -661,12 +690,16 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
   }
   ```
 
-  (`macos_preset_for_version` is the name unless M1 T1 designed a different shape; the
-  test's four cases stand either way.) CI's macOS legs (`macos-latest`) run it on a real Mac.
+  (The four cases stand with the table; a fifth asserts `PresetOlder` for 27.) CI's macOS
+  legs run it on a real Mac. **Step 10a (M1-T1-04):** once two generations exist,
+  `SystemTheme::from_system_with_preset(name)` and its async twin, validated against the
+  table, reporting `PresetOlder`, the rustdoc stating the hybrid result (the older
+  generation's geometry over the running OS's colours, fonts and accessibility).
 - [ ] **Step 11: Documentation.** The presets README (listing, live presets), the
   `native-theme` README's preset list, `docs/new-os-version-guide.md` (macOS: a new
   generation is a new preset plus a version arm), CHANGELOG `[Unreleased]`, and the
-  `docs/todo.md` entry for macOS 27 (D4).
+  `docs/todo.md` entry for macOS 27 (D4); `macos-sonoma.toml`'s header gets its 'covers'
+  and 'verified on' lines from Step 1's version map (M1-T1-03).
 - [ ] **Step 12: Screenshots.** `macos-tahoe:light:system` and `macos-tahoe:dark:system` in
   `.github/workflows/screenshots.yml` next to the `macos-sonoma` entries (:141-142), and the
   showcases' theme menus list the new preset. The CI run is the maintainer's (the next
@@ -757,6 +790,12 @@ anything extra.
 | R4 icons and fonts | `native-theme/src/{icons,freedesktop,winicons,sficons,rasterize,spinners,fonts}.rs`, `model/{icons,bundled,icon_sizes,animated}.rs`, `native-theme-build/src/*.rs` | Review Focus 2: every cache's bound and lifetime; icon misses cost; no icon-set mixing on any fallback path; `native-theme-build` errors name the offending TOML line. |
 | API | crates `native-theme` (icons, fonts, watch, detect surfaces), `native-theme-build` | One loader pattern across five icon loaders; watch API's shutdown semantics. |
 
+*Scheduled from M1 (fix phase):* M1-T6-04 (one reduced-motion read per platform, after
+M2b's Windows choice), M1-T6-06 (the runtime-set icon function and `SystemTheme::icon` in
+core), M1-T6-07 (`.size(px)` on the SF Symbols and Segoe loaders; `.scale()` only after a
+measurement on the macOS and Windows legs), the reader-source-to-notification table with
+the `docs/todo.md:247` watcher fix (M1-T6-08).
+
 ## M5 — iced connector
 
 Reviewed before v0.6.2's iced geometry work, so that work builds on reviewed code.
@@ -766,6 +805,13 @@ Reviewed before v0.6.2's iced geometry work, so that work builds on reviewed cod
 | R1 theme and palette | `connectors/native-theme-iced/src/{lib,palette,extended,icons,spinner}.rs` | Review Focus 4: every padding helper with zero, negative and unstated sides; every resolved value reaches iced (theme-data rule). |
 | R2 styles | `connectors/native-theme-iced/src/styles.rs`, `styles/aw.rs` | Review Focus 2: what each style closure captures and clones per call (they run per widget per frame). |
 | API | crate `native-theme-iced` (siblings: gpui, egui) | Names and shapes shared with the siblings (`to_theme`, `from_preset`, `from_system`). |
+
+*Scheduled from M1 (fix phase, before M6's review):* M1-T7-06 across all three connectors
+(a named `#[non_exhaustive]` result for `from_system` and `SystemThemeExt`, accessors
+renamed to the model's field names, `scripts/check_connector_parity.py` in the release
+check; breaking, 0.7.0); M1-T7-01 (iced switches to core's colouriser, its test cases moved
+into core); M1-T7-03 (a dry run counting the unmapped colour leaves, then the leaf-derived
+coverage test); M1-T6-06 (iced drops `load_custom_via_builder`).
 
 ## M6 — gpui connector
 
@@ -777,6 +823,10 @@ Reviewed before v0.6.2's iced geometry work, so that work builds on reviewed cod
 | R4 widgets | `connectors/native-theme-gpui/src/widgets/{mod,checkbox,spinner,tab_bar,switch,slider,progress,separator}.rs` | Render-path allocations; every widget reads its size from the theme. |
 | API | crate `native-theme-gpui` (siblings: iced, egui); `showcase.rs` read as a consumer of the API only | |
 
+*Scheduled from M1 (fix phase):* M1-T7-01 (gpui switches to core's colouriser, tests moved),
+M1-T7-03 (dry run, then the leaf-derived coverage test for the colour rows), M1-T6-06 (gpui
+drops its `load_custom_via_builder` copy).
+
 ## M7 — egui connector and egui widgets
 
 | Region | Files | Focus questions |
@@ -787,13 +837,15 @@ Reviewed before v0.6.2's iced geometry work, so that work builds on reviewed cod
 | R4 egui widgets | `connectors/native-theme-egui-widgets/src/*.rs` (not `tests.rs`) | Each widget's size from the theme; animation state cleaned up. |
 | API | crates `native-theme-egui`, `native-theme-egui-widgets` (siblings: iced, gpui) | |
 
+*Scheduled from M1 (fix phase):* M1-T6-06 (egui's icon dispatch uses the core function).
+
 ## M8 — Cross-cutting
 
 | Region | Scope | Focus questions |
 |--------|-------|-----------------|
 | R1 connector parity and shared code | the three connectors' public surfaces (the `connector-parity-checker` agent for gpui/iced, the same check extended to egui) | Concepts with different names or shapes across connectors; logic written three times that belongs in core (padding fallbacks, text scaling, icon recolouring). |
 | R2 test quality | every crate's tests (Haiku inventory first: tests without an assertion, `#[ignore]`d tests no script runs, tests asserting a constant against itself) | Tests that cannot fail; gates that pass when their input is missing. |
-| R3 scripts and CI | `scripts/*.sh`, `scripts/*.py`, `.github/workflows/*.yml` | A gate that silently skips (missing tool, empty glob, `|| true`); release steps run in the wrong order; the `docsrs` job in `publish.yml` (untested until the next tag). |
+| R3 scripts and CI | `scripts/*.sh`, `scripts/*.py`, `.github/workflows/*.yml` | A gate that silently skips (missing tool, empty glob, `|| true`); release steps run in the wrong order; the `docsrs` job in `publish.yml` (untested until the next tag). *From M1:* M1-T8-02's dump-and-compare step in `generate_assets_release.sh`, after `docs/todo.md`'s non-deterministic-dump entry is fixed. |
 | R4 documentation | `README.md`, crate-level docs, `docs/new-os-version-guide.md`, `CHANGELOG.md` `[Unreleased]` | A documented behaviour the code no longer has; an example that would not compile. |
 
 ## M9 — Optional: the showcases
@@ -805,7 +857,9 @@ Split so each part can stop on its own:
 - **M9a** gpui showcase, `connectors/native-theme-gpui/examples/showcase-gpui/` (~32k lines
   without `tests.rs`): 3 reviewers by directory (`demo.rs`; `app.rs` + `main.rs`; `info/`).
 - **M9b** iced showcase, `connectors/native-theme-iced/examples/showcase-iced.rs`
-  (16.9k lines): 2 reviewers by line range at a function boundary near the middle.
+  (16.9k lines): 2 reviewers by line range at a function boundary near the middle. *From
+  M1:* M1-T7-07, iced's per-widget Widget Info generated from the leaf-derived contract
+  table (after M5's M1-T7-03).
 - **M9c** egui showcase, `connectors/native-theme-egui/examples/showcase-egui/` (~10k lines
   without `tests.rs`): 2 reviewers (`pages/`; the rest).
 

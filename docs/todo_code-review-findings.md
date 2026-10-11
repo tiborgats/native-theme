@@ -1338,6 +1338,116 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 *Critic D-E notes:* I checked all nine proposals read-only. The only things run were check_widget_coverage.py, check_showcase_parity.py --check-list and --self-test, greps, wc and git show. Three findings go beyond the reviewer's proposals. (1) The parity comparator's static modes (--check-list, --self-test) pass in seconds and need no display, yet no gate runs them. This is the cheapest part of proposal 1. (2) The plan's known gap at todo_code-review-plan.md:19-24 says the macos-sonoma screenshots are taken on a macOS 26 runner, citing screenshots.yml:63. That line describes an external repository's run, so the claim has no evidence in the repository. (3) Crate-level #![deny(clippy::unwrap_used, expect_used)] already holds in native-theme and all four connectors under CI's -Dwarnings, so the CI panic gap in proposal 4 is narrower than stated. Proposals 5, 6 and 8 change rules or documents the maintainer owns (the per-commit check rule, the append-only rule, the memory index), so they belong at stop point A for approval, not to agents.
 
 
+### Fix plan (Step 6)
+
+Tasks for M1's fix phase, in order: F1 first because it shortens every later gate; the two
+structural changes next (F2, F3); then the small code changes; docs last. Every task is its
+own commit (several for F12), each code commit gated by `./scripts/check_release.sh
+--commit` once F1 exists, the last commit of the phase by the full run. Items decided for
+later milestones are listed in the plan's milestone sections (*Scheduled from M1*). The
+`docs/todo.md:N` citations in the entries above refer to the file at `a7b3a4cb`, before
+F13 reorders it.
+
+- [ ] **F1 · M1-T9-04 · `check_release.sh --commit`.** `scripts/check_release.sh` gains a
+  `--commit` flag that skips the packaging, docs.rs-emulation, security-audit,
+  outdated-deps and stamp-check sections and prints the skipped sections by name;
+  `CONTRIBUTING.md:17-30`, the plan's Global Constraints line and the memory rule say when
+  each mode is required. Gate: `./scripts/check_release.sh --commit` passes on the tree
+  before any other fix and names what it skipped; the full run is unchanged in what it
+  runs; the subset's wall-clock recorded here. Commit: `chore(release-check): a --commit
+  subset for per-commit runs; the full run stays for fix-phase ends and releases`.
+- [ ] **F2 · D6 · `material` → `material-3`.** As the plan's M1 Step 7 task, with its test.
+- [ ] **F3 · M1-T4-01 · remove the `-live` tier.** Delete the four `-live` TOML files;
+  `presets.rs` (PRESET_INFOS live entries, their tests), `pipeline.rs` (the live merge,
+  `is_live`/`live_name`, `select_reader`'s names), `lib.rs` (the re-export, the
+  `live_preset` field, `with_overlay`, the test fixtures), `documented_sizes.rs` (the live
+  rows and `reader_constants`' live half), `presets/README.md` (the two-tier section
+  becomes one paragraph; the reader-provided-fields list stays as reader documentation),
+  connector contract comments, `showcase-gpui/info/icons.rs`, CHANGELOG `[Unreleased]`
+  *Breaking*, `docs/todo.md:2579-2580` closed and the preset half of `:2594-2600`. Gate: a
+  new test `Theme::preset("kde-breeze-live")` is `Err`; `cargo test -p native-theme` and the
+  connectors' tests pass; `cargo semver-checks -p native-theme --baseline-version 0.6.1`
+  reports the removal (recorded as D1's evidence; then `rm -rf target/semver-checks`).
+  Commit: `refactor(presets)!: the -live preset tier is gone; readers merge over the
+  platform preset`.
+- [ ] **F4 · M1-T5-01 · version ruling and preset-keyed gate.** A ruling paragraph in
+  `platform-facts.md`'s Conventions; `documented_sizes.rs`'s `Platform` enum keyed by preset
+  (variants named by preset, rows unchanged); `docs/todo.md:2343` appended with the
+  OS-version axis. Gate: `cargo test -p native-theme` and `--test platform_facts_xref`
+  pass. Commit: `docs(platform-facts): a version-tagged cell belongs to that version's
+  preset; the size gate is keyed by preset`.
+- [ ] **F5 · M1-T6-01 · `is_dark` on `Dual`.** `lib.rs` enum and its two exhaustive
+  patterns (`lib.rs`, `gnome/mod.rs`), `pipeline.rs` deriving `mode` from the flag,
+  `macos.rs` filling it from the uncached `detect_is_dark()`, docs, the test constructions.
+  Gate: a pure test with a fake `Dual` reader asserting `mode` follows `is_dark` fails
+  before and passes after; a `cfg(target_os = "macos")` test `from_system().mode ==
+  detect_is_dark()`; both cross-target clippy runs clean. Commit: `fix(native-theme): a
+  dual-variant reader reports the active mode; a dark Mac no longer starts light`.
+- [ ] **F6 · M1-T6-02 · pollster everywhere.** `Cargo.toml` (pollster to `[dependencies]`),
+  `lib.rs` (the two noop pollers and the error arm deleted), `pipeline.rs` doc. Gate:
+  cross-target clippy clean on both targets; `cargo tree -p native-theme --target
+  x86_64-apple-darwin -e normal | grep pollster`; tests pass. Commit: `refactor(native-theme):
+  the sync entry points block on pollster on every platform`.
+- [ ] **F7 · M1-T3-01 · `Theme::resolve_with`.** `model/mod.rs` (public `resolve_with`,
+  the doc at :442-445 rewritten), `resolve/context.rs` (a constructor taking a known
+  `font_dpi`), `pipeline.rs:70-73` (reuses the reader's DPI), egui `ext.rs`, `icons.rs`,
+  `plugin.rs` (one context per call), `tests/timings.rs` (a `resolve_with` row), CHANGELOG.
+  Gate: a doctest on `resolve_with`; a unit test that the pipeline's context constructor
+  does not run DPI detection when given a DPI; the timing probe shows `resolve_with` on a
+  `for_tests()` context far below `resolve()` (recorded, not asserted). Commit:
+  `feat(native-theme): Theme::resolve_with takes the caller's context; the pipeline reuses
+  the reader's DPI`.
+- [ ] **F8 · M1-T3-03 · registry check.** A test comparing `docs/property-registry.toml`'s
+  widget and `_structures` key sets with the `WidgetFieldInfo`/`FieldInfo` inventory both
+  ways; the four stale `[defaults]` keys and the spacing note removed; the derive emits
+  each `inherit_from` target and the `[uniform]` test compares targets instead of the
+  hand-kept lists (`inheritance.rs:675-798`). Gate: the key-set test fails on the current
+  registry and passes after the fix; `cargo test -p native-theme` passes; `docs/todo.md`'s
+  `[uniform]` target entry closed. Commit: `test(native-theme): the property registry's keys
+  are checked against the derive inventory, and uniform-inheritance targets against the
+  macro`.
+- [ ] **F9 · M1-T6-03 + M1-T7-01 · the text-scale guard in core.**
+  `AccessibilityPreferences::text_scale_factor()` and `scaled(size)` in `lib.rs`; iced,
+  gpui and egui call them; a receiver table (reduced motion, reduced transparency, high
+  contrast: what the connector applies, what the application forwards) in each connector's
+  crate docs; `docs/todo.md:2086-2088` closed. Gate: core unit tests (NaN, 0, negative,
+  infinity give 1.0; 2.0 gives 2.0); the connectors' existing text-scale tests pass
+  unchanged; net deletion in the connectors. Commit: `refactor: the text-scale guard lives
+  once in core; the connectors call it`.
+- [ ] **F10 · M1-T6-05 · a cached accessibility accessor.** `detect.rs` (a
+  `DetectionContext` field, a public cached getter, `invalidate_caches` clears it),
+  `pipeline.rs` fills it from `from_system_inner`; connector README snippets and the
+  showcases' preset-switch paths use it. Gate: a test that a second call does not run the
+  reader; `tests/timings.rs` gains the cached call; tests pass. Commit: `feat(native-theme):
+  a cached accessibility accessor for preset switches; from_system stays a fresh read`.
+- [ ] **F11 · docs · M1-T1-03, M1-T2-01, M1-T1-04, D1.** The naming rule in
+  `presets/README.md` and `new-os-version-guide.md`; the `ios` and `material` sentences in
+  `native-theme/README.md` and `presets/README.md`; a `docs/todo.md` entry for
+  `from_system_with_preset`; ROADMAP renumbered for 0.7.0; CHANGELOG. Gate: docs only;
+  `cargo test --doc -p native-theme`. Commit: `docs: platform presets are named by
+  generation; what the ios and material presets are; the roadmap renumbered for 0.7.0`.
+- [ ] **F12 · gates · M1-T8-02, M1-T9-03, M1-T10-02, M1-T9-02.** `check_release.sh`
+  (`check_showcase_parity.py --check-list` and `--self-test`; `cargo semver-checks` soft,
+  timed; the archive-index check expanding brace notation), `ci.yml` (the parity static
+  modes, the strict-panic lint list with gpui `continue-on-error`), `dependency-canary.yml`
+  (egui-widgets), `screenshots.yml` (versioned macOS labels from GitHub's current list, an
+  OS-version sidecar on both platforms), `update_provenance.sh` and `PROVENANCE.toml` (the
+  version fields), `generate_assets_release.sh` (copies the sidecars), `CONTRIBUTING.md`
+  (where plans live, the archiving rule), `docs/archive/README.md` (four rows). Gate:
+  `./scripts/check_release.sh --commit` passes with the new checks; the YAML parses; the
+  archive check reports nothing missing. Two or three commits.
+- [ ] **F13 · M1-T10-01 · `docs/todo.md`.** Closed sections and done boxes move to a new
+  `docs/archive/todo_closed.md` with their decision text; every open item gets a milestone
+  tag (`[v0.7.0]`, `[1.0]`, `[post-1.0]`, `[upstream]`); *Post-1.0 / Deferred* split;
+  a header on the ordering; ROADMAP and CONTRIBUTING link the file. Gate: no `- [x]` left
+  in `docs/todo.md`, every one present in the archive file; every open item tagged
+  (a grep count equals the open-item count). Commit: `docs(todo): closed items archived,
+  open items tagged by milestone, the deferred section split`.
+- [ ] **F14 · M1-T10-03 · the memory index** (outside the repository, no commit).
+- [ ] **Close (stop point B).** The full `./scripts/check_release.sh`, both cross-target
+  clippy commands, `cargo semver-checks` for `native-theme` (recorded), the timing probe
+  re-run, the ledger's statuses, the project memory, `~/.claude/scripts/sweep-target.sh`.
+
 ## M2a — macOS
 
 ## M2b — Windows
