@@ -2682,6 +2682,10 @@ the colours.
   `over` returns the layer and the filled-button rows stay exact. iced's card close-colour
   exception for `macos-monterey/dark` goes (T1). Commits: be69481a (preset, test data,
   CHANGELOG), 00d49b51 (facts).
+- **Fix round 1 (review-M2a-7b):** `shadow_color` is `NSShadow.shadowColor`'s documented default,
+  black at 1/3 (`#00000055`), not the opaque `NSColor.shadowColor` (facts `:1053`); the egui
+  base `extreme_bg_color` question goes to docs/todo.md for M7; iced's (c) message and gpui's
+  test name corrected (bb1ec4a2).
 
 ## M2b — Windows
 
