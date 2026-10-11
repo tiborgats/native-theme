@@ -178,11 +178,13 @@ fi
 
 # Download macOS and Windows screenshots
 info "Downloading macOS and Windows screenshots..."
+# Each job's OS-version sidecar, kept for the provenance stamp as
+# <toolkit>-<os>.txt; not an asset, so it goes nowhere under docs/. Made
+# before TMPDIR is reassigned: an exported TMPDIR would put it inside the
+# download directory, which is removed before the stamp is written.
+OS_VERSIONS=$(mktemp -d)
 TMPDIR=$(mktemp -d)
 gh run download "$RUN_ID" --dir "$TMPDIR"
-# Each job's OS-version sidecar, kept for the provenance stamp as
-# <toolkit>-<os>.txt; not an asset, so it goes nowhere under docs/.
-OS_VERSIONS=$(mktemp -d)
 
 DOWNLOADED=0
 for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-egui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows "$TMPDIR"/screenshots-egui-windows; do

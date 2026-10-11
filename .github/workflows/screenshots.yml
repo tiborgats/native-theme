@@ -11,10 +11,13 @@ jobs:
     strategy:
       fail-fast: false
       # The macOS entries name macos-26, the image `macos-latest` resolves to in
-      # GitHub's runner-images list (README, read 2026-10-11), so a move of
-      # `macos-latest` cannot change the captures unnoticed. It is not macOS 14:
-      # `macos-14` retires on 2026-11-02. Which macOS the `macos-sonoma`
-      # captures may claim is M2a's to settle (docs/todo_code-review-plan.md).
+      # GitHub's runner-images list (README, read 2026-10-11:
+      # https://github.com/actions/runner-images/blob/main/README.md), so a move
+      # of `macos-latest` cannot change the captures unnoticed. It is not
+      # macOS 14: `macos-14` is fully unsupported from 2026-11-02, with brownouts
+      # in October (https://github.com/actions/runner-images/issues/13518, read
+      # 2026-10-11). Which macOS the `macos-sonoma` captures may claim is M2a's
+      # to settle (docs/todo_code-review-plan.md).
       # Windows stays on `windows-latest`, Windows Server 2025 in the same list,
       # whose one Windows 11 image is arm64 (`windows-11-arm`); which Windows
       # the `windows-11` captures may claim is M2b's. Each job records its
