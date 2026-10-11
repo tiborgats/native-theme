@@ -672,7 +672,7 @@ const ROWS: &[Row] = &[
 /// calls: an expectation computed with the code under test would agree with
 /// anything. The two agree bit for bit where `base` is opaque -- the same two
 /// products, added in the same order -- and
-/// `every_preset_states_an_opaque_button_fill` shows that is every
+/// `button_fill_is_opaque_outside_translucent_button_fill` shows that is every
 /// combination outside [`TRANSLUCENT_BUTTON_FILL`], whose layers over that
 /// fill are opaque, so the translucent-base arm is the general rule rather
 /// than a tolerance introduced to make a row pass.
@@ -1160,7 +1160,7 @@ const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
 /// combination's hover and pressed layers must be opaque: `over` then returns
 /// the layer itself, and those rows stay exact over the translucent fill.
 #[test]
-fn every_preset_states_an_opaque_button_fill() -> crate::Result<()> {
+fn button_fill_is_opaque_outside_translucent_button_fill() -> crate::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
     for c in &combinations {

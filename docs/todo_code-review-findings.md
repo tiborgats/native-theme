@@ -2677,7 +2677,7 @@ the colours.
 - **Test data (controller ruling):** the dark button fill, `controlColor` `#ffffff3f`
   (`:408`), is the first translucent `button.background_color`. It stays, and iced's
   `compositing_holds_its_four_properties_on_every_native_color` and gpui's
-  `every_preset_states_an_opaque_button_fill` declare `macos-monterey/dark` in
+  `button_fill_is_opaque_outside_translucent_button_fill` declare `macos-monterey/dark` in
   `TRANSLUCENT_BUTTON_FILL`; gpui checks that its hover and pressed layers stay opaque, so
   `over` returns the layer and the filled-button rows stay exact. iced's card close-colour
   exception for `macos-monterey/dark` goes (T1). Commits: be69481a (preset, test data,

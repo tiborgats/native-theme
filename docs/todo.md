@@ -320,7 +320,7 @@ the file was pruned on 2026-10-11, not reordered.
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
       (`docs/platform-facts.md:1278`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
-      `thumb_hover_color` and `thumb_active_color` (and macOS's the overlay
+      `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
       (`native-theme/src/presets/macos-monterey.toml:181-193`, `:604-616`;
       `native-theme/src/presets/windows-11.toml:209-222`, `:706-719`). No
@@ -720,6 +720,18 @@ model, the platform presets and the three connectors
       Ghost buttons in a style scope instead (`demo::ghost`: the full frame in
       every state, the resting fill and border colour transparent), and
       `a_ghost_button_keeps_its_size_when_hovered_and_pressed` checks it.
+- [ ] [v0.7.0] For M7: the base style's `extreme_bg_color` comes from
+      `scrollbar.track_color` (`connectors/native-theme-egui/src/mapping.md:432`,
+      `connectors/native-theme-egui/src/style/base.rs:202`), which
+      `macos-monterey` states transparent, the overlay scroll bar's clear track
+      (`native-theme/src/presets/macos-monterey.toml:187`, `:610`). egui 0.36.2
+      also fills a `ProgressBar`'s track (`egui/src/widgets/progress_bar.rs:140`)
+      and `Frame::canvas` (`egui/src/containers/frame.rs:231`) with it, so on
+      macOS a plain `ProgressBar` outside the progress-bar role, and an app's
+      canvas or plot frame, lose their fill. The role cell rewrites it from
+      `progress_bar.track_color` (`connectors/native-theme-egui/src/style/roles.rs:542`);
+      the base mapping does not. Decide which theme colour the base
+      `extreme_bg_color` takes.
 
 ### native-theme-gpui connector
 
