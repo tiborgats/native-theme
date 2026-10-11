@@ -34,7 +34,7 @@ pub fn to_theme_config(
 ) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
-    let s = crate::text_scale_factor(prefs);
+    let s = prefs.text_scale_factor();
 
     // Issue 14: clamp radius to non-negative before rounding
     let radius = d.border.corner_radius.max(0.0).round() as usize;

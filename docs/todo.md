@@ -2086,7 +2086,7 @@ the gap — closing it is a change, and each wants its own decision.
       function (`text`, `button`) rather than a type. The script also cannot
       see `cfg`, so the `iced_aw` widgets count as shown in a build that
       omits them.
-- [ ] `text_scale_factor` (finite and positive, else 1) is written twice, once
+- [x] (Three copies, iced, gpui and egui: now `AccessibilityPreferences::text_scale_factor` and `scaled` in the core crate, which all three call; their crate docs say what each flag does.) `text_scale_factor` (finite and positive, else 1) is written twice, once
       per connector; a method on `AccessibilityPreferences` in the core crate
       would state it once.
 - [ ] The repository's PreToolUse hook refuses `panic!` in files under

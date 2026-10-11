@@ -12,25 +12,17 @@ use crate::convert::{
 };
 use crate::{AccessibilityPreferences, Role, TextRole};
 
-/// A text size from the theme times the user's text-scaling factor; a factor that is not
-/// finite and positive is ignored. Same signature and semantics as
-/// `native_theme_iced::scaled_text_size` (`connectors/native-theme-iced/src/lib.rs:1050`) and
-/// `native_theme_gpui::scaled_text_size` (`connectors/native-theme-gpui/src/lib.rs:463`).
+/// A text size from the theme times the user's text-scaling factor,
+/// [`AccessibilityPreferences::scaled`]: a factor that is not finite and positive is ignored.
+/// `native_theme_iced::scaled_text_size` and `native_theme_gpui::scaled_text_size` call the
+/// same method.
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a
 /// `&SystemTheme`, so the preset path can pass [`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility).
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
-}
-
-/// The text-scaling multiplier: the factor when it is finite and positive, else `1.0`, the
-/// multiplicative identity (§6.17) — the rule both siblings apply, iced's own
-/// `text_scale_factor` being `connectors/native-theme-iced/src/lib.rs:1056-1059`.
-fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+    prefs.scaled(size)
 }
 
 /// egui's own size for a stock `TextStyle` slot (`egui/src/style.rs:1414-1424`); `None` only
@@ -533,7 +525,7 @@ pub fn font_family(t: &ResolvedTheme) -> &str {
 /// [`scaled_text_size`] of `defaults.font.size` — the `TextStyle::Body` size the atlas
 /// installs, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (§8.5). Same signature as `native_theme_iced::font_size`
-/// (`connectors/native-theme-iced/src/lib.rs:981-986`).
+/// (`connectors/native-theme-iced/src/lib.rs:985-990`).
 #[must_use]
 pub fn font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(

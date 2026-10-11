@@ -93,8 +93,8 @@ use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative}
 use gpui_component::Size;
 use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedPadding};
 
+use crate::Native;
 use crate::colors::rgba_to_hsla;
-use crate::{Native, text_scale_factor};
 
 /// `font.size × s` in pixels (spec §9.4).
 fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
@@ -167,7 +167,7 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
     let Some(stated) = stated else {
         return r;
     };
-    if text_scale_factor(n.accessibility) <= 1.0 {
+    if n.accessibility.text_scale_factor() <= 1.0 {
         r.h(px(stated))
     } else {
         r.min_h(px(stated)).h_auto()
@@ -472,7 +472,7 @@ pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     let upstream_side = TOOLTIP_UPSTREAM_PX_REM
         * n.resolved.defaults.font.size
-        * text_scale_factor(n.accessibility);
+        * n.accessibility.text_scale_factor();
     let left = t.border.padding.left.unwrap_or(upstream_side);
     let right = t.border.padding.right.unwrap_or(upstream_side);
     let inner = t.max_width - left - right - 2.0 * t.border.line_width.max(0.0);

@@ -109,10 +109,14 @@
 //! finite and positive is ignored. With a preset there is no OS reading:
 //! `AccessibilityPreferences::default()` scales by one.
 //!
-//! The other two preferences, reduced transparency and reduced motion, have no
-//! receiver in iced: a `Theme` is a palette, with nothing for either to act
-//! on. An application reads them from the same struct where it draws
-//! translucent surfaces or animates.
+//! # What each flag does
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | nothing on its own: a `Theme` is a palette, with no text size | each text size, through [`font_size()`], [`mono_font_size()`] or [`scaled_text_size()`] ([`AccessibilityPreferences::scaled`]) |
+//! | `reduce_motion` | `Spinner::view` (feature `spinner`) holds the spinner still when passed `true` | the flag to `Spinner::view` and to its own animations |
+//! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/todo.md:1173`) | the flag where it draws translucent surfaces |
+//! | `high_contrast` | nothing | its own colours, if they should change |
 //!
 //! # Font Configuration
 //!
@@ -1048,14 +1052,7 @@ pub fn mono_font_size(
 /// ```
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
-}
-
-/// Text-scaling multiplier from the preferences: the factor when it is finite
-/// and positive, else `1.0` (spec §4.1).
-fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+    prefs.scaled(size)
 }
 
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.

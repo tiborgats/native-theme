@@ -284,6 +284,24 @@ impl AccessibilityPreferences {
     pub fn from_system() -> Self {
         pollster::block_on(pipeline::accessibility_from_system_inner())
     }
+
+    /// The text-scaling multiplier: [`text_scaling_factor`](Self::text_scaling_factor)
+    /// when it is finite and positive, else `1.0`, so a factor no platform
+    /// could mean (NaN, zero, negative, infinite) leaves text at its size.
+    #[must_use]
+    pub fn text_scale_factor(&self) -> f32 {
+        let s = self.text_scaling_factor;
+        if s.is_finite() && s > 0.0 { s } else { 1.0 }
+    }
+
+    /// A text size times [`text_scale_factor`](Self::text_scale_factor).
+    ///
+    /// For every text size alike: a widget's font, a `text_scale` role's
+    /// size, the default fonts. No other length is scaled.
+    #[must_use]
+    pub fn scaled(&self, size: f32) -> f32 {
+        size * self.text_scale_factor()
+    }
 }
 
 /// Complete reader result for the pipeline.
@@ -1034,5 +1052,36 @@ mod overlay_tests {
         let st = default_system_theme()?;
         let _ = &st.overlay_source; // overlay_source exists
         Ok(())
+    }
+}
+
+// =============================================================================
+// Tests -- AccessibilityPreferences text scaling
+// =============================================================================
+
+#[cfg(test)]
+mod accessibility_tests {
+    use super::*;
+
+    fn prefs(text_scaling_factor: f32) -> AccessibilityPreferences {
+        AccessibilityPreferences {
+            text_scaling_factor,
+            ..AccessibilityPreferences::default()
+        }
+    }
+
+    #[test]
+    fn text_scale_factor_keeps_a_finite_positive_factor() {
+        assert_eq!(prefs(2.0).text_scale_factor(), 2.0);
+        assert_eq!(prefs(2.0).scaled(10.0), 20.0);
+        assert_eq!(AccessibilityPreferences::default().text_scale_factor(), 1.0);
+    }
+
+    #[test]
+    fn text_scale_factor_ignores_a_factor_that_is_not_finite_and_positive() {
+        for f in [f32::NAN, 0.0, -0.0, -1.0, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(prefs(f).text_scale_factor(), 1.0, "{f}");
+            assert_eq!(prefs(f).scaled(10.0), 10.0, "{f}");
+        }
     }
 }

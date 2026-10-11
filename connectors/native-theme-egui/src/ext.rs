@@ -141,8 +141,8 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
 /// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:267`), as
-/// in both siblings (`connectors/native-theme-iced/src/lib.rs:302`,
-/// `connectors/native-theme-gpui/src/lib.rs:278`).
+/// in both siblings (`connectors/native-theme-iced/src/lib.rs:306`,
+/// `connectors/native-theme-gpui/src/lib.rs:292`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
@@ -177,7 +177,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `&AccessibilityPreferences::from_system()` to honour the OS preferences under a preset —
 /// accessibility is orthogonal to the theme choice, which is why
 /// `native_theme_gpui::from_preset` takes the same argument
-/// (`connectors/native-theme-gpui/src/lib.rs:272-276`).
+/// (`connectors/native-theme-gpui/src/lib.rs:286-290`).
 ///
 /// # Errors
 /// Propagates `Theme::preset` and `Theme::resolve_with` failures.
@@ -229,7 +229,7 @@ pub fn from_preset(
 /// reaches the same spacing fields [`from_preset`] does. The accessibility preferences travel
 /// inside the atlas ([`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility)), which is why the tuple has no fourth
 /// element as `native_theme_iced::from_system`'s does
-/// (`connectors/native-theme-iced/src/lib.rs:325-330`).
+/// (`connectors/native-theme-iced/src/lib.rs:329-334`).
 ///
 /// # Errors
 /// Propagates `SystemTheme::from_system`.
@@ -248,8 +248,8 @@ pub trait SystemThemeExt: sealed::Sealed {
     /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:497`).
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
-    /// (`connectors/native-theme-iced/src/lib.rs:347`) and `to_gpui_theme`
-    /// (`connectors/native-theme-gpui/src/lib.rs:343`), which return one toolkit theme: egui
+    /// (`connectors/native-theme-iced/src/lib.rs:351`) and `to_gpui_theme`
+    /// (`connectors/native-theme-gpui/src/lib.rs:357`), which return one toolkit theme: egui
     /// stores one `Style` per `egui::Theme` and, under `ThemePreference::System`, picks one
     /// every pass from `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so
     /// returning one variant would guarantee a half-themed application. That input is the

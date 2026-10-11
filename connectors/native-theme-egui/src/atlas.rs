@@ -547,9 +547,9 @@ impl<'a> Builder<'a> {
     /// (`native-theme/src/lib.rs:499`) or, on the preset path,
     /// `AccessibilityPreferences::from_system()` (`native-theme/src/lib.rs:290`, `:303`).
     /// Applied wherever egui has a sink, as the sibling connectors apply them: gpui scales its
-    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:203`, `:205`)
-    /// and forwards reduced motion to gpui (`:846`); iced scales through `font_size` and
-    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:981-986`, `:1027-1032`).
+    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:217`, `:219`)
+    /// and forwards reduced motion to gpui (`:851`); iced scales through `font_size` and
+    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:985-990`, `:1031-1036`).
     ///
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
     ///   and each `Style::override_font_id` size, in the base styles and in every role style —

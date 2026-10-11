@@ -42,6 +42,18 @@
 //! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries are the free
 //! accessors of this crate root; fonts are [`fonts`]' and icons [`icons`]'.
 //!
+//! # What each flag does
+//!
+//! The four [`AccessibilityPreferences`] flags reach the atlas through
+//! [`Builder::accessibility`] and [`from_preset`]; [`from_system`] uses the OS reading.
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | every text size in the styles, and the font accessors' sizes, times [`AccessibilityPreferences::text_scale_factor`]; no other length | a size it reads from the `ResolvedTheme` itself, through [`scaled_text_size`] |
+//! | `reduce_motion` | `Style::animation_time = 0.0` and `ScrollAnimation::none()` in every style | animations of its own |
+//! | `reduce_transparency` | nothing: egui's `Modal` backdrop is a per-call `Modal::backdrop_color`, not a `Style` field; [`is_reduced_transparency`] reads it | the backdrop colour and its own translucent surfaces |
+//! | `high_contrast` | nothing; [`is_high_contrast`] reads it | its own colours, if they should change |
+//!
 //! # Semver
 //!
 //! 1. The crate version equals the workspace version.

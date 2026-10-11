@@ -45,6 +45,20 @@
 //! `apply` stores its variant, and gpui-component's `Theme::change` /
 //! `sync_system_appearance` then switch between the two native palettes.
 //!
+//! # What each flag does
+//!
+//! The four [`AccessibilityPreferences`] flags reach the connector through the
+//! preferences [`from_preset()`], [`to_theme()`], [`apply`] and
+//! [`apply_accessibility`] take; [`from_system()`] and [`apply_system_theme`]
+//! use the OS reading.
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`]; `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
+//! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
+//! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
+//! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md:1108`); [`is_high_contrast`] reads it | its own colours, if they should change |
+//!
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
@@ -182,7 +196,7 @@ pub fn to_theme(
     is_dark: bool,
     prefs: &AccessibilityPreferences,
 ) -> GpuiTheme {
-    let s = text_scale_factor(prefs);
+    let s = prefs.text_scale_factor();
     let theme_color = colors::to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let mode = if is_dark {
         GpuiThemeMode::Dark
@@ -461,16 +475,7 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 /// positive is ignored.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
-}
-
-/// Text-scaling multiplier from the preferences: the factor when it is finite
-/// and positive, else `1.0` (spec §7.2). Named `text_scale_factor` because
-/// [`text_scale()`], the public typography-scale accessor, already owns the
-/// shorter name.
-pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+    prefs.scaled(size)
 }
 
 /// The family gpui is asked to draw `family` in. On macOS (`macos`), the
@@ -1998,7 +2003,7 @@ mod apply_tests {
         )
         .unwrap();
         let n = Native::unscaled(&resolved);
-        assert_eq!(text_scale_factor(n.accessibility), 1.0);
+        assert_eq!(n.accessibility.text_scale_factor(), 1.0);
         assert!(!n.accessibility.reduce_motion);
     }
 
