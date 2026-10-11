@@ -1772,6 +1772,11 @@ mod tests {
         );
     }
 
+    /// The combinations whose preset states a combo box text colour of its own,
+    /// which gpui-component 0.7.1 gives no route for (Tier U): an iOS select's
+    /// text is systemBlue (WebKit html.css@31adf9d1:1099).
+    const STATED_COMBO_TEXT: [&str; 2] = ["ios/light", "ios/dark"];
+
     /// `geometry::checkbox` and `geometry::combobox` carry no colour although
     /// upstream paints both from `foreground`: the route is blocked past the
     /// element the refinement lands on. A `Checkbox::label` sits in a wrapper
@@ -1785,7 +1790,7 @@ mod tests {
     /// The run therefore also guards the preconditions: every preset states
     /// for both widgets exactly the colour upstream already paints there
     /// (`defaults.text_color` -> `foreground`), so the two builders lose
-    /// nothing today.
+    /// nothing today, except the combinations in [`STATED_COMBO_TEXT`].
     #[test]
     fn checkbox_and_combobox_carry_no_colour_because_upstream_leaves_no_route() {
         for info in Theme::list_presets() {
@@ -1830,14 +1835,23 @@ mod tests {
                      do NOT carry it in the builder, it would displace the \
                      disabled colour (checkbox.rs:252-256)"
                 );
-                assert_eq!(
-                    r.combo_box.font.color, r.defaults.text_color,
-                    "{at}: this preset states a combo box text colour that \
-                     gpui-component 0.7.1 gives no route for \
-                     (combobox.rs:991 -> :998) -- record it as a Tier U \
-                     candidate; do NOT carry it in the builder, it would \
-                     displace the disabled colour (input/input.rs:99-103)"
-                );
+                if STATED_COMBO_TEXT.contains(&at.as_str()) {
+                    assert_ne!(
+                        r.combo_box.font.color, r.defaults.text_color,
+                        "{at}: declared in STATED_COMBO_TEXT but no longer \
+                         states a combo box text colour of its own -- remove \
+                         it from the list"
+                    );
+                } else {
+                    assert_eq!(
+                        r.combo_box.font.color, r.defaults.text_color,
+                        "{at}: this preset states a combo box text colour that \
+                         gpui-component 0.7.1 gives no route for \
+                         (combobox.rs:991 -> :998) -- record it as a Tier U \
+                         candidate; do NOT carry it in the builder, it would \
+                         displace the disabled colour (input/input.rs:99-103)"
+                    );
+                }
             }
         }
     }

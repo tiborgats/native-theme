@@ -843,7 +843,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         ))
         .not_themeable(
             "font colour",
-            "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
+            "Tier U, not an absence: combo_box.font.color is modelled, and the iOS preset states one of its own (systemBlue, an iOS select's text); it is carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
         )
         .not_themeable(
             "rows",

@@ -16,6 +16,11 @@
 # (WebKit) marks a value read from WebKit's drawing of iOS controls (docs/platform-facts.md:20), not from UIKit.
 # A value with no comment has no primary source (M2c Step 2 found none: Apple publishes no UIKit
 # metric or state colour for it) and is kept as it was.
+# docs/inheritance-rules.toml:422-427 asks a preset to state the colours it would otherwise inherit
+# wrongly. No iOS source gives window.title_bar_background, list.header_background,
+# menu.background_color, menu.font.color, list.item_font.color, list.header_font.color or
+# scrollbar.thumb_color (the HIG's scroll indicator is "translucent", with no colour), so they
+# are not stated and inherit.
 name = "iOS"
 # SF Symbols, the system symbol set (HIG https://developer.apple.com/tutorials/data/design/human-interface-guidelines/sf-symbols.json, read 2026-10-11)
 icon_set = "sf-symbols"
@@ -61,7 +66,9 @@ disabled_text_color = "#3c3c434c"
 accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
-line_height = 1.2
+# docs/platform-facts.md:1030 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
+# macos-monterey.toml states it; SF Pro is the system font in iOS and iPadOS (HIG typography 2025-05-23)
+line_height = 1.19
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
 
@@ -125,12 +132,14 @@ line_height_pt = 41.0
 # (WebKit) opaqueSecondaryFill, an iOS button's fill (html.css:895; ios-18 expected.txt:85)
 background_color = "#e9e9ea"
 min_width_px = 64.0
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 icon_text_gap_px = 6.0
 hover_background = "#d1d1d6"
+# hover_text_color is not stated: iOS has no hover state and WebKit's iOS html.css gives a button no
+# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:160)
 active_background = "#c7c7cc"
-# (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:900-906; ios-18 expected.txt:13)
+# (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:901-906; ios-18 expected.txt:13)
 active_text_color = "#007aff"
 disabled_background = "#e5e5ea80"
 # (WebKit) tertiaryLabel, a disabled button's text (html.css:996-1003; ios-18 expected.txt:181)
@@ -143,17 +152,25 @@ color = "#007aff"
 [light.input]
 # (WebKit) Canvas = systemBackground (html.css:463; RenderThemeIOS.mm:1024; ios-18 expected.txt:7)
 background_color = "#ffffff"
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 hover_border_color = "#007aff"
 focus_border_color = "#007aff"
 disabled_background = "#f2f2f7"
 disabled_text_color = "#c7c7cc"
+# placeholderText, "The color for placeholder text in controls or text views" (UIKit
+# https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json, read 2026-10-11),
+# rgba(60,60,67,0.298) (ios-18 expected.txt:109); #c5c5c7 over white
+placeholder_color = "#3c3c434c"
 
 
 [light.input.font]
 # label (ios-18 expected.txt:73)
 color = "#000000"
+
+[light.input.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 [light.checkbox]
 indicator_width_px = 22.0
 label_gap_px = 8.0
@@ -162,6 +179,10 @@ disabled_background = "#e5e5ea80"
 disabled_text_color = "#c7c7cc"
 unchecked_background = "#ffffff"
 unchecked_border_color = "#c6c6c8"
+
+[light.checkbox.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [light.tooltip]
 background_color = "#2c2c2e"
@@ -180,9 +201,15 @@ thumb_hover_color = "#a0a0a5"
 thumb_active_color = "#8e8e93"
 
 [light.slider]
-# (WebKit) kTrackThickness (RenderThemeIOS.mm:560)
+# (WebKit) kTrackThickness, the track of WebKit's HTML range control (RenderThemeIOS.mm:560)
 track_height_px = 4.0
+# (WebKit) opaqueFill, the range control's track (RenderThemeIOS.mm:623; ios-18 expected.txt:79)
+track_color = "#e4e4e5"
+# no UIKit source. The same range control's thumb is 16 (kDefaultSliderThumbSize, RenderThemeIOS.mm:562,
+# :657-661), which M2c Step 6 did not take as UISlider's (M2c-21)
 thumb_diameter_px = 28.0
+# no UIKit source. The same range control's ticks are 1 x 3, under a FIXME that says the values need
+# correcting (RenderThemeIOS.mm:796-800)
 tick_mark_length_px = 4.0
 thumb_hover_color = "#f0f0f0"
 disabled_fill_color = "#007aff80"
@@ -193,6 +220,12 @@ disabled_thumb_color = "#e5e5ea"
 # (WebKit) barBlockSize (RenderThemeIOS.mm:718)
 track_height_px = 4.0
 min_width_px = 100.0
+# (WebKit) opaqueFill, the progress bar's track (RenderThemeIOS.mm:752; ios-18 expected.txt:79)
+track_color = "#e4e4e5"
+
+[light.progress_bar.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [light.tab]
 min_width_px = 64.0
@@ -249,8 +282,11 @@ checked_background = "#34c759"
 unchecked_background = "#78788029"
 hover_checked_background = "#2d8a47"
 hover_unchecked_background = "#b0b0b5"
-disabled_checked_background = "#34c75980"
-disabled_unchecked_background = "#c6c6c880"
+# (WebKit) a disabled switch's track is its track colour with the alpha multiplied by 0.4
+# (RenderThemeCocoa.mm:816-817, the painter of :271-279): on 255 x 0.4 = 102 (0x66), #aee9bd over
+# white; off 41 x 0.4 = 16.4, rounded to 16 (0x10), #f7f7f7 over white
+disabled_checked_background = "#34c75966"
+disabled_unchecked_background = "#78788010"
 # (WebKit) the thumb is white, disabled too (RenderThemeCocoa.mm:763)
 disabled_thumb_color = "#ffffff"
 # (WebKit) white (RenderThemeCocoa.mm:763)
@@ -286,7 +322,7 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
@@ -294,6 +330,16 @@ hover_background = "#d1d1d6"
 disabled_background = "#e5e5ea80"
 # (WebKit) tertiaryLabel, a disabled select's text (html.css:996-1003; ios-18 expected.txt:181)
 disabled_text_color = "#3c3c434c"
+# (WebKit) opaqueSecondaryFill, an iOS select's fill (html.css:1106; ios-18 expected.txt:85)
+background_color = "#e9e9ea"
+
+[light.combo_box.font]
+# (WebKit) systemBlue, an iOS select's text (html.css:1099; ios-18 expected.txt:13)
+color = "#007aff"
+
+[light.combo_box.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 
 [light.segmented_control]
@@ -303,6 +349,10 @@ hover_background = "#d1d1d6"
 active_background = "#007aff"
 active_text_color = "#ffffff"
 
+[light.segmented_control.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
+
 
 [light.card]
 
@@ -311,6 +361,10 @@ header_height_px = 44.0
 arrow_icon_size_px =12.0
 hover_background = "#e5e5ea"
 arrow_color = "#8e8e93"
+
+[light.expander.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [light.window]
 inactive_title_bar_background = "#f2f2f7"
@@ -356,7 +410,9 @@ disabled_text_color = "#ebebf54c"
 accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
-line_height = 1.2
+# docs/platform-facts.md:1030 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
+# macos-monterey.toml states it; SF Pro is the system font in iOS and iPadOS (HIG typography 2025-05-23)
+line_height = 1.19
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
 
@@ -419,12 +475,14 @@ line_height_pt = 41.0
 # (WebKit) opaqueSecondaryFill, an iOS button's fill (html.css:895; ios-18 expected.txt:87)
 background_color = "#262629"
 min_width_px = 64.0
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 icon_text_gap_px = 6.0
 hover_background = "#3a3a3c"
+# hover_text_color is not stated: iOS has no hover state and WebKit's iOS html.css gives a button no
+# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:160)
 active_background = "#48484a"
-# (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:900-906; ios-18 expected.txt:15)
+# (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:901-906; ios-18 expected.txt:15)
 active_text_color = "#0a84ff"
 disabled_background = "#2c2c2e80"
 # (WebKit) tertiaryLabel, a disabled button's text (html.css:996-1003; ios-18 expected.txt:183)
@@ -437,17 +495,25 @@ color = "#0a84ff"
 [dark.input]
 # (WebKit) Canvas = systemBackground (html.css:463; RenderThemeIOS.mm:1024; ios-18 expected.txt:9)
 background_color = "#000000"
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 hover_border_color = "#0a84ff"
 focus_border_color = "#0a84ff"
 disabled_background = "#2c2c2e"
 disabled_text_color = "#3a3a3c"
+# placeholderText, "The color for placeholder text in controls or text views" (UIKit
+# https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json, read 2026-10-11),
+# rgba(235,235,245,0.298) (ios-18 expected.txt:111); #464649 over black
+placeholder_color = "#ebebf54c"
 
 
 [dark.input.font]
 # label (ios-18 expected.txt:75)
 color = "#ffffff"
+
+[dark.input.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 [dark.checkbox]
 indicator_width_px = 22.0
 label_gap_px = 8.0
@@ -456,6 +522,10 @@ disabled_background = "#2c2c2e80"
 disabled_text_color = "#3a3a3c"
 unchecked_background = "#1c1c1e"
 unchecked_border_color = "#38383a"
+
+[dark.checkbox.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [dark.tooltip]
 background_color = "#2c2c2e"
@@ -474,9 +544,15 @@ thumb_hover_color = "#636366"
 thumb_active_color = "#8e8e93"
 
 [dark.slider]
-# (WebKit) kTrackThickness (RenderThemeIOS.mm:560)
+# (WebKit) kTrackThickness, the track of WebKit's HTML range control (RenderThemeIOS.mm:560)
 track_height_px = 4.0
+# (WebKit) opaqueFill, the range control's track (RenderThemeIOS.mm:623; ios-18 expected.txt:81)
+track_color = "#2b2b2e"
+# no UIKit source. The same range control's thumb is 16 (kDefaultSliderThumbSize, RenderThemeIOS.mm:562,
+# :657-661), which M2c Step 6 did not take as UISlider's (M2c-21)
 thumb_diameter_px = 28.0
+# no UIKit source. The same range control's ticks are 1 x 3, under a FIXME that says the values need
+# correcting (RenderThemeIOS.mm:796-800)
 tick_mark_length_px = 4.0
 thumb_hover_color = "#3a3a3c"
 disabled_fill_color = "#0a84ff80"
@@ -487,6 +563,12 @@ disabled_thumb_color = "#2c2c2e"
 # (WebKit) barBlockSize (RenderThemeIOS.mm:718)
 track_height_px = 4.0
 min_width_px = 100.0
+# (WebKit) opaqueFill, the progress bar's track (RenderThemeIOS.mm:752; ios-18 expected.txt:81)
+track_color = "#2b2b2e"
+
+[dark.progress_bar.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [dark.tab]
 min_width_px = 64.0
@@ -542,8 +624,11 @@ checked_background = "#30d158"
 unchecked_background = "#78788052"
 hover_checked_background = "#25813c"
 hover_unchecked_background = "#48484a"
-disabled_checked_background = "#30d15880"
-disabled_unchecked_background = "#38383a80"
+# (WebKit) a disabled switch's track is its track colour with the alpha multiplied by 0.4
+# (RenderThemeCocoa.mm:816-817, the painter of :271-279): on 255 x 0.4 = 102 (0x66), #135423 over
+# black; off 82 x 0.4 = 32.8, rounded to 33 (0x21), #101011 over black
+disabled_checked_background = "#30d15866"
+disabled_unchecked_background = "#78788021"
 # (WebKit) the thumb is white, disabled too (RenderThemeCocoa.mm:763)
 disabled_thumb_color = "#ffffff"
 # (WebKit) white (RenderThemeCocoa.mm:763)
@@ -579,7 +664,7 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
-# the minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14)
+# the HIG's minimum hit target, 44 x 44 pt (HIG accessibility 2024-11-14), used as the drawn min_height
 min_height_px = 44.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
@@ -587,6 +672,16 @@ hover_background = "#3a3a3c"
 disabled_background = "#2c2c2e80"
 # (WebKit) tertiaryLabel, a disabled select's text (html.css:996-1003; ios-18 expected.txt:183)
 disabled_text_color = "#ebebf54c"
+# (WebKit) opaqueSecondaryFill, an iOS select's fill (html.css:1106; ios-18 expected.txt:87)
+background_color = "#262629"
+
+[dark.combo_box.font]
+# (WebKit) systemBlue, an iOS select's text (html.css:1099; ios-18 expected.txt:15)
+color = "#0a84ff"
+
+[dark.combo_box.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 
 [dark.segmented_control]
@@ -596,6 +691,10 @@ hover_background = "#3a3a3c"
 active_background = "#0a84ff"
 active_text_color = "#ffffff"
 
+[dark.segmented_control.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
+
 
 [dark.card]
 
@@ -604,6 +703,10 @@ header_height_px = 44.0
 arrow_icon_size_px =12.0
 hover_background = "#2c2c2e"
 arrow_color = "#8e8e93"
+
+[dark.expander.border]
+# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+shadow_enabled = false
 
 [dark.window]
 inactive_title_bar_background = "#1c1c1e"
