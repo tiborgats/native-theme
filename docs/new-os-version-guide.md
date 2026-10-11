@@ -114,8 +114,8 @@ logical pixels at any display scale.
 
 ## macOS
 
-**Source:** Apple Human Interface Guidelines (HIG), AppKit release notes,
-Xcode Interface Builder measurements
+**Source:** Apple Human Interface Guidelines (HIG), AppKit release notes, the OS
+probe's API reads and renders (`tools/os-probe`)
 
 **Files to update:**
 

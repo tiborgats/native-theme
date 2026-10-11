@@ -106,7 +106,7 @@ hover_background = "#e0e0e5"
 # hover), disabled_text_color defaults.disabled_text_color
 # soft_option: CoreUI pressed highlight -- slightly darker than hover
 active_background = "#d6d6db"
-# soft_option: disabled control bg -- bg with reduced alpha
+# soft_option, no source: the former button fill #e8e8ed at alpha 0x80
 disabled_background = "#e8e8ed80"
 
 
@@ -211,7 +211,7 @@ tick_mark_length_px = 8.0
 thumb_hover_color = "#e0e0e0"
 # disabled slider fill -- accent at reduced opacity
 disabled_fill_color = "#007aff50"
-# disabled slider track -- muted at reduced opacity
+# disabled slider track -- no source: the former muted colour #86868b at alpha 0x50
 disabled_track_color = "#86868b50"
 # disabled slider knob -- surface at reduced opacity
 disabled_thumb_color = "#ffffff80"
@@ -290,8 +290,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-# platform-facts.md:1333 (§2.12): the sidebar is NSVisualEffectView.Material.sidebar, a material
-# with no colour; this value has no source
+# no source: a material (platform-facts.md:1333, §2.12: NSVisualEffectView.Material.sidebar, no
+# colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#e8e8ed"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # no source: platform-facts.md:1342 names selectedContentBackgroundColor at reduced opacity and
@@ -436,7 +436,8 @@ arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#e0e0e5"
-# NSDisclosureButton triangle color -- secondary label color
+# NSDisclosureButton triangle color -- no source: the former muted colour #86868b, not
+# secondaryLabelColor (defaults.muted_color)
 arrow_color = "#86868b"
 
 [light.expander.border]
@@ -559,7 +560,7 @@ hover_background = "#444446"
 # hover), disabled_text_color defaults.disabled_text_color
 # soft_option: CoreUI pressed highlight -- brighter than hover
 active_background = "#4e4e50"
-# soft_option: disabled control bg -- bg with reduced alpha
+# soft_option, no source: the former button fill #3a3a3c at alpha 0x80
 disabled_background = "#3a3a3c80"
 
 
@@ -583,11 +584,11 @@ caret_color = "#007aff"
 placeholder_color = "#ffffff3f"
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
-# soft_option: NSTextField hover ring -- accent-derived border
+# soft_option, no source: NSTextField hover ring -- the former dark accent #0a84ff at alpha 0x80
 hover_border_color = "#0a84ff80"
-# soft_option: accent-derived focus ring border
+# soft_option, no source: focus ring border -- the former dark accent #0a84ff
 focus_border_color = "#0a84ff"
-# soft_option: disabled text field bg -- surface with reduced alpha
+# soft_option, no source: disabled text field bg -- the former dark surface #2d2d2d at alpha 0x80
 disabled_background = "#2d2d2d80"
 
 
@@ -663,14 +664,12 @@ thumb_color = "#ffffff80"
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
-# slider knob hover -- slightly brighter surface
-thumb_hover_color = "#3a3a3c"
-# disabled slider fill -- accent at reduced opacity
+# disabled slider fill -- no source: the former dark accent #0a84ff at alpha 0x50
 disabled_fill_color = "#0a84ff50"
-# disabled slider track -- muted at reduced opacity
+# disabled slider track -- no source: the former muted colour #98989d at alpha 0x50
 disabled_track_color = "#98989d50"
-# disabled slider knob -- surface at reduced opacity
-disabled_thumb_color = "#2d2d2d80"
+# thumb_hover_color and disabled_thumb_color stay unset: no source gives either, and unset they
+# are the knob's thumb_color (platform-facts.md:1291)
 
 [dark.progress_bar]
 track_height_px = 6.0
@@ -747,8 +746,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-# platform-facts.md:1333 (§2.12): the sidebar is NSVisualEffectView.Material.sidebar, a material
-# with no colour; this value has no source
+# no source: a material (platform-facts.md:1333, §2.12: NSVisualEffectView.Material.sidebar, no
+# colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#262626"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # no source: platform-facts.md:1342 names selectedContentBackgroundColor at reduced opacity and
@@ -893,7 +892,8 @@ arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#444446"
-# NSDisclosureButton triangle color -- secondary label color
+# NSDisclosureButton triangle color -- no source: the former muted colour #98989d, not
+# secondaryLabelColor (defaults.muted_color)
 arrow_color = "#98989d"
 
 [dark.expander.border]

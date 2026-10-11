@@ -857,6 +857,25 @@ model, the platform presets and the three connectors
       grey on the dark `#1d1d20` where the preset resolves `#1d1d20`.
       Correct the cell, then the preset follows.
 
+### OS probe: macOS renders for the sidebar, the title bar and the list header
+
+- [ ] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar
+      is `NSVisualEffectView.Material.sidebar`, a material with no colour
+      (`docs/platform-facts.md:1333`), yet `macos-monterey` and `macos-tahoe`
+      state `#e8e8ed` / `#262626`. The OS probe resolves its colours with
+      Reduce Transparency on and renders no material. Have it render a
+      sidebar-material `NSVisualEffectView` with Reduce Transparency on and
+      off, in both appearances, on each macOS image; then state the cell
+      from the renders and the presets follow (found in M2a Step 8's
+      re-audit, 2026-10-11).
+- [ ] [v0.7.0] `window.title_bar_background` and `list.header_background`
+      are ≈ `defaults.surface_color` on macOS, "measured", with no render
+      cited (`docs/platform-facts.md:1147`, `:1387`). In `macos-monterey`
+      dark both inherit `controlBackgroundColor` `#1e1e1e` under a window of
+      `#323232`. Render a titled window and an `NSTableView` with a header
+      on the probe images, in both appearances, and check both cells against
+      the renders (found in M2a Step 8's re-audit, 2026-10-11).
+
 ---
 
 ## Toolkit Connectors

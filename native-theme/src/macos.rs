@@ -940,12 +940,22 @@ mod tests {
     #[test]
     fn read_macos_leaves_the_text_field_selection_to_inheritance() {
         let result = super::read_macos().unwrap();
-        assert!(matches!(
-            &result.output,
-            crate::ReaderOutput::Dual { light, dark, .. }
-                if light.input.selection_background.is_none()
-                    && dark.input.selection_background.is_none()
-        ));
+        assert!(
+            matches!(
+                &result.output,
+                crate::ReaderOutput::Dual { light, .. } if light.input.selection_background.is_none()
+            ),
+            "the reader should return both variants, light input.selection_background unset: it \
+             inherits defaults.text_selection_background (platform-facts.md:1193)"
+        );
+        assert!(
+            matches!(
+                &result.output,
+                crate::ReaderOutput::Dual { dark, .. } if dark.input.selection_background.is_none()
+            ),
+            "the reader should return both variants, dark input.selection_background unset: it \
+             inherits defaults.text_selection_background (platform-facts.md:1193)"
+        );
     }
 
     // === Plan 94-03 (G8): MacosReader ThemeReader impl ===

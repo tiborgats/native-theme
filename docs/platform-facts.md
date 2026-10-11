@@ -39,7 +39,7 @@ a default for these.
 | ❌     | Incorrect — disproved; see inline note for the correct information. |
 
 #### Version-tagged values
-A cell that tags its values with OS versions ("macOS 14: X · macOS 26: Y") states one value per version, and each value belongs to the preset of that version's generation (`macos-monterey`, and a later `macos-tahoe`), not to a usage context. The cell-reading rules (one number is stated, a per-context value only for a matching context; [unstated-sizes spec §1.4](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) therefore read per preset: a preset states the one number its own version carries, and a value tagged for another version says nothing about it. The size gate (`native-theme/src/presets/documented_sizes.rs`) keys its rows by preset for the same reason. In the macOS column (M2a Step 8, 2026-10-11) a cell's first value, untagged or tagged `macOS 14–15:`, is `macos-monterey`'s, which covers macOS 12–15 and was verified on 14 and 15; `macOS 26:` gives `macos-tahoe`'s, which covers 26 and was verified on 26.6.2 (the OS probe, [`evidence/os-probe/2026-10-11-run-38129819806/`](evidence/os-probe/2026-10-11-run-38129819806/)): `same` where a source shows the value unchanged, the value where it differs, ❓ where no source gives it. An inheritance pointer (`←`) carries no tag: it names a field of the model, not an OS value, and holds for both.
+A cell that tags its values with OS versions ("macOS 14: X · macOS 26: Y") states one value per version, and each value belongs to the preset of that version's generation (`macos-monterey`, and a later `macos-tahoe`), not to a usage context. The cell-reading rules (one number is stated, a per-context value only for a matching context; [unstated-sizes spec §1.4](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) therefore read per preset: a preset states the one number its own version carries, and a value tagged for another version says nothing about it. The size gate (`native-theme/src/presets/documented_sizes.rs`) keys its rows by preset for the same reason. In the macOS column (M2a Step 8, 2026-10-11) a cell's first value, untagged or tagged `macOS 14–15:`, is `macos-monterey`'s, which covers macOS 12–15 and was verified on 14 and 15; `macOS 26:` gives `macos-tahoe`'s, which covers 26 and was verified on 26.6.2 (the OS probe, [`evidence/os-probe/2026-10-11-run-38129819806/`](evidence/os-probe/2026-10-11-run-38129819806/)): `same` where a source shows the value unchanged, the value where it differs, ❓ where no source gives it. An inheritance pointer (`←`) names a field of the model, not an OS value: an untagged pointer holds for both, and one tagged `macOS 14–15:` holds only for those versions.
 
 ---
 
@@ -159,8 +159,8 @@ Most system colors date to macOS 10.10+. ✅ Later additions: (macOS 26: same, t
 | `NSColor.textInsertionPointColor`     | System text insertion point color (type property; macOS 14+) | ✅ Apple docs JSON: `introducedAt: "14.0"`, `roleHeading: "Type Property"` · macOS 26: same ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nscolor/textinsertionpointcolor.json), read 2026-10-11) |
 | `NSTextInsertionIndicator`            | System caret view (macOS 14+; follows accent color by default) | ✅ · macOS 26: ❓ — no source gives its macOS 26 value |
 
-macOS 14 changed the caret to match the system accent color and exposed (macOS 26: ❓)
-`NSColor.textInsertionPointColor` as a new type property.
+macOS 14 changed the caret to match the system accent color and exposed
+`NSColor.textInsertionPointColor` as a new type property. macOS 26: same ([probe 26 :329](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml#L329)).
 
 #### 1.1.3 Geometry
 
