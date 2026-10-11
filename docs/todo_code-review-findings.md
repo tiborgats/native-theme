@@ -6438,6 +6438,30 @@ AW1–AW7) and the task review of Step 7 (I1, minors 1–4 and 6), each value fe
 - **Commits:** 705c5eed (facts and presets), 464c2178 (test, CHANGELOG, docs/todo.md, registry,
   README).
 
+### Step 7, fix round 2 (2026-10-11)
+
+- **Values, at libadwaita 1.10.0 and KF 6.31.0.** adwaita's caret is `currentColor`, the entry's text
+  colour (`_entries.scss:11`): facts :1192's GNOME cell and inheritance-rules.toml's GNOME
+  `input.caret_color` rule (`input.font.color`) say so, and the preset states `#2e3436` / `#ffffff`
+  (were `#3584e4` / `#78aeed`): the resolver's safety net fills the caret from `defaults.text_color`,
+  not from the input's font colour. Dark `window.title_bar_background` `headerbar_bg_color` `#2e2e32`
+  (`_header-bar.scss:3`, `_colors.scss:103`); dark `card.background_color` `card_bg_color`
+  `#ffffff14` (`_misc.scss:203`, `_colors.scss:123`); `inactive_title_bar_background`
+  `headerbar_backdrop_color` = `@window_bg_color` (`_header-bar.scss:41-42`, `_colors.scss:43`, :32,
+  :95), `#fafafb` / `#222226` (dark was `#303034`; light inherited `#ffffff`), with facts :1153's GNOME
+  cell stating it. Light title bar and card unchanged (inheritance gives `#ffffff`, libadwaita's own).
+  Facts :1115's KDE cell says KColorScheme 6.31.0 (`kcolorscheme.cpp`, `kcolorutils.cpp` identical
+  at v6.30.0). Changed rows changed only their KDE or GNOME cell (cell-by-cell against HEAD).
+- **Inherited, with a docs/todo.md entry.** `list.header_background` (facts :1387 names no colour;
+  `_column-view.scss:12-13`, :72-76) and `slider.thumb_color` (facts :1291 says ←
+  `defaults.surface_color`, libadwaita's `$slider_color` is white 80 % over the view, `_scale.scss:50`,
+  `_colors.scss:288`). K3's ❓ and A1's warning move stand as ruled. docs/todo.md's spinner entry
+  points at `kde-breeze.toml:371`, :773 and `adwaita.toml:351`, :726.
+- **Gates:** `platform_facts_xref` (6), `documented_sizes` (10), native-theme lib 840 (`linux,kde,portal`)
+  and 667, the connectors' tests (egui 171 + 60 + 2, iced 146 + 59 + 8 + 5, gpui 291 + 181 + 16 + 1),
+  `./scripts/check_release.sh --commit` (79 checks, 79 ✅, exit 0).
+- **Commit:** 64d3769b.
+
 ## M3 — Core, part 1
 
 **Status:** Steps 1–5 done 2026-10-11 (stop point A); the fix phase (Steps 6–8) waits for M2's fix phase to land (maintainer, 2026-10-11), so its reviewers' line numbers are re-checked against the code at that point. Review run on Opus 5.5 (session) beside M2's fix session on the same branch, read-only.
