@@ -369,7 +369,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** Adopt the rule in presets/README.md and the guide now. Write each header's 'covers' and 'verified on' lines only from that platform's M2 Step 1 version map and Step 2 checks, at that part's close. macos-sonoma says 14-15 only if M2a confirms D4's condition. Until then a header names the generation and states no range, so no version claim is invented. Keep no windows-10, with the reason recorded once M2b Step 1 records Windows 10's support status.
 
 **Decision:** adopt the rule now, headers at each M2 part's close (round 1): the rule into presets/README.md and new-os-version-guide.md in M1; each header's 'covers' and 'verified on' lines from that part's sourced version map.
-**Status:** fixed in a85d1fe0 (the rule in presets/README.md and new-os-version-guide.md; fe5f4cea gated the style-version sentence on M2e's check); headers at the M2 parts' closes
+**Status:** fixed in a85d1fe0 (the rule in presets/README.md and new-os-version-guide.md; fe5f4cea gated the style-version sentence on M2e's check); kde-breeze and adwaita headers in M2e Step 7 (E45, E47, E53, E54, `21a24820`); the other headers at their M2 parts' closes
 
 ### M1-T1-04 · no API break · Pinning an older generation on a newer OS: from_system_with_preset
 
@@ -690,7 +690,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** Adopt only the core method now: AccessibilityPreferences::text_scale_factor()/scaled(size) per todo:2087 (an existing entry, so this is not a new finding), with the connectors calling it. Put the motion/transparency receiver table in the connector docs. Send high contrast to M2 as proposed. Do not move text scale into ResolutionContext in M1. Instead add an M2 check: does GNOME's xrdb Xft.dpi already include text-scaling-factor, and does KDE's forceFontDPI already cover it? Revisit at stop point A only if M2 shows the factor is not already in font_dpi.
 
 **Decision:** adopt the critic's form (round 3): only the core method `AccessibilityPreferences::text_scale_factor()` / `scaled()` now (docs/todo.md:2087, with M1-T7-01), connectors calling it; a motion/transparency receiver table in the connector docs; high contrast decided in M2 (M2b Windows, M2e GNOME); M2e checks whether KDE's `forceFontDPI` and GNOME's `Xft.dpi` already carry the text scale before resolve-time scaling is revisited.
-**Status:** method fixed in 25d69ceb (with M1-T7-01), receiver tables in the three crate docs; the M2 questions are in the plan's M2b and M2e rows
+**Status:** method fixed in 25d69ceb (with M1-T7-01), receiver tables in the three crate docs; M2e Step 7: KDE's `forceFontDPI` carries no second text scale (the KDE reader reports factor 1.0); GNOME's `Xft.dpi` did (96 × factor × UI scale) and the factor was applied twice, fixed in `74b556c9` (C1–C14); GNOME high contrast carried, not applied (T3); the Windows questions are M2b's
 
 ### M1-T6-04 · no API break · Reduced motion has two sources that disagree on KDE
 
@@ -5843,7 +5843,7 @@ No cell needs a ❓. Scratch: m2-src/m2d-s2c/ (mw clone, raw/), scripts in m2d-s
 
 ## M2e — KDE and GNOME currency
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 7 not started. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 7 done 2026-10-11 (6b21927a, 21a24820, 74b556c9). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 Currency only. Latest stable on 2026-10-11: Plasma 6.7.5 (Breeze `v6.7.5` = `ca217f12`; the facts' `f0b1d75` is a pre-6.8
 master commit whose three cited kstyle files are byte-identical at v6.7.5 and v6.7.91), Plasma 6.8.0 due 2026-10-14 (6.7.91 =
@@ -5932,42 +5932,42 @@ Step 6 triage: 6 fix.
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/ui/main.qml#L424-426 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/fontsaasettingsbase.kcfg#L8-11 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc ; https://invent.kde.org/plasma/plasma-workspace/-/commit/fe367323b30bfa239243b2164d75faacb1be15e7 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/startkde/plasma-setup-xwayland/main.cpp#L47-58 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/kcms/kconf_update/plasma6.0-remove-dpi-settings.cpp#L25 Note: The cell is right for 6.7.5 (latest stable). It is wrong for Plasma 6.8, which ships 2026-10-14: there Plasma neither writes nor reads forceFontDPI, yet native-theme/src/detect.rs:437-444 still reads it, so a stale value would be honoured. The kconf_update path is kcms/fonts/kconf_update/ (the citation URL above omits 'fonts/'; the correct path is kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp#L25). The citation should be pinned. This is not on todo.md: todo.md:2583 asks a different D…
 **Verdict:** CONFIRMED — Every cited value holds at the pinned tags (I grepped all three repos at v6.7.5 and v6.7.91), but the migration file's path is wrong: it is kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp:25, not kcms/kconf_update/. Confirmed value: Plasma 6.7.5 (cc1ab796): forceFontDPI UInt default 0 'Force font DPI on X11' (fontsaasettingsbase.kcfg:8-11); KCM row visible only when Qt.platform.pluginName === "xcb" (main.qml:426); krdb xftDpi() r….
 **Triage:** fix — Correct for Plasma 6.7.5; Plasma 6.8 (6.8.0 due 2026-10-14) drops forceFontDPI. Fix in Step 7 once v6.8.0 is tagged; the verifier also found the migration file's path wrong (kcms/fonts/kconf_update/...). The KDE reader reads forceFontDPI: M4.
-**Status:** open
+**Status:** fixed in Step 7 (E1, E14), `6b21927a`; re-check at Plasma v6.8.0 (due 2026-10-14; cited at Beta 2, v6.7.91); the KDE reader's and `detect.rs`'s `forceFontDPI` read, which Plasma 6.8 neither writes nor reads: M4 (docs/todo.md, the logical-versus-physical DPI entry)
 
 #### M2e-02 · bug · S2 · docs/platform-facts.md:714
 **Claim:** `Scale factor` (1.3.7 Accessibility): the cell says forceFontDPI / 96 (from kcmfontsrc); pinned (cell) / latest stable Plasma 6.7.5: forceFontDPI is meaningful only on X11 (default 0 = unset). The Wayland path is kwinrc [Xwayland] Scale*96.; Plasma 6.8 (beta) Plasma 6.7.91: Plasma has no forceFontDPI any more; Xft.dpi = kwinrc [Xwayland] Scale × 96..
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/startkde/plasma-setup-xwayland/main.cpp#L47-58 Note: Same cause as line 713. From 6.8 the ratio has no Plasma-side source.
 **Verdict:** PLAUSIBLE — krdb.cpp:328-341 at v6.7.5 and plasma-setup-xwayland/main.cpp:47-58 at v6.7.91 do read forceFontDPI on X11 only and set Xft.dpi from kwinrc [Xwayland] Scale*96 on Wayland, but that value is the Xft.dpi handed to X11 clients, so mapping it to the row's general 'Scale factor' (native Wayland output scale) needs a measurement.
 **Triage:** fix — As :713; PLAUSIBLE because the Wayland path (kwinrc [Xwayland] Scale x 96) is Xwayland's DPI, not a text scale.
-**Status:** open
+**Status:** fixed in Step 7 (E2), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01
 
 #### M2e-03 · bug · S2 · docs/platform-facts.md:1123
 **Claim:** `text_scaling_factor` (2.1.7 Accessibility): the cell says `forceFontDPI` / 96; pinned (cell) / latest stable Plasma 6.7.5: forceFontDPI is read on X11 only.; Plasma 6.8 (beta) Plasma 6.7.91: forceFontDPI was dropped from Plasma (c675077b8, fe367323b); no Plasma component reads it..
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc Note: Same as lines 713-714. Needs a 6.8 decision: either keep it as a legacy X11 key or read nothing on KDE.
 **Verdict:** CONFIRMED — krdb.cpp at v6.7.5 reads it only in the non-Wayland branch, and git grep at v6.7.91 finds it only in the kconf_update migration; the cited commit c675077b8 alone removes only the KCM and kcfg, while krdb's removal is fe367323b. Confirmed value: 6.7.5: forceFontDPI read on X11 only (krdb.cpp:340, inside the non-Wayland branch). 6.8 beta (v6.7.91): no reader left; c675077b8 dropped the kcfg/KCM, fe367323b dropped krdb..
 **Triage:** fix — As :713.
-**Status:** open
+**Status:** fixed in Step 7 (E6), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01
 
 #### M2e-04 · bug · S2 · docs/platform-facts.md:728
 **Claim:** `org.gnome.desktop.interface document-font-name default` (1.4.1 Fonts): the cell says Adwaita Sans 11 (GNOME 48+); pinned (cell) gsettings-desktop-schemas 48.0 (= frozen 'master' e8599d1 for this key): 'Adwaita Sans 11'; latest stable gsettings-desktop-schemas 51.0 (1db238b6): 'Adwaita Sans 12'.
 **Evidence:** [pinned (cell)] https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/48.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L158-159 [latest stable] https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L158-159 Note: Changed by commit 87022e2 'schemas: Increase document font size to 12' (2025-07-30), first in tag 49.beta; 49.0, 50.0, 51.0 all 'Adwaita Sans 12'. Cell is right only for GNOME 48. Not on todo.md. Appendix 1785 cites dead branch master.
 **Verdict:** CONFIRMED — The schema reads 'Adwaita Sans 11' at 48.0 and 'Adwaita Sans 12' from 49.0 onward, so the cell's 'GNOME 48+' holds only for GNOME 48; docs/todo.md does not list this item. Confirmed value: 48.0: 'Adwaita Sans 11'; 49.0, 50.0 and 51.0 (1db238b6): 'Adwaita Sans 12' (org.gnome.desktop.interface.gschema.xml.in:158-159), changed by commit 87022e2 'schemas: Increase document font size to 12'….
 **Triage:** fix — CONFIRMED: document-font-name is Adwaita Sans 12 from gsettings-desktop-schemas 49.0; the cell's "GNOME 48+" holds for 48 only.
-**Status:** open
+**Status:** fixed in Step 7 (E3, E19), `6b21927a`
 
 #### M2e-05 · bug · S2 · docs/platform-facts.md:1408
 **Claim:** `border.color (GNOME)` (2.16 popover): the cell says <- defaults.border.color; pinned (cell) libadwaita 1.9.3 (5789add9) / main@1e097d51: > arrow, > contents { border: 1px solid RGB(0 0 0 / 14%) } ($border_color under prefers-contrast: more); latest stable libadwaita 1.10.0: > contents has no CSS border; outline is the first box shadow '0 0 0 1px RGB(0 0 0 / 5%)' ($border_color under prefers-contrast: more); > arrow 'border: 1px solid transparent'.
 **Evidence:** [pinned (cell)] https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/widgets/_popovers.scss#L13-24 [latest stable] https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L13-46 Note: Inheritance cell, reported because its source changed in 1.10.0. 1.10.0 popover now matches the .card pattern row 1588 records as '(none) — outline is a box shadow'. Already a 14% black border in 1.9, not $border_color. Not on todo.md.
 **Verdict:** CONFIRMED — At both revisions the popover's outline is a fixed black alpha rather than $border_color (currentColor at 15%, platform-facts.md:1116) except under prefers-contrast: more, so the '<- defaults.border.color' cell differs; no other stylesheet rule overrides it. Confirmed value: libadwaita 1.9.3 (5789add9): popover > arrow, > contents { border: 1px solid RGB(0 0 0 / 14%) }, $border_color under prefers-contrast: more (_popovers.scss:13-24). 1.10.0: > contents has no border, ou….
 **Triage:** fix — CONFIRMED: libadwaita 1.10.0 draws the popover outline as a 1px box-shadow of black 5% (border colour only under prefers-contrast: more), not defaults.border.color.
-**Status:** open
+**Status:** fixed in Step 7 (E7, E51, E52), `6b21927a`, `21a24820`
 
 #### M2e-06 · bug · S2 · docs/platform-facts.md:1409
 **Claim:** `border.line_width (GNOME)` (2.16 popover): the cell says <- defaults.border.line_width; pinned (cell) libadwaita 1.9.3: 1px CSS border; latest stable libadwaita 1.10.0: no CSS border on contents (1px outline drawn as box-shadow spread).
 **Evidence:** [pinned (cell)] https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/widgets/_popovers.scss#L18 [latest stable] https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L13-27 Note: Same change as 1408; also means padding 8 (1412/1413) is now from the outer edge, not inside a 1px border.
 **Verdict:** CONFIRMED — The source reads as claimed. The pinned 1.9.3 value (1px) matches defaults.border.line_width, so only 1.10.0 differs: its contents have no CSS border, and a shadow outline takes no layout space. Confirmed value: 1.9.3: 1px CSS border on > contents (_popovers.scss:18), equal to the default 1px. 1.10.0: no CSS border on > contents; the 1px outline is a box-shadow spread (_popovers.scss:13-27), i.e. **(none)** u….
 **Triage:** fix — CONFIRMED: 1.10.0 has no CSS border on the popover contents; the 1px outline is a shadow spread and takes no layout space.
-**Status:** open
+**Status:** fixed in Step 7 (E7, E51, E52), `6b21927a`, `21a24820`
 
 ### Step 4 — preset-validator
 
@@ -6003,35 +6003,35 @@ No violations were found in the values that are cited.
 **Evidence:** This value feeds the popover border through inheritance (see the depends-on findings above), but its line has no citation and no derivation (which currentColor, which background, which libadwaita commit). Add the source before deciding whether popover should keep inheriting it.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — cite adwaita.toml's border colour derivation (S4), with M2e-05.
-**Status:** open
+**Status:** fixed in Step 7 (E5, E49), `6b21927a`, `21a24820`: `#dcdcde`, the computation docs/todo.md's "Presets: colours with no reproducible source" gave
 
 #### M2e-P02 · bug · S2 · native-theme/src/presets/adwaita.toml:403
 **Claim:** `dark.defaults.border.color` (no-citation): preset #4a4a4e, facts GNOME: (Adwaita CSS), no literal value; :1116 --border-opacity 15% (docs/platform-facts.md:1051).
 **Evidence:** Same as light: uncited, and it feeds dark.popover.border.color through inheritance.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — dark twin of M2e-P01 (S4).
-**Status:** open
+**Status:** fixed in Step 7 (E5, E50), `6b21927a`, `21a24820`: `#434347`
 
 #### M2e-P03 · bug · S2 · native-theme/src/presets/kde-breeze.toml:10
 **Claim:** `light.defaults.* colours (accent_color..focus_ring_color, lines 10-29), line_height (36), focus_ring_* (37-38), border block (42-47), font/mono_font (49-56), icon_sizes (59-63), and most widget geometry without comment lines` (no-citation): preset , facts  ().
 **Evidence:** Grouped finding, not a full per-key list. These values have no per-line platform-facts citation, unlike the cited lines (e.g. :30, :34, :66, :101). Values were not re-checked against facts in this M2e pass. No KDE key depends on the reported rows 713/714/1123: text_scaling_factor and font_dpi are not in the preset and are reader-filled (presets/README.md:79-87).
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — add per-line platform-facts citations to kde-breeze.toml:10-29 (S4); values not re-checked in M2e (currency only).
-**Status:** open
+**Status:** fixed in Step 7 (E46), `21a24820`: cited against BreezeLight.colors v6.7.5; selection and accent text `#ffffff`, danger, success and info text `#232629`
 
 #### M2e-P04 · bug · S2 · native-theme/src/presets/adwaita.toml:10
 **Claim:** `light.defaults.* colours (lines 10-29), line_height (36), focus_ring_* (37-38), border block (42-47), font/mono_font (49-56), icon_sizes (59-63), text_scale (65-77), and the matching dark block (371-438)` (no-citation): preset , facts  ().
 **Evidence:** Grouped finding, not a full per-key list. These values have no per-line platform-facts citation. defaults.font Adwaita Sans 11 (lines 49-50, 410-411) comes from font-name (platform-facts.md:727, :1025-1026), not from the reported document-font-name row :728. No preset key depends on row 728, and nothing under native-theme/src reads document-font-name.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — add per-line citations to adwaita.toml:10-29 (S4); values not re-checked in M2e.
-**Status:** open
+**Status:** fixed in part in Step 7 (E48, T1), `21a24820`: 13 values cited; text, muted, shadow, warning text, link and focus-ring colours marked ❓, their libadwaita 1.10.0 derivations in docs/todo.md
 
 #### M2e-P05 · bug · S2 · native-theme/src/presets/adwaita-live.toml:12
 **Claim:** `light.defaults.disabled_opacity` (no-citation): preset 0.5, facts (Adwaita CSS) 0.5, --disabled-opacity 50% (docs/platform-facts.md:1115).
 **Evidence:** The value matches the facts. adwaita.toml:34 cites platform-facts.md:1115 for the same key, but adwaita-live.toml:12 and :244 carry no citation. kde-breeze-live.toml:8 does cite its value.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — add the citation adwaita.toml:34 carries (S4).
-**Status:** open
+**Status:** no change in Step 7: adwaita-live.toml was removed in 19860fbc (M1-T4-01); adwaita.toml:34 cites the key
 
 <details><summary>Preset keys that depend on a <i>differs</i> row</summary>
 
@@ -6238,6 +6238,54 @@ Step-1 map: no errors found. libadwaita's latest tags are 1.10.0, 1.9.4 and 1.8.
 Not covered: the Adwaita Sans/Inter half of 1030 (rsms/inter, not a GNOME repo). §1.4 Pre-48 column (frozen history).
 
 </details>
+
+### Step 7 — fix and close (2026-10-11)
+
+Sources: Step 1's pins (Breeze v6.7.5 `ca217f12`, KF 6.31.0, plasma-workspace v6.7.5 `cc1ab796`
+and v6.7.91 `40cde89a`, libadwaita 1.10.0 `c9ab1186`, GTK 4.24.1 `2ea935e3`,
+gsettings-desktop-schemas 51.0 `1db238b6`), and gnome-settings-daemon 51.0 `7f7913cc` for
+M1-T6-03. KDE and GNOME have no probe; none is cited.
+
+- **Rows.** `forceFontDPI` (713, 714, 1123) is stated per version: Plasma 6.7 reads it on X11
+  only, Plasma 6.8 has no such key (cited at 6.8 Beta 2: `v6.8.0` was not tagged on 2026-10-11;
+  re-check when it is, due 2026-10-14). 728: Adwaita Sans 11 in GNOME 48, 12 from 49. 1408/1409:
+  libadwaita 1.10's popover outline is the box shadow `0 0 0 1px RGB(0 0 0 / 5%)`, 1px, outside
+  the contents. 1051 gains GNOME's computed line colour; 805 and the appendix's GtkSpinner line
+  name the real source of 16 (`-gtk-icon-size`). Appendix: 11 KDE and 26 GNOME moving-branch or
+  unpinned citations pinned to the tags above, each line checked at its pin. Every row was
+  replaced in place: no `platform-facts.md:N` citation moved.
+- **Presets.** kde-breeze light defaults are cited line by line against BreezeLight.colors
+  v6.7.5; five were not Breeze's: text on a selection and on the accent is `#ffffff` (Breeze 5.21
+  moved `[Colors:Selection] ForegroundNormal` from 252 to 255, `fd23e41d`), and danger, success
+  and info text is the window text `#232629`, as the facts rows and the KDE reader have it.
+  adwaita: 13 light defaults cited against libadwaita 1.10.0, six marked ❓ with their
+  derivations in docs/todo.md; line colour `#dcdcde` / `#434347`; popover outline `#0000000d`,
+  1px. Both headers name their pinned style version (M1-T1-03), and fe5f4cea's "neither does yet"
+  is gone from presets/README.md and new-os-version-guide.md.
+- **M1-T6-03 (a), double scaling.** KDE: none — the KDE reader leaves `text_scaling_factor` at
+  1.0 (`kde/mod.rs:49-52`), so `forceFontDPI` scales text once, as `font_dpi`. GNOME: yes —
+  gnome-settings-daemon writes `Xft.dpi` = 96 × `text-scaling-factor` × the X11 UI scale
+  (`gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), the reader reported it as
+  `font_dpi` and reported the factor too, and the connectors multiply by the factor: 2.25× at
+  1.5. Fixed: GNOME's font DPI is 96 (gsd's `DPI_FALLBACK`; GTK on Wayland lays fonts out at 96 ×
+  factor, `gdksettings-wayland.c:166-168`), in the reader and in
+  `ResolutionContext::from_system()` on GNOME and Budgie. A resolve-time multiply would now be
+  single on both desktops. The KDE reader's `Xft.dpi` fallback on Wayland is the display scale
+  (krdb `:333-337`), for M4 with Plasma 6.8's removal of `forceFontDPI` (docs/todo.md's
+  logical-versus-physical entry).
+- **M1-T6-03 (b), GNOME high contrast:** carried, not applied. The reader sets the flag (portal
+  `contrast`, else gsettings `high-contrast`); libadwaita 1.10 applies it as
+  `prefers-contrast: more` (`adw-style-manager.c:270-284`; `_colors.scss:323-329` and 32
+  stylesheet files). Recorded on docs/todo.md's high-contrast entry.
+- **Unchanged:** P05 (file removed by M1); researcher notes (3) reduced-motion keys and the
+  row-673 aside (no finding); Plasma 6.6 LTS (header only); fixed-commit pins (`f0b1d75`,
+  `5789add9`, `bd25f1e2`, `8319acc`, `27066d47`, `a5030fc6`), identical at the tags.
+- **Gates:** `platform_facts_xref`, `documented_sizes`, the GNOME and detect unit tests with
+  `--features portal` (the GNOME test failed first, `left: Some(144.0)`), clippy for `portal`, `kde`
+  and `linux`, the three connectors' tests, `./scripts/check_release.sh --commit`. The
+  `preset-validator` pass on kde-breeze and adwaita is the controller's (not run by the implementer).
+- **Commits:** 6b21927a (facts rows and citations), 21a24820 (presets, headers, line citations,
+  T1), 74b556c9 (C1–C14, T2).
 
 ## M3 — Core, part 1
 

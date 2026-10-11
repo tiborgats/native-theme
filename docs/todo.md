@@ -1023,6 +1023,15 @@ model, the platform presets and the three connectors
       stored value and the status bar's flag. Decide what it should change
       (a high-contrast preset, or the contrast rule's thresholds) or say in
       the connector's docs that it is carried and not applied.
+      For `adwaita` the platform's rules are known (M2e, 2026-10-11):
+      libadwaita 1.10.0 applies high contrast as `prefers-contrast: more`
+      (`adw-style-manager.c:270-284`): `--border-opacity` 50 %,
+      `--dim-opacity` 90 %, `--disabled-opacity` 40 % (`_colors.scss:323-329`)
+      and per-widget rules in 32 stylesheet files. The GNOME reader carries
+      the flag (portal `contrast`, else `org.gnome.desktop.a11y.interface
+      high-contrast`, in `native-theme/src/gnome/mod.rs`'s
+      `accessibility_from_gnome_data` and `build_gnome_variant`);
+      no preset or connector applies it.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
