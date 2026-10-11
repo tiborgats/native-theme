@@ -244,6 +244,19 @@ the file was pruned on 2026-10-11, not reordered.
       first — and nothing tells it to read again. Make it a trailing debounce
       (fire once, 300 ms after the last relevant event), or fire again at the
       end of the window when events were dropped in it.
+- [ ] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
+      lost on the next system re-read** (M2 final review, Minor 5,
+      2026-10-11). The connectors' re-reads call `from_system()`, which picks
+      the running version's generation: egui's watcher rebuilds through
+      `ThemeWatcher::system_rebuild`
+      (`connectors/native-theme-egui/src/watch.rs:100`, then
+      `SystemTheme::from_system()` at `ext.rs:239`), and gpui's
+      `from_system` (`connectors/native-theme-gpui/src/lib.rs:337`) calls it
+      too. An application that pinned `macos-monterey` on macOS 26 gets
+      `macos-tahoe` after the first theme change. A feature gap, not a bug:
+      decide whether a connector's re-read keeps the pinned preset (the
+      watcher or the connector remembering the name, or a re-read entry
+      point that takes it).
 
 ### windows-11: the disabled fills are fully transparent
 
@@ -762,6 +775,21 @@ model, the platform presets and the three connectors
       :23), and `docs/platform-facts.md:1186` gives the brush beside
       `COLOR_WINDOW`; the old dark `#2d2d2d` had no source.
       `tab.active_background` and `button.checked_background` are still open.
+      *M2 final review (2026-10-11, I1), for M4:* the mix shows in dark mode.
+      `apply_sys_colors` (`native-theme/src/windows.rs:268-281`) writes the
+      `GetSysColor` values over whichever variant `build_theme` fills
+      (`:449-452`), the dark one included: the button's rest fill and text
+      become `COLOR_BTNFACE` and `COLOR_BTNTEXT`, `#f0f0f0` and `#000000` on
+      the probe's runner
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:398`,
+      `:413`). That runner was in light mode (`AppsUseLightTheme = 1`,
+      `:768`); the review reads these colours as not following dark mode,
+      which no dark-mode probe has checked yet. Since M2b the dark preset's
+      `button.hover_background` is WinUI's opaque, flattened `#323232`
+      (`windows-11.toml:613`), where it was a near-invisible translucent
+      layer, so hovering such a light button turns it dark grey. The code
+      predates M2; M4 decides with the rest of this entry whether the reader
+      writes Win32 colours into the dark variant at all.
 
 ### windows-11: the switch's off-track outline
 
@@ -823,6 +851,19 @@ model, the platform presets and the three connectors
       macOS runner (the `macos-26` image), a dev-only app printing UIKit's
       intrinsic sizes and colours, as M2d Step 3's reference app does; the
       CI dispatch is the maintainer's.
+      *M2 final review (2026-10-11), an open question kept from the ledger:*
+      `ios-13` cites RenderThemeCocoa.mm@de320ba3:763 (`thumbColor =
+      Color::white`) for `switch.thumb_background` and
+      `switch.disabled_thumb_color`, "white, disabled too". Is that thumb the
+      pre-refresh (iOS ≤ 18) path? The code says it is the classic painter:
+      `renderThemePaintSwitchThumb` sends the refreshed look to
+      `renderThemePaintLiquidGlassSwitchThumb` when
+      `formControlRefreshEnabled()` (:737-742), and the classic painter
+      changes nothing for a disabled thumb (:744-797). Not checked: that
+      the classic path at de320ba3 is what iOS 18's WebKit drew (the
+      pre-refresh tag, 31adf9d1, has `RenderThemeIOS.mm` instead), nor what
+      UIKit's `UISwitch` draws. Step 17 cites the refreshed path's
+      `liquidGlassSwitchThumbColor` (:475-493) for `ios-26`.
 
 ### Model: one `*_text_color` field, two meanings
 
@@ -924,6 +965,21 @@ model, the platform presets and the three connectors
       `startkde/plasma-setup-xwayland/main.cpp:47-58`) and Breeze's colour
       files and kstyle at `v6.8.0`, then re-pin the three rows and the
       header (found in M2e Step 7, 2026-10-11).
+
+### macOS: the scroll bar width for the user's scroller style
+
+- [ ] [v0.7.0] For M4 (M2 final review, Minor 4, 2026-10-11): the macOS reader
+      reads the scroll bar style live, `NSScroller.preferredScrollerStyle`
+      (`native-theme/src/macos.rs:142`, stored as `scrollbar.overlay_mode` at
+      `:495-501`), but the groove width is always the preset's constant:
+      `macos-monterey` states the overlay style's 16
+      (`macos-monterey.toml:189`, `:643`), as ruled in M2a. With "always
+      show scroll bars" set, AppKit draws the legacy style, whose width is 15
+      on macOS 14.8.9 and 15.7.9 (`docs/platform-facts.md:1280`, the probe's
+      `scrollerWidth(for: .regular, scrollerStyle: .legacy)`); on macOS 26
+      both styles are 17, which `macos-tahoe` states. The reader could read
+      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads,
+      a live OS value rather than a constant.
 
 ---
 
@@ -1060,10 +1116,11 @@ model, the platform presets and the three connectors
       `ThemeColor` has `list_active` and `selection` fills and no label colour
       for either, so a selected row keeps `foreground` where the platform pairs
       `list.selection_background` with `list.selection_text_color`. Worse than
-      the platform on 21 of 32 each; reported by the gpui contract, not
+      the platform on 24 of 34 for the row and 25 of 34 for selected text
+      (measured 2026-10-11); reported by the gpui contract, not
       asserted. The title bar is the same shape (no `title_bar_foreground`),
-      worse on 12 of 32 against the darker end of upstream's title-bar
-      gradient (`title_bar.rs:21-35`).
+      worse on 13 of 34 (measured 2026-10-11) against the darker end of
+      upstream's title-bar gradient (`title_bar.rs:21-35`).
 - [ ] [upstream] `Checkbox::label` sets `text_color(foreground)` on the label wrapper
       unconditionally (`checkbox.rs:334-341`), so a platform
       `checkbox.font.color` has no route; and both `Checkbox` and `Combobox`
@@ -1355,8 +1412,9 @@ What is still open on the iced side:
       kde-breeze light (`#ffffff` against `#232629`) and windows-11 in both
       modes (`#0000009e` against `#000000e4`, dark `#ffffffc5` against
       `#ffffff`).
-- [ ] [1.0] The progress bar's fill on its track is below AA on 32 of 32 (kde-breeze
-      dark 1.05, adwaita light 1.21). It is the platform's own accent-on-muted
+- [ ] [1.0] The progress bar's fill on its track is below AA on 32 of 34 (the iced
+      contract, measured 2026-10-11: macos-tahoe light 1.02, adwaita light
+      1.21; material-3 is the exception). It is the platform's own accent-on-muted
       pair, emitted exactly — an indicator, not text — but it is the first
       thing that looks like a bug when the showcase is opened.
 - [ ] [1.0] No bundled preset states `segmented_control.background_color`, so it
@@ -2546,7 +2604,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [v0.7.0] The iced connector maps no `DialogTheme` field, and its contract lists none as unreachable: iced 0.14 has no dialog widget. `iced_aw`'s `Card` could carry the maxima, `Card::max_height` and `Card::max_width` taking an `f32` (`iced_aw-0.14.1/src/widget/card.rs:144`, `:151`); the minima, the button gap and order, the fonts and the border would still have no receiver of their own. Decide whether a `Card` is the dialog's receiver.
 
 ### GNOME reader: title and heading sizes ignore the user's font
-- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:65-77`, dark `:426-438`) and for `dialog.title_font` (15pt; `:292-295`, `:655-658`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:742-751`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
+- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:742-751`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
 
 ### iced showcase: the startup fallback outside Linux
 - [ ] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
