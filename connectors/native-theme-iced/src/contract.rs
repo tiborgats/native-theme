@@ -1833,8 +1833,8 @@ fn every_unreachable_value_is_one_a_preset_loses() -> native_theme::Result<()> {
     Ok(())
 }
 
-/// The `extended.secondary.base.text` entry's "31 of 32", counted rather than
-/// asserted in prose.
+/// The `extended.secondary.base.text` entry's figures, how many labels are
+/// substituted and which are not, counted rather than asserted in prose.
 ///
 /// The entry says `Pair::new` does not emit the label the connector hands it:
 /// it runs `readable()` against the placeholder fill, and the platform's own
@@ -1844,7 +1844,7 @@ fn every_unreachable_value_is_one_a_preset_loses() -> native_theme::Result<()> {
 /// are declared beside the sentence, so a preset added to the bundle moves
 /// the count and fails here instead of leaving the prose stale.
 #[test]
-fn readable_substitutes_the_secondary_label_on_every_combination_but_one()
+fn readable_substitution_of_the_secondary_label_matches_the_declared_count()
 -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut substituted = Vec::new();

@@ -15,14 +15,14 @@ use super::*;
 ///
 /// They live here, beside the sentence that cites them, so that a new preset
 /// moves the count and turns
-/// `readable_substitutes_the_secondary_label_on_every_combination_but_one`
+/// `readable_substitution_of_the_secondary_label_matches_the_declared_count`
 /// red instead of letting the sentence rot. The measurement is that test's,
 /// not a note of one made elsewhere.
-pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 31;
+pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 32;
 
 /// The combinations that emit `defaults.text_color` exactly as the platform
-/// states it -- the exception the entry below names.
-pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &["ios/light"];
+/// states it -- none, as the entry below says.
+pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &[];
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
@@ -42,10 +42,10 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
          (iced_core theme/palette.rs:440-445), and a label that is not \
          readable on that fill is lightened, darkened, or replaced by black or \
          white (palette.rs:692-720). So the emitted value is the platform's \
-         text colour only where it clears iced's contrast bar, and mostly it \
-         does not: over all 32 bundled preset/mode combinations, 31 emit a \
-         substitute of iced's own, ios light being the only one that does \
-         not. Those are SECONDARY_LABEL_SUBSTITUTED and \
+         text colour only where it clears iced's contrast bar, and it does \
+         not: over all 32 bundled preset/mode combinations, all 32 emit a \
+         substitute of iced's own and none emits the label as stated. \
+         Those are SECONDARY_LABEL_SUBSTITUTED and \
          SECONDARY_LABEL_AS_STATED above, counted again on every run by the \
          test named there rather than asserted here. Placeholder grey and \
          window text are close by construction, which is exactly the pair \
