@@ -7,6 +7,7 @@ See also:
 
 - [CHANGELOG.md](CHANGELOG.md) — what has already shipped
 - [`docs/archive/`](docs/archive/) — detailed design docs and phase notes from completed milestones
+- [`docs/todo.md`](docs/todo.md) — the backlog: every open item, tagged by milestone (`[v0.7.0]`, `[1.0]`, `[post-1.0]`, `[upstream]`)
 
 ## v0.6.0 — egui connector
 

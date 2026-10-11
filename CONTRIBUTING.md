@@ -174,7 +174,7 @@ Design-level choices are captured in files under `docs/`:
 - [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS Sonoma/Tahoe, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
 - [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
 - [`docs/inheritance-rules.toml`](docs/inheritance-rules.toml) — widget-field inheritance rules driving the resolution pipeline
-- [`docs/todo.md`](docs/todo.md) — the open items and follow-ups
+- [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)
 
 A change too large for one entry there gets a plan: `docs/todo_<topic>-plan.md`,
 usually with a `-rationale.md` (why each decision was taken) and a `-spec.md`

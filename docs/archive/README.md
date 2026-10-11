@@ -47,6 +47,7 @@ actually happened when they were implemented.
 | v0.6.0 (egui widgets) | `todo_egui-widgets-{rationale,spec}.md` |
 | v0.6.0 (gpui widgets) | `todo_gpui-widgets-spec.md` |
 | v0.6.1 | `todo_v0.6.1_gpui-kit-0.7.1-{rationale,spec,plan}.md` |
+| backlog, no version | `todo_closed.md`: the closed items of `docs/todo.md`, moved out of it on 2026-10-11 |
 
 The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to
 "inputs only": the plan carries an implementation record mapping each of its 16
