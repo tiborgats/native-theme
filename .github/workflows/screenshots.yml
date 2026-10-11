@@ -17,8 +17,9 @@ jobs:
       # macOS 14: `macos-14` is fully unsupported from 2026-11-02, with brownouts
       # in October (https://github.com/actions/runner-images/issues/13518, read
       # 2026-10-11). The `macos-monterey` captures show that preset (its header says
-      # which macOS versions it covers, 12 to 15) drawn on the runner's macOS 26, which
-      # each job records beside its captures (below).
+      # which macOS versions it covers, 12 to 15) drawn on the runner's macOS 26, and the
+      # `macos-tahoe` captures macOS 26's own generation; each job records the runner's
+      # macOS version beside its captures (below).
       # The Windows entries name windows-2025 (Windows Server 2025, build 26100),
       # the image `windows-latest` resolves to; GitHub's one Windows 11 image is
       # arm64 (`windows-11-arm`). The `windows-11` captures claim the preset drawn
@@ -176,6 +177,8 @@ jobs:
           themes=(
             "macos-monterey:light:system"
             "macos-monterey:dark:system"
+            "macos-tahoe:light:system"
+            "macos-tahoe:dark:system"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"

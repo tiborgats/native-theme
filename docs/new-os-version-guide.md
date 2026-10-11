@@ -18,7 +18,7 @@ first OS version:
 
 | Platform | The key names | Example |
 |---|---|---|
-| macOS | Apple's codename | `macos-monterey` |
+| macOS | Apple's codename | `macos-monterey`, `macos-tahoe` |
 | Windows | Microsoft's version number | `windows-11` |
 | iOS | the iOS version number | `ios-13` (the flat look of iOS 13 to 18) |
 | Material | the design version | `material-3` |
@@ -81,7 +81,8 @@ WinUI3 Fluent Design specifications
   which reads the system metrics at 96 DPI, in logical pixels; the reader states
   no WinUI3 design sizes
 - `native-theme/src/presets/windows-11.toml` -- bundled preset data, WinUI3's spacing
-  and sizes included; a new Windows generation is a preset plus a table row
+  and sizes included; a new Windows generation is a preset plus a row in
+  `WINDOWS_GENERATIONS` (`native-theme/src/pipeline.rs`)
 
 **What to look for:**
 
@@ -125,6 +126,12 @@ probe's API reads and renders (`tools/os-probe`)
   included (a new visual
   generation gets a preset of its own, named as
   [A new generation, a new preset](#a-new-generation-a-new-preset) says)
+- `native-theme/src/presets/macos-tahoe.toml` -- the Liquid Glass generation's preset (macOS 26)
+- `native-theme/src/pipeline.rs` -- `MACOS_GENERATIONS`, the generation table: a new
+  generation is a preset plus a row (its first version and the newest version its values
+  were verified on); a newer version of the same generation, once checked against the
+  preset, raises its row's `last_verified`. Until then `SystemTheme::version_match`
+  reports `PresetOlder` on it.
 
 **What to look for:**
 
@@ -146,8 +153,10 @@ probe's API reads and renders (`tools/os-probe`)
 5. Update the preset TOML file, or create the new generation's preset.
 6. Test on the target macOS version: `cargo test -p native-theme --features macos`.
 
-**Note:** The macOS module is unconditionally compiled. The `build_theme` tests run
-cross-platform using hardcoded fallback values, so basic testing works on any OS.
+**Note:** The macOS module is compiled on every OS. The reader holds no fallback
+values and no design constants: the `build_theme` tests run cross-platform on colours
+and fonts the tests construct, so basic testing works on any OS, and a value macOS does
+not report comes from the generation's preset.
 
 ---
 

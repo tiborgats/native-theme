@@ -7,7 +7,7 @@
 [![core MSRV: 1.88.0](https://img.shields.io/badge/core%20MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
 Cross-platform native theme loading for Rust GUI applications. Reads OS themes
-on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets
+on Linux (KDE, GNOME), macOS, and Windows, or loads any of 17 bundled presets
 (Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
 populated `ResolvedTheme`.
 

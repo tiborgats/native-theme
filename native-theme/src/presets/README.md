@@ -12,8 +12,15 @@ selects a platform reader, one of the crate-internal `ThemeReader`
 implementations `KdeReader`, `GnomeReader` (and `GnomePortalKdeReader`),
 `MacosReader` and `WindowsReader`, and merges the values it reads from the
 operating system over its platform preset (`kde-breeze`, `adwaita`,
-`macos-monterey`, `windows-11`); a field the reader does not provide keeps the
-preset's value, and the resolve pipeline fills any remaining gaps.
+`windows-11`, and on macOS the preset of the running version's generation,
+`macos-monterey` on 12 to 15 and `macos-tahoe` on 26 and later, by the
+generation table in `pipeline.rs`); a field the reader does not provide keeps
+the preset's value, and the resolve pipeline fills any remaining gaps.
+`SystemTheme::version_match` reports a running version the preset was not
+verified on (macOS 27 under `macos-tahoe` is `PresetOlder`), and
+`SystemTheme::from_system_with_preset` merges over another generation of the
+running platform instead, under the OS's live colours, fonts and
+accessibility.
 
 Gated sizes (padding sides, menu and list row heights, toolbar `bar_height`
 and `item_gap`, combobox `arrow_area_width`): a native preset states one only
@@ -38,7 +45,7 @@ macOS: its icons are SF Symbols, which load only on macOS (with
 `Theme::preset("ios-13")` loads it anywhere, but off macOS, iOS included, its
 icons are `None`, never another set's.
 
-Files: `kde-breeze.toml`, `macos-monterey.toml`, `windows-11.toml`,
+Files: `kde-breeze.toml`, `macos-monterey.toml`, `macos-tahoe.toml`, `windows-11.toml`,
 `adwaita.toml`, `material-3.toml`, `ios-13.toml`, and the community presets
 (`catppuccin-*.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
 `one-dark.toml`, `solarized.toml`, `tokyo-night.toml`).
@@ -46,7 +53,7 @@ Files: `kde-breeze.toml`, `macos-monterey.toml`, `windows-11.toml`,
 ## Naming a platform preset
 
 One platform preset per visual generation. Its key is the vendor's own name
-for the generation's first OS version: Apple's codename (`macos-monterey`),
+for the generation's first OS version: Apple's codename (`macos-monterey`, `macos-tahoe`),
 Microsoft's version number (`windows-11`), Material's design version
 (`material-3`). The file's first lines state which OS versions the preset
 covers and which versions its values were verified on, matching the version
@@ -76,6 +83,7 @@ its header naming the version its values were verified on.
 | `ios-13.toml` | iOS standalone theme, the flat look of iOS 13 to 18 |
 | `kde-breeze.toml` | KDE Breeze standalone theme |
 | `macos-monterey.toml` | macOS standalone theme, Monterey (12) to Sequoia (15) |
+| `macos-tahoe.toml` | macOS standalone theme, Tahoe (26) |
 | `material-3.toml` | Material Design standalone theme |
 | `nord.toml` | Nord color scheme |
 | `one-dark.toml` | One Dark color scheme |

@@ -652,6 +652,24 @@ model, the platform presets and the three connectors
       "Material" until then. Nothing is renamed before
       (`docs/todo_code-review-plan.md`, M2d Step 15).
 
+### macos-monterey and macos-tahoe: the screenshot names and the display name
+
+- [ ] [v0.7.0] At the next `scripts/generate_assets_release.sh` run (M2a
+      Step 12): the captures are named after the preset key, so the six
+      README links to `macos-macos-sonoma-{light,dark}.png`
+      (`connectors/native-theme-egui/README.md`, `native-theme-iced/README.md`,
+      `native-theme-gpui/README.md`) become `macos-macos-monterey-*`, and the
+      old PNGs are removed with `git rm`; `macos-monterey`'s display name and
+      TOML `name` become "macOS Monterey" (`PRESET_DISPLAY_NAMES` and its
+      `PresetInfo` in `native-theme/src/presets.rs`, `macos-monterey.toml`'s
+      `name`; "macOS Sonoma" until that run, ruled 2026-10-11). The run also
+      captures `macos-tahoe` (`.github/workflows/screenshots.yml`), and the
+      three connector READMEs show `macos-macos-tahoe-{light,dark}.png` beside
+      the Monterey pair (ruled 2026-10-11, Q5); no README links them before
+      the files exist. The header comments of
+      `scripts/generate_screenshots_gpui.sh` and `_egui.sh` ("macOS Sonoma and
+      Windows 11 are captured by CI") then name both macOS presets.
+
 ### windows-11: a border opacity with no source
 
 - [x] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
