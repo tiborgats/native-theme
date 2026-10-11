@@ -15,8 +15,8 @@ set -euo pipefail
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
 # macOS Sonoma and Windows 11 are captured by CI on their native runners.
-# The line above names both macOS presets at the next asset run (docs/todo.md,
-# "macos-monterey and macos-tahoe: the screenshot names and the display name").
+# The line above is stale until the next asset run (docs/todo.md, "macos-monterey
+# and macos-tahoe: the screenshot names and the display name").
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

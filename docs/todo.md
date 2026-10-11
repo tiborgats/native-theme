@@ -685,9 +685,10 @@ model, the platform presets and the three connectors
       captures `macos-tahoe` (`.github/workflows/screenshots.yml`), and the
       three connector READMEs show `macos-macos-tahoe-{light,dark}.png` beside
       the Monterey pair (ruled 2026-10-11, Q5); no README links them before
-      the files exist. The header comments of
-      `scripts/generate_screenshots_gpui.sh` and `_egui.sh` ("macOS Sonoma and
-      Windows 11 are captured by CI") then name both macOS presets.
+      the files exist. The header comment of
+      `scripts/generate_screenshots_gpui.sh` ("macOS Sonoma and Windows 11 are
+      captured by CI") then names both macOS presets (`_egui.sh` has no such
+      line).
 
 ### windows-11: a border opacity with no source
 
@@ -1373,7 +1374,11 @@ What is still open on the iced side:
 #### Research
 
 - [ ] [1.0] 174 of 512 text-on-background pairs sit below WCAG AA across the 16
-      presets in both modes (measured 2026-09-20, alpha composited). Most are
+      presets in both modes (measured 2026-09-20, before macos-tahoe; 16
+      presets; alpha composited; on 2026-10-11 the gpui contract test
+      `no_pair_contrasts_worse_than_the_platforms_own` prints 284 sub-AA lines
+      over a larger pair set, 23 asserted pairs and the reported ones × 34
+      combinations, so the two counts are not comparable). Most are
       the platform's own choice — macOS ships `success_color = "#34c759"` with
       white text at about 2.2:1 — and the connectors must not override a
       platform. But some look like preset data errors rather than platform

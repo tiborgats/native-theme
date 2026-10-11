@@ -664,7 +664,9 @@ a part does with a version gap it finds: a new preset, a documented limit, or no
   `documented_sizes.rs` checks, a clean `preset-validator` report, then the template's
   Step 8. Screenshots of a changed preset wait for the next `generate_assets_release.sh`.
   For M2a, Step 7 comes after Steps 8–12; for M2d, after Steps 13–15.
-  M2a: corrections done (923cb787..7f112d64, 849ceca2, e114c43c, 4ea7db72); close gates pending.
+  M2a: corrections done (923cb787..7f112d64, 849ceca2, e114c43c, 4ea7db72); close gates passed 2026-10-11.
+  Done for M2a, M2b, M2c, M2e 2026-10-11 (stop point B; the gates are in the ledger's *M2 — decisions*,
+  *Step 7 and Steps 8–18 close*); M2d's Step 7 is open (after Steps 13–15).
 
 ### M2a only: build `macos-tahoe` (D4)
 

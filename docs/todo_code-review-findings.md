@@ -9,7 +9,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 |---|--------|
 | M0 | done (2026-10-11) |
 | M1 | done (2026-10-11) |
-| M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7); Step 3 probes, the M2d release pin and the version gaps await the maintainer; Steps 7–15 not started |
+| M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
 | M3 | Steps 1–5 done 2026-10-11 (stop point A); fix phase waits for M2's fixes |
 | M4–M9 | not started |
 
@@ -176,6 +176,12 @@ opens; the Haiku context maps keep it bounded.
 | Total | | 10 | 273k output (Workflow: 283k with the session's share; 1.51M "subagent tokens") | 81M |
 
 16.3 min wall clock, 451 tool calls. The maintainer's cap was +1500k; as in M1, the Workflow's `budget.total` was unset (the hook did not pick the cap up), so the run was not capped mechanically and stayed under it by size. Against the estimate above (300k–500k output for the review): at its low end. Inventory and lint hints ran inline (one grep, one clippy run), triage and the ledger in the session.
+
+### M2 Step 7, Steps 8–12, 16, 18 (measured 2026-10-11/12)
+
+60 agent transcripts with usage records (both halves of the session; the first half ended in a
+crash during the iOS rename): 2.99M output tokens, 1.19B cache reads. Opus for the analysts,
+implementers and task reviews, Sonnet for the scoped re-reviews.
 
 ## M1 — Design review
 
@@ -1595,9 +1601,200 @@ M3–M8 cites these instead of reporting them again.
 - **Found on the way (for M8):** `check_release.sh` tests `-d .git`, so in a git worktree (where `.git` is a file) it prints
   "Not in a git repository" and skips its git checks, the tag check among them.
 
+### Step 7 and Steps 8–18 close (2026-10-11/12)
+
+One subagent-driven session, `dbaf8c4e..50e05936`: Step 7 of M2a, M2b, M2c and M2e (each with a
+second preset-validator pass and fix rounds), M2a Steps 8–12 (`macos-tahoe`, version-aware
+selection), M2c Steps 16 and 18's rename part (`ios-13`), a close-out docs pass and a final fix
+wave. The per-part sections hold each task's commits; the session's progress ledger
+(`.superpowers/sdd/todo_code-review-plan/progress.md`, untracked) holds every dispatch.
+
+- **Close gates.** Full `./scripts/check_release.sh` at `f5e64a1c`: 106 checks, 102 ✅, 2 ⚠️
+  (tag `v0.6.1` exists; the soft semver warning of the accepted breaks, `PlatformPreset::is_live` /
+  `live_name` from M1 and `GnomePortalData::font_dpi` from M2e), 2 ❌ expected (visual assets
+  stale, compatibility stamp stale: both the release asset run's), 10 min 57 s. Every commit
+  after it passed `--commit`.
+- **Final whole-branch review of M2's code** (51 commits, Opus): no Critical. Important I1 —
+  on a Windows desktop in dark mode `apply_sys_colors` writes the light `GetSysColor` button
+  colours over the dark variant, now under an opaque `#323232` hover — predates M2, is M4's, and
+  is a `docs/todo.md` line on the WinUI/Win32 entry. Minors 1–5 fixed or put on `docs/todo.md`
+  in `18d3e312` and `50e05936`; the fix wave's re-review found all addressed.
+- **Validators** (the plan's clean-report gate), last run per preset: `windows-11` PASS,
+  `macos-monterey` 0 blocking (warnings carried into Step 8 and its fix round), `macos-tahoe`
+  CLEAN, `ios-13` PASS, `kde-breeze` PASS, `adwaita` PASS.
+
+**Rulings made in this session**, in order, one line each (what was decided — why — cost if
+wrong; "not recorded" where the ruling gave none). **VETO FIRST** marks the two the maintainer may want to look at before the others;
+**[rename]**, **[deferral]** and **[carry]** mark the other decisions of that weight.
+
+1. M2a's Step 7 corrections land before Steps 8–12, its close gates after Step 12 — the
+   corrections do not depend on Tahoe — one extra gate run.
+2. M2c Q1: `button.active_text_color` and `combo_box.disabled_text_color` fixed from WebKit's
+   `html.css@31adf9d1` too — same file and commit source their siblings; otherwise pressed text
+   turns black — two values revert.
+3. M2c Q2: `ios-26`'s light and dark separator/border treated alike (translucent separator) — one
+   rule for both variants — one dark value in Step 17.
+4. iced tripwire moves with the preset (`SECONDARY_LABEL_SUBSTITUTED` 31→32, test renamed without
+   a count) — the test keeps the prose honest, not the presets still — one test edit.
+5. `ios`'s unsourced `button.hover_text_color` removed, inheriting the sourced systemBlue — iOS has
+   no hover and WebKit no `:hover` rule for buttons — two preset lines return.
+6. D9 Windows 10: `windows-11` covers it as a documented limit (one carried difference, the default
+   accent `#0078d7`) — every other OS-drawn value matches and the reader reads the accent live —
+   one more preset later.
+7. M2b-21: `scrollbar.overlay_mode` stays `false` with the ❓ — a user setting, no source says
+   which scroll bars follow it — one value.
+8. M2b-P07: `border.opacity` 0.14 unchanged in Step 7, re-homed for M3 on `docs/todo.md` — inert,
+   no source either way — none (later closed by M2b fix round 2).
+9. M2b-34: Segoe UI kept (the live reader's `lfMessageFont`), the facts cell names
+   `XamlAutoFontFamily` — the preset matches the live path — a font change later.
+10. M2b brief's settled-by-logic points stand (focus-ring offset 1, toolbar icon 16, popover
+    acrylic fallback, progress radius 1.5, `SPI_GETCLIENTAREAANIMATION`, high contrast in M4,
+    screenshots on `windows-2025`) — settled by logic in the brief — not recorded.
+11. M2a Q1 (D4): one preset covers macOS 14–15 at weight 700; facts record 14.8.9's reported
+    0.3 — same face and metrics, only the reported trait differs — Sonoma's title weight 600.
+12. **[rename]** M2a D8: `macos-sonoma` → `macos-monterey` (covers 12–15, verified on 14.8.9 and
+    15.7.9) in Step 7 — the AppKit 12 note ends the accent-highlighted button; 0.7.0 already
+    breaks — one more rename commit.
+13. M2a Q2: display name and TOML `name` stay "macOS Sonoma" until the next asset run — menus and
+    committed screenshots stay consistent — menus show the old name until then.
+14. M2a Q3/Q4: the probe-settled Sonoma halves of the *Step 8* rows are fixed in Step 8 with
+    their Tahoe halves; "about" values stay ❓ — Step 8 rewrites those rows anyway — none.
+15. **VETO FIRST — api-break.** M2e Q1 (D1): the public field `GnomePortalData::font_dpi` removed,
+    CHANGELOG breaking line — 0.7.0 already breaks, no public function takes the type, a field the
+    reader no longer fills is a trap; the fix stops 2.25× text at factor 1.5 — re-add one field.
+    Ruled to avoid a stall; the plan's api-break rule gives the maintainer this call.
+16. **VETO FIRST.** M2e Q2: `kde-breeze` light danger/success/info text = `#232629` per facts
+    `:1081`/`:1085`/`:1087` and the KDE reader — a preset follows its facts row; a live Breeze
+    Light desktop already gets this — three values back to `#fcfcfc` plus a model question.
+17. M2e Q3: `adwaita`'s six ❓ values wait for one pass over the GNOME cells of §2.1.3–§2.1.5 — a
+    preset follows its facts row — none.
+18. M2c fix round (W1–W7): disabled switch tracks = enabled × 0.4 alpha, slider/progress tracks
+    and placeholder from UIKit, combo text systemBlue, `shadow_enabled = false` where the rules
+    require it, citations fixed — each value from a file the preset already cites — a handful of
+    values.
+19. M2a review Important #1: the push button's and combo box's border share stays open (title
+    offsets measured from the bezel's outer edge); egui caveat restored — the render cannot tell
+    border from shadow — one caveat stays too long.
+20. M2a review Minors #3 (rename gate test matches `UnknownPreset`) and #4 (dead todo path) in the
+    same fix round; #2 accepted; #5 to Step 8 — cheap and checkable — not recorded.
+21. New task M2a-7b fixes the `macos-monterey` validator's 12 blocking findings and warnings from
+    the probe — the probe is a primary source and the gate wants a clean report — preset colours
+    revert.
+22. Cross-preset rule: colours with alpha are stated as the API gives them, the comment giving the
+    composite — one rule, no invented compositing base — a later pass composites them.
+23. `macos-monterey` `disabled_opacity` = 1.0 (colour-dimming platform), status text = labelColor,
+    `success_color` = the probe's green; unsourced soft-option state colours listed for Step 8 —
+    facts `:992` and `inheritance-rules.toml:352-359` say so — not recorded.
+24. M2a-7b Q1: `spinner.fill_color` = the leading fin as AppKit renders it (`#00000052` /
+    `#ffffff52`), ❓ with PNG and pixel cited — unstated resolves to the accent, which the render
+    shows wrong — one colour per variant.
+25. M2b review Critical: three macOS facts cells restored, the WinUI text moved to the Windows
+    column, with a per-column change check — corrupted facts — none.
+26. M2b review Important: `windows-11` hover fills = WinUI's replacing fill flattened over the
+    window colour (the model's hover is a layer, connector contract §6.1) — what the user sees
+    equals WinUI's drawing, no connector change — two values per variant plus an M5–M7 question.
+27. M2b minors: tooltip colours from WinUI's resources; "Step 7 not started" removed from all
+    parts' status paragraphs (one-time exception to append-only); stale `windows.rs` lines
+    re-pointed — why and cost not recorded.
+28. `windows-11` is what WinUI 3 draws: where a facts row names only a Win32 API, the row gains the
+    WinUI brush beside it and the preset keeps the WinUI value — one meaning for the preset —
+    a preset that should follow Win32 (model question on `docs/todo.md` for M3).
+29. Translucent WinUI brushes stated as given (`#000000e4` …), hover/pressed layers flattened —
+    the cross-preset rule — composites later.
+30. V12: the link's underline stays `true` (inline `Hyperlink` underlined, `HyperlinkButton`
+    not; facts state both) — the model's link is inline text — one boolean.
+31. V15: `shadow_color` from the facts row's layer matching the model's single shadow, else ❓ —
+    not guessed — not recorded.
+32. `macos-monterey` dark keeps the sourced translucent button fill `controlColor` `#ffffff3f`;
+    iced and gpui tests declare it a named exception — the tests assert a precondition of an
+    arithmetic arm, not a platform fact — two test exceptions removed later.
+33. `docs/todo.md`'s `macos-monterey.toml` citations re-pointed; the CHANGELOG push-button line
+    says "from the bezel's outer edge" — why and cost not recorded.
+34. M2b-7b Q1: `windows-11` link hover background transparent (inline `Hyperlink` changes only its
+    foreground) — one meaning for the model's link — one colour per variant.
+35. M2b-7b Q2/Q3: fully transparent WinUI fills stated with alpha 00; the drawn
+    `ToolTipBackgroundBrush` (acrylic fallback) accepted — the ruling meant what WinUI draws —
+    not recorded.
+36. `macos-monterey` `shadow_color` = NSShadow's documented default, black at 1/3 (`#00000055`),
+    facts `:1053` re-pointed — the model's shadow colour is the shadow's, not
+    `NSColor.shadowColor` — two values.
+37. M2a-7b minors: egui `extreme_bg_color` → M7 todo; iced (c) message, gpui test rename, todo
+    wording; #6, #7 accepted — why and cost not recorded.
+38. `windows-11` pressed fill = `ControlFillColorTertiary` flattened over the window (`#f5f5f5` /
+    `#272727`); gpui lists `windows-11` in `TRANSLUCENT_BUTTON_FILL` — the old value had no
+    source — two colours per variant.
+39. U1/U2/U4: iced/gpui tests use WinUI's translucent fills as fixtures on the resolved theme, and
+    `windows-11` joins `LINK_HOVER_NONE` — never change preset data to suit a test — not
+    recorded.
+40. `windows-11` border = `CardStrokeColorDefault` as given, `border.opacity` = its alpha — the
+    stated colour already carries it — border colours.
+41. `windows-11` `input.background_color` = `TextControlBackground` as given; facts row gains the
+    brush — the preset is WinUI — one colour per variant.
+42. M2b validator warnings: facts `:1029` gains `TextFillColorPrimary`; soft values copying
+    replaced colours take their control's WinUI resource or are listed; link wording follows the
+    inline-Hyperlink ruling — each value then has a source — not recorded.
+43. M2b fix round 2 = validator B1, B2, W1–W3 plus review I1 and m1–m6 in one dispatch; combo
+    hover = `ComboBoxBackgroundPointerOver` flattened — the hover ruling — not recorded.
+44. iOS Q1: a focused research pass tries to source `ios-26`'s 59 required fields; anything
+    unsourced defers `ios-26` rather than copying `ios-13` — the plan's Step 17 rule — `ios-26`
+    waits.
+45. iOS Q2–Q4: `ios-13` keeps the display name "iOS" until the asset run, `ios-26`'s is "iOS 26";
+    the extra sourced iOS 26 values kept; separator alpha per the cross-preset rule — the macOS
+    precedent — not recorded.
+46. **[deferral]** `ios-26` (Step 17) deferred: 38 of 59 required fields have no iOS 26 source;
+    `docs/todo.md` lists them and the iOS Simulator probe route (CI dispatch the maintainer's) —
+    38 fields would otherwise be copied or guessed — `ios-26` arrives later.
+47. **[carry]** Tahoe Q1: `macos-tahoe`'s required fields with no macOS 26 source carry
+    `macos-monterey`'s value, each labelled, plus five "wrong safety net" fields — a Mac on 26 gets
+    Monterey's value for every field today, so a labelled carry changes nothing a user sees —
+    the fields wait for sources either way. Re-counted at 32 required fields per variant (ruling
+    57), later joined by `dialog.title_font`, `segmented_control.active_background` and
+    `button.hover_background` (rulings 58, 59).
+48. Tahoe Q2–Q5: 17 kept unsourced in both presets; across-track extent 16 (slider) and 20
+    (switch); 26H2/26H1 report `PresetOlder` until a probe verifies them; Tahoe captures beside
+    Monterey's at the asset run — why and cost not recorded.
+49. `kde-breeze` fix round: inactive title text `[WM] inactiveForeground`; popover and separator
+    inherit; sidebar per source found (❓ if none); alternate row `BackgroundAlternate`; light
+    `button.active_text_color` `#ffffff` — each follows its facts row or a cited colour file — a
+    handful of colours.
+50. M2e review: "applied once" qualified (once on Wayland; X11/Xwayland also get the factor through
+    the toolkit's `Xft.dpi`), connectors todo entry, minors fixed — accuracy — docs only.
+51. GNOME status-text cells move to footnote ² (on-fill text), `adwaita` keeps `#ffffff`; the two
+    meanings of one field to M3 — the source says on-fill — footnote placement.
+52. M2e fix round 1 = review I1 + minors and both validators' findings in one dispatch — one
+    implementer in the tree — not recorded.
+53. iOS T-A: `ios` combo text stays the sourced systemBlue; gpui's no-route test lists it and the
+    showcase Info gains the Tier U note — the test records an upstream gap — one exception entry.
+54. M2e fix round 2: caret = `currentColor` (facts `:1192`, stated explicitly); dark title bar,
+    card and inactive title bar from libadwaita 1.10.0; K3 ❓ accepted; stale refs re-pointed —
+    each cited — a few GNOME colours.
+55. Step 8 fix round: `macos-monterey` comments stop naming bases they no longer equal; sidebar
+    stays a labelled material with a probe todo; the dark knob's soft colours dropped or labelled;
+    title-bar/list-header render check on the todo — no sources — comments and two soft values.
+56. `macos-tahoe` joins gpui's `TRANSLUCENT_BUTTON_FILL` with a named `DERIVED_PRESSED_FILL`
+    exception; both connector defects on the M6 todo — inventing a pressed fill or fixing the
+    connector here are both wrong — two exceptions.
+57. Six prose counts re-measured from the tests' output; the ledger says 32 required fields per
+    variant, not 30; combinations 32 → 34 — why and cost not recorded.
+58. **[carry]** `macos-tahoe` carries Monterey's `dialog.title_font` (13 pt, 700) and
+    `segmented_control.active_background`, labelled; spinner citation fixed — the Q1 status-quo
+    reasoning — not recorded.
+59. **[carry]** `macos-tahoe` `button.hover_background` carried and labelled (a wrong safety net);
+    native-preset lists gain `macos-tahoe` (a native preset) — the Q1 extension — not recorded.
+60. (Superseded by 62.) Keep macOS 16 → `macos-monterey` — Apple's `UIDesignRequiresCompatibility`
+    page read as saying an old-SDK app keeps the old look on 26 — a doc and one mapping row later.
+    The implementer found the sources do not support that reading.
+61. `macos-tahoe` `segmented_control.active_background` stays as committed with both findings in
+    the comment; a key-window probe render is on the todo — the never-key-window renders and facts
+    `:1567` disagree — one colour per variant in both macOS presets.
+62. The generation table's doc says exactly what the sources say (early 26 betas reported 16 to
+    15-SDK builds, from beta 3 the API reports 26, nothing covers the release reporting 16); a 16
+    maps to `macos-monterey` with `PresetOlder`, pinned by a test; boundary tests and the
+    clearer no-table message go ahead — no claim beyond the sources — a doc sentence.
+
 ## M2a — macOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51); Steps 8a and 8 done 2026-10-11 (c1704d2f, 849ceca2); Steps 9-12 (macos-tahoe) done 2026-10-11 (1985b13b, e114c43c, 1dca505c, 4ea7db72, 91b5b5f0); Step 7: corrections done, close gates pending. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51); Steps 8a and 8 done 2026-10-11 (c1704d2f, 849ceca2); Steps 9-12 (macos-tahoe) done 2026-10-11 (1985b13b, e114c43c, 1dca505c, 4ea7db72, 91b5b5f0); Step 7: corrections done, close gates pending; close gates passed 2026-10-11 (stop point B; *M2 — decisions*, *Step 7 and Steps 8–18 close*). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets macOS 14 (`macos-sonoma.toml:1-3`), and 14 has had no security update since 14.8.9 (2026-08-06): Apple
 supports 27, 26 and 15 today. No source separates 15 from 14 (WebKit's pre-Tahoe tables carry no 14/15 conditional, Apple
