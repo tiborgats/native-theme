@@ -242,9 +242,10 @@ There is no verb that writes the stamp without the run.
 The workspace's quality gate: source hygiene, `cargo check`, the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the examples,
-widget coverage and docs, then the release-only sections: the docs.rs
-emulation, packaging, `cargo audit`, `cargo outdated`, and the visual-asset
-and compatibility stamp checks. Prints one line per check and a summary;
+widget coverage, the showcase-parity comparator's static modes, docs and the
+archive index, then the release-only sections: the docs.rs emulation,
+packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
+visual-asset and compatibility stamp checks. Prints one line per check and a summary;
 exits 1 on a hard failure. `CONTRIBUTING.md` lists every check.
 
 With `--commit` it runs the per-commit subset: the release-only sections are
@@ -280,6 +281,20 @@ Requires jq.
 
 ```sh
 ./scripts/check_features.sh
+```
+
+## check_strict_panic.sh
+
+Runs `cargo clippy` with the type-aware panic-prone lints denied:
+`unwrap_used`, `expect_used`, `indexing_slicing`, `arithmetic_side_effects`
+and the rest of the list the script holds, each category explained in its
+header. The arguments are clippy's, before the `--`. `scripts/check_release.sh`
+runs it on every crate's library (the gpui connector soft) and `ci.yml`'s
+clippy job runs the same calls (the gpui connector's with
+`continue-on-error`), so the lint list lives in this one file.
+
+```sh
+./scripts/check_strict_panic.sh -p native-theme-iced --lib
 ```
 
 ## check_docsrs.py
@@ -354,7 +369,9 @@ groups) and the current groups, one group per set of reasons, listing the
 proposals it dropped and the differences none covers. With `--write` it also
 rewrites the exceptions file's `[parity]` section, from its `[parity]` line to
 the end, with those groups, every byte above that line unchanged; a second run
-over the same inputs changes nothing.
+over the same inputs changes nothing. `scripts/check_release.sh` (in the
+`--commit` subset too) and `ci.yml` run `--check-list` and `--self-test`,
+which need no display; the dump-and-compare run is not wired into a gate yet.
 
 Requires Python 3.11+ (for `tomllib`) and Pillow.
 

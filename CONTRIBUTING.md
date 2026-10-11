@@ -48,24 +48,32 @@ crates' other configurations (tests with no default features and, for iced, with
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
 `cargo build --examples` for the crates that have examples, the widget-coverage
-check (`scripts/check_widget_coverage.py`, Python 3.11+), per-crate
+check (`scripts/check_widget_coverage.py`, Python 3.11+), the showcase-parity
+comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
+`--self-test`, which needs Pillow), per-crate
 `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`,
-`native-theme-egui` and `native-theme-egui-widgets` with all features), `cargo package` on every
-publishable crate, `cargo audit`, `cargo outdated`, the visual assets'
+`native-theme-egui` and `native-theme-egui-widgets` with all features), the
+archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
+emulation, `cargo package` on every
+publishable crate, `cargo semver-checks` against each crate's crates.io release,
+`cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
-a single-line status per check; the gpui-connector checks and the connector
-packaging are soft (`⚠`), tolerable on a WIP branch but to be resolved before
-opening a release PR; a hard failure (`❌`) exits non-zero and must be fixed.
+a single-line status per check; the gpui-connector checks, the connector
+packaging, the archive index and the semver checks are soft (`⚠`), tolerable on
+a WIP branch but to be resolved before opening a release PR (a semver warning
+by the version number or by undoing the change); a hard failure (`❌`) exits
+non-zero and must be fixed.
 
 `--commit` runs every one of those checks except the release-only sections:
-packaging, the docs.rs emulation (`scripts/check_docsrs.py`), `cargo audit`,
-`cargo outdated`, and the PROVENANCE and compatibility stamp checks. Each of
+the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
+`cargo semver-checks`, `cargo audit`, `cargo outdated`, and the PROVENANCE and
+compatibility stamp checks. Each of
 them prints `skipped (--commit mode)`, and the summary names them as skipped,
 not passed.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
-strict panic lints, packaging and outdated-dependency checks CI does not run.
+packaging, semver, outdated-dependency and archive-index checks CI does not run.
 CI additionally tests `native-theme` across its feature matrix on Linux,
 Windows and macOS, which the script cannot do locally.
 

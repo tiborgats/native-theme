@@ -18,10 +18,10 @@
 #   (no argument)  the full run: every section below. Required on the last
 #                  commit of every fix phase and before the release commit.
 #   --commit       the per-commit subset: skips the release-only sections
-#                  (packaging, docs.rs emulation, security audit, outdated
-#                  dependencies, and the visual-asset and compatibility stamp
-#                  checks), each printing "skipped (--commit mode)", and names
-#                  them in the final summary.
+#                  (docs.rs emulation, packaging, semver checks, security
+#                  audit, outdated dependencies, and the visual-asset and
+#                  compatibility stamp checks), each printing "skipped
+#                  (--commit mode)", and names them in the final summary.
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
@@ -32,10 +32,11 @@ Usage: scripts/check_release.sh [--commit]
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
-  --commit       the per-commit subset: every lint, check, test, docs and
-                 widget-coverage gate; skips packaging, docs.rs emulation, the
-                 security audit, outdated dependencies, and the visual-asset
-                 and compatibility stamp checks
+  --commit       the per-commit subset: every lint, check, test, docs,
+                 widget-coverage, showcase-parity and archive-index gate; skips
+                 docs.rs emulation, packaging, semver checks, the security
+                 audit, outdated dependencies, and the visual-asset and
+                 compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -551,16 +552,9 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: strict panic lints (library code only)
 #
-# Runs clippy with type-aware panic-prone lints promoted to errors. Covers
-# every category of runtime panic the compiler/clippy can detect statically:
-#
-#   Explicit panics:    panic, todo, unimplemented, unreachable, manual_assert
-#   Fallible unwrap:    unwrap_used, expect_used, unwrap_in_result
-#   Slice/arr bounds:   indexing_slicing, string_slice
-#   Integer overflow:   arithmetic_side_effects
-#   Integer div/mod:    integer_division, modulo_arithmetic
-#   Process exit:       exit
-#   Result fn panics:   panic_in_result_fn
+# scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
+# lints promoted to errors; the lint list and what each lint catches are
+# there, and CI's clippy job runs the same script.
 #
 # Scope: library targets only (--lib). Tests and examples are exempt because
 # they legitimately use .unwrap() / asserts for failure clarity and demo brevity.
@@ -568,44 +562,27 @@ done
 #
 # `native-theme` is run with the full Linux feature set so feature-gated
 # modules (kde, portal, system-icons, freedesktop, spinners, watch) are
-# checked; plain `--lib` misses them.
+# checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-STRICT_PANIC_LINTS=(
-    -D clippy::unwrap_used
-    -D clippy::expect_used
-    -D clippy::unwrap_in_result
-    -D clippy::panic
-    -D clippy::panic_in_result_fn
-    -D clippy::todo
-    -D clippy::unimplemented
-    -D clippy::unreachable
-    -D clippy::manual_assert
-    -D clippy::indexing_slicing
-    -D clippy::string_slice
-    -D clippy::arithmetic_side_effects
-    -D clippy::integer_division
-    -D clippy::modulo_arithmetic
-    -D clippy::exit
-)
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 print_section "Strict panic lints (library code)"
 run_check "strict-panic (native-theme, Linux features)" \
-    cargo clippy -p native-theme --lib --features "$NT_FEATURES" -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
-    cargo clippy -p native-theme --lib --no-default-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
 run_check "strict-panic (native-theme-derive)" \
-    cargo clippy -p native-theme-derive --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-derive --lib
 run_check "strict-panic (native-theme-build)" \
-    cargo clippy -p native-theme-build --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-build --lib
 run_check "strict-panic (native-theme-iced)" \
-    cargo clippy -p native-theme-iced --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-iced --lib
 run_check_soft "strict-panic (native-theme-gpui)" \
-    cargo clippy -p native-theme-gpui --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
 run_check "strict-panic (native-theme-egui)" \
-    cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
 run_check "strict-panic (native-theme-egui-widgets)" \
-    cargo clippy -p native-theme-egui-widgets --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-egui-widgets --lib --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests
@@ -727,6 +704,24 @@ run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui ·
     python3 scripts/check_widget_coverage.py
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: showcase parity (static modes)
+#
+# scripts/check_showcase_parity.py compares the three showcases' layout dumps
+# and captures, which are taken on a display, so that comparison is not part
+# of this script. Its two static modes need neither and run here: `--check-list`
+# validates docs/showcase-elements.toml against docs/property-registry.toml
+# and the `[parity]` exceptions against the list and the presets (an unknown
+# element, property, preset or run, an overlapping scope, a group without a
+# reason), and `--self-test` runs the comparator's own scenarios on synthetic
+# dumps and captures, which needs Pillow. CI runs the same two.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Showcase parity (static)"
+run_check "showcase parity: element list and exceptions" \
+    python3 scripts/check_showcase_parity.py --check-list
+run_check "showcase parity: comparator self-test" \
+    python3 scripts/check_showcase_parity.py --self-test
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Docs"
@@ -752,6 +747,43 @@ run_check "docs (native-theme-egui, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
 run_check "docs (native-theme-egui-widgets, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: archive index
+#
+# An implemented plan moves to docs/archive/ with its rationale and spec, and
+# the plan's last task adds them to the index table in docs/archive/README.md
+# (CONTRIBUTING.md, "Where decisions live"). This lists every docs/archive/*.md
+# the index does not name. The index writes a set as `name-{rationale,spec,plan}.md`,
+# so its brace sets are expanded first. Soft: a missing row is a docs gap.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Archive index"
+run_check_soft "archive index (docs/archive/README.md)" python3 -c '
+import glob, os, re, sys
+
+with open("docs/archive/README.md") as f:
+    index = f.read()
+named = set()
+for token in re.findall(r"[\w.{},-]+\.md", index):
+    names = [token]
+    while any("{" in n for n in names):
+        expanded = []
+        for n in names:
+            m = re.search(r"\{([^{}]*)\}", n)
+            if m:
+                expanded.extend(n[:m.start()] + alt + n[m.end():] for alt in m.group(1).split(","))
+            else:
+                expanded.append(n)
+        names = expanded
+    named.update(names)
+missing = sorted(
+    name for name in (os.path.basename(p) for p in glob.glob("docs/archive/*.md"))
+    if name != "README.md" and name not in named
+)
+for name in missing:
+    print(f"docs/archive/{name} is not named in docs/archive/README.md")
+sys.exit(1 if missing else 0)
+'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs.rs emulation
@@ -823,6 +855,34 @@ else
         cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
     run_check_soft "package (native-theme-egui-widgets)" \
         cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: semver checks
+#
+# cargo-semver-checks compares each published library crate's public API with
+# its newest release on crates.io and reports every change the version in
+# Cargo.toml does not allow: a removed or renamed item, a new required trait
+# method, a changed signature. It is the mechanical half of choosing the next
+# version number. It downloads the baseline from crates.io and builds rustdoc
+# JSON for it and for the working tree, under target/semver-checks; its first
+# run on this workspace took 4m 18s for the six crates (2026-10-11), so it runs
+# with the release-only sections. Soft: a reported break asks for a version
+# decision (the bump, or the change undone), not a code fix. Skipped with a
+# warning when the tool is not installed.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Semver checks"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Semver checks"
+elif ! cargo semver-checks --version >/dev/null 2>&1; then
+    print_warn "cargo-semver-checks not installed: semver checks skipped (cargo install cargo-semver-checks)"
+else
+    # A proc-macro crate (native-theme-derive) has no library API to compare.
+    SEMVER_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
+        | jq -r '.packages[] | select(.publish != []) | select(any(.targets[]; any(.kind[]; . == "lib"))) | .name')
+    for crate in $SEMVER_CRATES; do
+        run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate"
+    done
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -13,7 +13,9 @@ name: Dependency canary
 # committed lockfile stays green until Cargo.lock is refreshed.
 #
 # egui releases reach consumers the same way: the egui connector's caret
-# requirement, `egui = "0.36.2"`, takes every 0.36.x patch release.
+# requirement, `egui = "0.36.2"`, takes every 0.36.x patch release, and the
+# egui widget crate reaches egui through the connector's re-exports, so the
+# same releases reach it.
 #
 # Linux only: the question is API compatibility, which one target answers.
 
@@ -89,6 +91,8 @@ jobs:
           cargo clippy -p native-theme-gpui --all-targets
           cargo clippy -p native-theme-egui --all-targets
           cargo clippy -p native-theme-egui --all-targets --all-features
+          cargo clippy -p native-theme-egui-widgets --all-targets
+          cargo clippy -p native-theme-egui-widgets --all-targets --all-features
 
       - name: Test
         run: |
@@ -103,6 +107,9 @@ jobs:
           cargo test -p native-theme-egui
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features
+          cargo test -p native-theme-egui-widgets
+          cargo test -p native-theme-egui-widgets --no-default-features
+          cargo test -p native-theme-egui-widgets --all-features
 
       # Every crate's library with no default features, each feature alone and
       # all features, as CI runs it: an upstream release can break a
