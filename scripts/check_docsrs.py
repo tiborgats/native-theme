@@ -55,7 +55,7 @@ def fail(message: str) -> None:
     sys.exit(1)
 
 
-def docsrs_metadata(crate: str) -> dict:
+def workspace_package(crate: str) -> dict:
     out = subprocess.run(
         ["cargo", "metadata", "--no-deps", "--format-version", "1"],
         check=False,
@@ -66,9 +66,13 @@ def docsrs_metadata(crate: str) -> dict:
         fail(f"cargo metadata failed:\n{out.stderr}")
     for package in json.loads(out.stdout)["packages"]:
         if package["name"] == crate:
-            return ((package.get("metadata") or {}).get("docs") or {}).get("rs") or {}
+            return package
     fail(f"{crate} is not a workspace package")
     return {}
+
+
+def docsrs_metadata(package: dict) -> dict:
+    return ((package.get("metadata") or {}).get("docs") or {}).get("rs") or {}
 
 
 def targets_of(meta: dict) -> list:
@@ -93,7 +97,13 @@ def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check_docsrs.py <crate>")
     crate = sys.argv[1]
-    meta = docsrs_metadata(crate)
+    package = workspace_package(crate)
+    # `publish = false` (cargo metadata: an empty registry list): never on
+    # crates.io, so docs.rs never builds it.
+    if package.get("publish") == []:
+        print(f"check_docsrs: {crate}: publish = false, docs.rs never documents it; skipped")
+        return
+    meta = docsrs_metadata(package)
     unknown = sorted(set(meta) - KNOWN_KEYS)
     if unknown:
         fail(f"{crate}: [package.metadata.docs.rs] has keys this script does not emulate: {unknown}")
