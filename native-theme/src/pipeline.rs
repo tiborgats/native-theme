@@ -495,6 +495,17 @@ impl GenerationTable {
 /// so [`macos_generation`] compares majors. macOS 27 refines Liquid Glass and
 /// gets no row until a preset is verified on it (plan D4): it maps to
 /// `macos-tahoe`, reported as [`VersionMatch::PresetOlder`].
+///
+/// Major version 16: early macOS 26 betas reported 16 to a binary built
+/// against the macOS 15 SDK ("When built against the 15 SDK or earlier, Tahoe
+/// returns 16 for compatibility with previous numbering and all existing
+/// apps", <https://eclecticlight.co/2025/06/13/is-tahoe-really-macos-26-or-16/>,
+/// 2025-06-13). From beta 3, `NSOperatingSystemVersion` reports 26 even for
+/// such a build (that page's comments, 2025-07-28; Apple Developer Forums
+/// thread 791906, <https://developer.apple.com/forums/thread/791906>). No
+/// source covers what the released OS reports. If a major version 16 is ever
+/// read, this table gives `macos-monterey` with [`VersionMatch::PresetOlder`]
+/// (no OS probe verified 16), which `generation_tests` pins.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 pub(crate) const MACOS_GENERATIONS: GenerationTable = GenerationTable {
     oldest: Generation {
@@ -1720,7 +1731,15 @@ mod pipeline_tests {
     #[test]
     fn linux_has_no_generation_to_pin() {
         let result = pollster::block_on(super::from_system_with_preset_inner("adwaita"));
-        assert!(matches!(result, Err(crate::Error::UnknownPreset { .. })));
+        let err = result.err();
+        assert!(matches!(
+            err,
+            Some(crate::Error::UnknownPreset { known: [], .. })
+        ));
+        assert!(
+            err.is_some_and(|e| e.to_string().contains("no platform presets")),
+            "pinning a preset on Linux says the platform has no platform presets"
+        );
     }
 
     /// A reader reporting a text-scaling factor of 1.5, standing in for any
@@ -2143,6 +2162,26 @@ mod generation_tests {
             macos_generation(OsVersion::new(27, 0, 1)).1,
             VersionMatch::PresetOlder
         );
+        // 16: what early macOS 26 betas reported to a macOS 15 SDK build
+        assert_eq!(
+            macos_generation(OsVersion::new(16, 0, 0)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetOlder
+            )
+        );
+        // An unreadable version reads as 0.0.0
+        assert_eq!(
+            macos_generation(OsVersion::new(0, 0, 0)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetNewer
+            )
+        );
     }
 
     #[test]
@@ -2189,6 +2228,22 @@ mod generation_tests {
         assert_eq!(
             windows_generation(OsVersion::new(10, 0, 26300)).1,
             VersionMatch::PresetOlder
+        );
+        // 26H1 (28000)
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 28000)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetOlder
+            )
+        );
+        // A failed version read gives 0.0.0
+        assert_eq!(
+            windows_generation(OsVersion::new(0, 0, 0)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetNewer
+            )
         );
     }
 

@@ -468,7 +468,11 @@ pub struct SystemTheme {
     /// table (Linux, whose readers read the installed style) or no reader ran.
     /// On macOS 27 under `macos-tahoe`, which no preset of its own covers yet,
     /// it is `Some(VersionMatch::PresetOlder)`; on Windows 10 under
-    /// `windows-11`, `Some(VersionMatch::PresetNewer)`.
+    /// `windows-11`, `Some(VersionMatch::PresetNewer)`. Early macOS 26 betas
+    /// reported version 16 to a binary built against the macOS 15 SDK; a
+    /// major version 16 gets `macos-monterey` with
+    /// `Some(VersionMatch::PresetOlder)` (sources in the macOS generation
+    /// table, `pipeline.rs`).
     pub version_match: Option<VersionMatch>,
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,

@@ -145,7 +145,10 @@ fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
 
 /// The running macOS version, from `NSProcessInfo.operatingSystemVersion`
 /// (a safe binding in objc2-foundation 0.3.2), for the generation table.
-/// AppKit's components are never negative; one that were would read as 0.
+/// AppKit's components are never negative; one that were would read as 0, and
+/// a version of 0.0.0 gets `macos-monterey` with `VersionMatch::PresetNewer`.
+/// Early macOS 26 betas reported 16 here to a binary built against the macOS
+/// 15 SDK; `pipeline::MACOS_GENERATIONS` gives the sources and the mapping.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 pub(crate) fn os_version() -> crate::pipeline::OsVersion {
     let v = NSProcessInfo::processInfo().operatingSystemVersion();

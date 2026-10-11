@@ -77,7 +77,8 @@ pub enum Error {
     UnknownPreset {
         /// The requested preset name.
         name: String,
-        /// Available preset names.
+        /// Available preset names: empty where the platform has no platform
+        /// presets (`from_system_with_preset` on Linux).
         known: &'static [&'static str],
     },
 
@@ -156,6 +157,12 @@ impl fmt::Display for Error {
             }
             Error::PlatformUnsupported { platform } => {
                 write!(f, "platform not supported: {platform}")
+            }
+            Error::UnknownPreset { name, known: [] } => {
+                write!(
+                    f,
+                    "unknown preset \"{name}\": this platform has no platform presets"
+                )
             }
             Error::UnknownPreset { name, known } => {
                 write!(
@@ -469,6 +476,18 @@ mod tests {
         assert!(msg.contains("foobar"), "got: {msg}");
         assert!(msg.contains("adwaita"), "got: {msg}");
         assert!(msg.contains("kde-breeze"), "got: {msg}");
+    }
+
+    #[test]
+    fn display_unknown_preset_without_presets_says_so() {
+        let err = Error::UnknownPreset {
+            name: "adwaita".into(),
+            known: &[],
+        };
+        assert_eq!(
+            err.to_string(),
+            "unknown preset \"adwaita\": this platform has no platform presets"
+        );
     }
 
     // === source() tests ===
