@@ -115,7 +115,7 @@ Measured cost per milestone, and the estimate for the rest.
 
 ## M1 — Design review
 
-### M2 decisions (2026-10-11)
+## M2 — decisions (2026-10-11)
 
 - **Step 3, M2a and M2b (maintainer):** the OS probe is built now on `m2-research` and run in CI before the `macos-14`
   runner image becomes unsupported (2026-11-02), on `macos-14`, `macos-15`, `macos-26`, `windows-2022` and `windows-2025`;
