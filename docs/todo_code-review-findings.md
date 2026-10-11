@@ -1663,9 +1663,11 @@ wrong; "not recorded" where the ruling gave none). **VETO FIRST** marks the two 
     CHANGELOG breaking line — 0.7.0 already breaks, no public function takes the type, a field the
     reader no longer fills is a trap; the fix stops 2.25× text at factor 1.5 — re-add one field.
     Ruled to avoid a stall; the plan's api-break rule gives the maintainer this call.
+    **Maintainer, 2026-10-12: kept** (no veto).
 16. **VETO FIRST.** M2e Q2: `kde-breeze` light danger/success/info text = `#232629` per facts
     `:1081`/`:1085`/`:1087` and the KDE reader — a preset follows its facts row; a live Breeze
     Light desktop already gets this — three values back to `#fcfcfc` plus a model question.
+    **Maintainer, 2026-10-12: kept** (no veto).
 17. M2e Q3: `adwaita`'s six ❓ values wait for one pass over the GNOME cells of §2.1.3–§2.1.5 — a
     preset follows its facts row — none.
 18. M2c fix round (W1–W7): disabled switch tracks = enabled × 0.4 alpha, slider/progress tracks
