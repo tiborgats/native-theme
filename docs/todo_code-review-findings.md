@@ -1597,7 +1597,7 @@ M3–M8 cites these instead of reporting them again.
 
 ## M2a — macOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets macOS 14 (`macos-sonoma.toml:1-3`), and 14 has had no security update since 14.8.9 (2026-08-06): Apple
 supports 27, 26 and 15 today. No source separates 15 from 14 (WebKit's pre-Tahoe tables carry no 14/15 conditional, Apple
@@ -2685,7 +2685,7 @@ the colours.
 
 ## M2b — Windows
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the Windows 10 gap waits for M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (eff33489), T1 (M1-T1-02) 507b1975, probe run 38129819806. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the Windows 10 gap waits for M1's stop point A; Step 7 done 2026-10-11 (eff33489), T1 (M1-T1-02) 507b1975, probe run 38129819806; Step 7b (the review's fixes and the preset-validator's second pass) done 2026-10-11 (4024bdd2, ad574abc). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets Windows 11 with no version stated (`windows-11.toml:1-3`). Every WinUI 3 file the facts cite is
 byte-identical at `8463f45`, the latest release `winui3/release/2.5.1` (`ba3a8d59`, 2026-09-19), `1.8.12` and `main`, and
@@ -2811,7 +2811,7 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G1+G2] https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.advancedeffectsenabled (git 3abc0b43, updated 2025-11-21); https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings (version table) Note: Windows does expose this setting; native-theme/src/windows.rs:536 also says 'Windows does not expose this setting'. Not on todo.md.
 **Verdict:** CONFIRMED — Read on the page (updated 2025-11-21, git 3abc0b43), so the row's '(none)' is wrong; correction: AdvancedEffectsEnabledChanged is also listed as introduced in 10.0.15063.0, not 1903. Confirmed value: UISettings.AdvancedEffectsEnabled: 'Gets a value that indicates whether the system Transparency effects setting is enabled' (introduced 10.0.15063.0, UniversalApiContract v4).
 **Triage:** fix — Read on the page (updated 2025-11-21, git 3abc0b43), so the row's '(none)' is wrong; correction: AdvancedEffectsEnabledChanged is also listed as introduced in 10.0.15063.0, not 1903.
-**Status:** fixed in Step 7 (E8; eff33489); reading AdvancedEffectsEnabled and windows.rs:536's comment in M4
+**Status:** fixed in Step 7 (E8; eff33489); reading AdvancedEffectsEnabled and windows.rs:462's comment in M4 (the line was :536 before 507b1975)
 
 #### M2b-10 · bug · S2 · docs/platform-facts.md:1132
 **Claim:** `toolbar (Windows)` (2.1.8 Icon Sizes): the cell says Fluent AppBarButton: 20; G2 WinUI 3 pin / 2.5.1 8463f45 = 2.5.1: 16 (AppBarButtonContentHeight, generic.xaml:19462); G2 docs ms.date 2025-02-26: 20x20 (doc).
@@ -2846,14 +2846,14 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/Button_themeresources.xaml#L31 (identical at 8463f45 #L31; Light dictionary in same file); colours Common_themeresources_any.xaml#L16 (D), #L220 (L) at both revisions [G1 Windows 10 (WinUI 2 Version1)] https://github.com/microsoft/microsoft-ui-xaml/blob/232a16e5ddfc22c9a1b79a2c51abeb9a39a94494/dev/CommonStyles/Button_themeresources_v1.xaml#L23 Note: SubtleFillColorSecondary is the menu/list/nav hover, not Button's. Preset states #0000000a / #ffffff0f (windows-11.toml:86, :494). Not on todo.md.
 **Verdict:** CONFIRMED — Both cited values hold at the given lines; the row's SubtleFillColorSecondary belongs to SubtleButtonStyle (:18, :116), not to the default Button. Confirmed value: G2: ButtonBackgroundPointerOver = ControlFillColorSecondaryBrush (Default dict Button_themeresources.xaml:31, Light :129, used by DefaultButtonStyle PointerOver :182 as a ContentPresenter Background r….
 **Triage:** fix — Both cited values hold at the given lines; the row's SubtleFillColorSecondary belongs to SubtleButtonStyle (:18, :116), not to the default Button.
-**Status:** fixed in Step 7 (E15, E74–E77; eff33489)
+**Status:** fixed in Step 7 (E15, E74–E77; eff33489); in Step 7b the preset states the hover flattened over the window colour, `#f6f6f6` / `#323232`, and the cell gives the derivation (ad574abc)
 
 #### M2b-15 · bug · S2 · docs/platform-facts.md:1191
 **Claim:** `placeholder_color` (2.4 Text Input): the cell says (Fluent) TextPlaceholderColor; G2 Windows 11 WinUI 3 2.5.1: TextControlPlaceholderForeground = TextFillColorSecondaryBrush (L #9E000000, D #C5FFFFFF); no resource named TextPlaceholderColor.
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/TextBox_themeresources.xaml#L35 , #L142; Common_themeresources_any.xaml#L6 (D), #L210 (L) (identical at 8463f45) Note: Name not found in TextBox/Common/generic resources. Not on todo.md.
 **Verdict:** CONFIRMED — Read as cited, and Common_themeresources_any.xaml contains no Placeholder resource at all. Confirmed value: TextControlPlaceholderForeground = TextFillColorSecondaryBrush (TextBox_themeresources.xaml:35 Default, :142 Light, used at :338); TextFillColorSecondary D #C5FFFFFF (Common_themeresources_any.xaml:6)….
 **Triage:** fix — Read as cited, and Common_themeresources_any.xaml contains no Placeholder resource at all.
-**Status:** fixed in Step 7 (E16; eff33489); the preset inherits defaults.muted_color, the same brush
+**Status:** fixed in Step 7 (E16; eff33489); the preset inherits defaults.muted_color, the same brush, stated as the resource gives it since Step 7b, `#0000009e` / `#ffffffc5` (ad574abc)
 
 #### M2b-16 · bug · S4 · docs/platform-facts.md:1227
 **Claim:** `background_color` (2.6 Menu): the cell says COLOR_MENU; G2 Windows 11 25H2: COLOR_MENU: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
@@ -2874,7 +2874,7 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:306). WinUI 3: ToolTip Background = ToolTipBackgroundBrush; ToolTipBackground = SystemControlBackgroundChromeMediumLowBrush (ToolTip_themeresources.xaml:8, :32, :44).
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already records it, so this is not new. Confirmed value: COLOR_INFOBK: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E19; eff33489); the reader's index in M4 (M2b-P05)
+**Status:** fixed in Step 7 (E19; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names the brush the default style draws, `ToolTipBackgroundBrush` (the acrylic, fallback #F9F9F9 / #2C2C2C), and the preset states it (ad574abc)
 
 #### M2b-19 · bug · S2 · docs/platform-facts.md:1253
 **Claim:** `font.size` (2.7 Tooltip): the cell says ← defaults.font; G2 Windows 11 WinUI 3 2.5.1: ToolTipContentThemeFontSize 12 (not the 14 body size); Win32 tooltips use lfStatusFont ('font used in status bars and tooltips'); G1 Windows 10 (WinUI 2 Version1) WinUI 2.8.7: ToolTipContentThemeFontSize 12.
@@ -2888,14 +2888,14 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:307). WinUI 3 ToolTipForeground = TextFillColorPrimaryBrush (ToolTip_themeresources.xaml:7, :31).
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already records it, so this is not new. Confirmed value: COLOR_INFOTEXT: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E21; eff33489); the reader's index in M4 (M2b-P05)
+**Status:** fixed in Step 7 (E21; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names `ToolTipForegroundBrush` = `TextFillColorPrimary`, and the preset states `#000000e4` / `#ffffff` (ad574abc)
 
 #### M2b-21 · bug · S2 · docs/platform-facts.md:1283
 **Claim:** `overlay_mode` (2.8 Scrollbar): the cell says (none) — always persistent; G2 Windows 11 25H2: UISettings.AutoHideScrollBars: true if 'Automatically hide scroll bars in Windows' is set; WinUI 3 ScrollBar collapses to a panning indicator by default; G1 Windows 10 22H2: same API, 'Windows 10, version 1903 (introduced in 10.0.18362.0)'.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.autohidescrollbars (git 3abc0b43, updated 2025-11-21, read 2026-10-11) [G1 Windows 10] same URL Note: Not on todo.md or in facts/reader. The setting is queryable on both generations.
 **Verdict:** PLAUSIBLE — The UISettings.AutoHideScrollBars page (git 3abc0b43, updated 2025-11-21) confirms the setting ('Automatically hide scroll bars in Windows') from 10.0.18362 onwards, but its Remarks say it 'returns the specified user setting, not whether a specific scroll bar is visible', and the WinUI 3 'collapses to a panning indicator' part has no cited source; Win32 scroll bars are not shown to auto-hide, so whether the row applies depends on which scroll bar the Windows column models.
 **Triage:** maintainer (Step 3 probe) — PLAUSIBLE: UISettings.AutoHideScrollBars exists (10.0.18362+), but it reports the user setting, not a scroll bar's behaviour; the cell's "(none)" is wrong either way, the value needs the probe.
-**Status:** cell fixed in Step 7 from the probe (E22; eff33489); overlay_mode kept false with the ❓ (Step 7 ruling: which scroll bars follow the setting has no source)
+**Status:** cell fixed in Step 7 from the probe (E22; eff33489); overlay_mode kept false with the ❓ (Step 7 ruling: which scroll bars follow the setting has no source); in Step 7b the preset's comment points at the ❓ (ad574abc)
 
 #### M2b-22 · bug · S2 · docs/platform-facts.md:1290
 **Claim:** `track_color` (2.9 Slider): the cell says ← defaults.muted_color (TextFillColorSecondary); G2 Windows 11 WinUI 3 2.5.1: SliderTrackFill = ControlStrongFillColorDefaultBrush (L #72000000, D #8BFFFFFF).
@@ -2930,21 +2930,21 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/TabView/TabView.idl#L105-L107 ; .../src/controls/dev/TabView/TabView.cpp#L1182 ; .../src/controls/dev/TabView/TabView_themeresources.xaml#L243-L244 (same lines at 8463f45 controls/dev/TabView/…) [G1 Windows 10 (WinUI 2 Version1)] https://github.com/microsoft/microsoft-ui-xaml/blob/232a16e5ddfc22c9a1b79a2c51abeb9a39a94494/dev/TabView/TabView_themeresources_v1.xaml#L154 Note: todo.md:2277 lists tab.min_width as Windows (none) vs preset 64; the source gives 100 in the default mode (SizeToContent/Compact differ).
 **Verdict:** CONFIRMED — TabView.idl:105-107 sets MUX_DEFAULT_VALUE Equal, TabView.cpp:1182 reads TabViewItemMinWidth in the Equal branch and std::clamp(…, minTabWidth, maxTabWidth) follows, TabView_themeresources.xaml:243-244 gives 240/100 (identical at 8463f45), and TabView_themeresources_v1.xaml:154 gives 100. Confirmed value: WinUI 3: TabWidthMode defaults to Equal; tab width = clamp(available/count, TabViewItemMinWidth 100, TabViewItemMaxWidth 240); WinUI 2.8.7 v1: TabViewItemMinWidth 100.
 **Triage:** fix — TabView.idl:105-107 sets MUX_DEFAULT_VALUE Equal, TabView.cpp:1182 reads TabViewItemMinWidth in the Equal branch and std::clamp(…, minTabWidth, maxTabWidth) follows, TabView_themeresources.xaml:243-244 gives 240/100 (identical at 8463f45), and TabView_themeresources_v1.xaml:154 gives 100.
-**Status:** fixed in Step 7 (E27, E83, E87, E101; eff33489)
+**Status:** fixed in Step 7 (E27, E83, E87, E101; eff33489); E27 landed in the macOS column, moved to the Windows column in Step 7b (4024bdd2)
 
 #### M2b-27 · bug · S2 · docs/platform-facts.md:1336
 **Claim:** `selection_background` (2.12 Sidebar): the cell says ← defaults.selection_background (COLOR_HIGHLIGHT); G2 Windows 11 WinUI 3 2.5.1: NavigationViewItemBackgroundSelected = SubtleFillColorSecondaryBrush, plus accent pill NavigationViewSelectionIndicatorForeground = AccentFillColorDefaultBrush.
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/NavigationView/NavigationView_themeresources.xaml#L17 , #L83 , #L48 , #L114 (identical at 8463f45) Note: Inheritance contradicted. Not on todo.md.
 **Verdict:** CONFIRMED — NavigationView_themeresources.xaml:17/:83 and :48/:114 hold these values, and the item template uses them (LayoutRoot.Background at :475, the SelectionIndicator Rectangle Fill at :602). Confirmed value: NavigationViewItemBackgroundSelected = SubtleFillColorSecondaryBrush; selection pill NavigationViewSelectionIndicatorForeground = AccentFillColorDefaultBrush.
 **Triage:** fix — NavigationView_themeresources.xaml:17/:83 and :48/:114 hold these values, and the item template uses them (LayoutRoot.Background at :475, the SelectionIndicator Rectangle Fill at :602).
-**Status:** fixed in Step 7 (E28, E89, E90; eff33489)
+**Status:** fixed in Step 7 (E28, E89, E90; eff33489); E28 landed in the macOS column, moved to the Windows column in Step 7b (4024bdd2)
 
 #### M2b-28 · bug · S2 · docs/platform-facts.md:1337
 **Claim:** `selection_text_color` (2.12 Sidebar): the cell says ← defaults.selection_text_color (COLOR_HIGHLIGHTTEXT); G2 Windows 11 WinUI 3 2.5.1: NavigationViewItemForegroundSelected = TextFillColorPrimaryBrush.
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/NavigationView/NavigationView_themeresources.xaml#L29 , #L95 (identical at 8463f45)
 **Verdict:** CONFIRMED — NavigationView_themeresources.xaml:29/:95 hold this value, and the Selected state applies it to the Icon and ContentPresenter foreground (:476-477). Confirmed value: NavigationViewItemForegroundSelected = TextFillColorPrimaryBrush.
 **Triage:** fix — NavigationView_themeresources.xaml:29/:95 hold this value, and the Selected state applies it to the Icon and ContentPresenter foreground (:476-477).
-**Status:** fixed in Step 7 (E29, E89, E90; eff33489)
+**Status:** fixed in Step 7 (E29, E89, E90; eff33489); E29 landed in the macOS column, moved to the Windows column in Step 7b (4024bdd2)
 
 #### M2b-29 · bug · S2 · docs/platform-facts.md:1356
 **Claim:** `icon_size` (2.13 Toolbar): the cell says ↕ 20 — see §2.1.8 (Fluent AppBarButton: 20); G2 Windows 11 WinUI 3 2.5.1: 16: AppBarButton ContentViewbox Height = AppBarButtonContentHeight = 16.
@@ -3000,7 +3000,7 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11 (WinUI 3)] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/ComboBox/ComboBox_themeresources.xaml#L40 , #L250 ; Common_themeresources_any.xaml #L5 (D), #L209 (L) same revision [Win32 (cell's source)] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10 (WinUI 2 Version1)] https://github.com/microsoft/microsoft-ui-xaml/blob/232a16e5ddfc22c9a1b79a2c51abeb9a39a94494/dev/ComboBox/ComboBox_themeresources_v1.xaml#L62 Note: Same Win32-vs-WinUI split as :1545.
 **Verdict:** CONFIRMED — ComboBox_themeresources.xaml:40/:250, Common_themeresources_any.xaml:5 (Default=Dark) and :209 (Light), and ComboBox_themeresources_v1.xaml:62 match, and the GetSysColor page lists COLOR_BTNTEXT without the 'not supported' note. Confirmed value: WinUI 3 ComboBoxForeground = TextFillColorPrimaryBrush (L #E4000000, D #FFFFFF); WinUI 2.8.7: SystemControlForegroundBaseHighBrush; COLOR_BTNTEXT (18) supported on Win10+.
 **Triage:** fix — ComboBox_themeresources.xaml:40/:250, Common_themeresources_any.xaml:5 (Default=Dark) and :209 (Light), and ComboBox_themeresources_v1.xaml:62 match, and the GetSysColor page lists COLOR_BTNTEXT without the 'not supported' note.
-**Status:** fixed in Step 7 (E38; eff33489); the preset's inherited text colour already matches
+**Status:** fixed in Step 7 (E38; eff33489); the preset's inherited text colour already matches; since Step 7b `defaults.text_color` is the brush as the resource gives it, `#000000e4` (ad574abc)
 
 ### Step 4 — preset-validator
 
@@ -3070,7 +3070,7 @@ I did not suggest replacement values anywhere. Each one needs the maintainer to 
 **Evidence:** Not in the differing list, but it is the same COLOR_BTNFACE cell the researcher flagged at :1545: BTNFACE is marked unsupported on Windows 10+, while its alias COLOR_3DFACE (also index 15) is listed as supported. The reader reads COLOR_BTNFACE (windows.rs:302, applied at :320). The same applies to dark line 488 ('#333333'). Neither hex value has a source comment.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — the §2.3 cell names COLOR_BTNFACE, the unsupported alias of the supported COLOR_3DFACE (same index 15); rename in Step 7 (S4).
-**Status:** fixed in Step 7 (E14; eff33489)
+**Status:** fixed in Step 7 (E14; eff33489); in Step 7b the cell also gives WinUI's `ButtonBackground` = `ControlFillColorDefault`, which the preset states (ad574abc)
 
 #### M2b-P07 · bug · S2 · native-theme/src/presets/windows-11.toml:45
 **Claim:** `light.defaults.border.opacity` (mismatch): preset 0.14, facts (none) — no multiplier … the preset's 0.14 has no source (docs/platform-facts.md:1116).
@@ -3652,9 +3652,73 @@ layout, so one line cites all three. WinUI 3 lines re-read at 8463f45 (the 2.5.1
   neither `AdvancedEffectsEnabled` nor `lfStatusFont` for the tooltip. For M3: `inheritance-rules.toml`'s
   `per_platform."popover.background_color".windows = "defaults.surface_color"` no longer describes the preset.
 
+### Step 7b — the review's fixes and the preset-validator's second pass (2026-10-11)
+
+Inputs: the task review of Step 7 (`.superpowers/sdd/todo_code-review-plan/review-M2b-7.md`: R-C1, R-I1,
+R-m1–R-m4) and the preset-validator on `windows-11.toml` after eff33489
+(`validator-windows-11-after-step7.md`: FAIL, blocking V1–V15, warnings W1–W9), with the controller's rulings in
+the session ledger. WinUI 3 lines re-read at microsoft-ui-xaml 8463f45; probe lines from
+`os-probe-windows-11-arm/probe.toml`, which `windows-2025` matches on every line used (`windows-2022` differs in the
+accent and its shades).
+
+- R-C1 / V1: Step 7's E27–E29 wrote the WinUI cells of tab `min_width` and sidebar `selection_background` /
+  `selection_text_color` into the macOS column of `platform-facts.md:1316`, `:1336`, `:1337` (their OLD text
+  repeated in the adjacent macOS cell). The macOS cells are back to their 89796690 text, the WinUI text is in the
+  Windows column, and a cell-by-cell check of every facts line changed since 89796690 finds no other line that
+  changed another platform's column (4024bdd2).
+- Rulings applied: windows-11 states what WinUI 3 draws. Where a Windows cell named only a Win32 or `UISettings`
+  API, it now gives the WinUI brush and its value beside the API: base font size (`ControlContentThemeFontSize`
+  14 px against `lfMessageFont`'s 9 pt), window background (Mica's fallback `SolidBackgroundFillColorBase`, the
+  Mica page updated 2026-07-17 by its `updated_at`; the page itself shows "Last updated" 2026-07-22), text, button fill and text, input text, tooltip (V2–V8). Translucent brushes are
+  stated as the resource gives them: text `#000000e4`, muted `#0000009e` / `#ffffffc5`, disabled `#0000005c` /
+  `#ffffff5d`, surface `#ffffffb3` / `#ffffff0d`, button fill `#ffffffb3` / `#ffffff0f`, unchecked check box and
+  switch `#00000006` / `#00000019`, check-box border `#00000072` / `#ffffff8b` (V4–V7, V9, V13, W3), and every
+  copy of the old text and disabled colours takes its control's own WinUI brush. R-I1: a hover fill that replaces
+  the rest fill is flattened over the window colour, button and segmented control `#f6f6f6`
+  (249 × 128/255 + 243 × 127/255 = 246.0) and dark `#323232` (255 × 21/255 + 32 × 234/255 = 50.4); facts :1179
+  gives the derivation, and the layer-or-replacement question is in docs/todo.md for M5–M7. By the controller's
+  ruling the button's pressed fill is flattened the same way: `ButtonBackgroundPressed` = `ControlFillColorTertiary`
+  #4DF9F9F9 / #08FFFFFF (Button_themeresources.xaml:130, :32; Common_themeresources_any.xaml:221, :17) over the
+  window, `#f5f5f5` (249 × 77/255 + 243 × 178/255 = 244.8) and dark `#272727` (255 × 8/255 + 32 × 247/255 = 39.0),
+  in the :1179 cell (the model has no pressed-fill row); it was the unsourced `#00000008` / `#ffffff08`. The
+  segmented control's `active_background` is its selected segment, the accent, for which facts :1567 gives Windows
+  none, so it is not a pressed fill and stays. Hovers over a
+  transparent rest fill (menu, list, sidebar, tab) are layers already and stay as given: menu, list and
+  sidebar `#00000009` (V10). The link's hover is transparent (V11, controller ruling): the model's link is inline
+  text, and an inline `Hyperlink` has no `Background` property and changes only its foreground (Hyperlink.cpp:609-635);
+  facts :1626 gives both it and `HyperlinkButton`'s `SubtleFillColorSecondary`.
+- Found while verifying: WinUI's `DefaultToolTipStyle` draws `ToolTipBackgroundBrush`, the acrylic (fallback
+  #F9F9F9 / #2C2C2C), and `ToolTipForegroundBrush`, not the `ToolTipBackground` the cell named
+  (ToolTip_themeresources.xaml:43-44), so the tooltip is light with primary text (R-m2, V8). The tab hover is
+  `LayerOnMicaBaseAltFillColorSecondary` #0A000000, not `SubtleFillColorSecondary` (comment fixed, value kept).
+  Links take `HyperlinkForeground` = `SystemAccentColorDark2` / `Light3`, which WinUI reads from UISettings
+  (SystemThemingInterop.cpp:262-291): `#003e92` / `#99ebff` for the default accent (probe.toml:753-759), hover and
+  pressed the next shades. An inline `Hyperlink` is underlined at rest and loses the underline on hover
+  (`HyperlinkUnderlineVisible` False, Hyperlink.cpp:669-671), a `HyperlinkButton` is not underlined (V12: true
+  kept, cell states both). The docked NavigationView pane is transparent (`SolidBackgroundFillColorTransparent`,
+  NavigationView.xaml:129), so `sidebar.background_color` is `#f3f3f300` / `#20202000`; the scroll bar track is
+  `SubtleFillColorTransparent` and the dialog `SolidBackgroundFillColorBase` (W5).
+- Test data, from sourced WinUI values set on the resolved theme, never from preset data: egui's and iced's
+  hovered-button compositing tests use `ControlFillColorSecondary` #80F9F9F9 (egui `style/states.rs`, iced
+  `contract.rs`); iced's compositing property (d) runs on `ControlFillColorTertiary` over windows-11's translucent
+  `ControlFillColorDefault`; windows-11 joins `LINK_HOVER_NONE` and `TRANSLUCENT_BUTTON_FILL` in the iced and gpui
+  contracts; egui t12's `windows-11/dark` exception is removed as stale; `docs/inheritance-rules.toml:368` names
+  the inline `Hyperlink`.
+- Kept with a ❓: `shadow_color` (V15): Fluent 2 gives Windows the ambient layer alone, 14% low ramp and 20% high,
+  and the connectors draw popup and window shadows in the one colour; the inactive title-bar colours (W2): the
+  values an unsupported `GetSysColor` index returns are not a source; `overlay_mode` (W1, M2b-21). The dark
+  separator inherits the border colour (V15).
+- For M3 (no change here): W4 (soft-option state colours with no facts row; `slider.disabled_track_color` has one,
+  `SliderTrackFillDisabled` = `ControlStrongFillColorDisabled` #51000000 / #3FFFFFFF, Slider_themeresources.xaml:127,
+  :23), W6 (wrong safety nets unstated, systemic), W7 (`list.alternate_row_background` (preset) ❓); and, in
+  docs/todo.md, the WinUI-or-Win32 meaning of the Windows theme with `input.background_color`,
+  `tab.active_background` and `AccentFillColorDefault` (`SystemAccentColorDark1` / `Light2`, not the accent).
+  Also for M3: the link's `disabled_text_color` still follows `HyperlinkButtonForegroundDisabled`, while its hover
+  follows the inline `Hyperlink`.
+
 ## M2c — iOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the iOS 26 gap waits for M1's stop point A; Step 7 not started; Step 7 done 2026-10-11 (4137fded). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; the iOS 26 gap waits for M1's stop point A; Step 7 done 2026-10-11 (4137fded). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 `ios.toml` names no iOS version; its colours are the flat-generation (iOS 13–18) palette exactly (HIG `color.json` as captured
 2025-06-07, WebKit's `platform/ios-18` baselines), and its fonts and Dynamic Type sizes are unchanged in iOS 26. iOS 26 (Liquid
