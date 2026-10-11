@@ -311,7 +311,11 @@ pub(crate) fn from_toml(toml_str: &str) -> Result<Theme> {
 }
 
 pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<Theme> {
-    let contents = std::fs::read_to_string(path)?;
+    let path = path.as_ref();
+    let contents = std::fs::read_to_string(path).map_err(|source| Error::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
     from_toml(&contents)
 }
 
@@ -485,9 +489,20 @@ accent_color = "#00ff00"
     fn from_file_nonexistent_returns_error() {
         let err = from_file("/tmp/nonexistent_theme_file_12345.toml").unwrap_err();
         match err {
-            Error::Io(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
+            Error::Io { source, .. } => assert_eq!(source.kind(), std::io::ErrorKind::NotFound),
             other => panic!("expected Io, got: {other:?}"),
         }
+    }
+
+    #[test]
+    fn from_file_error_names_the_path() {
+        let path = "/nonexistent/native_theme_missing_12345.toml";
+        let err = Theme::from_file(path).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains(path),
+            "error message should name the file: {msg}"
+        );
     }
 
     #[test]

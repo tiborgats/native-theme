@@ -104,8 +104,13 @@ pub enum Error {
     /// `ReaderFailed` with reader `"toml-serializer"`.)
     Toml(toml::de::Error),
 
-    /// File I/O error.
-    Io(std::io::Error),
+    /// A theme file could not be read.
+    Io {
+        /// The file that could not be read.
+        path: std::path::PathBuf,
+        /// The underlying I/O error.
+        source: std::io::Error,
+    },
 
     /// Theme resolution found missing fields that could not be inherited.
     ResolutionIncomplete {
@@ -143,7 +148,7 @@ impl Error {
             Error::ReaderFailed { .. } => ErrorKind::Platform,
             Error::UnknownPreset { .. } => ErrorKind::Parse,
             Error::Toml(_) => ErrorKind::Parse,
-            Error::Io(_) => ErrorKind::Io,
+            Error::Io { .. } => ErrorKind::Io,
             Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
             Error::ResolutionInvalid { .. } => ErrorKind::Resolution,
         }
@@ -179,7 +184,9 @@ impl fmt::Display for Error {
                 write!(f, "theme has no variant for {mode:?}")
             }
             Error::Toml(err) => write!(f, "TOML error: {err}"),
-            Error::Io(err) => write!(f, "I/O error: {err}"),
+            Error::Io { path, source } => {
+                write!(f, "cannot read theme file `{}`: {source}", path.display())
+            }
             Error::ResolutionIncomplete { missing } => {
                 write!(
                     f,
@@ -250,7 +257,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Toml(err) => Some(err),
-            Error::Io(err) => Some(err),
+            Error::Io { source, .. } => Some(source),
             Error::ReaderFailed { source, .. } => Some(source.as_ref()),
             Error::FeatureDisabled { .. }
             | Error::PlatformUnsupported { .. }
@@ -278,12 +285,6 @@ impl From<toml::ser::Error> for Error {
             reader: "toml-serializer",
             source: Box::new(err),
         }
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::Io(err)
     }
 }
 
@@ -365,7 +366,10 @@ mod tests {
 
     #[test]
     fn kind_io_for_io() {
-        let err = Error::Io(std::io::Error::other("disk failure"));
+        let err = Error::Io {
+            path: "theme.toml".into(),
+            source: std::io::Error::other("disk failure"),
+        };
         assert_eq!(err.kind(), ErrorKind::Io);
     }
 
@@ -495,7 +499,10 @@ mod tests {
 
     #[test]
     fn source_some_for_io() {
-        let err = Error::Io(std::io::Error::other("disk failure"));
+        let err = Error::Io {
+            path: "theme.toml".into(),
+            source: std::io::Error::other("disk failure"),
+        };
         assert!(
             std::error::Error::source(&err).is_some(),
             "Io should return Some from source()"
@@ -592,16 +599,15 @@ mod tests {
     }
 
     #[test]
-    fn from_io_error_produces_io_variant_no_arc() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
-        let err: Error = io_err.into();
-        match &err {
-            Error::Io(e) => {
-                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-                assert!(e.to_string().contains("missing file"));
-            }
-            other => panic!("expected Io variant, got: {other:?}"),
-        }
+    fn display_io_names_path_and_source() {
+        let err = Error::Io {
+            path: "/themes/my-theme.toml".into(),
+            source: std::io::Error::new(std::io::ErrorKind::NotFound, "missing file"),
+        };
+        assert_eq!(
+            err.to_string(),
+            "cannot read theme file `/themes/my-theme.toml`: missing file"
+        );
     }
 
     // === Derive checks ===
