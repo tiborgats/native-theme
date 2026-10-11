@@ -41,13 +41,15 @@ pub struct ResolutionContext {
     /// Font DPI for pt-to-px conversion.
     ///
     /// [`from_system`](Self::from_system) detects it: 72.0 on macOS, 96.0 on
-    /// Windows, and on Linux KDE's `forceFontDPI` (with the `kde` feature),
-    /// then `Xft.dpi`, then xrandr's physical DPI (with `kde` or `portal`),
-    /// then 96.0; 96.0 elsewhere. When the OS theme is read
+    /// Windows, 96.0 on a GNOME or Budgie desktop (with the `portal` feature;
+    /// GNOME's text-scaling factor is carried in
+    /// [`AccessibilityPreferences`](crate::AccessibilityPreferences), not in
+    /// the DPI), and on other Linux desktops KDE's `forceFontDPI` (with the
+    /// `kde` feature), then `Xft.dpi`, then xrandr's physical DPI (with `kde`
+    /// or `portal`), then 96.0; 96.0 elsewhere. When the OS theme is read
     /// ([`SystemTheme::from_system`](crate::SystemTheme::from_system)), the
     /// reader's own DPI replaces it: KDE's `forceFontDPI` → `Xft.dpi` →
-    /// xrandr → 96.0, GNOME's `Xft.dpi` → xrandr → 96.0, macOS's 72.0 and
-    /// Windows' 96.0.
+    /// xrandr → 96.0, GNOME's 96.0, macOS's 72.0 and Windows' 96.0.
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,
     /// `PrimaryRight` elsewhere).

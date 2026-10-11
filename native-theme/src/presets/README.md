@@ -93,9 +93,10 @@ over the platform preset:
 - **`icon_theme`** -- stated at the Theme level by the adwaita, macOS and
   Windows presets; KDE's reader supplies it per variant
 - **`font_dpi`** -- filled by the platform reader: KDE's from `forceFontDPI`,
-  `Xft.dpi` or the display, GNOME's from `Xft.dpi` or the display, macOS's a
-  fixed 72, and Windows' a fixed 96, since it reads its fonts at 96 DPI so
-  that they resolve to logical pixels
+  `Xft.dpi` or the display, GNOME's a fixed 96 (GNOME's text-scaling factor
+  goes to `text_scaling_factor`, not into the DPI), macOS's a fixed 72, and
+  Windows' a fixed 96, since it reads its fonts at 96 DPI so that they
+  resolve to logical pixels
 - **`reduce_motion`**, **`high_contrast`**, **`reduce_transparency`**,
   **`text_scaling_factor`** -- filled by platform reader from OS
   accessibility settings (the macOS reader reports no text-scaling factor:

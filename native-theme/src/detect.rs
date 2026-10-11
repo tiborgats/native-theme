@@ -389,14 +389,36 @@ mod xrandr_dpi_tests {
     }
 }
 
+/// GNOME's font DPI: 96. gnome-settings-daemon lays fonts out at a fixed 96
+/// (`DPI_FALLBACK`) times `text-scaling-factor`, and GTK on Wayland at the same
+/// 96 × factor (gnome-settings-daemon 51.0
+/// `plugins/xsettings/gsd-xsettings-manager.c:243`, `:583-595`; GTK 4.24.1
+/// `gdk/wayland/gdksettings-wayland.c:166-168`). The factor reaches
+/// [`AccessibilityPreferences::text_scaling_factor`](crate::AccessibilityPreferences::text_scaling_factor),
+/// which the connectors apply, so the font DPI leaves it out. `Xft.dpi` is not
+/// read on GNOME: gnome-settings-daemon sets it to 96 × factor × the X11 UI
+/// scale (`:665-668`, `:797-798`).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+pub(crate) const GNOME_FONT_DPI: f32 = 96.0;
+
+/// The font DPI a desktop fixes: [`GNOME_FONT_DPI`] on GNOME and Budgie, the
+/// desktops the GNOME reader reads (`pipeline::select_reader`); `None`
+/// elsewhere, where the detection chain decides.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
+    matches!(desktop, LinuxDesktop::Gnome | LinuxDesktop::Budgie).then_some(GNOME_FONT_DPI)
+}
+
 /// Detect the font DPI for the current system.
 ///
 /// Used by [`ThemeMode::into_resolved()`] as a fallback when no OS reader
 /// has provided `font_dpi`. Returns the platform-appropriate DPI for
 /// converting typographic points to logical pixels.
 ///
-/// - **Linux, `kde` feature** (any desktop): `forceFontDPI` → `Xft.dpi` → xrandr → 96.0
-/// - **Linux, `portal` feature without `kde`**: `Xft.dpi` → xrandr → 96.0; neither: 96.0
+/// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`)
+/// - **Linux, `kde` feature** (any other desktop): `forceFontDPI` → `Xft.dpi` → xrandr → 96.0
+/// - **Linux, `portal` feature without `kde`** (any other desktop): `Xft.dpi` → xrandr → 96.0;
+///   neither feature: 96.0
 /// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
 /// - **Windows**: 96.0, the Windows reader's `font_dpi`: a point is 96/72
 ///   logical (effective) pixels at any display scale
@@ -411,6 +433,14 @@ fn detect_system_font_dpi() -> f32 {
     #[cfg(all(target_os = "windows", feature = "windows"))]
     {
         return crate::windows::LOGICAL_DPI as f32;
+    }
+
+    // GNOME: a fixed 96, the text scale carried apart (GNOME_FONT_DPI)
+    #[cfg(all(target_os = "linux", feature = "portal"))]
+    {
+        if let Some(dpi) = desktop_font_dpi(detect_linux_desktop()) {
+            return dpi;
+        }
     }
 
     // KDE: check forceFontDPI first (same chain as the KDE reader)
@@ -947,14 +977,14 @@ pub(crate) fn gsettings_get(schema: &str, key: &str) -> Option<String> {
     run_gsettings_with_timeout(&["get", schema, key])
 }
 
-/// Read Xft.dpi from X resources.
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+/// Read Xft.dpi from X resources (the KDE reader's DPI chain).
+#[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) fn xft_dpi() -> Option<f32> {
     read_xft_dpi()
 }
 
-/// Detect physical DPI from xrandr.
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+/// Detect physical DPI from xrandr (the KDE reader's DPI chain).
+#[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) fn physical_dpi() -> Option<f32> {
     detect_physical_dpi()
 }
@@ -1251,5 +1281,20 @@ mod subprocess_tests {
             .filter(|path| std::fs::read(path).is_ok_and(|bytes| bytes == cmdline.as_bytes()))
             .collect();
         assert!(still_running.is_empty(), "not killed: {still_running:?}");
+    }
+}
+
+#[cfg(all(test, target_os = "linux", feature = "portal"))]
+mod gnome_font_dpi_tests {
+    use super::*;
+
+    /// GNOME and Budgie, the desktops the GNOME reader reads, lay fonts out at
+    /// GNOME's 96 whatever `Xft.dpi` says; other desktops keep the chain.
+    #[test]
+    fn gnome_desktops_fix_the_font_dpi() {
+        assert_eq!(desktop_font_dpi(LinuxDesktop::Gnome), Some(96.0));
+        assert_eq!(desktop_font_dpi(LinuxDesktop::Budgie), Some(96.0));
+        assert_eq!(desktop_font_dpi(LinuxDesktop::Kde), None);
+        assert_eq!(desktop_font_dpi(LinuxDesktop::Unknown), None);
     }
 }

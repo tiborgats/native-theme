@@ -134,24 +134,6 @@ fn read_gsetting(schema: &str, key: &str) -> Option<String> {
     }
 }
 
-/// Detect font DPI from X resources and display hardware.
-///
-/// Detection chain (first positive value wins):
-/// 1. `Xft.dpi` from X resources (via `xrdb -query`)
-/// 2. Physical DPI from display hardware (via `xrandr`)
-/// 3. Fallback: 96.0
-fn detect_font_dpi() -> f32 {
-    if let Some(dpi) = crate::detect::xft_dpi() {
-        return dpi;
-    }
-    // Physical DPI from display hardware (xrandr)
-    if let Some(dpi) = crate::detect::physical_dpi() {
-        return dpi;
-    }
-    // X11-standard fallback
-    96.0
-}
-
 /// Portal + gsettings data using primitive types only.
 ///
 /// Constructed from ashpd portal reads + gsettings in production,
@@ -175,8 +157,6 @@ pub struct GnomePortalData {
     pub titlebar_font: Option<String>,
     /// Text scaling factor (e.g. 1.0, 1.25).
     pub text_scaling_factor: Option<f32>,
-    /// Font DPI from X resources or display hardware.
-    pub font_dpi: f32,
     /// Whether overlay scrollbars are enabled. None = not provided.
     pub overlay_scrolling: Option<bool>,
     /// Icon theme name (e.g. "Adwaita", "Papirus").
@@ -226,7 +206,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         apply_accent(&mut variant, &rgba);
     }
 
-    // NOTE: high_contrast, reduce_motion, text_scaling_factor, and font_dpi
+    // NOTE: high_contrast, reduce_motion and text_scaling_factor
     // are no longer on ThemeDefaults. They live on AccessibilityPreferences,
     // constructed by the pipeline from GnomePortalData fields.
 
@@ -253,7 +233,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     }
 
     // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
-    // text_scaling_factor, font_dpi, reduce_motion are extracted from
+    // text_scaling_factor and reduce_motion are extracted from
     // GnomePortalData by the pipeline caller, not set on ThemeDefaults.
 
     // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
@@ -304,7 +284,7 @@ fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<crate::ReaderR
         name: "GNOME".into(),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        font_dpi: Some(data.font_dpi),
+        font_dpi: Some(crate::detect::GNOME_FONT_DPI),
         accessibility: acc,
     })
 }
@@ -343,8 +323,6 @@ pub(crate) fn build_gnome_variant(
     let text_scaling_factor = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
         .and_then(|s| s.parse::<f32>().ok());
 
-    let font_dpi = detect_font_dpi();
-
     let gsettings_high_contrast =
         read_gsetting("org.gnome.desktop.a11y.interface", "high-contrast").and_then(|s| {
             match s.as_str() {
@@ -381,7 +359,6 @@ pub(crate) fn build_gnome_variant(
         monospace_font_name,
         titlebar_font,
         text_scaling_factor,
-        font_dpi,
         overlay_scrolling,
         icon_theme,
         gsettings_high_contrast,
@@ -391,8 +368,11 @@ pub(crate) fn build_gnome_variant(
     let _ = scheme; // consumed by caller for light/dark selection
 
     let acc = accessibility_from_gnome_data(&data);
-    let dpi = data.font_dpi;
-    (build_gnome_variant_pure(&data), acc, dpi)
+    (
+        build_gnome_variant_pure(&data),
+        acc,
+        crate::detect::GNOME_FONT_DPI,
+    )
 }
 
 /// Build a ReaderResult from an Adwaita base, applying portal-provided
@@ -965,12 +945,30 @@ mod tests {
             monospace_font_name: Some("Source Code Pro 10".to_string()),
             titlebar_font: Some("Cantarell Bold 11".to_string()),
             text_scaling_factor: Some(1.0),
-            font_dpi: 96.0,
             overlay_scrolling: Some(true),
             icon_theme: Some("Adwaita".to_string()),
             gsettings_high_contrast: None,
             gsettings_enable_animations: None,
         }
+    }
+
+    /// gnome-settings-daemon writes `Xft.dpi` as 96 × text-scaling-factor × the
+    /// X11 UI scale (gnome-settings-daemon 51.0
+    /// `plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`,
+    /// `:797-798`), and the reader reports the factor itself, which the
+    /// connectors apply: the factor reaches a drawn size once, as GTK's
+    /// 96 × factor does (GTK 4.24.1 `gdk/wayland/gdksettings-wayland.c:166-168`).
+    #[test]
+    fn text_scale_reaches_the_font_size_once() {
+        let mut data = default_gnome_data();
+        data.text_scaling_factor = Some(1.5);
+        let reader = build_gnome_spec_pure(&data).unwrap();
+        assert_eq!(reader.font_dpi, Some(96.0));
+        let sys =
+            crate::pipeline::run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        // Cantarell 11 pt at 96 DPI is 14.67 px; times 1.5 it is 22 px.
+        let drawn = sys.accessibility.scaled(sys.light.defaults.font.size);
+        assert!((drawn - 22.0).abs() < 0.01, "drawn at {drawn} px");
     }
 
     #[test]
