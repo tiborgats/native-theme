@@ -1,0 +1,40 @@
+name: OS probe
+
+# Runs tools/os-probe (native-theme-os-probe, never published) on each macOS
+# and Windows runner image and uploads what the OS reported: probe.toml and,
+# on macOS, the control renders. Evidence for the platform-fidelity review
+# (docs/todo_code-review-plan.md, M2 Step 3). Dispatched by hand only.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  probe:
+    name: OS probe (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # xcode-27 is the macOS 27 preview image: its failure does not fail the run.
+    continue-on-error: ${{ matrix.os == 'xcode-27' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15, macos-26, xcode-27, windows-2022, windows-2025, windows-11-arm]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: os-probe
+      - name: Run the probe
+        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
+      - name: Upload the probe's output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: os-probe-${{ matrix.os }}
+          path: os-probe-out
