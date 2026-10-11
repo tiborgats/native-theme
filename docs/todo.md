@@ -750,6 +750,51 @@ model, the platform presets and the three connectors
       off-track border colour; M2b fix round 2 gave the off track's hover and
       disabled fills their WinUI resources.
 
+### ios-26: 38 required fields have no iOS 26 source
+
+- [ ] [v0.7.0] Step 17 of the code-review plan (`docs/todo_code-review-plan.md`,
+      M2c) writes `ios-26.toml`, the Liquid Glass look of iOS 26; it is
+      deferred (2026-10-11). The resolver requires 59 leaves per variant
+      that no inheritance rule fills (`ResolutionIncomplete` otherwise,
+      `native-theme/src/resolve/validate.rs`), Step 17 forbids copying
+      `ios-13`'s values into them, and 38 of the 59 have no iOS 26 source:
+      `defaults.link_color`, `defaults.border.corner_radius_lg_px`,
+      `defaults.border.shadow_enabled`, `defaults.icon_sizes.toolbar_px`,
+      `small_px`, `large_px`, `dialog_px`, `panel_px`,
+      `button.icon_text_gap_px`, `checkbox.label_gap_px`,
+      `menu.icon_text_gap_px`, `tooltip.max_width_px`,
+      `scrollbar.groove_width_px`, `min_thumb_length_px`, `thumb_width_px`,
+      `slider.thumb_diameter_px`, `progress_bar.min_width_px`,
+      `tab.min_width_px`, `min_height_px`, `list.alternate_row_background`,
+      `splitter.divider_width_px`, `switch.thumb_diameter_px`,
+      `track_radius_px`, `dialog.min_width_px`, `max_width_px`,
+      `min_height_px`, `max_height_px`, `button_gap_px`, `icon_size_px`,
+      `spinner.diameter_px`, `min_diameter_px`, `stroke_width_px`,
+      `combo_box.min_width_px`, `arrow_icon_size_px`,
+      `segmented_control.segment_height_px`, `separator_width_px`,
+      `expander.header_height_px` and `arrow_icon_size_px`. Three of them
+      need only a mapping ruling, since WebKit draws them at de320ba3: the
+      slider thumb is a 24 × 16 capsule, the switch thumb a 39.857 × 26.571
+      capsule, the select's chevron 0.55 em wide. The other 21 leaves have
+      a source (9 confirmed, 12 plausible); their values and citations are
+      kept in `docs/todo_code-review-findings.md`, `## M2c — iOS`,
+      *Steps 16–18*. Three of those carry an open choice:
+      `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
+      `docs/inheritance-rules.toml:352-359`) or WebKit's 0.4 (html.css:945-947,
+      RenderThemeCocoa.mm:1585); `defaults.selection_text_color` white on
+      the inherited accent or label on UIKit's grey row selection;
+      `button.min_width_px` 44 (the HIG's default control size) or 28 (its
+      minimum). Also to re-rule before the file is written: WebKit's iOS 26
+      controls draw a plain button's and a select's text in `label`, not
+      systemBlue (RenderThemeCocoa.mm@de320ba3:3324-3329, :3229-3232,
+      :3373-3376; a UA-sheet colour is not "explicitly set"), so the
+      systemBlue `button.font.color`, `button.active_text_color` and
+      `combo_box.font.color` M2c gave for iOS 26 are the pre-refresh look.
+      The route to the missing values: an iOS Simulator probe on a GitHub
+      macOS runner (the `macos-26` image), a dev-only app printing UIKit's
+      intrinsic sizes and colours, as M2d Step 3's reference app does; the
+      CI dispatch is the maintainer's.
+
 ---
 
 ## Toolkit Connectors

@@ -734,19 +734,23 @@ beside the Sonoma value in the same cell, tagged with its source and "macOS 26")
 
 Runs after M2c's Steps 1–6 (done) and M1's stop point A (done).
 
-- [ ] **Step 16: Rename.** `ios.toml` → `ios-13.toml` (`git mv`), its `PRESET_ENTRIES` /
+- [x] **Step 16: Rename.** `ios.toml` → `ios-13.toml` (`git mv`), its `PRESET_ENTRIES` /
   `PRESET_NAMES` entry, every use of the preset key (as the `material-3` rename did, M1 F2:
   a gate test that `ios-13` loads and `ios` does not), its header naming iOS 13–18 and the
   versions its values were verified on; CHANGELOG `[Unreleased]` under the breaking changes.
 - [ ] **Step 17: `ios-26`.** `ios-26.toml` from M2c's iOS 26 values, each with its source
   (HIG JSON, UIKit documentation, WebKit's iOS rendering, the **(WebKit)** tag); a value with
   no primary source stays unset, never copied from `ios-13` unless a source shows it
-  unchanged. `preset-validator` reports no unsourced value.
+  unchanged. `preset-validator` reports no unsourced value. Deferred (2026-10-11): the
+  resolver requires 59 leaves per variant, and 38 of them have no iOS 26 source
+  (`docs/todo.md`, *ios-26: 38 required fields have no iOS 26 source*; the 21 sourced values
+  are in the ledger's M2c, *Steps 16–18*).
 - [ ] **Step 18: Documentation and screenshots.** The presets README and the crate README
   (both are looks for desktop apps, D5), the showcases' theme menus, `screenshots.yml`; the
   capture run is the maintainer's. At that asset run (Step 16's rename, D8, as M2a Step 12 has
   it for macOS): the display name and the TOML `name` of `ios-13` become "iOS 13" (they stay
-  "iOS" until that run; ruled 2026-10-11).
+  "iOS" until that run; ruled 2026-10-11). The rename part is done (fd99fd2f); the ios-26
+  part waits with Step 17.
 
 ### M2d only: the two Material presets (D6)
 

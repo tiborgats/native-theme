@@ -4787,6 +4787,79 @@ dropped, 1 deferred. Commit `4137fded` (the preset and, since each moves the oth
   `layout.container_margin` 8 (UIKit `directionalLayoutMargins`) have sources; the rest stands.
 - Gates: `cargo test -p native-theme --test platform_facts_xref` (6 passed), `--lib documented_sizes` (10 passed), `--test preset_loading` (14 passed), `cargo test -p native-theme`, `-p native-theme-iced`, `-p native-theme-gpui --lib` all green; `./scripts/check_release.sh --commit` 79 of 79 checks passed (exit 0). The first run failed on the iced tripwire (hard) and the gpui hovered-button-label pair (soft); both were fixed by the controller rulings above. The `preset-validator` agent was not run by the implementer (no subagents); the controller runs it.
 
+### Steps 16–18 — ios-13; ios-26 deferred (2026-10-11)
+
+- **T-A, the validator fix round** (`1b053822`, before the rename): the preset-validator's W1–W4
+  and W7 on `4137fded` and the M2c-7 review's deferred hover-text minor. A disabled switch's
+  tracks keep 0.4 of their alpha (RenderThemeCocoa.mm@de320ba3:816-817); slider and progress
+  tracks opaqueFill, the input placeholder placeholderText, the drop-down's text systemBlue on
+  opaqueSecondaryFill (html.css@31adf9d1:1099, :1106); `line_height` 1.19
+  (platform-facts.md:1030; M2c-08, -34); `shadow_enabled = false` on six widgets
+  (inheritance-rules.toml:79-83); comments for the slider thumb and ticks (M2c-21, -48), the
+  44 pt hit target and the inherited hover text. W5 and W6 unchanged (ruled). iced: the
+  tripwire still measures 32, and `extended.rs`'s stale "31 of the 32" reads "all 32".
+  **Controller ruling, gpui Tier U:** the drop-down's systemBlue failed gpui's precondition
+  `checkbox_and_combobox_carry_no_colour_because_upstream_leaves_no_route`, which wanted every
+  preset's combo box text to be `defaults.text_color`. The colour is kept; `geometry.rs` lists
+  the iOS combinations in `STATED_COMBO_TEXT` (asserting they still differ), the builder
+  carries no colour (gpui-component 0.7.1 has no route, combobox.rs:991 -> :998, and a carried
+  colour would displace the disabled one), and the gpui showcase's Combobox Info
+  (`info/chrome.rs`) calls it Tier U.
+- **Step 16** (`fd99fd2f`): `ios.toml` is `ios-13.toml` (a 100 % rename, the file unchanged), key
+  `ios-13` in `PRESET_ENTRIES`, `PRESET_NAMES`, `PRESET_DISPLAY_NAMES`, `PRESET_INFOS` and the
+  icon-set test; `Theme::preset("ios")` returns `UnknownPreset`, no alias;
+  `ios_preset_is_named_by_its_generation` checks both. Every use of the key follows: the gpui
+  `STATED_COMBO_TEXT` (`ios-13/light`, `ios-13/dark`) and showcase test list, iced's iced_aw
+  card exception (`ios-13/dark`), the egui and gpui doc comments, `UNSOURCED_PRESETS`, both
+  READMEs, `docs/new-os-version-guide.md`, two `docs/todo.md` entries, CHANGELOG (a breaking
+  line; the two *Fixed* lines name `ios-13`). The platform tag `"ios"` is unchanged. The
+  display name and TOML `name` stay "iOS" until the next asset run (the macOS ruling,
+  `11017186`); Step 18 says so in the plan.
+- **Step 17 deferred:** the resolver requires 59 leaves per variant that no inheritance rule
+  fills, Step 17 forbids copying `ios-13`'s values, and the research
+  (`ios26-research.md`, 2026-10-11) found an iOS 26 source for 21 of them; the other 38 have
+  none. The 21 are kept below for when the file is written. The research also found that
+  WebKit's iOS 26 controls draw a plain button's and a select's text in `label`
+  (RenderThemeCocoa.mm@de320ba3:3324-3329, :3229-3232, :3373-3376), so the systemBlue
+  `button.font.color`, `button.active_text_color` and `combo_box.font.color` M2c gave for
+  iOS 26 need re-ruling. The 19 version-gap findings stay as Step 17's input.
+- **Step 18:** the rename part is in Step 16's commit; the ios-26 part (README rows and counts,
+  `screenshots.yml`) waits with Step 17.
+- **docs/todo.md:** *ios-26: 38 required fields have no iOS 26 source* (`[v0.7.0]`).
+
+The 21 sourced iOS 26 values (L / D; one value where both agree; WebKit at de320ba3, "ios
+expected.txt" its `LayoutTests/platform/ios/fast/css/ios/system-color-for-css-value-expected.txt`;
+the Apple pages read 2026-10-11):
+
+| Field | Value | Source | Confidence |
+|---|---|---|---|
+| `defaults.mono_font.family` | SF Mono | UIKit `uifontdescriptor/systemdesign/monospaced.json`, `uifont/monospacedsystemfont(ofsize:weight:).json`; role platform-facts.md:1036 | CONFIRMED |
+| `defaults.mono_font.size_pt` | 17 | HIG accessibility.json, custom type sizes, iOS 17 pt default; = Body (HIG typography) | PLAUSIBLE |
+| `defaults.mono_font.weight` | 400 | Body is Regular (HIG typography); `UIFont.Weight.regular` | PLAUSIBLE |
+| `defaults.accent_text_color` | #ffffff | (WebKit) RenderThemeCocoa.mm:1601, :189-194, :1766, :1407-1412; html.css:899-906; ios expected.txt:13 / :15; role platform-facts.md:1049 | PLAUSIBLE |
+| `defaults.shadow_color` | #00000055 | UIKit `nsshadow/shadowcolor.json` ("black with an alpha of 1/3"); role platform-facts.md:1053 | CONFIRMED |
+| `defaults.selection_text_color` | #ffffff | as `accent_text_color` (platform-facts.md:1056); `selection_background` inherits the accent (inheritance-rules.toml:51) | PLAUSIBLE (open: label on UIKit's grey row selection) |
+| `defaults.danger_text_color` | #000000 / #ffffff | platform-facts.md:1081 (labelColor, footnote :1089-1098); ios expected.txt:73 / :75 | CONFIRMED |
+| `defaults.warning_text_color` | #000000 / #ffffff | platform-facts.md:1083; ios expected.txt:73 / :75 | CONFIRMED |
+| `defaults.success_text_color` | #000000 / #ffffff | platform-facts.md:1085; ios expected.txt:73 / :75 | CONFIRMED |
+| `defaults.info_text_color` | #000000 / #ffffff | platform-facts.md:1087; ios expected.txt:73 / :75 | CONFIRMED |
+| `defaults.disabled_opacity` | 1.0 | inheritance-rules.toml:352-359 + html.css:979-986 | PLAUSIBLE (open: 0.4, html.css:945-947, RenderThemeCocoa.mm:1585) |
+| `defaults.focus_ring_width_px` | 3 | (WebKit) RenderTheme.h:207-208; StyleComputedStyle.cpp:549-550 | CONFIRMED |
+| `defaults.focus_ring_offset_px` | 0 | (WebKit) RenderThemeCocoa.mm:145-157; StyleComputedStyle.cpp:536-541; html.css:1480-1482 | PLAUSIBLE |
+| `defaults.border.corner_radius_px` | 5 | (WebKit) RenderThemeCocoa.mm:1949, :3073 | PLAUSIBLE |
+| `defaults.border.line_width_px` | 0.5 | (WebKit) RenderThemeCocoa.mm:2915, :3089, :3102 | PLAUSIBLE |
+| `button.min_width_px` | 44 | HIG accessibility.json, default control size 44 x 44 pt | PLAUSIBLE (open: 28, the minimum) |
+| `checkbox.indicator_width_px` | 16 | (WebKit) html.css:798-805; RenderThemeCocoa.mm:1589, :1679, :1967-1973 | PLAUSIBLE |
+| `slider.tick_mark_length_px` | 1 | (WebKit) RenderThemeCocoa.mm:3875-3880, :3900-3925 | PLAUSIBLE |
+| `link.underline_enabled` | true | UIKit `uitextview/linktextattributes.json` ("a single underline") | CONFIRMED |
+| `link.background_color` | #00000000 | same page (no background attribute); inheritance-rules.toml:367; platform-facts.md:1625 | CONFIRMED |
+| `link.hover_background` | #00000000 | inheritance-rules.toml:368; platform-facts.md:1626 | PLAUSIBLE |
+
+- Gates (Step 16's commit): `cargo test -p native-theme --test preset_loading` (16 passed,
+  among them `ios_preset_is_named_by_its_generation`), `cargo test -p native-theme` (lib 667
+  passed), `cargo test -p native-theme-iced`, `-p native-theme-egui`, `-p native-theme-gpui`
+  (its showcase's 181 tests) all green; `./scripts/check_release.sh --commit` 79 of 79 checks passed (exit 0).
+
 ## M2d — Material 3 and Material 3 Expressive
 
 **Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 7 not started. One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
