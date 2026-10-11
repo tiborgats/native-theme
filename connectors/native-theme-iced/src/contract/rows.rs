@@ -623,7 +623,7 @@ pub(super) const CHECKBOX_UNCHECKED_STATUSES: &[checkbox::Status] = &[
 /// The fill the native fields give a checkbox at rest, by whether it is
 /// checked. `unchecked_background` is a soft option copying the checkbox's own
 /// fill, and it is an idle fill, so it is emitted as given even where the
-/// platform states it translucent -- windows-11 does, at `#0000000a`.
+/// platform states it translucent -- windows-11 does, at `#00000006`.
 #[cfg(feature = "widgets")]
 fn native_checkbox_idle(r: &ResolvedTheme, is_checked: bool) -> Color {
     let c = &r.checkbox;

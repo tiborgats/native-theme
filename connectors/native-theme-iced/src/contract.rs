@@ -3258,11 +3258,16 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
 #[cfg(feature = "widgets")]
 #[test]
 fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_theme::Result<()> {
-    // Windows 11 light states a translucent hover layer, so this preset shows
-    // the difference between layering and replacing (section 3.2).
-    let resolved = native_theme::theme::Theme::preset("windows-11")?
+    // A translucent hover layer shows the difference between layering and
+    // replacing (section 3.2). No bundled preset states one since M2b Step 7b
+    // (windows-11 states WinUI's replacing fill flattened,
+    // native-theme/src/presets/windows-11.toml:116), so the fixture is
+    // windows-11 light with that brush as the resource gives it,
+    // `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1179).
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    resolved.button.hover_background = Rgba::new(0xf9, 0xf9, 0xf9, 0x80);
     let theme = crate::to_theme(&resolved, "windows-11");
 
     let raw = to_color(resolved.button.hover_background);
@@ -3638,16 +3643,20 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 }
 
 /// The presets whose platform states no link hover background
-/// (docs/platform-facts.md:1626, §2.28: macOS, KDE and GNOME), which they
-/// express as fully transparent.
+/// (docs/platform-facts.md:1626, §2.28: macOS, KDE and GNOME, and Windows,
+/// whose inline `Hyperlink` has no background), which they express as fully
+/// transparent.
 #[cfg(feature = "widgets")]
-const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-monterey"];
+const LINK_HOVER_NONE: [&str; 4] = ["kde-breeze", "adwaita", "macos-monterey", "windows-11"];
 
 /// The combinations whose platform states a translucent button fill:
 /// `controlColor` is `#ffffff3f` in darkAqua
-/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408).
+/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
+/// and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF` light and
+/// `#0FFFFFFF` dark (docs/platform-facts.md:1164).
 #[cfg(feature = "widgets")]
-const TRANSLUCENT_BUTTON_FILL: [&str; 1] = ["macos-monterey/dark"];
+const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
+    ["macos-monterey/dark", "windows-11/light", "windows-11/dark"];
 
 #[cfg(feature = "widgets")]
 #[test]
@@ -3783,12 +3792,20 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         // compute it the same way. Source-over is associative, so stacking a
         // layer on a base and then painting the pair on an opaque surface must
         // give what painting the base on the surface and then the layer gives.
-        // Both colors are real: windows-11 states `checkbox.unchecked_background`
-        // as a translucent fill and `link.hover_background` as a translucent
-        // layer.
-        if let Some(unchecked) = r.checkbox.unchecked_background {
-            let b = to_color(unchecked);
-            let l = to_color(r.link.hover_background);
+        // Both colors are WinUI 3's, as its resources give them: windows-11
+        // states `button.background_color` as `ControlFillColorDefault`
+        // (`#B3FFFFFF` light, `#0FFFFFFF` dark, docs/platform-facts.md:1164),
+        // and the layer is the pressed button's `ControlFillColorTertiary`
+        // (`#4DF9F9F9`, `#08FFFFFF`, :1179). The preset states that one
+        // flattened over the window, so it is set here, not read from it.
+        let pressed_as_given = match c.label().as_str() {
+            "windows-11/light" => Some(Rgba::new(0xf9, 0xf9, 0xf9, 0x4d)),
+            "windows-11/dark" => Some(Rgba::new(0xff, 0xff, 0xff, 0x08)),
+            _ => None,
+        };
+        if let Some(pressed) = pressed_as_given {
+            let b = to_color(r.button.background_color);
+            let l = to_color(pressed);
             let surface = to_color(r.defaults.background_color);
             let translucent = |x: Color| x.a > 0.0 && x.a < 1.0;
             if translucent(b) && translucent(l) && surface.a == 1.0 {
@@ -3854,9 +3871,9 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     assert!(
         interior_composites >= 2,
         "property (d) needs a translucent layer over a translucent base: \
-         windows-11 light and dark state both checkbox.unchecked_background \
-         and link.hover_background that way, so it must run at least twice, \
-         not {interior_composites} times"
+         windows-11 light and dark state button.background_color that way, \
+         under WinUI's ControlFillColorTertiary, so it must run at least \
+         twice, not {interior_composites} times"
     );
     assert!(
         failures.is_empty(),

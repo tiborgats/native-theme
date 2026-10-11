@@ -241,16 +241,15 @@ mod tests {
         (base_style(&input, &mut notes), notes)
     }
 
-    /// C17: windows-11 states a translucent hover layer (`#f9f9f980`,
-    /// `native-theme/src/presets/windows-11.toml:98`), which is composited over the idle fill,
-    /// not written as it stands.
+    /// C17: a translucent hover layer is composited over the idle fill, not written as it
+    /// stands. No bundled preset states one since M2b Step 7b (windows-11 states WinUI's
+    /// replacing fill flattened, `native-theme/src/presets/windows-11.toml:116`), so the
+    /// fixture is windows-11 with that brush as the resource gives it,
+    /// `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1179).
     #[test]
     fn a_translucent_hover_layer_is_composited_over_the_idle_fill() {
-        let t = resolved("windows-11", ColorMode::Light);
-        assert!(
-            t.button.hover_background.a < 255,
-            "the fixture must be translucent"
-        );
+        let mut t = resolved("windows-11", ColorMode::Light);
+        t.button.hover_background = Rgba::new(0xf9, 0xf9, 0xf9, 0x80);
         let (s, _) = base(egui::Theme::Light, &t);
         let w = &s.visuals.widgets;
         assert_eq!(

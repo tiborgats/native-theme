@@ -339,18 +339,18 @@ fn assign_buttons(tc: &mut ThemeColor) {
     // A filled button paints its own fill and upstream replaces that fill per
     // state, while the platform *layers* its hover and pressed colours over it
     // (spec §3.2, C17). So the layer is composited over the idle fill; for an
-    // opaque value `blend` is the identity, so there is no branch. Windows 11
-    // is the one preset where it shows: 4% black over `#fdfdfd` is `#f3f3f3`,
-    // not 4% black over whatever is behind the button.
+    // opaque value `blend` is the identity, so there is no branch. windows-11
+    // states its hover and pressed fills, WinUI's replacing fills, flattened
+    // over the window, so both are opaque (docs/todo.md, *Hover fills: a
+    // layer or a replacement*).
     //
     // `Hsla::blend` is not quite source-over: it lerps the channels by the
     // layer's alpha and keeps the *base's* alpha (`gpui-pre` color.rs:58-70,
     // reached through `:580-593`), where source-over would give the result
-    // `layer.a + base.a * (1 - layer.a)`. The two agree exactly whenever the
-    // base is opaque, and every base here is: no bundled preset states a
-    // translucent `button.background_color` or `defaults.background_color`,
-    // and the Windows reader builds its `COLOR_BTNFACE` with `Rgba::rgb`,
-    // which is alpha 255.
+    // `layer.a + base.a * (1 - layer.a)`. The two agree whenever the base or
+    // the layer is opaque; windows-11's `button.background_color` is not
+    // (WinUI's `ControlFillColorDefault`, `#ffffffb3`), but its layers are.
+    // The Windows reader's `COLOR_BTNFACE` is opaque (`Rgba::rgb`).
     tc.button_hover = tc.button.blend(tc.secondary_hover);
     tc.button_active = tc.button.blend(tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;

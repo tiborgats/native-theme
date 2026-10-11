@@ -1454,14 +1454,7 @@ const PAIRS: &[Pair] = &[
             )
         },
         asserted: true,
-        // windows-11's button hover layer is translucent (§6.1): `composite_over` blends in
-        // premultiplied gamma space and rounds to `u8` (`ecolor/src/color32.rs:343-345`, §7.2),
-        // the native pair here in straight-alpha `f32`, so the two differ by rounding alone —
-        // in dark, 9.740 against 9.770, above the pair's rounding floor of 9.618.
-        exceptions: &[(
-            "windows-11/dark",
-            "composite_over's premultiplied u8 rounding of a translucent layer (§7.2)",
-        )],
+        exceptions: &[],
     },
     Pair {
         what: "Label on a panel",

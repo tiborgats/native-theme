@@ -7,6 +7,10 @@
 # Verified on: the WinUI 3 values at microsoft-ui-xaml 8463f45 (the same files in WinAppSDK 2.5.1
 #   and 1.8.12); the OS-reported values on Windows 11 25H2 (26200) and Windows Server 2025 (26100),
 #   docs/evidence/os-probe/2026-10-11-run-38129819806.
+# Colours: what WinUI 3 draws. A brush with alpha is stated as the resource gives it (ARGB #E4000000
+#   is "#000000e4"); the defaults' comments give the composite over background_color. A hover fill
+#   that replaces the rest fill (button, segmented control) is stated flattened over
+#   background_color, because the connectors composite hover_background over the rest fill.
 # Source: WinUI3 XAML theme resources, Fluent Design System
 name = "Windows 11"
 icon_set = "segoe-fluent"
@@ -16,10 +20,17 @@ icon_theme = "segoe-fluent"
 
 [light.defaults]
 accent_color = "#0078d4"
+# platform-facts.md:1046 (§2.1.3): Mica's solid fallback, SolidBackgroundFillColorBase #F3F3F3
 background_color = "#f3f3f3"
-text_color = "#1a1a1a"
-surface_color = "#ffffff"
-muted_color = "#717171"
+# platform-facts.md:1047: TextFillColorPrimary #E4000000; over background_color #1a1a1a
+text_color = "#000000e4"
+# platform-facts.md:1050: CardBackgroundFillColorDefault #B3FFFFFF; over background_color #fbfbfb
+surface_color = "#ffffffb3"
+# platform-facts.md:1052: TextFillColorSecondary #9E000000; over background_color #5c5c5c
+muted_color = "#0000009e"
+# no source ❓: platform-facts.md:1053 gives Windows the ambient layer alone, 14% (#00000024) on
+# Fluent 2's low ramp (command dropdowns, tooltips) and 20% (#00000033) on the high one (dialogs); the
+# connectors draw popup and window shadows in this one colour, so no layer is the source
 shadow_color = "#00000018"
 
 danger_color = "#c42b1c"
@@ -34,10 +45,13 @@ info_text_color = "#ffffff"
 
 selection_background = "#0078d4"
 selection_text_color = "#ffffff"
-link_color = "#005a9e"
+# platform-facts.md:1054: HyperlinkForeground = SystemAccentColorDark2, UISettings AccentDark2 for
+# the accent above (OS probe, Windows 11 25H2)
+link_color = "#003e92"
 # platform-facts.md:1104 (§2.1.5): SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuter #E4000000
 focus_ring_color = "#000000e4"
-disabled_text_color = "#c5c5c5"
+# platform-facts.md:1060: TextFillColorDisabled #5C000000; over background_color #9b9b9b
+disabled_text_color = "#0000005c"
 accent_text_color = "#ffffff"
 
 # platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
@@ -57,6 +71,7 @@ opacity = 0.14
 shadow_enabled = true
 [light.defaults.font]
 family = "Segoe UI"
+# platform-facts.md:1026 (§2.1.1): WinUI3 ControlContentThemeFontSize 14px; lfMessageFont is 9pt
 size_pt =10.5
 weight = 400
 
@@ -89,18 +104,25 @@ size_pt =51.0
 weight = 600
 
 [light.button]
-background_color = "#fdfdfd"
+# platform-facts.md:1164 (§2.3): ButtonBackground = ControlFillColorDefault #B3FFFFFF
+background_color = "#ffffffb3"
 min_width_px = 64.0
 min_height_px = 32.0
 icon_text_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.3 Windows)
-# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #80F9F9F9, replacing the rest fill
-hover_background = "#f9f9f980"
-hover_text_color = "#1a1a1a"
-active_text_color = "#1a1a1a"
-disabled_text_color = "#c5c5c5"
-# soft_option: Fluent SubtleFillColorTertiary -- pressed state
-active_background = "#00000008"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #80F9F9F9
+# replaces the rest fill; flattened over background_color #f3f3f3:
+# 249 × 128/255 + 243 × 127/255 = 246.0 → #f6f6f6
+hover_background = "#f6f6f6"
+# ButtonForegroundPointerOver = TextFillColorPrimary #E4000000 (Button_themeresources.xaml:133 at
+# microsoft-ui-xaml 8463f45)
+hover_text_color = "#000000e4"
+# ButtonForegroundPressed = TextFillColorSecondary #9E000000 (Button_themeresources.xaml:134)
+active_text_color = "#0000009e"
+# ButtonForegroundDisabled = TextFillColorDisabled #5C000000 (Button_themeresources.xaml:135)
+disabled_text_color = "#0000005c"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #4DF9F9F9, flattened as the hover: 249 × 77/255 + 243 × 178/255 = 244.8 → #f5f5f5
+active_background = "#f5f5f5"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#f9f9f900"
 # platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF
@@ -115,12 +137,15 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [light.button.font]
-color = "#1a1a1a"
+# platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #E4000000
+color = "#000000e4"
 [light.input]
 background_color = "#ffffff"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
-disabled_text_color = "#c5c5c5"
+# TextControlForegroundDisabled = TemporaryTextFillColorDisabled #5C010101
+# (TextBox_themeresources.xaml:141, :129 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#0101015c"
 # soft_option: Fluent TextBox hover border
 hover_border_color = "#1a1a1a1a"
 # soft_option: Fluent accent-color bottom border
@@ -144,25 +169,29 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [light.input.font]
-color = "#1a1a1a"
+# platform-facts.md:1188 (§2.4): TextControlForeground = TextFillColorPrimary #E4000000
+color = "#000000e4"
 [light.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
 radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.5 Windows)
-disabled_text_color = "#c5c5c5"
+# CheckBoxForegroundUncheckedDisabled = TextFillColorDisabled #5C000000
+# (CheckBox_themeresources.xaml:184 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#0000005c"
 # soft_option: Fluent checkbox hover fill
 hover_background = "#0000000a"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#f9f9f900"
-# soft_option: Fluent ControlAltFillColorSecondary -- unchecked bg
-unchecked_background = "#0000000a"
-# soft_option: Fluent ControlStrongStrokeColorDefault -- unchecked border
-unchecked_border_color = "#0000005c"
+# platform-facts.md:1206 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #06000000
+unchecked_background = "#00000006"
+# platform-facts.md:1209 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
+unchecked_border_color = "#00000072"
 
 [light.tooltip]
-background_color = "#2c2c2c"
+# platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #F9F9F9
+background_color = "#f9f9f9"
 max_width_px = 320.0
 
 
@@ -173,13 +202,18 @@ padding_top_px = 6.0
 padding_bottom_px = 8.0
 
 [light.tooltip.font]
-color = "#ffffff"
+# platform-facts.md:1256 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #E4000000
+color = "#000000e4"
 # platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
 size_pt = 9.0
 [light.scrollbar]
+# platform-facts.md:1277 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
+track_color = "#ffffff00"
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
 thumb_width_px = 6.0
+# platform-facts.md:1283 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
+# bars follow it has no source ❓, so false stays (M2b-21)
 overlay_mode = false
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
@@ -225,9 +259,13 @@ min_height_px = 32.0
 item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#f3f3f3"
-active_text_color = "#1a1a1a"
-hover_text_color = "#1a1a1a"
-# soft_option: Fluent tab hover (SubtleFillColorSecondary)
+# TabViewItemHeaderForegroundSelected = TextFillColorPrimary #E4000000
+# (TabView_themeresources.xaml:14 at microsoft-ui-xaml 8463f45)
+active_text_color = "#000000e4"
+# TabViewItemHeaderForegroundPointerOver = TextFillColorSecondary #9E000000 (TabView_themeresources.xaml:15)
+hover_text_color = "#0000009e"
+# soft_option: TabViewItemHeaderBackgroundPointerOver = LayerOnMicaBaseAltFillColorSecondary #0A000000
+# (TabView_themeresources.xaml:9; Common_themeresources_any.xaml:269), over a transparent rest fill
 hover_background = "#0000000a"
 
 
@@ -242,11 +280,12 @@ icon_text_gap_px = 12.0
 # platform-facts.md:1242 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
-# Fluent SubtleFillColorSecondary
-hover_background = "#0000000a"
-# defaults.text_color (no change)
-hover_text_color = "#1a1a1a"
-disabled_text_color = "#c5c5c5"
+# platform-facts.md:1243 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+hover_background = "#00000009"
+# MenuFlyoutItemForegroundPointerOver = TextFillColorPrimary #E4000000; disabled TextFillColorDisabled
+# (MenuFlyout_themeresources.xaml:178, :180 at microsoft-ui-xaml 8463f45)
+hover_text_color = "#000000e4"
+disabled_text_color = "#0000005c"
 
 
 [light.menu.border]
@@ -262,10 +301,14 @@ selection_background = "#00000009"
 selection_text_color = "#000000e4"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
-# Fluent SubtleFillColorSecondary
-hover_background = "#0000000a"
-hover_text_color = "#1a1a1a"
-disabled_text_color = "#c5c5c5"
+# platform-facts.md:1392 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+hover_background = "#00000009"
+# ListViewItemForegroundPointerOver = TextFillColorPrimary #E4000000
+# (ListViewItem_themeresources.xaml:176 at microsoft-ui-xaml 8463f45)
+hover_text_color = "#000000e4"
+# defaults.disabled_text_color: ListView has no disabled foreground; a disabled row fades by
+# ListViewItemDisabledThemeOpacity 0.3 (platform-facts.md:1115), which a colour cannot carry
+disabled_text_color = "#0000005c"
 
 
 [light.list.border]
@@ -287,25 +330,30 @@ padding_left_px = 4.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-background_color = "#ebebeb"
+# platform-facts.md:1333 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
+# SolidBackgroundFillColorTransparent #00F3F3F3, so the window shows through
+background_color = "#f3f3f300"
 # platform-facts.md:1336-1337 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
 # NavigationViewItemForegroundSelected = TextFillColorPrimary #E4000000
 selection_background = "#00000009"
 selection_text_color = "#000000e4"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
-# Fluent SubtleFillColorSecondary
-hover_background = "#0000000a"
+# platform-facts.md:1342 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+hover_background = "#00000009"
 
 
 [light.sidebar.font]
-color = "#1a1a1a"
+# NavigationViewItemForeground = TextFillColorPrimary #E4000000
+# (NavigationView_themeresources.xaml:87 at microsoft-ui-xaml 8463f45)
+color = "#000000e4"
 [light.popover]
 # platform-facts.md:1405 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #F9F9F9
 background_color = "#f9f9f9"
 
 
 [light.popover.font]
-color = "#1a1a1a"
+# platform-facts.md:1407 (§2.16): ← defaults.font.color
+color = "#000000e4"
 
 
 [light.popover.border]
@@ -314,7 +362,7 @@ padding_horizontal_px = 16.0
 padding_top_px = 15.0
 padding_bottom_px = 17.0
 [light.separator]
-line_color = "#e5e5e5"
+# line_color inherits defaults.border.color (platform-facts.md:1426)
 
 [light.splitter]
 divider_width_px = 1.0
@@ -323,7 +371,9 @@ divider_width_px = 1.0
 hover_color = "#e5e5e5"
 
 [light.switch]
-unchecked_background = "#c5c5c5"
+# platform-facts.md:1472 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000; its
+# stroke, ToggleSwitchStrokeOff, the model does not carry
+unchecked_background = "#00000006"
 # platform-facts.md:1473 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #FFFFFF
 thumb_background = "#ffffff"
 # platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #9E000000
@@ -345,6 +395,8 @@ disabled_unchecked_background = "#c5c5c550"
 disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
+# platform-facts.md:1483 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #F3F3F3
+background_color = "#f3f3f3"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
 # modern WinUI 3 ContentDialog. See docs/platform-facts.md:1494, 1835-1836.
 button_order = "primary_left"
@@ -366,13 +418,19 @@ padding_horizontal_px = 24.0
 padding_vertical_px = 24.0
 
 [light.link]
+# platform-facts.md:1624 (§2.28): an inline Hyperlink is underlined at rest
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#0078d418"
+# platform-facts.md:1626 (§2.28): an inline Hyperlink has no background and changes only its foreground
+hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 Windows)
-hover_text_color = "#005a9e"
-active_text_color = "#005a9e"
-disabled_text_color = "#c5c5c5"
+# HyperlinkForegroundPointerOver = SystemAccentColorDark3, HyperlinkForegroundPressed =
+# SystemAccentColorDark1 (Hyperlink_themeresources.xaml:16-17, Common_themeresources_any.xaml:298-299
+# at microsoft-ui-xaml 8463f45), UISettings AccentDark3 / AccentDark1 (OS probe, Windows 11 25H2)
+hover_text_color = "#001a68"
+active_text_color = "#0067c0"
+# HyperlinkButtonForegroundDisabled = AccentTextFillColorDisabled #5C000000 (HyperlinkButton_themeresources.xaml:23)
+disabled_text_color = "#0000005c"
 
 [light.spinner]
 diameter_px = 32.0
@@ -387,7 +445,9 @@ min_width_px = 64.0
 arrow_icon_size_px =12.0
 arrow_area_width_px = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
-disabled_text_color = "#c5c5c5"
+# ComboBoxForegroundDisabled = TextFillColorDisabled #5C000000
+# (ComboBox_themeresources.xaml:253 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#0000005c"
 # soft_option: Fluent ComboBox hover
 hover_background = "#0000000a"
 # soft_option: Fluent ComboBox disabled
@@ -408,8 +468,8 @@ separator_width_px = 1.0
 active_background = "#0078d4"
 # Use defaults.accent_text_color
 active_text_color = "#ffffff"
-# soft_option: the button's hover fill (platform-facts.md:1179)
-hover_background = "#f9f9f980"
+# soft_option: the button's hover fill, flattened as button.hover_background (platform-facts.md:1179)
+hover_background = "#f6f6f6"
 
 
 [light.card]
@@ -432,8 +492,9 @@ frame_enabled = true
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#0000000a"
-# Fluent Expander chevron color = TextFillColorPrimary
-arrow_color = "#1a1a1ae0"
+# ExpanderChevronForeground = TextFillColorPrimary #E4000000
+# (Expander_themeresources.xaml:42 at microsoft-ui-xaml 8463f45)
+arrow_color = "#000000e4"
 
 
 [light.expander.border]
@@ -445,7 +506,9 @@ padding_vertical_px = 0.0
 [light.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)
 # no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
-# and return #bfcddb and #000000 on Windows 11 25H2 (platform-facts.md:1153-1154, OS probe)
+# and return #bfcddb and #000000 on Windows 11 25H2 (platform-facts.md:1153-1154, OS probe
+# probe.toml:338, :418); what an unsupported index returns is not what Windows draws, so those
+# values are not a source for these
 inactive_title_bar_background = "#f1f1f1"
 inactive_title_bar_text_color = "#1a1a1a99"
 
@@ -453,10 +516,16 @@ inactive_title_bar_text_color = "#1a1a1a99"
 
 [dark.defaults]
 accent_color = "#0078d4"
+# platform-facts.md:1046 (§2.1.3): Mica's solid fallback, SolidBackgroundFillColorBase #202020
 background_color = "#202020"
+# platform-facts.md:1047: TextFillColorPrimary #FFFFFF
 text_color = "#ffffff"
-surface_color = "#2d2d2d"
-muted_color = "#9a9a9a"
+# platform-facts.md:1050: CardBackgroundFillColorDefault #0DFFFFFF; over background_color #2b2b2b
+surface_color = "#ffffff0d"
+# platform-facts.md:1052: TextFillColorSecondary #C5FFFFFF; over background_color #cccccc
+muted_color = "#ffffffc5"
+# no source ❓: as the light variant; platform-facts.md:1053's dark ambient layer is 14% (#00000024)
+# low and 20% (#00000033) high
 shadow_color = "#00000040"
 
 danger_color = "#ff99a4"
@@ -466,15 +535,20 @@ warning_color = "#fce100"
 warning_text_color = "#000000e4"
 success_color = "#6ccb5f"
 success_text_color = "#000000e4"
-info_color = "#60cdff"
+# platform-facts.md:1086: SystemFillColorAttention = SystemAccentColorLight2, UISettings AccentLight2
+# for the accent above (OS probe, Windows 11 25H2)
+info_color = "#4cc2ff"
 info_text_color = "#000000e4"
 
 selection_background = "#0078d4"
 selection_text_color = "#ffffff"
-link_color = "#60cdff"
+# platform-facts.md:1054: HyperlinkForeground = SystemAccentColorLight3, UISettings AccentLight3 for
+# the accent above (OS probe, Windows 11 25H2)
+link_color = "#99ebff"
 # platform-facts.md:1104 (§2.1.5): SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuter #FFFFFF
 focus_ring_color = "#ffffff"
-disabled_text_color = "#454545"
+# platform-facts.md:1060: TextFillColorDisabled #5DFFFFFF; over background_color #717171
+disabled_text_color = "#ffffff5d"
 accent_text_color = "#000000"
 
 # platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
@@ -494,6 +568,7 @@ opacity = 0.14
 shadow_enabled = true
 [dark.defaults.font]
 family = "Segoe UI"
+# platform-facts.md:1026 (§2.1.1): WinUI3 ControlContentThemeFontSize 14px; lfMessageFont is 9pt
 size_pt =10.5
 weight = 400
 
@@ -526,18 +601,25 @@ size_pt =51.0
 weight = 600
 
 [dark.button]
-background_color = "#333333"
+# platform-facts.md:1164 (§2.3): ButtonBackground = ControlFillColorDefault #0FFFFFFF
+background_color = "#ffffff0f"
 min_width_px = 64.0
 min_height_px = 32.0
 icon_text_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.3 Windows)
-# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #15FFFFFF, replacing the rest fill
-hover_background = "#ffffff15"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPointerOver = ControlFillColorSecondary #15FFFFFF
+# replaces the rest fill; flattened over background_color #202020:
+# 255 × 21/255 + 32 × 234/255 = 50.4 → #323232
+hover_background = "#323232"
+# ButtonForegroundPointerOver = TextFillColorPrimary #FFFFFF (Button_themeresources.xaml:35 at
+# microsoft-ui-xaml 8463f45)
 hover_text_color = "#ffffff"
-active_text_color = "#ffffff"
-disabled_text_color = "#454545"
-# soft_option: Fluent SubtleFillColorTertiary -- pressed state
-active_background = "#ffffff08"
+# ButtonForegroundPressed = TextFillColorSecondary #C5FFFFFF (Button_themeresources.xaml:36)
+active_text_color = "#ffffffc5"
+# ButtonForegroundDisabled = TextFillColorDisabled #5DFFFFFF (Button_themeresources.xaml:37)
+disabled_text_color = "#ffffff5d"
+# platform-facts.md:1179 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #08FFFFFF, flattened as the hover: 255 × 8/255 + 32 × 247/255 = 39.0 → #272727
+active_background = "#272727"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"
 # platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000
@@ -552,12 +634,15 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [dark.button.font]
+# platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.input]
 background_color = "#2d2d2d"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
-disabled_text_color = "#454545"
+# TextControlForegroundDisabled = TemporaryTextFillColorDisabled #5DFEFEFE
+# (TextBox_themeresources.xaml:34, :22 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#fefefe5d"
 # soft_option: Fluent TextBox hover border
 hover_border_color = "#ffffff1a"
 # soft_option: Fluent accent-color bottom border
@@ -581,6 +666,7 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [dark.input.font]
+# platform-facts.md:1188 (§2.4): TextControlForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.checkbox]
 indicator_width_px = 20.0
@@ -588,18 +674,21 @@ indicator_width_px = 20.0
 radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.5 Windows)
-disabled_text_color = "#454545"
+# CheckBoxForegroundUncheckedDisabled = TextFillColorDisabled #5DFFFFFF
+# (CheckBox_themeresources.xaml:8 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#ffffff5d"
 # soft_option: Fluent checkbox hover fill
 hover_background = "#ffffff0f"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#33333300"
-# soft_option: Fluent ControlAltFillColorSecondary -- unchecked bg
-unchecked_background = "#ffffff0f"
-# soft_option: Fluent ControlStrongStrokeColorDefault -- unchecked border
-unchecked_border_color = "#ffffff9c"
+# platform-facts.md:1206 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #19000000
+unchecked_background = "#00000019"
+# platform-facts.md:1209 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
+unchecked_border_color = "#ffffff8b"
 
 [dark.tooltip]
-background_color = "#3a3a3a"
+# platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #2C2C2C
+background_color = "#2c2c2c"
 max_width_px = 320.0
 
 
@@ -610,13 +699,18 @@ padding_top_px = 6.0
 padding_bottom_px = 8.0
 
 [dark.tooltip.font]
+# platform-facts.md:1256 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 # platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
 size_pt = 9.0
 [dark.scrollbar]
+# platform-facts.md:1277 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
+track_color = "#ffffff00"
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
 thumb_width_px = 6.0
+# platform-facts.md:1283 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
+# bars follow it has no source ❓, so false stays (M2b-21)
 overlay_mode = false
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
@@ -662,9 +756,13 @@ min_height_px = 32.0
 item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#202020"
+# TabViewItemHeaderForegroundSelected = TextFillColorPrimary #FFFFFF
+# (TabView_themeresources.xaml:92 at microsoft-ui-xaml 8463f45)
 active_text_color = "#ffffff"
-hover_text_color = "#ffffff"
-# soft_option: Fluent tab hover (SubtleFillColorSecondary)
+# TabViewItemHeaderForegroundPointerOver = TextFillColorSecondary #C5FFFFFF (TabView_themeresources.xaml:93)
+hover_text_color = "#ffffffc5"
+# soft_option: TabViewItemHeaderBackgroundPointerOver = LayerOnMicaBaseAltFillColorSecondary #0FFFFFFF
+# (TabView_themeresources.xaml:87; Common_themeresources_any.xaml:65), over a transparent rest fill
 hover_background = "#ffffff0f"
 
 
@@ -679,11 +777,12 @@ icon_text_gap_px = 12.0
 # platform-facts.md:1242 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
-# Fluent SubtleFillColorSecondary
+# platform-facts.md:1243 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
-# defaults.text_color (no change)
+# MenuFlyoutItemForegroundPointerOver = TextFillColorPrimary #FFFFFF; disabled TextFillColorDisabled
+# (MenuFlyout_themeresources.xaml:12, :14 at microsoft-ui-xaml 8463f45)
 hover_text_color = "#ffffff"
-disabled_text_color = "#454545"
+disabled_text_color = "#ffffff5d"
 
 
 [dark.menu.border]
@@ -699,10 +798,14 @@ selection_background = "#ffffff0f"
 selection_text_color = "#ffffff"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
-# Fluent SubtleFillColorSecondary
+# platform-facts.md:1392 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
+# ListViewItemForegroundPointerOver = TextFillColorPrimary #FFFFFF
+# (ListViewItem_themeresources.xaml:24 at microsoft-ui-xaml 8463f45)
 hover_text_color = "#ffffff"
-disabled_text_color = "#454545"
+# defaults.disabled_text_color: ListView has no disabled foreground; a disabled row fades by
+# ListViewItemDisabledThemeOpacity 0.3 (platform-facts.md:1115), which a colour cannot carry
+disabled_text_color = "#ffffff5d"
 
 
 [dark.list.border]
@@ -724,17 +827,21 @@ padding_left_px = 4.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-background_color = "#272727"
+# platform-facts.md:1333 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
+# SolidBackgroundFillColorTransparent #00202020, so the window shows through
+background_color = "#20202000"
 # platform-facts.md:1336-1337 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
 # NavigationViewItemForegroundSelected = TextFillColorPrimary #FFFFFF
 selection_background = "#ffffff0f"
 selection_text_color = "#ffffff"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
-# Fluent SubtleFillColorSecondary
+# platform-facts.md:1342 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
 
 
 [dark.sidebar.font]
+# NavigationViewItemForeground = TextFillColorPrimary #FFFFFF
+# (NavigationView_themeresources.xaml:21 at microsoft-ui-xaml 8463f45)
 color = "#ffffff"
 [dark.popover]
 # platform-facts.md:1405 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #2C2C2C
@@ -751,7 +858,7 @@ padding_horizontal_px = 16.0
 padding_top_px = 15.0
 padding_bottom_px = 17.0
 [dark.separator]
-line_color = "#3b3b3b"
+# line_color inherits defaults.border.color (platform-facts.md:1426)
 
 [dark.splitter]
 divider_width_px = 1.0
@@ -760,7 +867,9 @@ divider_width_px = 1.0
 hover_color = "#454545"
 
 [dark.switch]
-unchecked_background = "#454545"
+# platform-facts.md:1472 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000; its
+# stroke, ToggleSwitchStrokeOff, the model does not carry
+unchecked_background = "#00000019"
 # platform-facts.md:1473 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #000000
 thumb_background = "#000000"
 # platform-facts.md:1476 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #C5FFFFFF
@@ -782,6 +891,8 @@ disabled_unchecked_background = "#45454550"
 disabled_thumb_color = "#ffffff80"
 
 [dark.dialog]
+# platform-facts.md:1483 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #202020
+background_color = "#202020"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
 # modern WinUI 3 ContentDialog. See docs/platform-facts.md:1494, 1835-1836.
 button_order = "primary_left"
@@ -803,13 +914,19 @@ padding_horizontal_px = 24.0
 padding_vertical_px = 24.0
 
 [dark.link]
+# platform-facts.md:1624 (§2.28): an inline Hyperlink is underlined at rest
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#0078d418"
+# platform-facts.md:1626 (§2.28): an inline Hyperlink has no background and changes only its foreground
+hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 Windows)
-hover_text_color = "#60cdff"
-active_text_color = "#60cdff"
-disabled_text_color = "#454545"
+# HyperlinkForegroundPointerOver = SystemAccentColorLight3, HyperlinkForegroundPressed =
+# SystemAccentColorLight2 (Hyperlink_themeresources.xaml:6-7, Common_themeresources_any.xaml:94-95
+# at microsoft-ui-xaml 8463f45), UISettings AccentLight3 / AccentLight2 (OS probe, Windows 11 25H2)
+hover_text_color = "#99ebff"
+active_text_color = "#4cc2ff"
+# HyperlinkButtonForegroundDisabled = AccentTextFillColorDisabled #5DFFFFFF (HyperlinkButton_themeresources.xaml:8)
+disabled_text_color = "#ffffff5d"
 
 [dark.spinner]
 diameter_px = 32.0
@@ -824,7 +941,9 @@ min_width_px = 64.0
 arrow_icon_size_px =12.0
 arrow_area_width_px = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
-disabled_text_color = "#454545"
+# ComboBoxForegroundDisabled = TextFillColorDisabled #5DFFFFFF
+# (ComboBox_themeresources.xaml:43 at microsoft-ui-xaml 8463f45)
+disabled_text_color = "#ffffff5d"
 # soft_option: Fluent ComboBox hover
 hover_background = "#ffffff0f"
 # soft_option: Fluent ComboBox disabled
@@ -845,8 +964,8 @@ separator_width_px = 1.0
 active_background = "#0078d4"
 # Use defaults.accent_text_color
 active_text_color = "#000000"
-# soft_option: the button's hover fill (platform-facts.md:1179)
-hover_background = "#ffffff15"
+# soft_option: the button's hover fill, flattened as button.hover_background (platform-facts.md:1179)
+hover_background = "#323232"
 
 
 [dark.card]
@@ -869,8 +988,9 @@ frame_enabled = true
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#ffffff0f"
-# Fluent Expander chevron color = TextFillColorPrimary
-arrow_color = "#ffffffe0"
+# ExpanderChevronForeground = TextFillColorPrimary #FFFFFF
+# (Expander_themeresources.xaml:18 at microsoft-ui-xaml 8463f45)
+arrow_color = "#ffffff"
 
 
 [dark.expander.border]
@@ -882,7 +1002,9 @@ padding_vertical_px = 0.0
 [dark.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)
 # no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
-# (platform-facts.md:1153-1154); the OS probe read light mode only
+# (platform-facts.md:1153-1154); the OS probe read light mode only (#bfcddb and #000000,
+# probe.toml:338, :418), and what an unsupported index returns is not what Windows draws, so those
+# values are not a source for these
 inactive_title_bar_background = "#2b2b2b"
 inactive_title_bar_text_color = "#ffffff99"
 

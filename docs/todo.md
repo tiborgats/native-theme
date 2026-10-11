@@ -50,7 +50,7 @@ the file was pruned on 2026-10-11, not reordered.
       of platform-facts has no hover row at all, so none of those 32 values
       is sourced there, and
       only `windows-11` says what its value is: "Fluent checkbox hover fill"
-      (`native-theme/src/presets/windows-11.toml:130-131`), without saying for
+      (`native-theme/src/presets/windows-11.toml:183-184`), without saying for
       which box state. Native toolkits do style the checked box under the
       pointer as a state of its own: WinUI3
       gives `CheckBoxCheckBackgroundFillCheckedPointerOver` =
@@ -249,10 +249,10 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `windows-11.toml` states the `disabled_background` of `button`, `input`,
       `checkbox` and `combo_box` as `#f9f9f900` in light and `#33333300` in
-      dark (light `:92`, `:113`, `:133`, `:335`; dark `:472`, `:493`, `:513`,
-      `:715`): alpha `00`, so a disabled control shows no fill at all. The
+      dark (light `:127`, `:154`, `:186`, `:454`; dark `:624`, `:651`, `:683`,
+      `:950`): alpha `00`, so a disabled control shows no fill at all. The
       button's comment names the source, "Fluent ControlFillColorDisabled"
-      (`:91`, `:471`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
+      (`:126`, `:623`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
       `Light` dictionary and `#0BFFFFFF` in `Default`, the dark one — ARGB,
       so about 30 % and 4 % opaque, and white rather than `#333333` in dark
       ([Common_themeresources_any.xaml:223](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L223),
@@ -323,7 +323,7 @@ the file was pruned on 2026-10-11, not reordered.
       `thumb_hover_color` and `thumb_active_color` (and macOS's the overlay
       `track_color`) but not it
       (`native-theme/src/presets/macos-monterey.toml:181-193`, `:604-616`;
-      `native-theme/src/presets/windows-11.toml:152-161`, `:532-541`). No
+      `native-theme/src/presets/windows-11.toml:209-222`, `:706-719`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
       resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:191`),
@@ -335,8 +335,8 @@ the file was pruned on 2026-10-11, not reordered.
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
       `native-theme/src/presets/macos-monterey.toml:191`, `:614`) and not on
-      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:159`,
-      `:539`): state the measured value in the two light variants, find a
+      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:220`,
+      `:717`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
       `preset-validator` agent over both presets against §2.8.
 
@@ -487,6 +487,9 @@ the file was pruned on 2026-10-11, not reordered.
       `TextFillColorDisabled` dark `#5DFFFFFF`, Common_themeresources_any.xaml).
       Find each one's source, or replace it with the computed platform
       value, citing the computation.
+      *M2b Step 7b (2026-10-11):* windows-11's `disabled_text_color` is now
+      `TextFillColorDisabled` as the resource gives it (`#0000005c`, dark
+      `#ffffff5d`); its dark `defaults.border.color` is still open.
 
 ### Disabled: presets that state both mechanisms
 
@@ -614,7 +617,7 @@ model, the platform presets and the three connectors
 ### windows-11: a border opacity with no source
 
 - [ ] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
-      variants (light `:56`, dark `:493`), and `docs/platform-facts.md:1116`
+      variants (light `:70`, dark `:567`), and `docs/platform-facts.md:1116`
       gives Windows no multiplier: WinUI 3 states each stroke role as a colour
       with its own alpha. M2b-P07 (`docs/todo_code-review-findings.md`) was
       deferred to the *Border opacity* entry, which closed on 2026-09-28
@@ -624,6 +627,61 @@ model, the platform presets and the three connectors
       can do without it (`ResolvedDefaultsBorder::opacity` is an `f32`,
       `native-theme/src/model/border.rs:232`), or mark it **(preset)** ❓ in the
       preset as the facts row does.
+
+### Hover fills: a layer or a replacement
+
+- [ ] [v0.7.0] The connectors composite `hover_background` and
+      `active_background` over the widget's rest fill, by rule C17, which
+      says "the platform layers where the toolkits replace"
+      (`docs/archive/todo_v0.5.9_theme-contracts-rationale.md:535`; egui
+      `connectors/native-theme-egui/src/style/states.rs:125`, gpui
+      `connectors/native-theme-gpui/src/colors.rs:354`, iced
+      `styles::composite_over`, `connectors/native-theme-iced/src/styles.rs:79`).
+      WinUI 3 replaces instead: `ButtonBackgroundPointerOver` =
+      `ControlFillColorSecondary` takes the place of `ButtonBackground`
+      (`docs/platform-facts.md:1179`), and so do `ButtonBackgroundPressed`
+      and `ComboBoxBackgroundPointerOver` (Button_themeresources.xaml:130,
+      ComboBox_themeresources.xaml:243, microsoft-ui-xaml 8463f45). M2b
+      Step 7b (`docs/todo_code-review-findings.md`, M2b) has windows-11
+      state the button's and the segmented control's hover flattened over
+      the window colour, `#f6f6f6` (dark `#323232`), which composites to
+      itself, and the button's pressed fill too, `#f5f5f5` (dark `#272727`);
+      the combo box's hover and the other pressed fills have no source yet. For M5–M7: decide whether the model's
+      `hover_background` is a layer (C17 stays, and a preset for a replacing
+      platform states the flattened result, as windows-11 now does) or a
+      replacement (the connectors write it as given, and the presets for
+      layering platforms state composites). For M6 as well: gpui's
+      `Hsla::blend` keeps the base's alpha (`colors.rs:347-353`), which is
+      not source-over once a preset states a translucent
+      `button.background_color` (windows-11 does since Step 7b, WinUI's
+      `ControlFillColorDefault`).
+
+### windows-11: what WinUI 3 draws, or what Win32 reports
+
+- [ ] [v0.7.0] M2b Step 7b (`docs/todo_code-review-findings.md`, M2b) has
+      windows-11 state what WinUI 3 draws. Where a Windows cell of
+      `docs/platform-facts.md` names a Win32 or `UISettings` API whose value
+      differs (the base font size, the window background, text, the button's
+      fill and text, the input's text, the tooltip), the cell now gives the
+      WinUI brush beside the API, and the preset states the brush. On a live
+      system the Windows reader reads the Win32 and `UISettings` values and
+      merges them over the preset (`native-theme/src/pipeline.rs:42-43`),
+      so a live Windows theme mixes the two. For M3 (the model) and M4 (the
+      reader): decide which one the Windows platform theme means, and make
+      the reader and the preset agree. Two preset values still follow Win32
+      or the window rather than WinUI: `input.background_color` `#ffffff`
+      (`COLOR_WINDOW`; WinUI's `TextControlBackground` is
+      `ControlFillColorDefault`, `#B3FFFFFF`, TextBox_themeresources.xaml:130)
+      and `tab.active_background` `#f3f3f3` / `#202020` (WinUI's
+      `TabViewItemHeaderBackgroundSelected` is
+      `SolidBackgroundFillColorTertiary`, `#F9F9F9` / `#282828`,
+      TabView_themeresources.xaml:7, :85; Common_themeresources_any.xaml:274,
+      :70). `button.checked_background` states the accent, `#0078d4`, for
+      `AccentFillColorDefault` (`docs/platform-facts.md:1181`), but that brush
+      is `SystemAccentColorDark1` light and `SystemAccentColorLight2` dark
+      (Common_themeresources_any.xaml:329, :125), `#0067c0` / `#4cc2ff` for
+      the default accent on Windows 11 25H2
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:755`, `:758`).
 
 ---
 
@@ -1850,7 +1908,8 @@ the gap — closing it is a change, and each wants its own decision.
       which is the content box, while `adwaita.toml` states the 20-point box
       that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
       read 20), and windows-11's
-      menu `row_height` 36, which no platform-facts context gives. Also for
+      menu `row_height` 36, which no platform-facts context gave (it states the
+      mouse context's 23 since 2026-09-24: the `menu.row_height` row above). Also for
       this plan:
       - **KDE input vertical padding** (the audit's N4): platform-facts'
         §2.4 cell is "3 (measured)", and the gate keeps 3/6/3/6. Breeze's
@@ -1907,8 +1966,9 @@ the gap — closing it is a change, and each wants its own decision.
 - [ ] [1.0] **WinUI's combobox arrow column: a model extension.** Per-side padding
       is done (v0.5.9). WinUI measures its combobox's right padding, 0, to
       a separate 38px arrow column (platform-facts §2.24), a structure the
-      model has no field for, so windows-11 leaves the right side unstated
-      and gpui's trigger keeps upstream's. An arrow-column field (or a
+      model has no field for, so windows-11 states WinUI's right padding, 0
+      (`native-theme/src/presets/windows-11.toml:460`, `:956`), and no field
+      carries the column. An arrow-column field (or a
       right padding that includes it) would let a connector with such a
       column draw it.
 - [ ] [1.0] **Loose ends of the v0.5.9 unstated-sizes plan** (from its reviews):

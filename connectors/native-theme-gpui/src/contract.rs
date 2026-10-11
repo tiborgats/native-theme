@@ -906,7 +906,9 @@ struct NoReceiver {
 /// Why kde-breeze, adwaita and macos-monterey leave `link.hover_background`
 /// transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
-                               link hover background for macOS, KDE and GNOME";
+                               link hover background for macOS, KDE and GNOME, \
+                               nor for WinUI's inline Hyperlink, which has no \
+                               background";
 
 const NO_RECEIVER: &[NoReceiver] = &[
     NoReceiver {
@@ -924,6 +926,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
             ("kde-breeze", LINK_HOVER_NONE),
             ("adwaita", LINK_HOVER_NONE),
             ("macos-monterey", LINK_HOVER_NONE),
+            ("windows-11", LINK_HOVER_NONE),
         ],
     },
     NoReceiver {
@@ -1140,8 +1143,11 @@ fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<
 
 /// The combinations whose platform states a translucent button fill:
 /// `controlColor` is `#ffffff3f` in darkAqua
-/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408).
-const TRANSLUCENT_BUTTON_FILL: [&str; 1] = ["macos-monterey/dark"];
+/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
+/// and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF` light and
+/// `#0FFFFFFF` dark (docs/platform-facts.md:1164).
+const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
+    ["macos-monterey/dark", "windows-11/light", "windows-11/dark"];
 
 /// Every preset paints its buttons on an opaque fill, except the combinations
 /// in [`TRANSLUCENT_BUTTON_FILL`].
