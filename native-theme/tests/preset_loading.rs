@@ -6,6 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+use native_theme::error::Error;
 use native_theme::theme::Theme;
 
 #[test]
@@ -365,7 +366,10 @@ fn material_preset_is_named_by_its_generation() {
 #[test]
 fn macos_preset_is_named_by_its_generation() {
     assert!(Theme::preset("macos-monterey").is_ok());
-    assert!(Theme::preset("macos-sonoma").is_err());
+    assert!(matches!(
+        Theme::preset("macos-sonoma"),
+        Err(Error::UnknownPreset { .. })
+    ));
     assert!(
         Theme::list_presets()
             .iter()

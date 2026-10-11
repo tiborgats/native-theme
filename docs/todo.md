@@ -270,19 +270,22 @@ the file was pruned on 2026-10-11, not reordered.
       rule counts border, padding and content as separate parts
       (`docs/platform-facts.md:897-902`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
-      `macos-sonoma` states the button's `padding_vertical_px = 3.0`
-      (`native-theme/src/presets/macos-sonoma.toml:83`, `:439`) with a
-      `line_width_px = 0.5` border (`:43`, `:399`). Research first, from
+      `macos-monterey` states the button's `padding_top_px = 1.0` and
+      `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:89-90`,
+      `:457-458`) with a `line_width_px = 0.5` border (`:48`, `:416`). Research first, from
       source or measurement with citations, what the 22 and 16 measure — the
       outer box with its border, and the text's line box or its glyph height —
       then correct platform-facts' derivation of each cell and, from it, the
       preset. Until then a connector that adds the border's width to the
       stated padding, as the egui connector does, counts that border twice,
       one border width too much on each side of those macOS controls.
-      M2a Step 7 (2026-10-11) settled the button's row from the OS probe:
-      AppKit's title rect sits 1 below the 20-tall bezel's top and 3 above
-      its bottom (`docs/platform-facts.md:1172`); the text input, menu, tab
-      and list rows remain.
+      M2a Step 7 (2026-10-11) took the button's row from the OS probe:
+      AppKit's title rect sits 1 below the top and 3 above the bottom of the
+      20-tall bezel, measured from its outer (alignment-rect) edge
+      (`docs/platform-facts.md:1172`), and the pop-up button's likewise
+      (`:1557`). Those are offsets from the outer edge, so the border's
+      share is still open on those two rows, as on the text input, menu, tab
+      and list rows.
 
 ### Presets: a spinner stroke width platform-facts does not give
 
