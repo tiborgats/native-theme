@@ -338,7 +338,7 @@ proposal without the maintainer (plan, M1 Step 4); the rest are decided in Step 
 **Changes required:** (1) Before deleting, add a one-off test that diffs every field the reader constants set against the merged full+live preset. Every difference is ruled from platform-facts: today groove 15/16 and divider 9/6 on macOS, divider 4/1 on Windows. The sourced value wins, the matching docs/todo.md Table B cells are updated, and nothing is invented. (2) Do not claim it closes todo.md:2579-2581. (3) Under D3 these are value changes, so schedule the change in M2a/M2b ahead of Step 9, not in M1's fix phase. (4) Coordinate with T4 (D-B): if the -live bases become derived, the constants land in the full preset. Since the full preset is merged first, deleting the reader constants may need no TOML change at all.
 
 **Decision:** adopt, scheduled in M2a/M2b (round 1): a one-off diff test first, each difference ruled from platform-facts (the sourced value wins, Table B updated), then the reader constants go; coordinated with M1-T4-01 (the tier is removed, so the constants live in the full preset, which is merged first).
-**Status:** scheduled: M2a (macOS), M2b (Windows); Windows half fixed in 507b1975 (M2b T1)
+**Status:** scheduled: M2a (macOS), M2b (Windows); Windows half fixed in 507b1975 (M2b T1); macOS half fixed in c1704d2f (M2a Step 8a)
 
 ### M1-T1-03 · no API break · Naming rule: one preset per generation, vendor's name, version range in the header
 
@@ -1597,7 +1597,7 @@ M3–M8 cites these instead of reporting them again.
 
 ## M2a — macOS
 
-**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
+**Status:** Steps 1, 2, 4, 5 and 6 done 2026-10-11, beside M1 (D7), in the `m2-research` worktree; Step 3 awaits the maintainer; Step 8 takes the *Step 8* rows after M1's stop point A; Step 7 done 2026-10-11 (923cb787, d1364365, 39544e19, a6fa68fe, 98cd13bb, fea91b22, e7048d86, 11017186), before Steps 8-12 (progress ledger ruling), probe run 38129819806; the preset is macos-monterey (D8). Step 7b (the preset-validator's second pass) done 2026-10-11 (be69481a, 00d49b51); Steps 8a and 8 done 2026-10-11 (c1704d2f, 849ceca2). One Workflow ran all five parts (41 Opus agents at high effort, 5.41M subagent tokens, 36.5 min). Triage values: *fix* (Step 7), *Step 8* / *Step 13* (the part's build steps, already decided), *maintainer (Step 3 probe)*, *maintainer (version gap)*, *M4* (reader code), *defer* (an existing docs/todo.md entry), *drop*.
 
 The preset targets macOS 14 (`macos-sonoma.toml:1-3`), and 14 has had no security update since 14.8.9 (2026-08-06): Apple
 supports 27, 26 and 15 today. No source separates 15 from 14 (WebKit's pre-Tahoe tables carry no 14/15 conditional, Apple
@@ -1708,21 +1708,21 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1351 and #L1448-L1462 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L1814-L1822 ; #L1949 ; #L3085-L3090 Note: The G2 values are WebKit's drawing of Liquid Glass, not AppKit's. The cell's WebKit link is unpinned (Step 1 finding 1). todo.md:995-1003 already covers whether the radius depends on control size.
 **Verdict:** PLAUSIBLE — The values hold at de320ba: legacy baseBorderRadius=5 (RenderThemeMac.mm:1351) is used only in adjustMenuListButtonStyle as trunc(5+fontScale-1) (:1460); the vector path's shapeForButton is 6*zoom, continuous, on Mac (RenderThemeCocoa.mm:1821,1850), and paintMenuListForVectorBasedControls draws <select> with it on Mac (:3258); text fields use 5 (:1949, used at :3071/:3073; the cited #L3085-3090 is border-colour code, not the radius). The vector path is compiled only for macOS 26+ (PlatformEnableCocoa.h:1189-1193), but these are shapes WebKit draws itself, not AppKit metrics, so the AppKit radi…
 **Triage:** maintainer (Step 3 probe) — WebKit's legacy 5 is a styled-<select> radius, so AppKit's Sonoma push-button radius has no primary source; the probe settles it. The Tahoe 6 (WebKit vector path) feeds Step 8.
-**Status:** ruled in Step 7 from the probe: 5 stays, ❓ instead of ✅, no AppKit radius (E5, E26, fea91b22); the Tahoe 6 goes to Step 8
+**Status:** ruled in Step 7 from the probe: 5 stays, ❓ instead of ✅, no AppKit radius (E5, E26, fea91b22); Tahoe's 6 (WebKit) recorded in Step 8 (849ceca2)
 
 #### M2a-04 · bug · S2 · docs/platform-facts.md:195
 **Claim:** `NSButton horizontal padding` (1.1.4 Widget Metrics): the cell says ~8px (WebKit controlPadding); G1 14 (WebKit legacy): 8 left/right, 2 top, 3 bottom (WebKit's own 'Just use 8px'); G2 26 (WebKit vector, mac): 6 left/right, 0 top, 1 bottom.
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1690-L1704 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3356-L3359 Note: The cell misquotes Gecko. At firefox dc44717d forms.css#L514, <button> has padding-inline: 8px; the 4px is <select> (#L227). AppKit's own padding is unpublished.
 **Verdict:** PLAUSIBLE — Legacy controlPadding returns {top 2, right 8, bottom 3, left 8} (RenderThemeMac.mm:1694-1700); in adjustButtonStyleForVectorBasedControls the Mac branch (#else of IOS_FAMILY at :3331) applies {0, 6, 1, 6} (RenderThemeCocoa.mm:3357-3358) unless the author set padding (:2352-2361). This is WebKit's own CSS padding for its redrawn button; the AppKit bezel padding is still unpublished, so it needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma value 8 equals the cell; the Tahoe 6 is WebKit's vector path, (WebKit)-tagged as the cell already is.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 8 (API), macOS 26 12 (API, the 26.6.2 probe)
 
 #### M2a-05 · bug · S2 · docs/platform-facts.md:200
 **Claim:** `NSSlider track height` (1.1.4 Widget Metrics): the cell says 5px (WebKit sliderTrackWidth); G1 14 (WebKit legacy): 5 (track radius 2); G2 26 (WebKit vector, mac; no 27 conditional): 8.
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SliderTrackMac.mm#L47 , #L78 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3875-L3879 Note: The cell is right for 14 (WebKit) and wrong for 26 (WebKit's rendition). The cell's link is unpinned.
 **Verdict:** PLAUSIBLE — SliderTrackMac.mm:47 has sliderTrackWidth=5 and :78 radius 2; RenderThemeCocoa.mm:3876 has trackThicknessForVectorBasedControls=8.0 under PLATFORM(MAC), used at :3997. The 8 is WebKit's own vector track, not AppKit's NSSlider, so it needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma 5 equals the cell; Tahoe 8 is WebKit's vector track, (WebKit)-tagged.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection (the probe gives Sonoma 4, not 5)
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 4 (API, was 5), macOS 26 6 (API)
 
 #### M2a-06 · bug · S2 · docs/platform-facts.md:201
 **Claim:** `NSSlider thumb diameter` (1.1.4 Widget Metrics): the cell says 21px (measured); WebKit 17; G1 14 (WebKit legacy): 17 (WebKit FIXME: should come from knobThickness); G2 26 (WebKit vector): 24 x 16 capsule, not a circle.
@@ -1743,21 +1743,21 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/ProgressBarMac.mm#L49-L57 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3770-L3773 Note: 6 is unsourced on 14.
 **Verdict:** PLAUSIBLE — ProgressBarMac.mm:53-56 gives cell heights 20/12/12/20 (regular/small/mini/large), and the legacy bar itself is drawn by AppKit; in the vector path paintProgressBarForVectorBasedControls has barBlockSize=8 and corner radius 4 (RenderThemeCocoa.mm:3770-3773). That is WebKit's own bar, so AppKit's macOS 26 visual track needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma has no source for the visible bar (cell is measured); Tahoe 8 / radius 4 is WebKit's vector bar, (WebKit)-tagged.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 6 (measured), macOS 26 8 (measured; WebKit agrees)
 
 #### M2a-09 · bug · S2 · docs/platform-facts.md:216
 **Claim:** `NSSwitch intrinsic size` (1.1.4 Widget Metrics): the cell says 38 x 22 (WebKit); G1 14 (WebKit legacy): 38x22 regular, 32x18 small, 26x15 mini; G2 26 (WebKit vector; no 27 conditional): 18 high x 41.14 wide (18 x 64/28); idealSwitchSize 64x28.
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SwitchMacUtilities.mm#L38-L46 ; .../rendering/mac/RenderThemeMac.mm#L1060-L1069 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L216-L221 , #L417-L418 , #L4516-L4540 Note: The G2 numbers are WebKit's rendition. A probe of AppKit's NSSwitch intrinsicContentSize on 26 is needed before changing the cell.
 **Verdict:** PLAUSIBLE — Legacy {38,22}/{32,18}/{26,15} hold (SwitchMacUtilities.mm:42-45, RenderThemeMac.mm:1063-1066); in the vector path the Mac logicalSwitchHeight is 18 (RenderThemeCocoa.mm:220), idealSwitchSize is 64x28 (:417), the width is 18*64/28 = 41.14 (:418, set at :4523/:4536), and AX_ZOOM_ADJUSTMENTS is not enabled in PlatformEnableCocoa.h. That is WebKit's HTML switch, not NSSwitch's intrinsic size, so it needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma 38 x 22 equals the cell; the Liquid Glass switch geometry feeds Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 38 × 22 (API), macOS 26 54 × 24 (API)
 
 #### M2a-10 · bug · S2 · docs/platform-facts.md:217
 **Claim:** `NSSwitch thumb diameter` (1.1.4 Widget Metrics): the cell says ~18px (WebKit SwitchThumbMac.mm box = track height); G1 14 (WebKit legacy): thumb box = track height (22 regular); visual knob drawn by AppKit; G2 26 (WebKit vector): capsule thumb: width 38/64 of track (≈24.4) and height ≈14.8 on an 18 track (ratio interpolated between 13/16 and 24/28).
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SwitchMac.mm#L231 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L420-L450 , #L597-L611 Note: ~18 is unsourced. The cited SwitchThumbMac.mm does not exist (Step 1 finding 2).
 **Verdict:** PLAUSIBLE — SwitchMac.mm:231 sets the thumb box to the track height (the row cites SwitchThumbMac.mm instead); in the vector path the Mac thumb width is 38/64 of the track (RenderThemeCocoa.mm:599-603, :609), about 24.4 on a 41.14 track, and the height ratio interpolated from 13/16 to 24/28 (:426-450) gives about 14.76 on an 18 track. WebKit draws this capsule itself, so the AppKit knob needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma unchanged; the Tahoe capsule thumb feeds Step 8 (and the model has only a diameter: Step 8 records what it cannot carry).
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 20 (measured, was ~18), macOS 26 a 32 × 20 capsule (measured; the preset states 20, Q3)
 
 #### M2a-11 · bug · S2 · docs/platform-facts.md:1112
 **Claim:** `border.corner_radius` (2.1.6 Global Geometry): the cell says 5px (measured); G1 14 (WebKit legacy): 5 (styled <select> only); G2 26 (WebKit vector): button 6, text field 5.
@@ -1778,7 +1778,7 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1690-L1701 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3356-L3359 Note: The cell is right for 14/15 (WebKit). WebKit's 26 rendition uses 6. The cell's WebKit link at :1688 is unpinned (blob/main).
 **Verdict:** CONFIRMED — Both cited values read as claimed at de320ba3, and the row already uses WebKit as its source, so the G2 change from 8 to 6 holds for that source. Confirmed value: G1 14/15: 8 (RenderThemeMac.mm:1690-1701, PaddingBox {2, 8, 3, 8}); G2 26: 6 (RenderThemeCocoa.mm:3355-3357 #else-of-IOS_FAMILY branch, PaddingBox {0, 6, 1, 6}, applied after RenderTheme::adjustButton….
 **Triage:** Step 8 (macos-tahoe, D4) — CONFIRMED Tahoe change 8 to 6 in the (WebKit) source the cell already uses; Sonoma unchanged.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 8 (API), macOS 26 12 (API, the 26.6.2 probe)
 
 #### M2a-14 · bug · S2 · docs/platform-facts.md:1172
 **Claim:** `border.padding_vertical` (2.3 Button): the cell says 3 (measured) (22−16)/2; G1 14/15: 2 top / 3 bottom (WebKit); G2 26: 0 top / 1 bottom (WebKit).
@@ -1792,21 +1792,21 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1539-L1540 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L2787-L2804 , #L2807 , #L2857 Note: The cell's 4 has no source. WebKit's 26 rendition differs.
 **Verdict:** PLAUSIBLE — G1 WebKit has no text-field padding override (RenderThemeMac.mm:1539-1540 is inside adjustSearchFieldStyle, 1px). G2 applies 0.5em inline padding truncated to int (RenderThemeCocoa.mm:2787-2807, 2857), which is 6 at 13–13.33px, but only to inputs without a datalist that are not number fields. This is WebKit's HTML input, not AppKit NSTextField, so it needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — No Sonoma source either way; Tahoe 0.5em (6 at 13 px) is WebKit's vector text field, (WebKit)-tagged.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 2 (API, was 4), macOS 26 4 (API)
 
 #### M2a-16 · bug · docs/platform-facts.md:1212
 **Claim:** `indicator_width` (2.5 Checkbox): the cell says NSButton checkbox: 14; G1 14/15: 14 regular (12 small, 10 mini, 16 large). Radio: 16 regular, or 14 when large controls are supported.; G2 26: 16 (checkboxRadioSizeForVectorBasedControls). Checkbox corner radius 5.5 at 16..
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/ToggleButtonMac.mm#L49-L71 ; .../Source/WebCore/rendering/mac/RenderThemeMac.mm#L938-L979 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L1589 , #L1679 Note: The cell is right for 14/15. WebKit's 26 rendition uses 16. Line 1222 radio_indicator_width inherits this; WebKit's G1 radio is 16, not 14, unless large controls are supported.
 **Verdict:** REJECTED — The G1 table holds (14 regular, ToggleButtonMac.mm:49-71; RenderThemeMac.mm:938-946). In G2, checkboxRadioSizeForVectorBasedControls = 16 (RenderThemeCocoa.mm:1589) is used only as the denominator of the corner-radius ratio 5.5/16 (lines 1679, 1857), not as the box size. The G2 HTML checkbox is still sized by RenderThemeMac::controlSize → checkboxSize → checkboxSizes() (RenderThemeMac.mm:1709-1710, 967), so source does not give 16.
 **Triage:** drop — REJECTED: the Tahoe 16 is only the denominator of WebKit's corner-radius ratio, not the drawn size; Sonoma 14 holds.
-**Status:** no change in Step 7 (drop); the probe's 26/27 checkbox image rect is 16 × 16, input for Step 8
+**Status:** no change in Step 7 (drop); Step 8 records macOS 26's 16 from the probe's image rect (849ceca2)
 
 #### M2a-17 · bug · S2 · docs/platform-facts.md:1292
 **Claim:** `track_height` (2.9 Slider): the cell says NSSlider: 5; G1 14/15: 5 (sliderTrackWidth), radius 2; G2 26: 8 (trackThicknessForVectorBasedControls, PLATFORM(MAC); iOS uses 4).
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SliderTrackMac.mm#L47 , #L78 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3875-L3879 Note: The cell is right for 14/15. WebKit's 26 rendition uses 8.
 **Verdict:** PLAUSIBLE — G1 sliderTrackWidth = 5 with radius 2 (SliderTrackMac.mm:47, 78) matches the row. G2 trackThicknessForVectorBasedControls = 8 under PLATFORM(MAC) (RenderThemeCocoa.mm:3875-3879) is confirmed, but it is WebKit's own vector HTML slider, so the AppKit NSSlider on 26 still needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Duplicate of the chapter 1 slider track row: Sonoma 5 holds, Tahoe 8 (WebKit).
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 4 (API, was 5), macOS 26 6 (API)
 
 #### M2a-18 · bug · S2 · docs/platform-facts.md:1293
 **Claim:** `thumb_diameter` (2.9 Slider): the cell says NSSlider knob: 21; G1 14/15: 17 (sliderThumbThickness, with a FIXME that AppKit's knobThickness 'returns an incorrect value'); G2 26: 24 × 16 thumb (not circular).
@@ -1827,7 +1827,7 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/ProgressBarMac.mm#L49-L57 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3770-L3773 Note: WebKit's 26 rendition differs from 6. todo.md:561-562 already notes that NSProgressIndicator is unread (border).
 **Verdict:** PLAUSIBLE — G1 cell heights 20/12/12/20 (ProgressBarMac.mm:49-57) and G2 barBlockSize 8, corner radius 4 (RenderThemeCocoa.mm:3770-3773; the paint function is not platform-gated) read as claimed. The G2 value is WebKit's HTML progress bar, not AppKit NSProgressIndicator, so the row needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Duplicate of the chapter 1 progress row.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 6 (measured), macOS 26 8 (measured; WebKit agrees)
 
 #### M2a-21 · bug · S2 · docs/platform-facts.md:1333
 **Claim:** `background_color` (2.12 Sidebar): the cell says underPageBackgroundColor; G1 14/15: Apple's sidebar background is NSVisualEffectView.Material.sidebar, 'The material for the background of window sidebars' (10.11+). underPageBackgroundColor is 'the area beneath your window's views'.; G2 26/27: HIG: 'sidebars can float above content in the Liquid Glass layer' (change log June 9, 2025).
@@ -1848,42 +1848,42 @@ Step 6 triage: 15 Step 8 (macos-tahoe, D4), 1 drop, 4 fix, 10 maintainer (Step 3
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1060-L1082 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SwitchMacUtilities.mm#L38-L68 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L216-L221 and #L415-L418 and #L4515-L4539 Note: The G2 numbers are WebKit's vector rendition, not NSSwitch's intrinsic size, but its proportions rule out 38 wide at 22 tall. No 27 conditional. Probe: NSSwitch.intrinsicContentSize per controlSize (extraLarge exists from 26.0).
 **Verdict:** PLAUSIBLE — G1 38×22 regular, outsets 2/2/1/2 (RenderThemeMac.mm:1060-1082; SwitchMacUtilities.mm:38-68) matches the row. G2 idealSwitchSize 64×28 and HTML default 18 tall × 18·64/28 ≈ 41.1 wide (RenderThemeCocoa.mm:216-221, 417-418, 4516-4537) is confirmed, but this is WebKit's Liquid Glass HTML switch, so AppKit NSSwitch on 26 needs a measurement.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma 38 holds; Liquid Glass switch 64 x 28 ideal / 41.1 at 18 high feeds Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 38 × 22 (API), macOS 26 54 × 24 (API)
 
 #### M2a-24 · bug · S2 · docs/platform-facts.md:1469
 **Claim:** `thumb_diameter` (2.21 Switch): the cell says ~18px (measured); G1 14: not stated: the knob is CoreUI art drawn in a square as tall as the track (22), so the visible knob size is not in source; G2 26: not a circle: a capsule 38/64 of the track wide (idealThumbWidth 38 on Mac) and 24/28 of the track tall at height 28 (13/16 at 16, 30/36 at 36).
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SwitchMac.mm#L231-L277 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L420-L452 and #L597-L612 Note: A single diameter cannot describe the G2 thumb (width differs from height). G1 ~18 is unverifiable.
 **Verdict:** PLAUSIBLE — G1: the knob is CoreUI art in a square as tall as the track (SwitchMac.mm:231-233, 268-277), so its visible size is not in source. G2 Mac thumb width = 38/64 of the track (RenderThemeCocoa.mm:598-603), with heights 13/16, 24/28 and 30/36 interpolated (lines 426-450): about 24.4×14.8 at the 18px HTML default. This is a WebKit HTML switch, not a measurement of NSSwitch.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma knob is CoreUI art (no source, stays ❓); the Tahoe capsule thumb feeds Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 20 (measured, was ~18), macOS 26 a 32 × 20 capsule (measured; the preset states 20, Q3)
 
 #### M2a-25 · bug · S2 · docs/platform-facts.md:1473
 **Claim:** `thumb_background` (2.21 Switch): the cell says (measured) white; G1 14: CoreUI knob (kCUIWidgetSwitchKnob); no colour in source; G2 26: light: white; dark: white x0.85 alpha (disabled x0.5).
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/platform/graphics/mac/controls/SwitchMac.mm#L276-L277 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L475-L495 Note: Differs in dark mode on G2 (WebKit). Sonoma is unverifiable.
 **Verdict:** PLAUSIBLE — Values read as cited, but G2 is WebKit's own vector HTML-switch painter gated by the formControlRefreshEnabled setting (L740-742), not AppKit NSSwitch, and its light value (white) equals the cell anyway, so a macOS 26 NSSwitch measurement is needed to show a difference. Confirmed value: G1: SwitchMac.mm L276-277 draws kCUIWidgetSwitchKnob via CoreUI, no colour; G2: liquidGlassSwitchThumbColor (RenderThemeCocoa.mm L475-495) = Color::white in light, white alpha x0.85 dark enabled, x sw….
 **Triage:** Step 8 (macos-tahoe, D4) — Light value white equals the cell; the Tahoe dark 0.85 alpha thumb is WebKit's Liquid Glass painter, (WebKit)-tagged for Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): dark knob white at alpha 191/255 on 14–15 and 221/255 on 26 (measured)
 
 #### M2a-26 · bug · S2 · docs/platform-facts.md:1545
 **Claim:** `background_color` (2.24 ComboBox): the cell says controlColor; G1 14: CoreUI bezel (NSPopUpButtonCell); no colour in source. controlColor docs: by default 'a pattern color ... same as windowBackgroundColor'; G2 26: WebKit vector menu list = button fill: secondarySystemFill composited over the canvas (default or submit buttons use the accent).
 **Evidence:** [G1] https://developer.apple.com/tutorials/data/documentation/appkit/nscolor/controlcolor.json (Last-Modified 2026-08-14) [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L2183-L2195 and #L3247-L3262 ; https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L686-L691 Note: G2 value is WebKit's rendition. Sonoma unverifiable.
 **Verdict:** PLAUSIBLE — Doc text and WebKit lines (RenderThemeCocoa.mm L2183-2195, L3247-3262; RenderThemeMac.mm L686-691) say what is claimed, but the G2 fill is WebKit's FormControlRefresh emulation of a select, not NSPopUpButton's CoreUI bezel, so the AppKit 26 fill needs measurement. Confirmed value: controlColor doc (Last-Modified 2026-08-14): 'By default, the control color is a pattern color that will draw the ruled lines for the window background, which is the same as returned by windowBackgrou….
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma: CoreUI bezel, no colour source (cell stays as is); Tahoe fill is WebKit's vector menulist, (WebKit)-tagged for Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): macOS 14–15 controlColor (render agrees), macOS 26 secondarySystemFillColor's value (measured)
 
 #### M2a-27 · bug · S2 · docs/platform-facts.md:1547
 **Claim:** `font.color` (2.24 ComboBox): the cell says controlTextColor; G1 14: not set for native Menulist (WebKit locks the font, not the colour); G2 26: labelColor enabled, tertiaryLabelColor disabled.
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1362-L1395 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3222-L3230 and #L3296-L3300 Note: labelColor and controlTextColor may resolve to the same value; the probe should compare them.
 **Verdict:** PLAUSIBLE — G2 holds for WebKit's vector menulist only; G1 (RenderThemeMac.mm L1362-1395 sets no colour) shows only that WebKit leaves text colour to CSS and says nothing about NSPopUpButton's title colour, so neither refutes controlTextColor for AppKit without a measurement. Confirmed value: G2: buttonTextColor = AppleSystemLabel (labelColor) enabled / AppleSystemTertiaryLabel disabled, applied in adjustMenuListStyleForVectorBasedControls when no explicit colour (RenderThemeCocoa.mm L3226….
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma unchanged; Tahoe labelColor / tertiaryLabelColor is WebKit's vector menulist.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): controlTextColor on 14–15 (preset states it now), the same value on 26
 
 #### M2a-28 · bug · S2 · docs/platform-facts.md:1553
 **Claim:** `arrow_icon_size` (2.24 ComboBox): the cell says ~16–18px (measured); G1 14: CoreUI arrows; no size in source; G2 26: SF Symbol chevron.up.chevron.down scaled to 0.55 em wide (14.46x20.17 path), so about 7.2 x 10.0 at 13 pt.
 **Evidence:** [G1] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1362-L1395 [G2] https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm#L3441-L3478 Note: 7.2 x 10 is derived from the 0.55 em scale and the glyph aspect at 13 pt.
 **Verdict:** PLAUSIBLE — The source matches (inside paintMenuListButtonDecorationsForVectorBasedControls, L3404, which is FormControlRefresh-only), but it is WebKit's HTML select glyph, the em depends on the select's used font size, and G1 has no value, so the AppKit popup arrow size still needs measurement. Confirmed value: G2: chevron.up.chevron.down path 14.4618 x 20.1723, scaled to 0.55 em wide (RenderThemeCocoa.mm L3443-3473), about 7.15 x 9.97 px at a 13px em.
 **Triage:** Step 8 (macos-tahoe, D4) — Sonoma has no source (cell measured); the Tahoe SF Symbol chevron size is WebKit's, (WebKit)-tagged for Step 8.
-**Status:** no change in Step 7 (Step 8); probe values in the Step 7 subsection
+**Status:** fixed in Step 8 (849ceca2): the chevron measured 6 × 10 (14–15) and 7 × 10.5 (26); the presets keep 17, unsourced (Q2)
 
 #### M2a-29 · bug · S2 · docs/platform-facts.md:1554
 **Claim:** `arrow_area_width` (2.24 ComboBox): the cell says ~16–18px (measured); G1 14: 26 regular (23 small, 22 mini, 26 large): right padding holding the arrow; G2 26: same 26 (shared padding function).
@@ -2000,7 +2000,7 @@ All research claims are recorded as reported and were not verified here. I propo
 **Evidence:** Not a preset file: the macOS reader hardcodes 15 where facts and both presets say 16. Which value wins depends on the merge order.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** defer — already docs/todo.md:2272 (the reader's 15 matches neither context); reader code, M4.
-**Status:** facts fixed in Step 7 from the probe, legacy 15 and overlay 16 (E6, E7, E11, E17, E18, E29, E35, E36, fea91b22); the reader's fixed 15 goes with the reader constants in Step 8a
+**Status:** facts fixed in Step 7 from the probe, legacy 15 and overlay 16 (E6, E7, E11, E17, E18, E29, E35, E36, fea91b22); the reader's fixed 15 removed in Step 8a (c1704d2f)
 
 #### M2a-P09 · bug · S2 · native-theme/src/macos.rs:401
 **Claim:** `splitter.divider_width (OS reader)` (other): preset 9.0 (reader); presets state 6.0 (macos-sonoma.toml:237, :596; live :131, :317), facts NSSplitView divider: 6 (docs/platform-facts.md:1419 (also :215)).
@@ -2686,6 +2686,33 @@ the colours.
   black at 1/3 (`#00000055`), not the opaque `NSColor.shadowColor` (facts `:1053`); the egui
   base `extreme_bg_color` question goes to docs/todo.md for M7; iced's (c) message and gpui's
   test name corrected (bb1ec4a2).
+
+### Steps 8a and 8 — toward `macos-tahoe` (2026-10-11)
+
+Read against the OS probe, run 38129819806: macOS 26.6.2 (`os-probe-macos-26`), the primary source for Tahoe,
+with macOS 27.0.1 (`os-probe-xcode-27`, preview image) reporting the same carried values, and 14.8.9 / 15.7.9
+for the `macos-monterey` halves.
+
+- **Order:** Step 8a ran first (c1704d2f), so the size gate's live resolution never saw a preset whose sizes the
+  reader constants contradicted. Its one-off diff found one difference, `scrollbar.groove_width` 15 (reader)
+  against 16 (preset): ruled 16, the overlay context's width the preset states with `overlay_mode = true`
+  (`platform-facts.md:1280`). The reader states only what macOS reports: no `NSColor.shadowColor` (the drawn
+  shadow is `NSShadow`'s default, `:1053`), `selection_text_color` from `alternateSelectedControlTextColor`
+  (`:1056`), the text-selection colours from `selectedTextColor` / `selectedTextBackgroundColor`
+  (`:1058-1059`), no `input.selection_background` (`:1193`).
+- **Facts (849ceca2):** 389 macOS lines tagged per the version ruling (`:42`, extended): `macOS 26:` with `same`
+  and its source, the value, or ❓; the 14–15 values the probe settles corrected in the same cells. Where AppKit's
+  26 numbers differ from WebKit's vector drawing (button padding 12 vs 6, slider track 6 vs 8, switch 54 × 24 vs
+  41.1 × 18, text-field padding 4 vs 6) the probe's are recorded and WebKit's quoted as its own control's.
+  Renders measured: the 26 push button and pop-up are drawn in `secondarySystemFillColor`'s value, with nothing
+  outside their frames (no shadow); the switch's off track is `systemFillColor`'s value on 26 and black / white
+  at 26/255 on 14; the dark knobs are white at 128/255 (slider) and 191/255 (switch) on 14, 217/255 and 221/255
+  on 26; the 26 knobs are capsules (slider 20 × 16, switch 32 × 20).
+- **macos-monterey (849ceca2):** text field 21 high, 2 / 2 inset, caret #007aff; check-box label gap 6; slider track
+  4, dark knob #ffffff80; switch knob 20, off track #0000001a / #ffffff1a, dark knob #ffffffbf; pop-up 20 high,
+  8 left, controlColor fill, controlTextColor text; segmented 22; list base rows controlBackgroundColor (the
+  stripes are no longer inverted, validator W3 / review minor 6); W2's state colours stay, their comments
+  corrected; W4's 40 stays, marked.
 
 ## M2b — Windows
 
