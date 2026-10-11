@@ -8,7 +8,7 @@
 
 use super::*;
 
-/// How many of the 32 preset/mode combinations emit a substitute for the
+/// How many of the 34 preset/mode combinations emit a substitute for the
 /// platform's own label in `extended.secondary.base.text`, and which ones do
 /// not -- the two numbers the `extended.secondary.base.text` entry below
 /// quotes in prose.
@@ -18,7 +18,7 @@ use super::*;
 /// `readable_substitution_of_the_secondary_label_matches_the_declared_count`
 /// red instead of letting the sentence rot. The measurement is that test's,
 /// not a note of one made elsewhere.
-pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 32;
+pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 34;
 
 /// The combinations that emit `defaults.text_color` exactly as the platform
 /// states it -- none, as the entry below says.
@@ -43,7 +43,7 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
          readable on that fill is lightened, darkened, or replaced by black or \
          white (palette.rs:692-720). So the emitted value is the platform's \
          text colour only where it clears iced's contrast bar, and it does \
-         not: over all 32 bundled preset/mode combinations, all 32 emit a \
+         not: over all 34 bundled preset/mode combinations, all 34 emit a \
          substitute of iced's own and none emits the label as stated. \
          Those are SECONDARY_LABEL_SUBSTITUTED and \
          SECONDARY_LABEL_AS_STATED above, counted again on every run by the \

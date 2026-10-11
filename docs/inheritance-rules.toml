@@ -512,7 +512,7 @@ why_wrong     = "All platforms have distinct thumb APIs; macOS/GNOME thumb is wh
 #
 # These are NOT real inheritance rules — they fabricate values out of thin air
 # when a field is None. Documented in todo_v0.5.5.md as bugs to remove.
-# All 16 presets already provide these values, so the safety nets are dead code.
+# All 17 presets already provide these values, so the safety nets are dead code.
 
 [hardcoded_safety_nets]
 "defaults.line_height"         = { value = "1.2", status = "dead_code" }

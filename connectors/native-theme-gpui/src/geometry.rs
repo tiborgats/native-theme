@@ -1643,8 +1643,9 @@ mod tests {
     ///
     /// The other four -- `list_item`, `radio`, `select`, `title_bar` -- get no
     /// such `assert_ne!`, and deliberately: their native font colour equals
-    /// `defaults.text_color` in all 32 combinations today, because a preset
-    /// that states no `font.color` for a widget inherits the window's
+    /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
+    /// select is the exception, its `combo_box.font.color` the accent), because
+    /// a preset that states no `font.color` for a widget inherits the window's
     /// (docs/inheritance-rules.toml:115-136), and `foreground` is fed from
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`

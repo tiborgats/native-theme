@@ -681,7 +681,7 @@ impl Theme {
     /// # Examples
     /// ```
     /// let presets = native_theme::theme::Theme::list_presets();
-    /// assert_eq!(presets.len(), 16);
+    /// assert_eq!(presets.len(), 17);
     /// assert_eq!(presets[0].key, "kde-breeze");
     /// assert_eq!(presets[0].display_name, "KDE Breeze");
     /// ```
@@ -694,7 +694,7 @@ impl Theme {
     ///
     /// Platform presets are included where their platform tag matches:
     /// kde-breeze on KDE, adwaita on Linux, windows-11 on Windows,
-    /// macos-monterey on macOS, ios-13 on macOS and iOS. `material-3` and the
+    /// macos-monterey and macos-tahoe on macOS, ios-13 on macOS and iOS. `material-3` and the
     /// community themes are always included.
     ///
     /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,

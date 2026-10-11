@@ -1,8 +1,8 @@
 //! Bundled theme presets and TOML serialization API.
 //!
-//! Provides 16 user-facing built-in presets embedded at compile time:
-//! 6 platform (kde-breeze, adwaita, windows-11, macos-monterey, material-3,
-//! ios-13) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
+//! Provides 17 user-facing built-in presets embedded at compile time:
+//! 7 platform (kde-breeze, adwaita, windows-11, macos-monterey, macos-tahoe,
+//! material-3, ios-13) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
 //! Solarized, Tokyo Night, One Dark), and functions for
 //! loading themes from TOML strings and files.
 
@@ -25,6 +25,7 @@ const PRESET_ENTRIES: &[(&str, &str)] = &[
         "macos-monterey",
         include_str!("presets/macos-monterey.toml"),
     ),
+    ("macos-tahoe", include_str!("presets/macos-tahoe.toml")),
     ("material-3", include_str!("presets/material-3.toml")),
     ("ios-13", include_str!("presets/ios-13.toml")),
     // Community presets
@@ -58,6 +59,7 @@ const PRESET_NAMES: &[&str] = &[
     "adwaita",
     "windows-11",
     "macos-monterey",
+    "macos-tahoe",
     "material-3",
     "ios-13",
     "catppuccin-latte",
@@ -83,6 +85,7 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("adwaita", "Adwaita"),
     ("windows-11", "Windows 11"),
     ("macos-monterey", "macOS Sonoma"),
+    ("macos-tahoe", "macOS Tahoe"),
     ("material-3", "Material"),
     ("ios-13", "iOS"),
     ("catppuccin-latte", "Catppuccin Latte"),
@@ -115,7 +118,7 @@ pub struct PresetInfo {
     pub light_only: bool,
 }
 
-/// Structured metadata for all 16 user-facing presets.
+/// Structured metadata for all 17 user-facing presets.
 ///
 /// Combines data from [`PRESET_NAMES`], [`PRESET_DISPLAY_NAMES`], and
 /// [`PLATFORM_SPECIFIC`] into a single array for richer preset enumeration.
@@ -142,6 +145,12 @@ const PRESET_INFOS: &[PresetInfo] = &[
     PresetInfo {
         key: "macos-monterey",
         display_name: "macOS Sonoma",
+        platforms: &["macos"],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "macos-tahoe",
+        display_name: "macOS Tahoe",
         platforms: &["macos"],
         light_only: false,
     },
@@ -300,7 +309,7 @@ fn detect_platform() -> &'static str {
 
 /// Returns preset info appropriate for the current platform.
 ///
-/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, ios-13)
+/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, macos-tahoe, ios-13)
 /// are only included on their native platform. Community themes are always included.
 pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     let platform = detect_platform();
@@ -372,8 +381,8 @@ mod tests {
         assert!(name.contains("nonexistent"));
     }
 
-    // NOTE: list_presets_returns_all_sixteen is covered by
-    // tests/preset_loading.rs::list_presets_returns_sixteen_entries.
+    // NOTE: list_presets_returns_all_seventeen is covered by
+    // tests/preset_loading.rs::list_presets_returns_seventeen_entries.
 
     #[test]
     fn from_toml_minimal_valid() {
@@ -450,6 +459,7 @@ accent_color = "#00ff00"
         let cases: &[(&str, IconSet)] = &[
             ("windows-11", IconSet::SegoeIcons),
             ("macos-monterey", IconSet::SfSymbols),
+            ("macos-tahoe", IconSet::SfSymbols),
             ("ios-13", IconSet::SfSymbols),
             ("adwaita", IconSet::Freedesktop),
             ("kde-breeze", IconSet::Freedesktop),
@@ -517,7 +527,13 @@ accent_color = "#00ff00"
     #[test]
     fn platform_presets_no_derived_fields() {
         // Platform presets must not contain fields that are derived by resolve()
-        let platform_presets = &["kde-breeze", "adwaita", "windows-11", "macos-monterey"];
+        let platform_presets = &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+        ];
         for name in platform_presets {
             let theme = preset(name).unwrap();
             for (label, variant_opt) in [

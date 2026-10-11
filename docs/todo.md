@@ -938,6 +938,21 @@ model, the platform presets and the three connectors
       passes its tests unchanged on gpui-kit 0.6.1 with gpui-pre 0.3.3 and
       0.3.4.
 
+- [ ] [1.0] **For M6: two defects in gpui's pressed button fill, shown by
+      `macos-tahoe`** (M2a Step 9). macOS 26 draws the push button in a
+      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md:1164`),
+      and no source gives its pressed fill, so the connector derives one.
+      (1) `tc.button_active = tc.button.blend(tc.secondary_active)`
+      (`connectors/native-theme-gpui/src/colors.rs:355`): `Hsla::blend` keeps
+      the base's alpha, so a translucent layer over a translucent base is not
+      composited (alpha 0.0784 where source-over gives 0.1507). (2)
+      `derive::active_color` lightens a near-black base multiplicatively
+      (`derive.rs:40-49`), which leaves pure black unchanged: in macos-tahoe
+      light the pressed fill equals the idle fill, so pressing shows no
+      change. The gpui contract excepts macos-tahoe for both
+      (`contract.rs`): `PRESSED_OVER_TRANSLUCENT` fails once (1) is fixed,
+      `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated.
+
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
 - [ ] [upstream] a `ghost_hover` / `ghost_hover_foreground` token pair separate from
@@ -1281,10 +1296,11 @@ What is still open on the iced side:
       (iced's `checkbox::Style` has no opacity; it would have to be multiplied
       into the emitted alphas). Since v0.5.9 `styles::checkbox` paints the
       disabled mark with `checkbox.disabled_text_color` on that fill — the
-      platform's own disabled pair, 1.17–2.71:1 over the 32 combinations, where
-      the on-accent mark on the neutral fill was worse than the platform's own
-      in 26. Decide whether the model should state a disabled *checked* fill
-      (or the connector apply `disabled_opacity`), then revisit that arm; it is
+      platform's own disabled pair, 1.07–4.02:1 over the 34 combinations (the
+      iced contract's report, 2026-10-11), where in v0.5.9 the on-accent mark
+      on the neutral fill was worse than the platform's own in 26. Decide
+      whether the model should state a disabled *checked* fill (or the
+      connector apply `disabled_opacity`), then revisit that arm; it is
       one match arm plus `native_checkbox_mark` in the contract.
       Half settled 2026-09-28 by the disabled rule (`docs/platform-facts.md`
       §2.1.6: a connector applies the disabled colours *and*
@@ -2124,6 +2140,22 @@ the gap — closing it is a change, and each wants its own decision.
       | `defaults.icon_sizes.dialog` | macOS, Windows (none); GNOME "(none) — 48 (GTK3 legacy)" (§2.1.8) | macos-monterey, windows-11, adwaita 22 |
       | `defaults.icon_sizes.panel` | macOS, Windows, GNOME (none) (§2.1.8) | macos-monterey, windows-11, adwaita 20 |
       | `defaults.icon_sizes.toolbar` | macOS per context, "32pt (reg) / 24 (sm)" (§2.1.8) | macos-monterey 24, the small mode rather than the regular default |
+
+      `macos-tahoe` (M2a Step 9) carries `macos-monterey`'s number, marked
+      "no macOS 26 source" in the file, in every macOS row above and wherever
+      else the model requires a number that no source gives for macOS 26:
+      `focus_ring_offset` -1, `border.corner_radius_lg` 10,
+      `border.line_width` 0.5, `border.shadow_enabled`,
+      `button.icon_text_gap` and `menu.icon_text_gap` 4, `tooltip.max_width`
+      300, `scrollbar.thumb_width` 7 and `min_thumb_length` 40,
+      `tab.min_height` 24, `segmented_control.separator_width` 1,
+      `expander.arrow_icon_size` 13, `dialog.button_gap` 12 and `icon_size` 64,
+      and the link's underline and transparent fills. It carries the same
+      way, marked, five values the model would otherwise inherit from a
+      safety net known to be the wrong kind: `scrollbar.track_color`
+      (transparent), `menu.icon_size` 16, the expander's `shadow_enabled`
+      (false), the tooltip's colours and `sidebar.background_color`
+      (`docs/todo_code-review-findings.md`, M2a Steps 8-12).
 
       The Icons page's Icon Sizes section already marks the unsourced icon
       sizes (panel 20, dialog 22, macOS large 32). Outside sizing, KDE's

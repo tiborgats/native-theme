@@ -255,8 +255,9 @@ pub fn to_margin(
 /// `epaint/src/margin.rs:117-119`), so a fractional padding or width moves an edge by at
 /// most half a point. It is exact only where the preset's padding is the platform's
 /// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
-/// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) are the title's offsets from the control's
-/// outer edge (`docs/platform-facts.md:1172`, `:1197`, `:1557`), where the border's share is
+/// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) and `macos-tahoe`'s (4 / 4 for all three)
+/// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1172`,
+/// `:1197`, `:1557`), where the border's share is
 /// still open, so there each of those controls comes out one line width per side taller than
 /// the platform's until platform-facts settles those cells (`docs/todo.md`).
 ///
@@ -598,7 +599,7 @@ mod tests {
     }
 
     /// T17: `composite_over` returns an opaque layer exactly and, for an `a == 0` layer, the
-    /// idle fill exactly, over every colour the sixteen presets state in both modes plus the
+    /// idle fill exactly, over every colour the seventeen presets state in both modes plus the
     /// alpha edges (`0`, `1`, `254`, `255`) no preset states.
     #[test]
     fn composite_over_returns_an_opaque_layer_and_a_transparent_layers_idle_fill_exactly() {

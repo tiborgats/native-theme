@@ -224,8 +224,8 @@ pub fn button(
 /// The model gives the accent and the three status colors a fill and a label
 /// and nothing else -- no hovered and no pressed variant of either -- and the
 /// neutral `button.hover_background` is not theirs to borrow: it is the neutral
-/// button's hover colour, an opaque grey or tinted neutral on fifteen of the
-/// sixteen presets and a pale blue (`#93cee9`) on kde-breeze, which would
+/// button's hover colour, an opaque grey or tinted neutral on sixteen of the
+/// seventeen presets and a pale blue (`#93cee9`) on kde-breeze, which would
 /// paint a hovered accent button in the neutral button's hover colour. So
 /// those two states follow the no-source
 /// rule and come from `class` at run time, which derives them from the same

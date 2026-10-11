@@ -25,7 +25,7 @@ use crate::style_diff::{
 };
 use crate::{Role, RoleVariant, Surface, ThemeAtlas};
 
-// ---- the 32 combinations (C6) ---------------------------------------------------------------
+// ---- the 34 combinations (C6) ---------------------------------------------------------------
 
 struct Combination {
     key: &'static str,
@@ -84,8 +84,8 @@ impl Combination {
     }
 }
 
-/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:689`) — sixteen — in both modes:
-/// the 32 combinations. One atlas per preset,
+/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:689`) — seventeen — in both modes:
+/// the 34 combinations. One atlas per preset,
 /// carrying both variants, built with no plan and `AccessibilityPreferences::default()`.
 fn combinations() -> Vec<Combination> {
     let mut out = Vec::new();
@@ -109,7 +109,7 @@ fn combinations() -> Vec<Combination> {
             });
         }
     }
-    assert_eq!(out.len(), 32, "C6's 32 combinations");
+    assert_eq!(out.len(), 34, "C6's 34 combinations");
     out
 }
 
@@ -938,7 +938,7 @@ fn expected(
 
 // ---- T10 --------------------------------------------------------------------------------------
 
-/// T10 (C6): every declared sink holds the value its location's formula gives, in all 32
+/// T10 (C6): every declared sink holds the value its location's formula gives, in all 34
 /// combinations; a `None` leaf leaves the value the location inherits; `exceptions` are the only
 /// relaxation.
 #[test]
@@ -1227,7 +1227,7 @@ fn t10c_every_undeclared_field_holds_its_inherited_value() {
     );
 }
 
-/// T10's `NaN` sweep over the 32 combinations: `Style` derives `PartialEq` (`egui/src/style.rs:241`)
+/// T10's `NaN` sweep over the 34 combinations: `Style` derives `PartialEq` (`egui/src/style.rs:241`)
 /// and one `NaN` anywhere makes a value unequal to itself; `number_formatter` compares by
 /// `Arc::ptr_eq` (`:57-62`) and always equals itself. `self_equal` spells `v == v` so
 /// that `clippy::eq_op`, deny-by-default, does not fire on it. One atlas per preset holds both

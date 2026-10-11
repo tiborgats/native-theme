@@ -884,7 +884,7 @@ mod tests {
         // C17: a filled button replaces its fill per state, so the platform's
         // hover layer is composited over that fill; `secondary_hover` keeps it
         // raw for its transparent-idle readers, which
-        // `direct_theme_reads_match_resolved_fields` covers. Over all sixteen
+        // `direct_theme_reads_match_resolved_fields` covers. Over all seventeen
         // presets both claims are contract rows.
         assert_eq!(
             tc.button_hover,
@@ -1013,7 +1013,7 @@ mod tests {
         // `defaults.accent_text_color`, which both used to take, because
         // catppuccin-mocha gives all three the same white. The source itself
         // is pinned by the `accent_foreground` and `sidebar_accent_foreground`
-        // rows of the contract table, over the sixteen presets in both modes.
+        // rows of the contract table, over the seventeen presets in both modes.
         assert_eq!(
             tc.accent_foreground,
             rgba_to_hsla(resolved.menu.hover_text_color),
@@ -1403,7 +1403,7 @@ mod tests {
     /// enforcement replaced the platform's danger label; white and black are
     /// all it could emit, so a label with any saturation left proves the
     /// replacement is gone. The contract table asserts the same over all
-    /// sixteen presets in both modes.
+    /// seventeen presets in both modes.
     #[test]
     fn status_foreground_is_the_platforms_own() {
         let resolved = resolved_preset("catppuccin-latte", ColorMode::Light);

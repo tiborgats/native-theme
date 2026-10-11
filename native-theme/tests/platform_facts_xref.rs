@@ -204,8 +204,66 @@ fn macos_monterey_matches_platform_facts() {
 }
 
 #[test]
+fn macos_tahoe_matches_platform_facts() {
+    let theme = Theme::preset("macos-tahoe").unwrap();
+    let light = theme
+        .light
+        .as_ref()
+        .expect("macos-tahoe should have light variant");
+
+    // Font: "SF Pro, 13pt, Regular (400)", the same on macOS 26 (platform-facts.md:59)
+    assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
+    assert_eq!(light.defaults.font.size, Some(FontSize::Pt(13.0)));
+    assert_eq!(light.defaults.font.weight, Some(400));
+
+    // Line height: 1.19, SF Pro's metrics, unchanged (platform-facts.md:1030)
+    assert_eq!(light.defaults.line_height, Some(1.19));
+
+    // Control corner radius: macOS 26's 6, the text field's 5 (platform-facts.md:174, :1112)
+    assert_eq!(light.defaults.border.corner_radius, Some(6.0));
+    assert_eq!(
+        light.input.border.as_ref().and_then(|b| b.corner_radius),
+        Some(5.0)
+    );
+
+    // Accent color: controlAccentColor #007aff on macOS 26.6.2
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(0, 122, 255)));
+    assert_eq!(theme.icon_set, Some(IconSet::SfSymbols));
+
+    assert!(
+        PLATFORM_FACTS.contains("macOS 26: 6 **(WebKit)**"),
+        "platform-facts.md should give macOS 26's control radius"
+    );
+}
+
+/// The macOS 26 sizes the OS probe settled: macos-tahoe states the numbers
+/// the cells' "macOS 26:" values give.
+#[test]
+fn macos_tahoe_probe_sizes_match_platform_facts() {
+    let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
+    assert!(line(1170).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1195).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1550).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1419).contains("macOS 26: same"));
+    let theme = Theme::preset("macos-tahoe").unwrap();
+    for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
+        assert_eq!(v.button.min_height, Some(24.0));
+        assert_eq!(v.input.min_height, Some(24.0));
+        assert_eq!(v.combo_box.min_height, Some(24.0));
+        assert_eq!(v.splitter.divider_width, Some(9.0));
+        assert_eq!(v.splitter.divider_color, Some(Rgba::TRANSPARENT));
+    }
+}
+
+#[test]
 fn dark_variants_use_same_font_as_light() {
-    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-monterey"] {
+    for preset_name in &[
+        "kde-breeze",
+        "adwaita",
+        "windows-11",
+        "macos-monterey",
+        "macos-tahoe",
+    ] {
         let theme = Theme::preset(preset_name).unwrap();
         let light = theme
             .light
@@ -233,7 +291,13 @@ fn dark_variants_use_same_font_as_light() {
 
 #[test]
 fn all_platform_presets_load_and_have_both_variants() {
-    for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-monterey"] {
+    for preset_name in &[
+        "kde-breeze",
+        "adwaita",
+        "windows-11",
+        "macos-monterey",
+        "macos-tahoe",
+    ] {
         let theme = Theme::preset(preset_name)
             .unwrap_or_else(|e| panic!("Failed to load '{preset_name}': {e}"));
 

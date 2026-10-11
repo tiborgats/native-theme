@@ -2,7 +2,7 @@
 //! and every field of a `styles::*` output, the native value each must equal,
 //! and the contrast report of spec section 7.
 //!
-//! Test-only. The rows are asserted over the sixteen presets of
+//! Test-only. The rows are asserted over the seventeen presets of
 //! `Theme::list_presets()` in both modes. The contrast report prints both ratios and asserts
 //! nothing: iced, not the connector, chooses the background a text input is
 //! painted on. The assertion lives over `styles::*`, where we control both
@@ -1687,11 +1687,11 @@ fn rows_claiming(field: &str) -> usize {
 }
 
 #[test]
-fn the_contract_covers_sixteen_presets_in_both_modes() -> native_theme::Result<()> {
+fn the_contract_covers_seventeen_presets_in_both_modes() -> native_theme::Result<()> {
     assert_eq!(
         combinations()?.len(),
-        32,
-        "the contract asserts over 16 presets x 2 modes; a shrinking preset \
+        34,
+        "the contract asserts over 17 presets x 2 modes; a shrinking preset \
          list must not silently narrow it"
     );
     Ok(())
@@ -3648,16 +3648,28 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 /// whose inline `Hyperlink` has no background), which they express as fully
 /// transparent.
 #[cfg(feature = "widgets")]
-const LINK_HOVER_NONE: [&str; 4] = ["kde-breeze", "adwaita", "macos-monterey", "windows-11"];
+const LINK_HOVER_NONE: [&str; 5] = [
+    "kde-breeze",
+    "adwaita",
+    "macos-monterey",
+    "macos-tahoe",
+    "windows-11",
+];
 
 /// The combinations whose platform states a translucent button fill:
 /// `controlColor` is `#ffffff3f` in darkAqua
 /// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
-/// and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF` light and
-/// `#0FFFFFFF` dark (docs/platform-facts.md:1164).
+/// macOS 26 draws the push button in `secondarySystemFillColor`'s value, `#00000014` light and
+/// `#ffffff14` dark, and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF`
+/// light and `#0FFFFFFF` dark (docs/platform-facts.md:1164).
 #[cfg(feature = "widgets")]
-const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
-    ["macos-monterey/dark", "windows-11/light", "windows-11/dark"];
+const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
+    "macos-monterey/dark",
+    "macos-tahoe/light",
+    "macos-tahoe/dark",
+    "windows-11/light",
+    "windows-11/dark",
+];
 
 #[cfg(feature = "widgets")]
 #[test]

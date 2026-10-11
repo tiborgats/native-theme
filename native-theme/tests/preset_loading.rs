@@ -274,11 +274,11 @@ fn all_presets_round_trip_toml() {
 }
 
 #[test]
-fn list_presets_returns_sixteen_entries() {
+fn list_presets_returns_seventeen_entries() {
     assert_eq!(
         Theme::list_presets().len(),
-        16,
-        "expected 16 presets, got {}",
+        17,
+        "expected 17 presets, got {}",
         Theme::list_presets().len()
     );
 }
@@ -327,6 +327,10 @@ fn preset_names_are_correct() {
         has_key("macos-monterey"),
         "list_presets() missing 'macos-monterey'"
     );
+    assert!(
+        has_key("macos-tahoe"),
+        "list_presets() missing 'macos-tahoe'"
+    );
     assert!(has_key("material-3"), "list_presets() missing 'material-3'");
     assert!(has_key("ios-13"), "list_presets() missing 'ios-13'");
     assert!(
@@ -366,6 +370,7 @@ fn material_preset_is_named_by_its_generation() {
 #[test]
 fn macos_preset_is_named_by_its_generation() {
     assert!(Theme::preset("macos-monterey").is_ok());
+    assert!(Theme::preset("macos-tahoe").is_ok());
     assert!(matches!(
         Theme::preset("macos-sonoma"),
         Err(Error::UnknownPreset { .. })

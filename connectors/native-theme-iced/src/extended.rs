@@ -63,7 +63,7 @@ pub(crate) fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
 /// - `background.base.text` <- foreground text color
 /// - `secondary.base` <- placeholder color, paired with the window's text
 ///   through `Pair::new`, which runs `readable()` and substitutes a label of
-///   iced's own on all 32 bundled preset/mode combinations
+///   iced's own on all 34 bundled preset/mode combinations
 /// - `secondary.strong` <- a copy of `secondary.base`
 /// - `background.weak.color` <- surface color
 /// - `background.weak.text` <- foreground text color
@@ -94,7 +94,7 @@ pub(crate) fn apply_overrides(
     // the platform's colour. It is not what comes out: `Pair::new` runs
     // `readable()` against the placeholder fill, and placeholder grey and
     // window text are close by construction -- exactly the pair `readable()`
-    // rejects -- so all 32 bundled combinations emit a substitute of
+    // rejects -- so all 34 bundled combinations emit a substitute of
     // iced's own (the contract's `derived.rs` counts them on every run).
     extended.secondary.base =
         Pair::new(to_color(colors.placeholder), extended.background.base.text);

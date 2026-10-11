@@ -279,6 +279,7 @@ impl FactsPlatform {
     fn of_preset(preset: &str) -> Option<Self> {
         match preset {
             "macos-monterey" => Some(Self::MacOs),
+            "macos-tahoe" => Some(Self::MacOs),
             "windows-11" => Some(Self::Windows),
             "kde-breeze" => Some(Self::Kde),
             "adwaita" => Some(Self::Gnome),

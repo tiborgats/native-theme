@@ -60,15 +60,17 @@ enum NativePreset {
     KdeBreeze,
     Adwaita,
     MacosMonterey,
+    MacosTahoe,
     Windows11,
     Material3,
 }
 
 impl NativePreset {
-    const ALL: [NativePreset; 5] = [
+    const ALL: [NativePreset; 6] = [
         NativePreset::KdeBreeze,
         NativePreset::Adwaita,
         NativePreset::MacosMonterey,
+        NativePreset::MacosTahoe,
         NativePreset::Windows11,
         NativePreset::Material3,
     ];
@@ -78,6 +80,7 @@ impl NativePreset {
             NativePreset::KdeBreeze => "kde-breeze",
             NativePreset::Adwaita => "adwaita",
             NativePreset::MacosMonterey => "macos-monterey",
+            NativePreset::MacosTahoe => "macos-tahoe",
             NativePreset::Windows11 => "windows-11",
             NativePreset::Material3 => "material-3",
         }
@@ -103,7 +106,8 @@ impl NativePreset {
             NativePreset::Adwaita
             | NativePreset::Material3
             | NativePreset::Windows11
-            | NativePreset::MacosMonterey => None,
+            | NativePreset::MacosMonterey
+            | NativePreset::MacosTahoe => None,
         }
     }
 }
@@ -167,7 +171,7 @@ const fn row(
     }
 }
 
-use NativePreset::{Adwaita, KdeBreeze, MacosMonterey, Material3, Windows11};
+use NativePreset::{Adwaita, KdeBreeze, MacosMonterey, MacosTahoe, Material3, Windows11};
 
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
@@ -266,6 +270,38 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
     row(MacosMonterey, "card", NONE, &[1592, 1593], "(none)"),
     row(MacosMonterey, "expander", NONE, &[1607, 1608], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
+    // --- macOS 26 (macos-tahoe; the "macOS 26:" values; ❓ is None) ---
+    row(MacosTahoe, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(MacosTahoe, "button", axes(4.0, 12.0), &[1171, 1172], "macOS 26: 12; 4 top / 4 bottom (API, the macOS 26.6.2 probe)"),
+    row(MacosTahoe, "input", all(4.0), &[1196, 1197], "macOS 26: 4; 4 top / 4 bottom (API)"),
+    row(MacosTahoe, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
+    row(MacosTahoe, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(MacosTahoe, "menu", NONE, &[1235, 1236], "macOS 26 ❓")
+        .with(&[("row_height", None, 1234)]),
+    row(MacosTahoe, "tooltip", NONE, &[1257, 1258], "macOS 26 ❓"),
+    row(MacosTahoe, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
+    row(MacosTahoe, "tab", NONE, &[1318, 1319], "macOS 26 ❓")
+        .with(&[("item_gap", None, 1326)]),
+    row(MacosTahoe, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    Row {
+        preset: MacosTahoe,
+        widget: "toolbar",
+        padding: NONE,
+        lines: &[1353, 1354],
+        note: "macOS 26 ❓",
+        extra: &[("bar_height", None, 1351), ("item_gap", None, 1352)],
+    },
+    row(MacosTahoe, "status_bar", NONE, &[1372, 1373], "(none): no window status bar"),
+    row(MacosTahoe, "list", NONE, &[1390, 1391], "macOS 26 ❓")
+        .with(&[("row_height", Some(24.0), 1389)]),
+    row(MacosTahoe, "popover", NONE, &[1412, 1413], "(none)"),
+    row(MacosTahoe, "dialog", NONE, &[1491, 1492], "macOS 26 ❓"),
+    row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1552, 1557], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
+        .with(&[("arrow_area_width", None, 1554)]),
+    row(MacosTahoe, "segmented_control", NONE, &[1571, 1576], "macOS 26 ❓"),
+    row(MacosTahoe, "card", NONE, &[1592, 1593], "(none)"),
+    row(MacosTahoe, "expander", NONE, &[1607, 1608], "(none), app-defined")
         .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
     // --- Windows (windows-11; the reader states no sizes) ---
     row(Windows11, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
@@ -808,6 +844,25 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(MacosMonterey, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
     field(MacosMonterey, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
     field(MacosMonterey, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
+    // --- macOS 26 ---
+    field(MacosTahoe, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt, the same on 26"),
+    field(MacosTahoe, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
+    field(MacosTahoe, "text_scale.section_heading.size", Pt(13.0), 1436, ".headline: 13pt"),
+    field(MacosTahoe, "text_scale.section_heading.weight", Weight(700), 1436, ".headline: 700"),
+    field(MacosTahoe, "text_scale.dialog_title.size", Pt(22.0), 1437, ".title1: 22pt"),
+    field(MacosTahoe, "text_scale.dialog_title.weight", Weight(400), 1437, ".title1: 400"),
+    field(MacosTahoe, "text_scale.display.size", Pt(26.0), 1438, ".largeTitle: 26pt"),
+    field(MacosTahoe, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
+    field(MacosTahoe, "dialog.title_font.size", Unstated, 1496, "macOS 26 ❓"),
+    field(MacosTahoe, "dialog.title_font.weight", Unstated, 1497, "macOS 26 ❓"),
+    field(MacosTahoe, "slider.track_height", Px(6.0), 1292, "macOS 26: 6 (API)"),
+    field(MacosTahoe, "slider.thumb_diameter", Px(16.0), 1293, "macOS 26: the 20 x 16 capsule, 16 across the track"),
+    field(MacosTahoe, "progress_bar.track_height", Px(8.0), 1303, "macOS 26: 8 (measured)"),
+    field(MacosTahoe, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
+    field(MacosTahoe, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
+    field(MacosTahoe, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
+    field(MacosTahoe, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
+    field(MacosTahoe, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
@@ -1133,10 +1188,11 @@ fn native_presets_state_no_text_scale_line_height() {
 /// arrow's side (`:1613`) and whether a frame holds header and content
 /// (`:1616`); `None` where the cell states none.
 #[rustfmt::skip]
-const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 5] = [
+const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 6] = [
     (KdeBreeze, Some(crate::model::ArrowSide::Leading), Some(false)),
     (Adwaita, Some(crate::model::ArrowSide::Trailing), Some(true)),
     (MacosMonterey, Some(crate::model::ArrowSide::Leading), None),
+    (MacosTahoe, Some(crate::model::ArrowSide::Leading), None),
     (Windows11, Some(crate::model::ArrowSide::Trailing), Some(true)),
     (Material3, None, None),
 ];

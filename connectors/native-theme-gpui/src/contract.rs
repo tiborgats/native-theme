@@ -2,7 +2,7 @@
 //! writes, the native value it must equal or the derivation that produced it,
 //! and the contrast invariant of spec section 7.
 //!
-//! Test-only. The rows are asserted over the sixteen presets of
+//! Test-only. The rows are asserted over the seventeen presets of
 //! `Theme::list_presets()` in both modes. A row that must differ on some preset carries the
 //! reason in `exceptions`, and an exception that no longer describes a real
 //! difference fails just as loudly as a broken row.
@@ -785,14 +785,14 @@ const COMPUTED_ROWS: &[ComputedRow] = &[
         source: "the pressed fill of `secondary_active` over button.background_color",
         native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_active,
-        exceptions: &[],
+        exceptions: &[("macos-tahoe", PRESSED_OVER_TRANSLUCENT)],
     },
     ComputedRow {
         slot: "button_secondary_active",
         source: "the pressed fill of `secondary_active` over button.background_color",
         native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_secondary_active,
-        exceptions: &[],
+        exceptions: &[("macos-tahoe", PRESSED_OVER_TRANSLUCENT)],
     },
 ];
 
@@ -926,6 +926,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
             ("kde-breeze", LINK_HOVER_NONE),
             ("adwaita", LINK_HOVER_NONE),
             ("macos-monterey", LINK_HOVER_NONE),
+            ("macos-tahoe", LINK_HOVER_NONE),
             ("windows-11", LINK_HOVER_NONE),
         ],
     },
@@ -1079,11 +1080,11 @@ impl Checked {
 }
 
 #[test]
-fn the_contract_covers_sixteen_presets_in_both_modes() -> crate::Result<()> {
+fn the_contract_covers_seventeen_presets_in_both_modes() -> crate::Result<()> {
     assert_eq!(
         combinations()?.len(),
-        32,
-        "the contract asserts over 16 presets x 2 modes; a shrinking preset \
+        34,
+        "the contract asserts over 17 presets x 2 modes; a shrinking preset \
          list must not silently narrow it"
     );
     Ok(())
@@ -1144,10 +1145,30 @@ fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<
 /// The combinations whose platform states a translucent button fill:
 /// `controlColor` is `#ffffff3f` in darkAqua
 /// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
-/// and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF` light and
-/// `#0FFFFFFF` dark (docs/platform-facts.md:1164).
-const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
-    ["macos-monterey/dark", "windows-11/light", "windows-11/dark"];
+/// macOS 26 draws the push button in a translucent fill, `#00000014` / `#ffffff14`
+/// (docs/platform-facts.md:1164, the probe's render), and WinUI 3's `ButtonBackground` is
+/// `ControlFillColorDefault`, `#B3FFFFFF` light and `#0FFFFFFF` dark (docs/platform-facts.md:1164).
+const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
+    "macos-monterey/dark",
+    "macos-tahoe/light",
+    "macos-tahoe/dark",
+    "windows-11/light",
+    "windows-11/dark",
+];
+
+/// The [`TRANSLUCENT_BUTTON_FILL`] combinations whose pressed fill gpui derives
+/// (`derive::active_color` of the translucent idle fill), with no platform
+/// source: no source gives macOS 26's pressed fill (docs/platform-facts.md §2.3
+/// has no pressed row, and its hover row, :1179, is ❓), so the layer is as
+/// translucent as the fill it is drawn over.
+const DERIVED_PRESSED_FILL: [&str; 2] = ["macos-tahoe/light", "macos-tahoe/dark"];
+
+/// Why `button_active` and `button_secondary_active` differ from their rows on
+/// macos-tahoe.
+const PRESSED_OVER_TRANSLUCENT: &str = "no macOS 26 pressed-fill source: gpui derives \
+                                        the pressed fill, and its blend does not \
+                                        composite a translucent layer over a \
+                                        translucent base (docs/todo.md, M6)";
 
 /// Every preset paints its buttons on an opaque fill, except the combinations
 /// in [`TRANSLUCENT_BUTTON_FILL`].
@@ -1158,7 +1179,10 @@ const TRANSLUCENT_BUTTON_FILL: [&str; 3] =
 /// move those rows onto the general arm, where agreement is no longer exact,
 /// so the assumption is asserted rather than remembered. A declared
 /// combination's hover and pressed layers must be opaque: `over` then returns
-/// the layer itself, and those rows stay exact over the translucent fill.
+/// the layer itself, and those rows stay exact over the translucent fill. The
+/// one exception is a [`DERIVED_PRESSED_FILL`] combination's pressed fill,
+/// which must still be derived (no `button.active_background`) and translucent,
+/// so the entry fails once it no longer describes one.
 #[test]
 fn button_fill_is_opaque_outside_translucent_button_fill() -> crate::Result<()> {
     let combinations = combinations()?;
@@ -1175,14 +1199,37 @@ fn button_fill_is_opaque_outside_translucent_button_fill() -> crate::Result<()> 
                 if declared { "lists" } else { "does not list" }
             ));
         }
+        let derived_pressed = DERIVED_PRESSED_FILL.contains(&c.label().as_str());
+        if derived_pressed && !declared {
+            failures.push(format!(
+                "{}: DERIVED_PRESSED_FILL lists it, and TRANSLUCENT_BUTTON_FILL does not",
+                c.label()
+            ));
+        }
+        if derived_pressed {
+            let pressed = native_pressed_fill(r, c.is_dark);
+            if r.button.active_background.is_some() || pressed.a >= 1.0 {
+                failures.push(format!(
+                    "{}: DERIVED_PRESSED_FILL lists it, yet the pressed fill is {} \
+                     and the platform {} one",
+                    c.label(),
+                    show(pressed),
+                    if r.button.active_background.is_some() {
+                        "states"
+                    } else {
+                        "states no"
+                    }
+                ));
+            }
+        }
         if declared {
-            for (what, layer) in [
-                (
-                    "button.hover_background",
-                    rgba_to_hsla(r.button.hover_background),
-                ),
-                ("the pressed fill", native_pressed_fill(r, c.is_dark)),
-            ] {
+            let pressed =
+                (!derived_pressed).then(|| ("the pressed fill", native_pressed_fill(r, c.is_dark)));
+            let hover = (
+                "button.hover_background",
+                rgba_to_hsla(r.button.hover_background),
+            );
+            for (what, layer) in std::iter::once(hover).chain(pressed) {
                 if layer.a < 1.0 {
                     failures.push(format!(
                         "{}: {what} is {}, a translucent layer over the translucent \
