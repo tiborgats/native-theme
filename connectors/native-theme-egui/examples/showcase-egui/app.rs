@@ -480,8 +480,9 @@ impl App {
 
     /// The atlas `settings` select (§10.4): `default` is `SystemTheme::from_system` through
     /// `to_egui_atlas`, with Preferences' overrides on its public `accessibility`
-    /// (`native-theme/src/lib.rs:500`) after `invalidate_caches()`; a preset is `from_preset`,
-    /// whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
+    /// (`native-theme/src/lib.rs:500`) after `invalidate_caches()`; a preset is `from_preset`
+    /// with the cached OS preferences (`detect::accessibility_preferences`, which the watcher
+    /// and `ReloadTheme` clear before they rebuild), whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
     /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
     pub(crate) fn rebuild_atlas(
@@ -621,7 +622,9 @@ impl App {
         *guard = self.settings.clone();
     }
 
-    /// One watcher for every selection, never dropped and restarted (§10.2, §10.4).
+    /// One watcher for every selection, never dropped and restarted (§10.2, §10.4). Each
+    /// event clears the detection caches first, as `ThemeWatcher::system_rebuild` does, so a
+    /// preset's rebuild reads the OS accessibility preferences again.
     #[cfg(feature = "watch")]
     fn start_watcher(&mut self, ctx: &egui::Context) {
         let selection = Arc::clone(&self.selection);
@@ -630,6 +633,7 @@ impl App {
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .clone();
+            native_theme::detect::invalidate_caches();
             App::rebuild_atlas(&settings).map(|(atlas, _)| atlas)
         });
         match started {
@@ -698,7 +702,10 @@ impl App {
             }
             Action::ToggleSidePanel => self.side_panel_visible = !self.side_panel_visible,
             Action::OpenCommandPalette => self.palette = Some(PaletteState::default()),
-            Action::ReloadTheme => self.install(ctx),
+            Action::ReloadTheme => {
+                native_theme::detect::invalidate_caches();
+                self.install(ctx);
+            }
             Action::SetMode(mode) => self.set_mode(mode, ctx),
             Action::OpenPreferences => self.preferences_open = true,
             Action::OpenAbout => self.about_open = true,
