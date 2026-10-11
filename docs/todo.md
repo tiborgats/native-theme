@@ -296,7 +296,7 @@ the file was pruned on 2026-10-11, not reordered.
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml:358`, `:782`;
       `native-theme/src/presets/kde-breeze.toml:281`, `:589`;
-      `native-theme/src/presets/adwaita.toml:297`, `:625`). Run the
+      `native-theme/src/presets/adwaita.toml:348`, `:719`). Run the
       `preset-validator` agent over the three presets against §2.23. The
       field is required in `ResolvedSpinnerTheme` — every preset must resolve
       it — so removing the value needs a decision in the model first: make
@@ -523,6 +523,13 @@ the file was pruned on 2026-10-11, not reordered.
       `segmented_control.active_text_color`: `[Colors:Selection]
       ForegroundNormal` by platform-facts §2.6 and §2.25, `#ffffff` in
       Breeze 6.7).
+      *M2e fix round 1 (2026-10-11):* kde-breeze's `separator.line_color`
+      (`#c4c8c6` / `#3e4550`, no source) is no longer stated: the separator
+      inherits `defaults.border.color` (`docs/platform-facts.md:1426`), so
+      the unsourced `#bcc0bf` / `#4d545b` above is now its line colour too.
+      kde-breeze light's `button.active_text_color`, the text on the accent
+      fill, is `#ffffff` (`[Colors:Selection] ForegroundNormal`,
+      BreezeLight.colors:95 at v6.7.5).
 
 ### Disabled: presets that state both mechanisms
 
@@ -794,6 +801,40 @@ model, the platform presets and the three connectors
       macOS runner (the `macos-26` image), a dev-only app printing UIKit's
       intrinsic sizes and colours, as M2d Step 3's reference app does; the
       CI dispatch is the maintainer's.
+
+### Model: one `*_text_color` field, two meanings
+
+- [ ] [v0.7.0] For M3: `docs/platform-facts.md` §2.1.4's
+      `danger_text_color`, `warning_text_color`, `success_text_color` and
+      `info_text_color` are the body text beside a status colour on macOS
+      and KDE (footnote ¹) and the text on the status fill on Windows and
+      GNOME (footnote ²; libadwaita 1.10.0's `destructive_fg_color`,
+      `success_fg_color`, `warning_fg_color` and `accent_fg_color`,
+      `_colors.scss:13`, `:17`, `:20`, `adw-style-manager.c:161`, since M2e
+      fix round 1). So kde-breeze states the window text (`#232629`) and
+      adwaita white (`#ffffff`) for the same field, and gpui maps it to
+      `danger_fg`, the text on the fill
+      (`connectors/native-theme-gpui/src/colors.rs:182`). Give the model
+      one meaning per field (or two fields), then restate the presets.
+
+### Presets: kde-breeze's sidebar colour set
+
+- [ ] [v0.7.0] `docs/platform-facts.md` §2.12 gave KDE's sidebar
+      `[Colors:Complementary]`, which no sidebar uses at KF 6.31.0; since M2e
+      fix round 1 the cells (`:1333`, `:1335`) are ❓. A non-modal Kirigami
+      drawer takes the `Window` set (kirigami v6.31.0
+      `src/templates/OverlayDrawer.qml:244`), a non-modal `GlobalDrawer` the
+      `View` set (`src/controls/GlobalDrawer.qml:337`), and KIO's places
+      panel (Dolphin, the file dialog) is transparent over the window with
+      `WindowText` (kio v6.31.0 `src/filewidgets/kfileplacesview.cpp:863-866`).
+      Decide which the model's sidebar is; then the facts cells, kde-breeze's
+      `sidebar.background_color` (`#dee0e2`, `[Colors:Header]
+      BackgroundNormal`; dark `#272c31`, `[WM] activeBackground`; both
+      marked ❓ "no source"), the KDE reader, which reads `[Colors:Complementary]`
+      (`native-theme/src/kde/colors.rs:173-176`, M4),
+      `docs/inheritance-rules.toml:489` and the `[Colors:Complementary]`
+      description at `docs/platform-facts.md:605` follow. The text colour
+      is settled either way: `ForegroundNormal` is the same in both sets.
 
 ---
 
@@ -1177,6 +1218,17 @@ What is still open on the iced side:
       by the iced contrast report; for `preset-validator` to judge. The same
       report shows `solarized` (both modes) and `tokyo-night` light with *idle*
       button labels at 3.6–4.1:1.
+      *M2e fix round 1 (2026-10-11):* the same unblended `#93cee9` is
+      kde-breeze's `checkbox.hover_background`, `scrollbar.thumb_hover_color`,
+      `slider.thumb_hover_color` and `combo_box.hover_background` in both
+      modes and `list.hover_background` and `sidebar.hover_background` in
+      light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
+      give no colour: "`[Colors:View] DecorationHover` blend"
+      (`docs/platform-facts.md:1342`, `:1392`), "(Breeze src) thumb hover"
+      (`:1279`). `segmented_control.hover_background` and
+      `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
+      BreezeDark colour) have no facts row. Values unchanged until a source
+      gives them.
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
@@ -2043,7 +2095,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `segmented_control.segment_height` | Windows, GNOME (none); KDE the tab bar as proxy (§2.25) | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1569`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
@@ -2061,7 +2113,7 @@ the gap — closing it is a change, and each wants its own decision.
       `docs/platform-facts.md:1212` gives GNOME 14, the CSS `min-width`,
       which is the content box, while `adwaita.toml` states the 20-point box
       that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
-      read 20), and windows-11's
+      read 20; it does since 963bcdd2, which closes this mismatch), and windows-11's
       menu `row_height` 36, which no platform-facts context gave (it states the
       mouse context's 23 since 2026-09-24: the `menu.row_height` row above). Also for
       this plan:
@@ -2326,7 +2378,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ## Deferred (pre-1.0)
 
 ### Font DPI
-- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96. KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+- [ ] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
+- [ ] [v0.7.0] For M4: an unrecognised `XDG_CURRENT_DESKTOP` with a GNOME portal backend gets the GNOME reader (`native-theme/src/pipeline.rs:631-646`), whose font DPI is 96, but `desktop_font_dpi(LinuxDesktop::Unknown)` is `None` (`native-theme/src/detect.rs:409`), so `ResolutionContext::from_system()` still reads `Xft.dpi` (96 × factor × the X11 UI scale under gnome-settings-daemon) while the connectors apply the factor: the preset path scales text twice there. The preset path should follow the reader's choice of desktop. Found in the M2e Step 7 review (2026-10-11).
 
 ### docs.rs feature badges
 - [ ] [1.0] docs.rs `doc(cfg)` badges: mark each feature-gated item on docs.rs with the feature it needs. It needs nightly's `doc_cfg` (`#![cfg_attr(docsrs, feature(doc_cfg))]` and `--cfg docsrs` in `[package.metadata.docs.rs]`); until then the item's rustdoc names the feature in prose (the v0.5.9 second pre-merge review's Task 6).

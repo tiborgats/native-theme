@@ -882,6 +882,7 @@ mod tests {
             base_light.defaults.background_color
         );
         assert_eq!(variant.defaults.text_color, base_light.defaults.text_color);
+        assert_eq!(result.font_dpi, Some(96.0));
     }
 
     #[test]

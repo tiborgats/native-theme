@@ -58,9 +58,9 @@ presets keep their style names, `kde-breeze` and `adwaita`, and their
 headers name the style version they pin (Breeze v6.7.5, libadwaita
 1.10.0, checked in the code review's M2e on 2026-10-11), since the KDE
 and GNOME readers read the installed style, and the style, not the
-desktop's version, is the generation. The iOS preset follows the rule as well: `ios-13` carries the flat
-look iOS 13 introduced, unchanged to iOS 18, its header naming the version its
-values were verified on.
+desktop's version, is the generation. The iOS preset follows the rule as
+well: `ios-13` carries the flat look iOS 13 introduced, unchanged to iOS 18,
+its header naming the version its values were verified on.
 
 ## Preset file listing
 
