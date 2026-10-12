@@ -34,7 +34,7 @@ let sys = SystemTheme::from_system()?;
 let active = sys.pick(sys.mode);                 // &ResolvedTheme
 let accent = active.defaults.accent_color;       // Rgba (fully populated)
 let bg     = active.defaults.background_color;   // Rgba
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 For OS readers, enable the `native` feature (or an individual `kde` / `portal`
@@ -59,12 +59,12 @@ are needed to use bundled presets.
 ### Load a bundled preset
 
 ```rust
-use native_theme::theme::{ColorMode, Theme};
+use native_theme::{ColorMode, Theme};
 
 let theme = Theme::preset("catppuccin-mocha")?;
 let resolved = theme.resolve(ColorMode::Dark)?;
 let accent = resolved.variant.defaults.accent_color;  // Rgba
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 `theme.resolve(mode)` returns a `Resolved` wrapper containing `variant`
@@ -73,7 +73,7 @@ let accent = resolved.variant.defaults.accent_color;  // Rgba
 ### Layer user overrides on a preset
 
 ```rust
-use native_theme::theme::Theme;
+use native_theme::Theme;
 
 let mut theme = Theme::preset("nord")?;
 let overrides = Theme::from_toml(r##"
@@ -82,7 +82,7 @@ let overrides = Theme::from_toml(r##"
     accent_color = "#ff6600"
 "##)?;
 theme.merge(&overrides);
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 `merge` fills in only the fields present in the overlay; everything else stays
@@ -91,7 +91,7 @@ from the base preset.
 ### Apply an overlay to the OS theme at runtime
 
 ```rust,no_run
-use native_theme::{SystemTheme, theme::Theme};
+use native_theme::{SystemTheme, Theme};
 
 let sys = SystemTheme::from_system()?;
 let overlay = Theme::from_toml(r##"
@@ -99,7 +99,7 @@ let overlay = Theme::from_toml(r##"
     accent_color = "#ff6600"
 "##)?;
 let customised = sys.with_overlay(&overlay)?;
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 ### Cheap dark-mode poll

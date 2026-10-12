@@ -138,8 +138,9 @@ pub mod watch;
 /// Convenience re-exports for common usage.
 ///
 /// `use native_theme::prelude::*` imports:
-/// [`Theme`], [`ResolvedTheme`], [`SystemTheme`], [`AccessibilityPreferences`],
-/// [`ResolutionContext`], [`Rgba`], [`Error`], and [`Result`].
+/// [`Theme`], [`ColorMode`], [`Resolved`], [`ResolvedTheme`], [`SystemTheme`],
+/// [`AccessibilityPreferences`], [`ResolutionContext`], [`Rgba`], [`Error`],
+/// and [`Result`].
 pub mod prelude;
 
 /// Theme data model: types, defaults, fonts, borders, widgets.
@@ -207,7 +208,8 @@ pub type Result<T> = std::result::Result<T, error::Error>;
 // without exposing them in the public API. External users access types via
 // native_theme::theme::*, native_theme::icons::*, native_theme::detect::*, etc.
 #[allow(unused_imports)]
-pub(crate) use color::{ParseColorError, Rgba};
+pub(crate) use color::ParseColorError;
+pub use color::Rgba;
 #[cfg(target_os = "linux")]
 #[allow(unused_imports)]
 pub(crate) use detect::LinuxDesktop;
@@ -219,8 +221,9 @@ pub(crate) use detect::{
     detect_is_dark, detect_reduced_motion, invalidate_caches, prefers_reduced_motion,
     system_is_dark,
 };
+pub use error::Error;
 #[allow(unused_imports)]
-pub(crate) use error::{Error, ErrorKind, RangeViolation};
+pub(crate) use error::{ErrorKind, RangeViolation};
 #[allow(unused_imports)]
 pub(crate) use icons::{
     FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeIconsLoader, SfSymbolsLoader,
@@ -231,21 +234,22 @@ pub use icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes};
 pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
 #[allow(unused_imports)]
 pub(crate) use model::{
-    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ColorMode, ComboBoxTheme,
-    DefaultsBorderSpec, DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec,
-    FontStyle, IconData, IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme,
-    LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedDefaults,
-    ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder, ScrollbarTheme,
-    SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme,
-    StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, Theme, ThemeDefaults,
-    ThemeMode, ToolbarTheme, TooltipTheme, TransformAnimation, WidgetBorderSpec, WindowTheme,
-    bundled_icon_by_name, bundled_icon_svg,
+    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DefaultsBorderSpec,
+    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
+    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
+    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedDefaults, ResolvedDefaultsBorder,
+    ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedWidgetBorder, ScrollbarTheme, SegmentedControlTheme,
+    SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
+    SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeMode, ToolbarTheme,
+    TooltipTheme, TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name,
+    bundled_icon_svg,
 };
 pub use pipeline::{DiagnosticEntry, PlatformPreset, VersionMatch};
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 pub use resolve::ResolutionContext;
+pub use theme::{ColorMode, Resolved, ResolvedTheme, Theme};
 
 /// OS-detected accessibility preferences.
 ///
