@@ -195,10 +195,16 @@ impl FromStr for Rgba {
             return Err(ParseColorError("empty hex color string".into()));
         }
 
-        // Destructure hex bytes directly. This is both UTF-8-safe (rejects any
-        // non-ASCII input implicitly, since each non-ASCII char occupies 2+ bytes
-        // and wouldn't match the single-byte slots) and avoids panic-prone string
-        // slicing / indexing.
+        // A non-ASCII char is 2+ bytes in UTF-8, so its bytes could fill the
+        // single-byte slots below and be reported as a wrong digit or length.
+        if !hex.is_ascii() {
+            return Err(ParseColorError(format!(
+                "invalid hex color {s:?}: not ASCII hex digits"
+            )));
+        }
+
+        // Destructure hex bytes directly: with ASCII input each byte is one char,
+        // and this avoids panic-prone string slicing / indexing.
         match hex.as_bytes() {
             // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa)
             [r, g, b] => {
@@ -396,6 +402,24 @@ mod tests {
     #[test]
     fn parse_invalid_length_5_chars_is_error() {
         assert!("#12345".parse::<Rgba>().is_err());
+    }
+
+    #[test]
+    fn parse_non_ascii_three_bytes_names_the_input() {
+        let err = "#é0".parse::<Rgba>().unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "invalid hex color \"#é0\": not ASCII hex digits"
+        );
+    }
+
+    #[test]
+    fn parse_non_ascii_two_bytes_names_the_input() {
+        let err = "#é".parse::<Rgba>().unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "invalid hex color \"#é\": not ASCII hex digits"
+        );
     }
 
     // === Display tests ===
