@@ -5,7 +5,8 @@
 //! This module provides the public API for monitoring OS theme changes at
 //! runtime. Call [`on_theme_change()`](crate::watch::on_theme_change) with a callback to start watching;
 //! the returned [`ThemeSubscription`] keeps the watcher alive via RAII semantics
-//! -- dropping it stops the watcher and joins the background thread.
+//! -- dropping it stops the watcher and joins the background thread (macOS has
+//! no watcher thread: dropping it removes the notification observer).
 //!
 //! # RAII ownership model
 //!
@@ -16,7 +17,8 @@
 //!
 //! # Shutdown mechanism
 //!
-//! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases:
+//! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases
+//! (on macOS only the first, which removes the observer):
 //!
 //! 1. **Platform-specific wakeup** -- if a platform shutdown closure was
 //!    registered (see constructor below), it runs first. This wakes
@@ -27,16 +29,18 @@
 //! 3. **Thread join** -- `JoinHandle::join()` blocks until the background
 //!    thread exits, ensuring clean shutdown before the guard is gone.
 //!
-//! # Constructor
+//! # Constructors
 //!
-//! There is a single `pub(crate)` constructor:
+//! There are two `pub(crate)` constructors:
 //!
 //! - [`ThemeSubscription::new(tx, handle, platform_shutdown)`] -- the optional
 //!   `platform_shutdown` closure wakes the background thread's event loop on
 //!   platforms where dropping the channel sender alone is not sufficient
-//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on Windows,
-//!   `Connection::close` on GNOME's D-Bus signal iterator). Pass `None` on
-//!   KDE, where inotify polls the channel directly.
+//!   (`PostThreadMessageW(WM_QUIT)` on Windows, `Connection::close` on
+//!   GNOME's D-Bus signal iterator). Pass `None` on KDE, where inotify polls
+//!   the channel directly.
+//! - `ThemeSubscription::from_platform_shutdown(platform_shutdown)` -- a
+//!   watcher without a thread (macOS), whose closure removes its observer.
 //!
 //! # Signal-only events
 //!
@@ -105,7 +109,8 @@ pub enum ThemeChangeEvent {
 ///
 /// Holds a background thread and a shutdown channel. When dropped, the
 /// channel sender is dropped (signaling shutdown via disconnection) and
-/// the background thread is joined.
+/// the background thread is joined. On macOS it holds the notification
+/// observer instead, and dropping it removes the observer.
 ///
 /// Note: `ThemeSubscription` is `Send` but not `Sync`. The background thread
 /// handle and shutdown channel are not safe to share across threads, but the
@@ -157,7 +162,6 @@ impl ThemeSubscription {
     #[cfg(any(
         test,
         all(target_os = "linux", any(feature = "kde", feature = "portal")),
-        all(target_os = "macos", feature = "macos"),
         all(target_os = "windows", feature = "windows"),
     ))]
     pub(crate) fn new(
@@ -171,13 +175,25 @@ impl ThemeSubscription {
             platform_shutdown,
         }
     }
+
+    /// Create a `ThemeSubscription` for a watcher without a thread: dropping
+    /// it only runs `platform_shutdown`.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    pub(crate) fn from_platform_shutdown(platform_shutdown: Box<dyn FnOnce() + Send>) -> Self {
+        Self {
+            shutdown_tx: None,
+            thread: None,
+            platform_shutdown: Some(platform_shutdown),
+        }
+    }
 }
 
 impl Drop for ThemeSubscription {
     fn drop(&mut self) {
-        // Run the platform-specific shutdown action first (e.g. CFRunLoop::stop
-        // on macOS, PostThreadMessageW WM_QUIT on Windows, Connection::close on
-        // GNOME) to wake the blocked event loop so it can observe the channel disconnect.
+        // Run the platform-specific shutdown action first (PostThreadMessageW
+        // WM_QUIT on Windows, Connection::close on GNOME) to wake the blocked
+        // event loop so it can observe the channel disconnect; on macOS it
+        // removes the notification observer.
         if let Some(shutdown_fn) = self.platform_shutdown.take() {
             shutdown_fn();
         }
@@ -213,6 +229,14 @@ impl Drop for ThemeSubscription {
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
 ///
+/// On macOS the change arrives as a distributed notification, which is
+/// delivered through the process's main run loop, so the application must be
+/// running one in a common mode; every GUI toolkit's event loop does
+/// (AppKit's `NSApplication::run`). See Apple's Notification Programming
+/// Topics, ["Notification Centers"](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Notifications/Articles/NotificationCenters.html).
+/// The callback then runs on a private serial queue, never on the main
+/// thread and never twice at once.
+///
 /// # Errors
 ///
 /// Returns [`Error::WatchUnavailable`](crate::Error::WatchUnavailable) if no
@@ -221,11 +245,10 @@ impl Drop for ThemeSubscription {
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
 /// not start: KDE, the `kdeglobals` path has no parent directory to watch;
 /// GNOME and Budgie, the watcher thread could not connect to the session bus;
-/// macOS, the watcher thread did not start or its run loop had no source for
-/// the notification observer; Windows, the watcher thread did not start or
-/// could not subscribe to `UISettings::ColorValuesChanged`. The GNOME, macOS
-/// and Windows backends return only once their thread has connected or
-/// started.
+/// Windows, the watcher thread did not start or could not subscribe to
+/// `UISettings::ColorValuesChanged`. The GNOME and Windows backends return
+/// only once their thread has connected or started; the macOS backend
+/// registers its observer on the calling thread and does not fail.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
