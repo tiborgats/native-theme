@@ -978,31 +978,43 @@ async fn select_reader() -> Option<SelectedReader> {
     }
 }
 
-/// The reader of the Linux desktop `de`, the refined desktop
-/// ([`crate::detect::refine_linux_desktop`]) the watcher and the icon-theme
-/// detection also decide by: KDE's (with the portal's accent colour where the
-/// `portal` feature is on) or GNOME's; `None` for the other desktops and
-/// where the reader's feature is off.
+/// A Linux platform reader.
 #[cfg(target_os = "linux")]
-fn linux_reader(de: LinuxDesktop) -> Option<SelectedReader> {
-    match de {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LinuxReader {
+    /// [`crate::kde::KdeReader`].
+    #[cfg(feature = "kde")]
+    Kde,
+    /// [`crate::gnome::GnomePortalKdeReader`]: the KDE reader with the
+    /// portal's accent colour.
+    #[cfg(all(feature = "kde", feature = "portal"))]
+    PortalKde,
+    /// [`crate::gnome::GnomeReader`].
+    #[cfg(feature = "portal")]
+    Gnome,
+}
+
+/// The reader of `refined`, the refined desktop
+/// ([`crate::detect::refine_desktop`]) the watcher and the icon-theme
+/// detection also decide by: KDE's, with the portal's accent colour where the
+/// `portal` feature is on and `XDG_CURRENT_DESKTOP` or the portal backend
+/// named KDE; GNOME's for GNOME and Budgie; `None` for the other desktops and
+/// where the reader's feature is off. A KDE named by `kdeglobals` alone gets
+/// the plain KDE reader: no portal backend answered, so an accent read would
+/// ask a portal that is not KDE's, or wait out a second deadline.
+#[cfg(target_os = "linux")]
+fn linux_reader_kind(refined: crate::detect::RefinedDesktop) -> Option<LinuxReader> {
+    match refined.desktop {
         #[cfg(all(feature = "kde", feature = "portal"))]
-        LinuxDesktop::Kde => Some(SelectedReader::unversioned(
-            Box::new(crate::gnome::GnomePortalKdeReader),
-            linux_preset_for_de(de).name,
-        )),
+        LinuxDesktop::Kde if refined.by_kdeglobals => Some(LinuxReader::Kde),
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxDesktop::Kde => Some(LinuxReader::PortalKde),
         #[cfg(all(feature = "kde", not(feature = "portal")))]
-        LinuxDesktop::Kde => Some(SelectedReader::unversioned(
-            Box::new(crate::kde::KdeReader),
-            linux_preset_for_de(de).name,
-        )),
+        LinuxDesktop::Kde => Some(LinuxReader::Kde),
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => None,
         #[cfg(feature = "portal")]
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie => Some(SelectedReader::unversioned(
-            Box::new(crate::gnome::GnomeReader),
-            linux_preset_for_de(de).name,
-        )),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => Some(LinuxReader::Gnome),
         #[cfg(not(feature = "portal"))]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => None,
         LinuxDesktop::Xfce
@@ -1017,6 +1029,25 @@ fn linux_reader(de: LinuxDesktop) -> Option<SelectedReader> {
         | LinuxDesktop::CosmicDe
         | LinuxDesktop::Unknown => None,
     }
+}
+
+/// [`linux_reader_kind`]'s reader, with the preset of `refined`'s desktop.
+#[cfg(target_os = "linux")]
+// Without `kde` and `portal` there is no reader: `LinuxReader` has no variant.
+#[cfg_attr(not(any(feature = "kde", feature = "portal")), allow(unreachable_code))]
+fn linux_reader(refined: crate::detect::RefinedDesktop) -> Option<SelectedReader> {
+    let reader: Box<dyn crate::reader::ThemeReader> = match linux_reader_kind(refined)? {
+        #[cfg(feature = "kde")]
+        LinuxReader::Kde => Box::new(crate::kde::KdeReader),
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxReader::PortalKde => Box::new(crate::gnome::GnomePortalKdeReader),
+        #[cfg(feature = "portal")]
+        LinuxReader::Gnome => Box::new(crate::gnome::GnomeReader),
+    };
+    Some(SelectedReader::unversioned(
+        reader,
+        linux_preset_for_de(refined.desktop).name,
+    ))
 }
 
 /// Single async implementation for all platforms. On Linux this may contain
@@ -1431,30 +1462,38 @@ ForegroundLink=41,128,185";
         assert_eq!(preset(LinuxDesktop::Xfce, true), "adwaita");
     }
 
-    /// The preset of the reader `linux_reader` picks for an unrecognised
-    /// desktop with `portal_backend` and, or without, `kdeglobals`.
+    /// The reader `linux_reader_kind` picks for an unrecognised desktop with
+    /// `portal_backend` and, or without, `kdeglobals`.
     fn unknown_desktop_reader(
         portal_backend: Option<LinuxDesktop>,
         kdeglobals: bool,
-    ) -> Option<&'static str> {
-        linux_reader(crate::detect::refine_linux_desktop(
+    ) -> Option<LinuxReader> {
+        linux_reader_kind(crate::detect::refine_desktop(
             LinuxDesktop::Unknown,
             portal_backend,
             || kdeglobals,
         ))
-        .map(|selected| selected.preset)
     }
 
-    /// A KDE portal backend gets the KDE reader, `kdeglobals` or not.
+    /// A KDE portal backend gets the KDE reader with the portal's accent,
+    /// `kdeglobals` or not, as `XDG_CURRENT_DESKTOP=KDE` does.
     #[test]
-    #[cfg(feature = "kde")]
+    #[cfg(all(feature = "kde", feature = "portal"))]
     fn an_unknown_desktop_with_a_kde_portal_gets_the_kde_reader() {
         for kdeglobals in [false, true] {
             assert_eq!(
                 unknown_desktop_reader(Some(LinuxDesktop::Kde), kdeglobals),
-                Some("kde-breeze")
+                Some(LinuxReader::PortalKde)
             );
         }
+        assert_eq!(
+            linux_reader_kind(crate::detect::refine_desktop(
+                LinuxDesktop::Kde,
+                None,
+                || false
+            )),
+            Some(LinuxReader::PortalKde)
+        );
     }
 
     /// A GNOME portal backend gets the GNOME reader, `kdeglobals` or not.
@@ -1464,18 +1503,35 @@ ForegroundLink=41,128,185";
         for kdeglobals in [false, true] {
             assert_eq!(
                 unknown_desktop_reader(Some(LinuxDesktop::Gnome), kdeglobals),
-                Some("adwaita")
+                Some(LinuxReader::Gnome)
             );
         }
     }
 
-    /// Without a portal answer, `kdeglobals` gets the KDE reader; with
-    /// neither there is no reader.
+    /// Without a portal answer, `kdeglobals` gets the plain KDE reader, with
+    /// or without the `portal` feature; with neither there is no reader.
     #[test]
     fn an_unknown_desktop_without_a_portal_answer() {
         #[cfg(feature = "kde")]
-        assert_eq!(unknown_desktop_reader(None, true), Some("kde-breeze"));
+        assert_eq!(unknown_desktop_reader(None, true), Some(LinuxReader::Kde));
         assert_eq!(unknown_desktop_reader(None, false), None);
+    }
+
+    /// A KDE reader merges over kde-breeze, the GNOME reader over adwaita.
+    #[test]
+    #[cfg(all(feature = "kde", feature = "portal"))]
+    fn the_linux_readers_presets() {
+        let preset = |portal_backend, kdeglobals| {
+            linux_reader(crate::detect::refine_desktop(
+                LinuxDesktop::Unknown,
+                portal_backend,
+                || kdeglobals,
+            ))
+            .map(|selected| selected.preset)
+        };
+        assert_eq!(preset(Some(LinuxDesktop::Kde), false), Some("kde-breeze"));
+        assert_eq!(preset(None, true), Some("kde-breeze"));
+        assert_eq!(preset(Some(LinuxDesktop::Gnome), true), Some("adwaita"));
     }
 
     // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --

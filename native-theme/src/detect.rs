@@ -128,10 +128,36 @@ pub(crate) fn refine_linux_desktop(
     portal_backend: Option<LinuxDesktop>,
     kdeglobals_exists: impl FnOnce() -> bool,
 ) -> LinuxDesktop {
-    match (raw, portal_backend) {
-        (LinuxDesktop::Unknown, Some(backend)) => backend,
-        (LinuxDesktop::Unknown, None) if kdeglobals_exists() => LinuxDesktop::Kde,
-        (other, _) => other,
+    refine_desktop(raw, portal_backend, kdeglobals_exists).desktop
+}
+
+/// A refined desktop ([`refine_linux_desktop`]), and whether only
+/// `kdeglobals` named it.
+#[cfg(target_os = "linux")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RefinedDesktop {
+    /// The desktop.
+    pub(crate) desktop: LinuxDesktop,
+    /// KDE named by the user's `kdeglobals` alone: `XDG_CURRENT_DESKTOP`
+    /// names no desktop and no portal backend answered.
+    pub(crate) by_kdeglobals: bool,
+}
+
+/// [`refine_linux_desktop`], with what named the desktop.
+#[cfg(target_os = "linux")]
+pub(crate) fn refine_desktop(
+    raw: LinuxDesktop,
+    portal_backend: Option<LinuxDesktop>,
+    kdeglobals_exists: impl FnOnce() -> bool,
+) -> RefinedDesktop {
+    let (desktop, by_kdeglobals) = match (raw, portal_backend) {
+        (LinuxDesktop::Unknown, Some(backend)) => (backend, false),
+        (LinuxDesktop::Unknown, None) if kdeglobals_exists() => (LinuxDesktop::Kde, true),
+        (other, _) => (other, false),
+    };
+    RefinedDesktop {
+        desktop,
+        by_kdeglobals,
     }
 }
 
@@ -168,7 +194,9 @@ fn kdeglobals_exists() -> bool {
 /// # Platform Behavior
 ///
 /// - **Linux:** Checks `GTK_THEME` for `:dark` or `-dark`; on KDE (with the
-///   `kde` feature) reads `kdeglobals`' background luminance; then
+///   `kde` feature; the desktop the KDE reader is chosen by, so an
+///   unrecognised one with a KDE portal backend or a `kdeglobals` counts)
+///   reads `kdeglobals`' background luminance; then
 ///   `gsettings` `color-scheme` (2-second timeout); then `kdeglobals` on
 ///   other desktops (with `kde`); finally `gtk-3.0/settings.ini`
 ///   `gtk-application-prefer-dark-theme`.
@@ -584,6 +612,24 @@ pub(crate) fn color_scheme_is_dark(
     }
 }
 
+/// Dark or light from the desktop's settings: on KDE (`detection`'s refined
+/// desktop, the one the KDE reader is chosen by) `kdeglobals` first, as
+/// gsettings `color-scheme` is synced by xdg-desktop-portal-kde and can be
+/// stale or inverted; elsewhere gsettings (reliable on GNOME and GTK-based
+/// desktops), then `kdeglobals`' background luminance.
+#[cfg(target_os = "linux")]
+fn desktop_is_dark(
+    detection: &DetectionContext,
+    kdeglobals: impl FnOnce() -> Option<bool>,
+    gsettings: impl FnOnce() -> Option<bool>,
+) -> Option<bool> {
+    if detection.refined_linux_desktop_sync() == LinuxDesktop::Kde {
+        kdeglobals().or_else(gsettings)
+    } else {
+        gsettings().or_else(kdeglobals)
+    }
+}
+
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching.
@@ -598,35 +644,25 @@ fn detect_is_dark_inner() -> bool {
             }
         }
 
-        // On KDE, read kdeglobals directly — gsettings color-scheme is
-        // synced by xdg-desktop-portal-kde and can be stale or inverted.
-        #[cfg(feature = "kde")]
-        let on_kde = matches!(
-            parse_linux_desktop(&xdg_current_desktop()),
-            LinuxDesktop::Kde
-        );
-        #[cfg(feature = "kde")]
-        {
-            if on_kde && let Some(dark) = crate::kde::kdeglobals_is_dark() {
-                return dark;
-            }
-        }
-
-        // gsettings color-scheme (reliable on GNOME / GTK-based DEs)
-        if let Some(dark) = color_scheme_is_dark(None, |schema, key| {
-            gsettings_get(schema, key, SUBPROCESS_TIMEOUT)
-        }) {
+        if let Some(dark) = desktop_is_dark(
+            system(),
+            || {
+                #[cfg(feature = "kde")]
+                {
+                    crate::kde::kdeglobals_is_dark()
+                }
+                #[cfg(not(feature = "kde"))]
+                {
+                    None
+                }
+            },
+            || {
+                color_scheme_is_dark(None, |schema, key| {
+                    gsettings_get(schema, key, SUBPROCESS_TIMEOUT)
+                })
+            },
+        ) {
             return dark;
-        }
-
-        // Fallback: read KDE's kdeglobals background luminance on a desktop
-        // other than KDE when the gsettings check above returned no result
-        // (on KDE it was read above).
-        #[cfg(feature = "kde")]
-        {
-            if !on_kde && let Some(dark) = crate::kde::kdeglobals_is_dark() {
-                return dark;
-            }
         }
 
         // Fallback: gtk-3.0/settings.ini for DEs that set the GTK dark preference
@@ -953,7 +989,7 @@ pub struct DetectionContext {
     #[cfg(target_os = "linux")]
     linux_desktop: CacheSlot<LinuxDesktop>,
     #[cfg(target_os = "linux")]
-    refined_linux_desktop: CacheSlot<LinuxDesktop>,
+    refined_linux_desktop: CacheSlot<RefinedDesktop>,
     font_dpi: CacheSlot<f32>,
 }
 
@@ -1089,7 +1125,7 @@ impl DetectionContext {
     /// `AccessibilityPreferences::from_system`) fill the cache.
     /// [`invalidate_linux_desktop()`](Self::invalidate_linux_desktop) clears it.
     #[cfg(target_os = "linux")]
-    pub(crate) async fn refined_linux_desktop(&self) -> LinuxDesktop {
+    pub(crate) async fn refined_linux_desktop(&self) -> RefinedDesktop {
         let fill = self.refined_linux_desktop.begin_fill();
         if let Some(v) = fill.cached() {
             return *v;
@@ -1103,9 +1139,30 @@ impl DetectionContext {
         };
         #[cfg(not(feature = "portal"))]
         let portal_backend = None;
-        let value = refine_linux_desktop(raw, portal_backend, kdeglobals_exists);
-        self.refined_linux_desktop.finish_fill(fill, value);
-        value
+        let refined = refine_desktop(raw, portal_backend, kdeglobals_exists);
+        let without_portal = refine_linux_desktop(raw, None, kdeglobals_exists);
+        self.finish_refined_desktop(fill, refined, without_portal);
+        refined
+    }
+
+    /// Cache `refined`, the desktop a system read refined. Where it is not
+    /// `without_portal`, the desktop a synchronous caller refines while
+    /// nothing is cached ([`refined_linux_desktop_sync`](Self::refined_linux_desktop_sync)),
+    /// the values detected from that desktop are cleared: the font DPI, the
+    /// icon theme and dark mode.
+    #[cfg(target_os = "linux")]
+    fn finish_refined_desktop(
+        &self,
+        fill: CacheFill<RefinedDesktop>,
+        refined: RefinedDesktop,
+        without_portal: LinuxDesktop,
+    ) {
+        self.refined_linux_desktop.finish_fill(fill, refined);
+        if refined.desktop != without_portal {
+            self.invalidate_font_dpi();
+            self.invalidate_icon_theme();
+            self.invalidate_is_dark();
+        }
     }
 
     /// [`refined_linux_desktop()`](Self::refined_linux_desktop) for a
@@ -1114,11 +1171,13 @@ impl DetectionContext {
     /// The two differ only on an unrecognised desktop whose portal backend
     /// names a desktop, until a system read has asked it: a KDE backend
     /// without `kdeglobals` is `Unknown` here, a GNOME backend with
-    /// `kdeglobals` is KDE here.
+    /// `kdeglobals` is KDE here. The system read then clears the font DPI,
+    /// icon theme and dark mode detected from this desktop
+    /// ([`finish_refined_desktop`](Self::finish_refined_desktop)).
     #[cfg(target_os = "linux")]
     pub(crate) fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
         if let Some(v) = self.refined_linux_desktop.get() {
-            return v;
+            return v.desktop;
         }
         refine_linux_desktop(self.linux_desktop(), None, kdeglobals_exists)
     }
@@ -1573,15 +1632,96 @@ mod detection_context_tests {
     fn the_sync_refined_desktop_is_the_cached_one() {
         let ctx = DetectionContext::new();
         let fill = ctx.refined_linux_desktop.begin_fill();
-        ctx.refined_linux_desktop
-            .finish_fill(fill, LinuxDesktop::Gnome);
+        let gnome = refine_desktop(LinuxDesktop::Gnome, None, || false);
+        ctx.refined_linux_desktop.finish_fill(fill, gnome);
         assert_eq!(ctx.refined_linux_desktop_sync(), LinuxDesktop::Gnome);
-        assert_eq!(
-            pollster::block_on(ctx.refined_linux_desktop()),
-            LinuxDesktop::Gnome
-        );
+        assert_eq!(pollster::block_on(ctx.refined_linux_desktop()), gnome);
         ctx.invalidate_linux_desktop();
         assert!(ctx.refined_linux_desktop.get().is_none());
+    }
+
+    /// A context whose raw desktop is `Unknown` and whose system read refined
+    /// it with `portal_backend`, `kdeglobals` absent.
+    #[cfg(target_os = "linux")]
+    fn refined_unknown(portal_backend: Option<LinuxDesktop>) -> DetectionContext {
+        let ctx = DetectionContext::new();
+        ctx.linux_desktop
+            .finish_fill(ctx.linux_desktop.begin_fill(), LinuxDesktop::Unknown);
+        ctx.finish_refined_desktop(
+            ctx.refined_linux_desktop.begin_fill(),
+            refine_desktop(LinuxDesktop::Unknown, portal_backend, || false),
+            LinuxDesktop::Unknown,
+        );
+        ctx
+    }
+
+    /// A font DPI, icon theme or dark mode read before the first system read
+    /// came from the desktop refined without the portal; a portal answer
+    /// that names another desktop clears them, so they are read again from
+    /// the reader's desktop (docs/todo.md:2628, M4-49).
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_portal_answer_that_changes_the_desktop_clears_what_was_read_from_it() {
+        let ctx = DetectionContext::new();
+        assert_eq!(ctx.font_dpi_with(|| 120.0), 120.0);
+        assert_eq!(
+            ctx.icon_theme_with(|| Ok("breeze".to_string()))
+                .ok()
+                .as_deref(),
+            Some("breeze")
+        );
+        assert!(ctx.is_dark.get_or_fill(|| true));
+
+        let refined = refine_desktop(LinuxDesktop::Unknown, Some(LinuxDesktop::Gnome), || true);
+        ctx.finish_refined_desktop(
+            ctx.refined_linux_desktop.begin_fill(),
+            refined,
+            LinuxDesktop::Kde,
+        );
+        assert_eq!(ctx.refined_linux_desktop_sync(), LinuxDesktop::Gnome);
+        assert_eq!(ctx.font_dpi_with(|| 96.0), 96.0);
+        assert_eq!(
+            ctx.icon_theme_with(|| Ok("Adwaita".to_string()))
+                .ok()
+                .as_deref(),
+            Some("Adwaita")
+        );
+        assert_eq!(ctx.is_dark.get(), None);
+    }
+
+    /// A portal answer that names the desktop the synchronous refinement
+    /// already gave keeps what was read from it.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_portal_answer_that_keeps_the_desktop_keeps_what_was_read() {
+        let ctx = DetectionContext::new();
+        assert_eq!(ctx.font_dpi_with(|| 120.0), 120.0);
+        let refined = refine_desktop(LinuxDesktop::Unknown, Some(LinuxDesktop::Kde), || true);
+        ctx.finish_refined_desktop(
+            ctx.refined_linux_desktop.begin_fill(),
+            refined,
+            LinuxDesktop::Kde,
+        );
+        assert_eq!(ctx.font_dpi_with(|| 96.0), 120.0);
+    }
+
+    /// On an unrecognised desktop a system read refined to KDE, dark mode
+    /// comes from `kdeglobals` first, as the KDE reader takes it; on one
+    /// refined to GNOME, from gsettings first.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dark_mode_follows_the_refined_desktop() {
+        let kde = refined_unknown(Some(LinuxDesktop::Kde));
+        assert_eq!(
+            desktop_is_dark(&kde, || Some(true), || Some(false)),
+            Some(true)
+        );
+        let gnome = refined_unknown(Some(LinuxDesktop::Gnome));
+        assert_eq!(
+            desktop_is_dark(&gnome, || Some(true), || Some(false)),
+            Some(false)
+        );
+        assert_eq!(desktop_is_dark(&gnome, || Some(true), || None), Some(true));
     }
 }
 
