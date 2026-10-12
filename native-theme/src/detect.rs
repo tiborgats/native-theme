@@ -150,7 +150,9 @@ pub fn system_is_dark() -> bool {
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
 /// [`prefers_reduced_motion()`], [`accessibility_preferences()`], or
 /// [`system_icon_theme()`] re-queries the OS; a cached failure to detect the
-/// icon theme is cleared too.
+/// icon theme is cleared too, and so is the font DPI that
+/// [`ResolutionContext::from_system()`](crate::ResolutionContext::from_system)
+/// and the KDE reader use.
 ///
 /// Call this when you detect that the user has changed system settings (e.g.,
 /// dark mode toggle, icon theme switch, accessibility preferences).
@@ -418,11 +420,13 @@ fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
 /// Detect the font DPI for the current system.
 ///
 /// Used by [`ThemeMode::into_resolved()`] as a fallback when no OS reader
-/// has provided `font_dpi`. Returns the platform-appropriate DPI for
-/// converting typographic points to logical pixels.
+/// has provided `font_dpi`, and by the KDE reader after its own kdeglobals'
+/// `forceFontDPI`. Returns the platform-appropriate DPI for converting
+/// typographic points to logical pixels.
 ///
 /// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`)
-/// - **Linux, `kde` feature** (any other desktop): `forceFontDPI` → `Xft.dpi` → xrandr → 96.0
+/// - **Linux, `kde` feature** (any other desktop): on an X11 session
+///   `forceFontDPI` (`kde_force_font_dpi`), then `Xft.dpi` → xrandr → 96.0
 /// - **Linux, `portal` feature without `kde`** (any other desktop): `Xft.dpi` → xrandr → 96.0;
 ///   neither feature: 96.0
 /// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
@@ -449,10 +453,13 @@ fn detect_system_font_dpi() -> f32 {
         }
     }
 
-    // KDE: check forceFontDPI first (same chain as the KDE reader)
     #[cfg(all(target_os = "linux", feature = "kde"))]
     {
-        if let Some(dpi) = read_kde_force_font_dpi() {
+        if let Some(dpi) = kde_force_font_dpi(
+            session_type().as_deref(),
+            || crate::kde::read_kdeglobals().and_then(|ini| ini.get("General", "forceFontDPI")),
+            || crate::kde::read_kcmfontsrc_key("General", "forceFontDPI"),
+        ) {
             return dpi;
         }
     }
@@ -470,33 +477,49 @@ fn detect_system_font_dpi() -> f32 {
     96.0
 }
 
-/// Read KDE's `forceFontDPI` from kdeglobals or kcmfontsrc.
-///
-/// This mirrors the first step of [`crate::kde::detect_font_dpi()`] so that
-/// standalone preset loading (via [`ThemeMode::into_resolved()`]) uses the
-/// same DPI as the full KDE reader pipeline.
+/// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-fn read_kde_force_font_dpi() -> Option<f32> {
-    // Try kdeglobals [General] forceFontDPI
-    let path = crate::kde::kdeglobals_path();
-    if let Ok(content) = std::fs::read_to_string(&path) {
-        let mut ini = crate::kde::create_kde_parser();
-        if ini.read(content).is_ok()
-            && let Some(dpi_str) = ini.get("General", "forceFontDPI")
-            && let Ok(dpi) = dpi_str.trim().parse::<f32>()
-            && dpi > 0.0
-        {
-            return Some(dpi);
-        }
+pub(crate) fn session_type() -> Option<String> {
+    std::env::var("XDG_SESSION_TYPE").ok()
+}
+
+/// Whether a session of `session_type` reads KDE's `forceFontDPI`: an X11
+/// session only. Plasma 6.7 reads the key on X11 alone (its fonts KCM shows
+/// it only for `xcb`, krdb hands it to X11 as `Xft.dpi` only off Wayland,
+/// `docs/platform-facts.md:713-714`), and Plasma 6.8 drops it; a Wayland
+/// session that kept the key from an X11 one would otherwise scale fonts
+/// Plasma does not.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+pub(crate) fn reads_force_font_dpi(session_type: Option<&str>) -> bool {
+    session_type == Some("x11")
+}
+
+/// A `forceFontDPI` value as a font DPI: Plasma declares the key a UInt
+/// whose default 0 means unset (`docs/platform-facts.md:713`), so it is
+/// parsed as a `u32` and 0 is `None`, as is anything that is not a `u32`.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+pub(crate) fn parse_force_font_dpi(value: &str) -> Option<f32> {
+    let dpi = value.trim().parse::<u32>().ok()?;
+    (dpi > 0).then_some(dpi as f32)
+}
+
+/// KDE's `forceFontDPI` on a session that reads it
+/// ([`reads_force_font_dpi`]): from kdeglobals, then from kcmfontsrc, the
+/// first that [`parse_force_font_dpi`] accepts. Neither file is read on any
+/// other session.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn kde_force_font_dpi(
+    session_type: Option<&str>,
+    kdeglobals: impl FnOnce() -> Option<String>,
+    kcmfontsrc: impl FnOnce() -> Option<String>,
+) -> Option<f32> {
+    if !reads_force_font_dpi(session_type) {
+        return None;
     }
-    // Try kcmfontsrc [General] forceFontDPI
-    if let Some(dpi_str) = crate::kde::read_kcmfontsrc_key("General", "forceFontDPI")
-        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
-        && dpi > 0.0
-    {
-        return Some(dpi);
-    }
-    None
+    kdeglobals()
+        .as_deref()
+        .and_then(parse_force_font_dpi)
+        .or_else(|| kcmfontsrc().as_deref().and_then(parse_force_font_dpi))
 }
 
 /// Inner detection logic for [`system_is_dark()`].
@@ -759,7 +782,7 @@ fn detect_reduced_motion_inner() -> bool {
 ///
 /// Provides "cache on first read" semantics for OS detection queries
 /// (`is_dark`, `reduced_motion`, `accessibility_preferences`, `icon_theme`,
-/// `linux_desktop`) and
+/// `linux_desktop`, the font DPI) and
 /// per-field invalidation for watchers that need fresh data.
 ///
 /// Obtain the process-wide instance via [`system()`].
@@ -775,6 +798,7 @@ pub struct DetectionContext {
     icon_theme: ArcSwapOption<Result<String, IconThemeFailure>>,
     #[cfg(target_os = "linux")]
     linux_desktop: ArcSwapOption<LinuxDesktop>,
+    font_dpi: ArcSwapOption<f32>,
 }
 
 impl DetectionContext {
@@ -787,6 +811,7 @@ impl DetectionContext {
             icon_theme: ArcSwapOption::empty(),
             #[cfg(target_os = "linux")]
             linux_desktop: ArcSwapOption::empty(),
+            font_dpi: ArcSwapOption::empty(),
         }
     }
 
@@ -915,6 +940,27 @@ impl DetectionContext {
         value
     }
 
+    /// The system font DPI (cached), from the detection chain of
+    /// `detect_system_font_dpi`.
+    ///
+    /// The first call runs the chain (on Linux `xrdb -query`, maybe
+    /// `xrandr`) and caches the result. Call
+    /// [`invalidate_all()`](Self::invalidate_all) to force a re-read.
+    pub(crate) fn font_dpi(&self) -> f32 {
+        self.font_dpi_with(detect_system_font_dpi)
+    }
+
+    /// [`font_dpi()`](Self::font_dpi), with `detect` run where nothing is
+    /// cached.
+    fn font_dpi_with(&self, detect: impl FnOnce() -> f32) -> f32 {
+        if let Some(v) = self.font_dpi.load().as_deref() {
+            return *v;
+        }
+        let value = detect();
+        self.font_dpi.store(Some(Arc::new(value)));
+        value
+    }
+
     /// Clear the cached dark-mode value.
     pub fn invalidate_is_dark(&self) {
         self.is_dark.store(None);
@@ -949,6 +995,7 @@ impl DetectionContext {
         self.invalidate_icon_theme();
         #[cfg(target_os = "linux")]
         self.invalidate_linux_desktop();
+        self.font_dpi.store(None);
     }
 }
 
@@ -977,21 +1024,9 @@ pub(crate) fn gsettings_get(schema: &str, key: &str) -> Option<String> {
     run_gsettings_with_timeout(&["get", schema, key])
 }
 
-/// Read Xft.dpi from X resources (the KDE reader's DPI chain).
-#[cfg(all(target_os = "linux", feature = "kde"))]
-pub(crate) fn xft_dpi() -> Option<f32> {
-    read_xft_dpi()
-}
-
-/// Detect physical DPI from xrandr (the KDE reader's DPI chain).
-#[cfg(all(target_os = "linux", feature = "kde"))]
-pub(crate) fn physical_dpi() -> Option<f32> {
-    detect_physical_dpi()
-}
-
-/// Detect the system font DPI (combining multiple sources).
+/// The system font DPI, cached ([`DetectionContext::font_dpi`]).
 pub(crate) fn system_font_dpi() -> f32 {
-    detect_system_font_dpi()
+    system().font_dpi()
 }
 
 #[cfg(test)]
@@ -1030,6 +1065,64 @@ mod reduced_motion_tests {
     fn detect_reduced_motion_inner_windows() {
         let result = detect_reduced_motion_inner();
         let _ = result;
+    }
+}
+
+#[cfg(all(test, target_os = "linux", feature = "kde"))]
+mod force_font_dpi_tests {
+    use super::*;
+
+    #[test]
+    fn force_font_dpi_is_a_positive_u32() {
+        assert_eq!(parse_force_font_dpi("120"), Some(120.0));
+        assert_eq!(parse_force_font_dpi(" 144 "), Some(144.0));
+        for value in ["0", "inf", "-inf", "NaN", "-96", "96.5", "1e3", ""] {
+            assert_eq!(parse_force_font_dpi(value), None, "forceFontDPI={value}");
+        }
+    }
+
+    #[test]
+    fn only_an_x11_session_reads_force_font_dpi() {
+        assert!(reads_force_font_dpi(Some("x11")));
+        for session in [Some("wayland"), Some("tty"), Some(""), None] {
+            assert!(!reads_force_font_dpi(session), "{session:?}");
+        }
+    }
+
+    #[test]
+    fn a_wayland_session_ignores_force_font_dpi() {
+        let reads = std::cell::Cell::new(0);
+        let file = || {
+            reads.set(reads.get() + 1);
+            Some("120".to_string())
+        };
+        for session in [Some("wayland"), None] {
+            assert_eq!(kde_force_font_dpi(session, file, file), None, "{session:?}");
+        }
+        assert_eq!(reads.get(), 0, "a file was read off X11");
+    }
+
+    #[test]
+    fn an_unset_or_bad_kdeglobals_key_falls_through_to_kcmfontsrc() {
+        for kdeglobals in [None, Some("0"), Some("inf")] {
+            assert_eq!(
+                kde_force_font_dpi(
+                    Some("x11"),
+                    || kdeglobals.map(String::from),
+                    || Some("144".to_string())
+                ),
+                Some(144.0),
+                "kdeglobals {kdeglobals:?}"
+            );
+        }
+        assert_eq!(
+            kde_force_font_dpi(Some("x11"), || Some("0".into()), || Some("inf".into())),
+            None
+        );
+        assert_eq!(
+            kde_force_font_dpi(Some("x11"), || Some("120".into()), || Some("144".into())),
+            Some(120.0)
+        );
     }
 }
 
@@ -1080,6 +1173,22 @@ mod detection_context_tests {
         let _ = ctx.is_dark();
         let _ = ctx.prefers_reduced_motion();
         let _ = ctx.icon_theme();
+    }
+
+    #[test]
+    fn font_dpi_is_cached_until_invalidate_all() {
+        let ctx = DetectionContext::new();
+        let runs = std::cell::Cell::new(0);
+        let detect = |dpi| {
+            runs.set(runs.get() + 1);
+            dpi
+        };
+        assert_eq!(ctx.font_dpi_with(|| detect(120.0)), 120.0);
+        assert_eq!(ctx.font_dpi_with(|| detect(96.0)), 120.0);
+        assert_eq!(runs.get(), 1, "a cached font DPI was detected again");
+        ctx.invalidate_all();
+        assert_eq!(ctx.font_dpi_with(|| detect(96.0)), 96.0);
+        assert_eq!(runs.get(), 2);
     }
 
     fn undetected() -> Result<String, IconThemeFailure> {

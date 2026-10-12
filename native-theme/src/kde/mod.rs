@@ -15,7 +15,8 @@ use crate::model::IconSizes;
 /// and Phase 79-02 decision for rationale.
 ///
 /// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
-/// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
+/// extract `forceFontDPI` from the INI content as an X11 session reads it (the
+/// session type is not checked), falling back to `None` (no DPI set).
 /// Icon sizes are NOT populated (requires filesystem access).
 #[doc(hidden)]
 pub fn from_kde_content_pure(
@@ -97,8 +98,12 @@ fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
         name: std::borrow::Cow::Owned(name),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
-        font_dpi: Some(detect_font_dpi(ini)),
+        // I/O: forceFontDPI (X11), then the cached chain (kcmfontsrc -> xrdb -> xrandr -> 96.0)
+        font_dpi: Some(reader_font_dpi(
+            ini,
+            crate::detect::session_type().as_deref(),
+            crate::detect::system_font_dpi,
+        )),
         accessibility,
     }
 }
@@ -111,46 +116,27 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResu
     Ok(from_kde_ini(&ini))
 }
 
-/// Extract forceFontDPI from the parsed INI content.
-/// Returns `Some(dpi)` if `[General]` `forceFontDPI` exists and is a valid positive f32.
+/// Extract forceFontDPI from the parsed INI content
+/// ([`crate::detect::parse_force_font_dpi`]), as an X11 session reads it.
 /// This is the pure (no I/O) portion of DPI detection.
 fn parse_force_font_dpi(ini: &configparser::ini::Ini) -> Option<f32> {
-    let dpi_str = ini.get("General", "forceFontDPI")?;
-    let dpi = dpi_str.trim().parse::<f32>().ok()?;
-    if dpi > 0.0 { Some(dpi) } else { None }
+    crate::detect::parse_force_font_dpi(&ini.get("General", "forceFontDPI")?)
 }
 
-/// Detect font DPI from KDE settings.
-///
-/// Detection chain (first positive value wins):
-/// 1. `forceFontDPI` from kdeglobals `[General]` or kcmfontsrc
-/// 2. `Xft.dpi` from X resources (via `xrdb -query`)
-/// 3. Physical DPI from display hardware (via `xrandr`)
-/// 4. Fallback: 96.0
-fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
-    // Check forceFontDPI from kdeglobals [General], then kcmfontsrc
-    let dpi_str = ini
-        .get("General", "forceFontDPI")
-        .or_else(|| read_kcmfontsrc_key("General", "forceFontDPI"));
-    if let Some(dpi_str) = dpi_str
-        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
-        && dpi > 0.0
-    {
-        return dpi;
-    }
-
-    // Fallback to Xft.dpi from X resources
-    if let Some(dpi) = crate::detect::xft_dpi() {
-        return dpi;
-    }
-
-    // Physical DPI from display hardware (xrandr)
-    if let Some(dpi) = crate::detect::physical_dpi() {
-        return dpi;
-    }
-
-    // Default: standard 96 DPI
-    96.0
+/// The KDE reader's font DPI: on a session that reads it
+/// ([`crate::detect::reads_force_font_dpi`]) the `forceFontDPI` of the
+/// kdeglobals in `ini`, else `chain`, the system's cached DPI chain
+/// ([`crate::detect::system_font_dpi`]: `forceFontDPI` on X11 from the
+/// kdeglobals and kcmfontsrc files, `Xft.dpi`, xrandr, 96.0).
+fn reader_font_dpi(
+    ini: &configparser::ini::Ini,
+    session_type: Option<&str>,
+    chain: impl FnOnce() -> f32,
+) -> f32 {
+    crate::detect::reads_force_font_dpi(session_type)
+        .then(|| parse_force_font_dpi(ini))
+        .flatten()
+        .unwrap_or_else(chain)
 }
 
 /// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).
@@ -1176,6 +1162,37 @@ AnimationDurationFactor=1.0
         let (_theme, dpi, _accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, None).unwrap();
         // forceFontDPI=120 in [General] -> font_dpi=120.0 (raw DPI, not divided by 96)
         assert_eq!(dpi, Some(120.0));
+    }
+
+    fn general_ini(content: &str) -> configparser::ini::Ini {
+        let mut ini = create_kde_parser();
+        read_kconfig(&mut ini, &format!("[General]\n{content}\n"));
+        ini
+    }
+
+    #[test]
+    fn the_reader_takes_kdeglobals_force_font_dpi_on_x11() {
+        let ini = general_ini("forceFontDPI=120");
+        assert_eq!(reader_font_dpi(&ini, Some("x11"), || 96.0), 120.0);
+    }
+
+    #[test]
+    fn the_reader_ignores_force_font_dpi_on_wayland() {
+        let ini = general_ini("forceFontDPI=120");
+        for session in [Some("wayland"), None] {
+            assert_eq!(reader_font_dpi(&ini, session, || 96.0), 96.0, "{session:?}");
+        }
+    }
+
+    #[test]
+    fn a_zero_or_infinite_force_font_dpi_is_the_chains() {
+        for value in ["0", "inf"] {
+            let ini = general_ini(&format!("forceFontDPI={value}"));
+            assert_eq!(reader_font_dpi(&ini, Some("x11"), || 96.0), 96.0, "{value}");
+            let (_theme, dpi, _accessibility) =
+                from_kde_content_pure(&format!("[General]\nforceFontDPI={value}\n"), None).unwrap();
+            assert_eq!(dpi, None, "{value}");
+        }
     }
 
     #[test]
