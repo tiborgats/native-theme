@@ -113,6 +113,21 @@ if system_is_dark() {
 
 Cached, does not run the full theme-reader pipeline.
 
+### Watch for OS theme changes
+
+With the `watch` feature:
+
+```rust,ignore
+use native_theme::watch::on_theme_change;
+
+let _subscription = on_theme_change(|_event| {
+    // Runs on a background thread. The event carries no theme: tell the UI
+    // thread to call `SystemTheme::from_system()` again.
+})?;
+```
+
+Keep the subscription alive: dropping it stops watching.
+
 ## Icon sets
 
 <p align="center">

@@ -1,12 +1,18 @@
-// native-theme-derive: proc-macro crate for ThemeWidget and ThemeFields derives.
-//
-// `ThemeWidget` generates paired Option/Resolved struct hierarchies, FIELD_NAMES,
-// merge/is_empty, validate_widget, and check_ranges from field attributes.
-//
-// `ThemeFields` (Phase 93-05 G5) generates a single `inventory::submit!` call
-// that registers a plain struct's serialized field names in the
-// `crate::resolve::FieldInfo` registry for TOML linting. Replaces the
-// hand-authored `FIELD_NAMES` constants on non-widget model types.
+//! Derive macros internal to [`native-theme`](https://docs.rs/native-theme).
+//!
+//! **Do not depend on this crate directly; depend on `native-theme`.** The
+//! derives exist for `native-theme`'s own model types: their expansions name
+//! `crate::resolve::*` paths (`WidgetFieldInfo`, `FieldInfo`,
+//! `validate_helpers`, the inheritance-rule registries) that exist only
+//! inside `native-theme`, so they compile nowhere else.
+//!
+//! - [`ThemeWidget`](derive@ThemeWidget) generates, from one annotated
+//!   struct, its paired `Resolved` struct, `FIELD_NAMES`, `merge` and
+//!   `is_empty`, `validate_widget`, `check_ranges` and the struct's
+//!   inheritance rules; its documentation is the reference for the
+//!   `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` attributes.
+//! - [`ThemeFields`](derive@ThemeFields) registers a plain struct's
+//!   serialized field names for TOML linting.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};

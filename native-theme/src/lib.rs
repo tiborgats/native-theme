@@ -4,6 +4,101 @@
 //!
 //! Any Rust GUI app can look native on any platform by loading a single theme
 //! file or reading live OS settings, without coupling to any specific toolkit.
+//!
+//! A [`Theme`] is sparse and TOML-shaped: every field is an `Option`, and it
+//! holds a light and a dark variant. Resolving one variant fills every field
+//! the model requires and checks its ranges, giving a [`ResolvedTheme`] that
+//! UI code reads without unwrapping. Most applications use a toolkit
+//! connector, which does this and converts the result:
+//! `native-theme-iced`, `native-theme-gpui` or `native-theme-egui`.
+//!
+//! # Quick start
+//!
+//! Read the OS theme and pick its active variant (the OS readers need the
+//! `native` feature, or `kde`, `portal`, `macos`, `windows`):
+//!
+//! ```no_run
+//! use native_theme::SystemTheme;
+//!
+//! let sys = SystemTheme::from_system()?;
+//! let active = sys.pick(sys.mode); // &ResolvedTheme
+//! let _accent = active.defaults.accent_color;
+//! # Ok::<(), native_theme::Error>(())
+//! ```
+//!
+//! Load a bundled preset and resolve one mode (no features needed):
+//!
+//! ```
+//! use native_theme::{ColorMode, Theme};
+//!
+//! let resolved = Theme::preset("nord")?.resolve(ColorMode::Dark)?;
+//! assert_eq!(resolved.mode, ColorMode::Dark);
+//! let _background = resolved.variant.defaults.background_color;
+//! # Ok::<(), native_theme::Error>(())
+//! ```
+//!
+//! Apply an overlay to the OS theme; the overlay states only what it changes:
+//!
+//! ```no_run
+//! use native_theme::{SystemTheme, Theme};
+//!
+//! let sys = SystemTheme::from_system()?;
+//! let overlay = Theme::from_toml(r##"
+//!     [light.defaults]
+//!     accent_color = "#ff6600"
+//!
+//!     [dark.defaults]
+//!     accent_color = "#ff6600"
+//! "##)?;
+//! let customised = sys.with_overlay(&overlay)?;
+//! # Ok::<(), native_theme::Error>(())
+//! ```
+//!
+//! Hand the result to a connector: `native-theme-iced`, `native-theme-gpui`
+//! and `native-theme-egui` each have `from_system` and `from_preset`, which do
+//! the steps above, and `to_theme`, which converts a [`ResolvedTheme`] you
+//! resolved yourself into the toolkit's theme.
+//!
+//! Watch for OS theme changes (the `watch` feature). The callback runs on a
+//! background thread and carries no theme: read the OS theme again. Keep the
+//! subscription alive; dropping it stops watching:
+//!
+//! ```no_run
+//! # #[cfg(feature = "watch")]
+//! # {
+//! let _subscription = native_theme::watch::on_theme_change(|_event| {
+//!     // Tell the UI thread to call `SystemTheme::from_system()` again.
+//! })?;
+//! # }
+//! # Ok::<(), native_theme::Error>(())
+//! ```
+//!
+//! # Modules
+//!
+//! - The crate root: [`Theme`], [`ColorMode`], [`SystemTheme`],
+//!   [`ResolvedTheme`], [`Resolved`], [`ResolutionContext`],
+//!   [`AccessibilityPreferences`], [`Rgba`], [`Error`], and the icon-set
+//!   choice ([`IconSetChoice`], [`default_icon_choice`],
+//!   [`list_freedesktop_themes`]).
+//! - [`prelude`]: the ten most-used items, for a glob import.
+//! - [`theme`]: the data model, the sparse types and their resolved
+//!   counterparts, widget by widget.
+//! - [`presets`]: [`PresetInfo`](presets::PresetInfo), the description of a
+//!   bundled preset that [`Theme::list_presets`] returns; [`Theme::preset`]
+//!   loads one.
+//! - [`resolve`]: the resolution-time inputs.
+//! - [`detect`]: OS detection, such as dark mode, reduced motion and the
+//!   desktop environment.
+//! - [`icons`]: the per-set icon loaders.
+//! - [`fonts`]: font face matching; the platform's own typeface with the
+//!   `system-fonts` feature.
+//! - [`pipeline`]: the running platform's preset and a diagnosis of its
+//!   theme support.
+//! - [`error`] and [`color`]: the error and colour types.
+//! - `watch` (the `watch` feature): OS theme-change notifications.
+//! - `rasterize` (the `svg-rasterize` feature): SVG icons to RGBA.
+//! - The platform modules, compiled on their platform with their feature:
+//!   `kde`, `gnome`, `freedesktop`, `macos`, `sficons`, `windows`, `winicons`.
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
