@@ -115,6 +115,7 @@ pub(crate) fn validate_svgs(
             if !svg_path.exists() {
                 errors.push(BuildError::MissingSvg {
                     path: svg_path.to_string_lossy().into_owned(),
+                    role: role.clone(),
                 });
             }
         }
@@ -246,13 +247,22 @@ pub(crate) fn validate_de_keys(mapping: &ThemeMapping, mapping_path: &str) -> Ve
 /// Validate that no theme appears in both `bundled_themes` and `system_themes`.
 ///
 /// Returns `BuildError::ThemeOverlap` for each theme that is in both lists.
-pub(crate) fn validate_theme_overlap(config: &MasterConfig) -> Vec<BuildError> {
+///
+/// When `file_hint` is `Some`, it is included in the error for per-file context.
+/// Pass `None` when validating a merged config where per-file context is lost.
+pub(crate) fn validate_theme_overlap(
+    config: &MasterConfig,
+    file_hint: Option<&str>,
+) -> Vec<BuildError> {
     let bundled: BTreeSet<&str> = config.bundled_themes.iter().map(|s| s.as_str()).collect();
     config
         .system_themes
         .iter()
         .filter(|t| bundled.contains(t.as_str()))
-        .map(|t| BuildError::ThemeOverlap { theme: t.clone() })
+        .map(|t| BuildError::ThemeOverlap {
+            theme: t.clone(),
+            source_file: file_hint.map(String::from),
+        })
         .collect()
 }
 
@@ -272,9 +282,9 @@ fn is_valid_ident_start(pascal: &str) -> bool {
 /// - Result is not a Rust keyword.
 /// - No two roles produce the same PascalCase variant (collision).
 ///
-/// When `file_hint` is `Some`, it is included in `IdentifierCollision` errors
-/// for per-file context. Pass `None` when validating a merged config where
-/// per-file context is lost.
+/// When `file_hint` is `Some`, it is included in `InvalidIdentifier` and
+/// `IdentifierCollision` errors for per-file context. Pass `None` when
+/// validating a merged config where per-file context is lost.
 pub(crate) fn validate_identifiers(
     config: &MasterConfig,
     file_hint: Option<&str>,
@@ -287,6 +297,7 @@ pub(crate) fn validate_identifiers(
         errors.push(BuildError::InvalidIdentifier {
             name: config.name.clone(),
             reason: "PascalCase conversion produces an empty string".to_string(),
+            source_file: file_hint.map(String::from),
         });
     } else if !is_valid_ident_start(&enum_pascal) {
         errors.push(BuildError::InvalidIdentifier {
@@ -295,11 +306,13 @@ pub(crate) fn validate_identifiers(
                 "\"{enum_pascal}\" starts with a non-letter character; \
                  Rust identifiers must begin with a letter or underscore"
             ),
+            source_file: file_hint.map(String::from),
         });
     } else if RUST_KEYWORDS.contains(&enum_pascal.as_str()) {
         errors.push(BuildError::InvalidIdentifier {
             name: config.name.clone(),
             reason: format!("\"{enum_pascal}\" is a Rust keyword"),
+            source_file: file_hint.map(String::from),
         });
     }
 
@@ -312,6 +325,7 @@ pub(crate) fn validate_identifiers(
             errors.push(BuildError::InvalidIdentifier {
                 name: role.clone(),
                 reason: "PascalCase conversion produces an empty string".to_string(),
+                source_file: file_hint.map(String::from),
             });
             continue;
         }
@@ -322,11 +336,13 @@ pub(crate) fn validate_identifiers(
                     "\"{pascal}\" starts with a non-letter character; \
                      Rust identifiers must begin with a letter or underscore"
                 ),
+                source_file: file_hint.map(String::from),
             });
         } else if RUST_KEYWORDS.contains(&pascal.as_str()) {
             errors.push(BuildError::InvalidIdentifier {
                 name: role.clone(),
                 reason: format!("\"{pascal}\" is a Rust keyword"),
+                source_file: file_hint.map(String::from),
             });
         }
         if let Some(&first_role) = seen.get(&pascal) {
@@ -371,7 +387,10 @@ pub(crate) fn validate_no_duplicate_roles_in_file(
 ///
 /// Checks both `bundled_themes` and `system_themes` for exact duplicates.
 /// Returns `BuildError::DuplicateTheme` for each duplicate found.
-pub(crate) fn validate_no_duplicate_themes(config: &MasterConfig) -> Vec<BuildError> {
+pub(crate) fn validate_no_duplicate_themes(
+    config: &MasterConfig,
+    file_path: &str,
+) -> Vec<BuildError> {
     let mut errors = Vec::new();
 
     let mut seen = BTreeSet::new();
@@ -380,6 +399,7 @@ pub(crate) fn validate_no_duplicate_themes(config: &MasterConfig) -> Vec<BuildEr
             errors.push(BuildError::DuplicateTheme {
                 theme: theme.clone(),
                 list: "bundled-themes".to_string(),
+                file: file_path.to_string(),
             });
         }
     }
@@ -390,6 +410,7 @@ pub(crate) fn validate_no_duplicate_themes(config: &MasterConfig) -> Vec<BuildEr
             errors.push(BuildError::DuplicateTheme {
                 theme: theme.clone(),
                 list: "system-themes".to_string(),
+                file: file_path.to_string(),
             });
         }
     }
@@ -414,6 +435,35 @@ fn is_invisible_unicode(c: char) -> bool {
     )
 }
 
+/// The first rule `name` breaks, with the character that breaks it when one
+/// does, or `None` for a well-formed icon name.
+fn icon_name_violation(name: &str) -> Option<(&'static str, Option<char>)> {
+    if name.is_empty() {
+        return Some(("names must be non-empty", None));
+    }
+    if let Some(c) = name.chars().find(|c| c.is_control()) {
+        return Some(("names must be free of control characters", Some(c)));
+    }
+    // Issue 4: Reject path separators and parent-directory sequences
+    if let Some(c) = name.chars().find(|c| *c == '/' || *c == '\\') {
+        return Some((
+            "names must not contain a path separator ('/' or '\\')",
+            Some(c),
+        ));
+    }
+    if name.contains("..") {
+        return Some(("names must not contain \"..\"", None));
+    }
+    // Issue 62: Reject invisible Unicode characters
+    if let Some(c) = name.chars().find(|c| is_invisible_unicode(*c)) {
+        return Some((
+            "names must be free of invisible Unicode characters",
+            Some(c),
+        ));
+    }
+    None
+}
+
 /// Validate that all icon name strings in a mapping are well-formed.
 ///
 /// Rejects:
@@ -435,13 +485,20 @@ pub(crate) fn validate_mapping_values(
         // Issue 43: Validate DE keys alongside values
         if let MappingValue::DeAware(m) = value {
             for key in m.keys() {
-                if key.is_empty() || key.chars().any(|c| c.is_control()) {
-                    let offending = key.chars().find(|c| c.is_control());
+                let violation = if key.is_empty() {
+                    Some(("DE keys must be non-empty", None))
+                } else {
+                    key.chars()
+                        .find(|c| c.is_control())
+                        .map(|c| ("DE keys must be free of control characters", Some(c)))
+                };
+                if let Some((reason, offending)) = violation {
                     errors.push(BuildError::InvalidIconName {
                         name: key.to_string(),
                         role: role.clone(),
                         mapping_file: mapping_path.to_string(),
                         offending,
+                        reason: reason.to_string(),
                     });
                 }
             }
@@ -452,24 +509,14 @@ pub(crate) fn validate_mapping_values(
             MappingValue::DeAware(m) => m.values().map(|s| s.as_str()).collect(),
         };
         for name in names {
-            if name.is_empty()
-                || name.chars().any(|c| c.is_control())
-                // Issue 4: Reject path separators and parent-directory sequences
-                || name.contains('/')
-                || name.contains('\\')
-                || name.contains("..")
-                // Issue 62: Reject invisible Unicode characters
-                || name.chars().any(is_invisible_unicode)
-            {
-                // Issue 97: Capture the first offending character for diagnostics
-                let offending = name.chars().find(|c| {
-                    c.is_control() || *c == '/' || *c == '\\' || is_invisible_unicode(*c)
-                });
+            // Issue 97: Capture the offending character for diagnostics
+            if let Some((reason, offending)) = icon_name_violation(name) {
                 errors.push(BuildError::InvalidIconName {
                     name: name.to_string(),
                     role: role.clone(),
                     mapping_file: mapping_path.to_string(),
                     offending,
+                    reason: reason.to_string(),
                 });
             }
         }
@@ -867,7 +914,7 @@ mod tests {
     #[test]
     fn theme_overlap_detected() {
         let config = make_config("x", &["a"], &["material"], &["material"]);
-        let errors = validate_theme_overlap(&config);
+        let errors = validate_theme_overlap(&config, None);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(
@@ -883,7 +930,7 @@ mod tests {
     #[test]
     fn theme_overlap_none() {
         let config = make_config("x", &["a"], &["material"], &["sf-symbols"]);
-        let errors = validate_theme_overlap(&config);
+        let errors = validate_theme_overlap(&config, None);
         assert!(errors.is_empty(), "no overlap expected");
     }
 
@@ -895,7 +942,7 @@ mod tests {
             &["material", "lucide"],
             &["material", "lucide"],
         );
-        let errors = validate_theme_overlap(&config);
+        let errors = validate_theme_overlap(&config, None);
         assert_eq!(errors.len(), 2);
     }
 
@@ -918,7 +965,7 @@ mod tests {
         let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(|e| {
-                matches!(e, BuildError::InvalidIdentifier { name, reason }
+                matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "---" && reason.contains("empty"))
             }),
             "should detect empty PascalCase for enum name: {errors:?}"
@@ -929,14 +976,16 @@ mod tests {
     fn identifier_role_is_keyword() {
         // "r#self" -> PascalCase "Self" which is a keyword
         let config = make_config("app-icon", &["self"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_identifiers(&config, Some("icons/icons.toml"));
         assert!(
             errors.iter().any(
-                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "self" && reason.contains("keyword"))
             ),
             "should detect keyword: {errors:?}"
         );
+        let msg = errors[0].to_string();
+        assert!(msg.contains("in icons/icons.toml: "), "{msg}");
     }
 
     #[test]
@@ -946,7 +995,7 @@ mod tests {
         let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
-                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "self" && reason.contains("keyword"))
             ),
             "should detect keyword for enum name: {errors:?}"
@@ -985,7 +1034,7 @@ mod tests {
         let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
-                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "3d-rotate" && reason.contains("non-letter"))
             ),
             "should reject digit-starting role identifier: {errors:?}"
@@ -998,7 +1047,7 @@ mod tests {
         let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
-                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "3d-icons" && reason.contains("non-letter"))
             ),
             "should reject digit-starting enum name: {errors:?}"
@@ -1011,7 +1060,7 @@ mod tests {
         let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
-                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
                     if name == "123" && reason.contains("non-letter"))
             ),
             "should reject all-digits role identifier: {errors:?}"
@@ -1063,17 +1112,18 @@ mod tests {
     #[test]
     fn duplicate_bundled_theme_detected() {
         let config = make_config("x", &["a"], &["material", "lucide", "material"], &[]);
-        let errors = validate_no_duplicate_themes(&config);
+        let errors = validate_no_duplicate_themes(&config, "icons/icons.toml");
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(msg.contains("material"));
         assert!(msg.contains("bundled-themes"));
+        assert!(msg.contains("icons/icons.toml"), "{msg}");
     }
 
     #[test]
     fn duplicate_system_theme_detected() {
         let config = make_config("x", &["a"], &[], &["freedesktop", "freedesktop"]);
-        let errors = validate_no_duplicate_themes(&config);
+        let errors = validate_no_duplicate_themes(&config, "icons.toml");
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(msg.contains("freedesktop"));
@@ -1083,7 +1133,7 @@ mod tests {
     #[test]
     fn no_duplicate_themes() {
         let config = make_config("x", &["a"], &["material", "lucide"], &["freedesktop"]);
-        let errors = validate_no_duplicate_themes(&config);
+        let errors = validate_no_duplicate_themes(&config, "icons.toml");
         assert!(errors.is_empty());
     }
 
@@ -1136,6 +1186,9 @@ mod tests {
         let mapping = make_mapping(vec![("play-pause", MappingValue::Simple("sub/dir".into()))]);
         let errors = validate_mapping_values(&mapping, "mapping.toml");
         assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("(contains '\\u{002F}')"), "{msg}");
+        assert!(msg.ends_with("path separator ('/' or '\\')"), "{msg}");
     }
 
     #[test]

@@ -60,22 +60,22 @@ fn generate_fixture(toml_path: &Path) -> native_theme_build::GenerateOutput {
 fn happy_path_generates_correct_enum() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
-    assert!(!output.code.is_empty(), "expected generated code");
+    assert!(!output.code().is_empty(), "expected generated code");
 
     // Check enum name is PascalCase of "sample-icon"
     assert!(
-        output.code.contains("pub enum SampleIcon"),
+        output.code().contains("pub enum SampleIcon"),
         "should have PascalCase enum name. code:\n{}",
-        output.code
+        output.code()
     );
 
     // Check variants
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
 }
@@ -86,7 +86,7 @@ fn happy_path_has_icon_provider_impl() {
 
     assert!(
         output
-            .code
+            .code()
             .contains("impl native_theme::icons::IconProvider for SampleIcon"),
         "should have IconProvider impl"
     );
@@ -97,13 +97,13 @@ fn happy_path_icon_name_material() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
         ),
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
         ),
         "should have Material icon_name arm for SkipForward"
@@ -115,13 +115,13 @@ fn happy_path_icon_name_sf_symbols() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
         ),
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
         ),
         "should have SfSymbols icon_name arm for SkipForward"
@@ -134,17 +134,17 @@ fn happy_path_icon_svg_bundled_only() {
 
     // Material (bundled) should have include_bytes! arms
     assert!(
-        output.code.contains("include_bytes!"),
+        output.code().contains("include_bytes!"),
         "should have include_bytes! for bundled material SVGs"
     );
     assert!(
-        output.code.contains("material/play_pause.svg"),
+        output.code().contains("material/play_pause.svg"),
         "should reference material/play_pause.svg in include_bytes! path"
     );
 
     // sf-symbols (system) should NOT have include_bytes! arms
     assert!(
-        !output.code.contains("SfSymbols) => Some(include_bytes!"),
+        !output.code().contains("SfSymbols) => Some(include_bytes!"),
         "system themes should not have include_bytes! arms"
     );
 }
@@ -154,15 +154,15 @@ fn happy_path_has_const_all() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains("pub const ALL: &[Self]"),
+        output.code().contains("pub const ALL: &[Self]"),
         "should have const ALL"
     );
     assert!(
-        output.code.contains("Self::PlayPause"),
+        output.code().contains("Self::PlayPause"),
         "ALL should contain PlayPause variant"
     );
     assert!(
-        output.code.contains("Self::SkipForward"),
+        output.code().contains("Self::SkipForward"),
         "ALL should contain SkipForward variant"
     );
 }
@@ -172,7 +172,7 @@ fn happy_path_output_filename() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert_eq!(
-        output.output_path.file_name().unwrap().to_str().unwrap(),
+        output.output_path().file_name().unwrap().to_str().unwrap(),
         "sample_icon.rs"
     );
 }
@@ -181,10 +181,10 @@ fn happy_path_output_filename() {
 fn happy_path_size_report() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
-    assert_eq!(output.role_count, 2);
-    assert_eq!(output.bundled_theme_count, 1);
-    assert_eq!(output.svg_count, 2);
-    assert!(output.total_svg_bytes > 0);
+    assert_eq!(output.role_count(), 2);
+    assert_eq!(output.bundled_theme_count(), 1);
+    assert_eq!(output.svg_count(), 2);
+    assert!(output.total_svg_bytes() > 0);
 }
 
 // =============================================================================
@@ -302,7 +302,7 @@ bundled-themes = ["material"]
         errors
             .errors()
             .iter()
-            .any(|e| matches!(e, native_theme_build::BuildError::MissingSvg { path } if path.contains("skip_next.svg"))),
+            .any(|e| matches!(e, native_theme_build::BuildError::MissingSvg { path, role } if path.contains("skip_next.svg") && role == "skip-forward")),
         "should have MissingSvg for 'skip_next.svg': {errors:?}",
     );
 
@@ -353,22 +353,25 @@ bundled-themes = ["material"]
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
     assert!(
-        output.code.contains("pub enum AllIcons"),
+        output.code().contains("pub enum AllIcons"),
         "should use override enum name"
     );
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause from file A"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward from file B"
     );
 
     // #61: Roles from the first source should appear before roles from the second
-    let play_pos = output.code.find("PlayPause").expect("PlayPause not found");
+    let play_pos = output
+        .code()
+        .find("PlayPause")
+        .expect("PlayPause not found");
     let skip_pos = output
-        .code
+        .code()
         .find("SkipForward")
         .expect("SkipForward not found");
     assert!(
@@ -377,7 +380,7 @@ bundled-themes = ["material"]
     );
 
     assert_eq!(
-        output.output_path.file_name().unwrap().to_str().unwrap(),
+        output.output_path().file_name().unwrap().to_str().unwrap(),
         "all_icons.rs"
     );
 
@@ -416,54 +419,54 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "expected generated code");
+    assert!(!output.code().is_empty(), "expected generated code");
 
     // Verify cfg-gated DE dispatch
     assert!(
-        output.code.contains("#[cfg(target_os = \"linux\")]"),
+        output.code().contains("#[cfg(target_os = \"linux\")]"),
         "should have cfg linux gate. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
         output
-            .code
+            .code()
             .contains("native_theme::detect::parse_linux_desktop("),
         "should call parse_linux_desktop. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
         output
-            .code
+            .code()
             .contains("native_theme::detect::LinuxDesktop::Kde => Some(\"view-visible\")"),
         "should have KDE-specific arm. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("_ => Some(\"view-reveal\")"),
+        output.code().contains("_ => Some(\"view-reveal\")"),
         "should have default wildcard arm. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("#[cfg(not(target_os = \"linux\"))]"),
+        output.code().contains("#[cfg(not(target_os = \"linux\"))]"),
         "should have cfg not-linux gate. code:\n{}",
-        output.code
+        output.code()
     );
 
     // #89: Verify DE-specific match arms reference the expected DE names
     assert!(
-        output.code.contains("Kde"),
+        output.code().contains("Kde"),
         "should contain Kde variant in DE dispatch. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("view-visible"),
+        output.code().contains("view-visible"),
         "should contain KDE-specific icon name 'view-visible'. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("view-reveal"),
+        output.code().contains("view-reveal"),
         "should contain default icon name 'view-reveal'. code:\n{}",
-        output.code
+        output.code()
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -499,24 +502,24 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
 
     // Warnings should mention cosmic and unrecognized (checked separately for resilience)
     assert!(
-        output.warnings.iter().any(|w| w.contains("cosmic")),
+        output.warnings().iter().any(|w| w.contains("cosmic")),
         "should mention 'cosmic': {:?}",
-        output.warnings
+        output.warnings()
     );
     assert!(
-        output.warnings.iter().any(|w| w.contains("unrecognized")),
+        output.warnings().iter().any(|w| w.contains("unrecognized")),
         "should mention 'unrecognized': {:?}",
-        output.warnings
+        output.warnings()
     );
 
-    assert!(!output.code.is_empty(), "code should still be generated");
+    assert!(!output.code().is_empty(), "code should still be generated");
 
     // Since "cosmic" maps to None in de_key_to_variant, no DE-specific arms generated,
     // so the DeAware value collapses to a simple arm using the default
     assert!(
-        output.code.contains("Some(\"view-reveal\")"),
+        output.code().contains("Some(\"view-reveal\")"),
         "should use default value. code:\n{}",
-        output.code
+        output.code()
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -622,14 +625,14 @@ bundled-themes = ["material"]
     // The include_bytes! path should be relative to the base_dir (themes/),
     // not relative to the TOML file's parent directory (config/).
     assert!(
-        output.code.contains("include_bytes!"),
+        output.code().contains("include_bytes!"),
         "should have include_bytes! directives"
     );
     // With base_dir set to themes/, the path should reference material/play_pause.svg
     assert!(
-        output.code.contains("material/play_pause.svg"),
+        output.code().contains("material/play_pause.svg"),
         "include_bytes! path should reference material/play_pause.svg. code:\n{}",
-        output.code
+        output.code()
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -644,25 +647,25 @@ fn golden_syntax_check() {
 
     // Contains enum keyword
     assert!(
-        output.code.contains("enum"),
+        output.code().contains("enum"),
         "generated code should contain 'enum' keyword"
     );
 
     // Contains fn icon_name (trait impl method, not pub)
     assert!(
-        output.code.contains("fn icon_name"),
+        output.code().contains("fn icon_name"),
         "generated code should contain 'fn icon_name'"
     );
 
     // Contains fn icon_svg (bundled theme present, so SVG function should exist)
     assert!(
-        output.code.contains("fn icon_svg"),
+        output.code().contains("fn icon_svg"),
         "generated code should contain 'fn icon_svg'"
     );
 
     // Braces are balanced
-    let open_braces = output.code.chars().filter(|&c| c == '{').count();
-    let close_braces = output.code.chars().filter(|&c| c == '}').count();
+    let open_braces = output.code().chars().filter(|&c| c == '{').count();
+    let close_braces = output.code().chars().filter(|&c| c == '}').count();
     assert_eq!(
         open_braces, close_braces,
         "braces should be balanced: {{ = {open_braces}, }} = {close_braces}"
@@ -682,8 +685,16 @@ fn compile_generated_code() {
     let src_dir = dir.join("src");
     fs::create_dir_all(&src_dir).unwrap();
 
-    // Write the generated code as lib.rs
-    fs::write(src_dir.join("lib.rs"), &output.code).unwrap();
+    // Write the generated code as lib.rs, under the lint a crate that
+    // `include!`s it into a public module meets
+    fs::write(
+        src_dir.join("lib.rs"),
+        format!(
+            "#![deny(missing_docs)]\n//! compile check\n{}",
+            output.code()
+        ),
+    )
+    .unwrap();
 
     // Copy fixture SVGs so include_bytes! paths resolve (they reference CARGO_MANIFEST_DIR)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -722,7 +733,7 @@ native-theme = {{ path = "{}" }}
                 let stderr = String::from_utf8_lossy(&output_cmd.stderr);
                 panic!(
                     "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
-                    output.code
+                    output.code()
                 );
             }
         }
@@ -757,23 +768,23 @@ system-themes = ["freedesktop"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     // System theme should not have include_bytes!
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
     // DE-aware mapping should generate DE dispatch code
     assert!(
-        output.code.contains("media-playback-start"),
+        output.code().contains("media-playback-start"),
         "should contain KDE-specific icon name"
     );
 
@@ -806,17 +817,17 @@ system-themes = ["segoe-fluent"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
 
@@ -850,18 +861,18 @@ system-themes = ["lucide"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     // System theme should not have include_bytes!
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
 
@@ -896,14 +907,14 @@ system-themes = ["freedesktop"]
 
     // System-only themes should NOT generate include_bytes! calls
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system-only theme should not embed SVG data via include_bytes!. code:\n{}",
-        output.code,
+        output.code(),
     );
 
     // The icon_svg function should exist but only return None for system themes
     assert!(
-        output.code.contains("icon_svg"),
+        output.code().contains("icon_svg"),
         "generated code should contain icon_svg function",
     );
 
