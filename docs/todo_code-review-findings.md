@@ -7408,6 +7408,48 @@ Rulings of the session:
 - The docs/todo.md entry "`SystemTheme::with_overlay` — the overlay's icon theme is never read" moved to docs/archive/todo_closed.md (fixed by bdad0edf, M3-41); the CHANGELOG's native-theme-derive line names `#[theme(...)]` and `#[theme_layer(...)]`.
 - Cost: this session's 40 agent runs (17 implementer, 23 review/re-review/final review; Opus 5.5 implementers, Sonnet 5.5 and Opus 5.5 reviewers): 109k output tokens, 76.8M cache reads, about 7.5 hours wall clock.
 
+### Step 8 — minors left deferred (2026-10-12)
+
+The final whole-branch review triaged every deferred minor of the task reviews; 25 stay deferred, each with its reason (copied from the review, `.superpowers/sdd/todo_code-review-plan/m3-final-review.md`, which is not in git). `ResolvedLayoutTheme` as a public type nothing produces is a `docs/todo.md` entry tagged `[1.0]`.
+
+- **Rulings (not counted):** M3-08, M3-25, T9 paths, T9 fix round 1, the implementer overlap, T12 concerns 1 and 2, the T13 in-place edits, and T15+T16 as one implementer.
+  The code follows each one. The docs/todo.md:364 entry is still open as the T12 ruling
+  intends, and is closed in Step 8's docs pass.
+- **T2:** the `pick_variant` doc naming only `resolve` (`resolve` calls `resolve_with`, so it
+  is true); `into_variant` records nothing (by design: it returns a `ThemeMode`); the missing
+  dark-only-asked-Light test (the light-only test covers the same code path symmetrically).
+- **T4:** the `from_file` doc. The `Error::Io` variant doc and the CHANGELOG already say it.
+- **T5:** the root re-exports are untested beyond the doctests that use `ColorMode`, `Theme`
+  and `Error`. Low risk. The stale prelude_smoke comment and test name are pre-existing.
+- **T6:** the hand-kept border key consts, guarded by `validate_paths_are_toml_keys`; derive
+  `toml_key` returning its input, where every caller passes a real field name from a macro
+  ident or a literal checked by a test.
+- **T7:** both colours `None` gives `None` (pre-existing; validation reports
+  `defaults.link_color`).
+- **T8:** the no_run OS-overlay recipe (parsing is covered by the runnable one); the leftover
+  `name=` in two tests; the connector READMEs, which belong to M5/M6.
+- **T9:**
+  - `check_layout`'s hand list. Four stable fields; `ResolvedLayoutTheme`'s fate is already
+    with the maintainer.
+  - A bad `defaults.border` value is reported once per Full-border widget. This is error noise,
+    not a wrong result. A fix needs stated-vs-inherited knowledge in the validator. Record it
+    in the ledger as M4/M5 follow-up material.
+- **T10:** the registry's "exactly one" wording (pre-existing).
+- **T11:** the duplicated test helper; the Unknown + KDE portal + no kdeglobals gap (ruled and
+  documented).
+- **T12:** the context is detected before an unknown preset name fails. That costs only on an
+  error path, and `from_system_with_preset` has already run its reader by then.
+- **T13:** the ragged line in docs/todo.md.
+- **T14:** the JSON `null` substring check (no preset string contains "null"); the guard for a
+  future wrong attribute order.
+- **T18:** the `size_key` array literal.
+- **T19:** docs/todo.md:826 lists `list.alternate_row_background` as a required ios-26 field,
+  which is correct: the field is required, only its `[uniform]` rule went.
+- **T20:**
+  - The README watch block is `rust,ignore`. The crate-docs copy is compiled.
+  - The `f64::MIN_POSITIVE` min in the `context.font_dpi` message is the format every
+    `check_positive` already prints.
+
 ## M4 — Core, part 2
 
 ## M5 — iced connector
