@@ -40,6 +40,20 @@ fn presets_parse_and_resolve() {
     }
 }
 
+/// One cold `Theme::preset` call: meaningful only as the first call in a fresh process, so run
+/// it alone (`-- --ignored --nocapture --exact preset_cold_first_call`), once per process.
+#[test]
+#[ignore = "timing probe; run with --ignored --nocapture"]
+fn preset_cold_first_call() {
+    let start = Instant::now();
+    let theme = Theme::preset("kde-breeze");
+    let cold = start.elapsed();
+    println!(
+        "timing preset kde-breeze cold first call: {cold:?} (ok: {})",
+        theme.is_ok()
+    );
+}
+
 #[test]
 #[ignore = "timing probe; run with --ignored --nocapture"]
 fn system_readers() {

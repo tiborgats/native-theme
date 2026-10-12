@@ -7,9 +7,8 @@
 //! loading themes from TOML strings and files.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use crate::{Error, Result, Theme};
 
@@ -86,30 +85,34 @@ fn parse(toml_str: &str) -> Parsed {
     from_toml(toml_str).map_err(|e| e.to_string())
 }
 
-static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
-    PRESET_ENTRIES
-        .iter()
-        .zip(PRESET_INFOS)
-        .map(|((key, toml_str), info)| {
-            let mut result = parse(toml_str);
-            // The TOML name equals the display name (tested); borrowing the
-            // static one saves an owned `String` per load
-            if let Ok(ref mut theme) = result {
-                theme.name = Cow::Borrowed(info.display_name);
-            }
-            (*key, result)
-        })
-        .collect()
-});
+/// One cell per [`PRESET_ENTRIES`] entry, at the same position, so a preset's
+/// TOML is parsed on its first use only.
+static CACHE: [OnceLock<Parsed>; PRESET_ENTRIES.len()] =
+    [const { OnceLock::new() }; PRESET_ENTRIES.len()];
 
 pub(crate) fn preset(name: &str) -> Result<Theme> {
-    match CACHE.get(name) {
-        None => Err(Error::UnknownPreset {
+    let Some(((_, toml_str), (info, cell))) = PRESET_ENTRIES
+        .iter()
+        .zip(PRESET_INFOS.iter().zip(&CACHE))
+        .find(|((key, _), _)| *key == name)
+    else {
+        return Err(Error::UnknownPreset {
             name: name.to_string(),
             known: PRESET_NAMES,
-        }),
-        Some(Ok(theme)) => Ok(theme.clone()),
-        Some(Err(msg)) => Err(Error::ReaderFailed {
+        });
+    };
+    let parsed = cell.get_or_init(|| {
+        let mut result = parse(toml_str);
+        // The TOML name equals the display name (tested); borrowing the
+        // static one saves an owned `String` per load
+        if let Ok(ref mut theme) = result {
+            theme.name = Cow::Borrowed(info.display_name);
+        }
+        result
+    });
+    match parsed {
+        Ok(theme) => Ok(theme.clone()),
+        Err(msg) => Err(Error::ReaderFailed {
             reader: "preset_cache",
             source: format!("bundled preset '{name}': {msg}").into(),
         }),
