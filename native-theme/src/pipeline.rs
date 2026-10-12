@@ -1094,8 +1094,9 @@ async fn read_through_pipeline(
     preset: &str,
     detection: &crate::detect::DetectionContext,
 ) -> crate::Result<SystemTheme> {
+    let fill = detection.begin_reader_accessibility();
     let result = reader.read().await?;
-    detection.store_reader_accessibility(result.accessibility.clone());
+    detection.store_reader_accessibility(fill, result.accessibility.clone());
     run_pipeline(result, preset)
 }
 
@@ -1924,6 +1925,39 @@ mod pipeline_tests {
         assert_eq!(runs.get(), 0, "the cache was empty after the system read");
         assert_eq!(cached, st.accessibility);
         assert_eq!(cached.text_scaling_factor, 1.5);
+    }
+
+    /// [`ScaledTextReader`], with the accessibility cache invalidated while
+    /// it reads, as a watcher does when the OS changes mid-read.
+    struct InvalidatedReader<'a>(&'a crate::detect::DetectionContext);
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for InvalidatedReader<'_> {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            self.0.invalidate_accessibility_preferences();
+            ScaledTextReader.read().await
+        }
+    }
+
+    #[test]
+    fn a_system_read_across_an_invalidation_leaves_the_cache_empty() {
+        let detection = crate::detect::DetectionContext::new();
+        pollster::block_on(read_through_pipeline(
+            &InvalidatedReader(&detection),
+            "adwaita",
+            &detection,
+        ))
+        .unwrap();
+        let runs = std::cell::Cell::new(0);
+        let _ = detection.reader_accessibility_with(|| {
+            runs.set(runs.get() + 1);
+            crate::AccessibilityPreferences::default()
+        });
+        assert_eq!(
+            runs.get(),
+            1,
+            "a block read before the invalidation was cached"
+        );
     }
 
     // --- Phase 93-04 G4: Theme.icon_theme + three-tier precedence ---

@@ -3,6 +3,7 @@
 
 use arc_swap::ArcSwapOption;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 mod icon_theme;
 
@@ -836,6 +837,100 @@ fn detect_reduced_motion_inner() -> bool {
 
 // === DetectionContext ===
 
+/// A value cached with the generation of its slot when its detection began.
+struct Stamped<T> {
+    generation: u64,
+    value: T,
+}
+
+/// One cached detection: the value, and a generation every invalidation
+/// bumps. A value is cached only if no invalidation landed while it was
+/// detected, so a fill that began before an OS change and ends after a
+/// watcher's invalidation does not cache what it read before the change.
+struct CacheSlot<T> {
+    value: ArcSwapOption<Stamped<T>>,
+    generation: AtomicU64,
+}
+
+/// A fill in progress: the slot's generation and entry when it began.
+pub(crate) struct CacheFill<T> {
+    generation: u64,
+    seen: Option<Arc<Stamped<T>>>,
+}
+
+impl<T> CacheFill<T> {
+    /// The value the slot held for this fill's generation, if any.
+    fn cached(&self) -> Option<&T> {
+        self.seen
+            .as_deref()
+            .filter(|entry| entry.generation == self.generation)
+            .map(|entry| &entry.value)
+    }
+}
+
+impl<T> CacheSlot<T> {
+    fn empty() -> Self {
+        Self {
+            value: ArcSwapOption::empty(),
+            generation: AtomicU64::new(0),
+        }
+    }
+
+    // The generation's Acquire loads pair with the Release bump in
+    // `invalidate`, which follows its clearing store: a fill that reads the
+    // bumped generation also sees the slot cleared, and an entry stamped with
+    // an older generation than the one loaded is never returned.
+    fn begin_fill(&self) -> CacheFill<T> {
+        let generation = self.generation.load(Ordering::Acquire);
+        CacheFill {
+            generation,
+            seen: self.value.load_full(),
+        }
+    }
+
+    /// Cache `value` unless an invalidation landed after `fill` began, or
+    /// another fill stored a value since.
+    fn finish_fill(&self, fill: CacheFill<T>, value: T) {
+        if self.generation.load(Ordering::Acquire) != fill.generation {
+            return;
+        }
+        let stamped = Arc::new(Stamped {
+            generation: fill.generation,
+            value,
+        });
+        let _ = self.value.compare_and_swap(&fill.seen, Some(stamped));
+    }
+
+    /// The cached value, or `detect`'s, cached as [`finish_fill`](Self::finish_fill)
+    /// caches it.
+    fn get_or_fill(&self, detect: impl FnOnce() -> T) -> T
+    where
+        T: Clone,
+    {
+        let fill = self.begin_fill();
+        if let Some(value) = fill.cached() {
+            return value.clone();
+        }
+        let value = detect();
+        self.finish_fill(fill, value.clone());
+        value
+    }
+
+    /// The cached value, if any.
+    #[cfg(any(test, target_os = "linux"))]
+    fn get(&self) -> Option<T>
+    where
+        T: Clone,
+    {
+        self.begin_fill().cached().cloned()
+    }
+
+    fn invalidate(&self) {
+        self.value.store(None);
+        self.generation.fetch_add(1, Ordering::Release);
+    }
+}
+
 /// Process-wide detection cache.
 ///
 /// Provides "cache on first read" semantics for OS detection queries
@@ -848,32 +943,33 @@ fn detect_reduced_motion_inner() -> bool {
 /// # Thread Safety
 ///
 /// All reads and invalidations are lock-free (backed by
-/// [`arc_swap::ArcSwapOption`]).
+/// [`arc_swap::ArcSwapOption`]). A value detected while an invalidation of
+/// its field lands is returned to its caller but not cached.
 pub struct DetectionContext {
-    is_dark: ArcSwapOption<bool>,
-    reduced_motion: ArcSwapOption<bool>,
-    reader_accessibility: ArcSwapOption<crate::AccessibilityPreferences>,
-    icon_theme: ArcSwapOption<Result<String, IconThemeFailure>>,
+    is_dark: CacheSlot<bool>,
+    reduced_motion: CacheSlot<bool>,
+    reader_accessibility: CacheSlot<crate::AccessibilityPreferences>,
+    icon_theme: CacheSlot<Result<String, IconThemeFailure>>,
     #[cfg(target_os = "linux")]
-    linux_desktop: ArcSwapOption<LinuxDesktop>,
+    linux_desktop: CacheSlot<LinuxDesktop>,
     #[cfg(target_os = "linux")]
-    refined_linux_desktop: ArcSwapOption<LinuxDesktop>,
-    font_dpi: ArcSwapOption<f32>,
+    refined_linux_desktop: CacheSlot<LinuxDesktop>,
+    font_dpi: CacheSlot<f32>,
 }
 
 impl DetectionContext {
     /// Create an empty context with no cached values.
     pub(crate) fn new() -> Self {
         Self {
-            is_dark: ArcSwapOption::empty(),
-            reduced_motion: ArcSwapOption::empty(),
-            reader_accessibility: ArcSwapOption::empty(),
-            icon_theme: ArcSwapOption::empty(),
+            is_dark: CacheSlot::empty(),
+            reduced_motion: CacheSlot::empty(),
+            reader_accessibility: CacheSlot::empty(),
+            icon_theme: CacheSlot::empty(),
             #[cfg(target_os = "linux")]
-            linux_desktop: ArcSwapOption::empty(),
+            linux_desktop: CacheSlot::empty(),
             #[cfg(target_os = "linux")]
-            refined_linux_desktop: ArcSwapOption::empty(),
-            font_dpi: ArcSwapOption::empty(),
+            refined_linux_desktop: CacheSlot::empty(),
+            font_dpi: CacheSlot::empty(),
         }
     }
 
@@ -885,12 +981,7 @@ impl DetectionContext {
     /// force a re-read on the next call.
     #[must_use]
     pub fn is_dark(&self) -> bool {
-        if let Some(v) = self.is_dark.load().as_deref() {
-            return *v;
-        }
-        let value = detect_is_dark_inner();
-        self.is_dark.store(Some(Arc::new(value)));
-        value
+        self.is_dark.get_or_fill(detect_is_dark_inner)
     }
 
     /// Whether the user prefers reduced motion (cached).
@@ -900,12 +991,7 @@ impl DetectionContext {
     /// to force a re-read.
     #[must_use]
     pub fn prefers_reduced_motion(&self) -> bool {
-        if let Some(v) = self.reduced_motion.load().as_deref() {
-            return *v;
-        }
-        let value = detect_reduced_motion_inner();
-        self.reduced_motion.store(Some(Arc::new(value)));
-        value
+        self.reduced_motion.get_or_fill(detect_reduced_motion_inner)
     }
 
     /// The OS accessibility preferences (cached), as
@@ -935,17 +1021,24 @@ impl DetectionContext {
         &self,
         read: impl FnOnce() -> crate::AccessibilityPreferences,
     ) -> crate::AccessibilityPreferences {
-        if let Some(prefs) = self.reader_accessibility.load().as_deref() {
-            return prefs.clone();
-        }
-        let prefs = read();
-        self.store_reader_accessibility(prefs.clone());
-        prefs
+        self.reader_accessibility.get_or_fill(read)
     }
 
-    /// Store the accessibility block a platform reader just returned.
-    pub(crate) fn store_reader_accessibility(&self, prefs: crate::AccessibilityPreferences) {
-        self.reader_accessibility.store(Some(Arc::new(prefs)));
+    /// Begin a platform read whose accessibility block
+    /// [`store_reader_accessibility`](Self::store_reader_accessibility)
+    /// stores.
+    pub(crate) fn begin_reader_accessibility(&self) -> CacheFill<crate::AccessibilityPreferences> {
+        self.reader_accessibility.begin_fill()
+    }
+
+    /// Store the accessibility block a platform reader just returned, unless
+    /// the cache was invalidated or filled since the read began (`fill`).
+    pub(crate) fn store_reader_accessibility(
+        &self,
+        fill: CacheFill<crate::AccessibilityPreferences>,
+        prefs: crate::AccessibilityPreferences,
+    ) {
+        self.reader_accessibility.finish_fill(fill, prefs);
     }
 
     /// The current icon theme name (cached), or why none was detected.
@@ -971,18 +1064,9 @@ impl DetectionContext {
         &self,
         detect: impl FnOnce() -> Result<String, IconThemeFailure>,
     ) -> crate::Result<String> {
-        let outcome = match self.icon_theme.load_full() {
-            Some(cached) => cached,
-            None => {
-                let detected = Arc::new(detect());
-                self.icon_theme.store(Some(Arc::clone(&detected)));
-                detected
-            }
-        };
-        match outcome.as_ref() {
-            Ok(theme) => Ok(theme.clone()),
-            Err(failure) => Err(failure.to_error()),
-        }
+        self.icon_theme
+            .get_or_fill(detect)
+            .map_err(|failure| failure.to_error())
     }
 
     /// The current Linux desktop environment (cached).
@@ -994,12 +1078,7 @@ impl DetectionContext {
     #[cfg(target_os = "linux")]
     #[must_use]
     pub fn linux_desktop(&self) -> LinuxDesktop {
-        if let Some(v) = self.linux_desktop.load().as_deref() {
-            return *v;
-        }
-        let value = detect_linux_desktop();
-        self.linux_desktop.store(Some(Arc::new(value)));
-        value
+        self.linux_desktop.get_or_fill(detect_linux_desktop)
     }
 
     /// The desktop the reader, the theme watcher, the icon-theme detection
@@ -1011,7 +1090,8 @@ impl DetectionContext {
     /// [`invalidate_linux_desktop()`](Self::invalidate_linux_desktop) clears it.
     #[cfg(target_os = "linux")]
     pub(crate) async fn refined_linux_desktop(&self) -> LinuxDesktop {
-        if let Some(v) = self.refined_linux_desktop.load().as_deref() {
+        let fill = self.refined_linux_desktop.begin_fill();
+        if let Some(v) = fill.cached() {
             return *v;
         }
         let raw = self.linux_desktop();
@@ -1024,7 +1104,7 @@ impl DetectionContext {
         #[cfg(not(feature = "portal"))]
         let portal_backend = None;
         let value = refine_linux_desktop(raw, portal_backend, kdeglobals_exists);
-        self.refined_linux_desktop.store(Some(Arc::new(value)));
+        self.refined_linux_desktop.finish_fill(fill, value);
         value
     }
 
@@ -1037,8 +1117,8 @@ impl DetectionContext {
     /// `kdeglobals` is KDE here.
     #[cfg(target_os = "linux")]
     pub(crate) fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
-        if let Some(v) = self.refined_linux_desktop.load().as_deref() {
-            return *v;
+        if let Some(v) = self.refined_linux_desktop.get() {
+            return v;
         }
         refine_linux_desktop(self.linux_desktop(), None, kdeglobals_exists)
     }
@@ -1048,7 +1128,7 @@ impl DetectionContext {
     ///
     /// The first call runs the chain (on Linux `xrdb -query`, maybe
     /// `xrandr`) and caches the result. Call
-    /// [`invalidate_all()`](Self::invalidate_all) to force a re-read.
+    /// [`invalidate_font_dpi()`](Self::invalidate_font_dpi) to force a re-read.
     pub(crate) fn font_dpi(&self) -> f32 {
         self.font_dpi_with(detect_system_font_dpi)
     }
@@ -1056,40 +1136,40 @@ impl DetectionContext {
     /// [`font_dpi()`](Self::font_dpi), with `detect` run where nothing is
     /// cached.
     fn font_dpi_with(&self, detect: impl FnOnce() -> f32) -> f32 {
-        if let Some(v) = self.font_dpi.load().as_deref() {
-            return *v;
-        }
-        let value = detect();
-        self.font_dpi.store(Some(Arc::new(value)));
-        value
+        self.font_dpi.get_or_fill(detect)
     }
 
     /// Clear the cached dark-mode value.
     pub fn invalidate_is_dark(&self) {
-        self.is_dark.store(None);
+        self.is_dark.invalidate();
     }
 
     /// Clear the cached reduced-motion value.
     pub fn invalidate_reduced_motion(&self) {
-        self.reduced_motion.store(None);
+        self.reduced_motion.invalidate();
     }
 
     /// Clear the cached accessibility preferences.
     pub fn invalidate_accessibility_preferences(&self) {
-        self.reader_accessibility.store(None);
+        self.reader_accessibility.invalidate();
     }
 
     /// Clear the cached icon theme, or the cached failure to detect one.
     pub fn invalidate_icon_theme(&self) {
-        self.icon_theme.store(None);
+        self.icon_theme.invalidate();
+    }
+
+    /// Clear the cached font DPI.
+    pub fn invalidate_font_dpi(&self) {
+        self.font_dpi.invalidate();
     }
 
     /// Clear the cached Linux desktop environment, and the desktop refined
     /// from it.
     #[cfg(target_os = "linux")]
     pub fn invalidate_linux_desktop(&self) {
-        self.linux_desktop.store(None);
-        self.refined_linux_desktop.store(None);
+        self.linux_desktop.invalidate();
+        self.refined_linux_desktop.invalidate();
     }
 
     /// Clear all cached values.
@@ -1100,7 +1180,7 @@ impl DetectionContext {
         self.invalidate_icon_theme();
         #[cfg(target_os = "linux")]
         self.invalidate_linux_desktop();
-        self.font_dpi.store(None);
+        self.invalidate_font_dpi();
     }
 }
 
@@ -1222,6 +1302,53 @@ mod force_font_dpi_tests {
             kde_force_font_dpi(Some("x11"), || Some("120".into()), || Some("144".into())),
             Some(120.0)
         );
+    }
+}
+
+#[cfg(test)]
+mod cache_slot_tests {
+    use super::*;
+
+    /// The slot every cached field uses ([`DetectionContext::is_dark`],
+    /// [`DetectionContext::linux_desktop`] and the rest): a value detected
+    /// across an invalidation is returned, not cached.
+    #[test]
+    fn a_value_detected_across_an_invalidation_is_not_cached() {
+        let slot = CacheSlot::empty();
+        assert!(slot.get_or_fill(|| {
+            slot.invalidate();
+            true
+        }));
+        assert!(slot.get().is_none());
+        assert!(!slot.get_or_fill(|| false));
+        assert_eq!(slot.get(), Some(false));
+    }
+
+    /// A fill whose generation check passed before an invalidation and whose
+    /// swap landed after it leaves an entry of the old generation, which no
+    /// read returns.
+    #[test]
+    fn an_entry_stamped_before_an_invalidation_is_not_returned() {
+        let slot = CacheSlot::empty();
+        let fill = slot.begin_fill();
+        slot.invalidate();
+        let stale = Arc::new(Stamped {
+            generation: fill.generation,
+            value: true,
+        });
+        let _ = slot.value.compare_and_swap(&fill.seen, Some(stale));
+        assert!(slot.get().is_none());
+        assert!(!slot.get_or_fill(|| false));
+        assert_eq!(slot.get(), Some(false));
+    }
+
+    #[test]
+    fn a_fill_does_not_replace_a_value_stored_since_it_began() {
+        let slot = CacheSlot::empty();
+        let slow = slot.begin_fill();
+        let _ = slot.get_or_fill(|| 2);
+        slot.finish_fill(slow, 1);
+        assert_eq!(slot.get(), Some(2));
     }
 }
 
@@ -1362,7 +1489,7 @@ mod detection_context_tests {
             runs.set(runs.get() + 1);
             scaled_by(1.25)
         };
-        ctx.store_reader_accessibility(scaled_by(2.0));
+        ctx.store_reader_accessibility(ctx.begin_reader_accessibility(), scaled_by(2.0));
         assert_eq!(ctx.reader_accessibility_with(read), scaled_by(2.0));
         assert_eq!(runs.get(), 0, "a stored block ran the reader");
         ctx.invalidate_all();
@@ -1400,21 +1527,61 @@ mod detection_context_tests {
         let _ = ctx.linux_desktop(); // re-reads without panic
     }
 
+    /// A font DPI detected before an invalidation that lands mid-detection
+    /// is not cached: the next read detects again.
+    #[test]
+    fn a_font_dpi_detected_across_an_invalidation_is_not_cached() {
+        let ctx = DetectionContext::new();
+        let stale = ctx.font_dpi_with(|| {
+            ctx.invalidate_font_dpi();
+            120.0
+        });
+        assert_eq!(stale, 120.0);
+        assert_eq!(ctx.font_dpi_with(|| 96.0), 96.0);
+    }
+
+    #[test]
+    fn an_icon_theme_detected_across_an_invalidation_is_not_cached() {
+        let ctx = DetectionContext::new();
+        let stale = ctx.icon_theme_with(|| {
+            ctx.invalidate_icon_theme();
+            Ok("breeze".to_string())
+        });
+        assert_eq!(stale.ok().as_deref(), Some("breeze"));
+        let theme = ctx.icon_theme_with(|| Ok("Adwaita".to_string()));
+        assert_eq!(theme.ok().as_deref(), Some("Adwaita"));
+    }
+
+    #[test]
+    fn an_accessibility_block_read_across_an_invalidation_is_not_cached() {
+        let ctx = DetectionContext::new();
+        let stale = ctx.reader_accessibility_with(|| {
+            ctx.invalidate_all();
+            scaled_by(1.5)
+        });
+        assert_eq!(stale, scaled_by(1.5));
+        assert_eq!(
+            ctx.reader_accessibility_with(|| scaled_by(2.0)),
+            scaled_by(2.0)
+        );
+    }
+
     /// A synchronous caller gets the desktop a system read refined, portal
     /// answer included, until it is invalidated.
     #[cfg(target_os = "linux")]
     #[test]
     fn the_sync_refined_desktop_is_the_cached_one() {
         let ctx = DetectionContext::new();
+        let fill = ctx.refined_linux_desktop.begin_fill();
         ctx.refined_linux_desktop
-            .store(Some(Arc::new(LinuxDesktop::Gnome)));
+            .finish_fill(fill, LinuxDesktop::Gnome);
         assert_eq!(ctx.refined_linux_desktop_sync(), LinuxDesktop::Gnome);
         assert_eq!(
             pollster::block_on(ctx.refined_linux_desktop()),
             LinuxDesktop::Gnome
         );
         ctx.invalidate_linux_desktop();
-        assert!(ctx.refined_linux_desktop.load().is_none());
+        assert!(ctx.refined_linux_desktop.get().is_none());
     }
 }
 
