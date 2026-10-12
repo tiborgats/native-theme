@@ -132,6 +132,7 @@ pub(crate) fn run_pipeline(
         layout: reader_layout,
         preset_name: preset_name.to_string(),
         context: ctx,
+        overlay: None,
     };
 
     Ok(SystemTheme {
@@ -1711,6 +1712,23 @@ mod pipeline_tests {
         );
         let st = result.unwrap();
         assert_eq!(st.name, "Adwaita");
+    }
+
+    /// Overlays stack: a second `with_overlay` keeps what the first one
+    /// stated (M3-10).
+    #[test]
+    fn with_overlay_keeps_an_earlier_overlay() -> crate::Result<()> {
+        let st = run_pipeline(
+            reader_from_preset("adwaita"),
+            "adwaita",
+            crate::ColorMode::Light,
+        )?;
+        let a = Theme::from_toml("[light.defaults]\naccent_color = \"#ff0000\"")?;
+        let b = Theme::from_toml("[light.defaults]\nbackground_color = \"#00ff00\"")?;
+        let both = st.with_overlay(&a)?.with_overlay(&b)?;
+        assert_eq!(both.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
+        assert_eq!(both.light.defaults.background_color, Rgba::rgb(0, 255, 0));
+        Ok(())
     }
 
     // --- Single/Dual contract tests ---

@@ -436,6 +436,9 @@ pub(crate) struct OverlaySource {
     /// into `with_overlay` replays so resolution is deterministic across
     /// overlay applications.
     pub(crate) context: crate::resolve::ResolutionContext,
+    /// Every overlay applied so far, merged in order; `None` before the
+    /// first [`SystemTheme::with_overlay()`].
+    pub(crate) overlay: Option<Theme>,
 }
 
 /// Result of the OS-first pipeline. Holds both resolved variants.
@@ -570,6 +573,10 @@ impl SystemTheme {
     /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
     /// the new accent color.
     ///
+    /// Overlays stack: each call applies its overlay over the ones applied
+    /// before it, so `sys.with_overlay(&a)?.with_overlay(&b)?` keeps what `a`
+    /// states unless `b` states it too.
+    ///
     /// # Examples
     ///
     /// An overlay is a theme file that states only what it changes; it needs
@@ -633,7 +640,15 @@ impl SystemTheme {
             ),
         };
 
-        // Apply the user overlay on top
+        // Apply the user overlays on top, the earlier ones under this one
+        let overlay = match &src.overlay {
+            Some(earlier) => {
+                let mut stacked = earlier.clone();
+                stacked.merge(overlay);
+                stacked
+            }
+            None => overlay.clone(),
+        };
         if let Some(over) = &overlay.light {
             light.merge(over);
         }
@@ -655,7 +670,10 @@ impl SystemTheme {
             mode: self.mode,
             light: resolved_light,
             dark: resolved_dark,
-            overlay_source: self.overlay_source.clone(),
+            overlay_source: OverlaySource {
+                overlay: Some(overlay),
+                ..src.clone()
+            },
             preset: self.preset.clone(),
             version_match: self.version_match,
             icon_set: self.icon_set,
@@ -826,6 +844,7 @@ mod system_theme_tests {
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
+                overlay: None,
             },
             preset: "catppuccin-mocha".into(),
             version_match: None,
@@ -870,6 +889,7 @@ mod system_theme_tests {
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
+                overlay: None,
             },
             preset: "catppuccin-mocha".into(),
             version_match: None,
@@ -914,6 +934,7 @@ mod system_theme_tests {
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 context: crate::resolve::ResolutionContext::for_tests(),
+                overlay: None,
             },
             preset: "catppuccin-mocha".into(),
             version_match: None,
