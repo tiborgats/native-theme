@@ -502,9 +502,10 @@ impl ReaderOutput {
 
 /// Data needed to replay the merge+resolve pipeline for overlay support.
 ///
-/// Stores the original reader output and preset name so that
-/// [`SystemTheme::with_overlay()`] can reconstruct pre-resolve variants
-/// on demand instead of storing ~2KB of ThemeMode clones.
+/// Stores the reader's output, the preset name and every overlay applied so
+/// far (merged into one [`Theme`]), so that [`SystemTheme::with_overlay()`]
+/// rebuilds the pre-resolve variants (preset, then reader, then overlays)
+/// and resolves them again.
 #[derive(Clone, Debug)]
 pub(crate) struct OverlaySource {
     /// The reader's variant data for replay.
@@ -664,46 +665,64 @@ impl SystemTheme {
     /// before it, so `sys.with_overlay(&a)?.with_overlay(&b)?` keeps what `a`
     /// states unless `b` states it too.
     ///
+    /// The overlay's `icon_set`, `icon_theme` and `[layout]` apply too, by
+    /// the precedence [`from_system()`](Self::from_system) uses: a variant's
+    /// `defaults.icon_theme`, then the theme's `icon_theme`, then the
+    /// detected one. So an overlay's top-level `icon_theme` loses to a
+    /// variant's own, such as the KDE reader's `breeze` and `breeze-dark`;
+    /// to replace those, state `[light.defaults] icon_theme` and
+    /// `[dark.defaults] icon_theme`.
+    ///
+    /// The result's `light`, `dark`, `layout`, `icon_set` and `icon_theme`
+    /// (with [`icon_theme_for`](Self::icon_theme_for)'s per-variant names)
+    /// are rebuilt from the theme's sources and the overlays, not copied
+    /// from `self`, so a change the caller made to one of those public fields
+    /// is lost. `name`, `mode`, `preset`, `version_match` and `accessibility`
+    /// are kept from `self`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::ResolutionInvalid`] when a value the overlay states,
+    /// or one that inherits it, is out of range. Each path is the TOML key,
+    /// as [`Error::ResolutionIncomplete`] describes: a variant's value under
+    /// its variant table (`light.button.min_height_px`), a `[layout]` value
+    /// with no variant (`layout.widget_gap_px`).
+    ///
     /// # Examples
     ///
     /// An overlay is a theme file that states only what it changes; it needs
     /// no `name`:
     ///
     /// ```
-    /// let overlay = native_theme::theme::Theme::from_toml(r##"
+    /// let overlay = native_theme::Theme::from_toml(r##"
     ///     [light.defaults]
     ///     accent_color = "#ff6600"
     ///     [dark.defaults]
     ///     accent_color = "#ff6600"
     /// "##)?;
-    /// # Ok::<(), native_theme::error::Error>(())
+    /// # Ok::<(), native_theme::Error>(())
     /// ```
     ///
     /// Then apply it to the live OS theme:
     ///
     /// ```no_run
-    /// # let overlay = native_theme::theme::Theme::default();
+    /// # let overlay = native_theme::Theme::default();
     /// let system = native_theme::SystemTheme::from_system()?;
     /// let customized = system.with_overlay(&overlay)?;
     /// // customized.pick(customized.mode).defaults.accent_color is now #ff6600
     /// // and all accent-derived fields are updated
-    /// # Ok::<(), native_theme::error::Error>(())
+    /// # Ok::<(), native_theme::Error>(())
     /// ```
     pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
-        let src = &self.overlay_source;
+        let mut source = self.overlay_source.clone();
         // The earlier overlays go under this one
-        let overlay = match &src.overlay {
-            Some(earlier) => {
-                let mut stacked = earlier.clone();
+        source.overlay = Some(match source.overlay.take() {
+            Some(mut stacked) => {
                 stacked.merge(overlay);
                 stacked
             }
             None => overlay.clone(),
-        };
-        let source = OverlaySource {
-            overlay: Some(overlay),
-            ..src.clone()
-        };
+        });
         Ok(SystemTheme {
             name: self.name.clone(),
             preset: self.preset.clone(),

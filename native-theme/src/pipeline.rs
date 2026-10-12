@@ -1737,8 +1737,8 @@ mod pipeline_tests {
         assert_eq!(st.name, "Adwaita");
     }
 
-    /// Overlays stack: a second `with_overlay` keeps what the first one
-    /// stated (M3-10).
+    /// Overlays stack: a later `with_overlay` keeps what an earlier one
+    /// stated (M3-10), and wins on a field both state.
     #[test]
     fn with_overlay_keeps_an_earlier_overlay() -> crate::Result<()> {
         let st = run_pipeline(
@@ -1751,6 +1751,11 @@ mod pipeline_tests {
         let both = st.with_overlay(&a)?.with_overlay(&b)?;
         assert_eq!(both.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
         assert_eq!(both.light.defaults.background_color, Rgba::rgb(0, 255, 0));
+
+        let c = Theme::from_toml("[light.defaults]\naccent_color = \"#0000ff\"")?;
+        let all = both.with_overlay(&c)?;
+        assert_eq!(all.light.defaults.accent_color, Rgba::rgb(0, 0, 255));
+        assert_eq!(all.light.defaults.background_color, Rgba::rgb(0, 255, 0));
         Ok(())
     }
 
