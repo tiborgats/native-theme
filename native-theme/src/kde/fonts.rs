@@ -15,6 +15,14 @@ const QT5_WEIGHTS: [(i32, u16); 9] = [
     (87, 900),
 ];
 
+/// The Qt6 weight range: `QFont::setWeight` bounds any weight to it, with a
+/// warning (`QFONT_WEIGHT_MIN`, `QFONT_WEIGHT_MAX`, qtbase
+/// `src/gui/text/qfont_p.h:35-36`; `qfont.cpp:1218-1224` at v6.11.2).
+const QT_WEIGHT_MIN: i32 = 1;
+
+/// The top of the Qt6 weight range ([`QT_WEIGHT_MIN`]).
+const QT_WEIGHT_MAX: i32 = 1000;
+
 /// Convert a Qt5 weight (0-99 scale) to CSS weight (100-900) as Qt's
 /// `qt_legacyToOpenTypeWeight` does (qtbase `src/gui/text/qfont.cpp:147-174`,
 /// `:196-200` at v6.11.2): the nearest of [`QT5_WEIGHTS`], the lower one on a
@@ -43,17 +51,17 @@ pub(crate) fn qt5_to_css_weight(qt5: i32) -> u16 {
 ///   that is positive, as `QFont::fromString` sets them (`:2252-2257`):
 ///   `FontSize::Pt` or `FontSize::Px`; a pixel size is at most a `u16`
 ///   (`setPixelSize`, `:1052-1054`)
-/// - weight: Qt6's within the 1..=1000 Qt takes (`QFONT_WEIGHT_MIN`,
-///   `QFONT_WEIGHT_MAX`, `src/gui/text/qfont_p.h:35-36`; `setWeight`,
-///   `qfont.cpp:1220`) clamped to the CSS 100..=900 that `check_font` accepts
-///   (`resolve/validate_helpers.rs:492`), another value `None`; Qt5's
-///   through [`qt5_to_css_weight`]
+/// - weight: Qt6's bounded to 1..=1000 as `QFont::setWeight` bounds any
+///   weight ([`QT_WEIGHT_MIN`], [`QT_WEIGHT_MAX`]), then clamped to the CSS
+///   100..=900 that `check_font` accepts (`resolve/validate_helpers.rs:492`);
+///   Qt5's through [`qt5_to_css_weight`]; a field that is not an integer
+///   leaves it `None`
 /// - style: `QFont::Style`'s `StyleNormal`, `StyleItalic`, `StyleOblique`
 ///   (`src/gui/text/qfont.h:77-81`) as [`FontStyle`](crate::model::font::FontStyle);
 ///   another value leaves it `None`
 ///
 /// Returns None if fewer than 5 fields, an empty family, no positive size,
-/// a weight that is not an integer, or a negative Qt5 weight.
+/// or a negative Qt5 weight.
 pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpec> {
     use crate::model::font::{FontSize, FontStyle};
     let fields: Vec<&str> = font_str.split(',').collect();
@@ -74,21 +82,18 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
         .filter(|size| *size > 0)
         .map(|size| FontSize::Px(f32::from(size)));
     let size = pixel_size.or(point_size)?;
-    let raw_weight = fields.get(4)?.trim().parse::<i32>().ok()?;
+    let raw_weight = fields.get(4)?.trim().parse::<i32>().ok();
 
     // Qt6 format has >= 16 fields and uses the OpenType scale (1-1000).
     // Qt5 format has < 16 fields and uses a 0-99 scale.
-    let css_weight = if fields.len() >= 16 {
-        u16::try_from(raw_weight)
-            .ok()
-            .filter(|weight| (1..=1000).contains(weight))
-            .map(|weight| weight.clamp(100, 900))
-    } else {
-        // Reject corrupted font entries with negative weight
-        if raw_weight < 0 {
-            return None;
+    let css_weight = match raw_weight {
+        None => None,
+        Some(raw) if fields.len() >= 16 => {
+            u16::try_from(raw.clamp(QT_WEIGHT_MIN, QT_WEIGHT_MAX).clamp(100, 900)).ok()
         }
-        Some(qt5_to_css_weight(raw_weight))
+        // Reject corrupted font entries with negative weight
+        Some(raw) if raw < 0 => return None,
+        Some(raw) => Some(qt5_to_css_weight(raw)),
     };
 
     let style = match fields.get(5).map(|field| field.trim()) {
@@ -120,10 +125,15 @@ const HEADING_LEVEL_2_FACTOR: f32 = 1.20;
 /// 400 (`src/controls/Heading.qml:35`).
 const HEADING_WEIGHT: u16 = 400;
 
-/// A Kirigami heading of a body font of `body_pt` points at a level's factor.
-fn heading(body_pt: f32, factor: f32) -> crate::TextScaleEntry {
+/// A Kirigami heading of the body font `body` at a level's factor.
+fn heading(body: crate::model::font::FontSize, factor: f32) -> crate::TextScaleEntry {
+    use crate::model::font::FontSize;
+    let size = match body {
+        FontSize::Pt(v) => FontSize::Pt(v * factor),
+        FontSize::Px(v) => FontSize::Px(v * factor),
+    };
     crate::TextScaleEntry {
-        size: Some(crate::model::font::FontSize::Pt(body_pt * factor)),
+        size: Some(size),
         weight: Some(HEADING_WEIGHT),
         line_height: None,
     }
@@ -148,12 +158,15 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
         && let Some(spec) = parse_qt_font_with_weight(&font_str)
     {
         // Kirigami scales the body font's pointSize (kirigami `8319acc`,
-        // `src/controls/Heading.qml:32`), which a pixel-sized font has as -1
-        // (qtbase `src/gui/text/qfont.cpp:1041-1050` at v6.11.2), so a
-        // pixel-sized body gives no heading and the preset's stand.
-        if let Some(crate::model::font::FontSize::Pt(body_pt)) = spec.size {
-            variant.text_scale.section_heading = Some(heading(body_pt, HEADING_LEVEL_2_FACTOR));
-            variant.text_scale.dialog_title = Some(heading(body_pt, HEADING_LEVEL_1_FACTOR));
+        // `src/controls/Heading.qml:32`), which Qt Quick's font value type
+        // gives a pixel-sized font as pixelSize * 72 / qt_defaultDpi()
+        // (qtdeclarative `src/quick/util/qquickvaluetypes.cpp:1165-1171`,
+        // `qquickvaluetypes_p.h:441-442` at v6.11.2, 4e3399c2). A pixel body's heading
+        // is therefore its pixel size times the factor, which equals
+        // Kirigami's when its DPI and the point-to-pixel conversion agree.
+        if let Some(body) = spec.size {
+            variant.text_scale.section_heading = Some(heading(body, HEADING_LEVEL_2_FACTOR));
+            variant.text_scale.dialog_title = Some(heading(body, HEADING_LEVEL_1_FACTOR));
         }
         variant.defaults.font = spec;
     }
@@ -538,7 +551,16 @@ mod tests {
 
     #[test]
     fn parse_qt6_weight_outside_css_range_is_clamped() {
-        for (weight, css) in [("1", 100), ("99", 100), ("950", 900), ("1000", 900)] {
+        for (weight, css) in [
+            ("-1", 100),
+            ("0", 100),
+            ("1", 100),
+            ("99", 100),
+            ("950", 900),
+            ("1000", 900),
+            ("1001", 900),
+            ("70000", 900),
+        ] {
             let font = format!("Noto Sans,10,-1,5,{weight},0,0,0,0,0,0,0,0,0,0,1");
             let spec = parse_qt_font_with_weight(&font).unwrap();
             assert_eq!(spec.weight, Some(css), "weight {weight}");
@@ -546,13 +568,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_qt6_weight_qt_rejects_keeps_the_font_without_weight() {
-        for weight in ["0", "1001", "70000", "-1"] {
-            let font = format!("Noto Sans,10,-1,5,{weight},0,0,0,0,0,0,0,0,0,0,1");
-            let spec = parse_qt_font_with_weight(&font).unwrap();
-            assert_eq!(spec.weight, None, "weight {weight}");
-            assert_eq!(spec.family.as_deref(), Some("Noto Sans"), "weight {weight}");
-            assert_eq!(spec.size, Some(FontSize::Pt(10.0)), "weight {weight}");
+    fn parse_non_integer_weight_keeps_the_font_without_weight() {
+        for weight in ["bold", "400.5", "", "99999999999"] {
+            for tail in ["0,0,0,0,0,0,0,0,0,0,1", "0,0,0,0,0"] {
+                let font = format!("Noto Sans,10,-1,5,{weight},{tail}");
+                let spec = parse_qt_font_with_weight(&font).unwrap();
+                assert_eq!(spec.weight, None, "{font}");
+                assert_eq!(spec.family.as_deref(), Some("Noto Sans"), "{font}");
+                assert_eq!(spec.size, Some(FontSize::Pt(10.0)), "{font}");
+            }
         }
     }
 
@@ -582,18 +606,26 @@ mod tests {
         );
     }
 
-    /// A pixel-sized body has no point size for Kirigami's heading factors,
-    /// so the headings are left to the preset.
+    /// A pixel-sized body's headings are its pixel size times Kirigami's
+    /// level factors.
     #[test]
-    fn populate_fonts_derives_no_headings_from_a_pixel_body() {
+    fn populate_fonts_derives_pixel_headings_from_a_pixel_body() {
         let mut ini = super::super::create_kde_parser();
         ini.read("[General]\nfont=Noto Sans,-1,13,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
             .unwrap();
         let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         assert_eq!(variant.defaults.font.size, Some(FontSize::Px(13.0)));
-        assert!(variant.text_scale.section_heading.is_none());
-        assert!(variant.text_scale.dialog_title.is_none());
+        let ts = &variant.text_scale;
+        for (entry, factor) in [
+            (&ts.section_heading, HEADING_LEVEL_2_FACTOR),
+            (&ts.dialog_title, HEADING_LEVEL_1_FACTOR),
+        ] {
+            assert_eq!(
+                entry.as_ref().and_then(|e| e.size),
+                Some(FontSize::Px(13.0 * factor))
+            );
+        }
     }
 
     #[test]
