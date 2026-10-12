@@ -246,6 +246,37 @@ the file was pruned on 2026-10-11, not reordered.
       non-client fonts, high contrast and client-area animation, which
       `WM_SETTINGCHANGE` reports only to a top-level window
       (`native-theme/src/windows.rs`, "Sources not watched").
+      T21 fix round 1 (2026-10-13): high contrast
+      (`AccessibilitySettings::HighContrastChanged`) and client-area
+      animation (`UISettings::AnimationsEnabledChanged`, Windows 10 2004 and
+      later) are watched too, with no window; the window-only Windows
+      sources are the next entry.
+- [ ] [v0.7.x] **Windows watcher: the window-only sources.** The reader
+      reads the non-client fonts (`SPI_GETNONCLIENTMETRICS`), the
+      `GetSysColor` colours and `DwmGetColorizationColor` (the latter two
+      until T22 drops them), whose changes Windows announces only to
+      top-level windows: `WM_SETTINGCHANGE` with the `SPI_SET*` action in
+      `wParam`
+      (<https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-settingchange>),
+      `WM_SYSCOLORCHANGE`
+      (<https://learn.microsoft.com/en-us/windows/win32/gdi/wm-syscolorchange>)
+      and `WM_DWMCOLORIZATIONCOLORCHANGED`
+      (<https://learn.microsoft.com/en-us/windows/win32/dwm/wm-dwmcolorizationcolorchanged>).
+      A message-only window "does not receive broadcast messages"
+      (<https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#message-only-windows>).
+      Watching them takes a hidden top-level window (not `HWND_MESSAGE`) on
+      the watcher thread, whose window procedure posts `WM_THEME_CHANGED` for
+      those messages (the pump already coalesces it), destroyed before
+      `CoUninitialize` (`native-theme/src/watch/windows.rs`).
+- [ ] [v0.7.x] **macOS watcher: check on a Mac which center posts the
+      colour and scroller notifications.** The watcher observes
+      `NSSystemColorsDidChangeNotification` and
+      `NSPreferredScrollerStyleDidChangeNotification` on the default
+      `NSNotificationCenter`, an inference: Apple's pages name no center,
+      and no test sees a real AppKit post (the tests post their own). Change
+      the accent colour and "Show scroll bars" in System Settings with an
+      application running its main run loop, and see that the callback
+      fires (`native-theme/src/watch/macos.rs` `registrations`).
 - [ ] [v0.7.0] **KDE: the 300 ms throttle keeps the first event of a burst and drops
       the rest.** `last_fire` starts as `None` and the watcher fires on the
       first relevant event, then ignores every relevant event until 300 ms

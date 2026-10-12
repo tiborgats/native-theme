@@ -1,10 +1,13 @@
 //! Windows theme change watcher using the `UISettings` change events.
 //!
 //! Creates a background thread with COM STA initialization and a
-//! `GetMessageW`/`DispatchMessageW` message pump. The `UISettings` events
-//! `ColorValuesChanged` and `TextScaleFactorChanged` fire whenever the user
-//! changes the system colours or the text scale; their handlers post a thread message to the pump, which
-//! fires the callback on the watcher thread. Shutdown is handled by posting
+//! `GetMessageW`/`DispatchMessageW` message pump. The WinRT events
+//! `UISettings::ColorValuesChanged`, `TextScaleFactorChanged` and
+//! `AnimationsEnabledChanged` and `AccessibilitySettings::HighContrastChanged`
+//! fire whenever the user changes the system colours, the text scale, the
+//! animations or high contrast; their handlers post a thread message to the
+//! pump, which fires the callback on the watcher thread. Shutdown is handled
+//! by posting
 //! `WM_QUIT` to the watcher thread via `PostThreadMessageW` from the
 //! `ThemeSubscription` Drop handler.
 
@@ -16,7 +19,9 @@ use std::marker::PhantomData;
 use std::sync::mpsc;
 
 use ::windows::Foundation::TypedEventHandler;
-use ::windows::UI::ViewManagement::UISettings;
+use ::windows::UI::ViewManagement::{
+    AccessibilitySettings, UISettings, UISettingsAnimationsEnabledChangedEventArgs,
+};
 use ::windows::Win32::Foundation::{LPARAM, WPARAM};
 use ::windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
 use ::windows::Win32::System::Threading::GetCurrentThreadId;
@@ -28,10 +33,15 @@ use ::windows::core::{IInspectable, Ref};
 
 use super::ThemeChangeEvent;
 
-/// The `UISettings` events the watcher subscribes to: the Windows reader's
-/// sources (`windows.rs`, "Sources").
+/// The WinRT events the watcher subscribes to: the Windows reader's sources
+/// (`windows.rs`, "Sources").
 #[cfg(test)]
-pub(super) const SUBSCRIBED_EVENTS: [&str; 2] = [COLOR_VALUES_CHANGED, TEXT_SCALE_FACTOR_CHANGED];
+pub(super) const SUBSCRIBED_EVENTS: [&str; 4] = [
+    COLOR_VALUES_CHANGED,
+    TEXT_SCALE_FACTOR_CHANGED,
+    HIGH_CONTRAST_CHANGED,
+    ANIMATIONS_ENABLED_CHANGED,
+];
 
 /// `UISettings::ColorValuesChanged`, for `UISettings.GetColorValue`.
 const COLOR_VALUES_CHANGED: &str = "ColorValuesChanged";
@@ -39,8 +49,26 @@ const COLOR_VALUES_CHANGED: &str = "ColorValuesChanged";
 /// `UISettings::TextScaleFactorChanged`, for `UISettings.TextScaleFactor`.
 const TEXT_SCALE_FACTOR_CHANGED: &str = "TextScaleFactorChanged";
 
+/// `AccessibilitySettings::HighContrastChanged`, for `SPI_GETHIGHCONTRAST`.
+const HIGH_CONTRAST_CHANGED: &str = "HighContrastChanged";
+
+/// `UISettings::AnimationsEnabledChanged`, for `SPI_GETCLIENTAREAANIMATION`.
+#[cfg(test)]
+const ANIMATIONS_ENABLED_CHANGED: &str = "AnimationsEnabledChanged";
+
 /// The thread message an event handler posts to the watcher thread.
 const WM_THEME_CHANGED: u32 = WM_APP;
+
+/// Post [`WM_THEME_CHANGED`] to the watcher thread `thread_id`, from an event
+/// handler on whatever thread WinRT raises the event.
+fn post_theme_changed(thread_id: u32) {
+    // SAFETY: PostThreadMessageW is safe to call from any thread; the
+    // watcher thread's message queue exists before any handler is
+    // registered. A failure (the thread has ended) loses only this message.
+    unsafe {
+        let _ = PostThreadMessageW(thread_id, WM_THEME_CHANGED, WPARAM(0), LPARAM(0));
+    }
+}
 
 /// Balances a successful `CoInitializeEx` when dropped. Declared before the
 /// WinRT objects of the watcher thread, so it drops after them: every COM
@@ -59,12 +87,14 @@ impl Drop for ComGuard {
 
 /// Spawn a background thread that watches for Windows theme changes.
 ///
-/// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`
-/// and `UISettings::TextScaleFactorChanged`, and runs a `GetMessageW`/`DispatchMessageW` message
-/// pump. The callback fires on the background thread, once per burst of
-/// events, 300ms after the last of them (a thread timer the pump receives),
-/// whenever the system colours change (e.g. the user switches between light
-/// and dark mode or picks an accent colour) or the text scale does.
+/// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`,
+/// `TextScaleFactorChanged` and `AnimationsEnabledChanged` and to
+/// `AccessibilitySettings::HighContrastChanged`, and runs a
+/// `GetMessageW`/`DispatchMessageW` message pump. The callback fires on the
+/// background thread, once per burst of events, 300ms after the last of them
+/// (a thread timer the pump receives), whenever the system colours change
+/// (e.g. the user switches between light and dark mode or picks an accent
+/// colour), or the text scale, the animations setting or high contrast does.
 ///
 /// Returns once the thread has its message queue and the subscriptions are
 /// in place, or with `Error::ReaderFailed` when a setup step failed.
@@ -117,20 +147,36 @@ pub(crate) fn watch_windows(
             }
         };
 
+        let accessibility = match AccessibilitySettings::new() {
+            Ok(a) => a,
+            Err(err) => {
+                let _ = ready_tx.send(Err(setup_failed("AccessibilitySettings::new", err)));
+                return;
+            }
+        };
+
         // The handlers only post a message to this thread, so the callback
         // runs on it alone, never twice at once, whichever thread raises the
         // event.
-        let post_changed = move |_sender: Ref<'_, UISettings>, _args: Ref<'_, IInspectable>| {
-            // SAFETY: PostThreadMessageW is safe to call from any thread;
-            // the thread's message queue exists. A failure (the thread has
-            // ended) loses only this message.
-            unsafe {
-                let _ = PostThreadMessageW(thread_id, WM_THEME_CHANGED, WPARAM(0), LPARAM(0));
-            }
+        let settings_changed = move |_: Ref<'_, UISettings>, _: Ref<'_, IInspectable>| {
+            post_theme_changed(thread_id);
             Ok(())
         };
-        let color_handler = TypedEventHandler::new(post_changed);
-        let text_scale_handler = TypedEventHandler::new(post_changed);
+        let color_handler = TypedEventHandler::new(settings_changed);
+        let text_scale_handler = TypedEventHandler::new(settings_changed);
+        let high_contrast_handler = TypedEventHandler::new(
+            move |_: Ref<'_, AccessibilitySettings>, _: Ref<'_, IInspectable>| {
+                post_theme_changed(thread_id);
+                Ok(())
+            },
+        );
+        let animations_handler = TypedEventHandler::new(
+            move |_: Ref<'_, UISettings>,
+                  _: Ref<'_, UISettingsAnimationsEnabledChangedEventArgs>| {
+                post_theme_changed(thread_id);
+                Ok(())
+            },
+        );
 
         let color_token = match settings.ColorValuesChanged(&color_handler) {
             Ok(t) => t,
@@ -147,6 +193,23 @@ pub(crate) fn watch_windows(
                 return;
             }
         };
+        let high_contrast_token = match accessibility.HighContrastChanged(&high_contrast_handler) {
+            Ok(t) => t,
+            Err(err) => {
+                let _ = settings.RemoveColorValuesChanged(color_token);
+                let _ = settings.RemoveTextScaleFactorChanged(text_scale_token);
+                let _ = ready_tx.send(Err(setup_failed(HIGH_CONTRAST_CHANGED, err)));
+                return;
+            }
+        };
+        // For `SPI_GETCLIENTAREAANIMATION`: no Microsoft page says
+        // `UISettings.AnimationsEnabled` is the same setting, but the two read
+        // the same on the three Windows probe images (`docs/platform-facts.md`,
+        // `reduce_motion`; probe.toml:682, :745 of the 2026-10-11 run), an
+        // agreement, not a documented identity. Windows before 10 2004 lacks
+        // the event (`IUISettings6`); the watcher then does without it, as the
+        // other sources are still watched.
+        let animations_token = settings.AnimationsEnabledChanged(&animations_handler).ok();
 
         if ready_tx.send(Ok(thread_id)).is_ok() {
             // The thread timer of the pending burst, 0 for none.
@@ -167,7 +230,9 @@ pub(crate) fn watch_windows(
                     let thread_message = msg.hwnd.is_invalid();
                     if thread_message && msg.message == WM_THEME_CHANGED {
                         // Restart the window: the callback fires once, after
-                        // the last event of a burst.
+                        // the last event of a burst. The window is T20's KDE
+                        // one reused to keep one user action one event, not
+                        // a Windows value.
                         if timer != 0 {
                             let _ = KillTimer(None, timer);
                         }
@@ -194,10 +259,14 @@ pub(crate) fn watch_windows(
         }
 
         // Cleanup: unregister the event handlers (ignore errors -- the
-        // UISettings may already be torn down). The handlers and `settings`
-        // drop here, before `_com` uninitializes COM.
+        // UISettings may already be torn down). The handlers, `settings` and
+        // `accessibility` drop here, before `_com` uninitializes COM.
         let _ = settings.RemoveColorValuesChanged(color_token);
         let _ = settings.RemoveTextScaleFactorChanged(text_scale_token);
+        let _ = accessibility.RemoveHighContrastChanged(high_contrast_token);
+        if let Some(token) = animations_token {
+            let _ = settings.RemoveAnimationsEnabledChanged(token);
+        }
     });
 
     // Receive the thread ID, or the setup error, from the background thread.

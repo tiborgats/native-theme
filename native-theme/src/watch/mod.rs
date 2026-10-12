@@ -235,7 +235,9 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// it fires: one user action can raise several notifications (KDE writes its
 /// files in several steps, `QSaveFile`'s atomic writes; GNOME's portal sends
 /// a gsettings key and the `org.freedesktop.appearance` setting it maps to),
-/// and the callback fires once for all of them.
+/// and the callback fires once for all of them. The value is T20's KDE
+/// window, reused on every platform to keep one user action one event: a
+/// design value, not a platform fact.
 #[cfg(any(
     test,
     all(target_os = "linux", any(feature = "kde", feature = "portal")),
@@ -336,8 +338,9 @@ fn fire_debounced<T>(
 /// and the `org.gnome.desktop.interface`, `org.gnome.desktop.wm.preferences`
 /// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
 /// the appearance, system-colour, scroller-style and accessibility-display
-/// notifications; on Windows `UISettings::ColorValuesChanged` and
-/// `TextScaleFactorChanged`. One change can raise several of them, so the
+/// notifications; on Windows `UISettings::ColorValuesChanged`,
+/// `TextScaleFactorChanged` and `AnimationsEnabledChanged` and
+/// `AccessibilitySettings::HighContrastChanged`. One change can raise several of them, so the
 /// callback fires once per burst, 300 ms after the last.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
@@ -364,8 +367,8 @@ fn fire_debounced<T>(
 /// (it does not exist, or the inotify limits are reached); GNOME and Budgie,
 /// the watcher thread could not connect to the session bus or subscribe to
 /// the portal's `SettingChanged` signal; Windows, the watcher thread did not
-/// start or could not subscribe to `UISettings::ColorValuesChanged` or
-/// `TextScaleFactorChanged`. The KDE backend sets up its watch on the
+/// start or could not subscribe to `UISettings::ColorValuesChanged`,
+/// `TextScaleFactorChanged` or `AccessibilitySettings::HighContrastChanged`. The KDE backend sets up its watch on the
 /// calling thread, and the GNOME and Windows backends return only once their
 /// thread is subscribed; the macOS backend registers its observer on the
 /// calling thread and does not fail.
@@ -599,6 +602,15 @@ mod tests {
             "windows",
             "UISettings.TextScaleFactor",
             "TextScaleFactorChanged",
+        ),
+        ("windows", "SPI_GETHIGHCONTRAST", "HighContrastChanged"),
+        // `UISettings.AnimationsEnabled` and SPI_GETCLIENTAREAANIMATION read
+        // the same on the three Windows probe images; no page says they are
+        // one setting.
+        (
+            "windows",
+            "SPI_GETCLIENTAREAANIMATION",
+            "AnimationsEnabledChanged",
         ),
     ];
 

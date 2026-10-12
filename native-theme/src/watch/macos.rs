@@ -12,8 +12,10 @@
 //!   (<https://developer.apple.com/documentation/foundation/distributednotificationcenter/addobserver(_:selector:name:object:suspensionbehavior:)>).
 //! - `NSSystemColorsDidChangeNotification` (the colours, the accent among
 //!   them) and `NSPreferredScrollerStyleDidChangeNotification` on the
-//!   process's default `NSNotificationCenter`, AppKit's notifications whose
-//!   pages name no other center.
+//!   process's default `NSNotificationCenter`. Apple's pages for them name
+//!   no center, so the default one is an inference, the conventional center
+//!   for AppKit's own notifications; no test sees a real AppKit post, so it
+//!   stays unverified until checked on a Mac (`docs/todo.md`).
 //! - `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification` on
 //!   `NSWorkspace`'s `notificationCenter`, the one center it is posted on
 //!   (<https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification>).
@@ -59,7 +61,8 @@ use super::ThemeChangeEvent;
 enum Center {
     /// The default `NSDistributedNotificationCenter`, delivering at once.
     Distributed,
-    /// The process's default `NSNotificationCenter`.
+    /// The process's default `NSNotificationCenter`; for AppKit's colour
+    /// and scroller notifications an inference, as Apple names no center.
     Local,
     /// `NSWorkspace`'s `notificationCenter`.
     Workspace,
@@ -155,7 +158,8 @@ impl Delivery {
 
     /// Wait until [`super::DEBOUNCE`] has passed since the last
     /// notification, then fire the callback, unless the guard dropped
-    /// meanwhile. Runs on the queue.
+    /// meanwhile. Runs on the queue. The window is T20's KDE one reused to
+    /// keep one user action one event, not a macOS value.
     fn run(&self) {
         {
             let Ok(mut pending) = self.pending.lock() else {
