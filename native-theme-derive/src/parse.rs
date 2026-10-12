@@ -491,7 +491,7 @@ fn parse_inherit_from(lit: &LitStr) -> Result<InheritFrom> {
 
 /// A field's `category` cannot be combined with `nested` or `resolved_type`.
 const NESTED_CATEGORY_CONFLICT: &str =
-    "category conflicts with nested and resolved_type: a nested field has no category";
+    "category conflicts with nested or resolved_type: a nested field has no category";
 
 #[cfg(test)]
 mod tests {
@@ -606,7 +606,7 @@ mod tests {
             #[theme(inherit_from = "defaults..color")]
             pub color: Option<Rgba>
         });
-        assert!(err.contains("inherit_from"), "got: {err}");
+        assert_eq!(err, "inherit_from: \"\" is not a valid Rust identifier");
     }
 
     #[test]
@@ -615,7 +615,10 @@ mod tests {
             #[theme(inherit_from = "defaults.border-color")]
             pub color: Option<Rgba>
         });
-        assert!(err.contains("inherit_from"), "got: {err}");
+        assert_eq!(
+            err,
+            "inherit_from: \"border-color\" is not a valid Rust identifier"
+        );
     }
 
     #[test]
@@ -624,7 +627,10 @@ mod tests {
             #[theme(nested, category = "soft_option")]
             pub font: Option<FontSpec>
         });
-        assert!(err.contains("category"), "got: {err}");
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
     }
 
     #[test]
@@ -633,7 +639,10 @@ mod tests {
             #[theme(category = "soft_option", nested)]
             pub font: Option<FontSpec>
         });
-        assert!(err.contains("category"), "got: {err}");
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
     }
 
     #[test]
@@ -642,7 +651,10 @@ mod tests {
             #[theme(category = "soft_option", resolved_type = "ResolvedFontSpec")]
             pub font: Option<FontSpec>
         });
-        assert!(err.contains("category"), "got: {err}");
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
     }
 
     #[test]
@@ -679,6 +691,15 @@ mod tests {
             pub opacity: Option<f32>
         });
         assert!(err.contains("finite"), "got: {err}");
+    }
+
+    #[test]
+    fn range_bound_beyond_f32_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range = "0.0..=1e39")]
+            pub opacity: Option<f32>
+        });
+        assert_eq!(err, "range bounds must be finite f32 values");
     }
 
     #[test]
