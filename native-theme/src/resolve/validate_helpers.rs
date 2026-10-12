@@ -227,8 +227,8 @@ pub(crate) fn require_font_opt(
 }
 
 /// Validate an `Option<TextScaleEntry>`.
-/// Converts `FontSize` to `f32` px via `to_logical_px(dpi)`. Also converts `line_height`
-/// when the sibling `size` is in points (same unit, same DPI factor).
+/// Converts `size` and `line_height` to `f32` px via `to_logical_px(dpi)`, each
+/// in its own unit.
 pub(crate) fn require_text_scale_entry(
     entry: &Option<crate::model::TextScaleEntry>,
     prefix: &str,

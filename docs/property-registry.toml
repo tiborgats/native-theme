@@ -73,7 +73,7 @@ panel_px                     = "f32"
 [_structures.TextScaleEntry]
 # One entry in the text scale ramp (§2.19).
 # Exactly one of size_pt or size_px must be set (same as Font.size_*).
-# Exactly one of line_height_pt or line_height_px must be set (same unit as size).
+# Exactly one of line_height_pt or line_height_px must be set; its unit need not match size's.
 size_pt                      = "f32"
 size_px                      = "f32"
 weight                       = "u16"

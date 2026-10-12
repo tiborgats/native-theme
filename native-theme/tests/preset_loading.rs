@@ -7,7 +7,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use native_theme::error::Error;
-use native_theme::theme::Theme;
+use native_theme::resolve::ResolutionContext;
+use native_theme::theme::{ColorMode, Theme};
 
 #[test]
 fn all_presets_parse_without_error() {
@@ -271,6 +272,52 @@ fn all_presets_round_trip_toml() {
             "preset '{name}' name changed after round-trip"
         );
     }
+}
+
+/// ios-13's caption states `size_pt` and `line_height_pt`; an overlay
+/// stating `size_px` leaves a merged entry in mixed units, which `to_toml`
+/// writes as `size_px` with `line_height_pt` and `from_toml` must read back.
+#[test]
+fn merged_mixed_unit_text_scale_round_trips_toml() {
+    let mut theme = Theme::preset("ios-13").unwrap();
+    let overlay = Theme::from_toml("[light.text_scale.caption]\nsize_px = 12.0\n").unwrap();
+    theme.merge(&overlay);
+
+    let toml_str = theme.to_toml().unwrap();
+    let reparsed = Theme::from_toml(&toml_str)
+        .unwrap_or_else(|e| panic!("merged theme round-trip from_toml failed: {e}"));
+    assert_eq!(theme, reparsed);
+}
+
+/// A caption stating `size_pt` with `line_height_px` resolves each value in
+/// its own unit: at 96 DPI, 12 pt is 16 px and the 20 px line height stays 20.
+#[test]
+fn mixed_unit_text_scale_resolves_each_value_in_its_own_unit() {
+    let mut theme = Theme::preset("ios-13").unwrap();
+    let overlay = Theme::from_toml("[light.text_scale.caption]\nline_height_px = 20.0\n").unwrap();
+    theme.merge(&overlay);
+    let theme = Theme::from_toml(&theme.to_toml().unwrap()).unwrap();
+
+    let ctx = ResolutionContext {
+        font_dpi: 96.0,
+        ..ResolutionContext::for_tests()
+    };
+    let caption = theme
+        .resolve_with(ColorMode::Light, &ctx)
+        .unwrap()
+        .variant
+        .text_scale
+        .caption;
+    assert!(
+        (caption.size - 16.0).abs() < 0.01,
+        "12 pt at 96 DPI should be 16 px, got {}",
+        caption.size
+    );
+    assert!(
+        (caption.line_height - 20.0).abs() < 0.01,
+        "line_height_px = 20.0 should stay 20 px, got {}",
+        caption.line_height
+    );
 }
 
 #[test]

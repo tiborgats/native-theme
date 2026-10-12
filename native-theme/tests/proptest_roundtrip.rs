@@ -95,10 +95,10 @@ prop_compose! {
         use_pt in any::<bool>(),
         weight in proptest::option::of(100u16..900u16),
         lh_raw in proptest::option::of(0.5f32..3.0),
+        lh_use_pt in any::<bool>(),
     ) -> TextScaleEntry {
         let size = size_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
-        // line_height must use the same unit as size for TryFrom consistency
-        let line_height = lh_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
+        let line_height = lh_raw.map(|v| if lh_use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
         TextScaleEntry { size, weight, line_height }
     }
 }

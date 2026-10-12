@@ -286,6 +286,9 @@ pub struct TextScaleEntry {
     pub weight: Option<u16>,
     /// Line height with explicit unit. When `None`, `resolve()` computes it
     /// as `defaults.line_height * size.raw()`, preserving the unit of `size`.
+    ///
+    /// Its unit need not match `size`'s: validation converts each value to
+    /// logical pixels on its own.
     pub line_height: Option<FontSize>,
 }
 
@@ -322,14 +325,6 @@ impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
                 );
             }
         };
-        if let (Some(s), Some(lh)) = (&size, &line_height)
-            && s.is_pt() != lh.is_pt()
-        {
-            return Err(
-                "text_scale: size and line_height must use the same unit suffix (_pt or _px)"
-                    .into(),
-            );
-        }
         Ok(TextScaleEntry {
             size,
             weight: raw.weight,
