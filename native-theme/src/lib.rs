@@ -457,6 +457,16 @@ pub(crate) enum ReaderOutput {
 }
 
 impl ReaderOutput {
+    /// The OS-active color mode, as `is_dark` reports it.
+    pub(crate) fn mode(&self) -> ColorMode {
+        let (ReaderOutput::Single { is_dark, .. } | ReaderOutput::Dual { is_dark, .. }) = self;
+        if *is_dark {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        }
+    }
+
     /// Reconstruct a [`Theme`] from this reader output (for overlay replay
     /// and merge compatibility).
     pub(crate) fn to_theme(
@@ -1133,7 +1143,7 @@ mod overlay_tests {
             font_dpi: None,
             accessibility: AccessibilityPreferences::default(),
         };
-        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light)
+        pipeline::run_pipeline(reader, "catppuccin-mocha")
     }
 
     /// The range-violation paths of `result`'s error.
@@ -1173,11 +1183,7 @@ mod overlay_tests {
             accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
-            violation_paths(pipeline::run_pipeline(
-                reader,
-                "catppuccin-mocha",
-                ColorMode::Dark
-            )),
+            violation_paths(pipeline::run_pipeline(reader, "catppuccin-mocha",)),
             ["light.button.min_height_px"]
         );
         Ok(())

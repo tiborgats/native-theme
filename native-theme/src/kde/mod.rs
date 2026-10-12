@@ -58,10 +58,7 @@ fn read_kde_ini(
     crate::kde_metrics::populate_widget_sizing(&mut variant);
 
     // KDE-05: Icon theme name from [Icons] Theme (per-variant)
-    variant.defaults.icon_theme = ini
-        .get("Icons", "Theme")
-        .filter(|s| !s.is_empty())
-        .map(std::borrow::Cow::Owned);
+    variant.defaults.icon_theme = icon_theme(ini).map(std::borrow::Cow::Owned);
 
     // KDE-06: Accessibility flags (pure -- no I/O)
     // AnimationDurationFactor from [KDE]
@@ -294,6 +291,34 @@ impl crate::reader::ThemeReader for KdeReader {
 /// in order ([`read_kconfig_files`]); `None` when none of them can be read.
 pub(crate) fn read_kdeglobals() -> Option<configparser::ini::Ini> {
     read_kconfig_files(&kdeglobals_files())
+}
+
+/// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or
+/// empty.
+fn icon_theme(ini: &configparser::ini::Ini) -> Option<String> {
+    ini.get("Icons", "Theme").filter(|s| !s.is_empty())
+}
+
+/// The icon theme of kdeglobals ([`read_kdeglobals`]), the one the KDE
+/// reader states, for `detect`'s icon-theme detection; the error says why
+/// there is none.
+pub(crate) fn kdeglobals_icon_theme() -> Result<String, String> {
+    kconfig_files_icon_theme(&kdeglobals_files())
+}
+
+/// [`icon_theme`] of the KConfig files `files` layered
+/// ([`read_kconfig_files`]); the error names the files.
+fn kconfig_files_icon_theme(files: &[std::path::PathBuf]) -> Result<String, String> {
+    let listed = || {
+        files
+            .iter()
+            .map(|file| file.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let ini =
+        read_kconfig_files(files).ok_or_else(|| format!("no file is readable: {}", listed()))?;
+    icon_theme(&ini).ok_or_else(|| format!("`[Icons] Theme` is absent or empty in {}", listed()))
 }
 
 /// Whether kdeglobals ([`read_kdeglobals`]) states a dark theme
@@ -997,6 +1022,37 @@ BackgroundNormal=49,54,59
         assert_eq!(kconfig_files_are_dark(&files), Some(true));
     }
 
+    /// The icon theme `detect` reports is the cascade's, as the reader's: a
+    /// file without the key leaves the one before it; the failures name the
+    /// files.
+    #[test]
+    fn the_detected_icon_theme_is_the_cascades() {
+        let dir = temp_config_dir("icon-theme");
+        let files = [dir.join("kdedefaults/kdeglobals"), dir.join("kdeglobals")];
+        let failure = kconfig_files_icon_theme(&files).unwrap_err();
+        assert!(failure.contains("no file is readable"), "got: {failure}");
+        assert!(failure.contains("kdedefaults/kdeglobals"), "got: {failure}");
+
+        std::fs::write(dir.join("kdeglobals"), "[General]\nColorScheme=Custom\n").unwrap();
+        let failure = kconfig_files_icon_theme(&files).unwrap_err();
+        assert!(
+            failure.contains("`[Icons] Theme` is absent or empty"),
+            "got: {failure}"
+        );
+
+        std::fs::write(
+            dir.join("kdedefaults/kdeglobals"),
+            "[Icons]\nTheme=breeze-dark\n",
+        )
+        .unwrap();
+        assert_eq!(
+            kconfig_files_icon_theme(&files),
+            Ok("breeze-dark".to_string())
+        );
+        let (mode, ..) = read_kde_ini(&read_kconfig_files(&files).unwrap());
+        assert_eq!(mode.defaults.icon_theme.as_deref(), Some("breeze-dark"));
+    }
+
     /// A missing file, here the user's, reads as empty; with no file at all
     /// there is nothing.
     #[test]
@@ -1133,11 +1189,7 @@ BackgroundNormal=49,54,59
     fn link_text_resolves_to_foreground_link() -> crate::Result<()> {
         let content = "[Colors:Window]\nBackgroundNormal=49,54,59\n\n\
                        [Colors:View]\nForegroundLink=246,116,0\n";
-        let st = crate::pipeline::run_pipeline(
-            from_kde_content(content)?,
-            "kde-breeze",
-            crate::ColorMode::Dark,
-        )?;
+        let st = crate::pipeline::run_pipeline(from_kde_content(content)?, "kde-breeze")?;
         assert_eq!(st.dark.link.font.color, Rgba::rgb(246, 116, 0));
         Ok(())
     }
@@ -1146,11 +1198,7 @@ BackgroundNormal=49,54,59
     /// KDE read: the reader states no `link.font.color` of its own.
     #[test]
     fn an_overlay_link_color_recolours_link_text() -> crate::Result<()> {
-        let st = crate::pipeline::run_pipeline(
-            from_kde_content(BREEZE_DARK_FULL)?,
-            "kde-breeze",
-            crate::ColorMode::Dark,
-        )?;
+        let st = crate::pipeline::run_pipeline(from_kde_content(BREEZE_DARK_FULL)?, "kde-breeze")?;
         let overlay = crate::Theme::from_toml("[dark.defaults]\nlink_color = \"#ff0000\"")?;
         let customised = st.with_overlay(&overlay)?;
         assert_eq!(customised.dark.link.font.color, Rgba::rgb(255, 0, 0));

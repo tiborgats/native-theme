@@ -905,7 +905,7 @@ mod tests {
         let reader = build_gnome_spec_pure(&data);
         assert_eq!(reader_mode(&reader).defaults.font, FontSpec::default());
         assert_eq!(reader_mode(&reader).defaults.mono_font, FontSpec::default());
-        assert!(crate::pipeline::run_pipeline(reader, "adwaita", crate::ColorMode::Light).is_ok());
+        assert!(crate::pipeline::run_pipeline(reader, "adwaita").is_ok());
     }
 
     // === portal_color_to_rgba tests ===
@@ -1171,8 +1171,7 @@ mod tests {
         data.text_scaling_factor = Some(1.5);
         let reader = build_gnome_spec_pure(&data);
         assert_eq!(reader.font_dpi, Some(96.0));
-        let sys =
-            crate::pipeline::run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        let sys = crate::pipeline::run_pipeline(reader, "adwaita").unwrap();
         // Cantarell 11 pt at 96 DPI is 14.67 px; times 1.5 it is 22 px.
         let drawn = sys.accessibility.scaled(sys.light.defaults.font.size);
         assert!((drawn - 22.0).abs() < 0.01, "drawn at {drawn} px");

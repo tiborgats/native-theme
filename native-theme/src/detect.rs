@@ -114,6 +114,40 @@ pub fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
     LinuxDesktop::Unknown
 }
 
+/// The desktop a theme is read by: `raw` ([`parse_linux_desktop`] of
+/// `XDG_CURRENT_DESKTOP`) where it names one; for `Unknown`, the desktop of
+/// the portal backend (`portal_backend`), else KDE where `kdeglobals_exists`,
+/// else `Unknown`. The reader, the theme watcher, the icon-theme detection
+/// and the font DPI all decide by it ([`DetectionContext::refined_linux_desktop`]),
+/// so they agree. `kdeglobals_exists` is asked only where nothing before it
+/// decides.
+#[cfg(target_os = "linux")]
+pub(crate) fn refine_linux_desktop(
+    raw: LinuxDesktop,
+    portal_backend: Option<LinuxDesktop>,
+    kdeglobals_exists: impl FnOnce() -> bool,
+) -> LinuxDesktop {
+    match (raw, portal_backend) {
+        (LinuxDesktop::Unknown, Some(backend)) => backend,
+        (LinuxDesktop::Unknown, None) if kdeglobals_exists() => LinuxDesktop::Kde,
+        (other, _) => other,
+    }
+}
+
+/// Whether the user's `kdeglobals` exists, with the `kde` feature; `false`
+/// without it, as no KDE file is read then.
+#[cfg(target_os = "linux")]
+fn kdeglobals_exists() -> bool {
+    #[cfg(feature = "kde")]
+    {
+        crate::kde::kdeglobals_path().exists()
+    }
+    #[cfg(not(feature = "kde"))]
+    {
+        false
+    }
+}
+
 /// Detect whether the system is using a dark color scheme.
 ///
 /// Uses synchronous, platform-specific checks so the result is available
@@ -411,8 +445,9 @@ mod xrandr_dpi_tests {
 pub(crate) const GNOME_FONT_DPI: f32 = 96.0;
 
 /// The font DPI a desktop fixes: [`GNOME_FONT_DPI`] on GNOME and Budgie, the
-/// desktops the GNOME reader reads (`pipeline::select_reader`); `None`
-/// elsewhere, where the detection chain decides.
+/// desktops the GNOME reader reads (`pipeline::select_reader`, both deciding
+/// by the refined desktop, [`refine_linux_desktop`]); `None` elsewhere, where
+/// the detection chain decides.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
     matches!(desktop, LinuxDesktop::Gnome | LinuxDesktop::Budgie).then_some(GNOME_FONT_DPI)
@@ -425,7 +460,9 @@ fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
 /// `forceFontDPI`. Returns the platform-appropriate DPI for converting
 /// typographic points to logical pixels.
 ///
-/// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`)
+/// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`);
+///   the desktop is [`DetectionContext::refined_linux_desktop_sync`]'s, so an
+///   unrecognised one counts as the reader's
 /// - **Linux, `kde` feature** (any other desktop): on an X11 session
 ///   `forceFontDPI` (`kde_force_font_dpi`), then `Xft.dpi` → xrandr → 96.0
 /// - **Linux, `portal` feature without `kde`** (any other desktop): `Xft.dpi` → xrandr → 96.0;
@@ -449,7 +486,7 @@ fn detect_system_font_dpi() -> f32 {
     // GNOME: a fixed 96, the text scale carried apart (GNOME_FONT_DPI)
     #[cfg(all(target_os = "linux", feature = "portal"))]
     {
-        if let Some(dpi) = desktop_font_dpi(detect_linux_desktop()) {
+        if let Some(dpi) = desktop_font_dpi(system().refined_linux_desktop_sync()) {
             return dpi;
         }
     }
@@ -819,6 +856,8 @@ pub struct DetectionContext {
     icon_theme: ArcSwapOption<Result<String, IconThemeFailure>>,
     #[cfg(target_os = "linux")]
     linux_desktop: ArcSwapOption<LinuxDesktop>,
+    #[cfg(target_os = "linux")]
+    refined_linux_desktop: ArcSwapOption<LinuxDesktop>,
     font_dpi: ArcSwapOption<f32>,
 }
 
@@ -832,6 +871,8 @@ impl DetectionContext {
             icon_theme: ArcSwapOption::empty(),
             #[cfg(target_os = "linux")]
             linux_desktop: ArcSwapOption::empty(),
+            #[cfg(target_os = "linux")]
+            refined_linux_desktop: ArcSwapOption::empty(),
             font_dpi: ArcSwapOption::empty(),
         }
     }
@@ -961,6 +1002,47 @@ impl DetectionContext {
         value
     }
 
+    /// The desktop the reader, the theme watcher, the icon-theme detection
+    /// and the font DPI decide by ([`refine_linux_desktop`]), cached: on an
+    /// unrecognised desktop the portal backend is asked over D-Bus (with the
+    /// `portal` feature), then `kdeglobals` is looked for. The system reads
+    /// (`SystemTheme::from_system`, `from_system_async`,
+    /// `AccessibilityPreferences::from_system`) fill the cache.
+    /// [`invalidate_linux_desktop()`](Self::invalidate_linux_desktop) clears it.
+    #[cfg(target_os = "linux")]
+    pub(crate) async fn refined_linux_desktop(&self) -> LinuxDesktop {
+        if let Some(v) = self.refined_linux_desktop.load().as_deref() {
+            return *v;
+        }
+        let raw = self.linux_desktop();
+        #[cfg(feature = "portal")]
+        let portal_backend = if raw == LinuxDesktop::Unknown {
+            crate::gnome::detect_portal_backend().await
+        } else {
+            None
+        };
+        #[cfg(not(feature = "portal"))]
+        let portal_backend = None;
+        let value = refine_linux_desktop(raw, portal_backend, kdeglobals_exists);
+        self.refined_linux_desktop.store(Some(Arc::new(value)));
+        value
+    }
+
+    /// [`refined_linux_desktop()`](Self::refined_linux_desktop) for a
+    /// synchronous caller, which does not ask the portal: the cached desktop,
+    /// else [`refine_linux_desktop`] without a portal backend (not cached).
+    /// The two differ only on an unrecognised desktop whose portal backend
+    /// names a desktop, until a system read has asked it: a KDE backend
+    /// without `kdeglobals` is `Unknown` here, a GNOME backend with
+    /// `kdeglobals` is KDE here.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
+        if let Some(v) = self.refined_linux_desktop.load().as_deref() {
+            return *v;
+        }
+        refine_linux_desktop(self.linux_desktop(), None, kdeglobals_exists)
+    }
+
     /// The system font DPI (cached), from the detection chain of
     /// `detect_system_font_dpi`.
     ///
@@ -1002,10 +1084,12 @@ impl DetectionContext {
         self.icon_theme.store(None);
     }
 
-    /// Clear the cached Linux desktop environment.
+    /// Clear the cached Linux desktop environment, and the desktop refined
+    /// from it.
     #[cfg(target_os = "linux")]
     pub fn invalidate_linux_desktop(&self) {
         self.linux_desktop.store(None);
+        self.refined_linux_desktop.store(None);
     }
 
     /// Clear all cached values.
@@ -1315,6 +1399,62 @@ mod detection_context_tests {
         ctx.invalidate_linux_desktop();
         let _ = ctx.linux_desktop(); // re-reads without panic
     }
+
+    /// A synchronous caller gets the desktop a system read refined, portal
+    /// answer included, until it is invalidated.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_sync_refined_desktop_is_the_cached_one() {
+        let ctx = DetectionContext::new();
+        ctx.refined_linux_desktop
+            .store(Some(Arc::new(LinuxDesktop::Gnome)));
+        assert_eq!(ctx.refined_linux_desktop_sync(), LinuxDesktop::Gnome);
+        assert_eq!(
+            pollster::block_on(ctx.refined_linux_desktop()),
+            LinuxDesktop::Gnome
+        );
+        ctx.invalidate_linux_desktop();
+        assert!(ctx.refined_linux_desktop.load().is_none());
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod refine_linux_desktop_tests {
+    use super::*;
+
+    fn asked() -> bool {
+        panic!("kdeglobals asked where the desktop is already decided")
+    }
+
+    /// `XDG_CURRENT_DESKTOP` decides where it names a desktop; the portal
+    /// backend, then `kdeglobals`, only where it names none.
+    #[test]
+    fn the_raw_desktop_then_the_portal_backend_then_kdeglobals() {
+        let refine = |raw, portal_backend, kdeglobals_exists: fn() -> bool| {
+            refine_linux_desktop(raw, portal_backend, kdeglobals_exists)
+        };
+        assert_eq!(
+            refine(LinuxDesktop::Gnome, Some(LinuxDesktop::Kde), asked),
+            LinuxDesktop::Gnome
+        );
+        assert_eq!(refine(LinuxDesktop::Xfce, None, asked), LinuxDesktop::Xfce);
+        assert_eq!(
+            refine(LinuxDesktop::Unknown, Some(LinuxDesktop::Kde), asked),
+            LinuxDesktop::Kde
+        );
+        assert_eq!(
+            refine(LinuxDesktop::Unknown, Some(LinuxDesktop::Gnome), asked),
+            LinuxDesktop::Gnome
+        );
+        assert_eq!(
+            refine(LinuxDesktop::Unknown, None, || true),
+            LinuxDesktop::Kde
+        );
+        assert_eq!(
+            refine(LinuxDesktop::Unknown, None, || false),
+            LinuxDesktop::Unknown
+        );
+    }
 }
 
 #[cfg(all(test, target_os = "linux"))]
@@ -1418,5 +1558,19 @@ mod gnome_font_dpi_tests {
         assert_eq!(desktop_font_dpi(LinuxDesktop::Budgie), Some(96.0));
         assert_eq!(desktop_font_dpi(LinuxDesktop::Kde), None);
         assert_eq!(desktop_font_dpi(LinuxDesktop::Unknown), None);
+    }
+
+    /// An unrecognised desktop with a GNOME portal backend gets the GNOME
+    /// reader, so the preset path takes the reader's 96, `kdeglobals` or not.
+    #[test]
+    fn an_unknown_desktop_with_a_gnome_portal_has_gnomes_font_dpi() {
+        for kdeglobals in [false, true] {
+            let desktop =
+                refine_linux_desktop(LinuxDesktop::Unknown, Some(LinuxDesktop::Gnome), || {
+                    kdeglobals
+                });
+            assert_eq!(desktop_font_dpi(desktop), Some(GNOME_FONT_DPI));
+            assert_eq!(GNOME_FONT_DPI, 96.0);
+        }
     }
 }

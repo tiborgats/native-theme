@@ -47,7 +47,10 @@ pub struct ResolutionContext {
     /// Windows, 96.0 on a GNOME or Budgie desktop (with the `portal` feature;
     /// GNOME's text-scaling factor is carried in
     /// [`AccessibilityPreferences`](crate::AccessibilityPreferences), not in
-    /// the DPI), and on other Linux desktops KDE's `forceFontDPI` on an X11
+    /// the DPI; an unrecognised desktop counts as the one
+    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) reads,
+    /// its portal backend's once a system read has asked it), and on other
+    /// Linux desktops KDE's `forceFontDPI` on an X11
     /// session (with the `kde` feature), then `Xft.dpi`, then xrandr's
     /// physical DPI (with `kde` or `portal`), then 96.0; 96.0 elsewhere. The
     /// detected DPI is cached until

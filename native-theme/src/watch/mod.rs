@@ -237,6 +237,13 @@ impl Drop for ThemeSubscription {
 /// The callback then runs on a private serial queue, never on the main
 /// thread and never twice at once.
 ///
+/// On Linux the backend is the one of the desktop the reader is chosen by:
+/// KDE's for KDE (with the `kde` feature), GNOME's for GNOME and Budgie (with
+/// `portal`). An unrecognised `XDG_CURRENT_DESKTOP` counts as the desktop of
+/// its portal backend once a system read such as
+/// [`SystemTheme::from_system`](crate::SystemTheme::from_system) has asked
+/// it, else as KDE where the user's `kdeglobals` exists.
+///
 /// # Errors
 ///
 /// Returns [`Error::WatchUnavailable`](crate::Error::WatchUnavailable) if no
@@ -256,15 +263,12 @@ pub fn on_theme_change(
     {
         #[cfg(not(any(feature = "kde", feature = "portal")))]
         let _ = callback;
-        let de = crate::detect_linux_desktop();
-        match de {
+        match linux_backend(crate::detect::system().refined_linux_desktop_sync()) {
             #[cfg(feature = "kde")]
-            crate::LinuxDesktop::Kde => kde::watch_kde(callback),
+            Some(LinuxBackend::Kde) => kde::watch_kde(callback),
 
             #[cfg(feature = "portal")]
-            crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
-                gnome::watch_gnome(callback)
-            }
+            Some(LinuxBackend::Gnome) => gnome::watch_gnome(callback),
 
             _ => Err(crate::Error::WatchUnavailable {
                 reason: "theme watching not supported for this desktop environment",
@@ -311,10 +315,74 @@ pub fn on_theme_change(
     }
 }
 
+/// A Linux watcher backend.
+#[cfg(target_os = "linux")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LinuxBackend {
+    /// [`kde::watch_kde`].
+    #[cfg(feature = "kde")]
+    Kde,
+    /// [`gnome::watch_gnome`].
+    #[cfg(feature = "portal")]
+    Gnome,
+}
+
+/// The backend that watches `desktop`, the refined desktop the reader is
+/// chosen by ([`crate::detect::refine_linux_desktop`]); `None` where there is
+/// none.
+#[cfg(target_os = "linux")]
+fn linux_backend(desktop: crate::LinuxDesktop) -> Option<LinuxBackend> {
+    match desktop {
+        #[cfg(feature = "kde")]
+        crate::LinuxDesktop::Kde => Some(LinuxBackend::Kde),
+        #[cfg(feature = "portal")]
+        crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => Some(LinuxBackend::Gnome),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    /// The watcher follows the reader on an unrecognised desktop: a KDE
+    /// portal backend gets KDE's watcher (M4-36).
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    #[test]
+    fn an_unknown_desktop_with_a_kde_portal_is_watched_as_kde() {
+        for kdeglobals in [false, true] {
+            let desktop = crate::detect::refine_linux_desktop(
+                crate::LinuxDesktop::Unknown,
+                Some(crate::LinuxDesktop::Kde),
+                || kdeglobals,
+            );
+            assert_eq!(linux_backend(desktop), Some(LinuxBackend::Kde));
+        }
+    }
+
+    /// A GNOME portal backend gets GNOME's watcher, `kdeglobals` or not.
+    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[test]
+    fn an_unknown_desktop_with_a_gnome_portal_is_watched_as_gnome() {
+        for kdeglobals in [false, true] {
+            let desktop = crate::detect::refine_linux_desktop(
+                crate::LinuxDesktop::Unknown,
+                Some(crate::LinuxDesktop::Gnome),
+                || kdeglobals,
+            );
+            assert_eq!(linux_backend(desktop), Some(LinuxBackend::Gnome));
+        }
+    }
+
+    /// An unrecognised desktop that nothing names has no watcher.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn an_unknown_desktop_that_nothing_names_is_not_watched() {
+        let desktop =
+            crate::detect::refine_linux_desktop(crate::LinuxDesktop::Unknown, None, || false);
+        assert_eq!(linux_backend(desktop), None);
+    }
 
     #[test]
     fn theme_change_event_is_debug_clone_eq() {

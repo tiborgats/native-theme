@@ -3,10 +3,12 @@
 use std::fmt;
 
 #[cfg(target_os = "linux")]
-use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop};
+use crate::detect::{LinuxDesktop, parse_linux_desktop};
 
+#[cfg(any(target_os = "linux", test))]
+use crate::ReaderOutput;
 use crate::model::Theme;
-use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
+use crate::{OverlaySource, ReaderResult, SystemTheme};
 
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
@@ -18,11 +20,8 @@ use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
 /// fills the other from the full platform preset. `ReaderOutput::Dual`
 /// readers provide both; the pipeline uses both after merging. Both kinds
 /// report which variant is OS-active through `is_dark`, which decides `mode`.
-pub(crate) fn run_pipeline(
-    reader: ReaderResult,
-    preset_name: &str,
-    mode: crate::ColorMode,
-) -> crate::Result<SystemTheme> {
+pub(crate) fn run_pipeline(reader: ReaderResult, preset_name: &str) -> crate::Result<SystemTheme> {
+    let mode = reader.output.mode();
     let ReaderResult {
         output: reader_output,
         name: reader_name,
@@ -603,15 +602,16 @@ pub(crate) fn windows_generation(running: OsVersion) -> (PlatformPreset, Version
 
 /// Map a Linux desktop environment to its matching platform preset.
 ///
-/// [`select_reader`] and [`platform_preset_name()`] both map a desktop
-/// through it. For `Unknown`, [`select_reader`] first asks the portal
-/// backend (async D-Bus, with the `portal` feature) and uses its answer,
-/// KDE or GNOME, either way; only where no portal backend answers does it
-/// run [`refine_linux_desktop`]'s `kdeglobals` check.
-/// [`platform_preset_name()`] cannot ask the portal and runs only the
-/// `kdeglobals` check, so with the `kde` and `portal` features the two can
-/// differ in both directions where a portal backend answers: a KDE backend
-/// without `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` in
+/// [`select_reader`] and [`platform_preset_name()`] both map the refined
+/// desktop through it ([`crate::detect::refine_linux_desktop`]). For
+/// `Unknown`, [`select_reader`] first asks the portal backend (async D-Bus,
+/// with the `portal` feature) and uses its answer, KDE or GNOME, either way;
+/// only where no portal backend answers does it check for `kdeglobals`.
+/// [`platform_preset_name()`] cannot ask the portal: it takes the desktop a
+/// system read refined, and before one only the `kdeglobals` check, so with
+/// the `kde` and `portal` features the two can differ until then, in both
+/// directions where a portal backend answers: a KDE backend without
+/// `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` in
 /// [`platform_preset_name()`], a GNOME backend with `kdeglobals` gives
 /// `adwaita` in `from_system` and `kde-breeze` in [`platform_preset_name()`].
 ///
@@ -623,33 +623,6 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
     match de {
         LinuxDesktop::Kde => PlatformPreset { name: "kde-breeze" },
         _ => PlatformPreset { name: "adwaita" },
-    }
-}
-
-/// `de`, with `Unknown` taken as KDE where a `kdeglobals` file exists (with
-/// the `kde` feature): the synchronous refinement [`select_reader`] and
-/// [`platform_preset_name()`] share.
-#[cfg(target_os = "linux")]
-fn refine_linux_desktop(de: LinuxDesktop) -> LinuxDesktop {
-    #[cfg(feature = "kde")]
-    {
-        refine_unknown_desktop(de, || crate::kde::kdeglobals_path().exists())
-    }
-    #[cfg(not(feature = "kde"))]
-    {
-        de
-    }
-}
-
-/// [`refine_linux_desktop`], with `kdeglobals_exists` asked only for `Unknown`.
-#[cfg(all(target_os = "linux", feature = "kde"))]
-fn refine_unknown_desktop(
-    de: LinuxDesktop,
-    kdeglobals_exists: impl FnOnce() -> bool,
-) -> LinuxDesktop {
-    match de {
-        LinuxDesktop::Unknown if kdeglobals_exists() => LinuxDesktop::Kde,
-        other => other,
     }
 }
 
@@ -670,12 +643,15 @@ fn refine_unknown_desktop(
 /// On an unrecognised Linux desktop `from_system` first asks the portal
 /// backend over D-Bus (with the `portal` feature) and uses its answer, KDE
 /// or GNOME, either way; only where no portal backend answers does it check
-/// for `kdeglobals`. This synchronous function runs only the `kdeglobals`
-/// check, so with the `kde` and `portal` features the two can differ in
-/// both directions where a portal backend answers: a KDE backend without
-/// `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` here, a
-/// GNOME backend with `kdeglobals` gives `adwaita` in `from_system` and
-/// `kde-breeze` here.
+/// for `kdeglobals`. This synchronous function does not ask the portal: it
+/// takes the desktop the last system read (`from_system`, `from_system_async`,
+/// [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system))
+/// refined, until [`invalidate_caches()`](crate::detect::invalidate_caches);
+/// before one it runs only the `kdeglobals` check, so with the `kde` and
+/// `portal` features the two can then differ in both directions where a
+/// portal backend answers: a KDE backend without `kdeglobals` gives
+/// `kde-breeze` in `from_system` and `adwaita` here, a GNOME backend with
+/// `kdeglobals` gives `adwaita` in `from_system` and `kde-breeze` here.
 ///
 /// Returns a [`PlatformPreset`] with the user-facing preset name. Showcase
 /// UIs use `preset.name` to build the "default (...)" label.
@@ -712,7 +688,7 @@ pub fn platform_preset_name() -> PlatformPreset {
     }
     #[cfg(target_os = "linux")]
     {
-        linux_preset_for_de(refine_linux_desktop(detect_linux_desktop()))
+        linux_preset_for_de(crate::detect::system().refined_linux_desktop_sync())
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -993,85 +969,53 @@ async fn select_reader() -> Option<SelectedReader> {
 
     #[cfg(target_os = "linux")]
     {
-        let de = detect_linux_desktop();
-        match de {
-            #[cfg(all(feature = "kde", feature = "portal"))]
-            LinuxDesktop::Kde => {
-                return Some(SelectedReader::unversioned(
-                    Box::new(crate::gnome::GnomePortalKdeReader),
-                    linux_preset_for_de(de).name,
-                ));
-            }
-            #[cfg(all(feature = "kde", not(feature = "portal")))]
-            LinuxDesktop::Kde => {
-                return Some(SelectedReader::unversioned(
-                    Box::new(crate::kde::KdeReader),
-                    linux_preset_for_de(de).name,
-                ));
-            }
-            #[cfg(not(feature = "kde"))]
-            LinuxDesktop::Kde => return None,
-            #[cfg(feature = "portal")]
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                return Some(SelectedReader::unversioned(
-                    Box::new(crate::gnome::GnomeReader),
-                    linux_preset_for_de(de).name,
-                ));
-            }
-            #[cfg(not(feature = "portal"))]
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => return None,
-            LinuxDesktop::Xfce
-            | LinuxDesktop::Cinnamon
-            | LinuxDesktop::Mate
-            | LinuxDesktop::LxQt
-            | LinuxDesktop::Hyprland
-            | LinuxDesktop::Sway
-            | LinuxDesktop::River
-            | LinuxDesktop::Niri
-            | LinuxDesktop::Wayfire
-            | LinuxDesktop::CosmicDe => return None,
-            LinuxDesktop::Unknown => {
-                // Refine heuristic via D-Bus portal backend detection
-                #[cfg(feature = "portal")]
-                {
-                    if let Some(detected) = crate::gnome::detect_portal_backend().await {
-                        return match detected {
-                            #[cfg(feature = "kde")]
-                            LinuxDesktop::Kde => Some(SelectedReader::unversioned(
-                                Box::new(crate::gnome::GnomePortalKdeReader),
-                                linux_preset_for_de(detected).name,
-                            )),
-                            #[cfg(not(feature = "kde"))]
-                            LinuxDesktop::Kde => None,
-                            LinuxDesktop::Gnome => Some(SelectedReader::unversioned(
-                                Box::new(crate::gnome::GnomeReader),
-                                linux_preset_for_de(detected).name,
-                            )),
-                            // detect_portal_backend only returns Kde or Gnome;
-                            // any future extension falls back to Adwaita preset.
-                            _ => None,
-                        };
-                    }
-                }
-                // Sync fallback: try kdeglobals, then Adwaita
-                #[cfg(feature = "kde")]
-                {
-                    let refined = refine_linux_desktop(de);
-                    if refined == LinuxDesktop::Kde {
-                        return Some(SelectedReader::unversioned(
-                            Box::new(crate::kde::KdeReader),
-                            linux_preset_for_de(refined).name,
-                        ));
-                    }
-                }
-                return None;
-            }
-        }
+        return linux_reader(crate::detect::system().refined_linux_desktop().await);
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         None
+    }
+}
+
+/// The reader of the Linux desktop `de`, the refined desktop
+/// ([`crate::detect::refine_linux_desktop`]) the watcher and the icon-theme
+/// detection also decide by: KDE's (with the portal's accent colour where the
+/// `portal` feature is on) or GNOME's; `None` for the other desktops and
+/// where the reader's feature is off.
+#[cfg(target_os = "linux")]
+fn linux_reader(de: LinuxDesktop) -> Option<SelectedReader> {
+    match de {
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxDesktop::Kde => Some(SelectedReader::unversioned(
+            Box::new(crate::gnome::GnomePortalKdeReader),
+            linux_preset_for_de(de).name,
+        )),
+        #[cfg(all(feature = "kde", not(feature = "portal")))]
+        LinuxDesktop::Kde => Some(SelectedReader::unversioned(
+            Box::new(crate::kde::KdeReader),
+            linux_preset_for_de(de).name,
+        )),
+        #[cfg(not(feature = "kde"))]
+        LinuxDesktop::Kde => None,
+        #[cfg(feature = "portal")]
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => Some(SelectedReader::unversioned(
+            Box::new(crate::gnome::GnomeReader),
+            linux_preset_for_de(de).name,
+        )),
+        #[cfg(not(feature = "portal"))]
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => None,
+        LinuxDesktop::Xfce
+        | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate
+        | LinuxDesktop::LxQt
+        | LinuxDesktop::Hyprland
+        | LinuxDesktop::Sway
+        | LinuxDesktop::River
+        | LinuxDesktop::Niri
+        | LinuxDesktop::Wayfire
+        | LinuxDesktop::CosmicDe
+        | LinuxDesktop::Unknown => None,
     }
 }
 
@@ -1139,12 +1083,11 @@ fn linux_fallback(preset: PlatformPreset, is_dark: bool) -> crate::Result<System
     } else {
         crate::ColorMode::Light
     };
-    run_pipeline(preset_as_reader(preset.name, mode)?, preset.name, mode)
+    run_pipeline(preset_as_reader(preset.name, mode)?, preset.name)
 }
 
-/// Run `reader` and feed its output through [`run_pipeline`] onto `preset`,
-/// in the color mode the reader reports as OS-active. The reader's
-/// accessibility block is stored in `detection`, so
+/// Run `reader` and feed its output through [`run_pipeline`] onto `preset`.
+/// The reader's accessibility block is stored in `detection`, so
 /// [`crate::detect::accessibility_preferences`] need not run it again.
 async fn read_through_pipeline(
     reader: &dyn crate::reader::ThemeReader,
@@ -1153,15 +1096,7 @@ async fn read_through_pipeline(
 ) -> crate::Result<SystemTheme> {
     let result = reader.read().await?;
     detection.store_reader_accessibility(result.accessibility.clone());
-    let is_dark = match &result.output {
-        ReaderOutput::Single { is_dark, .. } | ReaderOutput::Dual { is_dark, .. } => *is_dark,
-    };
-    let mode = if is_dark {
-        crate::ColorMode::Dark
-    } else {
-        crate::ColorMode::Light
-    };
-    run_pipeline(result, preset, mode)
+    run_pipeline(result, preset)
 }
 
 /// [`crate::SystemTheme::from_system_with_preset`]'s body: `preset` must be a
@@ -1354,7 +1289,7 @@ mod dispatch_tests {
         // GNOME desktop produces an Adwaita-named theme via the pure pipeline
         let preset = linux_preset_for_de(LinuxDesktop::Gnome);
         let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let theme = run_pipeline(result, preset.name, crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(theme.name, "Adwaita");
         Ok(())
     }
@@ -1401,7 +1336,7 @@ ForegroundLink=41,128,185";
             accessibility: acc,
         };
         let preset = linux_preset_for_de(LinuxDesktop::Kde);
-        let theme = run_pipeline(result, preset.name, crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(
             theme.name, "TestTheme",
             "should use KDE theme name from reader output"
@@ -1414,7 +1349,7 @@ ForegroundLink=41,128,185";
         // Unknown DE without kdeglobals falls back to Adwaita preset
         let preset = linux_preset_for_de(LinuxDesktop::Unknown);
         let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let theme = run_pipeline(result, preset.name, crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(
             theme.name, "Adwaita",
             "should fall back to Adwaita without kdeglobals"
@@ -1437,7 +1372,7 @@ ForegroundLink=41,128,185";
             font_dpi: None,
             accessibility: crate::AccessibilityPreferences::default(),
         };
-        run_pipeline(reader, preset, crate::ColorMode::Light).unwrap()
+        run_pipeline(reader, preset).unwrap()
     }
 
     #[test]
@@ -1484,14 +1419,62 @@ ForegroundLink=41,128,185";
     }
 
     #[test]
-    #[cfg(feature = "kde")]
     fn an_unknown_desktop_with_kdeglobals_maps_to_breeze() {
-        let preset = |de, exists| linux_preset_for_de(refine_unknown_desktop(de, || exists)).name;
+        let preset = |de, exists| {
+            linux_preset_for_de(crate::detect::refine_linux_desktop(de, None, || exists)).name
+        };
         assert_eq!(preset(LinuxDesktop::Unknown, true), "kde-breeze");
         assert_eq!(preset(LinuxDesktop::Unknown, false), "adwaita");
         assert_eq!(preset(LinuxDesktop::Kde, false), "kde-breeze");
         assert_eq!(preset(LinuxDesktop::Gnome, true), "adwaita");
         assert_eq!(preset(LinuxDesktop::Xfce, true), "adwaita");
+    }
+
+    /// The preset of the reader `linux_reader` picks for an unrecognised
+    /// desktop with `portal_backend` and, or without, `kdeglobals`.
+    fn unknown_desktop_reader(
+        portal_backend: Option<LinuxDesktop>,
+        kdeglobals: bool,
+    ) -> Option<&'static str> {
+        linux_reader(crate::detect::refine_linux_desktop(
+            LinuxDesktop::Unknown,
+            portal_backend,
+            || kdeglobals,
+        ))
+        .map(|selected| selected.preset)
+    }
+
+    /// A KDE portal backend gets the KDE reader, `kdeglobals` or not.
+    #[test]
+    #[cfg(feature = "kde")]
+    fn an_unknown_desktop_with_a_kde_portal_gets_the_kde_reader() {
+        for kdeglobals in [false, true] {
+            assert_eq!(
+                unknown_desktop_reader(Some(LinuxDesktop::Kde), kdeglobals),
+                Some("kde-breeze")
+            );
+        }
+    }
+
+    /// A GNOME portal backend gets the GNOME reader, `kdeglobals` or not.
+    #[test]
+    #[cfg(feature = "portal")]
+    fn an_unknown_desktop_with_a_gnome_portal_gets_the_gnome_reader() {
+        for kdeglobals in [false, true] {
+            assert_eq!(
+                unknown_desktop_reader(Some(LinuxDesktop::Gnome), kdeglobals),
+                Some("adwaita")
+            );
+        }
+    }
+
+    /// Without a portal answer, `kdeglobals` gets the KDE reader; with
+    /// neither there is no reader.
+    #[test]
+    fn an_unknown_desktop_without_a_portal_answer() {
+        #[cfg(feature = "kde")]
+        assert_eq!(unknown_desktop_reader(None, true), Some("kde-breeze"));
+        assert_eq!(unknown_desktop_reader(None, false), None);
     }
 
     // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --
@@ -1548,7 +1531,7 @@ ForegroundLink=41,128,185";
     fn from_system_returns_result() {
         // Test the pure pipeline directly instead of mocking env vars for from_system()
         let result = preset_as_reader("adwaita", crate::ColorMode::Light).unwrap();
-        let theme = run_pipeline(result, "adwaita", crate::ColorMode::Light)
+        let theme = run_pipeline(result, "adwaita")
             .expect("run_pipeline should succeed with adwaita preset");
         assert_eq!(theme.name, "Adwaita");
     }
@@ -1599,7 +1582,7 @@ mod pipeline_tests {
                 font_dpi: Some(font_dpi),
                 ..reader_from_preset("kde-breeze")
             };
-            let result = run_pipeline(reader, "kde-breeze", crate::ColorMode::Light);
+            let result = run_pipeline(reader, "kde-breeze");
             let Err(crate::Error::ResolutionInvalid { errors }) = result else {
                 panic!("font_dpi {font_dpi}: expected ResolutionInvalid");
             };
@@ -1611,7 +1594,7 @@ mod pipeline_tests {
     #[test]
     fn test_run_pipeline_produces_both_variants() {
         let reader = reader_from_preset("catppuccin-mocha");
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "catppuccin-mocha");
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // Both light and dark exist as ResolvedTheme (non-Option)
@@ -1639,7 +1622,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "catppuccin-mocha");
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // The reader's accent should win over the preset's accent
@@ -1671,7 +1654,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(reader, "kde-breeze", crate::ColorMode::Dark);
+        let result = run_pipeline(reader, "kde-breeze");
         assert!(
             result.is_ok(),
             "run_pipeline should succeed with single variant"
@@ -1705,7 +1688,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "kde-breeze", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
 
         // The light variant should have colors from the full "kde-breeze" preset
         let full_light = full.light.unwrap();
@@ -1728,7 +1711,7 @@ mod pipeline_tests {
         // Simulates GNOME sync fallback: adwaita used as both reader and preset.
         // Double-merge is harmless: merge is idempotent for matching values.
         let reader = reader_from_preset("adwaita");
-        let result = run_pipeline(reader, "adwaita", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "adwaita");
         assert!(
             result.is_ok(),
             "double-merge with same preset should succeed"
@@ -1741,11 +1724,7 @@ mod pipeline_tests {
     /// stated (M3-10), and wins on a field both state.
     #[test]
     fn with_overlay_keeps_an_earlier_overlay() -> crate::Result<()> {
-        let st = run_pipeline(
-            reader_from_preset("adwaita"),
-            "adwaita",
-            crate::ColorMode::Light,
-        )?;
+        let st = run_pipeline(reader_from_preset("adwaita"), "adwaita")?;
         let a = Theme::from_toml("[light.defaults]\naccent_color = \"#ff0000\"")?;
         let b = Theme::from_toml("[light.defaults]\nbackground_color = \"#00ff00\"")?;
         let both = st.with_overlay(&a)?.with_overlay(&b)?;
@@ -1779,7 +1758,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "kde-breeze", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
 
         // Dark variant should have reader's data (merged with preset).
         // Light variant should come from the full preset (kde-breeze).
@@ -1818,7 +1797,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "macos-monterey", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "macos-monterey").unwrap();
 
         // Both variants should reflect the reader's custom accents (merged).
         assert_eq!(
@@ -1978,7 +1957,7 @@ mod pipeline_tests {
         // With a reader that provides an empty variant (no per-variant override),
         // the resolver must fall through to tier 2 and produce "Adwaita".
         let reader = reader_with_empty_variant(false);
-        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "adwaita").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("Adwaita"),
@@ -2005,7 +1984,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
         // Adwaita preset has Theme.icon_theme = "Adwaita" after migration.
-        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "adwaita").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("custom-override"),
@@ -2018,11 +1997,7 @@ mod pipeline_tests {
     /// wins, and an overlay that states none keeps the base's.
     #[test]
     fn with_overlay_applies_the_overlays_icon_theme_and_layout() -> crate::Result<()> {
-        let st = run_pipeline(
-            reader_from_preset("adwaita"),
-            "adwaita",
-            crate::ColorMode::Light,
-        )?;
+        let st = run_pipeline(reader_from_preset("adwaita"), "adwaita")?;
         let kept = st.with_overlay(&Theme::default())?;
         assert_eq!(kept.icon_theme, st.icon_theme);
         assert_eq!(kept.layout.widget_gap, st.layout.widget_gap);
@@ -2063,7 +2038,7 @@ mod pipeline_tests {
             font_dpi: None,
             accessibility: crate::AccessibilityPreferences::default(),
         };
-        let st = run_pipeline(reader, "kde-breeze", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("breeze-dark"),
@@ -2140,7 +2115,7 @@ accent_color = "#0066cc"
     #[test]
     fn system_theme_layout_is_the_merged_preset_layout() -> crate::Result<()> {
         let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let sys = run_pipeline(reader, "adwaita", crate::ColorMode::Light)?;
+        let sys = run_pipeline(reader, "adwaita")?;
 
         let mut expected = Theme::preset("adwaita")?.layout;
         expected.merge(&Theme::preset("adwaita")?.layout);
@@ -2160,8 +2135,7 @@ accent_color = "#0066cc"
     fn system_theme_layout_out_of_range_is_invalid() -> crate::Result<()> {
         let mut reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
         reader.layout.widget_gap = Some(-8.0);
-        let Err(crate::Error::ResolutionInvalid { errors }) =
-            run_pipeline(reader, "adwaita", crate::ColorMode::Light)
+        let Err(crate::Error::ResolutionInvalid { errors }) = run_pipeline(reader, "adwaita")
         else {
             panic!("expected ResolutionInvalid");
         };
@@ -2169,7 +2143,7 @@ accent_color = "#0066cc"
         assert_eq!(paths, ["layout.widget_gap_px"]);
 
         let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let mut sys = run_pipeline(reader, "adwaita", crate::ColorMode::Light)?;
+        let mut sys = run_pipeline(reader, "adwaita")?;
         sys.overlay_source.layout.section_gap = Some(f32::NAN);
         let Err(crate::Error::ResolutionInvalid { errors }) = sys.with_overlay(&Theme::default())
         else {
@@ -2185,11 +2159,7 @@ accent_color = "#0066cc"
     /// when the public `mode` field is changed.
     #[test]
     fn icon_loads_from_the_modes_icon_theme() -> crate::Result<()> {
-        let mut theme = run_pipeline(
-            reader_from_preset("kde-breeze"),
-            "kde-breeze",
-            crate::ColorMode::Light,
-        )?;
+        let mut theme = run_pipeline(reader_from_preset("kde-breeze"), "kde-breeze")?;
         for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
             theme.mode = active;
             for (mode, expected) in [
@@ -2220,11 +2190,7 @@ accent_color = "#0066cc"
 
         const MISSING: &str = "native-theme-no-such-theme";
         assert!(!is_freedesktop_theme_available(MISSING));
-        let mut theme = run_pipeline(
-            reader_from_preset("kde-breeze"),
-            "kde-breeze",
-            crate::ColorMode::Light,
-        )?;
+        let mut theme = run_pipeline(reader_from_preset("kde-breeze"), "kde-breeze")?;
         theme.light_icon_theme = Some(std::borrow::Cow::Borrowed(MISSING));
         let role = IconRole::ActionCopy;
         for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
@@ -2257,11 +2223,7 @@ accent_color = "#0066cc"
     #[test]
     #[cfg(feature = "material-icons")]
     fn icon_of_a_material_theme_comes_back_in_the_colour() -> crate::Result<()> {
-        let theme = run_pipeline(
-            reader_from_preset("material-3"),
-            "material-3",
-            crate::ColorMode::Light,
-        )?;
+        let theme = run_pipeline(reader_from_preset("material-3"), "material-3")?;
         assert_eq!(
             theme.icon_set,
             crate::IconSet::Material,
@@ -2304,7 +2266,7 @@ accent_color = "#0066cc"
                 font_dpi: None,
                 accessibility: crate::AccessibilityPreferences::default(),
             };
-            let theme = run_pipeline(reader, "kde-breeze", mode)?;
+            let theme = run_pipeline(reader, "kde-breeze")?;
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Light),
                 Some("breeze"),

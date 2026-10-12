@@ -40,15 +40,21 @@ pub fn system_icon_set() -> IconSet {
 /// - **Linux:** DE-specific detection (e.g., `"breeze-dark"`, `"Adwaita"`)
 /// - **Other:** an error; there is no icon theme to detect
 ///
-/// On Linux, the detection method depends on the desktop environment:
-/// - KDE: reads `[Icons] Theme` from `kdeglobals`, then from
-///   `kdedefaults/kdeglobals`
+/// On Linux, the detection method depends on the desktop environment, the
+/// one the reader is chosen by: an unrecognised `XDG_CURRENT_DESKTOP` counts
+/// as the desktop of its portal backend (once a system read such as
+/// [`SystemTheme::from_system`](crate::SystemTheme::from_system) has asked
+/// it, with the `portal` feature), else as KDE where the user's `kdeglobals`
+/// exists (with the `kde` feature):
+/// - KDE: `[Icons] Theme` of kdeglobals as KConfig cascades it, the KDE
+///   reader's read (with the `kde` feature); without the feature, from
+///   `kdeglobals`, then from `kdedefaults/kdeglobals`
 /// - GNOME/Budgie: `gsettings get org.gnome.desktop.interface icon-theme`
 /// - Cinnamon: `gsettings get org.cinnamon.desktop.interface icon-theme`
 /// - XFCE: `xfconf-query -c xsettings -p /Net/IconThemeName`
 /// - MATE: `gsettings get org.mate.interface icon-theme`
 /// - LXQt: reads `icon_theme` from `~/.config/lxqt/lxqt.conf`
-/// - Unknown: tries KDE, then GNOME gsettings
+/// - Unknown (still): tries KDE, then GNOME gsettings
 ///
 /// No theme stands in for one that cannot be detected: the error says why,
 /// and what to do without a theme is the caller's decision.
@@ -215,13 +221,30 @@ impl IconThemeFailure {
 #[cfg(target_os = "linux")]
 const GNOME_INTERFACE_SCHEMA: &str = "org.gnome.desktop.interface";
 
-/// Linux icon theme detection, dispatched by desktop environment.
+/// Where a Linux desktop keeps its icon theme.
 #[cfg(target_os = "linux")]
-fn detect_linux_icon_theme() -> Result<String, IconThemeFailure> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IconThemeSource {
+    /// KDE's kdeglobals.
+    Kde,
+    /// `gsettings get <schema> icon-theme`.
+    Gsettings(&'static str),
+    /// XFCE's xfconf.
+    Xfce,
+    /// LXQt's `lxqt.conf`.
+    LxQt,
+    /// KDE's, else GNOME's: a desktop that nothing names.
+    KdeThenGnome,
+}
+
+/// The icon-theme source of `desktop`, the refined desktop
+/// ([`crate::detect::refine_linux_desktop`]) the reader is chosen by.
+#[cfg(target_os = "linux")]
+fn icon_theme_source(desktop: crate::detect::LinuxDesktop) -> IconThemeSource {
     use crate::detect::LinuxDesktop;
 
-    let found = match crate::detect::detect_linux_desktop() {
-        LinuxDesktop::Kde => detect_kde_icon_theme(),
+    match desktop {
+        LinuxDesktop::Kde => IconThemeSource::Kde,
         LinuxDesktop::Gnome
         | LinuxDesktop::Budgie
         | LinuxDesktop::Hyprland
@@ -229,12 +252,25 @@ fn detect_linux_icon_theme() -> Result<String, IconThemeFailure> {
         | LinuxDesktop::River
         | LinuxDesktop::Niri
         | LinuxDesktop::Wayfire
-        | LinuxDesktop::CosmicDe => gsettings_icon_theme(GNOME_INTERFACE_SCHEMA),
-        LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
-        LinuxDesktop::Xfce => detect_xfce_icon_theme(),
-        LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
-        LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
-        LinuxDesktop::Unknown => {
+        | LinuxDesktop::CosmicDe => IconThemeSource::Gsettings(GNOME_INTERFACE_SCHEMA),
+        LinuxDesktop::Cinnamon => IconThemeSource::Gsettings("org.cinnamon.desktop.interface"),
+        LinuxDesktop::Xfce => IconThemeSource::Xfce,
+        LinuxDesktop::Mate => IconThemeSource::Gsettings("org.mate.interface"),
+        LinuxDesktop::LxQt => IconThemeSource::LxQt,
+        LinuxDesktop::Unknown => IconThemeSource::KdeThenGnome,
+    }
+}
+
+/// Linux icon theme detection, dispatched by the refined desktop.
+#[cfg(target_os = "linux")]
+fn detect_linux_icon_theme() -> Result<String, IconThemeFailure> {
+    let desktop = crate::detect::system().refined_linux_desktop_sync();
+    let found = match icon_theme_source(desktop) {
+        IconThemeSource::Kde => detect_kde_icon_theme(),
+        IconThemeSource::Gsettings(schema) => gsettings_icon_theme(schema),
+        IconThemeSource::Xfce => detect_xfce_icon_theme(),
+        IconThemeSource::LxQt => detect_lxqt_icon_theme(),
+        IconThemeSource::KdeThenGnome => {
             return unknown_desktop_icon_theme(detect_kde_icon_theme, || {
                 gsettings_icon_theme(GNOME_INTERFACE_SCHEMA)
             });
@@ -275,8 +311,23 @@ fn config_dir_unresolved(source: &str) -> SourceFailure {
     }
 }
 
-/// Read the icon theme from KDE's kdeglobals INI file.
+/// The source name of KDE's icon theme in a failure.
 #[cfg(target_os = "linux")]
+const KDE_SOURCE: &str = "KDE kdeglobals";
+
+/// The icon theme of kdeglobals as the KDE reader reads it
+/// ([`crate::kde::kdeglobals_icon_theme`]), so the two cannot disagree.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
+    crate::kde::kdeglobals_icon_theme().map_err(|reason| SourceFailure {
+        source: KDE_SOURCE.to_string(),
+        reason,
+    })
+}
+
+/// Read the icon theme from KDE's kdeglobals INI file, without the `kde`
+/// feature, so without the KDE reader.
+#[cfg(all(target_os = "linux", not(feature = "kde")))]
 fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
     kde_icon_theme(xdg_config_dir().as_deref(), |path| {
         std::fs::read_to_string(path)
@@ -289,13 +340,12 @@ fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
 ///
 /// Uses simple line parsing — no `configparser` dependency required — so this
 /// works without the `kde` feature enabled.
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "kde")))]
 fn kde_icon_theme(
     config_dir: Option<&std::path::Path>,
     read: impl Fn(&std::path::Path) -> std::io::Result<String>,
 ) -> Result<String, SourceFailure> {
-    const SOURCE: &str = "KDE kdeglobals";
-    let config_dir = config_dir.ok_or_else(|| config_dir_unresolved(SOURCE))?;
+    let config_dir = config_dir.ok_or_else(|| config_dir_unresolved(KDE_SOURCE))?;
     let paths = [
         config_dir.join("kdeglobals"),
         config_dir.join("kdedefaults").join("kdeglobals"),
@@ -315,7 +365,7 @@ fn kde_icon_theme(
         }
     }
     Err(SourceFailure {
-        source: SOURCE.to_string(),
+        source: KDE_SOURCE.to_string(),
         reason: reasons.join(", "),
     })
 }
@@ -458,7 +508,7 @@ fn xdg_config_dir() -> Option<std::path::PathBuf> {
 /// Simple line-based parser — no external crate needed. Handles `[Section]`
 /// headers and `Key=Value` lines. Returns `None` if the section/key is
 /// missing or the value is empty.
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "kde")))]
 fn ini_value(content: &str, section: &str, key: &str) -> Option<String> {
     let target_section = format!("[{}]", section);
     let mut in_section = false;
@@ -524,6 +574,7 @@ mod tests {
 
     // === KDE: kdeglobals ===
 
+    #[cfg(not(feature = "kde"))]
     #[test]
     fn kde_without_a_config_dir_names_kdeglobals_and_the_config_dir() {
         let failure = kde_icon_theme(None, missing).unwrap_err().to_string();
@@ -532,6 +583,7 @@ mod tests {
         assert!(failure.contains("XDG_CONFIG_HOME"), "got: {failure}");
     }
 
+    #[cfg(not(feature = "kde"))]
     #[test]
     fn kde_with_no_readable_file_names_both_files() {
         let dir = PathBuf::from("/cfg");
@@ -544,6 +596,7 @@ mod tests {
         assert!(failure.contains("unreadable"), "got: {failure}");
     }
 
+    #[cfg(not(feature = "kde"))]
     #[test]
     fn kde_with_no_icons_theme_key_says_the_key_is_absent() {
         let dir = PathBuf::from("/cfg");
@@ -559,6 +612,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(feature = "kde"))]
     #[test]
     fn kde_takes_the_defaults_file_where_kdeglobals_lacks_the_key() {
         let dir = PathBuf::from("/cfg");
@@ -707,12 +761,18 @@ mod tests {
 
     // === Unknown desktop: KDE, then GNOME ===
 
+    fn kde_failed() -> Result<String, SourceFailure> {
+        Err(SourceFailure {
+            source: KDE_SOURCE.to_string(),
+            reason: "no file is readable".to_string(),
+        })
+    }
+
     #[test]
     fn unknown_desktop_error_names_both_attempts() {
-        let error = unknown_desktop_icon_theme(
-            || kde_icon_theme(None, missing),
-            || gsettings_icon_theme_from("org.gnome.desktop.interface", not_found()),
-        )
+        let error = unknown_desktop_icon_theme(kde_failed, || {
+            gsettings_icon_theme_from("org.gnome.desktop.interface", not_found())
+        })
         .unwrap_err()
         .to_error();
         let message = error.to_string();
@@ -735,13 +795,8 @@ mod tests {
 
     #[test]
     fn unknown_desktop_takes_kde_first() {
-        let dir = PathBuf::from("/cfg");
         let theme = unknown_desktop_icon_theme(
-            || {
-                kde_icon_theme(Some(&dir), |_: &Path| {
-                    Ok("[Icons]\nTheme=breeze\n".to_string())
-                })
-            },
+            || Ok("breeze".to_string()),
             || gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'")),
         );
         assert_eq!(theme, Ok("breeze".to_string()));
@@ -749,11 +804,51 @@ mod tests {
 
     #[test]
     fn unknown_desktop_takes_gnome_where_kde_fails() {
-        let theme = unknown_desktop_icon_theme(
-            || kde_icon_theme(None, missing),
-            || gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'")),
-        );
+        let theme = unknown_desktop_icon_theme(kde_failed, || {
+            gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'"))
+        });
         assert_eq!(theme, Ok("Adwaita".to_string()));
+    }
+
+    // === The refined desktop decides the source, as it decides the reader ===
+
+    fn source_of(
+        portal_backend: Option<crate::detect::LinuxDesktop>,
+        kdeglobals: bool,
+    ) -> IconThemeSource {
+        icon_theme_source(crate::detect::refine_linux_desktop(
+            crate::detect::LinuxDesktop::Unknown,
+            portal_backend,
+            || kdeglobals,
+        ))
+    }
+
+    /// An unrecognised desktop with a KDE portal backend is read as KDE,
+    /// as the reader reads it, `kdeglobals` or not.
+    #[test]
+    fn an_unknown_desktop_with_a_kde_portal_has_kdes_icon_theme() {
+        let kde = Some(crate::detect::LinuxDesktop::Kde);
+        assert_eq!(source_of(kde, false), IconThemeSource::Kde);
+        assert_eq!(source_of(kde, true), IconThemeSource::Kde);
+    }
+
+    /// An unrecognised desktop with a GNOME portal backend is read from
+    /// GNOME's gsettings, as the GNOME reader reads it, though a
+    /// `kdeglobals` exists (M4-49).
+    #[test]
+    fn an_unknown_desktop_with_a_gnome_portal_has_gnomes_icon_theme() {
+        let gnome = Some(crate::detect::LinuxDesktop::Gnome);
+        let gsettings = IconThemeSource::Gsettings(GNOME_INTERFACE_SCHEMA);
+        assert_eq!(source_of(gnome, true), gsettings);
+        assert_eq!(source_of(gnome, false), gsettings);
+    }
+
+    /// Without a portal answer, `kdeglobals` makes it KDE; with neither, both
+    /// are tried.
+    #[test]
+    fn an_unknown_desktop_without_a_portal_answer() {
+        assert_eq!(source_of(None, true), IconThemeSource::Kde);
+        assert_eq!(source_of(None, false), IconThemeSource::KdeThenGnome);
     }
 
     // === The public result ===
