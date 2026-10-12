@@ -603,11 +603,16 @@ pub(crate) fn windows_generation(running: OsVersion) -> (PlatformPreset, Version
 /// Map a Linux desktop environment to its matching platform preset.
 ///
 /// [`select_reader`] and [`platform_preset_name()`] both map a desktop
-/// through it, after [`refine_linux_desktop`] on `Unknown`. For `Unknown`,
-/// [`select_reader`] first asks the portal backend (async D-Bus, with the
-/// `portal` feature), which [`platform_preset_name()`] cannot: with the
-/// `kde` feature, a KDE portal backend and no `kdeglobals`, `from_system`
-/// uses `kde-breeze` where [`platform_preset_name()`] names `adwaita`.
+/// through it. For `Unknown`, [`select_reader`] first asks the portal
+/// backend (async D-Bus, with the `portal` feature) and uses its answer,
+/// KDE or GNOME, either way; only where no portal backend answers does it
+/// run [`refine_linux_desktop`]'s `kdeglobals` check.
+/// [`platform_preset_name()`] cannot ask the portal and runs only the
+/// `kdeglobals` check, so with the `kde` and `portal` features the two can
+/// differ in both directions where a portal backend answers: a KDE backend
+/// without `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` in
+/// [`platform_preset_name()`], a GNOME backend with `kdeglobals` gives
+/// `adwaita` in `from_system` and `kde-breeze` in [`platform_preset_name()`].
 ///
 /// - KDE -> `PlatformPreset { name: "kde-breeze" }`
 /// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
@@ -661,10 +666,15 @@ fn refine_unknown_desktop(
 /// - Linux other/GNOME -> `PlatformPreset { name: "adwaita" }`
 /// - Unknown platform -> `PlatformPreset { name: "adwaita" }`
 ///
-/// On an unrecognised Linux desktop `from_system` also asks the portal
-/// backend over D-Bus (with the `portal` feature), which this synchronous
-/// function does not: with the `kde` feature, a KDE portal backend and no
-/// `kdeglobals`, `from_system` uses `kde-breeze` where this names `adwaita`.
+/// On an unrecognised Linux desktop `from_system` first asks the portal
+/// backend over D-Bus (with the `portal` feature) and uses its answer, KDE
+/// or GNOME, either way; only where no portal backend answers does it check
+/// for `kdeglobals`. This synchronous function runs only the `kdeglobals`
+/// check, so with the `kde` and `portal` features the two can differ in
+/// both directions where a portal backend answers: a KDE backend without
+/// `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` here, a
+/// GNOME backend with `kdeglobals` gives `adwaita` in `from_system` and
+/// `kde-breeze` here.
 ///
 /// Returns a [`PlatformPreset`] with the user-facing preset name. Showcase
 /// UIs use `preset.name` to build the "default (...)" label.
