@@ -632,8 +632,12 @@ impl SystemTheme {
 
         // Re-resolve both variants using the captured context (avoids
         // re-detecting DPI / button_order / icon_theme on replay).
-        let resolved_light = light.into_resolved(&src.context)?;
-        let resolved_dark = dark.into_resolved(&src.context)?;
+        let resolved_light = light
+            .into_resolved(&src.context)
+            .map_err(|e| e.in_variant(ColorMode::Light))?;
+        let resolved_dark = dark
+            .into_resolved(&src.context)
+            .map_err(|e| e.in_variant(ColorMode::Dark))?;
 
         Ok(SystemTheme {
             name: self.name.clone(),
@@ -999,6 +1003,53 @@ mod overlay_tests {
             accessibility: AccessibilityPreferences::default(),
         };
         pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light)
+    }
+
+    /// The range-violation paths of `result`'s error.
+    fn violation_paths(result: crate::Result<SystemTheme>) -> Vec<String> {
+        let Err(crate::Error::ResolutionInvalid { errors }) = result else {
+            panic!("expected ResolutionInvalid, got {:?}", result.err());
+        };
+        errors.into_iter().map(|rv| rv.path).collect()
+    }
+
+    #[test]
+    fn test_overlay_error_names_the_variant() -> crate::Result<()> {
+        let st = default_system_theme()?;
+        let overlay = Theme::from_toml("name = \"overlay\"\n[dark.button]\nmin_height_px = -1.0")?;
+        assert_eq!(
+            violation_paths(st.with_overlay(&overlay)),
+            ["dark.button.min_height_px"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_pipeline_error_names_the_variant() -> crate::Result<()> {
+        let preset = Theme::preset("catppuccin-mocha")?;
+        let mut light = preset.light.clone().unwrap_or_default();
+        light.button.min_height = Some(-1.0);
+        let reader = ReaderResult {
+            output: ReaderOutput::Dual {
+                light: Box::new(light),
+                dark: Box::new(preset.dark.clone().unwrap_or_default()),
+                is_dark: true,
+            },
+            name: preset.name,
+            icon_set: preset.icon_set,
+            layout: preset.layout,
+            font_dpi: None,
+            accessibility: AccessibilityPreferences::default(),
+        };
+        assert_eq!(
+            violation_paths(pipeline::run_pipeline(
+                reader,
+                "catppuccin-mocha",
+                ColorMode::Dark
+            )),
+            ["light.button.min_height_px"]
+        );
+        Ok(())
     }
 
     #[test]

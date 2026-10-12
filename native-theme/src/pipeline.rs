@@ -116,8 +116,12 @@ pub(crate) fn run_pipeline(
         ),
     };
 
-    let light = light_variant.into_resolved(&ctx)?;
-    let dark = dark_variant.into_resolved(&ctx)?;
+    let light = light_variant
+        .into_resolved(&ctx)
+        .map_err(|e| e.in_variant(crate::ColorMode::Light))?;
+    let dark = dark_variant
+        .into_resolved(&ctx)
+        .map_err(|e| e.in_variant(crate::ColorMode::Dark))?;
 
     // Build OverlaySource from the original reader data + pipeline parameters
     let overlay_source = OverlaySource {

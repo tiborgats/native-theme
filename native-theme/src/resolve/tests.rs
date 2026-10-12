@@ -1305,7 +1305,7 @@ fn validate_error_message_includes_count_and_paths() {
     let msg = err.to_string();
     assert!(msg.contains("2 missing field(s)"), "got: {msg}");
     assert!(msg.contains("defaults.muted_color"), "got: {msg}");
-    assert!(msg.contains("button.min_height"), "got: {msg}");
+    assert!(msg.contains("button.min_height_px"), "got: {msg}");
 }
 
 #[test]
@@ -1326,9 +1326,9 @@ fn validate_checks_all_defaults_fields() {
     assert!(missing.contains(&"defaults.font.family".to_string()));
     assert!(missing.contains(&"defaults.background_color".to_string()));
     assert!(missing.contains(&"defaults.accent_color".to_string()));
-    assert!(missing.contains(&"defaults.border.corner_radius".to_string()));
+    assert!(missing.contains(&"defaults.border.corner_radius_px".to_string()));
     assert!(missing.contains(&"defaults.text_selection_background".to_string()));
-    assert!(missing.contains(&"defaults.icon_sizes.toolbar".to_string()));
+    assert!(missing.contains(&"defaults.icon_sizes.toolbar_px".to_string()));
 }
 
 #[test]
@@ -1618,7 +1618,7 @@ fn validate_catches_negative_radius() {
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
+            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
         "should report negative defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1635,9 +1635,7 @@ fn validate_catches_zero_font_size() {
         return;
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report zero defaults.font.size, got: {:?}",
         errors
     );
@@ -1761,9 +1759,7 @@ fn validate_catches_negative_font_size() {
         return;
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report negative font.size, got: {:?}",
         errors
     );
@@ -1820,7 +1816,7 @@ fn validate_catches_nan_values() {
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
+            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
         "should report NaN defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1837,9 +1833,7 @@ fn validate_catches_infinity() {
         return;
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report infinite font.size, got: {:?}",
         errors
     );
@@ -1859,7 +1853,7 @@ fn validate_catches_negative_infinity() {
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.line_width")),
+            .any(|rv| rv.path == "defaults.border.line_width_px"),
         "should report -inf border.line_width, got: {:?}",
         errors
     );
@@ -2343,6 +2337,7 @@ fn check_ranges_happy_path_zero_errors() {
     // errors, no format! calls execute and zero path strings are allocated.
     let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
     let light = theme.light.expect("adwaita should have light variant");
+    let stated_scale = light.text_scale.clone();
     let resolved = light
         .into_resolved(&crate::resolve::ResolutionContext::for_tests())
         .expect("adwaita should validate");
@@ -2353,6 +2348,7 @@ fn check_ranges_happy_path_zero_errors() {
     super::validate_helpers::check_defaults_ranges(
         &resolved.defaults,
         &resolved.text_scale,
+        &stated_scale,
         &mut errors,
     );
 
@@ -2631,5 +2627,223 @@ fn for_tests_values_match_gaps_doc_spec() {
     assert!(
         ctx.icon_theme.is_none(),
         "gaps doc §G7 specifies icon_theme = None for for_tests()"
+    );
+}
+
+// ===== Validation paths name the TOML keys (M3-20) =====
+
+/// The paths of the range violations `v.validate()` reports.
+fn range_violation_paths(v: &ThemeMode) -> Vec<String> {
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid, got {:?}", v.validate().err());
+    };
+    errors.into_iter().map(|rv| rv.path).collect()
+}
+
+/// The paths `v.validate()` reports missing.
+fn missing_paths(v: &ThemeMode) -> Vec<String> {
+    let Err(crate::Error::ResolutionIncomplete { missing }) = v.validate() else {
+        panic!(
+            "expected ResolutionIncomplete, got {:?}",
+            v.validate().err()
+        );
+    };
+    missing
+}
+
+#[test]
+fn validate_paths_name_a_widget_scalars_px_key() {
+    let mut v = fully_populated_variant();
+    v.button.min_height = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["button.min_height_px"]);
+
+    let mut v = fully_populated_variant();
+    v.button.min_height = None;
+    assert_eq!(missing_paths(&v), ["button.min_height_px"]);
+}
+
+#[test]
+fn validate_paths_name_a_padding_sides_key() {
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().padding_left = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["button.border.padding_left_px"]);
+}
+
+#[test]
+fn validate_paths_name_a_border_geometry_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.border.line_width = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["defaults.border.line_width_px"]);
+
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().corner_radius = None;
+    v.defaults.border.line_width = None;
+    assert_eq!(
+        missing_paths(&v),
+        [
+            "defaults.border.line_width_px",
+            "button.border.corner_radius_px"
+        ]
+    );
+}
+
+#[test]
+fn validate_paths_name_a_defaults_icon_size_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.icon_sizes.toolbar = Some(-1.0);
+    assert_eq!(
+        range_violation_paths(&v),
+        ["defaults.icon_sizes.toolbar_px"]
+    );
+
+    let mut v = fully_populated_variant();
+    v.defaults.icon_sizes.toolbar = None;
+    assert_eq!(missing_paths(&v), ["defaults.icon_sizes.toolbar_px"]);
+}
+
+#[test]
+fn validate_paths_name_a_defaults_px_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_width = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_width_px"]);
+}
+
+#[test]
+fn validate_paths_name_the_font_size_key_the_theme_states() {
+    let mut v = fully_populated_variant();
+    v.defaults.font.size = Some(FontSize::Px(0.0));
+    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-1.0));
+    let paths = range_violation_paths(&v);
+    assert!(
+        paths.contains(&"defaults.font.size_px".to_string()),
+        "{paths:?}"
+    );
+    assert!(
+        paths.contains(&"button.font.size_pt".to_string()),
+        "{paths:?}"
+    );
+
+    // A missing size states no unit: the path names the field.
+    let mut v = fully_populated_variant();
+    v.defaults.font.size = None;
+    assert_eq!(missing_paths(&v), ["defaults.font.size"]);
+}
+
+#[test]
+fn validate_paths_name_the_text_scale_key_the_theme_states() {
+    let mut v = fully_populated_variant();
+    v.text_scale.caption = Some(TextScaleEntry {
+        size: Some(FontSize::Pt(-1.0)),
+        weight: Some(400),
+        line_height: Some(FontSize::Pt(-1.0)),
+    });
+    assert_eq!(
+        range_violation_paths(&v),
+        [
+            "text_scale.caption.size_pt",
+            "text_scale.caption.line_height_pt"
+        ]
+    );
+}
+
+/// A ThemeMode TOML value with every leaf value removed: each table stays,
+/// empty, so validation names every field inside it as missing.
+fn strip_leaves(value: &mut toml::Value) {
+    if let toml::Value::Table(t) = value {
+        t.retain(|_, v| v.is_table());
+        for (_, v) in t.iter_mut() {
+            strip_leaves(v);
+        }
+    }
+}
+
+/// A ThemeMode TOML value with every number out of range: every float -1.0,
+/// every integer 0.
+fn break_numbers(value: &mut toml::Value) {
+    match value {
+        toml::Value::Table(t) => t.iter_mut().for_each(|(_, v)| break_numbers(v)),
+        toml::Value::Float(f) => *f = -1.0,
+        toml::Value::Integer(i) => *i = 0,
+        _ => {}
+    }
+}
+
+/// Every path a validation error names is a key `Theme::lint_toml` accepts
+/// in a variant. A missing font size or text-scale line height states no
+/// unit, so its path names the field, which stands for its two keys.
+#[test]
+fn validate_paths_are_toml_keys() {
+    let mut v = crate::Theme::preset("kde-breeze").unwrap().light.unwrap();
+    v.resolve_all_with_context(&ResolutionContext::for_tests());
+    let table = toml::Value::try_from(&v).unwrap();
+
+    let mut empty = table.clone();
+    strip_leaves(&mut empty);
+    let missing = missing_paths(&empty.try_into().unwrap());
+
+    let mut broken = table;
+    break_numbers(&mut broken);
+    let ranged = range_violation_paths(&broken.try_into().unwrap());
+    assert!(
+        ranged.iter().any(|p| p.ends_with(".padding_left_px")),
+        "{ranged:?}"
+    );
+
+    let lint = |key: &str| crate::Theme::lint_toml(&format!("light.{key} = 0")).unwrap();
+    for path in &missing {
+        let keys = match path.rsplit_once('.') {
+            Some((head, "size")) => vec![format!("{head}.size_pt"), format!("{head}.size_px")],
+            Some((head, "line_height")) if head.starts_with("text_scale.") => vec![
+                format!("{head}.line_height_pt"),
+                format!("{head}.line_height_px"),
+            ],
+            _ => vec![path.clone()],
+        };
+        for key in keys {
+            assert_eq!(lint(&key), Vec::<String>::new(), "missing path {path}");
+        }
+    }
+    for path in &ranged {
+        assert_eq!(lint(path), Vec::<String>::new(), "range path {path}");
+    }
+}
+
+/// `Theme::resolve_with` prefixes each path with the table of the variant it
+/// resolved: the requested one, or the other where the theme has only that.
+#[test]
+fn theme_resolve_paths_name_the_variant() {
+    let ctx = ResolutionContext::for_tests();
+    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
+    theme.dark.as_mut().unwrap().button.min_height = Some(-1.0);
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Dark, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(paths, ["dark.button.min_height_px"]);
+
+    theme.light = None;
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(paths, ["dark.button.min_height_px"]);
+
+    theme.light = Some(ThemeMode::default());
+    let Err(crate::Error::ResolutionIncomplete { missing }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionIncomplete");
+    };
+    assert!(
+        missing.contains(&"light.defaults.icon_sizes.toolbar_px".to_string()),
+        "{missing:?}"
+    );
+    assert!(
+        missing.iter().all(|p| p.starts_with("light.")),
+        "{missing:?}"
     );
 }

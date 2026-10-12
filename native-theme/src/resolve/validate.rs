@@ -166,7 +166,12 @@ impl ThemeMode {
 
         // --- Phase 2: range checks on fully-validated data (separate Vec) ---
         let mut range_errors: Vec<crate::error::RangeViolation> = Vec::new();
-        validate_helpers::check_defaults_ranges(&defaults, &text_scale, &mut range_errors);
+        validate_helpers::check_defaults_ranges(
+            &defaults,
+            &text_scale,
+            &self.text_scale,
+            &mut range_errors,
+        );
         window.check_ranges("window", &mut range_errors);
         button.check_ranges("button", &mut range_errors);
         input.check_ranges("input", &mut range_errors);

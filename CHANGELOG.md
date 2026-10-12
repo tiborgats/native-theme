@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **native-theme**: validation errors name the TOML key a theme author writes: `button.min_height_px`, `button.border.padding_left_px`, `defaults.icon_sizes.toolbar_px` (they named the model fields, `button.min_height`, `button.border.padding_left`, `defaults.icon_sizes.toolbar`), and an out-of-range font size the key the theme states, `size_pt` or `size_px`. Errors from `Theme::resolve`, `SystemTheme::from_system()` and `SystemTheme::with_overlay` start each path with the variant that failed, `light.` or `dark.`.
 - **native-theme**: `SystemTheme::from_system()` no longer detects the font DPI a second time after the platform reader supplied it.
 - **native-theme**: `SystemTheme::from_system()` and `AccessibilityPreferences::from_system()` block on `pollster` on macOS and Windows as they do on Linux, so `pollster` is a dependency on every platform; the single poll that answered `PlatformUnsupported` ("unexpected async suspension") if a reader ever awaited is gone.
 - **native-theme-egui**: `from_preset` resolves both variants on one `ResolutionContext`.

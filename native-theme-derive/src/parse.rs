@@ -41,6 +41,16 @@ pub(crate) struct FieldMeta {
     pub doc_attrs: Vec<Attribute>,
 }
 
+impl FieldMeta {
+    /// The key a theme author writes for this field in TOML: its serde
+    /// rename, else its name.
+    pub(crate) fn toml_key(&self) -> String {
+        self.serde_rename
+            .clone()
+            .unwrap_or_else(|| self.ident.to_string())
+    }
+}
+
 /// Class-level border validation mode from `#[theme_layer(border_kind = "...")]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum BorderKind {

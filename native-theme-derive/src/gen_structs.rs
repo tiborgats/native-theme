@@ -78,17 +78,13 @@ fn gen_resolved_fields(fields: &[FieldMeta]) -> TokenStream {
     quote! { #(#field_tokens)* }
 }
 
-/// Generate FIELD_NAMES entries: use serde_rename if present, else stringify.
+/// Generate FIELD_NAMES entries: each field's TOML key.
 fn gen_field_names(fields: &[FieldMeta]) -> TokenStream {
     let entries: Vec<TokenStream> = fields
         .iter()
         .map(|f| {
-            if let Some(ref rename) = f.serde_rename {
-                quote! { #rename, }
-            } else {
-                let name = f.ident.to_string();
-                quote! { #name, }
-            }
+            let key = f.toml_key();
+            quote! { #key, }
         })
         .collect();
 

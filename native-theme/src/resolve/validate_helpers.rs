@@ -9,8 +9,11 @@
 
 use crate::Rgba;
 use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
-use crate::model::font::FontStyle;
-use crate::model::{FontSpec, ResolvedFontSpec};
+use crate::model::font::{FontSize, FontStyle};
+use crate::model::{
+    DefaultsBorderSpec, FontSpec, IconSizes, ResolvedFontSpec, TextScale, TextScaleEntry,
+    ThemeDefaults,
+};
 use std::sync::Arc;
 
 /// Standard screen DPI (96 dots per inch). Used as the font_dpi fallback
@@ -63,6 +66,34 @@ fn padding_of(b: &WidgetBorderSpec) -> ResolvedPadding {
         right: b.padding_right,
         bottom: b.padding_bottom,
         left: b.padding_left,
+    }
+}
+
+// --- Paths ---
+//
+// A validation path names the key a theme author writes in TOML: the field's
+// serde key, `_px`/`_pt` suffix included. A font size (and a text-scale line
+// height) is one field with two keys; a range path names the key the theme
+// states, a missing path names the field (`size`, `line_height`).
+
+/// The TOML key of a font size: `size_pt` or `size_px` as the theme states
+/// it, `size` where it states none.
+pub(crate) fn font_size_key(size: Option<FontSize>) -> &'static str {
+    match size {
+        Some(FontSize::Pt(_)) => "size_pt",
+        Some(FontSize::Px(_)) => "size_px",
+        None => "size",
+    }
+}
+
+/// The TOML key of a text-scale line height: `line_height_pt` or
+/// `line_height_px` as the theme states it, `line_height` where it states
+/// none.
+fn line_height_key(line_height: Option<FontSize>) -> &'static str {
+    match line_height {
+        Some(FontSize::Pt(_)) => "line_height_pt",
+        Some(FontSize::Px(_)) => "line_height_px",
+        None => "line_height",
     }
 }
 
@@ -304,7 +335,7 @@ pub(crate) fn validate_border(
                 let zero_width: f32 = 0.0;
                 let line_width = require(
                     &b.line_width,
-                    &format!("{prefix}.line_width"),
+                    &format!("{prefix}.line_width_px"),
                     missing,
                     zero_width,
                 );
@@ -314,7 +345,7 @@ pub(crate) fn validate_border(
                     (
                         require(
                             &b.corner_radius,
-                            &format!("{prefix}.corner_radius"),
+                            &format!("{prefix}.corner_radius_px"),
                             missing,
                             zero_radius,
                         ),
@@ -456,8 +487,9 @@ pub(crate) fn check_min_max(
 }
 
 /// Check that every padding side a widget border states is finite and
-/// non-negative. An unstated side is not checked. Paths name the model's
-/// side fields: `"{prefix}.{field}.padding_left"`.
+/// non-negative. An unstated side is not checked. Paths name the side's TOML
+/// key: `"{prefix}.{field}.padding_left_px"`. A side set through an axis
+/// shorthand (`padding_horizontal_px`) is named by its side key.
 pub(crate) fn check_padding(
     padding: &ResolvedPadding,
     prefix: &str,
@@ -465,10 +497,10 @@ pub(crate) fn check_padding(
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     let sides = [
-        ("padding_top", padding.top),
-        ("padding_right", padding.right),
-        ("padding_bottom", padding.bottom),
-        ("padding_left", padding.left),
+        ("padding_top_px", padding.top),
+        ("padding_right_px", padding.right),
+        ("padding_bottom_px", padding.bottom),
+        ("padding_left_px", padding.left),
     ];
     for (side, value) in sides {
         if let Some(value) = value
@@ -551,6 +583,9 @@ impl ValidateNested for WidgetBorderSpec {
 ///
 /// `defaults.border` has no padding: padding is a widget-level field
 /// (`ResolvedWidgetBorder::padding`).
+///
+/// Missing paths name each field's TOML key, which the `ThemeFields` derive
+/// supplies as `toml_key`.
 macro_rules! validate_defaults {
     (
         $src:expr, $dpi:expr, $missing:expr;
@@ -560,12 +595,13 @@ macro_rules! validate_defaults {
         border_required { $($br_field:ident : $br_fallback:expr),* $(,)? }
         icon_sizes { $($is_field:ident),* $(,)? }
     ) => {{
+        use $crate::model::{DefaultsBorderSpec, IconSizes, ThemeDefaults};
         use $crate::resolve::validate_helpers::{require, require_font};
         // Pattern B: font fields (non-Option FontSpec -> ResolvedFontSpec)
         $(
             let $font_field = require_font(
                 &$src.defaults.$font_field,
-                concat!("defaults.", stringify!($font_field)),
+                &format!("defaults.{}", ThemeDefaults::toml_key(stringify!($font_field))),
                 $dpi,
                 $missing,
             );
@@ -574,7 +610,7 @@ macro_rules! validate_defaults {
         $(
             let $color_field = require(
                 &$src.defaults.$color_field,
-                concat!("defaults.", stringify!($color_field)),
+                &format!("defaults.{}", ThemeDefaults::toml_key(stringify!($color_field))),
                 $missing,
                 $crate::color::Rgba::TRANSPARENT,
             );
@@ -583,7 +619,7 @@ macro_rules! validate_defaults {
         $(
             let $f32_field = require(
                 &$src.defaults.$f32_field,
-                concat!("defaults.", stringify!($f32_field)),
+                &format!("defaults.{}", ThemeDefaults::toml_key(stringify!($f32_field))),
                 $missing,
                 0.0_f32,
             );
@@ -592,7 +628,10 @@ macro_rules! validate_defaults {
         $(
             let $br_field = require(
                 &$src.defaults.border.$br_field,
-                concat!("defaults.border.", stringify!($br_field)),
+                &format!(
+                    "defaults.border.{}",
+                    DefaultsBorderSpec::toml_key(stringify!($br_field)),
+                ),
                 $missing,
                 $br_fallback,
             );
@@ -601,7 +640,7 @@ macro_rules! validate_defaults {
         $(
             let $is_field = require(
                 &$src.defaults.icon_sizes.$is_field,
-                concat!("defaults.icon_sizes.", stringify!($is_field)),
+                &format!("defaults.icon_sizes.{}", IconSizes::toml_key(stringify!($is_field))),
                 $missing,
                 0.0_f32,
             );
@@ -629,11 +668,12 @@ pub(crate) use validate_defaults;
 /// Each field is an `Option<TextScaleEntry>` extracted via `require_text_scale_entry()`.
 macro_rules! validate_text_scale {
     ($src:expr, $dpi:expr, $missing:expr; $($field:ident),* $(,)?) => {{
+        use $crate::model::TextScale;
         use $crate::resolve::validate_helpers::require_text_scale_entry;
         $(
             let $field = require_text_scale_entry(
                 &$src.text_scale.$field,
-                concat!("text_scale.", stringify!($field)),
+                &format!("text_scale.{}", TextScale::toml_key(stringify!($field))),
                 $dpi,
                 $missing,
             );
@@ -647,13 +687,25 @@ pub(crate) use validate_text_scale;
 ///
 /// This centralizes all the range-check calls for the global defaults
 /// and the text_scale entries that were previously inline in validate().
+/// `stated_scale` is the text scale as the theme states it: it gives the
+/// unit, so the TOML key, of each entry's size and line height.
 pub(crate) fn check_defaults_ranges(
     defaults: &crate::model::resolved::ResolvedDefaults,
     text_scale: &crate::model::resolved::ResolvedTextScale,
+    stated_scale: &TextScale,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
+    let key = ThemeDefaults::toml_key;
+    let border_key = DefaultsBorderSpec::toml_key;
+    let icon_key = IconSizes::toml_key;
+
     // Fonts: size > 0, weight 100..=900
-    check_positive(defaults.font.size, "defaults.font", "size", errors);
+    check_positive(
+        defaults.font.size,
+        "defaults.font",
+        font_size_key(defaults.font.defined_size),
+        errors,
+    );
     check_range_u16(
         defaults.font.weight,
         100,
@@ -665,7 +717,7 @@ pub(crate) fn check_defaults_ranges(
     check_positive(
         defaults.mono_font.size,
         "defaults.mono_font",
-        "size",
+        font_size_key(defaults.mono_font.defined_size),
         errors,
     );
     check_range_u16(
@@ -678,31 +730,31 @@ pub(crate) fn check_defaults_ranges(
     );
 
     // defaults: line_height > 0
-    check_positive(defaults.line_height, "defaults", "line_height", errors);
+    check_positive(defaults.line_height, "defaults", key("line_height"), errors);
 
     // defaults: radius, geometry >= 0
     check_non_negative(
         defaults.border.corner_radius,
         "defaults.border",
-        "corner_radius",
+        border_key("corner_radius"),
         errors,
     );
     check_non_negative(
         defaults.border.corner_radius_lg,
         "defaults.border",
-        "corner_radius_lg",
+        border_key("corner_radius_lg"),
         errors,
     );
     check_non_negative(
         defaults.border.line_width,
         "defaults.border",
-        "line_width",
+        border_key("line_width"),
         errors,
     );
     check_non_negative(
         defaults.focus_ring_width,
         "defaults",
-        "focus_ring_width",
+        key("focus_ring_width"),
         errors,
     );
     // Note: focus_ring_offset is intentionally NOT range-checked -- negative values
@@ -714,7 +766,7 @@ pub(crate) fn check_defaults_ranges(
         0.0,
         1.0,
         "defaults",
-        "disabled_opacity",
+        key("disabled_opacity"),
         errors,
     );
     check_range_f32(
@@ -722,7 +774,7 @@ pub(crate) fn check_defaults_ranges(
         0.0,
         1.0,
         "defaults.border",
-        "opacity",
+        border_key("opacity"),
         errors,
     );
 
@@ -730,113 +782,71 @@ pub(crate) fn check_defaults_ranges(
     check_non_negative(
         defaults.icon_sizes.toolbar,
         "defaults.icon_sizes",
-        "toolbar",
+        icon_key("toolbar"),
         errors,
     );
     check_non_negative(
         defaults.icon_sizes.small,
         "defaults.icon_sizes",
-        "small",
+        icon_key("small"),
         errors,
     );
     check_non_negative(
         defaults.icon_sizes.large,
         "defaults.icon_sizes",
-        "large",
+        icon_key("large"),
         errors,
     );
     check_non_negative(
         defaults.icon_sizes.dialog,
         "defaults.icon_sizes",
-        "dialog",
+        icon_key("dialog"),
         errors,
     );
     check_non_negative(
         defaults.icon_sizes.panel,
         "defaults.icon_sizes",
-        "panel",
+        icon_key("panel"),
         errors,
     );
 
-    // text_scale: entry sizes > 0, line_height > 0
-    check_positive(
-        text_scale.caption.size,
-        "text_scale.caption",
-        "size",
-        errors,
-    );
-    check_positive(
-        text_scale.caption.line_height,
-        "text_scale.caption",
-        "line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.caption.weight,
-        100,
-        900,
-        "text_scale.caption",
-        "weight",
-        errors,
-    );
-    check_positive(
-        text_scale.section_heading.size,
-        "text_scale.section_heading",
-        "size",
-        errors,
-    );
-    check_positive(
-        text_scale.section_heading.line_height,
-        "text_scale.section_heading",
-        "line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.section_heading.weight,
-        100,
-        900,
-        "text_scale.section_heading",
-        "weight",
-        errors,
-    );
-    check_positive(
-        text_scale.dialog_title.size,
-        "text_scale.dialog_title",
-        "size",
-        errors,
-    );
-    check_positive(
-        text_scale.dialog_title.line_height,
-        "text_scale.dialog_title",
-        "line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.dialog_title.weight,
-        100,
-        900,
-        "text_scale.dialog_title",
-        "weight",
-        errors,
-    );
-    check_positive(
-        text_scale.display.size,
-        "text_scale.display",
-        "size",
-        errors,
-    );
-    check_positive(
-        text_scale.display.line_height,
-        "text_scale.display",
-        "line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.display.weight,
-        100,
-        900,
-        "text_scale.display",
-        "weight",
-        errors,
-    );
+    // text_scale: entry sizes > 0, line_height > 0, weight 100..=900
+    let entries = [
+        (
+            "text_scale.caption",
+            &text_scale.caption,
+            &stated_scale.caption,
+        ),
+        (
+            "text_scale.section_heading",
+            &text_scale.section_heading,
+            &stated_scale.section_heading,
+        ),
+        (
+            "text_scale.dialog_title",
+            &text_scale.dialog_title,
+            &stated_scale.dialog_title,
+        ),
+        (
+            "text_scale.display",
+            &text_scale.display,
+            &stated_scale.display,
+        ),
+    ];
+    for (prefix, entry, stated) in entries {
+        let stated: Option<&TextScaleEntry> = stated.as_ref();
+        check_positive(
+            entry.size,
+            prefix,
+            font_size_key(stated.and_then(|e| e.size)),
+            errors,
+        );
+        check_positive(
+            entry.line_height,
+            prefix,
+            line_height_key(stated.and_then(|e| e.line_height)),
+            errors,
+        );
+        check_range_u16(entry.weight, 100, 900, prefix, "weight", errors);
+    }
 }

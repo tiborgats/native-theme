@@ -171,8 +171,12 @@ fn to_snake_case(s: &str) -> String {
 /// pub struct HasProxy { /* ... */ }
 /// ```
 ///
-/// This derive emits ONLY an `inventory::submit!` call; it does not emit a
-/// `FIELD_NAMES` associated constant. To also get widget-style codegen
+/// On the introspection path it also emits `toml_key(field)`, which maps a
+/// field's name to its TOML key, so validation can name the key a theme
+/// author writes.
+///
+/// This derive does not emit a `FIELD_NAMES` associated constant. To also
+/// get widget-style codegen
 /// (Resolved pair + merge + validate + `FIELD_NAMES`), combine with
 /// `#[derive(ThemeWidget)]`.
 #[proc_macro_derive(ThemeFields, attributes(theme_layer))]
@@ -189,6 +193,7 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
     let struct_name = &input.ident;
     let layer = parse::parse_layer_attrs(&input.attrs)?;
 
+    let mut renames = Vec::new();
     let field_names: Vec<String> = if let Some(ref explicit) = layer.explicit_fields {
         explicit.clone()
     } else {
@@ -201,19 +206,50 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
                 ));
             }
         };
-        parse::parse_fields(&data.fields)?
+        let fields = parse::parse_fields(&data.fields)?;
+        renames = fields
             .iter()
-            .map(|f| {
-                f.serde_rename
-                    .clone()
-                    .unwrap_or_else(|| f.ident.to_string())
+            .filter_map(|f| {
+                let rename = f.serde_rename.as_ref()?;
+                Some((f.ident.to_string(), rename.clone()))
             })
-            .collect()
+            .collect();
+        fields.iter().map(parse::FieldMeta::toml_key).collect()
     };
 
     let struct_name_str = struct_name.to_string();
     let entries: Vec<proc_macro2::TokenStream> =
         field_names.iter().map(|n| quote::quote! { #n, }).collect();
+
+    // An explicit field list has no field-to-key mapping: no `toml_key`.
+    let toml_key = if layer.explicit_fields.is_some() {
+        proc_macro2::TokenStream::new()
+    } else {
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+        let arms = renames
+            .iter()
+            .map(|(name, key)| quote::quote! { #name => #key, });
+        let body = if renames.is_empty() {
+            quote::quote! { field }
+        } else {
+            quote::quote! {
+                match field {
+                    #(#arms)*
+                    _ => field,
+                }
+            }
+        };
+        quote::quote! {
+            impl #impl_generics #struct_name #ty_generics #where_clause {
+                /// The TOML key of the field named `field`: its serde
+                /// rename, else `field` itself.
+                #[allow(dead_code)]
+                pub(crate) fn toml_key(field: &'static str) -> &'static str {
+                    #body
+                }
+            }
+        }
+    };
 
     // Emit at item level directly -- mirrors the pattern used by the widget
     // derive at line 111 above. The inventory registry path
@@ -224,5 +260,6 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
             struct_name: #struct_name_str,
             field_names: &[#(#entries)*],
         });
+        #toml_key
     })
 }

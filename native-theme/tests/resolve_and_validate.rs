@@ -475,8 +475,8 @@ fn a_negative_padding_side_is_a_validation_error() {
             assert!(
                 errors
                     .iter()
-                    .any(|e| e.path == "button.border.padding_bottom" && e.value == -1.0),
-                "no violation names button.border.padding_bottom: {errors:?}"
+                    .any(|e| e.path == "button.border.padding_bottom_px" && e.value == -1.0),
+                "no violation names button.border.padding_bottom_px: {errors:?}"
             );
         }
         other => panic!("a negative padding side must be a range violation, got {other:?}"),
@@ -511,7 +511,7 @@ fn a_negative_bar_height_is_a_validation_error() {
         matches!(
             resolve_mode(v),
             Err(Error::ResolutionInvalid { ref errors })
-                if errors.iter().any(|e| e.path == "toolbar.bar_height")
+                if errors.iter().any(|e| e.path == "toolbar.bar_height_px")
         ),
         "a stated negative bar height must still be range-checked"
     );
@@ -551,9 +551,9 @@ fn a_negative_row_height_or_arrow_area_width_is_a_validation_error() {
     match resolve_mode(v) {
         Err(Error::ResolutionInvalid { errors }) => {
             for path in [
-                "menu.row_height",
-                "list.row_height",
-                "combo_box.arrow_area_width",
+                "menu.row_height_px",
+                "list.row_height_px",
+                "combo_box.arrow_area_width_px",
             ] {
                 assert!(
                     errors.iter().any(|e| e.path == path),

@@ -10,7 +10,9 @@ use std::fmt;
 /// its allowed range.
 #[derive(Debug, Clone)]
 pub struct RangeViolation {
-    /// Dot-separated path of the property (e.g. `"button.min_width"`).
+    /// Dot-separated TOML path of the property (e.g.
+    /// `"light.button.min_width_px"`), as
+    /// [`Error::ResolutionIncomplete`] describes.
     pub path: String,
     /// The actual value found.
     pub value: f64,
@@ -113,12 +115,29 @@ pub enum Error {
     },
 
     /// Theme resolution found missing fields that could not be inherited.
+    ///
+    /// Each path, here and in [`RangeViolation::path`], names the key a
+    /// theme author writes in TOML: `button.min_height_px`,
+    /// `button.border.padding_left_px`, `defaults.icon_sizes.toolbar_px`.
+    /// A path from a whole theme ([`Theme::resolve`](crate::Theme::resolve),
+    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system),
+    /// [`SystemTheme::with_overlay`](crate::SystemTheme::with_overlay))
+    /// starts with the table of the variant that failed, `light.` or
+    /// `dark.`; a [`ThemeMode`](crate::theme::ThemeMode) resolved alone has
+    /// no variant table, so its paths start below it.
+    ///
+    /// A font size is one field with two keys, `size_pt` and `size_px` (a
+    /// text-scale line height likewise, `line_height_pt` and
+    /// `line_height_px`): an out-of-range one is named by the key the theme
+    /// states, a missing one by the field, `size` (`line_height`).
     ResolutionIncomplete {
-        /// Dot-separated paths of fields still `None` after resolution.
+        /// Dot-separated TOML paths of fields still `None` after resolution.
         missing: Vec<String>,
     },
 
-    /// Theme resolution found numeric values outside allowed ranges.
+    /// Theme resolution found numeric values outside allowed ranges. Each
+    /// violation's path is a TOML path, as [`Error::ResolutionIncomplete`]
+    /// describes.
     ResolutionInvalid {
         /// One entry per out-of-range property.
         errors: Vec<RangeViolation>,
@@ -151,6 +170,36 @@ impl Error {
             Error::Io { .. } => ErrorKind::Io,
             Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
             Error::ResolutionInvalid { .. } => ErrorKind::Resolution,
+        }
+    }
+}
+
+impl Error {
+    /// This error with each path it names prefixed by the table of the
+    /// variant that failed: `light.` or `dark.`. Errors that name no path
+    /// are returned unchanged.
+    pub(crate) fn in_variant(self, mode: crate::theme::ColorMode) -> Self {
+        let table = match mode {
+            crate::theme::ColorMode::Light => "light",
+            crate::theme::ColorMode::Dark => "dark",
+        };
+        match self {
+            Error::ResolutionIncomplete { missing } => Error::ResolutionIncomplete {
+                missing: missing
+                    .into_iter()
+                    .map(|path| format!("{table}.{path}"))
+                    .collect(),
+            },
+            Error::ResolutionInvalid { errors } => Error::ResolutionInvalid {
+                errors: errors
+                    .into_iter()
+                    .map(|rv| RangeViolation {
+                        path: format!("{table}.{}", rv.path),
+                        ..rv
+                    })
+                    .collect(),
+            },
+            other => other,
         }
     }
 }
@@ -244,8 +293,13 @@ impl fmt::Display for Error {
     }
 }
 
-/// Categorize a field path into a human-readable group name.
+/// Categorize a field path into a human-readable group name. A leading
+/// variant table (`light.`, `dark.`) does not count.
 fn field_category(field: &str) -> &'static str {
+    let field = field
+        .strip_prefix("light.")
+        .or_else(|| field.strip_prefix("dark."))
+        .unwrap_or(field);
     match field.split('.').next() {
         Some("defaults") => "root defaults",
         Some("text_scale") => "text scale",
@@ -355,7 +409,7 @@ mod tests {
     fn kind_resolution_for_invalid() {
         let err = Error::ResolutionInvalid {
             errors: vec![RangeViolation {
-                path: "button.min_width".into(),
+                path: "button.min_width_px".into(),
                 value: -5.0,
                 min: Some(0.0),
                 max: None,
@@ -400,7 +454,7 @@ mod tests {
             missing: vec![
                 "defaults.accent_color".into(),
                 "button.font.color".into(),
-                "window.border.corner_radius".into(),
+                "window.border.corner_radius_px".into(),
             ],
         };
         let msg = err.to_string();
@@ -409,7 +463,7 @@ mod tests {
         assert!(msg.contains("defaults.accent_color"), "got: {msg}");
         assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(msg.contains("button.font.color"), "got: {msg}");
-        assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
+        assert!(msg.contains("window.border.corner_radius_px"), "got: {msg}");
         assert!(msg.contains("hint:"), "got: {msg}");
         assert!(msg.contains("preset"), "got: {msg}");
     }
@@ -435,6 +489,31 @@ mod tests {
     }
 
     #[test]
+    fn display_resolution_incomplete_groups_variant_prefixed_paths() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec![
+                "dark.text_scale.caption".into(),
+                "light.defaults.icon_sizes.toolbar_px".into(),
+                "light.button.min_height_px".into(),
+            ],
+        };
+        let msg = err.to_string();
+        assert!(
+            msg.contains("[text scale]\n    - dark.text_scale.caption"),
+            "got: {msg}"
+        );
+        assert!(
+            msg.contains("[root defaults]\n    - light.defaults.icon_sizes.toolbar_px"),
+            "got: {msg}"
+        );
+        assert!(
+            msg.contains("[widget fields]\n    - light.button.min_height_px"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("hint:"), "got: {msg}");
+    }
+
+    #[test]
     fn display_resolution_incomplete_widget_category() {
         // icon_set is no longer validated per-variant; test a widget field instead
         let err = Error::ResolutionIncomplete {
@@ -450,13 +529,13 @@ mod tests {
         let err = Error::ResolutionInvalid {
             errors: vec![
                 RangeViolation {
-                    path: "button.min_width".into(),
+                    path: "button.min_width_px".into(),
                     value: -5.0,
                     min: Some(0.0),
                     max: None,
                 },
                 RangeViolation {
-                    path: "slider.track_height".into(),
+                    path: "slider.track_height_px".into(),
                     value: 200.0,
                     min: Some(1.0),
                     max: Some(100.0),
@@ -465,9 +544,9 @@ mod tests {
         };
         let msg = err.to_string();
         assert!(msg.contains("2 range violation(s)"), "got: {msg}");
-        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("button.min_width_px"), "got: {msg}");
         assert!(msg.contains("-5"), "got: {msg}");
-        assert!(msg.contains("slider.track_height"), "got: {msg}");
+        assert!(msg.contains("slider.track_height_px"), "got: {msg}");
         assert!(msg.contains("200"), "got: {msg}");
     }
 
@@ -652,13 +731,13 @@ mod tests {
     #[test]
     fn range_violation_display_both_bounds() {
         let v = RangeViolation {
-            path: "button.min_width".into(),
+            path: "button.min_width_px".into(),
             value: -5.0,
             min: Some(0.0),
             max: Some(1000.0),
         };
         let msg = v.to_string();
-        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("button.min_width_px"), "got: {msg}");
         assert!(msg.contains("0..=1000"), "got: {msg}");
         assert!(msg.contains("-5"), "got: {msg}");
     }

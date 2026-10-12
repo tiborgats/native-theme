@@ -519,7 +519,10 @@ impl Theme {
             .icon_set
             .unwrap_or_else(crate::model::icons::system_icon_set);
 
-        let variant = variant_ref.clone().into_resolved(ctx)?;
+        let variant = variant_ref
+            .clone()
+            .into_resolved(ctx)
+            .map_err(|e| e.in_variant(picked_mode))?;
 
         Ok(Resolved {
             mode: picked_mode,

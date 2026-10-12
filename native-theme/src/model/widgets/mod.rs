@@ -1818,7 +1818,7 @@ mod tests {
         let _ = ResolvedButtonTheme::validate_widget(&button, "button", 96.0, &mut missing);
         // option fields should be recorded as missing
         assert!(missing.contains(&"button.background_color".to_string()));
-        assert!(missing.contains(&"button.min_width".to_string()));
+        assert!(missing.contains(&"button.min_width_px".to_string()));
         // font (optional_nested) should be recorded
         assert!(missing.contains(&"button.font".to_string()));
         // border (optional_nested) should be recorded

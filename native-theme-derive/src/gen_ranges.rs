@@ -33,14 +33,15 @@ pub(crate) fn gen_ranges(opt_name: &Ident, fields: &[FieldMeta], layer: &LayerMe
 
 /// Generate range check statements from field metadata.
 ///
-/// All generated code defers `format!` to error branches only -- the happy path
-/// (all values in range) allocates zero path strings.
+/// Paths name each field's TOML key. All generated code defers `format!` to
+/// error branches only -- the happy path (all values in range) allocates zero
+/// path strings.
 fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
     let mut stmts = Vec::new();
 
     for f in fields {
         let ident = &f.ident;
-        let field_name = ident.to_string();
+        let field_name = f.toml_key();
 
         // Emit explicit range check if present. A soft-option field stays
         // `Option<T>` on the resolved struct, so it is checked only where it
@@ -111,7 +112,10 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
 
         // Emit min_max_pair check if present
         if let Some(ref pair_ident) = f.min_max_pair {
-            let pair_name = pair_ident.to_string();
+            let pair_name = fields
+                .iter()
+                .find(|g| g.ident == *pair_ident)
+                .map_or_else(|| pair_ident.to_string(), FieldMeta::toml_key);
             stmts.push(quote! {
                 crate::resolve::validate_helpers::check_min_max(
                     self.#ident,
@@ -142,7 +146,8 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
 
         // Auto-emit font range checks for nested ResolvedFontSpec fields.
         // Inlines the check logic so that format! only runs in error branches,
-        // avoiding sub-prefix allocation on the happy path.
+        // avoiding sub-prefix allocation on the happy path. The size path
+        // names the key the theme states (`size_pt` or `size_px`).
         if let FieldCategory::Nested { resolved_ty } = &f.category
             && is_resolved_font_spec(resolved_ty)
         {
@@ -151,7 +156,11 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                     let font = &self.#ident;
                     if !font.size.is_finite() || font.size <= 0.0 {
                         errors.push(crate::error::RangeViolation {
-                            path: format!("{prefix}.{}.size", #field_name),
+                            path: format!(
+                                "{prefix}.{}.{}",
+                                #field_name,
+                                crate::resolve::validate_helpers::font_size_key(font.defined_size),
+                            ),
                             value: font.size as f64,
                             min: Some(f64::MIN_POSITIVE),
                             max: None,
