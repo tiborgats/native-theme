@@ -752,13 +752,7 @@ mod tests {
             ("link.font.color", "defaults.link_color"),
         ];
 
-        // Category 4: stated in [uniform] and in [wrong_safety_nets], but no
-        // resolver applies it; `list_alternate_row_background_not_derived`
-        // guards that it stays so.
-        let documented_only_rules: &[(&str, &str)] =
-            &[("list.alternate_row_background", "list.background_color")];
-
-        for &(target, source) in hand_written_rules.iter().chain(documented_only_rules) {
+        for &(target, source) in hand_written_rules {
             implemented.push((target.to_string(), source.to_string()));
         }
 

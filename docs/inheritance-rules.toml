@@ -231,7 +231,6 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "status_bar.border.line_width"               = "defaults.border.line_width"
 
 # list (§2.15)
-"list.alternate_row_background"              = "list.background_color"        # see wrong_safety_nets
 "list.selection_background"                  = "defaults.selection_background"
 "list.selection_text_color"                  = "defaults.selection_text_color"
 "list.header_background"                     = "defaults.surface_color"       # see wrong_safety_nets
@@ -422,9 +421,10 @@ fields = [
 # ─── Wrong safety nets ────────────────────────────────────────────────────
 #
 # Fields where resolve() currently inherits (via [uniform] or
-# [font_inheritance] above), but the inheritance is known to produce
-# wrong results. The preset MUST provide the actual value. These are
-# listed in the inheritance doc as "cannot be universally derived."
+# [font_inheritance] above), or once did (list.alternate_row_background),
+# but the inheritance is known to produce wrong results. The preset MUST
+# provide the actual value. These are listed in the inheritance doc as
+# "cannot be universally derived."
 
 [wrong_safety_nets]
 
