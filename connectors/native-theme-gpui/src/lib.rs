@@ -150,9 +150,9 @@ pub mod widgets;
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
+pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
-    ResolvedTheme, Theme, ThemeMode, TransformAnimation,
+    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
 };
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 

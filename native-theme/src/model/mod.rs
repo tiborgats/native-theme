@@ -72,10 +72,7 @@ pub use font::{
     FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry, intern_font_family,
 };
 pub use icon_sizes::IconSizes;
-pub use icons::{
-    IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name, system_icon_set,
-    system_icon_theme,
-};
+pub use icons::{IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name};
 pub use resolved::{
     Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
@@ -284,7 +281,7 @@ pub struct Theme {
     /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
     /// `SfSymbols`, `SegoeIcons`). Shared across light and dark variants.
     /// When `None`, filled during resolution from
-    /// [`system_icon_set()`](crate::theme::system_icon_set).
+    /// [`system_icon_set()`](crate::detect::system_icon_set).
     ///
     /// # Examples
     ///
@@ -309,7 +306,7 @@ pub struct Theme {
     /// Precedence at resolve time:
     /// 1. [`ThemeMode::defaults.icon_theme`](crate::model::ThemeDefaults::icon_theme) — per-variant override (if set)
     /// 2. `Theme::icon_theme` — this field (if set)
-    /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime
+    /// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) — runtime
     ///    detection; none where it fails
     ///
     /// See `docs/archive/v0.5.7_gaps.md` §G4 for the design rationale.
@@ -432,16 +429,20 @@ impl Theme {
     /// `icon_set` / `icon_theme` fields. This is the one-call path from a
     /// parsed [`Theme`] to the values a UI framework needs.
     ///
-    /// `icon_set` falls back to [`system_icon_set()`] when the TOML omits
-    /// it. `icon_theme` uses three-tier precedence:
+    /// `icon_set` falls back to
+    /// [`system_icon_set()`](crate::detect::system_icon_set) when the TOML
+    /// omits it. `icon_theme` uses three-tier precedence:
     ///
     /// 1. The picked variant's `defaults.icon_theme` (per-mode override).
     /// 2. [`Theme::icon_theme`] (shared across variants).
-    /// 3. [`system_icon_theme()`] (runtime detect).
+    /// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) (runtime
+    ///    detect).
     ///
     /// Where no tier gives a name — the TOML states none and detection
     /// fails — [`Resolved::icon_theme`] is `None`; the resolution itself
-    /// does not fail over it, and [`system_icon_theme()`] gives the reason.
+    /// does not fail over it, and
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
+    /// reason.
     /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
     /// fired (value came from TOML) versus tier 3 (runtime detection).
     ///
@@ -521,9 +522,7 @@ impl Theme {
         let icon_theme_explicit = tier1.is_some() || tier2.is_some();
         let icon_theme = tier1.or(tier2).or_else(|| ctx.icon_theme.clone());
 
-        let icon_set = self
-            .icon_set
-            .unwrap_or_else(crate::model::icons::system_icon_set);
+        let icon_set = self.icon_set.unwrap_or_else(crate::detect::system_icon_set);
 
         let variant = variant_ref
             .clone()
@@ -1515,7 +1514,7 @@ accent_color = "#ff0000"
         assert!(!r.icon_theme_explicit);
         assert_eq!(
             r.icon_theme.as_deref(),
-            crate::model::icons::system_icon_theme().ok().as_deref()
+            crate::detect::system_icon_theme().ok().as_deref()
         );
     }
 

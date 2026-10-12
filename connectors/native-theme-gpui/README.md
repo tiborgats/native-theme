@@ -489,8 +489,7 @@ let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material,
 ### Animated spinners
 
 ```rust,ignore
-use native_theme::theme::AnimatedIcon;
-use native_theme::icons::MaterialLoader;
+use native_theme::icons::{AnimatedIcon, MaterialLoader};
 use native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
 

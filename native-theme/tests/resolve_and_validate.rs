@@ -9,6 +9,7 @@
 
 use native_theme::color::Rgba;
 use native_theme::error::Error;
+use native_theme::icons::IconRole;
 use native_theme::theme::*;
 
 // ---------------------------------------------------------------------------
@@ -320,7 +321,7 @@ fn theme_spec_with_one_variant_is_not_empty() {
 #[test]
 #[cfg(feature = "material-icons")]
 fn bundled_material_svg_starts_with_svg_tag() {
-    use native_theme::icons::MaterialLoader;
+    use native_theme::icons::{IconData, MaterialLoader};
     for role in IconRole::ALL.iter().copied() {
         if let Some(data) = MaterialLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
@@ -340,7 +341,7 @@ fn bundled_material_svg_starts_with_svg_tag() {
 #[test]
 #[cfg(feature = "lucide-icons")]
 fn bundled_lucide_svg_starts_with_svg_tag() {
-    use native_theme::icons::LucideLoader;
+    use native_theme::icons::{IconData, LucideLoader};
     for role in IconRole::ALL.iter().copied() {
         if let Some(data) = LucideLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };

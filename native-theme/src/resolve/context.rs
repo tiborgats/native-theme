@@ -64,7 +64,7 @@ pub struct ResolutionContext {
     ///
     /// [`from_system`](Self::from_system) puts the detected system icon
     /// theme here, or `None` where detection failed;
-    /// [`system_icon_theme()`](crate::theme::system_icon_theme) gives the
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
     /// reason.
     pub icon_theme: Option<Cow<'static, str>>,
 }
@@ -76,11 +76,11 @@ impl ResolutionContext {
     /// - `crate::detect::system_font_dpi` for `font_dpi` (private)
     /// - `crate::resolve::inheritance::platform_button_order` for
     ///   `button_order`
-    /// - [`crate::model::icons::system_icon_theme`] for `icon_theme`, which
+    /// - [`crate::detect::system_icon_theme`] for `icon_theme`, which
     ///   is `None` where detection fails
     #[must_use]
     pub fn from_system() -> Self {
-        Self::with_detected_icon_theme(crate::model::icons::system_icon_theme())
+        Self::with_detected_icon_theme(crate::detect::system_icon_theme())
     }
 
     /// [`from_system`](Self::from_system), with `detected` as the outcome

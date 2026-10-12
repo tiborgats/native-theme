@@ -6,7 +6,7 @@ custom icon roles.
 ## What it does
 
 Reads a TOML file describing your app's custom icon roles at build time and
-generates a Rust enum that implements `native_theme::theme::IconProvider`. The
+generates a Rust enum that implements `native_theme::icons::IconProvider`. The
 generated enum maps each role to its platform-specific identifier (SF Symbols,
 Segoe Fluent, freedesktop, Material, Lucide) and optionally embeds bundled SVG
 data via `include_bytes!`.
@@ -68,7 +68,7 @@ let icon = MaterialLoader::new(&AppIcon::PlayPause).load();
 - **Role** — a semantic name (`PlayPause`). Declared in `roles = [...]`; becomes a PascalCase enum variant.
 - **Bundled theme** — SVG assets that ship inside your binary via `include_bytes!`. Declared in `bundled-themes`.
 - **System theme** — identifier-only mapping. The actual icon is looked up at runtime by the OS (SF Symbols on macOS, Segoe Fluent on Windows, freedesktop on Linux). Declared in `system-themes`.
-- **Generated enum** — produced at build time into `$OUT_DIR`. Implements `native_theme::theme::IconProvider`, so it plugs into every per-set loader (`MaterialLoader::new(&icon)`, `FreedesktopLoader::new(&icon)`, …).
+- **Generated enum** — produced at build time into `$OUT_DIR`. Implements `native_theme::icons::IconProvider`, so it plugs into every per-set loader (`MaterialLoader::new(&icon)`, `FreedesktopLoader::new(&icon)`, …).
 
 ## Common recipes
 

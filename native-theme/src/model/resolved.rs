@@ -238,11 +238,13 @@ pub struct ResolvedTheme {
 ///    KDE Plasma's `"breeze"` light / `"breeze-dark"` dark).
 /// 2. The parent [`Theme::icon_theme`](super::Theme::icon_theme) (shared
 ///    across light and dark).
-/// 3. [`system_icon_theme()`](super::system_icon_theme) (runtime detect).
+/// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) (runtime
+///    detect).
 ///
 /// The first value that is `Some` wins. Where none is — the TOML states no
 /// icon theme and detection fails — the field is `None`: no theme stands in,
-/// and [`system_icon_theme()`](super::system_icon_theme) gives the reason.
+/// and [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
+/// reason.
 /// [`icon_theme_explicit`](Self::icon_theme_explicit) reports whether the
 /// value came from the TOML (tiers 1 or 2) or from runtime detection
 /// (tier 3) — useful for UI code that labels the theme-author's choice as
@@ -270,12 +272,14 @@ pub struct Resolved {
     /// The picked variant's fully-resolved visual properties.
     pub variant: ResolvedTheme,
     /// The theme's icon set. Falls back to
-    /// [`system_icon_set()`](super::system_icon_set) when the TOML omits it.
+    /// [`system_icon_set()`](crate::detect::system_icon_set) when the TOML
+    /// omits it.
     pub icon_set: super::IconSet,
     /// The icon theme name, resolved through the three-tier precedence
     /// documented on the struct. `None` when the TOML states none and
     /// detection fails; the app can call
-    /// [`system_icon_theme()`](super::system_icon_theme) for the reason.
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) for the
+    /// reason.
     pub icon_theme: Option<std::borrow::Cow<'static, str>>,
     /// `true` if [`icon_theme`](Self::icon_theme) came from the TOML (tiers 1
     /// or 2); `false` if it was left to runtime system detection (tier 3),

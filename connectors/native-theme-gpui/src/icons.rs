@@ -37,8 +37,10 @@ use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
-use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
+use native_theme::icons::{
+    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, IconRole, SegoeIconsLoader,
+    SfSymbolsLoader, load_icon,
+};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -82,7 +84,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// # Examples
 ///
 /// ```ignore
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::IconRole;
 /// use native_theme_gpui::icons::icon_name;
 ///
 /// assert_eq!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert));
@@ -948,7 +950,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// # Examples
 ///
 /// ```ignore
-/// use native_theme::theme::IconData;
+/// use native_theme::icons::IconData;
 /// use native_theme_gpui::icons::to_image_source;
 /// use std::borrow::Cow;
 ///
@@ -1205,7 +1207,7 @@ pub fn animated_frames_to_image_sources(
 /// milliseconds, repeating infinitely. Uses linear easing for constant-speed
 /// rotation suitable for loading spinners.
 ///
-/// `duration_ms` comes from [`native_theme::theme::TransformAnimation::Spin`].
+/// `duration_ms` comes from [`native_theme::icons::TransformAnimation::Spin`].
 /// `animation_id` must be unique among sibling animated elements (accepts
 /// `&'static str`, integer IDs, or any `impl Into<ElementId>`).
 ///
@@ -2351,7 +2353,7 @@ mod tests {
     #[derive(Debug)]
     struct TestCustomIcon;
 
-    impl native_theme::theme::IconProvider for TestCustomIcon {
+    impl native_theme::icons::IconProvider for TestCustomIcon {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None // No system name -- forces bundled SVG path
         }
@@ -2367,7 +2369,7 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::theme::IconProvider for EmptyProvider {
+    impl native_theme::icons::IconProvider for EmptyProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -2420,7 +2422,7 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_accepts_dyn_provider() {
-        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestCustomIcon);
+        let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestCustomIcon);
         let result = custom_icon_to_image_source(
             &*boxed,
             native_theme::theme::IconSet::Material,
@@ -2520,7 +2522,7 @@ mod tests {
             IconData::Svg(std::borrow::Cow::Borrowed(
                 b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
             )),
-            native_theme::theme::TransformAnimation::Spin {
+            native_theme::icons::TransformAnimation::Spin {
                 duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
             },
         );
@@ -2662,7 +2664,7 @@ mod freedesktop_mapping_tests {
     #[cfg(feature = "system-icons")]
     #[test]
     fn all_kde_names_resolve_in_breeze() {
-        let theme = match native_theme::theme::system_icon_theme() {
+        let theme = match native_theme::detect::system_icon_theme() {
             Ok(theme) => theme,
             Err(e) => {
                 eprintln!("Skipping: no system icon theme detected ({e})");

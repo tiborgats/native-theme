@@ -5731,7 +5731,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             .iter()
             .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path);
         let expected = match entry {
-            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
                 ChromeIcon::Loaded(n, bytes.clone())
             }
             Some((n, ..)) => ChromeIcon::Missing(n),
@@ -6013,7 +6013,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             .iter()
             .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path)
         {
-            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
                 ChromeIcon::Loaded(n, bytes.clone())
             }
             Some((n, ..)) => ChromeIcon::Missing(n),

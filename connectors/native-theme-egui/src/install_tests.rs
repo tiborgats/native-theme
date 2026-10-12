@@ -75,7 +75,7 @@ fn the_builder_defaults_are_the_documented_ones() {
     assert_eq!(atlas.accessibility(), &AccessibilityPreferences::default());
     assert_eq!(atlas.layout(), &LayoutTheme::default());
     assert_eq!(atlas.os_mode(), None);
-    assert_eq!(atlas.icon_set(), native_theme::theme::system_icon_set());
+    assert_eq!(atlas.icon_set(), native_theme::detect::system_icon_set());
     assert_eq!(atlas.icon_theme(egui::Theme::Light), None);
     assert_eq!(atlas.icon_theme(egui::Theme::Dark), None);
     // No conversion runs on kde-breeze that emits a note; a later task that makes one emit

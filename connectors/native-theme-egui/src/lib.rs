@@ -144,7 +144,7 @@ pub use native_theme;
 // RULE: the crate root re-exports no name that also exists at `egui`'s root.
 // Four native-theme names are therefore deliberately NOT here:
 //   * `native_theme::color::Rgba`     -> `convert::Rgba`   (egui/src/lib.rs:442, opposite colour space)
-//   * `native_theme::theme::IconData` -> `icons::IconData` (egui/src/viewport.rs:183)
+//   * `native_theme::icons::IconData` -> `icons::IconData` (egui/src/viewport.rs:183)
 //   * `native_theme::theme::Theme`    -> reachable as `native_theme::theme::Theme`
 //                                        (egui/src/lib.rs:483 already exports `Theme`)
 //   * `native_theme::SystemTheme`     -> reachable as `native_theme::SystemTheme`
@@ -153,9 +153,9 @@ pub use native_theme;
 //                                         it resolves as `crate::SystemTheme` inside egui at
 //                                         context.rs:252 and :2479)
 pub use native_theme::error::Error;
+pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, FontStyle, IconProvider, IconRole, IconSet,
-    LayoutTheme, ResolvedTheme, ThemeMode, TransformAnimation,
+    ColorMode, DialogButtonOrder, FontStyle, IconSet, LayoutTheme, ResolvedTheme, ThemeMode,
 };
 pub use native_theme::{AccessibilityPreferences, Result};
 

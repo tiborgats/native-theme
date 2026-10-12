@@ -36,15 +36,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use native_theme::detect::system_is_dark;
+use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
-    load_icon_indicator,
+    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, TransformAnimation,
+    default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::pipeline::platform_preset_name;
-use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, system_icon_set,
-    system_icon_theme,
-};
+use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{animated_frames_to_image_sources, to_image_source};
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};

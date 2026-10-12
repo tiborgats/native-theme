@@ -1,7 +1,7 @@
 //! Demo helpers: each applies one seam and records the instance it drew (spec §10.4).
 
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::{FreedesktopLoader, IconRole, SegoeIconsLoader, SfSymbolsLoader};
+use native_theme::theme::IconSet;
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

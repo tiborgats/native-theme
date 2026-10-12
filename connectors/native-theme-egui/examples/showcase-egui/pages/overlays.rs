@@ -3,7 +3,8 @@
 //! (§1.5, §3.2), its body styled as the first statement inside.
 
 use egui::containers::menu::SubMenuButton;
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::IconRole;
+use native_theme::theme::IconSet;
 use native_theme_egui::{
     DialogButtonOrder, Role, RoleVariant, Surface, ThemeAtlas, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,

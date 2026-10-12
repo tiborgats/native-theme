@@ -3,7 +3,7 @@
 /// Re-exported **here and not at the crate root**, because `egui::IconData`
 /// (`egui/src/viewport.rs:183`, the window/taskbar icon) already occupies that name and this
 /// crate re-exports `egui`.
-pub use native_theme::theme::IconData;
+pub use native_theme::icons::IconData;
 
 use std::borrow::Cow;
 use std::collections::BTreeSet;
@@ -11,7 +11,8 @@ use std::hash::{DefaultHasher, Hasher};
 use std::time::Duration;
 
 use native_theme::color::Rgba;
-use native_theme::theme::{AnimatedIcon, IconProvider, IconRole, IconSet, TransformAnimation};
+use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
+use native_theme::theme::IconSet;
 
 use crate::{ResolvedTheme, ThemeAtlas};
 

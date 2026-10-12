@@ -1,9 +1,9 @@
 // KDE theme reader -- reads kdeglobals INI file and maps to Theme
 
 /// KDE color group parsing and mapping.
-pub mod colors;
+pub(crate) mod colors;
 /// Qt font string parsing with weight extraction.
-pub mod fonts;
+pub(crate) mod fonts;
 
 use crate::Rgba;
 use crate::model::IconSizes;
@@ -18,6 +18,7 @@ use crate::model::IconSizes;
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
 /// Icon sizes are NOT populated (requires filesystem access) -- the caller
 /// (`from_kde_content` / `from_kde`) handles that after this returns.
+#[doc(hidden)]
 pub fn from_kde_content_pure(
     content: &str,
     font_dpi: Option<f32>,

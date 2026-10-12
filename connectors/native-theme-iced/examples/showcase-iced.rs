@@ -51,12 +51,13 @@ use iced_aw::{Card, ContextMenu, SelectionList, Spinner, TabBar, TabLabel, Tabs}
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
+    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
+    MaterialLoader, SegoeIconsLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
+    list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, ArrowSide, IconData, IconRole, IconSet, LayoutTheme, ResolvedFontSpec,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
+    ArrowSide, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedTheme,
 };
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -1361,7 +1362,7 @@ fn load_all_icons(
                 IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
                 _ => None,
             };
-            let name = native_theme::theme::icon_name(role, set);
+            let name = native_theme::icons::icon_name(role, set);
             let source = match (&data, is_system_set) {
                 (None, _) => IconSource::NotFound,
                 (Some(_), false) => IconSource::Bundled,
@@ -1912,7 +1913,7 @@ impl State {
             screenshot_countdown: 0,
             error_message: initial_error,
             read_system_theme,
-            detect_icon_theme: native_theme::theme::system_icon_theme,
+            detect_icon_theme: native_theme::detect::system_icon_theme,
             theme_change_flag,
             _theme_watcher,
         };

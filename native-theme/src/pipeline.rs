@@ -39,7 +39,7 @@ pub(crate) fn run_pipeline(
     let context = match font_dpi {
         Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(
             dpi,
-            crate::model::icons::system_icon_theme(),
+            crate::detect::system_icon_theme(),
         ),
         None => crate::resolve::ResolutionContext::from_system(),
     };
@@ -88,7 +88,7 @@ pub(crate) fn replay(
     // Resolve icon_set from Theme level (shared across variants)
     let icon_set = merged
         .icon_set
-        .unwrap_or_else(crate::model::icons::system_icon_set);
+        .unwrap_or_else(crate::detect::system_icon_set);
 
     // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
     //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)

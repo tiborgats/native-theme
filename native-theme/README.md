@@ -139,8 +139,7 @@ Keep the subscription alive: dropping it stops watching.
 Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:
 
 ```rust,ignore
-use native_theme::icons::{MaterialLoader, FreedesktopLoader};
-use native_theme::theme::IconRole;
+use native_theme::icons::{FreedesktopLoader, IconRole, MaterialLoader};
 
 // Bundled set (no system dependencies).
 let copy = MaterialLoader::new(IconRole::ActionCopy).load();

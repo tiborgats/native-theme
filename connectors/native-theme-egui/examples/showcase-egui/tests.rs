@@ -1724,7 +1724,7 @@ fn the_icons_page_has_the_gpui_showcases_sections() {
         .count();
     assert_eq!(
         names,
-        native_theme::theme::IconRole::ALL.len(),
+        native_theme::icons::IconRole::ALL.len(),
         "a named cell per role"
     );
     let headings: Vec<egui::accesskit::NodeId> = records

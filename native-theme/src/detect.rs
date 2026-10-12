@@ -1,7 +1,13 @@
-//! OS detection: dark mode, reduced motion, DPI, desktop environment.
+//! OS detection: dark mode, reduced motion, accessibility preferences, icon
+//! theme and set, desktop environment.
 
 use arc_swap::ArcSwapOption;
 use std::sync::Arc;
+
+mod icon_theme;
+
+pub(crate) use icon_theme::IconThemeFailure;
+pub use icon_theme::{detect_icon_theme, system_icon_set, system_icon_theme};
 
 /// Timeout for subprocess commands (gsettings, xrdb, xrandr).
 ///
@@ -143,8 +149,8 @@ pub fn system_is_dark() -> bool {
 
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
 /// [`prefers_reduced_motion()`], [`accessibility_preferences()`], or
-/// [`system_icon_theme()`](crate::theme::system_icon_theme) re-queries the OS; a
-/// cached failure to detect the icon theme is cleared too.
+/// [`system_icon_theme()`] re-queries the OS; a cached failure to detect the
+/// icon theme is cleared too.
 ///
 /// Call this when you detect that the user has changed system settings (e.g.,
 /// dark mode toggle, icon theme switch, accessibility preferences).
@@ -772,7 +778,7 @@ pub struct DetectionContext {
     is_dark: ArcSwapOption<bool>,
     reduced_motion: ArcSwapOption<bool>,
     reader_accessibility: ArcSwapOption<crate::AccessibilityPreferences>,
-    icon_theme: ArcSwapOption<Result<String, crate::model::icons::IconThemeFailure>>,
+    icon_theme: ArcSwapOption<Result<String, IconThemeFailure>>,
     #[cfg(target_os = "linux")]
     linux_desktop: ArcSwapOption<LinuxDesktop>,
 }
@@ -872,8 +878,8 @@ impl DetectionContext {
     ///
     /// # Errors
     ///
-    /// As [`system_icon_theme()`](crate::theme::system_icon_theme): no
-    /// theme stands in for one that could not be detected.
+    /// As [`system_icon_theme()`]: no theme stands in for one that could
+    /// not be detected.
     pub fn icon_theme(&self) -> crate::Result<String> {
         self.icon_theme_with(detect_icon_theme_inner)
     }
@@ -882,7 +888,7 @@ impl DetectionContext {
     /// nothing is cached.
     fn icon_theme_with(
         &self,
-        detect: impl FnOnce() -> Result<String, crate::model::icons::IconThemeFailure>,
+        detect: impl FnOnce() -> Result<String, IconThemeFailure>,
     ) -> crate::Result<String> {
         let outcome = match self.icon_theme.load_full() {
             Some(cached) => cached,
@@ -965,8 +971,8 @@ pub fn system() -> &'static DetectionContext {
 ///
 /// On Linux, dispatches by desktop environment. On macOS/iOS/Windows,
 /// returns the compile-time constant; elsewhere, the platform's failure.
-fn detect_icon_theme_inner() -> Result<String, crate::model::icons::IconThemeFailure> {
-    crate::model::icons::detect_icon_theme_outcome()
+fn detect_icon_theme_inner() -> Result<String, IconThemeFailure> {
+    icon_theme::detect_icon_theme_outcome()
 }
 
 // === Crate-internal accessors ===
@@ -1082,10 +1088,8 @@ mod detection_context_tests {
         let _ = ctx.icon_theme();
     }
 
-    fn undetected() -> Result<String, crate::model::icons::IconThemeFailure> {
-        Err(crate::model::icons::IconThemeFailure::for_tests(
-            "the test's failing detection",
-        ))
+    fn undetected() -> Result<String, IconThemeFailure> {
+        Err(IconThemeFailure::for_tests("the test's failing detection"))
     }
 
     #[test]

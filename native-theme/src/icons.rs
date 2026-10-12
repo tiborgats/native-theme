@@ -6,8 +6,12 @@ use std::fmt;
 use std::borrow::Cow;
 
 #[allow(unused_imports)]
-use crate::model::icons::{icon_name, system_icon_set, system_icon_theme};
-use crate::model::{AnimatedIcon, IconData, IconProvider, IconRole, IconSet};
+use crate::detect::{system_icon_set, system_icon_theme};
+use crate::model::IconSet;
+pub use crate::model::{
+    AnimatedIcon, EmptyFrameListError, FrameList, FramesData, IconData, IconProvider, IconRole,
+    RgbaData, TransformAnimation, TransformData, icon_name,
+};
 #[allow(unused_imports)]
 use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 
@@ -35,7 +39,7 @@ pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
 ///
 /// ```
 /// use native_theme::icons::IconId;
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::IconRole;
 ///
 /// // All of these work via Into<IconId>:
 /// let _: IconId = IconRole::ActionSave.into();
@@ -116,7 +120,7 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 /// # #[cfg(all(target_os = "linux", feature = "system-icons"))]
 /// # {
 /// use native_theme::icons::FreedesktopLoader;
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::IconRole;
 ///
 /// // By role, system theme:
 /// let _icon = FreedesktopLoader::new(IconRole::ActionCopy).load();
@@ -190,7 +194,7 @@ impl<'a> FreedesktopLoader<'a> {
     /// as none stands in for the undetected one: a role or a name gives
     /// `None`, and a custom [`IconProvider`] gives only its own freedesktop
     /// SVG ([`IconProvider::icon_svg`]), which depends on no theme, where it
-    /// has one. [`system_icon_theme()`](crate::theme::system_icon_theme)
+    /// has one. [`system_icon_theme()`](crate::detect::system_icon_theme)
     /// gives the reason.
     ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
@@ -789,9 +793,9 @@ pub enum IconSetChoice {
 
     /// Use the OS-configured icon theme.
     ///
-    /// Resolved at load time via [`system_icon_set()`](crate::model::icons::system_icon_set).
+    /// Resolved at load time via [`system_icon_set()`](crate::detect::system_icon_set).
     /// The display label ("system (breeze-dark)") is computed dynamically
-    /// from [`system_icon_theme()`](crate::model::icons::system_icon_theme),
+    /// from [`system_icon_theme()`](crate::detect::system_icon_theme),
     /// so it tracks runtime OS theme changes. Where detection fails the
     /// label gives the reason, `system (unavailable: <reason>)`, and the
     /// freedesktop loaders search no theme for this choice.

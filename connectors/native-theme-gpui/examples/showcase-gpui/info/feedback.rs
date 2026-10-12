@@ -223,7 +223,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:415",
+                "native-theme-gpui/widgets/spinner.rs:417",
             ))
         } else {
             info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
@@ -237,7 +237,7 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:89"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:91"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {

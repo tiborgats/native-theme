@@ -1,7 +1,7 @@
 //! Build-time code generation for native-theme custom icon roles.
 //!
 //! This crate reads TOML icon definitions at build time and generates a Rust
-//! enum that implements `native_theme::theme::IconProvider`. The generated
+//! enum that implements `native_theme::icons::IconProvider`. The generated
 //! enum maps each icon role to platform-specific identifiers (SF Symbols,
 //! Segoe Fluent, freedesktop, Material, Lucide) and optionally embeds bundled
 //! SVG data via `include_bytes!`.
@@ -2293,7 +2293,7 @@ bundled-themes = ["material"]
         assert!(
             result
                 .code
-                .contains("impl my_crate::native_theme::theme::IconProvider"),
+                .contains("impl my_crate::native_theme::icons::IconProvider"),
             "should use custom crate path in impl. code:\n{}",
             result.code
         );

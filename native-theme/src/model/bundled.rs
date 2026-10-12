@@ -26,7 +26,7 @@ use super::icons::{IconRole, IconSet};
 ///
 /// ```
 /// use native_theme::icons::SfSymbolsLoader;
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::IconRole;
 ///
 /// // SfSymbols is not a bundled set on non-macOS targets; the loader returns None.
 /// let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();

@@ -82,14 +82,14 @@ fn system_readers() {
 #[ignore = "timing probe; run with --ignored --nocapture"]
 fn bundled_icons() {
     let all = median(11, || {
-        native_theme::theme::IconRole::ALL
+        native_theme::icons::IconRole::ALL
             .iter()
             .filter_map(|role| native_theme::icons::MaterialLoader::new(*role).load())
             .count()
     });
     println!(
         "timing material, all {} roles: {all:?}",
-        native_theme::theme::IconRole::ALL.len()
+        native_theme::icons::IconRole::ALL.len()
     );
 }
 
@@ -99,7 +99,7 @@ fn bundled_icons() {
 fn freedesktop_icons() {
     for theme in ["breeze", "breeze-dark", "Adwaita"] {
         let start = Instant::now();
-        let cold = native_theme::theme::IconRole::ALL
+        let cold = native_theme::icons::IconRole::ALL
             .iter()
             .filter_map(|role| {
                 native_theme::icons::FreedesktopLoader::new(*role)
@@ -109,7 +109,7 @@ fn freedesktop_icons() {
             .count();
         let cold_time = start.elapsed();
         let warm = median(11, || {
-            native_theme::theme::IconRole::ALL
+            native_theme::icons::IconRole::ALL
                 .iter()
                 .filter_map(|role| {
                     native_theme::icons::FreedesktopLoader::new(*role)

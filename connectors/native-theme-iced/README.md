@@ -456,8 +456,7 @@ spinner.view(start.elapsed(), prefs.reduce_motion)
 To play an indicator by hand:
 
 ```rust,ignore
-use native_theme::theme::AnimatedIcon;
-use native_theme::icons::MaterialLoader;
+use native_theme::icons::{AnimatedIcon, MaterialLoader};
 use native_theme::detect::prefers_reduced_motion;
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
 

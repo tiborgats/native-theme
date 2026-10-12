@@ -7,7 +7,8 @@
 
 use egui::Button;
 use egui::widget_style::{Classes, WidgetState};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::IconRole;
+use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
     Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, text_area_frame,

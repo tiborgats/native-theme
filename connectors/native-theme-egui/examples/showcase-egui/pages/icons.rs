@@ -4,8 +4,8 @@
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
 
-use native_theme::icons::FreedesktopLoader;
-use native_theme::theme::{IconRole, IconSet, TransformAnimation};
+use native_theme::icons::{FreedesktopLoader, IconRole, TransformAnimation};
+use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
 use native_theme_egui::{ThemeAtlas, border_color, border_radius};
 
@@ -198,7 +198,7 @@ fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
     }
     match icon_theme {
         Some(theme) => format!("freedesktop ({theme})"),
-        None => match native_theme::theme::system_icon_theme() {
+        None => match native_theme::detect::system_icon_theme() {
             Ok(theme) => format!("freedesktop ({theme})"),
             Err(error) => format!("freedesktop (unavailable: {error})"),
         },

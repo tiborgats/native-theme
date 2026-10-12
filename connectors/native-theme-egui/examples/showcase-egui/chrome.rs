@@ -1,7 +1,7 @@
 //! The chrome: menu bar, toolbar, status bar, side panel, page tabs, overlays (spec §10.4).
 
-use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::{IconRole, IconSetChoice, default_icon_choice};
+use native_theme::theme::IconSet;
 use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,

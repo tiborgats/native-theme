@@ -87,7 +87,7 @@ fn happy_path_has_icon_provider_impl() {
     assert!(
         output
             .code
-            .contains("impl native_theme::theme::IconProvider for SampleIcon"),
+            .contains("impl native_theme::icons::IconProvider for SampleIcon"),
         "should have IconProvider impl"
     );
 }

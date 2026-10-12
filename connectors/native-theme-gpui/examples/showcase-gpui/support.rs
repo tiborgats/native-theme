@@ -18,13 +18,15 @@ use gpui_component::{
 
 #[cfg(target_os = "linux")]
 use native_theme::detect::parse_linux_desktop;
-use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, load_icon,
-};
-use native_theme::theme::{IconData, IconRole, IconSet};
 #[cfg(target_os = "linux")]
-use native_theme::theme::{icon_name as native_icon_name, system_icon_theme};
+use native_theme::detect::system_icon_theme;
+#[cfg(target_os = "linux")]
+use native_theme::icons::icon_name as native_icon_name;
+use native_theme::icons::{
+    FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
+    SegoeIconsLoader, SfSymbolsLoader, load_icon,
+};
+use native_theme::theme::IconSet;
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};

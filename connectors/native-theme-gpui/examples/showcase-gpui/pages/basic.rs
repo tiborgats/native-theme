@@ -17,7 +17,7 @@ use gpui::{
 };
 use gpui_component::{h_flex, v_flex};
 
-use native_theme::theme::IconRole;
+use native_theme::icons::IconRole;
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;

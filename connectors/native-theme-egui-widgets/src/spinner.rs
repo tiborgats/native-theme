@@ -7,8 +7,10 @@ use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui;
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::icons::{self, IconKey};
-use native_theme_egui::native_theme::icons::{FreedesktopLoader, load_icon_indicator};
-use native_theme_egui::native_theme::theme::{AnimatedIcon, IconSet};
+use native_theme_egui::native_theme::icons::{
+    AnimatedIcon, FreedesktopLoader, load_icon_indicator,
+};
+use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{Role, ThemeAtlas};
 
 use crate::scope;

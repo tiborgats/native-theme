@@ -1,12 +1,14 @@
 //! Icon conversion helpers for iced.
 //!
-//! Converts [`native_theme::theme::IconData`] variants into iced-compatible handles.
+//! Converts [`native_theme::icons::IconData`] variants into iced-compatible handles.
 //! Since iced separates raster images (`iced::widget::Image`) from SVG
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
-use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
+use native_theme::icons::{
+    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, SegoeIconsLoader, SfSymbolsLoader,
+    load_icon,
+};
 
 /// Converted animation frames with timing metadata.
 ///
@@ -190,7 +192,7 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// Returns a [`Radians`](iced_core::Radians) value representing the current
 /// rotation based on `elapsed` time and `duration_ms` (the full rotation
-/// period from [`native_theme::theme::TransformAnimation::Spin`]).
+/// period from [`native_theme::icons::TransformAnimation::Spin`]).
 ///
 /// The angle wraps around via modulo, so values of `elapsed` greater than
 /// `duration_ms` cycle correctly.
@@ -368,7 +370,7 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::theme::IconData;
+    use native_theme::icons::IconData;
 
     #[test]
     fn to_image_handle_with_rgba_returns_some() {
@@ -436,7 +438,7 @@ mod tests {
     #[derive(Debug)]
     struct TestSvgProvider;
 
-    impl native_theme::theme::IconProvider for TestSvgProvider {
+    impl native_theme::icons::IconProvider for TestSvgProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -453,7 +455,7 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::theme::IconProvider for EmptyProvider {
+    impl native_theme::icons::IconProvider for EmptyProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -516,7 +518,7 @@ mod tests {
 
     #[test]
     fn custom_icon_helpers_accept_dyn_provider() {
-        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestSvgProvider);
+        let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestSvgProvider);
         let result =
             custom_icon_to_svg_handle(&*boxed, native_theme::theme::IconSet::Material, None);
         assert!(result.is_some());
@@ -559,7 +561,7 @@ mod tests {
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::transform(
             IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
-            native_theme::theme::TransformAnimation::Spin {
+            native_theme::icons::TransformAnimation::Spin {
                 duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
             },
         );

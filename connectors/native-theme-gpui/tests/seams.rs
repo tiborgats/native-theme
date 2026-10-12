@@ -256,7 +256,7 @@ mod first_draw {
         Context, ImageSource, InteractiveElement as _, IntoElement, ParentElement as _, Render,
         Styled as _, TestAppContext, Window, div, px,
     };
-    use native_theme::theme::{AnimatedIcon, IconData};
+    use native_theme::icons::{AnimatedIcon, IconData};
     use native_theme_gpui::icons;
 
     /// The size one animation frame is rasterised at here; a size this file names,

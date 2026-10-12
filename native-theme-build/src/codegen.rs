@@ -135,7 +135,7 @@ pub(crate) fn generate_code(
     // IconProvider impl
     let _ = writeln!(
         out,
-        "impl {crate_path}::theme::IconProvider for {enum_name} {{"
+        "impl {crate_path}::icons::IconProvider for {enum_name} {{"
     );
 
     // icon_name()
@@ -596,7 +596,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn generated_code_has_icon_provider_impl() {
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        assert!(output.contains("impl native_theme::theme::IconProvider for AppIcon"));
+        assert!(output.contains("impl native_theme::icons::IconProvider for AppIcon"));
     }
 
     #[test]
@@ -1014,7 +1014,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("impl my_crate::theme::IconProvider for AppIcon"),
+            output.contains("impl my_crate::icons::IconProvider for AppIcon"),
             "should use custom crate path in impl. output:\n{output}"
         );
         assert!(
@@ -1125,7 +1125,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("native_theme::theme::IconProvider"),
+            output.contains("native_theme::icons::IconProvider"),
             "default crate path should be 'native_theme'"
         );
     }

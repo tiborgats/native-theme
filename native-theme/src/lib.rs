@@ -77,9 +77,7 @@
 //!
 //! - The crate root: [`Theme`], [`ColorMode`], [`SystemTheme`],
 //!   [`ResolvedTheme`], [`Resolved`], [`ResolutionContext`],
-//!   [`AccessibilityPreferences`], [`Rgba`], [`Error`], and the icon-set
-//!   choice ([`IconSetChoice`], [`default_icon_choice`],
-//!   [`list_freedesktop_themes`]).
+//!   [`AccessibilityPreferences`], [`Rgba`] and [`Error`].
 //! - [`prelude`]: the ten most-used items, for a glob import.
 //! - [`theme`]: the data model, the sparse types and their resolved
 //!   counterparts, widget by widget.
@@ -87,9 +85,10 @@
 //!   bundled preset that [`Theme::list_presets`] returns; [`Theme::preset`]
 //!   loads one.
 //! - [`resolve`]: the resolution-time inputs.
-//! - [`detect`]: OS detection, such as dark mode, reduced motion and the
-//!   desktop environment.
-//! - [`icons`]: the per-set icon loaders.
+//! - [`detect`]: OS detection: dark mode, reduced motion, accessibility
+//!   preferences, icon theme and set, desktop environment.
+//! - [`icons`]: the per-set icon loaders, the icon data types and the
+//!   icon-set choice.
 //! - [`fonts`]: font face matching; the platform's own typeface with the
 //!   `system-fonts` feature.
 //! - [`pipeline`]: the running platform's preset and a diagnosis of its
@@ -97,8 +96,6 @@
 //! - [`error`] and [`color`]: the error and colour types.
 //! - `watch` (the `watch` feature): OS theme-change notifications.
 //! - `rasterize` (the `svg-rasterize` feature): SVG icons to RGBA.
-//! - The platform modules, compiled on their platform with their feature:
-//!   `kde`, `gnome`, `freedesktop`, `macos`, `sficons`, `windows`, `winicons`.
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
@@ -173,7 +170,8 @@ macro_rules! impl_merge {
 
 /// Color types and sRGB utilities.
 pub mod color;
-/// OS detection: dark mode, reduced motion, DPI, desktop environment.
+/// OS detection: dark mode, reduced motion, accessibility preferences, icon
+/// theme and set, desktop environment.
 pub mod detect;
 /// Error types for theme operations.
 pub mod error;
@@ -235,17 +233,13 @@ pub mod prelude;
 /// Core types: [`Theme`], [`ThemeMode`],
 /// [`ResolvedTheme`], [`ResolvedDefaults`].
 pub mod theme {
-    pub use crate::model::icons::detect_icon_theme;
     pub use crate::model::widgets::*;
     pub use crate::model::{
-        AnimatedIcon, ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder,
-        EmptyFrameListError, FontSize, FontSpec, FontStyle, FrameList, FramesData, IconData,
-        IconProvider, IconRole, IconSet, IconSizes, Resolved, ResolvedDefaults,
-        ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
-        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder, RgbaData,
-        TabIndicatorSide, TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode,
-        TransformAnimation, TransformData, WidgetBorderSpec, icon_name, intern_font_family,
-        system_icon_set, system_icon_theme,
+        ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder, FontSize, FontSpec, FontStyle,
+        IconSet, IconSizes, Resolved, ResolvedDefaults, ResolvedDefaultsBorder, ResolvedFontSpec,
+        ResolvedIconSizes, ResolvedPadding, ResolvedTextScale, ResolvedTextScaleEntry,
+        ResolvedTheme, ResolvedWidgetBorder, TabIndicatorSide, TextScale, TextScaleEntry, Theme,
+        ThemeDefaults, ThemeMode, WidgetBorderSpec, intern_font_family,
     };
     pub use crate::presets::PresetInfo;
 }
@@ -254,11 +248,8 @@ pub mod theme {
 ///
 /// Requires the `system-icons` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
-pub mod freedesktop;
+pub(crate) mod freedesktop;
 /// macOS platform helpers.
-#[cfg(target_os = "macos")]
-pub mod macos;
-#[cfg(not(target_os = "macos"))]
 pub(crate) mod macos;
 /// SVG-to-RGBA rasterization utilities.
 ///
@@ -269,11 +260,11 @@ pub mod rasterize;
 ///
 /// Requires the `system-icons` feature, and macOS.
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
-pub mod sficons;
+pub(crate) mod sficons;
 /// Windows platform theme reader.
 #[cfg(target_os = "windows")]
 #[cfg_attr(not(feature = "windows"), allow(dead_code))]
-pub mod windows;
+pub(crate) mod windows;
 #[cfg(not(target_os = "windows"))]
 #[allow(dead_code, unused_variables)]
 pub(crate) mod windows;
@@ -281,7 +272,7 @@ pub(crate) mod windows;
 ///
 /// Requires the `system-icons` feature, and Windows.
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
-pub mod winicons;
+pub(crate) mod winicons;
 #[cfg(all(not(target_os = "windows"), feature = "system-icons"))]
 #[allow(dead_code, unused_imports)]
 pub(crate) mod winicons;
@@ -304,6 +295,8 @@ pub(crate) use detect::LinuxDesktop;
 #[allow(unused_imports)]
 pub(crate) use detect::detect_linux_desktop;
 #[allow(unused_imports)]
+pub(crate) use detect::{detect_icon_theme, system_icon_set, system_icon_theme};
+#[allow(unused_imports)]
 pub(crate) use detect::{
     detect_is_dark, detect_reduced_motion, invalidate_caches, prefers_reduced_motion,
     system_is_dark,
@@ -316,9 +309,8 @@ pub(crate) use icons::{
     FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeIconsLoader, SfSymbolsLoader,
     is_freedesktop_theme_available, load_icon, load_icon_indicator,
 };
-pub use icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes};
 #[allow(unused_imports)]
-pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
+pub(crate) use model::icons::icon_name;
 #[allow(unused_imports)]
 pub(crate) use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DefaultsBorderSpec,
@@ -589,7 +581,7 @@ pub struct SystemTheme {
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`):
     /// the active variant's, else the theme's, else the detected system
     /// icon theme. `None` where the theme states none and detection fails;
-    /// [`system_icon_theme()`](crate::theme::system_icon_theme) gives the
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
     /// reason.
     ///
     /// # Ownership type

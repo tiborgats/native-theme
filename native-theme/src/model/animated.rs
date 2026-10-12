@@ -35,7 +35,7 @@ impl std::error::Error for EmptyFrameListError {}
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::{FrameList, IconData};
+/// use native_theme::icons::{FrameList, IconData};
 /// use std::borrow::Cow;
 ///
 /// let frames = FrameList::new(vec![
@@ -109,7 +109,7 @@ impl<'de> serde::Deserialize<'de> for FrameList {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::TransformAnimation;
+/// use native_theme::icons::TransformAnimation;
 /// use std::num::NonZeroU32;
 ///
 /// let spin = TransformAnimation::Spin {
@@ -180,7 +180,7 @@ impl TransformData {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
+/// use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation};
 /// use std::borrow::Cow;
 /// use std::num::NonZeroU32;
 ///
@@ -234,7 +234,7 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::theme::{AnimatedIcon, IconData};
+    /// use native_theme::icons::{AnimatedIcon, IconData};
     /// use std::borrow::Cow;
     /// use std::num::NonZeroU32;
     ///
@@ -263,7 +263,7 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
+    /// use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation};
     /// use std::borrow::Cow;
     /// use std::num::NonZeroU32;
     ///
@@ -285,7 +285,7 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
+    /// use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation};
     /// use std::borrow::Cow;
     /// use std::num::NonZeroU32;
     ///

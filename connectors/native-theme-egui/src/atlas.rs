@@ -322,7 +322,7 @@ impl ThemeAtlas {
     /// `system_icon_set()` when the preset states none; on the [`from_system`](crate::from_system) /
     /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path it is `SystemTheme::icon_set`
     /// (`native-theme/src/lib.rs:471`); a [`Builder`] atlas takes [`Builder::icon_set`], else
-    /// `native_theme::theme::system_icon_set()` (`native-theme/src/model/icons.rs:512`) — the
+    /// `native_theme::detect::system_icon_set()` (`native-theme/src/detect/icon_theme.rs:23`) — the
     /// same fallback native-theme applies.
     #[must_use]
     pub fn icon_set(&self) -> IconSet {
@@ -602,7 +602,7 @@ impl<'a> Builder<'a> {
     }
 
     /// The icon set [`ThemeAtlas::icon_set`] reports. Without this call:
-    /// `native_theme::theme::system_icon_set()`. [`from_preset`](crate::from_preset) and [`from_system`](crate::from_system) pass the
+    /// `native_theme::detect::system_icon_set()`. [`from_preset`](crate::from_preset) and [`from_system`](crate::from_system) pass the
     /// theme's own.
     pub fn icon_set(mut self, set: IconSet) -> Self {
         self.icon_set = Some(set);
@@ -698,7 +698,7 @@ impl<'a> Builder<'a> {
             os_mode: self.os_mode,
             icon_set: self
                 .icon_set
-                .unwrap_or_else(native_theme::theme::system_icon_set),
+                .unwrap_or_else(native_theme::detect::system_icon_set),
             icon_theme: [
                 self.icon_theme[0].map(str::to_owned),
                 self.icon_theme[1].map(str::to_owned),

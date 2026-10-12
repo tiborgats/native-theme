@@ -17,10 +17,12 @@ use gpui_base::Progress as BaseProgress;
 use gpui_component::plot::shape::{Arc, ArcData};
 use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
-use native_theme::icons::{FreedesktopLoader, colorize_monochrome_svg, load_icon_indicator};
-use native_theme::theme::{
-    AnimatedIcon, IconData, IconSet, ResolvedTheme, TransformAnimation, system_icon_set,
+use native_theme::detect::system_icon_set;
+use native_theme::icons::{
+    AnimatedIcon, FreedesktopLoader, IconData, TransformAnimation, colorize_monochrome_svg,
+    load_icon_indicator,
 };
+use native_theme::theme::{IconSet, ResolvedTheme};
 
 use super::{color, length, native};
 use crate::icons::{to_image_source, with_spin_animation};
@@ -305,7 +307,7 @@ fn frame(frames: &[ImageSource], ix: usize) -> impl IntoElement {
 /// Which icon set's indicator a spinner draws.
 #[derive(Clone)]
 enum IconChoice {
-    /// `native_theme::theme::system_icon_set()`, its icon theme detected.
+    /// `native_theme::detect::system_icon_set()`, its icon theme detected.
     System,
     /// A set, or none; for a freedesktop set, the icon theme.
     Set(Option<IconSet>, Option<SharedString>),
@@ -335,7 +337,7 @@ enum IconChoice {
 /// motion the first frame stands still. Name the set with
 /// [`icon_set`](Self::icon_set) and, for a freedesktop set,
 /// [`icon_theme`](Self::icon_theme); without them it is
-/// `native_theme::theme::system_icon_set()` with the system's icon theme.
+/// `native_theme::detect::system_icon_set()` with the system's icon theme.
 ///
 /// **An arc for a set without one** (`SfSymbols`, `SegoeIcons`, an icon
 /// feature that is off, or `icon_set(None)`): `spinner.fill_color` at

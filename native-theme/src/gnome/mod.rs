@@ -139,34 +139,36 @@ fn read_gsetting(schema: &str, key: &str) -> Option<String> {
 /// Constructed from ashpd portal reads + gsettings in production,
 /// or directly in tests for deterministic verification.
 /// No ashpd types, no D-Bus access, no gsettings subprocess calls.
-pub struct GnomePortalData {
+pub(crate) struct GnomePortalData {
     /// Whether the user prefers a dark color scheme.
-    pub is_dark: bool,
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) is_dark: bool,
     /// Accent color as (R, G, B) with components in 0.0..=1.0 (XDG portal spec).
     /// None means no accent color set.
-    pub accent_rgb: Option<(f64, f64, f64)>,
+    pub(crate) accent_rgb: Option<(f64, f64, f64)>,
     /// Whether high contrast is requested (from portal Contrast::High).
-    pub high_contrast: bool,
+    pub(crate) high_contrast: bool,
     /// Whether reduced motion is requested. None = not provided by portal.
-    pub reduce_motion: Option<bool>,
+    pub(crate) reduce_motion: Option<bool>,
     /// Primary UI font string in GNOME/Pango format (e.g. "Cantarell 11").
-    pub font_name: Option<String>,
+    pub(crate) font_name: Option<String>,
     /// Monospace font string (e.g. "Source Code Pro 10").
-    pub monospace_font_name: Option<String>,
+    pub(crate) monospace_font_name: Option<String>,
     /// Window titlebar font string.
-    pub titlebar_font: Option<String>,
+    pub(crate) titlebar_font: Option<String>,
     /// Text scaling factor (e.g. 1.0, 1.25).
-    pub text_scaling_factor: Option<f32>,
+    pub(crate) text_scaling_factor: Option<f32>,
     /// Whether overlay scrollbars are enabled. None = not provided.
-    pub overlay_scrolling: Option<bool>,
+    pub(crate) overlay_scrolling: Option<bool>,
     /// Icon theme name (e.g. "Adwaita", "Papirus").
-    pub icon_theme: Option<String>,
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) icon_theme: Option<String>,
     /// High contrast from gsettings fallback (for GNOME < 44).
     /// Only used when `high_contrast` is false (portal didn't report high contrast).
-    pub gsettings_high_contrast: Option<bool>,
+    pub(crate) gsettings_high_contrast: Option<bool>,
     /// Reduced motion from gsettings enable-animations fallback.
     /// Only used when `reduce_motion` is None (portal didn't report).
-    pub gsettings_enable_animations: Option<bool>,
+    pub(crate) gsettings_enable_animations: Option<bool>,
 }
 
 /// Extract AccessibilityPreferences from GNOME portal + gsettings data.
