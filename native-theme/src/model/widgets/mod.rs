@@ -8,8 +8,8 @@ use native_theme_derive::{ThemeFields, ThemeWidget};
 // ── 2.2 Window / Application Chrome ────────────────────────────────────────
 
 /// Window chrome: background, title bar colors, inactive states, geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full_lg", font = "title_bar_font")]
 pub struct WindowTheme {
@@ -34,8 +34,8 @@ pub struct WindowTheme {
 // ── 2.3 Button ──────────────────────────────────────────────────────────────
 
 /// Push button: colors, sizing, spacing, geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ButtonTheme {
@@ -105,8 +105,8 @@ pub struct ButtonTheme {
 
 /// Single-line and multi-line text input fields: everything of a multi-line
 /// field but its padding, which is [`TextAreaTheme`]'s.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct InputTheme {
@@ -158,8 +158,8 @@ pub struct InputTheme {
 /// Multi-line text field: the padding in which it differs from the
 /// single-line field. Everything else a text area shows -- its fill, text,
 /// placeholder, caret, selection, states and font -- is [`InputTheme`]'s.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct TextAreaTheme {
     /// Text area border specification. Its padding sides are the multi-line
@@ -174,8 +174,8 @@ pub struct TextAreaTheme {
 // ── 2.5 Checkbox / Radio Button ────────────────────────────────────────────
 
 /// Checkbox and radio button theme: colors, indicator, label font, border, and interactive states.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct CheckboxTheme {
@@ -249,8 +249,8 @@ pub struct CheckboxTheme {
 // ── 2.6 Menu ────────────────────────────────────────────────────────────────
 
 /// Popup and context menu appearance.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_layer(border_kind = "none")]
 #[theme_inherit(font = "font")]
@@ -295,8 +295,8 @@ pub struct MenuTheme {
 // ── 2.7 Tooltip ─────────────────────────────────────────────────────────────
 
 /// Tooltip popup appearance.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct TooltipTheme {
@@ -318,8 +318,8 @@ pub struct TooltipTheme {
 // ── 2.8 Scrollbar ───────────────────────────────────────────────────────────
 
 /// Scrollbar colors and geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct ScrollbarTheme {
     /// Scrollbar track (gutter) color.
@@ -352,8 +352,8 @@ pub struct ScrollbarTheme {
 // ── 2.9 Slider ──────────────────────────────────────────────────────────────
 
 /// Slider control colors and geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct SliderTheme {
     /// Filled portion of the slider track.
@@ -400,8 +400,8 @@ pub struct SliderTheme {
 // ── 2.10 Progress Bar ───────────────────────────────────────────────────────
 
 /// Progress bar colors and geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full")]
 pub struct ProgressBarTheme {
@@ -427,8 +427,8 @@ pub struct ProgressBarTheme {
 // ── 2.11 Tab Bar ─────────────────────────────────────────────────────────────
 
 /// Tab bar colors and sizing.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_layer(border_kind = "none")]
 #[theme_inherit(font = "font")]
@@ -492,8 +492,8 @@ pub struct TabTheme {
 // ── 2.12 Sidebar ─────────────────────────────────────────────────────────────
 
 /// Sidebar panel background, selection, and hover colors.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_layer(border_kind = "partial")]
 #[theme_inherit(border_kind = "partial", font = "font")]
@@ -521,8 +521,8 @@ pub struct SidebarTheme {
 // ── 2.13 Toolbar ─────────────────────────────────────────────────────────────
 
 /// Toolbar sizing, spacing, and font.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ToolbarTheme {
@@ -556,8 +556,8 @@ pub struct ToolbarTheme {
 // ── 2.14 Status Bar ──────────────────────────────────────────────────────────
 
 /// Status bar font and background.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_layer(border_kind = "partial")]
 #[theme_inherit(border_kind = "partial", font = "font")]
@@ -576,8 +576,8 @@ pub struct StatusBarTheme {
 // ── 2.15 List / Table ────────────────────────────────────────────────────────
 
 /// List and table colors and row geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "item_font")]
 #[theme_inherit(font = "header_font")]
@@ -626,8 +626,8 @@ pub struct ListTheme {
 // ── 2.16 Popover / Dropdown ──────────────────────────────────────────────────
 
 /// Popover / dropdown panel appearance.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full_lg", font = "font")]
 pub struct PopoverTheme {
@@ -644,8 +644,8 @@ pub struct PopoverTheme {
 // ── 2.17 Splitter ────────────────────────────────────────────────────────────
 
 /// Splitter handle width and color.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct SplitterTheme {
     /// Handle width in logical pixels.
@@ -662,8 +662,8 @@ pub struct SplitterTheme {
 // ── 2.18 Separator ───────────────────────────────────────────────────────────
 
 /// Separator line color and width.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct SeparatorTheme {
     /// Separator line color.
@@ -678,8 +678,8 @@ pub struct SeparatorTheme {
 // ── 2.21 Switch / Toggle ─────────────────────────────────────────────────────
 
 /// Toggle switch track, thumb, geometry, and interactive states.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct SwitchTheme {
     /// Track background when the switch is on.
@@ -747,8 +747,8 @@ pub struct SwitchTheme {
 // ── 2.22 Dialog ──────────────────────────────────────────────────────────────
 
 /// Dialog sizing, spacing, button order, fonts, border, and background.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full_lg", font = "title_font")]
 #[theme_inherit(font = "body_font")]
@@ -795,8 +795,8 @@ pub struct DialogTheme {
 // ── 2.23 Spinner / Progress Ring ─────────────────────────────────────────────
 
 /// Spinner / indeterminate progress indicator.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct SpinnerTheme {
     /// Spinner arc fill color.
@@ -818,8 +818,8 @@ pub struct SpinnerTheme {
 // ── 2.24 ComboBox / Dropdown Trigger ─────────────────────────────────────────
 
 /// ComboBox / dropdown trigger sizing.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ComboBoxTheme {
@@ -871,8 +871,8 @@ pub struct ComboBoxTheme {
 // ── 2.25 Segmented Control ───────────────────────────────────────────────────
 
 /// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct SegmentedControlTheme {
@@ -912,8 +912,8 @@ pub struct SegmentedControlTheme {
 // ── 2.26 Card / Container ────────────────────────────────────────────────────
 
 /// Card / container colors and geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_layer(border_kind = "none")]
 pub struct CardTheme {
@@ -928,8 +928,8 @@ pub struct CardTheme {
 // ── 2.27 Expander / Disclosure ───────────────────────────────────────────────
 
 /// Expander / disclosure row geometry.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ExpanderTheme {
@@ -983,8 +983,8 @@ pub struct ExpanderTheme {
 // ── 2.28 Link ────────────────────────────────────────────────────────────────
 
 /// Hyperlink colors and underline setting.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 #[theme_inherit(font = "font")]
 pub struct LinkTheme {
@@ -1019,10 +1019,10 @@ pub struct LinkTheme {
 // in the per-variant WidgetFieldInfo registry (it is top-level, not per-variant),
 // but also derives ThemeFields so lint_toml can look up its fields in the
 // non-widget FieldInfo registry under the key "LayoutTheme".
+#[serde_with::skip_serializing_none]
 #[derive(
     Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget, ThemeFields,
 )]
-#[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(skip_inventory)]
 pub struct LayoutTheme {
@@ -1055,10 +1055,10 @@ mod tests {
 
     // Test widget using derive (validates derive macro works in test context)
     /// Test widget for macro verification.
+    #[serde_with::skip_serializing_none]
     #[derive(
         Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget,
     )]
-    #[serde_with::skip_serializing_none]
     #[serde(default)]
     #[theme_layer(skip_inventory)]
     pub struct TestWidget {
@@ -1629,10 +1629,10 @@ mod tests {
 
     // SC4: Verify derive handles dual optional_nested (font + border)
     /// Test widget with both font and border nested sub-structs.
+    #[serde_with::skip_serializing_none]
     #[derive(
         Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget,
     )]
-    #[serde_with::skip_serializing_none]
     #[serde(default)]
     #[theme_layer(skip_inventory)]
     pub struct DualNestedTestWidget {
