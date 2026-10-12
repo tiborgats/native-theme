@@ -33,9 +33,9 @@ use super::ThemeChangeEvent;
 struct ObserverGuard {
     center: Retained<NSNotificationCenter>,
     token: Retained<ProtocolObject<dyn NSObjectProtocol>>,
-    /// The serial queue the observer's block runs on, held for as long as
-    /// the observer is registered.
-    #[allow(dead_code)] // read only by the tests
+    /// The serial queue the observer's block runs on. The guard owns it: it
+    /// keeps the queue alive while the observer is registered, and its drop
+    /// waits on it.
     queue: Retained<NSOperationQueue>,
 }
 
@@ -56,6 +56,15 @@ impl Drop for ObserverGuard {
             let observer_any: &AnyObject = (*self.token).as_ref();
             self.center.removeObserver(observer_any);
         }
+        // removeObserver does not wait for a block already queued, so wait
+        // for the queue to drain: no callback runs after the drop returns.
+        // A drop from inside the callback runs on the queue itself, where
+        // the wait would deadlock, so it returns without waiting.
+        let on_own_queue = NSOperationQueue::currentQueue()
+            .is_some_and(|current| Retained::as_ptr(&current) == Retained::as_ptr(&self.queue));
+        if !on_own_queue {
+            self.queue.waitUntilAllOperationsAreFinished();
+        }
     }
 }
 
@@ -70,13 +79,13 @@ fn observe(
     queue.setMaxConcurrentOperationCount(1);
 
     // The block may run on any of the queue's threads, so the callback,
-    // which is only `Send`, is shared through a mutex. A poisoned lock (a
-    // callback that panicked) skips the call.
+    // which is only `Send`, is shared through a mutex. `fire` contains a
+    // panic inside the lock, so the lock is never poisoned.
     let callback = Mutex::new(callback);
     let block: RcBlock<dyn Fn(NonNull<NSNotification>)> =
         RcBlock::new(move |_notification: NonNull<NSNotification>| {
             if let Ok(callback) = callback.lock() {
-                callback(ThemeChangeEvent::Changed);
+                super::fire(&*callback);
             }
         });
 
@@ -145,5 +154,28 @@ mod tests {
         unsafe { center.postNotificationName_object(name, None) };
         queue.waitUntilAllOperationsAreFinished();
         assert_eq!(count.load(Ordering::SeqCst), 1);
+    }
+
+    /// A callback that panics does not end the observer: the next
+    /// notification still runs it (M4-33).
+    #[test]
+    fn a_panicking_callback_does_not_stop_the_observer() {
+        let center = NSNotificationCenter::defaultCenter();
+        let name: &NSNotificationName = &NSString::from_str("native-theme.watch.macos.panic");
+        let count = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&count);
+        let guard = observe(center.clone(), name, move |_| {
+            let call = counter.fetch_add(1, Ordering::SeqCst);
+            assert!(call > 0, "the first callback panics");
+        });
+        let queue = guard.queue.clone();
+
+        for _ in 0..2 {
+            // SAFETY: `name` is a valid NSString and no object is attached.
+            unsafe { center.postNotificationName_object(name, None) };
+            queue.waitUntilAllOperationsAreFinished();
+        }
+        assert_eq!(count.load(Ordering::SeqCst), 2);
+        drop(guard);
     }
 }

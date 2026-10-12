@@ -20,27 +20,15 @@
 //! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases
 //! (on macOS only the first, which removes the observer):
 //!
-//! 1. **Platform-specific wakeup** -- if a platform shutdown closure was
-//!    registered (see constructor below), it runs first. This wakes
-//!    the background thread's event loop so it can observe the disconnect.
+//! 1. **Platform-specific wakeup** -- where the backend has one, it runs
+//!    first (GNOME closes its D-Bus connection, Windows posts `WM_QUIT`).
+//!    This wakes the background thread's event loop so it can observe the
+//!    disconnect.
 //! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
 //!    causing the receiver in the background thread to see `Disconnected`
 //!    on its next `recv()` or `try_recv()`.
 //! 3. **Thread join** -- `JoinHandle::join()` blocks until the background
 //!    thread exits, ensuring clean shutdown before the guard is gone.
-//!
-//! # Constructors
-//!
-//! There are two `pub(crate)` constructors:
-//!
-//! - [`ThemeSubscription::new(tx, handle, platform_shutdown)`] -- the optional
-//!   `platform_shutdown` closure wakes the background thread's event loop on
-//!   platforms where dropping the channel sender alone is not sufficient
-//!   (`PostThreadMessageW(WM_QUIT)` on Windows, `Connection::close` on
-//!   GNOME's D-Bus signal iterator). Pass `None` on KDE, where inotify polls
-//!   the channel directly.
-//! - `ThemeSubscription::from_platform_shutdown(platform_shutdown)` -- a
-//!   watcher without a thread (macOS), whose closure removes its observer.
 //!
 //! # Signal-only events
 //!
@@ -115,6 +103,17 @@ pub enum ThemeChangeEvent {
 /// Note: `ThemeSubscription` is `Send` but not `Sync`. The background thread
 /// handle and shutdown channel are not safe to share across threads, but the
 /// guard can be moved to a different thread if needed.
+///
+/// # Dropping
+///
+/// Drop the subscription from another thread than the callback's: `Drop`
+/// joins the watcher thread, and a callback that drops it would join itself.
+/// A callback that is running when the drop starts finishes before the drop
+/// returns, and none runs after it. On macOS, where there is no watcher
+/// thread, dropping removes the observer and waits for a callback already
+/// queued to finish; dropped from inside the callback, it returns without
+/// waiting, and a notification already queued can still run the callback
+/// once.
 ///
 /// # Important
 ///
@@ -206,6 +205,21 @@ impl Drop for ThemeSubscription {
     }
 }
 
+/// Call `callback` with [`ThemeChangeEvent::Changed`], containing a panic:
+/// a callback that panics loses that one event, and the watcher keeps
+/// running.
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
+    all(target_os = "macos", feature = "macos"),
+    all(target_os = "windows", feature = "windows"),
+))]
+fn fire(callback: &impl Fn(ThemeChangeEvent)) {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        callback(ThemeChangeEvent::Changed)
+    }));
+}
+
 /// Start watching for OS theme changes.
 ///
 /// The `callback` is invoked on a **background thread** whenever the OS
@@ -237,6 +251,10 @@ impl Drop for ThemeSubscription {
 /// The callback then runs on a private serial queue, never on the main
 /// thread and never twice at once.
 ///
+/// A callback that panics loses that one event: the panic is contained, and
+/// the watcher keeps running. Drop the returned [`ThemeSubscription`] from
+/// another thread than the callback's (see its "Dropping" section).
+///
 /// On Linux the backend is the one of the desktop the reader is chosen by:
 /// KDE's for KDE (with the `kde` feature), GNOME's for GNOME and Budgie (with
 /// `portal`). An unrecognised `XDG_CURRENT_DESKTOP` counts as the desktop of
@@ -250,12 +268,15 @@ impl Drop for ThemeSubscription {
 /// platform-specific backend is available for the current desktop
 /// environment or platform, and
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
-/// not start: KDE, the `kdeglobals` path has no parent directory to watch;
-/// GNOME and Budgie, the watcher thread could not connect to the session bus;
-/// Windows, the watcher thread did not start or could not subscribe to
-/// `UISettings::ColorValuesChanged`. The GNOME and Windows backends return
-/// only once their thread has connected or started; the macOS backend
-/// registers its observer on the calling thread and does not fail.
+/// not start: KDE, the config directory is unresolved (`$XDG_CONFIG_HOME` is
+/// not an absolute path and `$HOME` is unset or empty) or cannot be watched
+/// (it does not exist, or the inotify limits are reached); GNOME and Budgie,
+/// the watcher thread could not connect to the session bus or subscribe to
+/// the portal's `SettingChanged` signal; Windows, the watcher thread did not
+/// start or could not subscribe to `UISettings::ColorValuesChanged`. The KDE
+/// backend sets up its watch on the calling thread, and the GNOME and
+/// Windows backends return only once their thread is subscribed; the macOS
+/// backend registers its observer on the calling thread and does not fail.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
@@ -442,6 +463,22 @@ mod tests {
         // Drop the watcher -- should signal shutdown and join thread
         drop(watcher);
         // If we get here, the thread was joined successfully (did not hang)
+    }
+
+    /// A panicking callback is contained: `fire` returns, and the next call
+    /// runs the callback again (M4-33).
+    #[test]
+    fn fire_contains_a_panicking_callback() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let calls = AtomicUsize::new(0);
+        let callback = |_| {
+            let call = calls.fetch_add(1, Ordering::SeqCst);
+            assert!(call > 0, "the first call panics");
+        };
+        fire(&callback);
+        fire(&callback);
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
     }
 
     #[test]
