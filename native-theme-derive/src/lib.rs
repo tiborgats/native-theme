@@ -82,8 +82,8 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let validate = gen_validate::gen_validate(opt_name, &fields, &layer);
     let ranges = gen_ranges::gen_ranges(opt_name, &fields, &layer);
     let inherit = gen_inherit::gen_inherit(opt_name, &fields, &layer);
-    let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta);
-    let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta);
+    let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta, &layer);
+    let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta, &layer);
     let inventory = gen_inventory_submit(opt_name, &layer);
 
     Ok(quote::quote! {
@@ -262,4 +262,27 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
         });
         #toml_key
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skip_inventory_skips_inheritance_registrations() {
+        let input: DeriveInput = syn::parse_quote! {
+            #[theme_layer(skip_inventory)]
+            #[theme_inherit(border_kind = "full", font = "font")]
+            struct ProbeTheme {
+                #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
+                border: Option<WidgetBorderSpec>,
+                #[theme(nested, resolved_type = "ResolvedFontSpec")]
+                font: Option<FontSpec>,
+            }
+        };
+        let output = derive_inner(input).expect("should derive").to_string();
+        assert!(output.contains("resolve_border_from_defaults"), "{output}");
+        assert!(output.contains("resolve_font_from_defaults"), "{output}");
+        assert!(!output.contains("inventory"), "{output}");
+    }
 }

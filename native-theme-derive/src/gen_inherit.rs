@@ -10,7 +10,7 @@
 // tests can introspect the post-G6 rule set without hand-maintained lists.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::Ident;
 
 use crate::parse::{BorderInheritanceKind, FieldMeta, InheritMeta, LayerMeta};
@@ -57,7 +57,7 @@ fn gen_uniform_submissions(
 
     let widget_name = widget_name_from_ident(opt_name);
     let submissions = fields.iter().filter_map(|f| {
-        let source = f.inherit_from.as_ref()?;
+        let source = &f.inherit_from.as_ref()?.path;
         let field_str = f.ident.to_string();
         Some(quote! {
             inventory::submit!(crate::resolve::UniformInheritanceInfo {
@@ -78,32 +78,16 @@ fn gen_inherit_stmts(fields: &[FieldMeta]) -> TokenStream {
     for f in fields {
         if let Some(ref source) = f.inherit_from {
             let ident = &f.ident;
-            let accessor = parse_defaults_path(source);
+            let segments = &source.segments;
             stmts.push(quote! {
                 if self.#ident.is_none() {
-                    self.#ident = #accessor;
+                    self.#ident = defaults.#(#segments).*;
                 }
             });
         }
     }
 
     quote! { #(#stmts)* }
-}
-
-/// Convert a dot-separated path like "defaults.border.color" into a token
-/// stream like `defaults.border.color`.
-///
-/// The leading "defaults." is stripped because the method parameter is already
-/// named `defaults`.
-fn parse_defaults_path(path: &str) -> TokenStream {
-    let stripped = path.strip_prefix("defaults.").unwrap_or(path);
-
-    let segments: Vec<Ident> = stripped
-        .split('.')
-        .map(|s| format_ident!("{}", s))
-        .collect();
-
-    quote! { defaults.#(#segments).* }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -140,17 +124,32 @@ fn widget_name_from_ident(opt_name: &Ident) -> String {
 /// no registration). Widgets without border inheritance (menu, tab, card,
 /// scrollbar, slider, splitter, separator, switch, spinner, link) do not get
 /// the method at all; callers in `inheritance.rs` only dispatch on widgets
-/// that declare the attribute.
-pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> TokenStream {
+/// that declare the attribute. The registration is skipped under
+/// `#[theme_layer(skip_inventory)]`, like the widget registry.
+pub(crate) fn gen_border_inherit(
+    opt_name: &Ident,
+    inherit: &InheritMeta,
+    layer: &LayerMeta,
+) -> TokenStream {
     let Some(kind) = inherit.border_kind else {
         return TokenStream::new();
     };
 
-    let widget_name = widget_name_from_ident(opt_name);
-    let kind_str = match kind {
-        BorderInheritanceKind::Full => "full",
-        BorderInheritanceKind::FullLg => "full_lg",
-        BorderInheritanceKind::Partial => "partial",
+    let submission = if layer.skip_inventory {
+        TokenStream::new()
+    } else {
+        let widget_name = widget_name_from_ident(opt_name);
+        let kind_str = match kind {
+            BorderInheritanceKind::Full => "full",
+            BorderInheritanceKind::FullLg => "full_lg",
+            BorderInheritanceKind::Partial => "partial",
+        };
+        quote! {
+            inventory::submit!(crate::resolve::BorderInheritanceInfo {
+                widget_name: #widget_name,
+                kind: #kind_str,
+            });
+        }
     };
 
     // Body: inherit from defaults_border into self.border, filling None sub-fields.
@@ -215,10 +214,7 @@ pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> Tok
             }
         }
 
-        inventory::submit!(crate::resolve::BorderInheritanceInfo {
-            widget_name: #widget_name,
-            kind: #kind_str,
-        });
+        #submission
     }
 }
 
@@ -238,7 +234,8 @@ pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> Tok
 /// If `inherit.font.is_empty()`: returns an empty token stream (no method,
 /// no registration). Widgets without font inheritance (scrollbar, slider,
 /// progress_bar, splitter, separator, switch, spinner, card) do not get
-/// the method at all.
+/// the method at all. The registrations are skipped under
+/// `#[theme_layer(skip_inventory)]`, like the widget registry.
 ///
 /// Note on the link.font.color override: the override `link.font.color =
 /// defaults.link_color` stays hand-written in `resolve_font_inheritance`
@@ -246,12 +243,14 @@ pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> Tok
 /// inherit from `defaults_font.color`; the caller re-writes a color it filled
 /// that way afterwards, and keeps one the theme stated.
 /// See plan 94-01 objective for the scope-boundary rationale.
-pub(crate) fn gen_font_inherit(opt_name: &Ident, inherit: &InheritMeta) -> TokenStream {
+pub(crate) fn gen_font_inherit(
+    opt_name: &Ident,
+    inherit: &InheritMeta,
+    layer: &LayerMeta,
+) -> TokenStream {
     if inherit.font.is_empty() {
         return TokenStream::new();
     }
-
-    let widget_name = widget_name_from_ident(opt_name);
 
     // For each declared font field, emit a block that handles None-or-Some.
     let blocks: Vec<TokenStream> = inherit
@@ -289,9 +288,11 @@ pub(crate) fn gen_font_inherit(opt_name: &Ident, inherit: &InheritMeta) -> Token
     // &'static strs — the registry schema keeps a single struct per row so
     // the "widgets_with_font" TOML entry ("widget.font_field") can be
     // reconstructed by joining the two fields with a dot.
+    let widget_name = widget_name_from_ident(opt_name);
     let submissions: Vec<TokenStream> = inherit
         .font
         .iter()
+        .filter(|_| !layer.skip_inventory)
         .map(|field_ident| {
             let field_str = field_ident.to_string();
             quote! {
