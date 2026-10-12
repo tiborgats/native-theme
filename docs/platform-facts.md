@@ -552,7 +552,7 @@ that only enlarges text.
 **kdeglobals `[General]` section** — `QFont::toString()` format: ✅
 `family,pointSizeF,pixelSize,styleHint,weight,style,underline,strikeOut,fixedPitch,...`
 
-Field 0 = family, field 1 = point size, field 4 = weight. ✅
+Field 0 = family, field 1 = point size, field 4 = weight. ✅ Field 2 = pixel size: `toString` writes `pointSizeF()` then `pixelSize()` ([qfont.cpp:2159-2160](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L2159-L2160)), each -1 when the size was set the other way ([:1041-1050](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L1041-L1050), [:1080-1090](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L1080-L1090)); `fromString` sets the point size when field 1 is positive, then the pixel size when field 2 is positive, which replaces it ([:2252-2257](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L2252-L2257); `setPixelSize` sets the point size to -1, [:1074-1075](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L1074-L1075)). A pixel size is in pixels, at most an unsigned 16-bit integer ([:1052-1054](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L1052-L1054)), not points, so no point-to-pixel DPI conversion applies to it. Field 5 = style, `QFont::Style`: `StyleNormal` 0, `StyleItalic` 1, `StyleOblique` 2 ([qfont.h:77-81](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.h#L77-L81)), written as `(int) style()` ([qfont.cpp:2163](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L2163)) and read back by `setStyle` ([:2263](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L2263)). ✅ Qt 6.11.2 (`ef55f427`)
 Qt6 adds extra fixed fields (capitalization, letterSpacingType, letterSpacing,
 wordSpacing, stretch, styleStrategy, font style, font features, variable axes)
 after field 9. Qt6 6.4–6.10 produces 16 fixed fields + an optional
@@ -561,7 +561,7 @@ styleName and adds features/variableAxes counts, producing a minimum of 19
 fields. Parser should handle variable field counts gracefully.
 
 Weight scale differs between Qt versions:
-- **Qt5**: 0–99 (Normal=50, DemiBold=63, Bold=75, Black=87) ✅ Black (87) is the highest named constant; max accepted value is 99
+- **Qt5**: 0–99 (Normal=50, DemiBold=63, Bold=75, Black=87) ✅ Black (87) is the highest named constant; max accepted value is 99; Qt converts it to the Qt6 scale with `qt_legacyToOpenTypeWeight` when the string has fewer than 16 fields ([qfont.cpp:2259-2262](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L2259-L2262)): the nearest of the Qt5 constants 0, 12, 25, 50, 57, 63, 75, 81, 87 gives 100, 200, 300, 400, 500, 600, 700, 800, 900, the lower constant on a tie (`legacyToOpenTypeMap`, `convertWeights`, [:147-174](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L147-L174), [:196-200](https://github.com/qt/qtbase/blob/v6.11.2/src/gui/text/qfont.cpp#L196-L200)), so Qt5 Black 87 is Qt6 Black 900 ✅ Qt 6.11.2
 - **Qt6**: 1–1000 (Normal=400, DemiBold=600, Bold=700, Black=900) ✅ named constants span 100–900 but range accepts 1–1000
 
 Parser must detect which scale is in use and normalize to CSS 100–900.

@@ -448,11 +448,12 @@ impl Theme {
     ///
     /// Builds its inputs with
     /// [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
-    /// on every call, which reads the environment and configuration files
-    /// and, on Linux, may run `xrdb -query` (and `xrandr` where `Xft.dpi`
-    /// is unset) to detect the font DPI. To resolve several variants or
-    /// themes with one detection, or with inputs of your own, build the
-    /// context once and call
+    /// on every call, which reads the environment and configuration files.
+    /// The font DPI it detects (on Linux by `xrdb -query`, and `xrandr`
+    /// where `Xft.dpi` is unset) is cached after the first call until
+    /// [`invalidate_caches()`](crate::detect::invalidate_caches). To
+    /// resolve several variants or themes with one detection, or with
+    /// inputs of your own, build the context once and call
     /// [`resolve_with`](Self::resolve_with).
     ///
     /// # Errors
