@@ -5,6 +5,7 @@ use std::fmt;
 #[allow(unused_imports)]
 use std::borrow::Cow;
 
+use crate::color::Rgba;
 #[allow(unused_imports)]
 use crate::detect::{system_icon_set, system_icon_theme};
 use crate::model::IconSet;
@@ -27,6 +28,30 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
     allow(dead_code)
 )]
 pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
+
+/// Whether a `size × size` RGBA raster (`size² × 4` bytes) is inside
+/// [`MAX_ICON_DECODE_BYTES`]; a size of 0 is not.
+#[cfg_attr(
+    not(all(
+        any(target_os = "macos", target_os = "windows"),
+        feature = "system-icons"
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn raster_size_in_bound(size: u32) -> bool {
+    let size = u64::from(size);
+    size > 0
+        && size
+            .checked_mul(size)
+            .and_then(|area| area.checked_mul(4))
+            .is_some_and(|bytes| bytes <= MAX_ICON_DECODE_BYTES as u64)
+}
+
+/// The red, green and blue of a loader's foreground colour; the alpha is
+/// dropped, as the loaders draw the glyph's own coverage.
+fn rgb(color: Rgba) -> [u8; 3] {
+    [color.r, color.g, color.b]
+}
 
 /// Identifies what icon to load: a semantic role, a platform-specific name,
 /// or a custom provider.
@@ -129,7 +154,7 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 /// let _icon = FreedesktopLoader::new("edit-copy")
 ///     .theme("Adwaita")
 ///     .size(48)
-///     .color([0, 0, 0])
+///     .color(native_theme::Rgba::rgb(0, 0, 0))
 ///     .load();
 /// # }
 /// ```
@@ -140,7 +165,7 @@ pub struct FreedesktopLoader<'a> {
     #[allow(dead_code)]
     id: IconId<'a>,
     #[allow(dead_code)]
-    size: u16,
+    size: u32,
     #[allow(dead_code)]
     fg_color: Option<[u8; 3]>,
     #[allow(dead_code)]
@@ -158,21 +183,24 @@ impl<'a> FreedesktopLoader<'a> {
         }
     }
 
-    /// Set the requested icon size in pixels (default 24).
-    pub fn size(mut self, size: u16) -> Self {
+    /// Set the requested icon size in pixels (default 24). Sizes above
+    /// 65535 look up the largest directory, as 65535 does.
+    pub fn size(mut self, size: u32) -> Self {
         self.size = size;
         self
     }
 
-    /// Set the foreground color for GTK symbolic icon colorization.
-    pub fn color(mut self, rgb: [u8; 3]) -> Self {
-        self.fg_color = Some(rgb);
+    /// Set the foreground color for GTK symbolic icon colorization; its
+    /// alpha is ignored: the icon keeps its own coverage.
+    pub fn color(mut self, color: Rgba) -> Self {
+        self.fg_color = Some(rgb(color));
         self
     }
 
-    /// Set the foreground color if `Some`, leave default if `None`.
-    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
-        self.fg_color = rgb;
+    /// Set the foreground color if `Some`, leave default if `None`; its
+    /// alpha is ignored, as in [`Self::color`].
+    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+        self.fg_color = color.map(rgb);
         self
     }
 
@@ -290,29 +318,41 @@ pub struct SfSymbolsLoader<'a> {
     #[allow(dead_code)] // read only in the macOS cfg branch of `load`
     id: IconId<'a>,
     #[allow(dead_code)] // read only in the macOS cfg branch of `load`
+    size: Option<u32>,
+    #[allow(dead_code)] // read only in the macOS cfg branch of `load`
     fg_color: Option<[u8; 3]>,
 }
 
 impl<'a> SfSymbolsLoader<'a> {
     /// Construct a new SF Symbols loader for the given icon id. Defaults:
-    /// no fg_color.
+    /// size 24 points, no fg_color.
     pub fn new(id: impl Into<IconId<'a>>) -> Self {
         Self {
             id: id.into(),
+            size: None,
             fg_color: None,
         }
     }
 
-    /// Set the foreground color the monochrome symbol is drawn in; its
-    /// alpha is kept.
-    pub fn color(mut self, rgb: [u8; 3]) -> Self {
-        self.fg_color = Some(rgb);
+    /// Set the symbol's point size (default 24), the size its symbol
+    /// configuration is made with. A size of 0, or one whose `size² × 4`
+    /// bytes exceed the 64 MiB decode bound, loads `None`.
+    pub fn size(mut self, size: u32) -> Self {
+        self.size = Some(size);
         self
     }
 
-    /// Set the foreground color if `Some`, leave default if `None`.
-    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
-        self.fg_color = rgb;
+    /// Set the foreground color the monochrome symbol is drawn in; its
+    /// alpha is ignored: the symbol keeps its own coverage.
+    pub fn color(mut self, color: Rgba) -> Self {
+        self.fg_color = Some(rgb(color));
+        self
+    }
+
+    /// Set the foreground color if `Some`, leave default if `None`; its
+    /// alpha is ignored, as in [`Self::color`].
+    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+        self.fg_color = color.map(rgb);
         self
     }
 
@@ -327,12 +367,15 @@ impl<'a> SfSymbolsLoader<'a> {
             match self.id {
                 IconId::Role(role) => {
                     let name = icon_name(role, IconSet::SfSymbols)?;
-                    crate::sficons::load_sf_icon_by_name(name, self.fg_color)
+                    crate::sficons::load_sf_icon_by_name(name, self.size, self.fg_color)
                 }
-                IconId::Name(n) => crate::sficons::load_sf_icon_by_name(n, self.fg_color),
+                IconId::Name(n) => {
+                    crate::sficons::load_sf_icon_by_name(n, self.size, self.fg_color)
+                }
                 IconId::Custom(p) => {
                     if let Some(n) = p.icon_name(IconSet::SfSymbols)
-                        && let Some(data) = crate::sficons::load_sf_icon_by_name(n, self.fg_color)
+                        && let Some(data) =
+                            crate::sficons::load_sf_icon_by_name(n, self.size, self.fg_color)
                     {
                         return Some(data);
                     }
@@ -356,33 +399,47 @@ impl<'a> SfSymbolsLoader<'a> {
 /// own colours.
 #[derive(Debug)]
 #[must_use]
-pub struct SegoeIconsLoader<'a> {
+pub struct SegoeFluentLoader<'a> {
     #[allow(dead_code)] // read only in the Windows cfg branch of `load`
     id: IconId<'a>,
+    #[allow(dead_code)] // read only in the Windows cfg branch of `load`
+    size: Option<u32>,
     #[allow(dead_code)] // read only in the Windows cfg branch of `load`
     fg_color: Option<[u8; 3]>,
 }
 
-impl<'a> SegoeIconsLoader<'a> {
+impl<'a> SegoeFluentLoader<'a> {
     /// Construct a new Segoe Fluent loader for the given icon id. Defaults:
-    /// no fg_color.
+    /// size 32 pixels, no fg_color.
     pub fn new(id: impl Into<IconId<'a>>) -> Self {
         Self {
             id: id.into(),
+            size: None,
             fg_color: None,
         }
     }
 
-    /// Set the foreground color a monochrome glyph is drawn in; its alpha
-    /// is kept. A full-colour stock icon is unchanged.
-    pub fn color(mut self, rgb: [u8; 3]) -> Self {
-        self.fg_color = Some(rgb);
+    /// Set a glyph's size in pixels (default 32), the em height its font
+    /// is created with. A size of 0, or one whose `size² × 4` bytes exceed
+    /// the 64 MiB decode bound, loads `None` for a glyph. A stock shell icon
+    /// keeps the system's large icon size.
+    pub fn size(mut self, size: u32) -> Self {
+        self.size = Some(size);
         self
     }
 
-    /// Set the foreground color if `Some`, leave default if `None`.
-    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
-        self.fg_color = rgb;
+    /// Set the foreground color a monochrome glyph is drawn in; its alpha
+    /// is ignored: the glyph keeps its own coverage. A full-colour stock
+    /// icon is unchanged.
+    pub fn color(mut self, color: Rgba) -> Self {
+        self.fg_color = Some(rgb(color));
+        self
+    }
+
+    /// Set the foreground color if `Some`, leave default if `None`; its
+    /// alpha is ignored, as in [`Self::color`].
+    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+        self.fg_color = color.map(rgb);
         self
     }
 
@@ -396,18 +453,20 @@ impl<'a> SegoeIconsLoader<'a> {
         {
             match self.id {
                 IconId::Role(role) => {
-                    let name = icon_name(role, IconSet::SegoeIcons)?;
-                    crate::winicons::load_windows_icon_by_name(name, self.fg_color)
+                    let name = icon_name(role, IconSet::SegoeFluent)?;
+                    crate::winicons::load_windows_icon_by_name(name, self.size, self.fg_color)
                 }
-                IconId::Name(n) => crate::winicons::load_windows_icon_by_name(n, self.fg_color),
+                IconId::Name(n) => {
+                    crate::winicons::load_windows_icon_by_name(n, self.size, self.fg_color)
+                }
                 IconId::Custom(p) => {
-                    if let Some(n) = p.icon_name(IconSet::SegoeIcons)
+                    if let Some(n) = p.icon_name(IconSet::SegoeFluent)
                         && let Some(data) =
-                            crate::winicons::load_windows_icon_by_name(n, self.fg_color)
+                            crate::winicons::load_windows_icon_by_name(n, self.size, self.fg_color)
                     {
                         return Some(data);
                     }
-                    p.icon_svg(IconSet::SegoeIcons).map(IconData::Svg)
+                    p.icon_svg(IconSet::SegoeFluent).map(IconData::Svg)
                 }
             }
         }
@@ -556,7 +615,7 @@ pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData
     match set {
         IconSet::Freedesktop => FreedesktopLoader::new(id).load(),
         IconSet::SfSymbols => SfSymbolsLoader::new(id).load(),
-        IconSet::SegoeIcons => SegoeIconsLoader::new(id).load(),
+        IconSet::SegoeFluent => SegoeFluentLoader::new(id).load(),
         IconSet::Material => MaterialLoader::new(id).load(),
         IconSet::Lucide => LucideLoader::new(id).load(),
     }
@@ -564,7 +623,7 @@ pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData
 
 /// Load the animated loading indicator for the given set.
 ///
-/// Returns `None` for sets without an animated spinner (SfSymbols, SegoeIcons).
+/// Returns `None` for sets without an animated spinner (SfSymbols, SegoeFluent).
 /// For a freedesktop spinner from a specific theme, use
 /// [`FreedesktopLoader::load_indicator`] directly.
 ///
@@ -575,7 +634,7 @@ pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon> {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(None),
         IconSet::Material => MaterialLoader::load_indicator(),
         IconSet::Lucide => LucideLoader::load_indicator(),
-        IconSet::SfSymbols | IconSet::SegoeIcons => None,
+        IconSet::SfSymbols | IconSet::SegoeFluent => None,
     }
 }
 
@@ -601,7 +660,7 @@ pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon> {
 /// element when the root tag has another fill. For monochrome icon sets; a
 /// full-colour SVG should not be passed through it.
 #[must_use]
-pub fn colorize_monochrome_svg(svg: &[u8], color: crate::color::Rgba) -> Vec<u8> {
+pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
     let hex = format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b);
 
     let Ok(svg_str) = std::str::from_utf8(svg) else {
@@ -906,7 +965,7 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
     let available = match icon_set {
         IconSet::Material | IconSet::Lucide => true,
         IconSet::Freedesktop => is_freedesktop_theme_available(theme),
-        IconSet::SfSymbols | IconSet::SegoeIcons => true,
+        IconSet::SfSymbols | IconSet::SegoeFluent => true,
     };
     if available {
         IconSetChoice::Default(theme.to_string())
@@ -1181,25 +1240,62 @@ mod load_icon_tests {
     }
 
     #[test]
+    fn freedesktop_loader_stores_the_size_and_colour() {
+        let loader = FreedesktopLoader::new("edit-copy");
+        assert_eq!((loader.size, loader.fg_color), (24, None));
+        let loader = loader.size(70_000).color(Rgba::new(10, 20, 30, 40));
+        assert_eq!(loader.size, 70_000);
+        assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
+        assert_eq!(loader.color_opt(None).fg_color, None);
+    }
+
+    #[test]
+    fn raster_size_in_bound_is_the_decode_bound() {
+        assert!(!raster_size_in_bound(0));
+        assert!(raster_size_in_bound(1));
+        assert!(raster_size_in_bound(4096));
+        assert!(!raster_size_in_bound(4097));
+        assert!(!raster_size_in_bound(u32::MAX));
+    }
+
+    #[test]
     fn sf_symbols_loader_stores_the_colour() {
-        let loader = SfSymbolsLoader::new(IconRole::ActionCopy).color([10, 20, 30]);
-        assert_eq!(loader.fg_color, Some([10, 20, 30]));
+        let loader = SfSymbolsLoader::new(IconRole::ActionCopy).color(Rgba::new(10, 20, 30, 40));
+        assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         let loader = loader.color_opt(None);
         assert_eq!(loader.fg_color, None);
-        let loader = loader.color_opt(Some([40, 50, 60]));
+        let loader = loader.color_opt(Some(Rgba::rgb(40, 50, 60)));
         assert_eq!(loader.fg_color, Some([40, 50, 60]));
         assert_eq!(SfSymbolsLoader::new(IconRole::ActionCopy).fg_color, None);
     }
 
     #[test]
-    fn segoe_icons_loader_stores_the_colour() {
-        let loader = SegoeIconsLoader::new(IconRole::ActionCopy).color([10, 20, 30]);
-        assert_eq!(loader.fg_color, Some([10, 20, 30]));
+    fn sf_symbols_loader_stores_the_size() {
+        assert_eq!(SfSymbolsLoader::new(IconRole::ActionCopy).size, None);
+        assert_eq!(
+            SfSymbolsLoader::new(IconRole::ActionCopy).size(48).size,
+            Some(48)
+        );
+    }
+
+    #[test]
+    fn segoe_fluent_loader_stores_the_colour() {
+        let loader = SegoeFluentLoader::new(IconRole::ActionCopy).color(Rgba::new(10, 20, 30, 40));
+        assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         let loader = loader.color_opt(None);
         assert_eq!(loader.fg_color, None);
-        let loader = loader.color_opt(Some([40, 50, 60]));
+        let loader = loader.color_opt(Some(Rgba::rgb(40, 50, 60)));
         assert_eq!(loader.fg_color, Some([40, 50, 60]));
-        assert_eq!(SegoeIconsLoader::new(IconRole::ActionCopy).fg_color, None);
+        assert_eq!(SegoeFluentLoader::new(IconRole::ActionCopy).fg_color, None);
+    }
+
+    #[test]
+    fn segoe_fluent_loader_stores_the_size() {
+        assert_eq!(SegoeFluentLoader::new(IconRole::ActionCopy).size, None);
+        assert_eq!(
+            SegoeFluentLoader::new(IconRole::ActionCopy).size(48).size,
+            Some(48)
+        );
     }
 
     #[test]
@@ -1474,7 +1570,7 @@ mod icon_loader_tests {
         // system theme having 'document-save' at size 48.
         let _ = FreedesktopLoader::new(IconRole::ActionSave)
             .size(48)
-            .color([0, 0, 0])
+            .color(Rgba::rgb(0, 0, 0))
             .theme("Adwaita")
             .load();
     }
@@ -1495,9 +1591,9 @@ mod icon_loader_tests {
 
     #[test]
     fn load_icon_indicator_free_fn_dispatches() {
-        // SfSymbols and SegoeIcons have no spinner primitive.
+        // SfSymbols and SegoeFluent have no spinner primitive.
         assert!(load_icon_indicator(IconSet::SfSymbols).is_none());
-        assert!(load_icon_indicator(IconSet::SegoeIcons).is_none());
+        assert!(load_icon_indicator(IconSet::SegoeFluent).is_none());
     }
 }
 

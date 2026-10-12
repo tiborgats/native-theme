@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 /// All other modules derive their theme lists from this table.
 pub(crate) const THEME_TABLE: &[(&str, &str)] = &[
     ("sf-symbols", "IconSet::SfSymbols"),
-    ("segoe-fluent", "IconSet::SegoeIcons"),
+    ("segoe-fluent", "IconSet::SegoeFluent"),
     ("freedesktop", "IconSet::Freedesktop"),
     ("material", "IconSet::Material"),
     ("lucide", "IconSet::Lucide"),
@@ -244,7 +244,7 @@ mod tests {
     fn theme_table_covers_all_icon_set_variants() {
         let all_variants: &[native_theme::theme::IconSet] = &[
             native_theme::theme::IconSet::SfSymbols,
-            native_theme::theme::IconSet::SegoeIcons,
+            native_theme::theme::IconSet::SegoeFluent,
             native_theme::theme::IconSet::Freedesktop,
             native_theme::theme::IconSet::Material,
             native_theme::theme::IconSet::Lucide,

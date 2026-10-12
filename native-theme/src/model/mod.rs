@@ -279,7 +279,7 @@ pub struct Theme {
     pub layout: LayoutTheme,
 
     /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
-    /// `SfSymbols`, `SegoeIcons`). Shared across light and dark variants.
+    /// `SfSymbols`, `SegoeFluent`). Shared across light and dark variants.
     /// When `None`, filled during resolution from
     /// [`system_icon_set()`](crate::detect::system_icon_set).
     ///
@@ -1123,6 +1123,21 @@ mod tests {
         assert_eq!(
             base.light.as_ref().unwrap().defaults.accent_color,
             Some(Rgba::rgb(0xff, 0x66, 0x00))
+        );
+    }
+
+    #[test]
+    fn icon_set_segoe_fluent_toml_round_trip() {
+        let theme = Theme::from_toml("name = \"T\"\nicon_set = \"segoe-fluent\"").unwrap();
+        assert_eq!(theme.icon_set, Some(IconSet::SegoeFluent));
+        let toml_text = theme.to_toml().unwrap();
+        assert!(
+            toml_text.contains("icon_set = \"segoe-fluent\""),
+            "serialized name changed: {toml_text}"
+        );
+        assert_eq!(
+            Theme::from_toml(&toml_text).unwrap().icon_set,
+            Some(IconSet::SegoeFluent)
         );
     }
 

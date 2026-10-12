@@ -32,7 +32,7 @@ const SWEEP_DEGREES: f32 = 240.0;
 /// frame per `frame_duration_ms` or turned once per `TransformAnimation::Spin`
 /// period, and still on its first frame under reduced motion.
 ///
-/// **An arc otherwise.** Where the set has none (`SfSymbols`, `SegoeIcons`,
+/// **An arc otherwise.** Where the set has none (`SfSymbols`, `SegoeFluent`,
 /// or its icon feature is off), or a frame is neither SVG nor RGBA, it draws
 /// an arc on a canvas: `spinner.diameter` across its outer edge, in
 /// `spinner.fill_color` at `spinner.stroke_width`, the stroke centred on a
@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn a_set_without_an_indicator_draws_the_arc() -> native_theme::Result<()> {
         let (_, resolved) = crate::from_preset("kde-breeze", false)?;
-        for set in [IconSet::SfSymbols, IconSet::SegoeIcons] {
+        for set in [IconSet::SfSymbols, IconSet::SegoeFluent] {
             assert!(
                 !Spinner::new(&resolved, set, None).is_indicator(),
                 "{set:?}"

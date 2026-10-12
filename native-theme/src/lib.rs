@@ -306,7 +306,7 @@ pub use error::Error;
 pub(crate) use error::{ErrorKind, RangeViolation};
 #[allow(unused_imports)]
 pub(crate) use icons::{
-    FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeIconsLoader, SfSymbolsLoader,
+    FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeFluentLoader, SfSymbolsLoader,
     is_freedesktop_theme_available, load_icon, load_icon_indicator,
 };
 #[allow(unused_imports)]

@@ -7,7 +7,7 @@ use crate::model::IconSet;
 ///
 /// Returns the platform-appropriate icon set at runtime using `cfg!()` macros:
 /// - macOS / iOS: [`IconSet::SfSymbols`]
-/// - Windows: [`IconSet::SegoeIcons`]
+/// - Windows: [`IconSet::SegoeFluent`]
 /// - Linux: [`IconSet::Freedesktop`]
 /// - Other: [`IconSet::Material`] (safe cross-platform fallback)
 ///
@@ -24,7 +24,7 @@ pub fn system_icon_set() -> IconSet {
     if cfg!(any(target_os = "macos", target_os = "ios")) {
         IconSet::SfSymbols
     } else if cfg!(target_os = "windows") {
-        IconSet::SegoeIcons
+        IconSet::SegoeFluent
     } else if cfg!(target_os = "linux") {
         IconSet::Freedesktop
     } else {

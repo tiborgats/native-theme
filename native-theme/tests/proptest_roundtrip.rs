@@ -374,7 +374,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
 fn arb_icon_set() -> impl Strategy<Value = IconSet> {
     prop_oneof![
         Just(IconSet::SfSymbols),
-        Just(IconSet::SegoeIcons),
+        Just(IconSet::SegoeFluent),
         Just(IconSet::Freedesktop),
         Just(IconSet::Material),
         Just(IconSet::Lucide),

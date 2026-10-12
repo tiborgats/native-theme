@@ -68,7 +68,7 @@ pub struct IconKey {
     id: KeyId,
     set: IconSet,
     icon_theme: Option<String>,
-    size: Option<u16>,
+    size: Option<u32>,
     tint: Option<egui::Color32>,
 }
 
@@ -107,19 +107,19 @@ impl IconKey {
     }
 
     /// The requested edge length in logical pixels; freedesktop lookup is size-dependent
-    /// (`native-theme/src/icons.rs:137`). Stored as a private `u16` — the type
-    /// `native_theme::icons::FreedesktopLoader::size` takes (`native-theme/src/icons.rs:137`)
-    /// — computed as `(if points > 0.0 { points.round() } else { 0.0 }) as u16`, which is
+    /// (`native-theme/src/icons.rs:188`). Stored as a private `u32` — the type
+    /// `native_theme::icons::FreedesktopLoader::size` takes (`native-theme/src/icons.rs:188`)
+    /// — computed as `(if points > 0.0 { points.round() } else { 0.0 }) as u32`, which is
     /// total over every `f32`: `NaN`, `-0.0` and every negative fold to the single key `0`,
-    /// and the float-to-int `as` cast saturates at `65535` (§7.1). An integer, not an `f32`,
+    /// and the float-to-int `as` cast saturates at `u32::MAX` (§7.1). An integer, not an `f32`,
     /// is what lets `IconKey` derive `Eq` and `Hash`. Without this call the key has no size,
     /// and [`custom_icon_to_image_source`]'s freedesktop lookup takes `FreedesktopLoader`'s
-    /// own default, 24 (`native-theme/src/icons.rs:126`).
+    /// own default, 24 (`native-theme/src/icons.rs:180`).
     #[must_use]
     pub fn size(mut self, points: f32) -> Self {
         let rounded = if points > 0.0 { points.round() } else { 0.0 };
         // The float-to-int `as` cast saturates and folds NaN to 0 (§7.1).
-        self.size = Some(rounded as u16);
+        self.size = Some(rounded as u32);
         self
     }
 
@@ -397,7 +397,7 @@ pub fn to_image(
 /// Same, for an application-supplied [`IconProvider`]. Loads through native-theme's
 /// custom-provider path for the key's set — `FreedesktopLoader::new(provider)` with the key's
 /// icon theme and size, and `FreedesktopLoader::color` in the colour [`to_image_source`]
-/// uses, for `IconSet::Freedesktop`; `SfSymbolsLoader` and `SegoeIconsLoader` with `color` in
+/// uses, for `IconSet::Freedesktop`; `SfSymbolsLoader` and `SegoeFluentLoader` with `color` in
 /// that colour for the system sets; else `native_theme::icons::load_icon(provider, set)`
 /// (`native-theme/src/icons.rs:529`), each trying `provider.icon_name(set)` then
 /// `icon_svg(set)` — then colours and keys the bytes as [`to_image_source`] does, so the
@@ -421,16 +421,16 @@ pub fn custom_icon_to_image_source(
                 loader = loader.size(size);
             }
             if let Some(c) = load_color(ctx, key) {
-                loader = loader.color([c.r, c.g, c.b]);
+                loader = loader.color(c);
             }
             loader.load()?
         }
         // A system set's monochrome glyphs arrive in the colour they are loaded in (§9.2).
         IconSet::SfSymbols => native_theme::icons::SfSymbolsLoader::new(provider)
-            .color_opt(load_color(ctx, key).map(|c| [c.r, c.g, c.b]))
+            .color_opt(load_color(ctx, key))
             .load()?,
-        IconSet::SegoeIcons => native_theme::icons::SegoeIconsLoader::new(provider)
-            .color_opt(load_color(ctx, key).map(|c| [c.r, c.g, c.b]))
+        IconSet::SegoeFluent => native_theme::icons::SegoeFluentLoader::new(provider)
+            .color_opt(load_color(ctx, key))
             .load()?,
         set => native_theme::icons::load_icon(provider, set)?,
     };
@@ -886,7 +886,7 @@ mod tests {
 
     /// `IconKey::size` is total over every `f32` (§4.10).
     #[test]
-    fn a_size_folds_every_float_to_one_u16() {
+    fn a_size_folds_every_float_to_one_u32() {
         for bad in [f32::NAN, -0.0, -3.0, f32::NEG_INFINITY] {
             assert_eq!(
                 IconKey::name("x", IconSet::Material).size(bad).size,
@@ -901,7 +901,7 @@ mod tests {
             IconKey::name("x", IconSet::Material)
                 .size(f32::INFINITY)
                 .size,
-            Some(u16::MAX)
+            Some(u32::MAX)
         );
         assert_eq!(IconKey::name("x", IconSet::Material).size, None);
     }

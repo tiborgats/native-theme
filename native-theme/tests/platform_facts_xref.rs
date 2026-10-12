@@ -145,7 +145,7 @@ fn windows_11_matches_platform_facts() {
     assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(0, 120, 212)));
 
     // Icon set (on Theme, shared across variants)
-    assert_eq!(theme.icon_set, Some(IconSet::SegoeIcons));
+    assert_eq!(theme.icon_set, Some(IconSet::SegoeFluent));
     // Icon theme (G4: now Theme-level, shared across variants)
     assert_eq!(theme.icon_theme.as_deref(), Some("segoe-fluent"));
     // Per-variant defaults.icon_theme is None (Theme-level value wins via tier 2)

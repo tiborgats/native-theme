@@ -440,9 +440,10 @@ impl TryFrom<RawRgbaData> for RgbaData {
 pub enum IconSet {
     /// Apple SF Symbols (macOS, iOS).
     SfSymbols,
-    /// Microsoft Segoe Fluent Icons (Windows).
-    #[serde(rename = "segoe-fluent")]
-    SegoeIcons,
+    /// Microsoft Segoe Fluent Icons (Windows): the font's glyphs (Segoe MDL2
+    /// Assets on Windows 10, same code points) and the shell's stock icons
+    /// (`SHGetStockIconInfo`, `LoadIconW`).
+    SegoeFluent,
     /// freedesktop Icon Naming Specification (Linux).
     Freedesktop,
     /// Google Material Symbols.
@@ -468,7 +469,7 @@ impl IconSet {
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "sf-symbols" => Some(Self::SfSymbols),
-            "segoe-fluent" => Some(Self::SegoeIcons),
+            "segoe-fluent" => Some(Self::SegoeFluent),
             "freedesktop" => Some(Self::Freedesktop),
             "material" => Some(Self::Material),
             "lucide" => Some(Self::Lucide),
@@ -481,7 +482,7 @@ impl IconSet {
     pub fn name(&self) -> &'static str {
         match self {
             Self::SfSymbols => "sf-symbols",
-            Self::SegoeIcons => "segoe-fluent",
+            Self::SegoeFluent => "segoe-fluent",
             Self::Freedesktop => "freedesktop",
             Self::Material => "material",
             Self::Lucide => "lucide",
@@ -574,7 +575,7 @@ impl IconProvider for IconRole {
 pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
     match set {
         IconSet::SfSymbols => sf_symbols_name(role),
-        IconSet::SegoeIcons => segoe_name(role),
+        IconSet::SegoeFluent => segoe_name(role),
         IconSet::Freedesktop => freedesktop_name(role),
         IconSet::Material => material_name(role),
         IconSet::Lucide => lucide_name(role),
@@ -1178,7 +1179,7 @@ mod tests {
     fn icon_set_from_name_segoe_fluent() {
         assert_eq!(
             IconSet::from_name("segoe-fluent"),
-            Some(IconSet::SegoeIcons)
+            Some(IconSet::SegoeFluent)
         );
     }
 
@@ -1212,7 +1213,7 @@ mod tests {
 
     #[test]
     fn icon_set_name_segoe_fluent() {
-        assert_eq!(IconSet::SegoeIcons.name(), "segoe-fluent");
+        assert_eq!(IconSet::SegoeFluent.name(), "segoe-fluent");
     }
 
     #[test]
@@ -1234,7 +1235,7 @@ mod tests {
     fn icon_set_from_name_name_round_trip() {
         let sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -1291,7 +1292,7 @@ mod tests {
     #[test]
     fn icon_name_segoe_action_copy() {
         assert_eq!(
-            icon_name(IconRole::ActionCopy, IconSet::SegoeIcons),
+            icon_name(IconRole::ActionCopy, IconSet::SegoeFluent),
             Some("Copy")
         );
     }
@@ -1358,14 +1359,14 @@ mod tests {
     #[test]
     fn icon_name_segoe_dialog_success() {
         assert_eq!(
-            icon_name(IconRole::DialogSuccess, IconSet::SegoeIcons),
+            icon_name(IconRole::DialogSuccess, IconSet::SegoeFluent),
             Some("CheckMark")
         );
     }
 
     #[test]
     fn icon_name_segoe_status_busy_is_none() {
-        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SegoeIcons), None);
+        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SegoeFluent), None);
     }
 
     #[test]
@@ -1422,7 +1423,7 @@ mod tests {
             Some("xmark.circle.fill")
         );
         assert_eq!(
-            icon_name(IconRole::DialogError, IconSet::SegoeIcons),
+            icon_name(IconRole::DialogError, IconSet::SegoeFluent),
             Some("SIID_ERROR")
         );
         assert_eq!(
@@ -1446,7 +1447,7 @@ mod tests {
             Some("house")
         );
         assert_eq!(
-            icon_name(IconRole::NavHome, IconSet::SegoeIcons),
+            icon_name(IconRole::NavHome, IconSet::SegoeFluent),
             Some("Home")
         );
         assert_eq!(
@@ -1476,7 +1477,7 @@ mod tests {
         // Segoe: 42 - 1 None (StatusBusy) = 41 Some
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
+            .filter(|r| icon_name(**r, IconSet::SegoeFluent).is_some())
             .count();
         assert_eq!(some_count, 41, "Segoe Icons should have 41 mappings");
     }
@@ -1585,7 +1586,7 @@ mod tests {
         &[
             (IconSet::SfSymbols, IconRole::FolderOpen),
             (IconSet::SfSymbols, IconRole::StatusBusy),
-            (IconSet::SegoeIcons, IconRole::StatusBusy),
+            (IconSet::SegoeFluent, IconRole::StatusBusy),
         ]
     }
 
@@ -1594,7 +1595,7 @@ mod tests {
         let gaps = known_gaps();
         let system_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
         ];
         for &set in &system_sets {
@@ -1653,7 +1654,7 @@ mod tests {
         // Segoe: at least 41 (StatusBusy is None)
         let segoe_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
+            .filter(|r| icon_name(**r, IconSet::SegoeFluent).is_some())
             .count();
         assert!(
             segoe_count >= 41,
@@ -1675,7 +1676,7 @@ mod tests {
     fn icon_name_returns_nonempty_strings() {
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -1700,7 +1701,7 @@ mod tests {
         // from_name(), this test fails.
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -1751,7 +1752,7 @@ mod tests {
     fn icon_set_serde_matches_name() {
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,

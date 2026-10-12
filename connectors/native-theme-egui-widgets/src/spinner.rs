@@ -34,7 +34,7 @@ const MAX_POINTS: u8 = 128;
 /// image loaders it installs (`egui_extras::install_image_loaders`), as for every icon of the
 /// connector.
 ///
-/// **Tier P.** Where the set has none (`SfSymbols`, `SegoeIcons`, or its icon feature is
+/// **Tier P.** Where the set has none (`SfSymbols`, `SegoeFluent`, or its icon feature is
 /// off), it paints an arc, because `egui::Spinner` exposes only `.size()` and `.color()`
 /// (`egui/src/widgets/spinner.rs:25`, `:32`): its stroke is hardcoded
 /// `Stroke::new(3.0, color)` (`:58`) and its radius inset by a literal `- 2.0` (`:45`), so

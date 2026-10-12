@@ -210,7 +210,7 @@ fn native_here(set: IconSet) -> bool {
     match set {
         IconSet::Freedesktop => cfg!(target_os = "linux"),
         IconSet::SfSymbols => cfg!(any(target_os = "macos", target_os = "ios")),
-        IconSet::SegoeIcons => cfg!(target_os = "windows"),
+        IconSet::SegoeFluent => cfg!(target_os = "windows"),
         _ => true,
     }
 }

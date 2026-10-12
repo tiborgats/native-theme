@@ -337,17 +337,26 @@ fn find_icon_with(
 /// Returns `None` if the icon is not found in the theme or if the
 /// decoded file cannot be parsed.
 ///
+/// `size` is clamped to [`lookup_size`]'s bound before the lookup.
+///
 /// **Performance note:** Each call reads the icon file from disk. Callers
 /// that load the same icon repeatedly should cache the returned `IconData`.
 #[must_use]
 pub(crate) fn load_freedesktop_icon_by_name(
     name: &str,
     theme: &str,
-    size: u16,
+    size: u32,
     fg_color: Option<[u8; 3]>,
 ) -> Option<IconData> {
-    let (path, is_symbolic) = find_icon(name, theme, size)?;
+    let (path, is_symbolic) = find_icon(name, theme, lookup_size(size))?;
     load_icon_file(&path, is_symbolic, fg_color)
+}
+
+/// The size freedesktop-icons looks `size` up at: its `with_size` takes a
+/// `u16` (freedesktop-icons-0.4.0 `src/lib.rs:192`), so a larger size looks
+/// up as `u16::MAX`, the largest directory.
+fn lookup_size(size: u32) -> u16 {
+    u16::try_from(size).unwrap_or(u16::MAX)
 }
 
 /// Read and decode an icon file, branching on its extension.
@@ -684,6 +693,14 @@ fn normalize_gtk_symbolic(svg_bytes: Vec<u8>, replacement: &str) -> Vec<u8> {
 mod tests {
     use super::*;
     use crate::{IconRole, IconSet, icon_name};
+
+    #[test]
+    fn lookup_size_clamps_to_u16() {
+        assert_eq!(lookup_size(24), 24);
+        assert_eq!(lookup_size(u32::from(u16::MAX)), u16::MAX);
+        assert_eq!(lookup_size(70_000), u16::MAX);
+        assert_eq!(lookup_size(u32::MAX), u16::MAX);
+    }
 
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]

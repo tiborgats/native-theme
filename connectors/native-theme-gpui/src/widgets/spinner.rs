@@ -339,7 +339,7 @@ enum IconChoice {
 /// [`icon_theme`](Self::icon_theme); without them it is
 /// `native_theme::detect::system_icon_set()` with the system's icon theme.
 ///
-/// **An arc for a set without one** (`SfSymbols`, `SegoeIcons`, an icon
+/// **An arc for a set without one** (`SfSymbols`, `SegoeFluent`, an icon
 /// feature that is off, or `icon_set(None)`): `spinner.fill_color` at
 /// `spinner.stroke_width`, its outer edge the Size's diameter across,
 /// sweeping 240° and turning a turn a second; under reduced motion it stands
@@ -557,7 +557,7 @@ mod tests {
         };
         let black = Rgba::rgb(0, 0, 0);
         assert!(load(&key(IconSet::SfSymbols), black).is_none());
-        assert!(load(&key(IconSet::SegoeIcons), black).is_none());
+        assert!(load(&key(IconSet::SegoeFluent), black).is_none());
         #[cfg(feature = "lucide-icons")]
         assert!(matches!(
             load(&key(IconSet::Lucide), black),

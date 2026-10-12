@@ -325,7 +325,7 @@ accent_color = "#00ff00"
     fn icon_set_native_presets_have_correct_values() {
         use crate::IconSet;
         let cases: &[(&str, IconSet)] = &[
-            ("windows-11", IconSet::SegoeIcons),
+            ("windows-11", IconSet::SegoeFluent),
             ("macos-monterey", IconSet::SfSymbols),
             ("macos-tahoe", IconSet::SfSymbols),
             ("ios-13", IconSet::SfSymbols),

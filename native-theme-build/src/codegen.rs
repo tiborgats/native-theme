@@ -501,7 +501,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn theme_name_maps_segoe_fluent() {
         assert_eq!(
             theme_name_to_icon_set("segoe-fluent"),
-            Some("IconSet::SegoeIcons")
+            Some("IconSet::SegoeFluent")
         );
     }
 

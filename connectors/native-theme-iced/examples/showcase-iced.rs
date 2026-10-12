@@ -52,7 +52,7 @@ use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
-    MaterialLoader, SegoeIconsLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
+    MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
     list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
@@ -1327,12 +1327,12 @@ fn load_all_icons(
     let theme = choice.freedesktop_theme();
     let is_system_set = matches!(
         set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
     );
 
     // Foreground color for GTK symbolic icons (Adwaita, Yaru, etc.), SF Symbols, Segoe glyphs
     let tc = resolved.defaults.text_color;
-    let fg = Some([tc.r, tc.g, tc.b]);
+    let fg = Some(tc);
 
     // For system icon sets, pre-load the Material set so we can detect fallbacks
     let material_icons: Vec<Option<IconData>> = if is_system_set {
@@ -1359,7 +1359,7 @@ fn load_all_icons(
                 IconSet::Material => MaterialLoader::new(role).load(),
                 IconSet::Lucide => LucideLoader::new(role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
+                IconSet::SegoeFluent => SegoeFluentLoader::new(role).color_opt(fg).load(),
                 _ => None,
             };
             let name = native_theme::icons::icon_name(role, set);
@@ -3839,7 +3839,7 @@ fn load_chrome_icons(
     let set = choice.effective_icon_set(theme_icon_set);
     let theme = choice.freedesktop_theme();
     let tc = resolved.defaults.text_color;
-    let fg = Some([tc.r, tc.g, tc.b]);
+    let fg = Some(tc);
     let freedesktop = |loader: FreedesktopLoader<'_>| {
         let loader = loader.color_opt(fg);
         match theme {
@@ -3859,7 +3859,7 @@ fn load_chrome_icons(
         IconSet::Material => MaterialLoader::new(role).load(),
         IconSet::Lucide => LucideLoader::new(role).load(),
         IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
-        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
+        IconSet::SegoeFluent => SegoeFluentLoader::new(role).color_opt(fg).load(),
         _ => None,
     };
     ChromeIcons {
@@ -3874,7 +3874,7 @@ fn load_chrome_icons(
         folder: by_role(IconRole::FolderOpen),
         system: matches!(
             set,
-            IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+            IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
         ),
     }
 }
@@ -15251,7 +15251,7 @@ mod tests {
             };
             let s = &resolved.spinner;
             let fill = to_color(s.fill_color).into_rgba8();
-            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeIcons, None);
+            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeFluent, None);
             assert!(!spinner.is_indicator(), "{preset}: Segoe has no indicator");
             for (n, elapsed) in [0.0, 0.25, 0.5, 1.0, pi, 2.0 * pi, 6.3, 7.0, 3.0 * pi]
                 .into_iter()

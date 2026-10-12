@@ -1,6 +1,7 @@
 //! Demo helpers: each applies one seam and records the instance it drew (spec §10.4).
 
-use native_theme::icons::{FreedesktopLoader, IconRole, SegoeIconsLoader, SfSymbolsLoader};
+use native_theme::Rgba;
+use native_theme::icons::{FreedesktopLoader, IconRole, SegoeFluentLoader, SfSymbolsLoader};
 use native_theme::theme::IconSet;
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
 
@@ -793,10 +794,10 @@ impl PanelSeams {
 /// An icon of `role` from the chosen set and theme at `size` points (§10.4's icon rule, §9.2):
 /// a freedesktop icon is read from `icon_theme` — the chosen theme; the OS's own only when the
 /// choice is `system`, which passes `None` — in the text colour
-/// (`FreedesktopLoader::{new, theme, size, color, load}`, `native-theme/src/icons.rs:127`, `:157`,
-/// `:137`, `:143`, `:177`); an SF Symbol or a Segoe glyph is loaded in the text colour too
-/// (`SfSymbolsLoader::color`, `native-theme/src/icons.rs:283`; `SegoeIconsLoader::color`,
-/// `:353`); a bundled icon is tinted the text colour. `None` where the set or theme lacks it:
+/// (`FreedesktopLoader::{new, theme, size, color, load}`, `native-theme/src/icons.rs:177`, `:210`,
+/// `:188`, `:195`, `:230`); an SF Symbol or a Segoe glyph is loaded in the text colour too
+/// (`SfSymbolsLoader::color`, `native-theme/src/icons.rs:347`; `SegoeFluentLoader::color`,
+/// `:434`); a bundled icon is tinted the text colour. `None` where the set or theme lacks it:
 /// the caller shows it as absent, never from another set.
 pub(crate) fn role_image(
     ui: &egui::Ui,
@@ -812,16 +813,20 @@ pub(crate) fn role_image(
         IconSet::Freedesktop => {
             // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
             let mut loader = FreedesktopLoader::new(role)
-                .size(size.round() as u16)
-                .color([r, g, b]);
+                .size(size.round() as u32)
+                .color(Rgba::rgb(r, g, b));
             if let Some(name) = icon_theme {
                 loader = loader.theme(name);
                 key = key.icon_theme(name);
             }
             loader.load()?
         }
-        IconSet::SfSymbols => SfSymbolsLoader::new(role).color([r, g, b]).load()?,
-        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color([r, g, b]).load()?,
+        IconSet::SfSymbols => SfSymbolsLoader::new(role)
+            .color(Rgba::rgb(r, g, b))
+            .load()?,
+        IconSet::SegoeFluent => SegoeFluentLoader::new(role)
+            .color(Rgba::rgb(r, g, b))
+            .load()?,
         _ => {
             key = key.tint(text);
             native_theme::icons::load_icon(role, set)?
@@ -903,8 +908,8 @@ pub(crate) fn named_image(
     let data = if set == IconSet::Freedesktop {
         // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
         let mut loader = FreedesktopLoader::new(name)
-            .size(size.round() as u16)
-            .color([r, g, b]);
+            .size(size.round() as u32)
+            .color(Rgba::rgb(r, g, b));
         if let Some(theme) = icon_theme {
             loader = loader.theme(theme);
             key = key.icon_theme(theme);

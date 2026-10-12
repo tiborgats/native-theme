@@ -6,7 +6,7 @@
 //! functions for each variant.
 
 use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, SegoeIconsLoader, SfSymbolsLoader,
+    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, SegoeFluentLoader, SfSymbolsLoader,
     load_icon,
 };
 
@@ -67,7 +67,7 @@ pub fn to_svg_handle(
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
 /// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). When `color`
-/// is `Some`, a system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named
+/// is `Some`, a system set's icon (`Freedesktop`, `SfSymbols`, `SegoeFluent`) named
 /// by the provider is loaded in `color`: an SF Symbol or a Segoe glyph arrives as
 /// RGBA in that colour instead of its fixed black or white.
 #[must_use]
@@ -84,7 +84,7 @@ pub fn custom_icon_to_image_handle(
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
 /// icon is RGBA. When `color` is `Some`, colorizes monochrome SVGs, and a
-/// system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named by the
+/// system set's icon (`Freedesktop`, `SfSymbols`, `SegoeFluent`) named by the
 /// provider is loaded in `color`.
 #[must_use]
 pub fn custom_icon_to_svg_handle(
@@ -108,12 +108,13 @@ fn load_custom_via_builder(
     color: Option<[u8; 3]>,
 ) -> Option<IconData> {
     use native_theme::theme::IconSet;
+    let color = color.map(|[r, g, b]| native_theme::Rgba::rgb(r, g, b));
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
         && let Some(data) = match icon_set {
             IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
             IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
+            IconSet::SegoeFluent => SegoeFluentLoader::new(name).color_opt(color).load(),
             set => load_icon(name, set),
         }
     {

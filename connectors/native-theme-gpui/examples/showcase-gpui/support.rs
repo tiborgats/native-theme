@@ -24,7 +24,7 @@ use native_theme::detect::system_icon_theme;
 use native_theme::icons::icon_name as native_icon_name;
 use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
-    SegoeIconsLoader, SfSymbolsLoader, load_icon,
+    SegoeFluentLoader, SfSymbolsLoader, load_icon,
 };
 use native_theme::theme::IconSet;
 #[cfg(target_os = "linux")]
@@ -421,13 +421,13 @@ pub(crate) fn load_all_icons(
     icon_set: IconSet,
     default_theme: Option<&str>,
     cli_override: Option<&str>,
-    fg_color: Option<[u8; 3]>,
+    fg_color: Option<native_theme::Rgba>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
     #[cfg(not(target_os = "linux"))]
     let _ = cli_override;
     let is_system_set = matches!(
         icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
     );
 
     IconRole::ALL
@@ -457,7 +457,7 @@ pub(crate) fn load_all_icons(
                 IconSet::Material => MaterialLoader::new(*role).load(),
                 IconSet::Lucide => LucideLoader::new(*role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
+                IconSet::SegoeFluent => SegoeFluentLoader::new(*role).color_opt(fg_color).load(),
                 _ => None,
             };
             #[cfg(not(target_os = "linux"))]
@@ -472,7 +472,7 @@ pub(crate) fn load_all_icons(
                 IconSet::Material => MaterialLoader::new(*role).load(),
                 IconSet::Lucide => LucideLoader::new(*role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
+                IconSet::SegoeFluent => SegoeFluentLoader::new(*role).color_opt(fg_color).load(),
                 _ => None,
             };
 
@@ -675,7 +675,7 @@ pub(crate) fn load_gpui_icons(
     icon_set: Option<IconSet>,
     default_theme: Option<&str>,
     cli_override: Option<&str>,
-    fg_color: Option<[u8; 3]>,
+    fg_color: Option<native_theme::Rgba>,
 ) -> Vec<IconEntry> {
     let icon_set = match icon_set {
         Some(set) => set,
@@ -695,7 +695,7 @@ pub(crate) fn load_gpui_icons(
     let _ = cli_override;
     let is_system_set = matches!(
         icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
     );
 
     // On Linux with freedesktop, detect DE + theme once for the whole batch.
@@ -749,7 +749,7 @@ pub(crate) fn load_gpui_icons(
                     IconSet::Material => MaterialLoader::new(r).load(),
                     IconSet::Lucide => LucideLoader::new(r).load(),
                     IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
+                    IconSet::SegoeFluent => SegoeFluentLoader::new(r).color_opt(fg_color).load(),
                     _ => None,
                 };
                 #[cfg(not(target_os = "linux"))]
@@ -764,7 +764,7 @@ pub(crate) fn load_gpui_icons(
                     IconSet::Material => MaterialLoader::new(r).load(),
                     IconSet::Lucide => LucideLoader::new(r).load(),
                     IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
+                    IconSet::SegoeFluent => SegoeFluentLoader::new(r).color_opt(fg_color).load(),
                     _ => None,
                 };
                 let source = match &data {

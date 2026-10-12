@@ -484,7 +484,7 @@ fn build_theme(
     crate::ReaderResult {
         output,
         name: "Windows".into(),
-        icon_set: Some(crate::IconSet::SegoeIcons),
+        icon_set: Some(crate::IconSet::SegoeFluent),
         layout: crate::LayoutTheme::default(),
         font_dpi,
         accessibility: acc,

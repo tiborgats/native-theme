@@ -19,7 +19,7 @@ use objc2_foundation::NSString;
 use std::ffi::c_void;
 use std::ptr;
 
-/// Default icon size in pixels (suitable for toolbar/menu icons).
+/// Default icon size in points (suitable for toolbar/menu icons).
 const DEFAULT_ICON_SIZE: u32 = 24;
 
 /// Load an SF Symbol image by name with the given point size.
@@ -92,20 +92,30 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// the built-in [`IconRole`](crate::IconRole) mappings. Use this when you know the
 /// exact SF Symbol name (e.g., from a custom icon mapping).
 ///
-/// The symbol is a monochrome template: with `fg_color` its pixels take that
-/// colour and keep their alpha; without it they are left as drawn.
+/// The symbol is configured at `size` points, [`DEFAULT_ICON_SIZE`] where
+/// it is `None`. It is a monochrome template: with `fg_color` its pixels
+/// take that colour and keep their alpha; without it they are left as drawn.
 ///
-/// Returns `None` if the symbol name doesn't exist on this macOS version.
+/// Returns `None` if the symbol name doesn't exist on this macOS version,
+/// or if `size` is 0 or its `size² × 4` bytes exceed the decode bound
+/// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)).
 ///
 /// # Examples
 ///
 /// ```ignore
-/// let icon = load_sf_icon_by_name("arrow.right", None);
+/// let icon = load_sf_icon_by_name("arrow.right", None, None);
 /// ```
 #[must_use]
-pub(crate) fn load_sf_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Option<IconData> {
-    let size = DEFAULT_ICON_SIZE;
-    let image = load_symbol(name, size as f64)?;
+pub(crate) fn load_sf_icon_by_name(
+    name: &str,
+    size: Option<u32>,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
+    let size = size.unwrap_or(DEFAULT_ICON_SIZE);
+    if !crate::icons::raster_size_in_bound(size) {
+        return None;
+    }
+    let image = load_symbol(name, f64::from(size))?;
     let cg_image = extract_cgimage(&image)?;
     let w = CGImage::width(Some(&cg_image)) as u32;
     let h = CGImage::height(Some(&cg_image)) as u32;
@@ -124,7 +134,7 @@ mod tests {
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the SF Symbols set.
     fn load_role(role: IconRole) -> Option<IconData> {
-        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?, None)
+        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?, None, None)
     }
 
     #[test]
@@ -182,7 +192,7 @@ mod tests {
     #[test]
     fn load_sf_icon_by_name_returns_some() {
         // "doc.on.doc" is the SF Symbol for copy
-        let result = load_sf_icon_by_name("doc.on.doc", None);
+        let result = load_sf_icon_by_name("doc.on.doc", None, None);
         assert!(
             result.is_some(),
             "doc.on.doc should resolve to an SF Symbol"
@@ -191,8 +201,31 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
+    fn load_sf_icon_by_name_size_scales_the_raster() {
+        let small = load_sf_icon_by_name("doc.on.doc", Some(16), None);
+        let large = load_sf_icon_by_name("doc.on.doc", Some(64), None);
+        let (Some(IconData::Rgba(small)), Some(IconData::Rgba(large))) = (small, large) else {
+            panic!("doc.on.doc should load as RGBA at 16 and 64 points");
+        };
+        assert!(
+            large.height() > small.height(),
+            "64 pt ({}) should be taller than 16 pt ({})",
+            large.height(),
+            small.height()
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn load_sf_icon_by_name_size_out_of_bound_returns_none() {
+        assert!(load_sf_icon_by_name("doc.on.doc", Some(0), None).is_none());
+        assert!(load_sf_icon_by_name("doc.on.doc", Some(u32::MAX), None).is_none());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
     fn load_sf_icon_by_name_nonexistent_returns_none() {
-        let result = load_sf_icon_by_name("zzz.nonexistent.symbol", None);
+        let result = load_sf_icon_by_name("zzz.nonexistent.symbol", None, None);
         assert!(result.is_none(), "nonexistent symbol should return None");
     }
 }

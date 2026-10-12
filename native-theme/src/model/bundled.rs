@@ -309,8 +309,8 @@ mod tests {
             "Freedesktop should not be a bundled set"
         );
         assert!(
-            bundled_icon_svg(IconRole::ActionCopy, IconSet::SegoeIcons).is_none(),
-            "SegoeIcons should not be a bundled set"
+            bundled_icon_svg(IconRole::ActionCopy, IconSet::SegoeFluent).is_none(),
+            "SegoeFluent should not be a bundled set"
         );
     }
 
@@ -350,7 +350,7 @@ mod tests {
     fn by_name_non_bundled_sets_return_none() {
         assert!(bundled_icon_by_name("check", IconSet::SfSymbols).is_none());
         assert!(bundled_icon_by_name("check", IconSet::Freedesktop).is_none());
-        assert!(bundled_icon_by_name("check", IconSet::SegoeIcons).is_none());
+        assert!(bundled_icon_by_name("check", IconSet::SegoeFluent).is_none());
     }
 
     #[test]

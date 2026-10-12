@@ -942,17 +942,17 @@ impl Showcase {
             .map(|s| s.to_string());
         let cli_ref = self.icon_theme_override.as_deref();
         let fc = self.original_font.color;
-        let fg_rgb = Some([fc.r, fc.g, fc.b]);
+        let fg_color = Some(fc);
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
             self.loaded_icons =
-                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
+                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_color);
         }
         self.gpui_icons = load_gpui_icons(
             self.icon_set_enum,
             default_theme.as_deref(),
             cli_ref,
-            fg_rgb,
+            fg_color,
         );
         let fg = cx.theme().foreground;
         self.rebuild_icon_caches(fg, window, cx);
@@ -1307,7 +1307,7 @@ impl Showcase {
         let initial_resolved_name = initial_effective_set.name().to_string();
         let installed_themes = list_freedesktop_themes();
         let fc = original_font.color;
-        let fg = Some([fc.r, fc.g, fc.b]);
+        let fg = Some(fc);
         let loaded_icons = load_all_icons(
             initial_effective_set,
             initial_default_theme.as_deref(),

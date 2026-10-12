@@ -38,7 +38,7 @@ use gpui::{
 };
 use gpui_component::IconName;
 use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, IconRole, SegoeIconsLoader,
+    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, IconRole, SegoeFluentLoader,
     SfSymbolsLoader, load_icon,
 };
 use std::sync::Arc;
@@ -1006,8 +1006,8 @@ pub fn into_image_source(
 ///
 /// Loads the provider's icon for `icon_set`, then converts it with
 /// [`to_image_source()`]. A system set's icon (`Freedesktop`, `SfSymbols`,
-/// `SegoeIcons`) named by the provider is loaded in `color` through
-/// [`FreedesktopLoader`], [`SfSymbolsLoader`] or [`SegoeIconsLoader`], since
+/// `SegoeFluent`) named by the provider is loaded in `color` through
+/// [`FreedesktopLoader`], [`SfSymbolsLoader`] or [`SegoeFluentLoader`], since
 /// its monochrome glyphs arrive in the colour they are loaded in; a bundled
 /// set's goes through [`load_icon`].
 ///
@@ -1038,12 +1038,13 @@ fn load_custom_via_builder(
     color: Option<[u8; 3]>,
 ) -> Option<IconData> {
     use native_theme::theme::IconSet;
+    let color = color.map(|[r, g, b]| native_theme::Rgba::rgb(r, g, b));
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
         && let Some(data) = match icon_set {
             IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
             IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
+            IconSet::SegoeFluent => SegoeFluentLoader::new(name).color_opt(color).load(),
             set => load_icon(name, set),
         }
     {

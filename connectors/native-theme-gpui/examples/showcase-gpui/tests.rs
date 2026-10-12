@@ -6547,7 +6547,7 @@ fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
                 effective,
                 this.icon_set_choice.freedesktop_theme(),
                 Some(theme),
-                Some([fc.r, fc.g, fc.b]),
+                Some(fc),
             ),
         )
     });

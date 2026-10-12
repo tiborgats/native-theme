@@ -1,7 +1,7 @@
 // Windows icon loader
 //
 // Resolves Segoe icon names (the names `icon_name` gives each IconRole in
-// IconSet::SegoeIcons) to RGBA pixel data via two pipelines:
+// IconSet::SegoeFluent) to RGBA pixel data via two pipelines:
 // 1. Stock icons via SHGetStockIconInfo (13 SIID_ prefixed roles), and
 //    IDI_QUESTION via LoadIconW -- full-colour
 // 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (27 glyph
@@ -30,8 +30,9 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 #[cfg(target_os = "windows")]
 use windows::core::PCWSTR;
 
-/// Default icon size in pixels for font glyph rendering.
-const DEFAULT_ICON_SIZE: i32 = 32;
+/// Default icon size in pixels for font glyph rendering: the em height the
+/// font is created with.
+const DEFAULT_ICON_SIZE: u32 = 32;
 
 /// Map a Segoe Fluent Icons glyph name to its Unicode PUA codepoint.
 ///
@@ -226,16 +227,22 @@ fn load_idi_icon() -> Option<IconData> {
 
 /// Try to create a font and verify it was actually loaded (not substituted).
 ///
+/// `em_height` is the font's em height in pixels: CreateFontW matches a
+/// negative height against the character (em) height, a positive one
+/// against the cell height (LOGFONTW `lfHeight`,
+/// <https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logfontw>).
+///
 /// GDI silently substitutes a different font if the requested one is not
 /// available. We detect this by comparing GetTextFaceW output against the
 /// requested name.
 #[cfg(target_os = "windows")]
-unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT> {
+unsafe fn try_create_font(hdc: HDC, face_name: &str, em_height: u32) -> Option<HFONT> {
+    let height = i32::try_from(em_height).ok()?.checked_neg()?;
     unsafe {
         let wide_name: Vec<u16> = face_name.encode_utf16().chain(std::iter::once(0)).collect();
 
         let font = CreateFontW(
-            size,
+            height,
             0,
             0,
             0,
@@ -277,7 +284,8 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT>
     }
 }
 
-/// Render a font glyph to RGBA pixels via GetGlyphOutlineW.
+/// Render a font glyph to RGBA pixels via GetGlyphOutlineW, from the font
+/// created at `size` pixels em height.
 ///
 /// Tries Segoe Fluent Icons first (Win11), then Segoe MDL2 Assets (Win10).
 /// Returns None if neither font is available (caller falls back to bundled).
@@ -286,7 +294,10 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT>
 /// (values 0-64), converted to RGBA with scaled alpha and a white
 /// foreground, or `fg_color` where it is given.
 #[cfg(target_os = "windows")]
-fn load_glyph_icon(codepoint: u32, size: i32, fg_color: Option<[u8; 3]>) -> Option<IconData> {
+fn load_glyph_icon(codepoint: u32, size: u32, fg_color: Option<[u8; 3]>) -> Option<IconData> {
+    if !crate::icons::raster_size_in_bound(size) {
+        return None;
+    }
     unsafe {
         let hdc = CreateCompatibleDC(None);
 
@@ -388,13 +399,21 @@ fn parse_hex_codepoint(name: &str) -> Option<u32> {
 /// - `"0xE8BB"` -- hex codepoint for Segoe Fluent Icons glyph
 /// - `"ChromeClose"` -- named Segoe Fluent Icons glyph
 ///
-/// A glyph is drawn in `fg_color` where it is given, white otherwise; the
-/// stock and dialog icons are full-colour and ignore it.
+/// A glyph is drawn at `size` pixels em height, [`DEFAULT_ICON_SIZE`] where
+/// it is `None`, and in `fg_color` where it is given, white otherwise; the
+/// stock and dialog icons are full-colour at the system's large icon size
+/// and ignore both.
 ///
 /// Returns `None` if the name doesn't match any known format or
-/// the icon cannot be loaded on this system.
+/// the icon cannot be loaded on this system, and for a glyph whose `size`
+/// is 0 or whose `size² × 4` bytes exceed the decode bound
+/// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)).
 #[must_use]
-pub(crate) fn load_windows_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Option<IconData> {
+pub(crate) fn load_windows_icon_by_name(
+    name: &str,
+    size: Option<u32>,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
     #[cfg(target_os = "windows")]
     {
         if name.starts_with("SIID_") {
@@ -403,20 +422,21 @@ pub(crate) fn load_windows_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -
         if name == "IDI_QUESTION" {
             return load_idi_icon();
         }
+        let size = size.unwrap_or(DEFAULT_ICON_SIZE);
         // Try hex codepoint (e.g., "0xE8BB")
         if let Some(cp) = parse_hex_codepoint(name) {
-            return load_glyph_icon(cp, DEFAULT_ICON_SIZE, fg_color);
+            return load_glyph_icon(cp, size, fg_color);
         }
         // Try named glyph (e.g., "ChromeClose")
         if let Some(cp) = glyph_codepoint(name) {
-            return load_glyph_icon(cp, DEFAULT_ICON_SIZE, fg_color);
+            return load_glyph_icon(cp, size, fg_color);
         }
         None
     }
 
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (name, fg_color);
+        let _ = (name, size, fg_color);
         None
     }
 }
@@ -430,7 +450,7 @@ mod tests {
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the Segoe set.
     fn load_role(role: IconRole) -> Option<IconData> {
-        load_windows_icon_by_name(icon_name(role, IconSet::SegoeIcons)?, None)
+        load_windows_icon_by_name(icon_name(role, IconSet::SegoeFluent)?, None, None)
     }
 
     // === Platform-independent unit tests ===
@@ -492,7 +512,7 @@ mod tests {
             (IconRole::ActionDelete, "Delete", 0xE74D),
             (IconRole::ActionPrint, "Print", 0xE749),
         ] {
-            assert_eq!(icon_name(role, IconSet::SegoeIcons), Some(name));
+            assert_eq!(icon_name(role, IconSet::SegoeFluent), Some(name));
             assert_eq!(glyph_codepoint(name), Some(codepoint));
         }
     }
@@ -605,7 +625,7 @@ mod tests {
     #[test]
     fn load_by_name_hex_codepoint() {
         // 0xE8C8 is the Copy glyph
-        let result = load_windows_icon_by_name("0xE8C8", None);
+        let result = load_windows_icon_by_name("0xE8C8", None, None);
         assert!(
             result.is_some(),
             "hex codepoint 0xE8C8 should load Copy glyph"
@@ -615,14 +635,37 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn load_by_name_named_glyph() {
-        let result = load_windows_icon_by_name("Copy", None);
+        let result = load_windows_icon_by_name("Copy", None, None);
         assert!(result.is_some(), "named glyph Copy should load");
     }
 
     #[cfg(target_os = "windows")]
     #[test]
+    fn load_by_name_glyph_size_scales_the_raster() {
+        let small = load_windows_icon_by_name("Copy", Some(16), None);
+        let large = load_windows_icon_by_name("Copy", Some(64), None);
+        let (Some(IconData::Rgba(small)), Some(IconData::Rgba(large))) = (small, large) else {
+            panic!("Copy should load as RGBA at 16 and 64 px");
+        };
+        assert!(
+            large.height() > small.height(),
+            "64 px ({}) should be taller than 16 px ({})",
+            large.height(),
+            small.height()
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn load_by_name_glyph_size_out_of_bound_returns_none() {
+        assert!(load_windows_icon_by_name("Copy", Some(0), None).is_none());
+        assert!(load_windows_icon_by_name("Copy", Some(u32::MAX), None).is_none());
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
     fn load_by_name_stock_icon() {
-        let result = load_windows_icon_by_name("SIID_WARNING", None);
+        let result = load_windows_icon_by_name("SIID_WARNING", None, None);
         assert!(result.is_some(), "SIID_WARNING stock icon should load");
     }
 }

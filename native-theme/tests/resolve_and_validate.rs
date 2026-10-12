@@ -365,7 +365,7 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 // G3 (Phase 93-03): the original test asserted that `bundled_icon_svg`
 // (bundled lookup) has no entries for non-bundled sets. With the per-set
 // loaders, the equivalent observable behaviour is that platform-native sets
-// (SfSymbols, SegoeIcons) return None on the wrong OS. Freedesktop is
+// (SfSymbols, SegoeFluent) return None on the wrong OS. Freedesktop is
 // no longer asserted None here because on Linux with `system-icons`
 // FreedesktopLoader intentionally DOES load icons via the filesystem.
 
@@ -384,11 +384,11 @@ fn sf_symbols_returns_none_on_non_macos() {
 #[test]
 #[cfg(not(target_os = "windows"))]
 fn segoe_icons_returns_none_on_non_windows() {
-    use native_theme::icons::SegoeIconsLoader;
+    use native_theme::icons::SegoeFluentLoader;
     for role in IconRole::ALL.iter().copied() {
         assert!(
-            SegoeIconsLoader::new(role).load().is_none(),
-            "SegoeIcons should not load on non-Windows for {role:?}"
+            SegoeFluentLoader::new(role).load().is_none(),
+            "SegoeFluent should not load on non-Windows for {role:?}"
         );
     }
 }
