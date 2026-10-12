@@ -16,50 +16,45 @@ use crate::model::IconSizes;
 ///
 /// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
-/// Icon sizes are NOT populated (requires filesystem access) -- the caller
-/// (`from_kde_content` / `from_kde`) handles that after this returns.
+/// Icon sizes are NOT populated (requires filesystem access).
 #[doc(hidden)]
 pub fn from_kde_content_pure(
     content: &str,
     font_dpi: Option<f32>,
 ) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let mut ini = create_kde_parser();
-    ini.read(content.to_string())
-        .map_err(|e| crate::Error::ReaderFailed {
-            reader: "kde",
-            source: e.into(),
-        })?;
+    read_kconfig(&mut ini, content);
+    let (mode, is_dark, name, accessibility) = read_kde_ini(&ini);
+    let output = crate::ReaderOutput::Single {
+        mode: Box::new(mode),
+        is_dark,
+    };
+    let theme = output.to_theme(&name, None, &crate::LayoutTheme::default());
+    // Font DPI: use provided value, or try extracting forceFontDPI from INI content
+    Ok((
+        theme,
+        font_dpi.or_else(|| parse_force_font_dpi(&ini)),
+        accessibility,
+    ))
+}
 
+/// The variant, its darkness, the scheme name and the accessibility flags
+/// kdeglobals states, without any I/O: per-widget colors, fonts with Qt5/Qt6
+/// weight conversion, the icon theme and Breeze widget sizing constants.
+fn read_kde_ini(
+    ini: &configparser::ini::Ini,
+) -> (
+    crate::ThemeMode,
+    bool,
+    String,
+    crate::AccessibilityPreferences,
+) {
     let mut variant = crate::ThemeMode::default();
 
     // Populate colors, fonts, and widget sizing on the variant
-    colors::populate_colors(&ini, &mut variant);
-    fonts::populate_fonts(&ini, &mut variant);
+    colors::populate_colors(ini, &mut variant);
+    fonts::populate_fonts(ini, &mut variant);
     crate::kde_metrics::populate_widget_sizing(&mut variant);
-
-    // KDE-06: Accessibility flags (pure -- no I/O)
-    // AnimationDurationFactor from [KDE]
-    let reduce_motion = if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
-        && let Ok(value) = anim_str.trim().parse::<f32>()
-    {
-        value == 0.0
-    } else {
-        false
-    };
-
-    let accessibility = crate::AccessibilityPreferences {
-        reduce_motion,
-        ..Default::default()
-    };
-
-    // Font DPI: use provided value, or try extracting forceFontDPI from INI content
-    let resolved_dpi = font_dpi.or_else(|| parse_force_font_dpi(&ini));
-
-    let dark = is_dark_theme(&ini);
-
-    let name = ini
-        .get("General", "ColorScheme")
-        .unwrap_or_else(|| "KDE".to_string());
 
     // KDE-05: Icon theme name from [Icons] Theme (per-variant)
     variant.defaults.icon_theme = ini
@@ -67,79 +62,53 @@ pub fn from_kde_content_pure(
         .filter(|s| !s.is_empty())
         .map(std::borrow::Cow::Owned);
 
-    let theme = if dark {
-        crate::Theme {
-            name: std::borrow::Cow::Owned(name),
-            light: None,
-            dark: Some(variant),
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-            // KDE sets icon_theme per-variant (breeze / breeze-dark) on
-            // variant.defaults.icon_theme; the Theme-level field is left None
-            // so tier 1 (per-variant) always wins.
-            icon_theme: None,
-        }
-    } else {
-        crate::Theme {
-            name: std::borrow::Cow::Owned(name),
-            light: Some(variant),
-            dark: None,
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-            icon_theme: None,
-        }
+    // KDE-06: Accessibility flags (pure -- no I/O)
+    // AnimationDurationFactor from [KDE]
+    let accessibility = crate::AccessibilityPreferences {
+        reduce_motion: ini
+            .get("KDE", "AnimationDurationFactor")
+            .and_then(|value| value.trim().parse::<f32>().ok())
+            == Some(0.0),
+        ..Default::default()
     };
 
-    Ok((theme, resolved_dpi, accessibility))
+    let name = ini
+        .get("General", "ColorScheme")
+        .unwrap_or_else(|| "KDE".to_string());
+
+    (variant, is_dark_theme(ini), name, accessibility)
 }
 
-/// Parse a KDE kdeglobals content string into a ReaderResult.
-///
-/// Builds a sparse ThemeMode with per-widget colors, fonts with Qt5/Qt6
-/// weight conversion, text scale from Kirigami multipliers, accessibility
-/// flags, icon set, and Breeze widget sizing constants.
-///
-/// Delegates to [`from_kde_content_pure`] for parsing, then performs I/O
-/// for full DPI detection and icon size lookup.
-pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResult> {
-    let mut ini = create_kde_parser();
-    ini.read(content.to_string())
-        .map_err(|e| crate::Error::ReaderFailed {
-            reader: "kde",
-            source: e.into(),
-        })?;
-
-    // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
-    let font_dpi = detect_font_dpi(&ini);
-
-    let (theme, _dpi, accessibility) = from_kde_content_pure(content, Some(font_dpi))?;
-
-    // Determine dark/light from theme shape
-    let is_dark = theme.dark.is_some() && theme.light.is_none();
-    let mut mode_data = if is_dark {
-        theme.dark.unwrap_or_default()
-    } else {
-        theme.light.unwrap_or_default()
-    };
+/// The KDE reader's result for the kdeglobals in `ini`: [`read_kde_ini`],
+/// with the font DPI and the icon theme's sizes read from the system.
+fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
+    let (mut mode, is_dark, name, accessibility) = read_kde_ini(ini);
 
     // I/O: icon sizes from filesystem (icon_theme is on variant defaults)
-    if let Some(ref theme_name) = mode_data.defaults.icon_theme {
-        mode_data.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
+    if let Some(ref theme_name) = mode.defaults.icon_theme {
+        mode.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
     }
 
-    let output = crate::ReaderOutput::Single {
-        mode: Box::new(mode_data),
-        is_dark,
-    };
-
-    Ok(crate::ReaderResult {
-        output,
-        name: theme.name,
-        icon_set: theme.icon_set,
-        layout: theme.layout,
-        font_dpi: Some(font_dpi),
+    crate::ReaderResult {
+        output: crate::ReaderOutput::Single {
+            mode: Box::new(mode),
+            is_dark,
+        },
+        name: std::borrow::Cow::Owned(name),
+        icon_set: None,
+        layout: crate::LayoutTheme::default(),
+        // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
+        font_dpi: Some(detect_font_dpi(ini)),
         accessibility,
-    })
+    }
+}
+
+/// [`from_kde_ini`] over one kdeglobals file's `content`.
+#[cfg(test)]
+pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResult> {
+    let mut ini = create_kde_parser();
+    read_kconfig(&mut ini, content);
+    Ok(from_kde_ini(&ini))
 }
 
 /// Extract forceFontDPI from the parsed INI content.
@@ -367,8 +336,9 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 
 /// Read the current KDE theme from kdeglobals.
 ///
-/// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
-/// KDE color groups and font strings to a [`ReaderResult`](crate::ReaderResult).
+/// Reads kdeglobals as KConfig cascades it ([`read_kdeglobals`]; no file at
+/// all reads as an empty one) and maps KDE color groups and font strings to
+/// a [`ReaderResult`](crate::ReaderResult).
 ///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
 /// by [`pipeline::select_reader`]; external consumers should use
@@ -378,45 +348,125 @@ pub(crate) struct KdeReader;
 #[async_trait::async_trait]
 impl crate::reader::ThemeReader for KdeReader {
     async fn read(&self) -> crate::Result<crate::ReaderResult> {
-        let path = kdeglobals_path();
-        let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
-            reader: "kde",
-            source: format!("cannot read {}: {e}", path.display()).into(),
-        })?;
-        let mut result = from_kde_content(&content)?;
-
-        // Cascade: if kdeglobals lacks [Icons] Theme, check kdedefaults/kdeglobals
-        let mode = match &mut result.output {
-            crate::ReaderOutput::Single { mode, .. } => &mut **mode,
-            crate::ReaderOutput::Dual { light, .. } => &mut **light,
-        };
-        if mode.defaults.icon_theme.is_none()
-            && let Some(parent) = path.parent()
-        {
-            let defaults_path = parent.join("kdedefaults").join("kdeglobals");
-            if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
-                let mut defaults_ini = create_kde_parser();
-                if defaults_ini.read(defaults_content).is_ok() {
-                    mode.defaults.icon_theme = defaults_ini
-                        .get("Icons", "Theme")
-                        .filter(|s| !s.is_empty())
-                        .map(std::borrow::Cow::Owned);
-                }
-            }
-        }
-
-        Ok(result)
+        Ok(from_kde_ini(
+            &read_kdeglobals().unwrap_or_else(create_kde_parser),
+        ))
     }
+}
+
+/// kdeglobals as KConfig reads it: the files of [`kdeglobals_files`] layered
+/// in order ([`read_kconfig_files`]); `None` when none of them can be read.
+pub(crate) fn read_kdeglobals() -> Option<configparser::ini::Ini> {
+    read_kconfig_files(&kdeglobals_files())
+}
+
+/// Whether kdeglobals ([`read_kdeglobals`]) states a dark theme
+/// ([`is_dark_theme`]); `None` when no kdeglobals file can be read.
+pub(crate) fn kdeglobals_is_dark() -> Option<bool> {
+    read_kdeglobals().map(|ini| is_dark_theme(&ini))
+}
+
+/// The kdeglobals files KConfig reads, lowest priority first
+/// ([`kdeglobals_files_pure`] for `$XDG_CONFIG_DIRS` and [`kdeglobals_path`]).
+fn kdeglobals_files() -> Vec<std::path::PathBuf> {
+    kdeglobals_files_pure(
+        std::env::var("XDG_CONFIG_DIRS").ok().as_deref(),
+        kdeglobals_path(),
+    )
+}
+
+/// `kdeglobals` in each of `config_dirs` (`$XDG_CONFIG_DIRS`), last first,
+/// then the user's `user_file`.
+///
+/// KConfig reads every `kdeglobals` `QStandardPaths::locateAll` finds, in
+/// reverse, so the user's file comes last and wins (kconfig
+/// `src/core/kconfig.cpp:740`, `:761-766` at a4e32e9d). The config dirs are
+/// `$XDG_CONFIG_DIRS`'s absolute entries without duplicates, `/etc/xdg` when
+/// none is left (qtbase `src/corelib/io/qstandardpaths_unix.cpp:370-389`,
+/// `:403-413` at 512d45ad). Plasma puts `kdedefaults` beside the user's file
+/// first in `$XDG_CONFIG_DIRS` (plasma-workspace
+/// `startkde/startplasma.cpp:419-426` at 8bd4f86a); it is added there when
+/// `config_dirs` lacks it, for a process started outside Plasma's session.
+fn kdeglobals_files_pure(
+    config_dirs: Option<&str>,
+    user_file: std::path::PathBuf,
+) -> Vec<std::path::PathBuf> {
+    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
+    for dir in config_dirs
+        .unwrap_or_default()
+        .split(':')
+        .filter(|dir| dir.starts_with('/'))
+    {
+        let dir = std::path::PathBuf::from(dir);
+        if !dirs.contains(&dir) {
+            dirs.push(dir);
+        }
+    }
+    if dirs.is_empty() {
+        dirs.push(std::path::PathBuf::from("/etc/xdg"));
+    }
+    if let Some(defaults) = user_file.parent().map(|dir| dir.join("kdedefaults"))
+        && !dirs.contains(&defaults)
+    {
+        dirs.insert(0, defaults);
+    }
+    let mut files: Vec<std::path::PathBuf> = dirs
+        .iter()
+        .rev()
+        .map(|dir| dir.join("kdeglobals"))
+        .collect();
+    if !files.contains(&user_file) {
+        files.push(user_file);
+    }
+    files
+}
+
+/// The KConfig files `files` layered in order, later files overriding
+/// earlier keys ([`read_kconfig`]). A file that cannot be read is skipped,
+/// and its bytes are decoded lossily; `None` when no file can be read.
+fn read_kconfig_files(files: &[std::path::PathBuf]) -> Option<configparser::ini::Ini> {
+    let mut ini = create_kde_parser();
+    let mut any = false;
+    for bytes in files.iter().filter_map(|path| std::fs::read(path).ok()) {
+        read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
+        any = true;
+    }
+    any.then_some(ini)
+}
+
+/// Parse KConfig `content` into `ini`, over the keys it already holds.
+///
+/// The lines KConfig skips are skipped (kconfig `src/core/kconfigini.cpp` at
+/// a4e32e9d): a group header without `]` (`:100-112`, the group before it
+/// stays current) and an entry with an empty key (`:168-171`). They are the
+/// only lines configparser rejects, so one stray line no longer loses the
+/// whole file.
+fn read_kconfig(ini: &mut configparser::ini::Ini, content: &str) {
+    let valid: String = content
+        .lines()
+        .filter(|line| {
+            let line = line.trim();
+            !(line.starts_with('[') && !line.contains(']')) && !line.starts_with('=')
+        })
+        .flat_map(|line| [line, "\n"])
+        .collect();
+    // Cannot fail: the filter above drops every line configparser rejects.
+    let _ = ini.read_and_append(valid);
 }
 
 /// Create a configparser Ini instance configured for KDE files.
 ///
 /// Uses case-sensitive mode and equals-only delimiter to correctly
 /// handle KDE's PascalCase keys and colon-containing section names.
+/// Only a line starting with `#` is a comment, as in KConfig (kconfig
+/// `src/core/kconfigini.cpp:95-98` at a4e32e9d): a `#` or `;` inside a value,
+/// as in `ColorScheme=My#Scheme`, is part of it.
 pub(crate) fn create_kde_parser() -> configparser::ini::Ini {
     let tmp = configparser::ini::Ini::new_cs();
     let mut defaults = tmp.defaults();
     defaults.delimiters = vec!['='];
+    defaults.comment_symbols = vec!['#'];
+    defaults.enable_inline_comments = false;
     configparser::ini::Ini::new_from_defaults(defaults)
 }
 
@@ -473,20 +523,6 @@ fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> st
     }
     // Last resort fallback
     std::path::PathBuf::from("/etc/xdg/kdeglobals")
-}
-
-/// Read KDE theme from a specific kdeglobals file path (for testing).
-/// Returns a Theme reconstructed from the ReaderResult for test assertions.
-#[cfg(test)]
-pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::Theme> {
-    let content = std::fs::read_to_string(path).map_err(|e| crate::Error::ReaderFailed {
-        reader: "kde",
-        source: Box::new(e),
-    })?;
-    let result = from_kde_content(&content)?;
-    Ok(result
-        .output
-        .to_theme(&result.name, result.icon_set, &result.layout))
 }
 
 /// Detect whether the active KDE theme is dark based on background luminance.
@@ -841,20 +877,173 @@ BackgroundNormal=49,54,59
         assert_eq!(r.name, "KDE");
     }
 
+    // === KConfig parsing ===
+
+    /// KConfig skips a group header without `]` and keeps the group before
+    /// it; the rest of the file is still read.
     #[test]
-    fn test_missing_file() {
-        // Test that from_kde_at returns ReaderFailed for a nonexistent path
-        let path = std::path::PathBuf::from("/tmp/nonexistent_kde_test_dir_12345/kdeglobals");
-        let result = from_kde_at(&path);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        let crate::Error::ReaderFailed { source, .. } = &err else {
-            panic!("expected ReaderFailed, got: {err:?}");
-        };
-        let msg = source.to_string();
-        assert!(
-            msg.contains("kdeglobals") || msg.contains("No such file"),
-            "unexpected error message: {msg}"
+    fn a_stray_group_line_is_skipped() -> crate::Result<()> {
+        let result = from_kde_content(
+            "[Colors:Window\nBackgroundNormal=49,54,59\n\n[General]\nColorScheme=BreezeDark\n",
+        )?;
+        assert_eq!(result.name, "BreezeDark");
+        Ok(())
+    }
+
+    /// KConfig skips an entry with an empty key.
+    #[test]
+    fn a_line_with_an_empty_key_is_skipped() -> crate::Result<()> {
+        let result = from_kde_content("[General]\n=stray\nColorScheme=BreezeDark\n")?;
+        assert_eq!(result.name, "BreezeDark");
+        Ok(())
+    }
+
+    /// KConfig has no inline comments: a `#` in a value is part of it.
+    #[test]
+    fn a_hash_in_a_value_is_kept() -> crate::Result<()> {
+        let result = from_kde_content("[General]\nColorScheme=My#Scheme\n")?;
+        assert_eq!(result.name, "My#Scheme");
+        Ok(())
+    }
+
+    // === KConfig cascade ===
+
+    /// A fresh directory for one test's kdeglobals files.
+    fn temp_config_dir(tag: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "native-theme-kdeglobals-{}-{tag}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("kdedefaults")).unwrap();
+        dir
+    }
+
+    fn paths(paths: &[&str]) -> Vec<std::path::PathBuf> {
+        paths.iter().map(std::path::PathBuf::from).collect()
+    }
+
+    #[test]
+    fn kdeglobals_files_follow_plasmas_config_dirs() {
+        let files = kdeglobals_files_pure(
+            Some("/home/u/.config/kdedefaults:/etc/xdg"),
+            "/home/u/.config/kdeglobals".into(),
+        );
+        assert_eq!(
+            files,
+            paths(&[
+                "/etc/xdg/kdeglobals",
+                "/home/u/.config/kdedefaults/kdeglobals",
+                "/home/u/.config/kdeglobals",
+            ])
+        );
+    }
+
+    /// Without `$XDG_CONFIG_DIRS`, or with only relative entries, the config
+    /// dirs are `/etc/xdg`, and `kdedefaults` is read as Plasma adds it.
+    #[test]
+    fn kdeglobals_files_default_to_etc_xdg_and_kdedefaults() {
+        let expected = paths(&[
+            "/etc/xdg/kdeglobals",
+            "/home/u/.config/kdedefaults/kdeglobals",
+            "/home/u/.config/kdeglobals",
+        ]);
+        for config_dirs in [None, Some(""), Some("relative:")] {
+            let files = kdeglobals_files_pure(config_dirs, "/home/u/.config/kdeglobals".into());
+            assert_eq!(files, expected, "{config_dirs:?}");
+        }
+    }
+
+    #[test]
+    fn kdeglobals_files_read_the_config_dirs_last_first_once_each() {
+        let files = kdeglobals_files_pure(
+            Some("/opt/a:/opt/b:/opt/a"),
+            "/home/u/.config/kdeglobals".into(),
+        );
+        assert_eq!(
+            files,
+            paths(&[
+                "/opt/b/kdeglobals",
+                "/opt/a/kdeglobals",
+                "/home/u/.config/kdedefaults/kdeglobals",
+                "/home/u/.config/kdeglobals",
+            ])
+        );
+    }
+
+    /// A ColorScheme set only in `kdedefaults/kdeglobals`, as Plasma 6 writes
+    /// it, names the theme; each file overrides the keys of the ones before.
+    #[test]
+    fn the_scheme_name_and_icon_theme_cascade_from_kdedefaults() {
+        let dir = temp_config_dir("cascade");
+        std::fs::create_dir_all(dir.join("xdg")).unwrap();
+        std::fs::write(
+            dir.join("xdg/kdeglobals"),
+            "[General]\nColorScheme=SystemScheme\n\n[KDE]\nAnimationDurationFactor=0\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("kdedefaults/kdeglobals"),
+            "[General]\nColorScheme=BreezeDark\n\n[Icons]\nTheme=breeze-dark\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("kdeglobals"),
+            "[Colors:Window]\nBackgroundNormal=49,54,59\n",
+        )
+        .unwrap();
+        let files = kdeglobals_files_pure(
+            Some(dir.join("xdg").to_str().unwrap()),
+            dir.join("kdeglobals"),
+        );
+        let result = from_kde_ini(&read_kconfig_files(&files).expect("the files are readable"));
+        assert_eq!(result.name, "BreezeDark");
+        assert!(result.accessibility.reduce_motion);
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: true, .. }
+        ));
+        assert_eq!(
+            reader_mode(&result).defaults.icon_theme.as_deref(),
+            Some("breeze-dark")
+        );
+    }
+
+    /// A missing file, here the user's, reads as empty; with no file at all
+    /// there is nothing.
+    #[test]
+    fn a_missing_kdeglobals_file_reads_as_empty() {
+        let dir = temp_config_dir("missing");
+        std::fs::write(
+            dir.join("kdeglobals"),
+            "[General]\nColorScheme=BreezeDark\n",
+        )
+        .unwrap();
+        let ini = read_kconfig_files(&[dir.join("kdeglobals"), dir.join("absent")])
+            .expect("one file is readable");
+        assert_eq!(
+            ini.get("General", "ColorScheme").as_deref(),
+            Some("BreezeDark")
+        );
+        assert!(read_kconfig_files(&[dir.join("absent")]).is_none());
+    }
+
+    /// A byte that is not UTF-8 is replaced; the rest of the theme is read.
+    #[test]
+    fn a_non_utf8_byte_keeps_the_theme() {
+        let dir = temp_config_dir("non-utf8");
+        std::fs::write(
+            dir.join("kdeglobals"),
+            b"[General]\nColorScheme=Caf\xe9\n\n[Colors:Window]\nBackgroundNormal=49,54,59\n",
+        )
+        .unwrap();
+        let result = from_kde_ini(
+            &read_kconfig_files(&[dir.join("kdeglobals")]).expect("the file is readable"),
+        );
+        assert_eq!(result.name, "Caf\u{fffd}");
+        assert_eq!(
+            reader_mode(&result).defaults.background_color,
+            Some(Rgba::rgb(49, 54, 59))
         );
     }
 
@@ -931,15 +1120,18 @@ BackgroundNormal=49,54,59
     }
 
     /// Link text takes `ForegroundLink` through `defaults.link_color`, so a
-    /// plain read resolves it to that colour.
+    /// plain read resolves it to that colour, here one `kde-breeze` does not
+    /// state.
     #[test]
     fn link_text_resolves_to_foreground_link() -> crate::Result<()> {
+        let content = "[Colors:Window]\nBackgroundNormal=49,54,59\n\n\
+                       [Colors:View]\nForegroundLink=246,116,0\n";
         let st = crate::pipeline::run_pipeline(
-            from_kde_content(BREEZE_DARK_FULL)?,
+            from_kde_content(content)?,
             "kde-breeze",
             crate::ColorMode::Dark,
         )?;
-        assert_eq!(st.dark.link.font.color, Rgba::rgb(29, 153, 243));
+        assert_eq!(st.dark.link.font.color, Rgba::rgb(246, 116, 0));
         Ok(())
     }
 

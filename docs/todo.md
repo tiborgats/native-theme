@@ -969,6 +969,10 @@ model, the platform presets and the three connectors
       link text comes from the reader or from the preset. Give it a fixture
       whose `ForegroundLink` differs from the preset's (the light fixture has
       no `ForegroundLink`).
+      Fixed in M4 T10 (`fix(kde): kdeglobals read as KConfig cascades it`):
+      the test reads a fixture whose `ForegroundLink` is `246,116,0`, which
+      `kde-breeze` does not state as `link_color`; it fails when the reader
+      drops `ForegroundLink`.
 
 ### kde-breeze: link hover and active colours stated without a source
 

@@ -516,16 +516,14 @@ fn detect_is_dark_inner() -> bool {
         // On KDE, read kdeglobals directly — gsettings color-scheme is
         // synced by xdg-desktop-portal-kde and can be stale or inverted.
         #[cfg(feature = "kde")]
+        let on_kde = matches!(
+            parse_linux_desktop(&xdg_current_desktop()),
+            LinuxDesktop::Kde
+        );
+        #[cfg(feature = "kde")]
         {
-            let de = parse_linux_desktop(&xdg_current_desktop());
-            if matches!(de, LinuxDesktop::Kde) {
-                let path = crate::kde::kdeglobals_path();
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    let mut ini = crate::kde::create_kde_parser();
-                    if ini.read(content).is_ok() {
-                        return crate::kde::is_dark_theme(&ini);
-                    }
-                }
+            if on_kde && let Some(dark) = crate::kde::kdeglobals_is_dark() {
+                return dark;
             }
         }
 
@@ -541,17 +539,13 @@ fn detect_is_dark_inner() -> bool {
             }
         }
 
-        // Fallback: read KDE's kdeglobals background luminance (non-KDE DE
-        // or when the KDE feature is disabled and the gsettings check above
-        // returned no result).
+        // Fallback: read KDE's kdeglobals background luminance on a desktop
+        // other than KDE when the gsettings check above returned no result
+        // (on KDE it was read above).
         #[cfg(feature = "kde")]
         {
-            let path = crate::kde::kdeglobals_path();
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                let mut ini = crate::kde::create_kde_parser();
-                if ini.read(content).is_ok() {
-                    return crate::kde::is_dark_theme(&ini);
-                }
+            if !on_kde && let Some(dark) = crate::kde::kdeglobals_is_dark() {
+                return dark;
             }
         }
 
