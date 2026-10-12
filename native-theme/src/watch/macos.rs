@@ -1,56 +1,54 @@
 //! macOS theme change watcher using NSDistributedNotificationCenter.
 //!
 //! Observes `AppleInterfaceThemeChangedNotification` via a block-based observer
-//! registered with the default distributed notification center. A CFRunLoop on
-//! the background thread processes notification delivery. Shutdown is handled
-//! by calling `CFRunLoop::stop()` from the `ThemeSubscription` Drop handler.
+//! registered with the default distributed notification center. The background
+//! thread runs its CFRunLoop in slices of [`RUN_SLICE_SECONDS`] to process
+//! notification delivery, and checks the shutdown channel between slices. The
+//! `ThemeSubscription` Drop handler signals the channel and calls
+//! `CFRunLoop::stop()` to end a running slice early.
 
 // Objective-C FFI via objc2 -- no safe alternative for platform bindings.
 // This follows the same pattern as src/macos.rs (the theme reader).
 #![allow(unsafe_code)]
 
 use core::ptr::NonNull;
-use std::sync::mpsc;
+use std::sync::mpsc::{self, TryRecvError};
 
 use block2::RcBlock;
 use objc2::runtime::{AnyObject, ProtocolObject};
-use objc2_core_foundation::{CFRetained, CFRunLoop};
+use objc2_core_foundation::{
+    CFRetained, CFRunLoop, CFRunLoopRunResult, CFTimeInterval, kCFRunLoopDefaultMode,
+};
 use objc2_foundation::{
     NSDistributedNotificationCenter, NSNotification, NSNotificationName, NSObjectProtocol, NSString,
 };
 
 use super::ThemeChangeEvent;
 
-/// A thin wrapper around a raw `CFRunLoop` pointer that is `Send`.
-///
-/// Apple documents `CFRunLoopStop` as thread-safe: it can be called from any
-/// thread to stop a run loop running on another thread. The objc2 bindings do
-/// not mark `CFRunLoop` as `Send` because most run loop operations are
-/// thread-local, but `stop()` is the documented exception.
-struct SendableCFRunLoop(NonNull<CFRunLoop>);
+/// Length of one `CFRunLoopRunInMode` slice of the watcher thread. It bounds
+/// how long a stop that arrives before the loop runs waits: `CFRunLoopStop`
+/// does nothing to a run loop that is not running, so such a stop is seen
+/// only when the current slice times out.
+const RUN_SLICE_SECONDS: CFTimeInterval = 0.25;
 
-// SAFETY: We only use this to call `CFRunLoop::stop()`, which Apple documents
-// as safe to call from any thread.
+/// A retained `CFRunLoop` that is `Send`, so the shutdown closure can stop
+/// the watcher thread's run loop from the thread that drops the subscription.
+///
+/// The objc2 bindings do not mark `CFRunLoop` as `Send` because most run loop
+/// operations are thread-local; `CFRunLoopStop` is the documented exception.
+/// Holding a retain keeps the run loop alive after the watcher thread exits,
+/// so `stop()` on a finished thread's loop is a no-op.
+struct SendableCFRunLoop(CFRetained<CFRunLoop>);
+
+// SAFETY: The wrapper is only used to call `CFRunLoop::stop()`, which Apple
+// documents as safe to call from any thread, and to release the retain when
+// it drops; CoreFoundation's retain and release are thread-safe.
 unsafe impl Send for SendableCFRunLoop {}
 
 impl SendableCFRunLoop {
-    /// Create from a `CFRetained<CFRunLoop>` reference.
-    ///
-    /// The caller must ensure the `CFRetained` outlives this wrapper (i.e. the
-    /// run loop is kept alive by the background thread).
-    fn from_retained(retained: &CFRetained<CFRunLoop>) -> Self {
-        Self(NonNull::from(&**retained))
-    }
-
-    /// Stop the run loop.
-    ///
-    /// # Safety
-    ///
-    /// The underlying `CFRunLoop` must still be alive.
-    unsafe fn stop(&self) {
-        // SAFETY: Caller guarantees the run loop is alive. CFRunLoopStop is
-        // documented as thread-safe.
-        unsafe { self.0.as_ref().stop() };
+    /// Stop the run loop's current activation, if it is running.
+    fn stop(&self) {
+        self.0.stop();
     }
 }
 
@@ -60,26 +58,31 @@ impl SendableCFRunLoop {
 /// default `NSDistributedNotificationCenter`, then runs a `CFRunLoop` to
 /// receive notifications. The callback fires on the background thread
 /// whenever the user toggles Appearance in System Settings.
+///
+/// Returns once the observer is registered and the thread's run loop has a
+/// source to wait on, or with `Error::ReaderFailed` when a setup step failed.
 pub(crate) fn watch_macos(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
-    let (shutdown_tx, _shutdown_rx) = mpsc::channel::<()>();
+    let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
 
-    // Channel for the background thread to send its CFRunLoop handle back.
-    let (loop_tx, loop_rx) = mpsc::channel::<SendableCFRunLoop>();
+    // Channel for the background thread to send back its CFRunLoop handle,
+    // or the setup step that failed.
+    let (ready_tx, ready_rx) = mpsc::channel::<crate::Result<SendableCFRunLoop>>();
 
     let thread = std::thread::spawn(move || {
-        // Get this thread's CFRunLoop (must be called on the watcher thread).
-        let Some(run_loop) = CFRunLoop::current() else {
-            return;
+        let setup_failed = |reason: &str| crate::Error::ReaderFailed {
+            reader: "macos-watcher",
+            source: reason.into(),
         };
 
-        // Send the run loop handle back to the constructor so the
-        // platform_shutdown closure can call stop() on it.
-        let sendable = SendableCFRunLoop::from_retained(&run_loop);
-        if loop_tx.send(sendable).is_err() {
+        // Get this thread's CFRunLoop (must be called on the watcher thread).
+        let Some(run_loop) = CFRunLoop::current() else {
+            let _ = ready_tx.send(Err(setup_failed(
+                "CFRunLoopGetCurrent returned no run loop",
+            )));
             return;
-        }
+        };
 
         // Get the default distributed notification center.
         let center = NSDistributedNotificationCenter::defaultCenter();
@@ -109,9 +112,36 @@ pub(crate) fn watch_macos(
             )
         };
 
-        // Run the CFRunLoop. This blocks until CFRunLoop::stop() is called
-        // from the platform_shutdown closure in ThemeSubscription::drop().
-        CFRunLoop::run();
+        // SAFETY: `kCFRunLoopDefaultMode` is an immutable CFString constant
+        // exported by CoreFoundation; reading the static is a plain load.
+        let mode = unsafe { kCFRunLoopDefaultMode };
+
+        // A run loop whose mode has no source returns Finished at once, without
+        // waiting, so a zero-length pass shows whether notifications can
+        // arrive on this thread before the subscription is reported started.
+        let ready = if CFRunLoop::run_in_mode(mode, 0.0, false) == CFRunLoopRunResult::Finished {
+            Err(setup_failed(
+                "the run loop has no source in the default mode after registering the observer",
+            ))
+        } else {
+            Ok(SendableCFRunLoop(run_loop))
+        };
+        let started = ready.is_ok();
+
+        if ready_tx.send(ready).is_ok() && started {
+            // Run the CFRunLoop slice by slice until the shutdown channel
+            // receives a message or disconnects. CFRunLoop::stop() from the
+            // platform_shutdown closure ends a running slice early.
+            while let Err(TryRecvError::Empty) = shutdown_rx.try_recv() {
+                if CFRunLoop::run_in_mode(mode, RUN_SLICE_SECONDS, false)
+                    == CFRunLoopRunResult::Finished
+                {
+                    // The mode lost its sources: no notification can arrive,
+                    // and running again would return at once.
+                    break;
+                }
+            }
+        }
 
         // After the run loop stops, unregister the observer.
         // SAFETY: `observer` is the object returned by
@@ -123,18 +153,30 @@ pub(crate) fn watch_macos(
         }
     });
 
-    // Receive the CFRunLoop handle from the background thread.
-    let sendable_loop = loop_rx.recv().map_err(|_| crate::Error::ReaderFailed {
-        reader: "macos_watcher",
-        source: "macOS watcher thread failed to start".into(),
-    })?;
+    // Receive the CFRunLoop handle, or the setup error, from the background
+    // thread.
+    let run_loop = match ready_rx.recv() {
+        Ok(Ok(run_loop)) => run_loop,
+        Ok(Err(err)) => {
+            let _ = thread.join();
+            return Err(err);
+        }
+        Err(_) => {
+            let _ = thread.join();
+            return Err(crate::Error::ReaderFailed {
+                reader: "macos-watcher",
+                source: "macOS watcher thread failed to start".into(),
+            });
+        }
+    };
 
-    // Build the platform shutdown closure: calls CFRunLoop::stop() to
-    // unblock CFRunLoop::run() on the watcher thread.
+    // Build the platform shutdown closure: signals the shutdown channel, then
+    // calls CFRunLoop::stop() so a running slice returns at once and the
+    // thread sees the signal.
+    let stop_tx = shutdown_tx.clone();
     let platform_shutdown = Box::new(move || {
-        // SAFETY: The run loop is alive as long as the thread is running,
-        // and we call stop() before joining the thread.
-        unsafe { sendable_loop.stop() };
+        let _ = stop_tx.send(());
+        run_loop.stop();
     });
 
     Ok(super::ThemeSubscription::new(

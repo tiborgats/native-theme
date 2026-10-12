@@ -221,10 +221,11 @@ impl Drop for ThemeSubscription {
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
 /// not start: KDE, the `kdeglobals` path has no parent directory to watch;
 /// GNOME and Budgie, the watcher thread could not connect to the session bus;
-/// macOS, the watcher thread did not start; Windows, the watcher thread did
-/// not start or could not subscribe to `UISettings::ColorValuesChanged`. The
-/// GNOME, macOS and Windows backends return only once their thread has
-/// connected or started.
+/// macOS, the watcher thread did not start or its run loop had no source for
+/// the notification observer; Windows, the watcher thread did not start or
+/// could not subscribe to `UISettings::ColorValuesChanged`. The GNOME, macOS
+/// and Windows backends return only once their thread has connected or
+/// started.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
@@ -359,27 +360,33 @@ mod tests {
     }
 
     /// Start the platform watcher and drop it at once, `rounds` times. Each
-    /// drop runs on a helper thread, so a drop that hangs fails the test
-    /// after `per_drop_timeout` instead of blocking it. A platform or desktop
-    /// without a watcher (`WatchUnavailable`) skips the test.
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    /// round subscribes and drops on a helper thread, with nothing between
+    /// the two, so a drop that hangs fails the test after `per_drop_timeout`
+    /// instead of blocking it. A platform or desktop without a watcher
+    /// (`WatchUnavailable`) skips the test.
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
         for round in 0..rounds {
-            let subscription = match on_theme_change(|_| {}) {
-                Ok(subscription) => subscription,
-                Err(crate::Error::WatchUnavailable { .. }) => return,
-                Err(err) => panic!("round {round}: on_theme_change failed: {err:?}"),
-            };
             let (done_tx, done_rx) = mpsc::channel();
             std::thread::spawn(move || {
-                drop(subscription);
-                let _ = done_tx.send(());
+                let result = on_theme_change(|_| {}).map(drop);
+                let _ = done_tx.send(result);
             });
-            assert!(
-                done_rx.recv_timeout(per_drop_timeout).is_ok(),
-                "round {round}: dropping the subscription did not return within {per_drop_timeout:?}"
-            );
+            match done_rx.recv_timeout(per_drop_timeout) {
+                Ok(Ok(())) => {}
+                Ok(Err(crate::Error::WatchUnavailable { .. })) => return,
+                Ok(Err(err)) => panic!("round {round}: on_theme_change failed: {err:?}"),
+                Err(_) => panic!(
+                    "round {round}: subscribing and dropping did not return within {per_drop_timeout:?}"
+                ),
+            }
         }
+    }
+
+    #[cfg(all(target_os = "macos", feature = "watch"))]
+    #[test]
+    fn macos_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
     }
 
     #[cfg(all(target_os = "windows", feature = "watch"))]
