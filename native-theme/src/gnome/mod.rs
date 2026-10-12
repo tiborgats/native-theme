@@ -346,7 +346,9 @@ pub(crate) struct GnomePortalData {
     pub(crate) accent_rgb: Option<(f64, f64, f64)>,
     /// Whether high contrast is requested (from portal Contrast::High).
     pub(crate) high_contrast: bool,
-    /// Whether reduced motion is requested. None = not provided by portal.
+    /// Whether reduced motion is requested: the portal's answer, else
+    /// gsettings' ([`crate::detect::gnome_reduce_motion`]). None = neither
+    /// gave one.
     pub(crate) reduce_motion: Option<bool>,
     /// Primary UI font string in GNOME/Pango format (e.g. "Cantarell 11").
     pub(crate) font_name: Option<String>,
@@ -363,26 +365,20 @@ pub(crate) struct GnomePortalData {
     /// High contrast from gsettings fallback (for GNOME < 44).
     /// Only used when `high_contrast` is false (portal didn't report high contrast).
     pub(crate) gsettings_high_contrast: Option<bool>,
-    /// Reduced motion from gsettings enable-animations fallback.
-    /// Only used when `reduce_motion` is None (portal didn't report).
-    pub(crate) gsettings_enable_animations: Option<bool>,
 }
 
 /// Extract AccessibilityPreferences from GNOME portal + gsettings data.
 ///
-/// Merges portal and gsettings sources: portal `high_contrast` and
-/// `reduce_motion` take priority, gsettings values are fallback.
+/// Merges portal and gsettings sources: portal `high_contrast` takes
+/// priority, gsettings is the fallback; `reduce_motion` is already merged.
 /// GNOME does not expose `reduce_transparency`, so it keeps the default (false).
 fn accessibility_from_gnome_data(data: &GnomePortalData) -> crate::AccessibilityPreferences {
     let mut acc = crate::AccessibilityPreferences::default();
     let effective_high_contrast = data.high_contrast || data.gsettings_high_contrast == Some(true);
-    let effective_reduce_motion = data
-        .reduce_motion
-        .or_else(|| data.gsettings_enable_animations.map(|anim| !anim));
     if let Some(tsf) = data.text_scaling_factor {
         acc.text_scaling_factor = tsf;
     }
-    if let Some(rm) = effective_reduce_motion {
+    if let Some(rm) = data.reduce_motion {
         acc.reduce_motion = rm;
     }
     acc.high_contrast = effective_high_contrast;
@@ -475,12 +471,16 @@ pub(crate) fn build_theme(
 ) -> crate::ReaderResult {
     let portal_dark = scheme.map(|scheme| matches!(scheme, ColorScheme::PreferDark));
     let is_dark = crate::detect::color_scheme_is_dark(portal_dark, &mut gsetting).unwrap_or(false);
+    let reduce_motion = crate::detect::gnome_reduce_motion(
+        reduced_motion.map(portal_reduces_motion),
+        &mut gsetting,
+    );
     let flag = |value: Option<String>| value.and_then(|s| s.parse::<bool>().ok());
     let data = GnomePortalData {
         is_dark,
         accent_rgb: accent.map(|c| (c.red(), c.green(), c.blue())),
         high_contrast: matches!(contrast, Contrast::High),
-        reduce_motion: reduced_motion.map(|rm| matches!(rm, ReducedMotion::ReducedMotion)),
+        reduce_motion,
         font_name: gsetting("org.gnome.desktop.interface", "font-name"),
         monospace_font_name: gsetting("org.gnome.desktop.interface", "monospace-font-name"),
         titlebar_font: gsetting("org.gnome.desktop.wm.preferences", "titlebar-font"),
@@ -492,12 +492,29 @@ pub(crate) fn build_theme(
             "org.gnome.desktop.a11y.interface",
             "high-contrast",
         )),
-        gsettings_enable_animations: flag(gsetting(
-            "org.gnome.desktop.interface",
-            "enable-animations",
-        )),
     };
     build_gnome_spec_pure(&data)
+}
+
+/// Whether the portal's `reduced-motion` setting asks for reduced motion.
+fn portal_reduces_motion(reduced_motion: ReducedMotion) -> bool {
+    matches!(reduced_motion, ReducedMotion::ReducedMotion)
+}
+
+/// The portal's `reduced-motion` setting, as the GNOME reader reads it, for
+/// [`crate::detect::detect_reduced_motion`]; `None` when the portal does not
+/// give it within [`PORTAL_DEADLINE`].
+pub(crate) async fn portal_reduce_motion() -> Option<bool> {
+    with_deadline(
+        async {
+            let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+            settings.reduced_motion().await.ok()
+        },
+        PORTAL_DEADLINE,
+    )
+    .await
+    .flatten()
+    .map(portal_reduces_motion)
 }
 
 /// Read the current GNOME theme from the XDG Desktop Portal.
@@ -1155,7 +1172,6 @@ mod tests {
             overlay_scrolling: Some(true),
             icon_theme: Some("Adwaita".to_string()),
             gsettings_high_contrast: None,
-            gsettings_enable_animations: None,
         }
     }
 
@@ -1264,19 +1280,24 @@ mod tests {
         let mut data = default_gnome_data();
         data.reduce_motion = Some(true);
         let result = build_gnome_spec_pure(&data);
-        let _variant = reader_mode(&result);
-        // reduce_motion now on AccessibilityPreferences
+        assert!(result.accessibility.reduce_motion);
     }
 
+    /// Reduced motion is the portal's, else gsettings' `enable-animations`
+    /// (`false` is reduced motion), as [`crate::detect::detect_reduced_motion`]
+    /// reads it on GNOME.
     #[test]
-    fn pure_reduce_motion_gsettings_fallback() {
-        let mut data = default_gnome_data();
-        data.reduce_motion = None;
-        data.gsettings_enable_animations = Some(false);
-        let result = build_gnome_spec_pure(&data);
-        let _variant = reader_mode(&result);
-        // enable-animations=false means reduce_motion=true
-        // reduce_motion now on AccessibilityPreferences
+    fn reduce_motion_is_the_portal_then_gsettings() {
+        let animations_off =
+            |_: &str, key: &str| (key == "enable-animations").then(|| "false".to_string());
+        let read = |portal| {
+            build_theme(None, None, Contrast::NoPreference, portal, animations_off)
+                .accessibility
+                .reduce_motion
+        };
+        assert!(read(None));
+        assert!(!read(Some(ReducedMotion::NoPreference)));
+        assert!(read(Some(ReducedMotion::ReducedMotion)));
     }
 
     #[test]

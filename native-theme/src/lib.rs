@@ -371,16 +371,16 @@ impl AccessibilityPreferences {
     /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE
     /// `kdeglobals`, GNOME portal + gsettings, macOS `NSWorkspace`, Windows
     /// `UISettings`) and takes its accessibility block, blocking on it with
-    /// `pollster::block_on`; `reduce_motion` is additionally read through
-    /// [`crate::detect::detect_reduced_motion`] on every platform. Fields no
-    /// reader supplies keep their defaults. Never fails: with no reader or a
-    /// failing reader the defaults are returned.
+    /// `pollster::block_on`. Fields no reader supplies keep their defaults.
+    /// Never fails: with no reader or a failing reader the defaults are
+    /// returned, with `reduce_motion` the platform's read
+    /// ([`crate::detect::detect_reduced_motion`], the one the readers make).
     ///
     /// Use it on the preset path, where accessibility is orthogonal to the
     /// theme choice (a user with large text wants it under a preset too).
     #[must_use]
     pub fn from_system() -> Self {
-        pollster::block_on(pipeline::accessibility_from_system_inner())
+        pollster::block_on(pipeline::reader_accessibility())
     }
 
     /// The text-scaling multiplier: [`text_scaling_factor`](Self::text_scaling_factor)
@@ -1112,8 +1112,7 @@ mod system_theme_tests {
                 prefs.reduce_transparency,
                 sys.accessibility.reduce_transparency
             );
-            // reduce_motion may additionally be true via detect::detect_reduced_motion().
-            assert!(prefs.reduce_motion || !sys.accessibility.reduce_motion);
+            assert_eq!(prefs.reduce_motion, sys.accessibility.reduce_motion);
         }
     }
 }

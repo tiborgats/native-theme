@@ -340,30 +340,32 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
         }
     };
 
-    // SPI_GETCLIENTAREAANIMATION
-    let reduce_motion = {
-        let mut animation_enabled = ::windows::core::BOOL(1);
-        let success = unsafe {
-            SystemParametersInfoW(
-                ::windows::Win32::UI::WindowsAndMessaging::SPI_GETCLIENTAREAANIMATION,
-                0,
-                Some(&mut animation_enabled as *mut _ as *mut _),
-                SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
-            )
-        };
-        if success.is_ok() {
-            // If animation is disabled, reduce_motion is true
-            Some(!animation_enabled.as_bool())
-        } else {
-            None
-        }
-    };
-
     AccessibilityData {
         text_scaling_factor,
         high_contrast,
-        reduce_motion,
+        reduce_motion: read_reduce_motion(),
     }
+}
+
+/// Whether the user asks for reduced motion: client-area animations are off
+/// (`SPI_GETCLIENTAREAANIMATION`), as the reader reads it, for
+/// [`crate::detect::detect_reduced_motion`]; `None` when the call fails.
+#[cfg(all(target_os = "windows", feature = "windows"))]
+#[allow(unsafe_code)]
+pub(crate) fn read_reduce_motion() -> Option<bool> {
+    use ::windows::Win32::UI::WindowsAndMessaging::SPI_GETCLIENTAREAANIMATION;
+    let mut animation_enabled = ::windows::core::BOOL(1);
+    // SAFETY: SPI_GETCLIENTAREAANIMATION writes one BOOL through `pvParam`,
+    // which points to `animation_enabled`, a live BOOL for the whole call.
+    let success = unsafe {
+        SystemParametersInfoW(
+            SPI_GETCLIENTAREAANIMATION,
+            0,
+            Some(&mut animation_enabled as *mut _ as *mut _),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+        )
+    };
+    success.is_ok().then(|| !animation_enabled.as_bool())
 }
 
 /// Read icon sizes from GetSystemMetricsForDpi, in logical pixels (WIN-05).

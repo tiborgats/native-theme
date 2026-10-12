@@ -1100,7 +1100,11 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     }
     #[cfg(target_os = "linux")]
     {
-        return linux_fallback(platform_preset_name(), crate::detect::detect_is_dark());
+        return linux_fallback(
+            platform_preset_name(),
+            crate::detect::detect_is_dark(),
+            readerless_accessibility(),
+        );
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -1112,16 +1116,23 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
 
 /// The Linux theme where no reader is available: `preset` alone, as both
 /// the reader's output and the base it merges over, in the mode `is_dark`
-/// names. [`from_system_inner`] passes the uncached
-/// [`crate::detect::detect_is_dark`], as the readers read the mode fresh.
+/// names, with `accessibility`. [`from_system_inner`] passes the uncached
+/// [`crate::detect::detect_is_dark`], as the readers read the mode fresh, and
+/// [`readerless_accessibility`], as [`reader_accessibility`] does.
 #[cfg(target_os = "linux")]
-fn linux_fallback(preset: PlatformPreset, is_dark: bool) -> crate::Result<SystemTheme> {
+fn linux_fallback(
+    preset: PlatformPreset,
+    is_dark: bool,
+    accessibility: crate::AccessibilityPreferences,
+) -> crate::Result<SystemTheme> {
     let mode = if is_dark {
         crate::ColorMode::Dark
     } else {
         crate::ColorMode::Light
     };
-    run_pipeline(preset_as_reader(preset.name, mode)?, preset.name)
+    let mut reader = preset_as_reader(preset.name, mode)?;
+    reader.accessibility = accessibility;
+    run_pipeline(reader, preset.name)
 }
 
 /// Run `reader` and feed its output through [`run_pipeline`] onto `preset`.
@@ -1223,30 +1234,26 @@ async fn pinned_pipeline(
     Ok(theme)
 }
 
-/// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
-/// [`reader_accessibility`], with `reduce_motion` OR-ed with
-/// [`crate::detect::detect_reduced_motion`], a floor for the cases where no
-/// reader supplies it and it stays at its default: Linux outside KDE and
-/// GNOME, and macOS or Windows builds without their reader feature. A reader's
-/// own `true` is never downgraded (spec §11.2).
-pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
-    let mut prefs = reader_accessibility().await;
-    if !prefs.reduce_motion {
-        prefs.reduce_motion = crate::detect::detect_reduced_motion();
-    }
-    prefs
-}
-
 /// Runs the same platform reader `from_system_inner` would run and returns its
 /// accessibility block without merging or resolving a theme. Where no reader
-/// is available (or it fails) the defaults are used.
+/// is available (or it fails) [`readerless_accessibility`] is used.
 pub(crate) async fn reader_accessibility() -> crate::AccessibilityPreferences {
     match select_reader().await {
         Some(selected) => match selected.reader.read().await {
             Ok(result) => result.accessibility,
-            Err(_) => crate::AccessibilityPreferences::default(),
+            Err(_) => readerless_accessibility(),
         },
-        None => crate::AccessibilityPreferences::default(),
+        None => readerless_accessibility(),
+    }
+}
+
+/// The accessibility block where no reader supplies one: the defaults, with
+/// `reduce_motion` the platform's reduced-motion read, the one the readers
+/// make ([`crate::detect::detect_reduced_motion`]).
+fn readerless_accessibility() -> crate::AccessibilityPreferences {
+    crate::AccessibilityPreferences {
+        reduce_motion: crate::detect::detect_reduced_motion(),
+        ..Default::default()
     }
 }
 
@@ -1418,7 +1425,12 @@ ForegroundLink=41,128,185";
     fn the_fallback_on_kde_is_the_whole_breeze_preset() {
         let expected = preset_theme("kde-breeze");
         for is_dark in [false, true] {
-            let st = linux_fallback(linux_preset_for_de(LinuxDesktop::Kde), is_dark).unwrap();
+            let st = linux_fallback(
+                linux_preset_for_de(LinuxDesktop::Kde),
+                is_dark,
+                crate::AccessibilityPreferences::default(),
+            )
+            .unwrap();
             assert_eq!(st.preset, "kde-breeze");
             assert_eq!(st.name, expected.name, "is_dark {is_dark}");
             assert_eq!(st.light, expected.light, "is_dark {is_dark}");
@@ -1437,7 +1449,12 @@ ForegroundLink=41,128,185";
     #[test]
     fn the_fallback_on_other_desktops_is_the_whole_adwaita_preset() {
         let expected = preset_theme("adwaita");
-        let st = linux_fallback(linux_preset_for_de(LinuxDesktop::Xfce), true).unwrap();
+        let st = linux_fallback(
+            linux_preset_for_de(LinuxDesktop::Xfce),
+            true,
+            crate::AccessibilityPreferences::default(),
+        )
+        .unwrap();
         assert_eq!(st.preset, "adwaita");
         assert_eq!(st.name, expected.name);
         assert_eq!(st.light, expected.light);
@@ -1447,14 +1464,33 @@ ForegroundLink=41,128,185";
     #[test]
     fn the_fallback_mode_is_the_dark_reading_it_is_given() {
         let preset = || linux_preset_for_de(LinuxDesktop::Unknown);
+        let none = crate::AccessibilityPreferences::default;
         assert_eq!(
-            linux_fallback(preset(), true).unwrap().mode,
+            linux_fallback(preset(), true, none()).unwrap().mode,
             crate::ColorMode::Dark
         );
         assert_eq!(
-            linux_fallback(preset(), false).unwrap().mode,
+            linux_fallback(preset(), false, none()).unwrap().mode,
             crate::ColorMode::Light
         );
+    }
+
+    /// Without a reader the theme carries the accessibility block
+    /// `AccessibilityPreferences::from_system` reads there
+    /// (`readerless_accessibility`), so the two agree on reduced motion.
+    #[test]
+    fn the_fallback_carries_the_accessibility_it_is_given() {
+        let reduced = crate::AccessibilityPreferences {
+            reduce_motion: true,
+            ..Default::default()
+        };
+        let st = linux_fallback(
+            linux_preset_for_de(LinuxDesktop::Xfce),
+            false,
+            reduced.clone(),
+        )
+        .unwrap();
+        assert_eq!(st.accessibility, reduced);
     }
 
     #[test]

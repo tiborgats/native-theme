@@ -878,11 +878,22 @@ fn detect_is_dark_inner() -> bool {
 ///
 /// # Platform Behavior
 ///
-/// - **Linux:** Queries `gsettings get org.gnome.desktop.interface enable-animations`.
-///   Returns `true` when animations are disabled (`enable-animations` is `false`).
+/// Each platform's read is the one its theme reader makes, so the result is
+/// the `reduce_motion` of
+/// [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system)
+/// and of [`SystemTheme::from_system`](crate::SystemTheme::from_system)'s
+/// accessibility block.
+///
+/// - **Linux:** by the desktop the reader is chosen by. KDE (with the `kde`
+///   feature): `kdeglobals`' `[KDE] AnimationDurationFactor` is 0. GNOME and
+///   Budgie: the portal's `reduced-motion` (with the `portal` feature, 2-second
+///   deadline), else `gsettings get org.gnome.desktop.interface enable-animations`
+///   is `false` (2-second timeout). Other desktops, and KDE without the `kde`
+///   feature: that gsettings key alone.
 /// - **macOS:** Queries `NSWorkspace.accessibilityDisplayShouldReduceMotion`
 ///   (requires `macos` feature).
-/// - **Windows:** Queries `UISettings.AnimationsEnabled()` (requires `windows` feature).
+/// - **Windows:** Queries `SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION)`;
+///   `true` when client-area animations are off (requires `windows` feature).
 /// - **Other platforms:** Returns `false`.
 ///
 /// # Examples
@@ -918,11 +929,10 @@ pub fn detect_reduced_motion() -> bool {
 /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) and
 /// `from_system_async` fill it, and where neither has run since the last
 /// [`invalidate_caches()`], the first call runs the reader itself.
-/// `reduce_motion` is additionally [`prefers_reduced_motion()`], as
-/// `from_system` adds [`detect_reduced_motion()`]. [`invalidate_caches()`]
-/// clears it. A reader that fails is not reported: its default preferences
-/// stay cached until the next invalidation, as a failure to detect the icon
-/// theme does.
+/// [`invalidate_caches()`] clears it. A reader that fails is not reported:
+/// the preferences used without a reader (the defaults, with the platform's
+/// [`detect_reduced_motion()`]) stay cached until the next invalidation, as a
+/// failure to detect the icon theme does.
 ///
 /// For a preset switch, where the OS preferences apply under the preset and
 /// the reader has usually just run. The theme watcher does not report most
@@ -936,31 +946,81 @@ pub fn accessibility_preferences() -> crate::AccessibilityPreferences {
     system().accessibility_preferences()
 }
 
+/// Whether GNOME asks for reduced motion: the portal's answer when it gave
+/// one, else gsettings' `org.gnome.desktop.interface` `enable-animations`
+/// read through `gsetting` (`false` is reduced motion); `None` when neither
+/// answers. [`detect_reduced_motion`] and the GNOME reader both decide
+/// through it.
+#[cfg(target_os = "linux")]
+pub(crate) fn gnome_reduce_motion(
+    portal: Option<bool>,
+    gsetting: impl FnOnce(&str, &str) -> Option<String>,
+) -> Option<bool> {
+    if portal.is_some() {
+        return portal;
+    }
+    let enabled = gsetting("org.gnome.desktop.interface", "enable-animations")?;
+    enabled.trim().parse::<bool>().ok().map(|enabled| !enabled)
+}
+
+/// Reduced motion as the reader of `desktop` (the refined desktop) reads it:
+/// on KDE `kdeglobals` (`None` without the `kde` feature, which reads no KDE
+/// file), as the KDE reader does; on GNOME and Budgie the `portal`, then
+/// gsettings ([`gnome_reduce_motion`]), as the GNOME reader does; elsewhere,
+/// and on KDE where `kdeglobals` gives `None`, gsettings alone. `false` when
+/// nothing answers.
+#[cfg(target_os = "linux")]
+fn desktop_reduce_motion(
+    desktop: LinuxDesktop,
+    kdeglobals: impl FnOnce() -> Option<bool>,
+    portal: impl FnOnce() -> Option<bool>,
+    gsetting: impl FnOnce(&str, &str) -> Option<String>,
+) -> bool {
+    match desktop {
+        LinuxDesktop::Kde => kdeglobals().or_else(|| gnome_reduce_motion(None, gsetting)),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => gnome_reduce_motion(portal(), gsetting),
+        _ => gnome_reduce_motion(None, gsetting),
+    }
+    .unwrap_or(false)
+}
+
 /// Inner detection logic for [`prefers_reduced_motion()`].
 ///
 /// Separated from the public function to allow caching.
 fn detect_reduced_motion_inner() -> bool {
     #[cfg(target_os = "linux")]
     {
-        // gsettings boolean output is bare "true\n" or "false\n" (no quotes)
-        // enable-animations has INVERTED semantics: false => reduced motion preferred
-        if let Some(val) = gsettings_get(
-            "org.gnome.desktop.interface",
-            "enable-animations",
-            SUBPROCESS_TIMEOUT,
-        ) {
-            return val.trim() == "false";
-        }
-        false
+        desktop_reduce_motion(
+            system().refined_linux_desktop_sync(),
+            || {
+                #[cfg(feature = "kde")]
+                {
+                    Some(crate::kde::kdeglobals_reduce_motion())
+                }
+                #[cfg(not(feature = "kde"))]
+                {
+                    None
+                }
+            },
+            || {
+                #[cfg(feature = "portal")]
+                {
+                    pollster::block_on(crate::gnome::portal_reduce_motion())
+                }
+                #[cfg(not(feature = "portal"))]
+                {
+                    None
+                }
+            },
+            |schema, key| gsettings_get(schema, key, SUBPROCESS_TIMEOUT),
+        )
     }
 
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
         {
-            let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace();
-            // Direct semantics: true = reduce motion preferred (no inversion needed)
-            workspace.accessibilityDisplayShouldReduceMotion()
+            crate::macos::reduce_motion()
         }
         #[cfg(not(feature = "macos"))]
         {
@@ -972,14 +1032,7 @@ fn detect_reduced_motion_inner() -> bool {
     {
         #[cfg(feature = "windows")]
         {
-            let Ok(settings) = ::windows::UI::ViewManagement::UISettings::new() else {
-                return false;
-            };
-            // AnimationsEnabled has INVERTED semantics: false => reduced motion preferred
-            match settings.AnimationsEnabled() {
-                Ok(enabled) => !enabled,
-                Err(_) => false,
-            }
+            crate::windows::read_reduce_motion().unwrap_or(false)
         }
         #[cfg(not(feature = "windows"))]
         {
@@ -1155,22 +1208,15 @@ impl DetectionContext {
     /// The OS accessibility preferences (cached), as
     /// [`accessibility_preferences()`](crate::detect::accessibility_preferences)
     /// describes: the platform reader's accessibility block, run on the
-    /// first call unless a system read stored it, with `reduce_motion`
-    /// also [`prefers_reduced_motion()`](Self::prefers_reduced_motion).
+    /// first call unless a system read stored it.
     /// Call
     /// [`invalidate_accessibility_preferences()`](Self::invalidate_accessibility_preferences)
-    /// to force a re-read of the reader's block; the reduced-motion floor
-    /// stays cached until [`invalidate_reduced_motion()`](Self::invalidate_reduced_motion)
-    /// or [`invalidate_caches()`](crate::detect::invalidate_caches) is called.
+    /// to force a re-read.
     #[must_use]
     pub fn accessibility_preferences(&self) -> crate::AccessibilityPreferences {
-        let mut prefs = self.reader_accessibility_with(|| {
+        self.reader_accessibility_with(|| {
             pollster::block_on(crate::pipeline::reader_accessibility())
-        });
-        if !prefs.reduce_motion {
-            prefs.reduce_motion = self.prefers_reduced_motion();
-        }
-        prefs
+        })
     }
 
     /// The cached reader accessibility block, with `read` run where
@@ -1271,7 +1317,7 @@ impl DetectionContext {
     /// `without_portal`, the desktop a synchronous caller refines while
     /// nothing is cached ([`refined_linux_desktop_sync`](Self::refined_linux_desktop_sync)),
     /// the values detected from that desktop are cleared: the font DPI, the
-    /// icon theme and dark mode.
+    /// icon theme, dark mode and reduced motion.
     #[cfg(target_os = "linux")]
     fn finish_refined_desktop(
         &self,
@@ -1284,6 +1330,7 @@ impl DetectionContext {
             self.invalidate_font_dpi();
             self.invalidate_icon_theme();
             self.invalidate_is_dark();
+            self.invalidate_reduced_motion();
         }
     }
 
@@ -1294,7 +1341,7 @@ impl DetectionContext {
     /// names a desktop, until a system read has asked it: a KDE backend
     /// without `kdeglobals` is `Unknown` here, a GNOME backend with
     /// `kdeglobals` is KDE here. The system read then clears the font DPI,
-    /// icon theme and dark mode detected from this desktop
+    /// icon theme, dark mode and reduced motion detected from this desktop
     /// ([`finish_refined_desktop`](Self::finish_refined_desktop)).
     #[cfg(target_os = "linux")]
     pub(crate) fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
@@ -1411,6 +1458,102 @@ mod reduced_motion_tests {
         let result = detect_reduced_motion_inner();
         // Just verify it returns a bool without panicking.
         let _ = result;
+    }
+
+    /// `gsetting` for [`desktop_reduce_motion`]: `enable-animations` is
+    /// `enabled`; `asked` counts the reads.
+    #[cfg(target_os = "linux")]
+    fn animations<'a>(
+        enabled: &'static str,
+        asked: &'a std::cell::Cell<u32>,
+    ) -> impl FnOnce(&str, &str) -> Option<String> + 'a {
+        move |schema, key| {
+            asked.set(asked.get() + 1);
+            ((schema, key) == ("org.gnome.desktop.interface", "enable-animations"))
+                .then(|| enabled.to_string())
+        }
+    }
+
+    /// On KDE reduced motion is kdeglobals' `AnimationDurationFactor`, as the
+    /// KDE reader reads it, not GNOME's `enable-animations`, which may be
+    /// absent or stale there (M1-T6-04); gsettings answers only where
+    /// kdeglobals is not read (no `kde` feature).
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn kde_reduced_motion_is_kdeglobals_not_gsettings() {
+        let asked = std::cell::Cell::new(0);
+        let portal = || -> Option<bool> { panic!("KDE does not ask the portal") };
+        assert!(desktop_reduce_motion(
+            LinuxDesktop::Kde,
+            || Some(true),
+            portal,
+            animations("true", &asked)
+        ));
+        assert!(!desktop_reduce_motion(
+            LinuxDesktop::Kde,
+            || Some(false),
+            portal,
+            animations("false", &asked)
+        ));
+        assert_eq!(asked.get(), 0);
+        assert!(desktop_reduce_motion(
+            LinuxDesktop::Kde,
+            || None,
+            portal,
+            animations("false", &asked)
+        ));
+        assert_eq!(asked.get(), 1);
+    }
+
+    /// On GNOME and Budgie the portal's answer decides, as in the GNOME
+    /// reader; without one, gsettings' `enable-animations`.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn gnome_reduced_motion_is_the_portal_then_gsettings() {
+        let asked = std::cell::Cell::new(0);
+        let kdeglobals = || -> Option<bool> { panic!("GNOME does not read kdeglobals") };
+        for desktop in [LinuxDesktop::Gnome, LinuxDesktop::Budgie] {
+            assert!(desktop_reduce_motion(
+                desktop,
+                kdeglobals,
+                || Some(true),
+                animations("true", &asked)
+            ));
+            assert!(!desktop_reduce_motion(
+                desktop,
+                kdeglobals,
+                || Some(false),
+                animations("false", &asked)
+            ));
+            assert_eq!(asked.get(), 0);
+            assert!(desktop_reduce_motion(
+                desktop,
+                kdeglobals,
+                || None,
+                animations("false", &asked)
+            ));
+            assert_eq!(asked.get(), 1);
+            asked.set(0);
+        }
+    }
+
+    /// A desktop without a reader answers from gsettings alone.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn other_desktops_reduced_motion_is_gsettings() {
+        let asked = std::cell::Cell::new(0);
+        assert!(desktop_reduce_motion(
+            LinuxDesktop::Xfce,
+            || -> Option<bool> { panic!("XFCE does not read kdeglobals") },
+            || -> Option<bool> { panic!("XFCE does not ask the portal") },
+            animations("false", &asked)
+        ));
+        assert!(!desktop_reduce_motion(
+            LinuxDesktop::Unknown,
+            || None,
+            || None,
+            |_, _| None
+        ));
     }
 
     #[cfg(target_os = "macos")]
@@ -1777,10 +1920,10 @@ mod detection_context_tests {
         ctx
     }
 
-    /// A font DPI, icon theme or dark mode read before the first system read
-    /// came from the desktop refined without the portal; a portal answer
-    /// that names another desktop clears them, so they are read again from
-    /// the reader's desktop (docs/todo.md:2628, M4-49).
+    /// A font DPI, icon theme, dark mode or reduced motion read before the
+    /// first system read came from the desktop refined without the portal; a
+    /// portal answer that names another desktop clears them, so they are read
+    /// again from the reader's desktop (docs/todo.md:2628, M4-49).
     #[cfg(target_os = "linux")]
     #[test]
     fn a_portal_answer_that_changes_the_desktop_clears_what_was_read_from_it() {
@@ -1793,6 +1936,7 @@ mod detection_context_tests {
             Some("breeze")
         );
         assert!(ctx.is_dark.get_or_fill(|| true));
+        assert!(ctx.reduced_motion.get_or_fill(|| true));
 
         let refined = refine_desktop(LinuxDesktop::Unknown, Some(LinuxDesktop::Gnome), || true);
         ctx.finish_refined_desktop(
@@ -1809,6 +1953,7 @@ mod detection_context_tests {
             Some("Adwaita")
         );
         assert_eq!(ctx.is_dark.get(), None);
+        assert_eq!(ctx.reduced_motion.get(), None);
     }
 
     /// A portal answer that names the desktop the synchronous refinement

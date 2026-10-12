@@ -160,6 +160,14 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
     )
 }
 
+/// Whether the user asks for reduced motion
+/// (`NSWorkspace.accessibilityDisplayShouldReduceMotion`), as the reader
+/// reads it, for [`crate::detect::detect_reduced_motion`].
+#[cfg(all(target_os = "macos", feature = "macos"))]
+pub(crate) fn reduce_motion() -> bool {
+    NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceMotion()
+}
+
 /// Read accessibility flags from NSWorkspace.
 ///
 /// Returns (reduce_motion, high_contrast, reduce_transparency). No text-scaling
@@ -171,7 +179,7 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>) {
     let workspace = NSWorkspace::sharedWorkspace();
     (
-        Some(workspace.accessibilityDisplayShouldReduceMotion()),
+        Some(reduce_motion()),
         Some(workspace.accessibilityDisplayShouldIncreaseContrast()),
         Some(workspace.accessibilityDisplayShouldReduceTransparency()),
     )

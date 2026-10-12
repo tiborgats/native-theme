@@ -61,12 +61,8 @@ fn read_kde_ini(
     variant.defaults.icon_theme = icon_theme(ini).map(std::borrow::Cow::Owned);
 
     // KDE-06: Accessibility flags (pure -- no I/O)
-    // AnimationDurationFactor from [KDE]
     let accessibility = crate::AccessibilityPreferences {
-        reduce_motion: ini
-            .get("KDE", "AnimationDurationFactor")
-            .and_then(|value| value.trim().parse::<f32>().ok())
-            == Some(0.0),
+        reduce_motion: reduce_motion(ini),
         ..Default::default()
     };
 
@@ -277,6 +273,20 @@ impl crate::reader::ThemeReader for KdeReader {
 /// in order ([`read_kconfig_files`]); `None` when none of them can be read.
 pub(crate) fn read_kdeglobals() -> Option<configparser::ini::Ini> {
     read_kconfig_files(&kdeglobals_files())
+}
+
+/// Whether `ini` asks for reduced motion: `[KDE] AnimationDurationFactor`
+/// is 0.
+fn reduce_motion(ini: &configparser::ini::Ini) -> bool {
+    ini.get("KDE", "AnimationDurationFactor")
+        .and_then(|value| value.trim().parse::<f32>().ok())
+        == Some(0.0)
+}
+
+/// [`reduce_motion`] of kdeglobals ([`read_kdeglobals`]), as the KDE reader
+/// reads it, for [`crate::detect::detect_reduced_motion`].
+pub(crate) fn kdeglobals_reduce_motion() -> bool {
+    reduce_motion(&read_kdeglobals().unwrap_or_else(create_kde_parser))
 }
 
 /// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or
