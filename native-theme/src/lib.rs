@@ -572,14 +572,24 @@ impl SystemTheme {
     ///
     /// # Examples
     ///
-    /// ```no_run
-    /// let system = native_theme::SystemTheme::from_system()?;
+    /// An overlay is a theme file that states only what it changes; it needs
+    /// no `name`:
+    ///
+    /// ```
     /// let overlay = native_theme::theme::Theme::from_toml(r##"
     ///     [light.defaults]
     ///     accent_color = "#ff6600"
     ///     [dark.defaults]
     ///     accent_color = "#ff6600"
     /// "##)?;
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    ///
+    /// Then apply it to the live OS theme:
+    ///
+    /// ```no_run
+    /// # let overlay = native_theme::theme::Theme::default();
+    /// let system = native_theme::SystemTheme::from_system()?;
     /// let customized = system.with_overlay(&overlay)?;
     /// // customized.pick(customized.mode).defaults.accent_color is now #ff6600
     /// // and all accent-derived fields are updated

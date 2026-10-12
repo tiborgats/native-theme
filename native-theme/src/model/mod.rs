@@ -263,7 +263,9 @@ pub struct Theme {
     /// Uses `Cow<'static, str>` so bundled presets can store borrowed
     /// `&'static str` values without per-load `String` allocations.
     /// User-provided names (from TOML files or runtime detection)
-    /// are `Cow::Owned`.
+    /// are `Cow::Owned`. A TOML file may omit it (an overlay needs no
+    /// name: [`merge`](Self::merge) keeps the base's); it is then empty.
+    #[serde(default)]
     pub name: Cow<'static, str>,
 
     /// Light variant of the theme.
@@ -573,7 +575,8 @@ impl Theme {
     ///
     /// # TOML Format
     ///
-    /// Theme files use the following structure. Every field is optional --
+    /// Theme files use the following structure. Every field is optional,
+    /// `name` included --
     /// omit any field you don't need. Unknown fields are silently ignored;
     /// [`lint_toml`](Self::lint_toml) reports them. Hex colors accept
     /// `#RGB`, `#RGBA`, `#RRGGBB` or `#RRGGBBAA` (the `#` is optional). A size carries its unit in its key:
@@ -1101,6 +1104,22 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.name, "Base Theme");
+    }
+
+    #[test]
+    fn nameless_overlay_parses_and_merges() {
+        let toml = "[light.defaults]\naccent_color = \"#ff6600\"";
+        assert!(Theme::lint_toml(toml).unwrap().is_empty());
+        let overlay = Theme::from_toml(toml).unwrap();
+        assert_eq!(overlay.name, "");
+
+        let mut base = Theme::preset("catppuccin-mocha").unwrap();
+        base.merge(&overlay);
+        assert_eq!(base.name, "Catppuccin Mocha");
+        assert_eq!(
+            base.light.as_ref().unwrap().defaults.accent_color,
+            Some(Rgba::rgb(0xff, 0x66, 0x00))
+        );
     }
 
     #[test]

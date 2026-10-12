@@ -77,7 +77,6 @@ use native_theme::Theme;
 
 let mut theme = Theme::preset("nord")?;
 let overrides = Theme::from_toml(r##"
-    name = "My Nord"
     [light.defaults]
     accent_color = "#ff6600"
 "##)?;
@@ -86,7 +85,7 @@ theme.merge(&overrides);
 ```
 
 `merge` fills in only the fields present in the overlay; everything else stays
-from the base preset.
+from the base preset. An overlay needs no `name`: the base keeps its own.
 
 ### Apply an overlay to the OS theme at runtime
 
