@@ -347,9 +347,18 @@ pub(crate) fn read_kdeglobals() -> Option<configparser::ini::Ini> {
 }
 
 /// Whether kdeglobals ([`read_kdeglobals`]) states a dark theme
-/// ([`is_dark_theme`]); `None` when no kdeglobals file can be read.
+/// ([`window_background_is_dark`]); `None` when no kdeglobals file states a
+/// window background.
 pub(crate) fn kdeglobals_is_dark() -> Option<bool> {
-    read_kdeglobals().map(|ini| is_dark_theme(&ini))
+    kconfig_files_are_dark(&kdeglobals_files())
+}
+
+/// [`window_background_is_dark`] over the KConfig files `files` layered
+/// ([`read_kconfig_files`]).
+fn kconfig_files_are_dark(files: &[std::path::PathBuf]) -> Option<bool> {
+    read_kconfig_files(files)
+        .as_ref()
+        .and_then(window_background_is_dark)
 }
 
 /// The kdeglobals files KConfig reads, lowest priority first
@@ -513,16 +522,18 @@ fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> st
 
 /// Detect whether the active KDE theme is dark based on background luminance.
 ///
-/// Uses BT.601 luminance coefficients on Colors:Window/BackgroundNormal.
-/// Defaults to false (light) if the section/key is missing.
+/// [`window_background_is_dark`], false (light) if the section/key is
+/// missing or does not parse.
 pub(crate) fn is_dark_theme(ini: &configparser::ini::Ini) -> bool {
-    if let Some(bg_str) = ini.get("Colors:Window", "BackgroundNormal")
-        && let Some(bg) = parse_rgb(&bg_str)
-    {
-        let luma = 0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
-        return luma < 128.0;
-    }
-    false
+    window_background_is_dark(ini).unwrap_or(false)
+}
+
+/// Whether Colors:Window/BackgroundNormal is dark, by its BT.601 luminance;
+/// `None` if the section/key is missing or does not parse.
+fn window_background_is_dark(ini: &configparser::ini::Ini) -> Option<bool> {
+    let bg = parse_rgb(&ini.get("Colors:Window", "BackgroundNormal")?)?;
+    let luma = 0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
+    Some(luma < 128.0)
 }
 
 #[cfg(test)]
@@ -894,15 +905,31 @@ BackgroundNormal=49,54,59
 
     // === KConfig cascade ===
 
-    /// A fresh directory for one test's kdeglobals files.
-    fn temp_config_dir(tag: &str) -> std::path::PathBuf {
+    /// A fresh directory for one test's kdeglobals files, removed on drop.
+    struct TempConfigDir(std::path::PathBuf);
+
+    impl std::ops::Deref for TempConfigDir {
+        type Target = std::path::Path;
+
+        fn deref(&self) -> &std::path::Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TempConfigDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn temp_config_dir(tag: &str) -> TempConfigDir {
         let dir = std::env::temp_dir().join(format!(
             "native-theme-kdeglobals-{}-{tag}",
             std::process::id()
         ));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("kdedefaults")).unwrap();
-        dir
+        TempConfigDir(dir)
     }
 
     fn paths(paths: &[&str]) -> Vec<std::path::PathBuf> {
@@ -989,10 +1016,35 @@ BackgroundNormal=49,54,59
             result.output,
             crate::ReaderOutput::Single { is_dark: true, .. }
         ));
+        let mode = reader_mode(&result);
+        assert_eq!(mode.defaults.icon_theme.as_deref(), Some("breeze-dark"));
+        // The sizes of the theme the cascade found (all None where
+        // breeze-dark is not installed).
         assert_eq!(
-            reader_mode(&result).defaults.icon_theme.as_deref(),
-            Some("breeze-dark")
+            mode.defaults.icon_sizes,
+            parse_icon_sizes_from_index_theme("breeze-dark")
         );
+    }
+
+    /// kdeglobals files that state no window background say nothing about
+    /// darkness, so detect's fallback goes on to the next source.
+    #[test]
+    fn a_kdeglobals_without_a_window_background_is_not_light() {
+        let dir = temp_config_dir("colourless");
+        std::fs::write(dir.join("kdeglobals"), "[General]\nColorScheme=Custom\n").unwrap();
+        std::fs::write(
+            dir.join("kdedefaults/kdeglobals"),
+            "[Colors:Window]\nBackgroundNormal=not,a,colour\n",
+        )
+        .unwrap();
+        let files = [dir.join("kdedefaults/kdeglobals"), dir.join("kdeglobals")];
+        assert_eq!(kconfig_files_are_dark(&files), None);
+        std::fs::write(
+            dir.join("kdeglobals"),
+            "[Colors:Window]\nBackgroundNormal=49,54,59\n",
+        )
+        .unwrap();
+        assert_eq!(kconfig_files_are_dark(&files), Some(true));
     }
 
     /// A missing file, here the user's, reads as empty; with no file at all
@@ -1030,6 +1082,25 @@ BackgroundNormal=49,54,59
         assert_eq!(
             reader_mode(&result).defaults.background_color,
             Some(Rgba::rgb(49, 54, 59))
+        );
+    }
+
+    /// KConfig has no `;` comments: a `;` in a value is part of it, and a
+    /// line starting with `;` is an entry.
+    #[test]
+    fn a_semicolon_is_not_a_comment() {
+        let mut ini = create_kde_parser();
+        read_kconfig(
+            &mut ini,
+            "[General]\n;ColorScheme=Hidden\nColorScheme=My;Scheme\n",
+        );
+        assert_eq!(
+            ini.get("General", "ColorScheme").as_deref(),
+            Some("My;Scheme")
+        );
+        assert_eq!(
+            ini.get("General", ";ColorScheme").as_deref(),
+            Some("Hidden")
         );
     }
 
