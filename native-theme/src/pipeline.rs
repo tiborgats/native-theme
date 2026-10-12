@@ -32,33 +32,11 @@ pub(crate) fn run_pipeline(
         accessibility,
     } = reader;
 
-    let full_preset = Theme::preset(preset_name)?;
-
-    // Reconstruct a Theme from the type-safe ReaderOutput for merge
-    let reader_as_theme = reader_output.to_theme(&reader_name, reader_icon_set, &reader_layout);
-
-    // Merge: the platform preset provides the defaults, reader output
-    // provides live OS data on top.
-    let mut merged = full_preset.clone();
-    merged.merge(&reader_as_theme);
-
-    // Keep reader name if non-empty, else use preset name
-    let name = if reader_name.is_empty() {
-        merged.name.clone()
-    } else {
-        reader_name.clone()
-    };
-
-    // Resolve icon_set from Theme level (shared across variants)
-    let icon_set = merged
-        .icon_set
-        .unwrap_or_else(crate::model::icons::system_icon_set);
-
     // Build ONE resolution-time context for this theme-build. The reader
     // may have supplied an authoritative font_dpi (e.g. KDE forceFontDPI);
     // when it does, the context takes it and no DPI detection runs again.
     // button_order + icon_theme are platform-detected as from_system()'s.
-    let ctx = match font_dpi {
+    let context = match font_dpi {
         Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(
             dpi,
             crate::model::icons::system_icon_theme(),
@@ -66,13 +44,59 @@ pub(crate) fn run_pipeline(
         None => crate::resolve::ResolutionContext::from_system(),
     };
 
+    let source = OverlaySource {
+        reader_output,
+        name: reader_name,
+        icon_set: reader_icon_set,
+        layout: reader_layout,
+        preset_name: preset_name.to_string(),
+        context,
+        overlay: None,
+    };
+    replay(source, mode, accessibility)
+}
+
+/// Merge and resolve what `source` holds: the platform preset provides the
+/// defaults, the reader output live OS data on top, the app's overlays (if
+/// any) their changes over both. Shared by [`run_pipeline`] and
+/// [`SystemTheme::with_overlay`], which replays its source with one more
+/// overlay.
+pub(crate) fn replay(
+    source: OverlaySource,
+    mode: crate::ColorMode,
+    accessibility: crate::AccessibilityPreferences,
+) -> crate::Result<SystemTheme> {
+    // A `Single` reader states no inactive variant, so the merge keeps the
+    // preset's own there; a `Dual` reader's two variants go over the preset's.
+    let mut merged = Theme::preset(&source.preset_name)?;
+    merged.merge(
+        &source
+            .reader_output
+            .to_theme(&source.name, source.icon_set, &source.layout),
+    );
+    if let Some(overlay) = &source.overlay {
+        merged.merge(overlay);
+    }
+
+    // Keep reader name if non-empty, else use preset name
+    let name = if source.name.is_empty() {
+        merged.name.clone()
+    } else {
+        source.name.clone()
+    };
+
+    // Resolve icon_set from Theme level (shared across variants)
+    let icon_set = merged
+        .icon_set
+        .unwrap_or_else(crate::model::icons::system_icon_set);
+
     // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
     //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)
     //   Tier 2: shared Theme-level value (`Theme::icon_theme`)
-    //   Tier 3: runtime system detect (from `ctx.icon_theme`)
+    //   Tier 3: runtime system detect (from `context.icon_theme`)
     // Must read before variants are consumed by unwrap_or_default().
     // None where no tier names a theme: the TOML states none and detection
-    // failed (`ctx.icon_theme` is then None). No theme stands in for it.
+    // failed (`context.icon_theme` is then None). No theme stands in for it.
     // Both variants are resolved, kept by variant (`SystemTheme::icon_theme_for`);
     // `icon_theme` is the active mode's copy.
     let icon_theme_of =
@@ -81,7 +105,7 @@ pub(crate) fn run_pipeline(
                 .as_ref()
                 .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
                 .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
-                .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
+                .or_else(|| source.context.icon_theme.clone()) // tier 3: pre-detected system
         };
     let light_icon_theme = icon_theme_of(&merged.light);
     let dark_icon_theme = icon_theme_of(&merged.dark);
@@ -90,64 +114,33 @@ pub(crate) fn run_pipeline(
         crate::ColorMode::Dark => dark_icon_theme.clone(),
     };
 
-    // Shared across variants; read before the variants are moved out of `merged`.
-    let layout = merged.layout.clone();
-    crate::resolve::validate_helpers::check_layout(&layout)?;
+    // Shared across variants.
+    crate::resolve::validate_helpers::check_layout(&merged.layout)?;
 
-    // Match on ReaderOutput for type-safe variant selection:
-    // Single: active variant from merged, inactive from full preset.
-    // Dual: both variants from merged.
-    let (light_variant, dark_variant) = match &reader_output {
-        ReaderOutput::Single { is_dark, .. } => {
-            if *is_dark {
-                (
-                    full_preset.light.unwrap_or_default(),
-                    merged.dark.unwrap_or_default(),
-                )
-            } else {
-                (
-                    merged.light.unwrap_or_default(),
-                    full_preset.dark.unwrap_or_default(),
-                )
-            }
-        }
-        ReaderOutput::Dual { .. } => (
-            merged.light.unwrap_or_default(),
-            merged.dark.unwrap_or_default(),
-        ),
-    };
-
-    let light = light_variant
-        .into_resolved(&ctx)
+    let light = merged
+        .light
+        .unwrap_or_default()
+        .into_resolved(&source.context)
         .map_err(|e| e.in_variant(crate::ColorMode::Light))?;
-    let dark = dark_variant
-        .into_resolved(&ctx)
+    let dark = merged
+        .dark
+        .unwrap_or_default()
+        .into_resolved(&source.context)
         .map_err(|e| e.in_variant(crate::ColorMode::Dark))?;
-
-    // Build OverlaySource from the original reader data + pipeline parameters
-    let overlay_source = OverlaySource {
-        reader_output,
-        name: reader_name,
-        icon_set: reader_icon_set,
-        layout: reader_layout,
-        preset_name: preset_name.to_string(),
-        context: ctx,
-        overlay: None,
-    };
 
     Ok(SystemTheme {
         name,
         mode,
         light,
         dark,
-        overlay_source,
-        preset: preset_name.to_string(),
+        preset: source.preset_name.clone(),
+        overlay_source: source,
         version_match: None,
         icon_set,
         icon_theme,
         light_icon_theme,
         dark_icon_theme,
-        layout,
+        layout: merged.layout,
         accessibility,
     })
 }
@@ -1983,6 +1976,32 @@ mod pipeline_tests {
             Some("custom-override"),
             "tier 1: per-variant icon_theme override must win over Theme-level"
         );
+    }
+
+    /// `with_overlay` replays the overlay through the same tiers and layout
+    /// as `run_pipeline`: an icon theme or a layout gap the overlay states
+    /// wins, and an overlay that states none keeps the base's.
+    #[test]
+    fn with_overlay_applies_the_overlays_icon_theme_and_layout() -> crate::Result<()> {
+        let st = run_pipeline(
+            reader_from_preset("adwaita"),
+            "adwaita",
+            crate::ColorMode::Light,
+        )?;
+        let kept = st.with_overlay(&Theme::default())?;
+        assert_eq!(kept.icon_theme, st.icon_theme);
+        assert_eq!(kept.layout.widget_gap, st.layout.widget_gap);
+
+        let overlay =
+            Theme::from_toml("icon_theme = \"custom-override\"\n[layout]\nwidget_gap_px = 9.0")?;
+        let changed = st.with_overlay(&overlay)?;
+        assert_eq!(changed.icon_theme.as_deref(), Some("custom-override"));
+        assert_eq!(
+            changed.icon_theme_for(crate::ColorMode::Dark),
+            Some("custom-override")
+        );
+        assert_eq!(changed.layout.widget_gap, Some(9.0));
+        Ok(())
     }
 
     #[test]

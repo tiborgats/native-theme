@@ -603,44 +603,8 @@ impl SystemTheme {
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
-        // Reconstruct pre-resolve variants from overlay_source
         let src = &self.overlay_source;
-        let full_preset = Theme::preset(&src.preset_name)?;
-
-        // Reconstruct a Theme from the type-safe ReaderOutput for merge
-        let reader_as_theme = src
-            .reader_output
-            .to_theme(&src.name, src.icon_set, &src.layout);
-
-        let mut merged = full_preset.clone();
-        merged.merge(&reader_as_theme);
-
-        // Shared across variants; read before the variants are moved out of `merged`.
-        let layout = merged.layout.clone();
-        crate::resolve::validate_helpers::check_layout(&layout)?;
-
-        // Match on ReaderOutput for type-safe variant selection
-        let (mut light, mut dark) = match &src.reader_output {
-            ReaderOutput::Single { is_dark, .. } => {
-                if *is_dark {
-                    (
-                        full_preset.light.unwrap_or_default(),
-                        merged.dark.unwrap_or_default(),
-                    )
-                } else {
-                    (
-                        merged.light.unwrap_or_default(),
-                        full_preset.dark.unwrap_or_default(),
-                    )
-                }
-            }
-            ReaderOutput::Dual { .. } => (
-                merged.light.unwrap_or_default(),
-                merged.dark.unwrap_or_default(),
-            ),
-        };
-
-        // Apply the user overlays on top, the earlier ones under this one
+        // The earlier overlays go under this one
         let overlay = match &src.overlay {
             Some(earlier) => {
                 let mut stacked = earlier.clone();
@@ -649,39 +613,15 @@ impl SystemTheme {
             }
             None => overlay.clone(),
         };
-        if let Some(over) = &overlay.light {
-            light.merge(over);
-        }
-        if let Some(over) = &overlay.dark {
-            dark.merge(over);
-        }
-
-        // Re-resolve both variants using the captured context (avoids
-        // re-detecting DPI / button_order / icon_theme on replay).
-        let resolved_light = light
-            .into_resolved(&src.context)
-            .map_err(|e| e.in_variant(ColorMode::Light))?;
-        let resolved_dark = dark
-            .into_resolved(&src.context)
-            .map_err(|e| e.in_variant(ColorMode::Dark))?;
-
+        let source = OverlaySource {
+            overlay: Some(overlay),
+            ..src.clone()
+        };
         Ok(SystemTheme {
             name: self.name.clone(),
-            mode: self.mode,
-            light: resolved_light,
-            dark: resolved_dark,
-            overlay_source: OverlaySource {
-                overlay: Some(overlay),
-                ..src.clone()
-            },
             preset: self.preset.clone(),
             version_match: self.version_match,
-            icon_set: self.icon_set,
-            icon_theme: self.icon_theme.clone(),
-            light_icon_theme: self.light_icon_theme.clone(),
-            dark_icon_theme: self.dark_icon_theme.clone(),
-            layout,
-            accessibility: self.accessibility.clone(),
+            ..pipeline::replay(source, self.mode, self.accessibility.clone())?
         })
     }
 
