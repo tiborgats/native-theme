@@ -244,6 +244,10 @@ the file was pruned on 2026-10-11, not reordered.
       first — and nothing tells it to read again. Make it a trailing debounce
       (fire once, 300 ms after the last relevant event), or fire again at the
       end of the window when events were dropped in it.
+      Fixed by 7988c1ec (M4 T20, 2026-10-13): a trailing debounce, the
+      callback fires once, 300 ms after the last relevant event of a burst;
+      the loop checks shutdown on every iteration
+      (`native-theme/src/watch/kde.rs` `watch_kde_dir`).
 - [ ] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
       lost on the next system re-read** (M2 final review, Minor 5,
       2026-10-11). The connectors' re-reads call `from_system()`, which picks
