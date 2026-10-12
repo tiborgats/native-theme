@@ -221,8 +221,10 @@ impl Drop for ThemeSubscription {
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
 /// not start: KDE, the `kdeglobals` path has no parent directory to watch;
 /// GNOME and Budgie, the watcher thread could not connect to the session bus;
-/// macOS and Windows, the watcher thread did not start. The GNOME, macOS and
-/// Windows backends return only once their thread has connected or started.
+/// macOS, the watcher thread did not start; Windows, the watcher thread did
+/// not start or could not subscribe to `UISettings::ColorValuesChanged`. The
+/// GNOME, macOS and Windows backends return only once their thread has
+/// connected or started.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
@@ -354,5 +356,43 @@ mod tests {
     fn theme_subscription_is_send() {
         fn assert_send<T: Send>() {}
         assert_send::<ThemeSubscription>();
+    }
+
+    /// Start the platform watcher and drop it at once, `rounds` times. Each
+    /// drop runs on a helper thread, so a drop that hangs fails the test
+    /// after `per_drop_timeout` instead of blocking it. A platform or desktop
+    /// without a watcher (`WatchUnavailable`) skips the test.
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
+        for round in 0..rounds {
+            let subscription = match on_theme_change(|_| {}) {
+                Ok(subscription) => subscription,
+                Err(crate::Error::WatchUnavailable { .. }) => return,
+                Err(err) => panic!("round {round}: on_theme_change failed: {err:?}"),
+            };
+            let (done_tx, done_rx) = mpsc::channel();
+            std::thread::spawn(move || {
+                drop(subscription);
+                let _ = done_tx.send(());
+            });
+            assert!(
+                done_rx.recv_timeout(per_drop_timeout).is_ok(),
+                "round {round}: dropping the subscription did not return within {per_drop_timeout:?}"
+            );
+        }
+    }
+
+    #[cfg(all(target_os = "windows", feature = "watch"))]
+    #[test]
+    fn windows_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
+    }
+
+    /// The KDE watcher polls its shutdown channel every 200 ms, so a drop
+    /// takes up to that long: a few rounds keep the test short.
+    #[cfg(all(target_os = "linux", feature = "watch"))]
+    #[test]
+    fn linux_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(10, std::time::Duration::from_secs(5));
     }
 }
