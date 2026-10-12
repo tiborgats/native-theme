@@ -859,28 +859,48 @@ fn xdg_icon_base_dirs() -> Vec<std::path::PathBuf> {
     let Some(home) = std::env::home_dir() else {
         return Vec::new();
     };
-    let data_dirs: Vec<PathBuf> = std::env::var_os("XDG_DATA_DIRS")
-        .map(|dirs| {
-            std::env::split_paths(&dirs)
-                .filter(|dir| dir.is_absolute())
-                .collect::<Vec<_>>()
-        })
-        .filter(|dirs| !dirs.is_empty())
-        .unwrap_or_else(|| {
-            vec![
-                PathBuf::from("/usr/local/share"),
-                PathBuf::from("/usr/share"),
-            ]
-        });
-    let data_home = std::env::var_os("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .filter(|dir| dir.is_absolute())
-        .unwrap_or_else(|| home.join(".local/share"));
+    let data_dirs = xdg_data_dirs(std::env::var_os("XDG_DATA_DIRS").as_deref());
+    let data_home = xdg_data_home(std::env::var_os("XDG_DATA_HOME").as_deref(), Some(&home));
     let mut dirs: Vec<PathBuf> = data_dirs.iter().map(|dir| dir.join("icons")).collect();
-    dirs.push(data_home.join("icons"));
+    dirs.extend(data_home.map(|dir| dir.join("icons")));
     dirs.push(home.join(".icons"));
     dirs.retain(|dir| dir.exists());
     dirs
+}
+
+/// The data dirs `$XDG_DATA_DIRS` (`var`) names: its absolute entries, or
+/// `/usr/local/share` and `/usr/share` when none is left, as `xdg` 2.5.2
+/// and Qt (`qstandardpaths_unix.cpp:370-399` at v6.11.2) read it.
+#[cfg(target_os = "linux")]
+pub(crate) fn xdg_data_dirs(var: Option<&std::ffi::OsStr>) -> Vec<std::path::PathBuf> {
+    use std::path::PathBuf;
+
+    var.map(|dirs| {
+        std::env::split_paths(dirs)
+            .filter(|dir| dir.is_absolute())
+            .collect::<Vec<_>>()
+    })
+    .filter(|dirs| !dirs.is_empty())
+    .unwrap_or_else(|| {
+        vec![
+            PathBuf::from("/usr/local/share"),
+            PathBuf::from("/usr/share"),
+        ]
+    })
+}
+
+/// The data home `$XDG_DATA_HOME` (`var`) names: itself when absolute, else
+/// `<home>/.local/share`, as `xdg` 2.5.2 and Qt
+/// (`qstandardpaths_unix.cpp:227-232` at v6.11.2) read it; `None` without
+/// either.
+#[cfg(target_os = "linux")]
+pub(crate) fn xdg_data_home(
+    var: Option<&std::ffi::OsStr>,
+    home: Option<&std::path::Path>,
+) -> Option<std::path::PathBuf> {
+    var.map(std::path::PathBuf::from)
+        .filter(|dir| dir.is_absolute())
+        .or_else(|| home.map(|home| home.join(".local/share")))
 }
 
 /// Whether `name` can name a theme directory: one plain path component,

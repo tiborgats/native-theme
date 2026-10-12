@@ -177,32 +177,79 @@ pub(crate) fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
 /// - `dialog`: `DialogDefault`
 /// - `panel`: `PanelDefault`
 ///
-/// A key the theme omits, or one that is not a size, remains None, so the
-/// preset's size applies where KIconTheme would use its own fallback
-/// (`kicontheme.cpp:160-167`).
+/// A key the theme omits, or one that is not a size, has KIconTheme's own
+/// fallback for the group ([`KICONTHEME_DEFAULT_SIZES`]), as KConfig returns
+/// the default for a missing key or one it cannot convert. That fallback is
+/// KDE's, not the preset's, and can differ from it: a theme without
+/// `DesktopDefault` is drawn at 32 where Breeze states 48.
 pub(crate) fn parse_icon_sizes_from_content(ini: &configparser::ini::Ini) -> IconSizes {
-    let size = |key: &str| {
-        ini.get("Icon Theme", key)
-            .and_then(|s| s.trim().parse::<u32>().ok())
-            .map(|sz| sz as f32)
-    };
+    let [small, toolbar, large, dialog, panel] = KICONTHEME_DEFAULT_SIZES.map(|(key, fallback)| {
+        Some(
+            ini.get("Icon Theme", key)
+                .and_then(|s| s.trim().parse::<u32>().ok())
+                .map_or(fallback, |sz| sz as f32),
+        )
+    });
     IconSizes {
-        small: size("SmallDefault"),
-        toolbar: size("MainToolbarDefault"),
-        large: size("DesktopDefault"),
-        dialog: size("DialogDefault"),
-        panel: size("PanelDefault"),
+        small,
+        toolbar,
+        large,
+        dialog,
+        panel,
     }
 }
 
+/// The `[Icon Theme]` key of each size [`parse_icon_sizes_from_content`]
+/// reads (`small`, `toolbar`, `large`, `dialog`, `panel`, in that order) and
+/// KIconTheme's fallback for its group: `Small` 16, `MainToolbar` 22,
+/// `Desktop` 32, `Dialog` 32, `Panel` 48 (kiconthemes `src/kicontheme.cpp:160-167`
+/// at v6.31.0), the size it keeps when `readEntry` finds no key
+/// (kconfig `src/core/kconfiggroup.cpp:690-693` at v6.31.0) or cannot
+/// convert the value (:256-269).
+const KICONTHEME_DEFAULT_SIZES: [(&str, f32); 5] = [
+    ("SmallDefault", 16.0),
+    ("MainToolbarDefault", 22.0),
+    ("DesktopDefault", 32.0),
+    ("DialogDefault", 32.0),
+    ("PanelDefault", 48.0),
+];
+
 /// Parse icon sizes from the active icon theme's index.theme file
-/// ([`parse_icon_sizes_from_content`]), found in the icon base directories
-/// the freedesktop icon lookup searches ([`crate::icons::icon_base_dirs`]).
+/// ([`parse_icon_sizes_from_content`]), found where KIconTheme finds it
+/// ([`kde_icon_base_dirs`]).
 ///
 /// Returns `IconSizes::default()` (all None) if no index.theme is found or
 /// the file cannot be read.
 pub(crate) fn parse_icon_sizes_from_index_theme(theme_name: &str) -> IconSizes {
-    icon_sizes_in_bases(theme_name, crate::icons::icon_base_dirs())
+    let bases = kde_icon_base_dirs(
+        std::env::home_dir().as_deref(),
+        std::env::var_os("XDG_DATA_HOME").as_deref(),
+        std::env::var_os("XDG_DATA_DIRS").as_deref(),
+    );
+    icon_sizes_in_bases(theme_name, &bases)
+}
+
+/// The icon base directories KIconTheme searches for a theme's index.theme,
+/// in its order: `QStandardPaths::locateAll(GenericDataLocation, "icons")`
+/// (kiconthemes `src/kicontheme.cpp:382` at v6.31.0, the first holding the
+/// theme's index.theme winning, :395-405), which is the data home
+/// (`$XDG_DATA_HOME`, `data_home`), then each data dir (`$XDG_DATA_DIRS`,
+/// `data_dirs`; qtbase `src/corelib/io/qstandardpaths_unix.cpp:452` at
+/// v6.11.2), each joined with `icons`. `~/.icons`, which the freedesktop icon
+/// lookup also searches ([`crate::icons::icon_base_dirs`]) and KIconTheme
+/// does not, comes last. Without a home directory the data dirs are still
+/// searched.
+fn kde_icon_base_dirs(
+    home: Option<&std::path::Path>,
+    data_home: Option<&std::ffi::OsStr>,
+    data_dirs: Option<&std::ffi::OsStr>,
+) -> Vec<std::path::PathBuf> {
+    crate::icons::xdg_data_home(data_home, home)
+        .into_iter()
+        .chain(crate::icons::xdg_data_dirs(data_dirs))
+        .map(|dir| dir.join("icons"))
+        .chain(home.map(|home| home.join(".icons")))
+        .collect()
 }
 
 /// [`parse_icon_sizes_from_index_theme`] over the icon base directories
@@ -1256,27 +1303,36 @@ BackgroundNormal=49,54,59
         );
     }
 
-    /// A theme that states no default sizes has none, whatever directories
-    /// it lists.
+    /// A theme that states no default sizes has KIconTheme's fallbacks,
+    /// whatever directories it lists.
     #[test]
-    fn an_icon_theme_without_default_keys_has_no_sizes() {
+    fn an_icon_theme_without_default_keys_has_kiconthemes_fallbacks() {
         let content = "\
 [Icon Theme]
 Name=sizeless
-Directories=actions/16
+Directories=actions/12
 
-[actions/16]
-Size=16
+[actions/12]
+Size=12
 Context=Actions
 Type=Fixed
 ";
         let mut ini = create_kde_parser();
         read_kconfig(&mut ini, content);
-        assert_eq!(parse_icon_sizes_from_content(&ini), IconSizes::default());
+        assert_eq!(
+            parse_icon_sizes_from_content(&ini),
+            IconSizes {
+                toolbar: Some(22.0),
+                small: Some(16.0),
+                large: Some(32.0),
+                dialog: Some(32.0),
+                panel: Some(48.0),
+            }
+        );
     }
 
-    /// The index.theme is found in every base directory the icon lookup
-    /// searches, `~/.icons` among them, the first base holding it winning.
+    /// The index.theme is found in any base directory, `~/.icons` among
+    /// them, the first base holding it winning.
     #[test]
     fn the_index_theme_is_found_in_any_icon_base_dir() {
         let dir = temp_config_dir("icon-bases");
@@ -1308,6 +1364,82 @@ Type=Fixed
         assert_eq!(icon_sizes_in_bases("absent", &bases), IconSizes::default());
     }
 
+    /// KIconTheme's order: the user's data home, then each data dir, then
+    /// `~/.icons`, which KDE does not search, last; with no home directory
+    /// the data dirs are still searched.
+    #[test]
+    fn kde_icon_base_dirs_follow_kiconthemes_order() {
+        use std::ffi::OsStr;
+        use std::path::Path;
+
+        assert_eq!(
+            kde_icon_base_dirs(Some(Path::new("/h")), None, Some(OsStr::new("/a:rel:/b"))),
+            paths(&["/h/.local/share/icons", "/a/icons", "/b/icons", "/h/.icons"])
+        );
+        assert_eq!(
+            kde_icon_base_dirs(
+                Some(Path::new("/h")),
+                Some(OsStr::new("/data")),
+                Some(OsStr::new(""))
+            ),
+            paths(&[
+                "/data/icons",
+                "/usr/local/share/icons",
+                "/usr/share/icons",
+                "/h/.icons"
+            ])
+        );
+        assert_eq!(
+            kde_icon_base_dirs(None, Some(OsStr::new("rel")), Some(OsStr::new("/a"))),
+            paths(&["/a/icons"])
+        );
+    }
+
+    /// A theme the user installed over a system one, as "Get New Icons"
+    /// does into `~/.local/share/icons`, gives the user copy's sizes, the
+    /// copy KIconTheme reads.
+    #[test]
+    fn the_users_copy_of_an_icon_theme_wins() {
+        let dir = temp_config_dir("icon-user-copy");
+        let home = dir.join("home");
+        let system = dir.join("usr/share");
+        std::fs::create_dir_all(home.join(".local/share/icons/copied")).unwrap();
+        std::fs::create_dir_all(system.join("icons/copied")).unwrap();
+        std::fs::write(
+            home.join(".local/share/icons/copied/index.theme"),
+            "[Icon Theme]\nDesktopDefault=64\n",
+        )
+        .unwrap();
+        std::fs::write(
+            system.join("icons/copied/index.theme"),
+            "[Icon Theme]\nDesktopDefault=48\n",
+        )
+        .unwrap();
+        let bases = kde_icon_base_dirs(Some(&home), None, Some(system.as_os_str()));
+        assert_eq!(icon_sizes_in_bases("copied", &bases).large, Some(64.0));
+    }
+
+    /// A key a found theme omits, or one that is no size, has KIconTheme's
+    /// own fallback for its group.
+    #[test]
+    fn a_key_the_icon_theme_omits_has_kiconthemes_fallback() {
+        let mut ini = create_kde_parser();
+        read_kconfig(
+            &mut ini,
+            "[Icon Theme]\nName=partial\nSmallDefault=24\nPanelDefault=big\n",
+        );
+        assert_eq!(
+            parse_icon_sizes_from_content(&ini),
+            IconSizes {
+                toolbar: Some(22.0),
+                small: Some(24.0),
+                large: Some(32.0),
+                dialog: Some(32.0),
+                panel: Some(48.0),
+            }
+        );
+    }
+
     /// A name that is not one directory, as `../dotted`, is no theme: the
     /// search never leaves the base directories.
     #[test]
@@ -1336,9 +1468,9 @@ Name=whatever
         let mut ini = create_kde_parser();
         ini.read(content.to_string()).unwrap();
         let sizes = parse_icon_sizes_from_content(&ini);
-        assert!(sizes.small.is_none());
-        assert!(sizes.toolbar.is_none());
-        assert!(sizes.large.is_none());
+        assert_eq!(sizes.small, Some(16.0));
+        assert_eq!(sizes.toolbar, Some(22.0));
+        assert_eq!(sizes.large, Some(32.0));
     }
 
     #[test]
