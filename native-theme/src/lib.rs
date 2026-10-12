@@ -644,6 +644,64 @@ impl SystemTheme {
         }
     }
 
+    /// Load an icon from this theme's [`icon_set`](Self::icon_set), in
+    /// `color`, for one colour mode's variant: a freedesktop icon comes from
+    /// that variant's theme, [`icon_theme_for(mode)`](Self::icon_theme_for)
+    /// (`breeze` or `breeze-dark` under `kde-breeze`), so an application can
+    /// draw the variant that is not the OS's.
+    ///
+    /// Every set honours `color`, as in
+    /// [`load_custom_icon`](crate::icons::load_custom_icon): the system sets
+    /// load the icon in it, and a Material or Lucide SVG (or a provider's own
+    /// SVG) is coloured through
+    /// [`colorize_monochrome_svg`](crate::icons::colorize_monochrome_svg).
+    /// `None` leaves each icon in the colour it loads in.
+    ///
+    /// `None` where the set has no such icon, or without the set's feature
+    /// (see the loaders in [`icons`]).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use native_theme::icons::IconRole;
+    ///
+    /// let sys = native_theme::SystemTheme::from_system()?;
+    /// let fg = sys.pick(sys.mode).defaults.text_color;
+    /// let _icon = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg));
+    /// # Ok::<(), native_theme::Error>(())
+    /// ```
+    #[must_use]
+    pub fn icon<'a>(
+        &self,
+        id: impl Into<IconId<'a>>,
+        mode: ColorMode,
+        color: Option<Rgba>,
+    ) -> Option<IconData> {
+        self.with_icon_source(mode, |set, theme| {
+            icons::load_icon_in(id.into(), set, theme, color)
+        })
+    }
+
+    /// Load this theme's [`icon_set`](Self::icon_set) animated loading
+    /// indicator for one colour mode's variant: a freedesktop spinner comes
+    /// from [`icon_theme_for(mode)`](Self::icon_theme_for), as in
+    /// [`icon`](Self::icon). See
+    /// [`load_icon_indicator`].
+    #[must_use]
+    pub fn icon_indicator(&self, mode: ColorMode) -> Option<AnimatedIcon> {
+        self.with_icon_source(mode, icons::load_icon_indicator)
+    }
+
+    /// Run `load` on the set and the freedesktop theme that [`icon`](Self::icon)
+    /// and [`icon_indicator`](Self::icon_indicator) load from for `mode`.
+    fn with_icon_source<'s, R>(
+        &'s self,
+        mode: ColorMode,
+        load: impl FnOnce(IconSet, Option<&'s str>) -> R,
+    ) -> R {
+        load(self.icon_set, self.icon_theme_for(mode))
+    }
+
     /// Apply an app-level TOML overlay and re-resolve.
     ///
     /// Merges the overlay onto the pre-resolve [`ThemeMode`] (not the

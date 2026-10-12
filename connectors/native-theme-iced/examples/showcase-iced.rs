@@ -1424,7 +1424,7 @@ fn build_animation_caches(
     {
         let indicator = match icon_set {
             IconSet::Freedesktop => FreedesktopLoader::load_indicator(freedesktop_theme),
-            other => load_icon_indicator(other),
+            other => load_icon_indicator(other, None),
         };
         if let Some(anim) = indicator {
             // Cache static first-frame for reduced motion

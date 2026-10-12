@@ -216,7 +216,7 @@ impl Global for Indicators {}
 fn load(key: &IndicatorKey, colour: Rgba) -> Option<Indicator> {
     let anim = match key.set {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(key.icon_theme.as_deref()),
-        other => load_icon_indicator(other),
+        other => load_icon_indicator(other, None),
     }?;
     match &anim {
         AnimatedIcon::Frames(data) => {

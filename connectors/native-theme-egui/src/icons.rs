@@ -663,7 +663,7 @@ mod tests {
 
         // Two frames of the Material indicator, `material_spinner` (`native-theme/src/spinners.rs:159-162`),
         // an `AnimatedIcon::Frames` (`material_spinner_is_frames`, `:212-221`), under one key.
-        let indicator = native_theme::icons::load_icon_indicator(IconSet::Material).unwrap();
+        let indicator = native_theme::icons::load_icon_indicator(IconSet::Material, None).unwrap();
         let frames = indicator
             .frame_list()
             .expect("the Material indicator is frame-animated");
@@ -796,7 +796,7 @@ mod tests {
     fn animation_helpers_answer_none_under_reduced_motion_and_for_the_other_variant() {
         // No pass is needed: `ctx.input(|i| i.time)` reads the bare `Context`'s input state.
         let ctx = egui::Context::default();
-        let frames = native_theme::icons::load_icon_indicator(IconSet::Material).unwrap();
+        let frames = native_theme::icons::load_icon_indicator(IconSet::Material, None).unwrap();
         let spin = AnimatedIcon::transform(
             svg(PLAIN),
             TransformAnimation::Spin {

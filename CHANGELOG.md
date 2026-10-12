@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `IconSet::SegoeIcons` is `IconSet::SegoeFluent` and `SegoeIconsLoader` is `SegoeFluentLoader`, matching the set's serialized name `segoe-fluent`, which is unchanged (TOML `icon_set = "segoe-fluent"`, the native-theme-build mapping key and its `segoe-fluent/` directory); code native-theme-build generates names `IconSet::SegoeFluent`.
 - **native-theme**: `FreedesktopLoader::size` takes a `u32`, the pixel type of `rasterize_svg` and `IconData::rgba` (it was `u16`); a size above 65535 looks up the largest directory, as 65535 does.
 - **native-theme**: the system loaders' `color` and `color_opt` (`FreedesktopLoader`, `SfSymbolsLoader`, `SegoeFluentLoader`) take an `Rgba` and an `Option<Rgba>`, the crate's colour type that `colorize_monochrome_svg` takes (they took `[u8; 3]`); the alpha is ignored, as the icon keeps its own coverage.
+- **native-theme**: `icons::load_icon_indicator(set, theme)` takes the freedesktop theme to take the spinner from (`None` for the system's, as it used before), so a freedesktop spinner from a chosen theme needs no dispatch by hand; the other sets do not use it.
 - **native-theme-build**: the generated enum implements `{crate_path}::icons::IconProvider` (it was `{crate_path}::theme::IconProvider`), the trait's path in this native-theme.
 
 ### Added
@@ -47,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `SystemTheme::from_system_with_preset(name)` and `from_system_with_preset_async(name)` merge the platform reader's live values over a chosen generation of the running platform (on macOS 26, `macos-monterey`'s geometry under macOS 26's colours, fonts and accessibility), reported in `version_match`.
 - **native-theme**: crate documentation on docs.rs: a quick start (read the OS theme, resolve a preset, apply an overlay, hand the result to a connector, watch for changes) and a map of the modules; native-theme-derive's says it is internal to native-theme. The README has a `watch` recipe.
 - **native-theme**: `SfSymbolsLoader::size(points)` and `SegoeFluentLoader::size(px)`, so a system icon can be asked for at a theme's icon size: an SF Symbol is configured at that point size, a Segoe glyph drawn from the font at that em height. Without it they stay at 24 points and 32 pixels; a size of 0, or one whose `size² × 4` bytes exceed the 64 MiB icon decode bound, loads `None`. A Segoe stock shell icon keeps the system's large icon size.
+- **native-theme**: `icons::load_custom_icon(provider, set, color)` loads an `IconProvider`'s icon for a set known only at runtime, and every set honours the colour: the system sets load the icon in it, and a Material or Lucide icon, or the provider's own SVG, is coloured through `colorize_monochrome_svg`. The gpui and iced connectors' private copies of it go in a later release.
+- **native-theme**: `SystemTheme::icon(id, mode, color)` and `SystemTheme::icon_indicator(mode)` load a role, a name or a provider's icon, and the animated loading indicator, from the theme's `icon_set`; a freedesktop icon or spinner comes from `icon_theme_for(mode)`, that variant's theme (`breeze` or `breeze-dark` under `kde-breeze`).
 
 ### Changed
 

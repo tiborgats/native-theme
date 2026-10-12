@@ -117,7 +117,7 @@ fn indicator(
     // Outside every accessor closure: a freedesktop lookup reads the file system.
     let loaded = Arc::new(match set {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
-        other => load_icon_indicator(other),
+        other => load_icon_indicator(other, None),
     });
     ctx.data_mut(|d| d.insert_temp(key, Arc::clone(&loaded)));
     loaded

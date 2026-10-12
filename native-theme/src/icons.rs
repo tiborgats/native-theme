@@ -2,7 +2,6 @@
 
 use std::fmt;
 
-#[allow(unused_imports)]
 use std::borrow::Cow;
 
 use crate::color::Rgba;
@@ -118,8 +117,8 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 // compile error.
 //
 // For runtime-set dispatch (common in connector code), use the free
-// functions `load_icon(id, set)` and `load_icon_indicator(set)` at the
-// bottom of this section.
+// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color)`
+// and `load_icon_indicator(set, theme)` at the bottom of this section.
 
 /// Loader for freedesktop.org icon themes (GTK / Linux).
 ///
@@ -623,18 +622,120 @@ pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData
 
 /// Load the animated loading indicator for the given set.
 ///
+/// `theme` is the freedesktop theme to take the spinner from, as
+/// [`FreedesktopLoader::load_indicator`] takes it: `None` uses the
+/// system-detected theme. It is used only for [`IconSet::Freedesktop`];
+/// for the sets that have no themes (Material, Lucide, SfSymbols,
+/// SegoeFluent), the theme name is not used by the loader.
+///
 /// Returns `None` for sets without an animated spinner (SfSymbols, SegoeFluent).
-/// For a freedesktop spinner from a specific theme, use
-/// [`FreedesktopLoader::load_indicator`] directly.
 ///
 /// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
-pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon> {
+pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<AnimatedIcon> {
     match set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(None),
+        IconSet::Freedesktop => FreedesktopLoader::load_indicator(theme),
         IconSet::Material => MaterialLoader::load_indicator(),
         IconSet::Lucide => LucideLoader::load_indicator(),
         IconSet::SfSymbols | IconSet::SegoeFluent => None,
+    }
+}
+
+/// Load a custom icon from an [`IconProvider`] for a set known only at
+/// runtime, in `color`.
+///
+/// The provider's [`icon_name`](IconProvider::icon_name) for `set` is loaded
+/// first; where it has none, or the set has no such icon, its own
+/// [`icon_svg`](IconProvider::icon_svg) for `set` is used. No other set is
+/// tried.
+///
+/// Every set honours `color`: the system sets load the icon in it
+/// ([`FreedesktopLoader::color`] for a symbolic icon, [`SfSymbolsLoader::color`],
+/// [`SegoeFluentLoader::color`]), and a Material or Lucide icon, or the
+/// provider's own SVG, is coloured through [`colorize_monochrome_svg`]. `None`
+/// leaves each icon in the colour it loads in. A freedesktop icon comes from
+/// the system's icon theme; [`SystemTheme::icon`](crate::SystemTheme::icon)
+/// takes the theme's own. For monochrome icons: a full-colour SVG the
+/// provider gives is recoloured too.
+///
+/// Each set needs its loader's feature (see the loaders); `None` without it.
+#[must_use]
+pub fn load_custom_icon(
+    provider: &(impl IconProvider + ?Sized),
+    set: IconSet,
+    color: Option<Rgba>,
+) -> Option<IconData> {
+    load_provider_icon(provider, set, None, color)
+}
+
+/// The runtime-set load behind [`load_custom_icon`] and
+/// [`SystemTheme::icon`](crate::SystemTheme::icon): `id` from `set` in
+/// `color`, a freedesktop icon from `theme` (the system's where `None`).
+pub(crate) fn load_icon_in<'a>(
+    id: IconId<'a>,
+    set: IconSet,
+    theme: Option<&'a str>,
+    color: Option<Rgba>,
+) -> Option<IconData> {
+    match id {
+        IconId::Custom(provider) => load_provider_icon(provider, set, theme, color),
+        id => load_set_icon(id, set, theme, color),
+    }
+}
+
+/// A provider's icon: its name for `set` through the set's loader, else its
+/// own SVG, coloured.
+fn load_provider_icon(
+    provider: &(impl IconProvider + ?Sized),
+    set: IconSet,
+    theme: Option<&str>,
+    color: Option<Rgba>,
+) -> Option<IconData> {
+    if let Some(name) = provider.icon_name(set)
+        && let Some(data) = load_set_icon(IconId::Name(name), set, theme, color)
+    {
+        return Some(data);
+    }
+    provider
+        .icon_svg(set)
+        .map(|svg| colorize_svg_data(IconData::Svg(svg), color))
+}
+
+/// A role or a name from `set`'s loader, in `color`.
+fn load_set_icon<'a>(
+    id: IconId<'a>,
+    set: IconSet,
+    theme: Option<&'a str>,
+    color: Option<Rgba>,
+) -> Option<IconData> {
+    match set {
+        IconSet::Freedesktop => {
+            let loader = FreedesktopLoader::new(id).color_opt(color);
+            match theme {
+                Some(theme) => loader.theme(theme),
+                None => loader,
+            }
+            .load()
+        }
+        IconSet::SfSymbols => SfSymbolsLoader::new(id).color_opt(color).load(),
+        IconSet::SegoeFluent => SegoeFluentLoader::new(id).color_opt(color).load(),
+        IconSet::Material => MaterialLoader::new(id)
+            .load()
+            .map(|data| colorize_svg_data(data, color)),
+        IconSet::Lucide => LucideLoader::new(id)
+            .load()
+            .map(|data| colorize_svg_data(data, color)),
+    }
+}
+
+/// An SVG coloured through [`colorize_monochrome_svg`] where `color` is
+/// given; anything else unchanged.
+fn colorize_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
+    match (data, color) {
+        (IconData::Svg(svg), Some(color)) => {
+            IconData::Svg(Cow::Owned(colorize_monochrome_svg(&svg, color)))
+        }
+        (data, _) => data,
     }
 }
 
@@ -1471,6 +1572,130 @@ mod load_custom_icon_tests {
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
+mod runtime_set_icon_tests {
+    use super::*;
+
+    // Test fixture colour, not a theme value.
+    const COLOR: Rgba = Rgba::rgb(0x12, 0x34, 0x56);
+
+    fn svg_text(data: IconData) -> String {
+        match data {
+            IconData::Svg(svg) => String::from_utf8(svg.into_owned()).unwrap(),
+            other => panic!("expected IconData::Svg, got {other:?}"),
+        }
+    }
+
+    #[derive(Debug)]
+    struct SvgOnlyProvider;
+    impl IconProvider for SvgOnlyProvider {
+        fn icon_name(&self, _set: IconSet) -> Option<&str> {
+            None
+        }
+        fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+            Some(Cow::Borrowed(
+                b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>",
+            ))
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn material_role_comes_back_in_the_colour() {
+        let svg = svg_text(
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Material, Some(COLOR)).unwrap(),
+        );
+        assert!(
+            svg.contains("#123456"),
+            "colour written into the bytes: {svg}"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn lucide_role_comes_back_in_the_colour() {
+        let svg = svg_text(
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Lucide, Some(COLOR)).unwrap(),
+        );
+        assert!(
+            svg.contains("#123456"),
+            "colour written into the bytes: {svg}"
+        );
+        assert!(!svg.contains("currentColor"), "{svg}");
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn no_colour_leaves_the_bundled_bytes() {
+        let loaded = load_custom_icon(&IconRole::ActionCopy, IconSet::Material, None).unwrap();
+        assert_eq!(
+            loaded,
+            MaterialLoader::new(IconRole::ActionCopy).load().unwrap()
+        );
+    }
+
+    #[test]
+    fn provider_svg_comes_back_in_the_colour() {
+        for set in [
+            IconSet::Freedesktop,
+            IconSet::SfSymbols,
+            IconSet::SegoeFluent,
+            IconSet::Material,
+            IconSet::Lucide,
+        ] {
+            let svg = svg_text(load_custom_icon(&SvgOnlyProvider, set, Some(COLOR)).unwrap());
+            assert!(svg.contains("fill=\"#123456\""), "{set:?}: {svg}");
+        }
+    }
+
+    #[test]
+    fn unsized_provider_is_accepted() {
+        let provider: &dyn IconProvider = &SvgOnlyProvider;
+        assert!(load_custom_icon(provider, IconSet::Material, None).is_some());
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn custom_id_in_the_dispatcher_is_coloured() {
+        let provider: &dyn IconProvider = &IconRole::ActionCopy;
+        let svg = svg_text(
+            load_icon_in(
+                IconId::Custom(provider),
+                IconSet::Material,
+                None,
+                Some(COLOR),
+            )
+            .unwrap(),
+        );
+        assert!(svg.contains("#123456"), "{svg}");
+    }
+
+    #[test]
+    fn provider_with_nothing_is_none() {
+        #[derive(Debug)]
+        struct NullProvider;
+        impl IconProvider for NullProvider {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                None
+            }
+            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+                None
+            }
+        }
+        assert!(load_custom_icon(&NullProvider, IconSet::Material, Some(COLOR)).is_none());
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn indicator_of_a_themeless_set_ignores_the_theme() {
+        assert_eq!(
+            load_icon_indicator(IconSet::Material, Some("breeze")),
+            load_icon_indicator(IconSet::Material, None)
+        );
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod loading_indicator_tests {
     use super::*;
 
@@ -1592,8 +1817,8 @@ mod icon_loader_tests {
     #[test]
     fn load_icon_indicator_free_fn_dispatches() {
         // SfSymbols and SegoeFluent have no spinner primitive.
-        assert!(load_icon_indicator(IconSet::SfSymbols).is_none());
-        assert!(load_icon_indicator(IconSet::SegoeFluent).is_none());
+        assert!(load_icon_indicator(IconSet::SfSymbols, None).is_none());
+        assert!(load_icon_indicator(IconSet::SegoeFluent, None).is_none());
     }
 }
 

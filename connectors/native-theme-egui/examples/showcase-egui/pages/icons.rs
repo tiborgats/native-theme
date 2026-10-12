@@ -231,7 +231,7 @@ fn icons_indicator(
     let (set, icon_theme) = chosen;
     let indicator = match set {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme.as_deref()),
-        set => native_theme::icons::load_icon_indicator(*set),
+        set => native_theme::icons::load_icon_indicator(*set, None),
     };
     let reduce_motion = atlas.accessibility().reduce_motion;
     let Some(anim) = indicator else {

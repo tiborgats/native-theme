@@ -1167,7 +1167,7 @@ fn svg_bytes_to_image_source(
 /// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
 ///
 /// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
-///     load_icon_indicator(IconSet::Lucide)
+///     load_icon_indicator(IconSet::Lucide, None)
 ///         .and_then(|anim| animated_frames_to_image_sources(&anim, None, None))
 /// {
 ///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):

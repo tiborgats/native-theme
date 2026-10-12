@@ -614,7 +614,7 @@ impl Showcase {
             Some(IconSet::Freedesktop) => {
                 FreedesktopLoader::load_indicator(self.freedesktop_theme())
             }
-            Some(icon_set) => load_icon_indicator(icon_set),
+            Some(icon_set) => load_icon_indicator(icon_set, None),
             None => None,
         };
         let set_name = &self.icon_theme_name;

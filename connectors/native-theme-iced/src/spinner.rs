@@ -104,7 +104,7 @@ impl Spinner {
         let color = to_color(s.fill_color);
         let indicator = match icon_set {
             IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
-            other => load_icon_indicator(other),
+            other => load_icon_indicator(other, None),
         };
         let tint = matches!(icon_set, IconSet::Material | IconSet::Lucide).then_some(color);
         Self {
@@ -312,7 +312,7 @@ mod tests {
     fn material_draws_its_frames_in_the_spinner_colour() -> native_theme::Result<()> {
         let (_, resolved) = crate::from_preset("material-3", true)?;
         let spinner = Spinner::new(&resolved, IconSet::Material, None);
-        let Some(anim) = load_icon_indicator(IconSet::Material) else {
+        let Some(anim) = load_icon_indicator(IconSet::Material, None) else {
             panic!("material-icons is on, yet Material has no indicator");
         };
         let tint = to_color(resolved.spinner.fill_color);

@@ -2180,6 +2180,67 @@ accent_color = "#0066cc"
         Ok(())
     }
 
+    /// `SystemTheme::icon` and `icon_indicator` load a freedesktop icon from
+    /// the asked mode's variant theme, not the active one's, and keep doing so
+    /// when the public `mode` field is changed.
+    #[test]
+    fn icon_loads_from_the_modes_icon_theme() -> crate::Result<()> {
+        let mut theme = run_pipeline(
+            reader_from_preset("kde-breeze"),
+            "kde-breeze",
+            crate::ColorMode::Light,
+        )?;
+        for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            theme.mode = active;
+            for (mode, expected) in [
+                (crate::ColorMode::Light, "breeze"),
+                (crate::ColorMode::Dark, "breeze-dark"),
+            ] {
+                let source =
+                    theme.with_icon_source(mode, |set, theme| (set, theme.map(str::to_owned)));
+                assert_eq!(
+                    source,
+                    (crate::IconSet::Freedesktop, Some(expected.to_owned())),
+                    "kde-breeze.toml:16 and :415 (active mode {active:?}, asked {mode:?})"
+                );
+                assert_eq!(theme.icon_theme_for(mode), Some(expected));
+            }
+        }
+        Ok(())
+    }
+
+    /// A Material system theme's icon comes back with the colour in its bytes.
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_of_a_material_theme_comes_back_in_the_colour() -> crate::Result<()> {
+        let theme = run_pipeline(
+            reader_from_preset("material-3"),
+            "material-3",
+            crate::ColorMode::Light,
+        )?;
+        assert_eq!(
+            theme.icon_set,
+            crate::IconSet::Material,
+            "material-3.toml:9"
+        );
+        // Test fixture colour, not a theme value.
+        let color = Rgba::rgb(0x12, 0x34, 0x56);
+        for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            match theme.icon(crate::IconRole::ActionCopy, mode, Some(color)) {
+                Some(crate::IconData::Svg(svg)) => {
+                    let svg = String::from_utf8(svg.into_owned()).unwrap();
+                    assert!(svg.contains("#123456"), "{mode:?}: {svg}");
+                }
+                other => panic!("expected an SVG for {mode:?}, got {other:?}"),
+            }
+            assert!(
+                theme.icon_indicator(mode).is_some(),
+                "Material's spinner ({mode:?})"
+            );
+        }
+        Ok(())
+    }
+
     /// Both variants' icon themes are known whichever mode is active: the
     /// egui connector needs the name per `egui::Theme`, because egui draws
     /// either style after a scheme change (egui spec §4.2, §9).
