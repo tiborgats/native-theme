@@ -245,12 +245,14 @@ impl ThemeMode {
         self.combo_box.resolve_font_from_defaults(d); // font
         self.segmented_control.resolve_font_from_defaults(d); // font
         self.expander.resolve_font_from_defaults(d); // font
+        let link_color_stated = self.link.font.as_ref().is_some_and(|f| f.color.is_some());
         self.link.resolve_font_from_defaults(d); // font
 
         // Exception: link.font.color inherits from defaults.link_color, NOT
         // defaults.font.color. This MUST run AFTER the generic
-        // resolve_font_from_defaults call above, which populates
-        // link.font.color from defaults.font.color; we overwrite it here.
+        // resolve_font_from_defaults call above, which fills a None
+        // link.font.color from defaults.font.color; we replace that fill
+        // here, and keep a link.font.color the theme stated.
         //
         // OUT of G6 codegen scope per docs/archive/v0.5.7_gaps.md §G6: the
         // override TARGET (a nested sub-field inside an Option FontSpec)
@@ -258,7 +260,7 @@ impl ThemeMode {
         // grammar which names the whole font field. Staying hand-written
         // keeps the rule visible to the `uniform_rules_all_accounted_for`
         // drift test.
-        if let Some(ref mut font) = self.link.font {
+        if !link_color_stated && let Some(ref mut font) = self.link.font {
             font.color = self.defaults.link_color;
         }
     }

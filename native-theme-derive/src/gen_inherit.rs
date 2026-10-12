@@ -243,7 +243,8 @@ pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> Tok
 /// Note on the link.font.color override: the override `link.font.color =
 /// defaults.link_color` stays hand-written in `resolve_font_inheritance`
 /// AFTER the generated dispatch. This method emits the standard color
-/// inherit from `defaults_font.color`; the caller re-writes it afterwards.
+/// inherit from `defaults_font.color`; the caller re-writes a color it filled
+/// that way afterwards, and keeps one the theme stated.
 /// See plan 94-01 objective for the scope-boundary rationale.
 pub(crate) fn gen_font_inherit(opt_name: &Ident, inherit: &InheritMeta) -> TokenStream {
     if inherit.font.is_empty() {

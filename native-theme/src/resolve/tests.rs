@@ -498,6 +498,51 @@ fn resolve_phase3_font_entire_inheritance() {
     assert_eq!(button_font.weight, Some(400));
 }
 
+#[test]
+fn resolve_phase3_link_font_color_explicit_preserved() {
+    let mut v = ThemeMode::default();
+    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
+    v.link.font = Some(FontSpec {
+        color: Some(Rgba::rgb(255, 0, 0)),
+        ..Default::default()
+    });
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(255, 0, 0)),
+        "stated link.font.color preserved"
+    );
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(255, 0, 0)),
+        "a second resolve keeps it"
+    );
+}
+
+#[test]
+fn resolve_phase3_link_font_color_from_link_color() {
+    let mut v = ThemeMode::default();
+    v.defaults.font.color = Some(Rgba::rgb(0, 0, 0));
+    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
+    v.link.font = Some(FontSpec {
+        size: Some(FontSize::Px(12.0)),
+        ..Default::default()
+    });
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(0, 0, 255)),
+        "None link.font.color from defaults.link_color, not defaults.font.color"
+    );
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(0, 0, 255)),
+        "a second resolve keeps it"
+    );
+}
+
 // ===== Phase 3: Text scale inheritance (RESOLVE-05) =====
 
 #[test]
