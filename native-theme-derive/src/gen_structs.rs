@@ -1,23 +1,19 @@
 // Generation of the Resolved struct and FIELD_NAMES const.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::Ident;
 
-use crate::parse::{FieldCategory, FieldMeta, LayerMeta};
+use crate::parse::{FieldCategory, FieldMeta};
+use crate::util::option_inner;
 
 /// Generate the Resolved struct and FIELD_NAMES const on the Option struct.
 pub(crate) fn gen_structs(
     opt_name: &Ident,
+    resolved_name: &Ident,
     fields: &[FieldMeta],
-    layer: &LayerMeta,
     doc_attrs: &[syn::Attribute],
 ) -> TokenStream {
-    let resolved_name = layer
-        .resolved_name
-        .clone()
-        .unwrap_or_else(|| format_ident!("Resolved{}", opt_name));
-
     let resolved_fields = gen_resolved_fields(fields);
     let field_names = gen_field_names(fields);
 
@@ -51,7 +47,7 @@ fn gen_resolved_fields(fields: &[FieldMeta]) -> TokenStream {
             match &f.category {
                 FieldCategory::Option => {
                     // Extract inner type from Option<T>
-                    let inner = extract_option_inner(&f.ty);
+                    let inner = option_inner(&f.ty);
                     quote! {
                         #(#docs)*
                         pub #ident: #inner,
@@ -59,7 +55,7 @@ fn gen_resolved_fields(fields: &[FieldMeta]) -> TokenStream {
                 }
                 FieldCategory::SoftOption => {
                     // Keep as Option<T> -- extract inner and re-wrap
-                    let inner = extract_option_inner(&f.ty);
+                    let inner = option_inner(&f.ty);
                     quote! {
                         #(#docs)*
                         pub #ident: Option<#inner>,
@@ -89,18 +85,4 @@ fn gen_field_names(fields: &[FieldMeta]) -> TokenStream {
         .collect();
 
     quote! { #(#entries)* }
-}
-
-/// Extract T from Option<T>. Falls back to the original type if not Option.
-fn extract_option_inner(ty: &syn::Type) -> syn::Type {
-    if let syn::Type::Path(type_path) = ty
-        && let Some(seg) = type_path.path.segments.last()
-        && seg.ident == "Option"
-        && let syn::PathArguments::AngleBracketed(args) = &seg.arguments
-        && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
-    {
-        return inner.clone();
-    }
-    // Not Option<T>, return as-is
-    ty.clone()
 }

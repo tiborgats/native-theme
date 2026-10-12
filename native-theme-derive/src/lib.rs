@@ -17,6 +17,7 @@ mod gen_ranges;
 mod gen_structs;
 mod gen_validate;
 mod parse;
+mod util;
 
 /// Derive macro that generates a companion Resolved struct and impl blocks
 /// for theme widget types.
@@ -76,11 +77,16 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         .cloned()
         .collect();
 
+    let resolved_name = layer
+        .resolved_name
+        .clone()
+        .unwrap_or_else(|| quote::format_ident!("Resolved{}", opt_name));
+
     // Generate code
-    let structs = gen_structs::gen_structs(opt_name, &fields, &layer, &doc_attrs);
+    let structs = gen_structs::gen_structs(opt_name, &resolved_name, &fields, &doc_attrs);
     let merge = gen_merge::gen_merge(opt_name, &fields);
-    let validate = gen_validate::gen_validate(opt_name, &fields, &layer);
-    let ranges = gen_ranges::gen_ranges(opt_name, &fields, &layer);
+    let validate = gen_validate::gen_validate(opt_name, &resolved_name, &fields, &layer);
+    let ranges = gen_ranges::gen_ranges(&resolved_name, &fields);
     let inherit = gen_inherit::gen_inherit(opt_name, &fields, &layer);
     let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta, &layer);
     let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta, &layer);
@@ -113,8 +119,7 @@ fn gen_inventory_submit(
         return proc_macro2::TokenStream::new();
     }
 
-    let name_str = opt_name.to_string();
-    let widget_name = to_snake_case(name_str.strip_suffix("Theme").unwrap_or(&name_str));
+    let widget_name = util::widget_name(opt_name);
 
     quote::quote! {
         inventory::submit!(crate::resolve::WidgetFieldInfo {
@@ -122,18 +127,6 @@ fn gen_inventory_submit(
             field_names: #opt_name::FIELD_NAMES,
         });
     }
-}
-
-/// Convert a PascalCase identifier to snake_case.
-fn to_snake_case(s: &str) -> String {
-    let mut result = String::with_capacity(s.len().saturating_add(4));
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_uppercase() && i > 0 {
-            result.push('_');
-        }
-        result.push(ch.to_ascii_lowercase());
-    }
-    result
 }
 
 /// Derive macro that registers a plain struct's serialized field names in the

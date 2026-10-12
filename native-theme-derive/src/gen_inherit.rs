@@ -14,6 +14,7 @@ use quote::quote;
 use syn::Ident;
 
 use crate::parse::{BorderInheritanceKind, FieldMeta, InheritMeta, LayerMeta};
+use crate::util::widget_name;
 
 /// Generate `resolve_from_defaults()` impl block on the Option struct.
 ///
@@ -55,7 +56,7 @@ fn gen_uniform_submissions(
         return TokenStream::new();
     }
 
-    let widget_name = widget_name_from_ident(opt_name);
+    let widget_name = widget_name(opt_name);
     let submissions = fields.iter().filter_map(|f| {
         let source = &f.inherit_from.as_ref()?.path;
         let field_str = f.ident.to_string();
@@ -94,24 +95,6 @@ fn gen_inherit_stmts(fields: &[FieldMeta]) -> TokenStream {
 // Phase 94-01 G6 emitters
 // ═════════════════════════════════════════════════════════════════════════════
 
-/// Derive a snake_case widget name from a widget struct identifier.
-///
-/// Strips trailing "Theme" (`ButtonTheme` -> `Button`) then emits snake_case.
-/// Mirrors the helper in lib.rs::to_snake_case but is duplicated here to
-/// avoid crossing module boundaries for a 15-line helper.
-fn widget_name_from_ident(opt_name: &Ident) -> String {
-    let s = opt_name.to_string();
-    let base = s.strip_suffix("Theme").unwrap_or(&s);
-    let mut out = String::with_capacity(base.len().saturating_add(4));
-    for (i, ch) in base.chars().enumerate() {
-        if ch.is_uppercase() && i > 0 {
-            out.push('_');
-        }
-        out.push(ch.to_ascii_lowercase());
-    }
-    out
-}
-
 /// Generate `resolve_border_from_defaults()` impl block + inventory registration
 /// for widgets that declare `#[theme_inherit(border_kind = "...")]`.
 ///
@@ -138,7 +121,7 @@ pub(crate) fn gen_border_inherit(
     let submission = if layer.skip_inventory {
         TokenStream::new()
     } else {
-        let widget_name = widget_name_from_ident(opt_name);
+        let widget_name = widget_name(opt_name);
         let kind_str = match kind {
             BorderInheritanceKind::Full => "full",
             BorderInheritanceKind::FullLg => "full_lg",
@@ -288,7 +271,7 @@ pub(crate) fn gen_font_inherit(
     // &'static strs — the registry schema keeps a single struct per row so
     // the "widgets_with_font" TOML entry ("widget.font_field") can be
     // reconstructed by joining the two fields with a dot.
-    let widget_name = widget_name_from_ident(opt_name);
+    let widget_name = widget_name(opt_name);
     let submissions: Vec<TokenStream> = inherit
         .font
         .iter()

@@ -78,7 +78,7 @@ fn padding_of(b: &WidgetBorderSpec) -> ResolvedPadding {
 
 /// The TOML key of a font size: `size_pt` or `size_px` as the theme states
 /// it, `size` where it states none.
-pub(crate) fn font_size_key(size: Option<FontSize>) -> &'static str {
+fn font_size_key(size: Option<FontSize>) -> &'static str {
     match size {
         Some(FontSize::Pt(_)) => "size_pt",
         Some(FontSize::Px(_)) => "size_px",
@@ -512,6 +512,34 @@ pub(crate) fn check_min_max(
     }
 }
 
+/// Check that a font's size is finite and strictly positive and its weight
+/// within 100..=900. Paths name the TOML key: `"{prefix}.{field}.weight"`,
+/// and for the size the key the theme states, `"{prefix}.{field}.size_pt"`
+/// or `size_px`. Paths are only formatted in the error branches.
+pub(crate) fn check_font(
+    font: &ResolvedFontSpec,
+    prefix: &str,
+    field: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
+    if !font.size.is_finite() || font.size <= 0.0 {
+        errors.push(crate::error::RangeViolation {
+            path: format!("{prefix}.{field}.{}", font_size_key(font.defined_size)),
+            value: font.size as f64,
+            min: Some(f64::MIN_POSITIVE),
+            max: None,
+        });
+    }
+    if font.weight < 100 || font.weight > 900 {
+        errors.push(crate::error::RangeViolation {
+            path: format!("{prefix}.{field}.weight"),
+            value: font.weight as f64,
+            min: Some(100.0),
+            max: Some(900.0),
+        });
+    }
+}
+
 /// Check that a widget border's corner radius, line width and every padding
 /// side it states are finite and non-negative. An unstated side is not
 /// checked. Paths name the TOML key: `"{prefix}.{field}.corner_radius_px"`,
@@ -761,35 +789,8 @@ pub(crate) fn check_defaults_ranges(
     let border_key = DefaultsBorderSpec::toml_key;
     let icon_key = IconSizes::toml_key;
 
-    // Fonts: size > 0, weight 100..=900
-    check_positive(
-        defaults.font.size,
-        "defaults.font",
-        font_size_key(defaults.font.defined_size),
-        errors,
-    );
-    check_range_u16(
-        defaults.font.weight,
-        100,
-        900,
-        "defaults.font",
-        "weight",
-        errors,
-    );
-    check_positive(
-        defaults.mono_font.size,
-        "defaults.mono_font",
-        font_size_key(defaults.mono_font.defined_size),
-        errors,
-    );
-    check_range_u16(
-        defaults.mono_font.weight,
-        100,
-        900,
-        "defaults.mono_font",
-        "weight",
-        errors,
-    );
+    check_font(&defaults.font, "defaults", "font", errors);
+    check_font(&defaults.mono_font, "defaults", "mono_font", errors);
 
     // defaults: line_height > 0
     check_positive(defaults.line_height, "defaults", key("line_height"), errors);
