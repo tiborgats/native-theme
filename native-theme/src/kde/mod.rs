@@ -166,158 +166,61 @@ pub(crate) fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
     ini.get(section, key)
 }
 
-/// Parse icon sizes from a freedesktop index.theme INI already loaded into a parser.
+/// Parse icon sizes from an icon theme's index.theme already loaded into a
+/// parser: the `[Icon Theme]` group's `<Group>Default` keys, which KIconTheme
+/// reads as each KIconLoader group's default size (kiconthemes
+/// `src/kicontheme.cpp:468-473` at v6.31.0), mapped as
+/// `docs/platform-facts.md` §2.1.8 maps the groups:
+/// - `small`: `SmallDefault`
+/// - `toolbar`: `MainToolbarDefault`
+/// - `large`: `DesktopDefault`
+/// - `dialog`: `DialogDefault`
+/// - `panel`: `PanelDefault`
 ///
-/// Reads the `[Icon Theme]` section's `Directories` key, then for each listed
-/// directory reads `Size` and `Context`. Derives:
-/// - `small`: smallest Size where Context is "Actions" or "Status"
-/// - `toolbar`: Size closest to 22 from "Actions" entries
-/// - `large`: smallest Size >= 32 from "Applications" entries
-///
-/// Fields without matching entries remain None.
+/// A key the theme omits, or one that is not a size, remains None, so the
+/// preset's size applies where KIconTheme would use its own fallback
+/// (`kicontheme.cpp:160-167`).
 pub(crate) fn parse_icon_sizes_from_content(ini: &configparser::ini::Ini) -> IconSizes {
-    let dirs_str = match ini.get("Icon Theme", "Directories") {
-        Some(s) if !s.trim().is_empty() => s,
-        _ => return IconSizes::default(),
+    let size = |key: &str| {
+        ini.get("Icon Theme", key)
+            .and_then(|s| s.trim().parse::<u32>().ok())
+            .map(|sz| sz as f32)
     };
-
-    // Collect (size, context) pairs from each directory section
-    let mut entries: Vec<(u32, String)> = Vec::new();
-    for dir_name in dirs_str.split(',') {
-        let dir_name = dir_name.trim();
-        if dir_name.is_empty() {
-            continue;
-        }
-        let size = ini
-            .get(dir_name, "Size")
-            .and_then(|s| s.trim().parse::<u32>().ok());
-        let context = ini.get(dir_name, "Context");
-        if let (Some(sz), Some(ctx)) = (size, context) {
-            entries.push((sz, ctx));
-        }
-    }
-
-    if entries.is_empty() {
-        return IconSizes::default();
-    }
-
-    // small: smallest Size from Actions or Status context
-    let small = entries
-        .iter()
-        .filter(|(_, ctx)| ctx == "Actions" || ctx == "Status")
-        .map(|(sz, _)| *sz)
-        .min()
-        .map(|sz| sz as f32);
-
-    // toolbar: Actions entry closest to 22
-    let toolbar = entries
-        .iter()
-        .filter(|(_, ctx)| ctx == "Actions")
-        .map(|(sz, _)| *sz)
-        .min_by_key(|sz| sz.abs_diff(22))
-        .map(|sz| sz as f32);
-
-    // large: smallest Applications entry >= 32 (or largest if none >= 32)
-    let large = {
-        let app_sizes: Vec<u32> = entries
-            .iter()
-            .filter(|(_, ctx)| ctx == "Applications")
-            .map(|(sz, _)| *sz)
-            .collect();
-        if app_sizes.is_empty() {
-            None
-        } else {
-            let ge32: Vec<u32> = app_sizes.iter().copied().filter(|&s| s >= 32).collect();
-            if ge32.is_empty() {
-                app_sizes.iter().copied().max().map(|sz| sz as f32)
-            } else {
-                ge32.iter().copied().min().map(|sz| sz as f32)
-            }
-        }
-    };
-
-    // dialog: DialogDefault from [Icon Theme] (e.g., 22)
-    let dialog = ini
-        .get("Icon Theme", "DialogDefault")
-        .and_then(|s| s.trim().parse::<u32>().ok())
-        .map(|sz| sz as f32);
-
-    // panel: PanelDefault from [Icon Theme] (e.g., 48)
-    let panel = ini
-        .get("Icon Theme", "PanelDefault")
-        .and_then(|s| s.trim().parse::<u32>().ok())
-        .map(|sz| sz as f32);
-
     IconSizes {
-        small,
-        toolbar,
-        large,
-        dialog,
-        panel,
+        small: size("SmallDefault"),
+        toolbar: size("MainToolbarDefault"),
+        large: size("DesktopDefault"),
+        dialog: size("DialogDefault"),
+        panel: size("PanelDefault"),
     }
 }
 
-/// Parse icon sizes from the active icon theme's index.theme file.
-///
-/// Searches XDG icon theme directories for `{theme_name}/index.theme`:
-/// 1. `$HOME/.local/share/icons/{theme_name}/index.theme`
-/// 2. Each directory in `$XDG_DATA_DIRS` (default `/usr/local/share:/usr/share`)
-///    appended with `/icons/{theme_name}/index.theme`
+/// Parse icon sizes from the active icon theme's index.theme file
+/// ([`parse_icon_sizes_from_content`]), found in the icon base directories
+/// the freedesktop icon lookup searches ([`crate::icons::icon_base_dirs`]).
 ///
 /// Returns `IconSizes::default()` (all None) if no index.theme is found or
-/// the file cannot be parsed.
+/// the file cannot be read.
 pub(crate) fn parse_icon_sizes_from_index_theme(theme_name: &str) -> IconSizes {
-    let path = match find_index_theme_path(theme_name) {
-        Some(p) => p,
-        None => return IconSizes::default(),
-    };
-
-    let content = match std::fs::read_to_string(&path) {
-        Ok(c) => c,
-        Err(_) => return IconSizes::default(),
-    };
-
-    let mut ini = create_kde_parser();
-    if ini.read(content).is_err() {
-        return IconSizes::default();
-    }
-
-    parse_icon_sizes_from_content(&ini)
+    icon_sizes_in_bases(theme_name, crate::icons::icon_base_dirs())
 }
 
-/// Locate the index.theme file for a given icon theme name.
-///
-/// Searches in XDG standard order: user local first, then system dirs.
-fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
-    // 1. $HOME/.local/share/icons/{theme_name}/index.theme
-    if let Ok(home) = std::env::var("HOME") {
-        let p = std::path::PathBuf::from(home)
-            .join(".local/share/icons")
-            .join(theme_name)
-            .join("index.theme");
-        if p.exists() {
-            return Some(p);
-        }
+/// [`parse_icon_sizes_from_index_theme`] over the icon base directories
+/// `bases`: the first `<base>/<theme_name>/index.theme` in their order, for a
+/// `theme_name` that names a theme directory ([`crate::icons::is_theme_name`]).
+fn icon_sizes_in_bases(theme_name: &str, bases: &[std::path::PathBuf]) -> IconSizes {
+    if !crate::icons::is_theme_name(theme_name) {
+        return IconSizes::default();
     }
-
-    // 2. XDG_DATA_DIRS entries + /icons/{theme_name}/index.theme
-    let data_dirs = std::env::var("XDG_DATA_DIRS")
-        .unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
-    for dir in data_dirs.split(':') {
-        let dir = dir.trim();
-        if dir.is_empty() {
-            continue;
-        }
-        let p = std::path::PathBuf::from(dir)
-            .join("icons")
-            .join(theme_name)
-            .join("index.theme");
-        if p.exists() {
-            return Some(p);
-        }
-    }
-
-    None
+    let Some(bytes) = bases
+        .iter()
+        .find_map(|base| std::fs::read(base.join(theme_name).join("index.theme")).ok())
+    else {
+        return IconSizes::default();
+    };
+    let mut ini = create_kde_parser();
+    read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
+    parse_icon_sizes_from_content(&ini)
 }
 
 /// Read the current KDE theme from kdeglobals.
@@ -1304,80 +1207,27 @@ BackgroundNormal=49,54,59
 
     // === KDE-05: Icon sizes from index.theme ===
 
-    /// Minimal index.theme content for testing icon size parsing.
-    const BREEZE_INDEX_THEME: &str = "\
-[Icon Theme]
-Name=breeze-dark
-Comment=Breeze Dark
-Directories=actions/16,actions/22,actions/32,apps/16,apps/32,apps/48,status/16,status/22
+    /// Breeze's index.theme from breeze-icons 6.30.0
+    /// (`/usr/share/icons/breeze/index.theme`): its `[Icon Theme]` group
+    /// (:1-145), `[actions/12]` (:146-150) and `[apps/32]` (:329-332).
+    const BREEZE_INDEX_THEME: &str = include_str!("../../tests/fixtures/kde/breeze-index.theme");
 
-[actions/16]
-Size=16
-Context=Actions
-Type=Fixed
-
-[actions/22]
-Size=22
-Context=Actions
-Type=Fixed
-
-[actions/32]
-Size=32
-Context=Actions
-Type=Fixed
-
-[apps/16]
-Size=16
-Context=Applications
-Type=Fixed
-
-[apps/32]
-Size=32
-Context=Applications
-Type=Fixed
-
-[apps/48]
-Size=48
-Context=Applications
-Type=Fixed
-
-[status/16]
-Size=16
-Context=Status
-Type=Fixed
-
-[status/22]
-Size=22
-Context=Status
-Type=Fixed
-";
-
+    /// The sizes are the `[Icon Theme]` group's `*Default` keys, as
+    /// KIconTheme reads them, not the smallest directories the theme lists.
     #[test]
-    fn test_parse_icon_sizes_from_content() {
+    fn icon_sizes_are_the_icon_themes_default_keys() {
         let mut ini = create_kde_parser();
-        ini.read(BREEZE_INDEX_THEME.to_string()).unwrap();
-        let sizes = parse_icon_sizes_from_content(&ini);
-
-        // small: smallest Size from Actions/Status context = 16
+        read_kconfig(&mut ini, BREEZE_INDEX_THEME);
         assert_eq!(
-            sizes.small,
-            Some(16.0),
-            "small should be 16 from actions/16 and status/16"
+            parse_icon_sizes_from_content(&ini),
+            IconSizes {
+                toolbar: Some(22.0),
+                small: Some(16.0),
+                large: Some(48.0),
+                dialog: Some(32.0),
+                panel: Some(48.0),
+            }
         );
-
-        // toolbar: closest to 22 from Actions context = 22
-        assert_eq!(
-            sizes.toolbar,
-            Some(22.0),
-            "toolbar should be 22 from actions/22"
-        );
-
-        // large: smallest Applications size >= 32 = 32
-        assert_eq!(sizes.large, Some(32.0), "large should be 32 from apps/32");
-
-        // dialog and panel: not extracted from index.theme
-        assert!(sizes.dialog.is_none(), "dialog should remain None");
-        assert!(sizes.panel.is_none(), "panel should remain None");
     }
 
     #[test]
@@ -1406,19 +1256,75 @@ Type=Fixed
         );
     }
 
+    /// A theme that states no default sizes has none, whatever directories
+    /// it lists.
     #[test]
-    fn test_parse_icon_sizes_empty_directories() {
+    fn an_icon_theme_without_default_keys_has_no_sizes() {
         let content = "\
 [Icon Theme]
-Name=empty
-Directories=
+Name=sizeless
+Directories=actions/16
+
+[actions/16]
+Size=16
+Context=Actions
+Type=Fixed
 ";
         let mut ini = create_kde_parser();
-        ini.read(content.to_string()).unwrap();
-        let sizes = parse_icon_sizes_from_content(&ini);
-        assert!(sizes.small.is_none());
-        assert!(sizes.toolbar.is_none());
-        assert!(sizes.large.is_none());
+        read_kconfig(&mut ini, content);
+        assert_eq!(parse_icon_sizes_from_content(&ini), IconSizes::default());
+    }
+
+    /// The index.theme is found in every base directory the icon lookup
+    /// searches, `~/.icons` among them, the first base holding it winning.
+    #[test]
+    fn the_index_theme_is_found_in_any_icon_base_dir() {
+        let dir = temp_config_dir("icon-bases");
+        let data_icons = dir.join("share/icons");
+        let dot_icons = dir.join("home/.icons");
+        std::fs::create_dir_all(dot_icons.join("dotted")).unwrap();
+        std::fs::create_dir_all(data_icons.join("both")).unwrap();
+        std::fs::create_dir_all(dot_icons.join("both")).unwrap();
+        std::fs::write(
+            dot_icons.join("dotted/index.theme"),
+            "[Icon Theme]\nSmallDefault=24\n",
+        )
+        .unwrap();
+        std::fs::write(
+            data_icons.join("both/index.theme"),
+            "[Icon Theme]\nDesktopDefault=64\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dot_icons.join("both/index.theme"),
+            "[Icon Theme]\nDesktopDefault=32\n",
+        )
+        .unwrap();
+        let bases = [data_icons, dot_icons];
+
+        let dotted = icon_sizes_in_bases("dotted", &bases);
+        assert_eq!(dotted.small, Some(24.0));
+        assert_eq!(icon_sizes_in_bases("both", &bases).large, Some(64.0));
+        assert_eq!(icon_sizes_in_bases("absent", &bases), IconSizes::default());
+    }
+
+    /// A name that is not one directory, as `../dotted`, is no theme: the
+    /// search never leaves the base directories.
+    #[test]
+    fn an_icon_theme_name_with_a_path_is_not_searched() {
+        let dir = temp_config_dir("icon-name");
+        std::fs::create_dir_all(dir.join("icons")).unwrap();
+        std::fs::create_dir_all(dir.join("dotted")).unwrap();
+        std::fs::write(
+            dir.join("dotted/index.theme"),
+            "[Icon Theme]\nSmallDefault=24\n",
+        )
+        .unwrap();
+        let bases = [dir.join("icons")];
+        assert_eq!(
+            icon_sizes_in_bases("../dotted", &bases),
+            IconSizes::default()
+        );
     }
 
     #[test]

@@ -886,7 +886,7 @@ fn xdg_icon_base_dirs() -> Vec<std::path::PathBuf> {
 /// Whether `name` can name a theme directory: one plain path component,
 /// so joining it to a base dir stays inside that base dir.
 #[cfg(target_os = "linux")]
-fn is_theme_name(name: &str) -> bool {
+pub(crate) fn is_theme_name(name: &str) -> bool {
     use std::path::{Component, Path};
 
     let mut components = Path::new(name).components();
