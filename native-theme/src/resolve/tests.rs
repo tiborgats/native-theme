@@ -2401,6 +2401,7 @@ fn check_ranges_happy_path_zero_errors() {
     resolved.window.check_ranges("window", &mut errors);
     resolved.button.check_ranges("button", &mut errors);
     resolved.input.check_ranges("input", &mut errors);
+    resolved.text_area.check_ranges("text_area", &mut errors);
     resolved.checkbox.check_ranges("checkbox", &mut errors);
     resolved.menu.check_ranges("menu", &mut errors);
     resolved.tooltip.check_ranges("tooltip", &mut errors);
@@ -2424,6 +2425,7 @@ fn check_ranges_happy_path_zero_errors() {
     resolved
         .segmented_control
         .check_ranges("segmented_control", &mut errors);
+    resolved.card.check_ranges("card", &mut errors);
     resolved.expander.check_ranges("expander", &mut errors);
     resolved.link.check_ranges("link", &mut errors);
 
@@ -2715,6 +2717,44 @@ fn validate_paths_name_a_padding_sides_key() {
 }
 
 #[test]
+fn validate_checks_the_card_border_padding() {
+    let mut v = fully_populated_variant();
+    v.card.border.get_or_insert_default().padding_left = Some(-8.0);
+    assert_eq!(range_violation_paths(&v), ["card.border.padding_left_px"]);
+}
+
+#[test]
+fn validate_checks_a_widget_borders_geometry() {
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().corner_radius = Some(-4.0);
+    assert_eq!(
+        range_violation_paths(&v),
+        ["button.border.corner_radius_px"]
+    );
+
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().line_width = Some(f32::NAN);
+    assert_eq!(range_violation_paths(&v), ["button.border.line_width_px"]);
+}
+
+/// A negative focus ring offset is an inset ring and stays legal; a
+/// non-finite one is a range violation.
+#[test]
+fn validate_checks_the_focus_ring_offset_is_finite() {
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(f32::NAN);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
+
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(f32::INFINITY);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
+
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(-2.0);
+    assert!(v.validate().is_ok(), "{:?}", v.validate().err());
+}
+
+#[test]
 fn validate_paths_name_a_border_geometry_key() {
     let mut v = fully_populated_variant();
     v.defaults.border.line_width = Some(-1.0);
@@ -2802,12 +2842,12 @@ fn strip_leaves(value: &mut toml::Value) {
     }
 }
 
-/// A ThemeMode TOML value with every number out of range: every float -1.0,
+/// A ThemeMode TOML value with every number out of range: every float NaN,
 /// every integer 0.
 fn break_numbers(value: &mut toml::Value) {
     match value {
         toml::Value::Table(t) => t.iter_mut().for_each(|(_, v)| break_numbers(v)),
-        toml::Value::Float(f) => *f = -1.0,
+        toml::Value::Float(f) => *f = f64::NAN,
         toml::Value::Integer(i) => *i = 0,
         _ => {}
     }
@@ -2820,6 +2860,8 @@ fn break_numbers(value: &mut toml::Value) {
 fn validate_paths_are_toml_keys() {
     let mut v = crate::Theme::preset("kde-breeze").unwrap().light.unwrap();
     v.resolve_all_with_context(&ResolutionContext::for_tests());
+    // kde-breeze states no card padding: give the card a side to break.
+    v.card.border.get_or_insert_default().padding_left = Some(0.0);
     let table = toml::Value::try_from(&v).unwrap();
 
     let mut empty = table.clone();
@@ -2829,10 +2871,15 @@ fn validate_paths_are_toml_keys() {
     let mut broken = table;
     break_numbers(&mut broken);
     let ranged = range_violation_paths(&broken.try_into().unwrap());
-    assert!(
-        ranged.iter().any(|p| p.ends_with(".padding_left_px")),
-        "{ranged:?}"
-    );
+    for key in [
+        "button.border.padding_left_px",
+        "button.border.corner_radius_px",
+        "button.border.line_width_px",
+        "card.border.padding_left_px",
+        "defaults.focus_ring_offset_px",
+    ] {
+        assert!(ranged.iter().any(|p| p == key), "{key}: {ranged:?}");
+    }
 
     let lint = |key: &str| crate::Theme::lint_toml(&format!("light.{key} = 0")).unwrap();
     for path in &missing {
@@ -2850,6 +2897,39 @@ fn validate_paths_are_toml_keys() {
     }
     for path in &ranged {
         assert_eq!(lint(path), Vec::<String>::new(), "range path {path}");
+    }
+}
+
+/// `Theme::resolve_with` range-checks the theme's layout. Layout is shared by
+/// both variants, so each path is a top-level key, with no variant table.
+#[test]
+fn theme_resolve_checks_the_layout() {
+    let ctx = ResolutionContext::for_tests();
+    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
+    theme.layout.widget_gap = Some(-8.0);
+    theme.layout.container_margin = Some(f32::NAN);
+    theme.layout.window_margin = Some(f32::INFINITY);
+    theme.layout.section_gap = Some(0.0);
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        [
+            "layout.widget_gap_px",
+            "layout.container_margin_px",
+            "layout.window_margin_px"
+        ]
+    );
+    for path in paths {
+        assert_eq!(
+            crate::Theme::lint_toml(&format!("{path} = 0")).unwrap(),
+            Vec::<String>::new(),
+            "range path {path}"
+        );
     }
 }
 

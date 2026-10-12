@@ -128,15 +128,15 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
             });
         }
 
-        // Auto-emit the padding check for nested ResolvedWidgetBorder fields:
-        // every side the theme states must be >= 0; an unstated side is not
-        // checked.
+        // Auto-emit the border check for nested ResolvedWidgetBorder fields:
+        // corner radius, line width and every padding side the theme states
+        // must be >= 0; an unstated side is not checked.
         if let FieldCategory::Nested { resolved_ty } = &f.category
             && is_resolved_widget_border(resolved_ty)
         {
             stmts.push(quote! {
-                crate::resolve::validate_helpers::check_padding(
-                    &self.#ident.padding,
+                crate::resolve::validate_helpers::check_widget_border(
+                    &self.#ident,
                     prefix,
                     #field_name,
                     errors,

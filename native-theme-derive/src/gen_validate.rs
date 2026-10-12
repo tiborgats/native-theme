@@ -20,7 +20,6 @@ pub(crate) fn gen_validate(
     let field_inits = gen_field_inits(fields, layer);
 
     quote! {
-        #[allow(dead_code)]
         #[allow(clippy::ptr_arg)] // Generated code passes Vec to helper functions that push
         impl #resolved_name {
             /// Extract and validate fields from the Option-based source struct.

@@ -610,6 +610,7 @@ impl SystemTheme {
 
         // Shared across variants; read before the variants are moved out of `merged`.
         let layout = merged.layout.clone();
+        crate::resolve::validate_helpers::check_layout(&layout)?;
 
         // Match on ReaderOutput for type-safe variant selection
         let (mut light, mut dark) = match &src.reader_output {

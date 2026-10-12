@@ -11,8 +11,8 @@ use crate::Rgba;
 use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
 use crate::model::font::{FontSize, FontStyle};
 use crate::model::{
-    DefaultsBorderSpec, FontSpec, IconSizes, ResolvedFontSpec, TextScale, TextScaleEntry,
-    ThemeDefaults,
+    DefaultsBorderSpec, FontSpec, IconSizes, LayoutTheme, ResolvedFontSpec, ResolvedLayoutTheme,
+    TextScale, TextScaleEntry, ThemeDefaults,
 };
 use std::sync::Arc;
 
@@ -291,6 +291,11 @@ pub(crate) enum BorderKind {
     None,
 }
 
+/// The TOML key of a widget border's corner radius.
+const CORNER_RADIUS_KEY: &str = "corner_radius_px";
+/// The TOML key of a widget border's line width.
+const LINE_WIDTH_KEY: &str = "line_width_px";
+
 /// Validate an `Option<WidgetBorderSpec>` according to its `BorderKind`.
 ///
 /// - `Full`: requires color, corner_radius, line_width, shadow_enabled.
@@ -335,7 +340,7 @@ pub(crate) fn validate_border(
                 let zero_width: f32 = 0.0;
                 let line_width = require(
                     &b.line_width,
-                    &format!("{prefix}.line_width_px"),
+                    &format!("{prefix}.{LINE_WIDTH_KEY}"),
                     missing,
                     zero_width,
                 );
@@ -345,7 +350,7 @@ pub(crate) fn validate_border(
                     (
                         require(
                             &b.corner_radius,
-                            &format!("{prefix}.corner_radius_px"),
+                            &format!("{prefix}.{CORNER_RADIUS_KEY}"),
                             missing,
                             zero_radius,
                         ),
@@ -464,6 +469,27 @@ pub(crate) fn check_range_u16(
     }
 }
 
+/// Check that an `f32` value is finite; any finite value, negative too, is
+/// in range.
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
+pub(crate) fn check_finite(
+    value: f32,
+    prefix: &str,
+    field: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
+    if !value.is_finite() {
+        errors.push(crate::error::RangeViolation {
+            path: format!("{prefix}.{field}"),
+            value: value as f64,
+            min: None,
+            max: None,
+        });
+    }
+}
+
 /// Check that a min value does not exceed its corresponding max value.
 ///
 /// Path string (`"{prefix}.{min_field}"`) is only formatted in the error branch,
@@ -486,33 +512,62 @@ pub(crate) fn check_min_max(
     }
 }
 
-/// Check that every padding side a widget border states is finite and
-/// non-negative. An unstated side is not checked. Paths name the side's TOML
-/// key: `"{prefix}.{field}.padding_left_px"`. A side set through an axis
+/// Check that a widget border's corner radius, line width and every padding
+/// side it states are finite and non-negative. An unstated side is not
+/// checked. Paths name the TOML key: `"{prefix}.{field}.corner_radius_px"`,
+/// `"{prefix}.{field}.padding_left_px"`. A side set through an axis
 /// shorthand (`padding_horizontal_px`) is named by its side key.
-pub(crate) fn check_padding(
-    padding: &ResolvedPadding,
+pub(crate) fn check_widget_border(
+    border: &ResolvedWidgetBorder,
     prefix: &str,
     field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
-    let sides = [
+    let padding = &border.padding;
+    let values = [
+        (CORNER_RADIUS_KEY, Some(border.corner_radius)),
+        (LINE_WIDTH_KEY, Some(border.line_width)),
         ("padding_top_px", padding.top),
         ("padding_right_px", padding.right),
         ("padding_bottom_px", padding.bottom),
         ("padding_left_px", padding.left),
     ];
-    for (side, value) in sides {
+    for (key, value) in values {
         if let Some(value) = value
             && (!value.is_finite() || value < 0.0)
         {
             errors.push(crate::error::RangeViolation {
-                path: format!("{prefix}.{field}.{side}"),
+                path: format!("{prefix}.{field}.{key}"),
                 value: value as f64,
                 min: Some(0.0),
                 max: None,
             });
         }
+    }
+}
+
+/// Range-check the layout a theme states. Layout is shared by both variants,
+/// so its paths carry no variant table: `"layout.widget_gap_px"`.
+///
+/// # Errors
+///
+/// Returns [`crate::Error::ResolutionInvalid`] if a stated value is out of
+/// range.
+pub(crate) fn check_layout(layout: &LayoutTheme) -> crate::Result<()> {
+    // Every layout field is a soft option: a theme may state none of them,
+    // so nothing is missing.
+    let mut missing = Vec::new();
+    let resolved =
+        ResolvedLayoutTheme::validate_widget(layout, "layout", DEFAULT_FONT_DPI, &mut missing);
+    if !missing.is_empty() {
+        return Err(crate::Error::ResolutionIncomplete { missing });
+    }
+    let mut errors = Vec::new();
+    resolved.check_ranges("layout", &mut errors);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(crate::Error::ResolutionInvalid { errors })
     }
 }
 
@@ -757,8 +812,14 @@ pub(crate) fn check_defaults_ranges(
         key("focus_ring_width"),
         errors,
     );
-    // Note: focus_ring_offset is intentionally NOT range-checked -- negative values
-    // mean an inset focus ring (e.g., adwaita uses -2.0, macOS uses -1.0).
+    // focus_ring_offset: finite only -- a negative value means an inset focus
+    // ring (e.g., adwaita uses -2.0, macOS uses -1.0).
+    check_finite(
+        defaults.focus_ring_offset,
+        "defaults",
+        key("focus_ring_offset"),
+        errors,
+    );
 
     // defaults: opacity 0..=1
     check_range_f32(

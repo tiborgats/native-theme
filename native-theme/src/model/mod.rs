@@ -458,7 +458,8 @@ impl Theme {
     /// Returns [`crate::Error::NoVariant`] when the theme has no variants,
     /// or [`crate::Error::ResolutionIncomplete`] /
     /// [`crate::Error::ResolutionInvalid`] when the picked variant cannot
-    /// be fully resolved.
+    /// be fully resolved. A value of [`Theme::layout`] out of range is also
+    /// [`crate::Error::ResolutionInvalid`].
     ///
     /// # Examples
     ///
@@ -511,6 +512,7 @@ impl Theme {
         ctx: &crate::resolve::ResolutionContext,
     ) -> crate::Result<Resolved> {
         let (picked_mode, variant_ref) = self.pick_variant_with_mode(mode)?;
+        crate::resolve::validate_helpers::check_layout(&self.layout)?;
 
         let tier1 = variant_ref.defaults.icon_theme.clone();
         let tier2 = self.icon_theme.clone();

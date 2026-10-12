@@ -195,6 +195,7 @@ impl ThemeMode {
         spinner.check_ranges("spinner", &mut range_errors);
         combo_box.check_ranges("combo_box", &mut range_errors);
         segmented_control.check_ranges("segmented_control", &mut range_errors);
+        card.check_ranges("card", &mut range_errors);
         expander.check_ranges("expander", &mut range_errors);
         link.check_ranges("link", &mut range_errors);
 

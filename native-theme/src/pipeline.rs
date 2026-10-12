@@ -92,6 +92,7 @@ pub(crate) fn run_pipeline(
 
     // Shared across variants; read before the variants are moved out of `merged`.
     let layout = merged.layout.clone();
+    crate::resolve::validate_helpers::check_layout(&layout)?;
 
     // Match on ReaderOutput for type-safe variant selection:
     // Single: active variant from merged, inactive from full preset.
@@ -1959,6 +1960,33 @@ accent_color = "#0066cc"
             sys.layout.widget_gap.is_some(),
             "adwaita defines all four layout keys (spec §1.3)"
         );
+        Ok(())
+    }
+
+    /// A layout value out of range fails the build, in `run_pipeline` and in
+    /// `with_overlay`. Layout is shared by both variants: the path has no
+    /// variant table.
+    #[test]
+    fn system_theme_layout_out_of_range_is_invalid() -> crate::Result<()> {
+        let mut reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        reader.layout.widget_gap = Some(-8.0);
+        let Err(crate::Error::ResolutionInvalid { errors }) =
+            run_pipeline(reader, "adwaita", crate::ColorMode::Light)
+        else {
+            panic!("expected ResolutionInvalid");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["layout.widget_gap_px"]);
+
+        let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        let mut sys = run_pipeline(reader, "adwaita", crate::ColorMode::Light)?;
+        sys.overlay_source.layout.section_gap = Some(f32::NAN);
+        let Err(crate::Error::ResolutionInvalid { errors }) = sys.with_overlay(&Theme::default())
+        else {
+            panic!("expected ResolutionInvalid");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["layout.section_gap_px"]);
         Ok(())
     }
 
