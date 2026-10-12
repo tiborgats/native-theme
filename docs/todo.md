@@ -361,29 +361,6 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:480-485`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:203-205`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:5697-5711`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
 
-### `SystemTheme::with_overlay` — the overlay's icon theme is never read
-
-- [ ] [v0.7.0] `SystemTheme::with_overlay` (`native-theme/src/lib.rs:538`) merges the
-      overlay's light and dark variants (`:581-586`) and re-resolves them, but
-      builds its result with `icon_theme: self.icon_theme.clone()` (`:603`):
-      the base theme's name, whatever the overlay states. Neither the
-      overlay's `Theme::icon_theme` (`native-theme/src/model/mod.rs:304`) nor
-      its active variant's `ThemeDefaults::icon_theme`
-      (`native-theme/src/model/defaults.rs:137`) is read, although
-      `from_system` ranks exactly those two above runtime detection
-      (`native-theme/src/pipeline.rs:82-92`) and `Theme::merge` lets an
-      overlay's `icon_theme` win (`native-theme/src/model/mod.rs:348-350`).
-      Expected: an icon theme the overlay states wins, like its other fields —
-      the same three tiers applied to the base merged with the overlay — and
-      an overlay that states none keeps the base's. The same function keeps
-      `icon_set` (`:602`) and `layout` (`:558`, read before the overlay is
-      applied) and ignores the overlay's `Theme::icon_set` and `Theme::layout`
-      in the same way, so the fix covers all three — and with them the other
-      variant's icon theme that `icon_theme_for` (above) returns, resolved by
-      the same tiers over the merged theme. Add regression tests
-      beside the tier tests in `native-theme/src/pipeline.rs` (`:1265`,
-      `:1281`).
-
 ### Icons: one monochrome-SVG colouriser, in native-theme
 
 - [ ] [v0.7.0] The iced and gpui connectors each recolour a monochrome SVG icon with a
@@ -981,6 +958,36 @@ model, the platform presets and the three connectors
       both styles are 17, which `macos-tahoe` states. The reader could read
       `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads,
       a live OS value rather than a constant.
+
+### KDE: the plain-read link test cannot tell the reader from the preset
+
+- [ ] [v0.7.0] For M4, the KDE reader (M3 final review, 2026-10-12): the test
+      `link_text_resolves_to_foreground_link` (`native-theme/src/kde/mod.rs:935`)
+      reads the dark fixture, whose `ForegroundLink` is `#1d99f3`, the same
+      value `kde-breeze` states as its dark `defaults.link_color`
+      (`native-theme/src/presets/kde-breeze.toml:451`), so it passes whether
+      link text comes from the reader or from the preset. Give it a fixture
+      whose `ForegroundLink` differs from the preset's (the light fixture has
+      no `ForegroundLink`).
+
+### kde-breeze: link hover and active colours stated without a source
+
+- [ ] [v0.7.0] For M4, the `kde-breeze` preset through the `preset-validator`
+      agent (M3 final review, 2026-10-12): `[light.link]` and `[dark.link]`
+      state `hover_text_color` and `active_text_color` (`#2980b9` light,
+      `native-theme/src/presets/kde-breeze.toml:363-364`; `#1d99f3` dark,
+      `:765-766`), Breeze's default blue with no citation, so they never
+      follow a KDE colour scheme or an overlay's `defaults.link_color`.
+      Find a source for each, or state none so they inherit `link.font.color`
+      (`docs/inheritance-rules.toml:290-291`).
+
+### Validation: an out-of-range `size_pt` is reported with its px value
+
+- [ ] [v0.7.0] In the resolve validation code, carried to M4 (M3 final review,
+      2026-10-12): `check_font` (`native-theme/src/resolve/validate_helpers.rs:475`)
+      names the key the theme stated, `size_pt`, but reports the resolved
+      size, converted to px: `size_pt = -3` prints `got -4`. Report the
+      value in the stated key's unit, or name the px key.
 
 ---
 

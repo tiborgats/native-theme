@@ -299,6 +299,32 @@ many have since drifted, as the archive's [README](README.md) warns.
       Done in M2a Step 10a (2026-10-11): `SystemTheme::from_system_with_preset` and
       `from_system_with_preset_async`.
 
+### `SystemTheme::with_overlay` — the overlay's icon theme is never read
+
+- [x] [v0.7.0] `SystemTheme::with_overlay` (`native-theme/src/lib.rs:538`) merges the
+      overlay's light and dark variants (`:581-586`) and re-resolves them, but
+      builds its result with `icon_theme: self.icon_theme.clone()` (`:603`):
+      the base theme's name, whatever the overlay states. Neither the
+      overlay's `Theme::icon_theme` (`native-theme/src/model/mod.rs:304`) nor
+      its active variant's `ThemeDefaults::icon_theme`
+      (`native-theme/src/model/defaults.rs:137`) is read, although
+      `from_system` ranks exactly those two above runtime detection
+      (`native-theme/src/pipeline.rs:82-92`) and `Theme::merge` lets an
+      overlay's `icon_theme` win (`native-theme/src/model/mod.rs:348-350`).
+      Expected: an icon theme the overlay states wins, like its other fields —
+      the same three tiers applied to the base merged with the overlay — and
+      an overlay that states none keeps the base's. The same function keeps
+      `icon_set` (`:602`) and `layout` (`:558`, read before the overlay is
+      applied) and ignores the overlay's `Theme::icon_set` and `Theme::layout`
+      in the same way, so the fix covers all three — and with them the other
+      variant's icon theme that `icon_theme_for` (above) returns, resolved by
+      the same tiers over the merged theme. Add regression tests
+      beside the tier tests in `native-theme/src/pipeline.rs` (`:1265`,
+      `:1281`).
+      Closed 2026-10-12: `with_overlay` replays the whole theme since bdad0edf
+      (M3-41); the overlay's `icon_theme`, `icon_set` and `[layout]` apply;
+      regression test in `pipeline.rs`.
+
 ---
 
 ## Toolkit Connectors

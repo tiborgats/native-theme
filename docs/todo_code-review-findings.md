@@ -10,7 +10,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M0 | done (2026-10-11) |
 | M1 | done (2026-10-11) |
 | M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
-| M3 | Steps 1–5 done 2026-10-11 (stop point A); fix phase waits for M2's fixes |
+| M3 | done (2026-10-12) |
 | M4–M9 | not started |
 
 ## Baseline (M0, 2026-10-11)
@@ -182,6 +182,10 @@ opens; the Haiku context maps keep it bounded.
 60 agent transcripts with usage records (both halves of the session; the first half ended in a
 crash during the iOS rename): 2.99M output tokens, 1.19B cache reads. Opus for the analysts,
 implementers and task reviews, Sonnet for the scoped re-reviews.
+
+### M3 fix phase (measured 2026-10-12)
+
+20 tasks, the whole-branch review and its fix wave: 40 agent runs (17 implementer, 23 review/re-review/final review), 109k output tokens, 76.8M cache reads, about 7.5 h wall clock, dominated by `check_release.sh --commit` (about 11–24 min per task).
 
 ## M1 — Design review
 
@@ -6781,7 +6785,7 @@ AW1–AW7) and the task review of Step 7 (I1, minors 1–4 and 6), each value fe
 
 ## M3 — Core, part 1
 
-**Status:** Steps 1–5 done 2026-10-11 (stop point A); the fix phase (Steps 6–8) waits for M2's fix phase to land (maintainer, 2026-10-11), so its reviewers' line numbers are re-checked against the code at that point. Review run on Opus 5.5 (session) beside M2's fix session on the same branch, read-only.
+**Status:** done 2026-10-12 (Steps 1–8; stop point B at 9b9c6072). Review run on Opus 5.5 (session) beside M2's fix session on the same branch, read-only.
 
 ### Step 1 — inventory
 
@@ -6810,7 +6814,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before `self.link.resolve_font_from_defaults(d)`, read whether link.font.color was stated, and write `defaults.link_color` only when it was None. That makes the rule a None-fill like every other rule, and it stays idempotent.
 **Verdict:** CONFIRMED — inheritance.rs:261-263 assigns `font.color = self.defaults.link_color` unconditionally, while the generated font inherit only fills a None color (gen_inherit.rs:278-279), so a stated link.font.color is always overwritten. The rule in inheritance-rules.toml:287 describes inheritance, not an override. Impact today is narrower than S1 suggests: no bundled preset sets [*.link.font] color, and the KDE reader writes the same ForegroundLink to both fields (kde/colors.rs:128, :248-249). Only app overlays and custom TOML lose a value.
 **Triage:** fix — CONFIRMED bug; severity lowered from the reviewer's S1 by the session: the KDE reader fills both values from `Colors:View ForegroundLink` (kde/colors.rs:128, :248), so no shipped preset or reader shows a difference; only an overlay or preset author who states `link.font.color` loses it
-**Status:** open
+**Status:** fixed in 21b87466 (T7); the KDE reader's redundant link.font.color write removed in dfb947b9 (final fix wave I1)
 
 #### M3-02 · bug · S2 · native-theme/src/model/mod.rs:267
 **Claim:** An overlay TOML with no `name` key, such as the documented `[light.defaults] accent_color = "#ff6600"`, fails `Theme::from_toml` with `missing field "name"`, although `Theme::merge` throws the overlay's name away anyway.
@@ -6818,7 +6822,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Put `#[serde(default)]` on `name`; the empty `Cow::Borrowed("")` matches `impl Default for Theme` at mod.rs:320. Then add a test that parses a nameless overlay and merges it.
 **Verdict:** CONFIRMED — `Theme.name` (model/mod.rs:267) has no `#[serde(default)]`, there is none on the struct, and `presets::from_toml` (presets.rs:314-316) is a plain `toml::from_str`. So the name-less overlays in the docs fail at run time: lib.rs:547-552 and native-theme/README.md:96-100 are both `no_run`, so the doctests never catch it. `Theme::merge` drops the overlay's name anyway (model/mod.rs:338). No entry for it in todo.md or the ledger.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in ce71649f
 
 #### M3-03 · bug · S2 · native-theme/src/model/widgets/mod.rs:1028
 **Claim:** `LayoutTheme` declares `check = "non_negative"` on all four fields, but that check never runs, so `[layout] widget_gap_px = -8.0` (or `nan`) reaches the connectors unvalidated.
@@ -6826,7 +6830,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Treat the layout fields as soft options and run their range check wherever a theme is resolved (`Theme::resolve_with` and `run_pipeline`/`with_overlay`), returning `ResolutionInvalid` with path `layout.widget_gap`. Otherwise drop the dead attributes and the unused `ResolvedLayoutTheme`.
 **Verdict:** CONFIRMED — The `non_negative` checks on `LayoutTheme` (widgets/mod.rs:1031-1043) generate a `check_ranges` that nothing calls. validate.rs:166-193 has no layout entry, and pipeline.rs:94 and lib.rs:572 copy `merged.layout` straight into `SystemTheme.layout` (lib.rs:493), so the connectors read the raw `Option<f32>`. The todo.md:874 item only describes `LayoutTheme` as public; it does not record the gap.
 **Triage:** fix — CONFIRMED bug; run the generated range check (the layout values are stated, never inherited), not drop the attributes
-**Status:** open
+**Status:** fixed in a2515313 and 828d2d2a (layout check hand-written, public types unchanged)
 
 #### M3-04 · bug · S2 · native-theme/src/resolve/validate.rs:192
 **Claim:** No range check runs on the card. A theme TOML with `[light.card.border] padding_left_px = -8` (or `nan`, or `inf`) passes validation, and the bad value reaches `ResolvedTheme.card.border.padding`.
@@ -6834,7 +6838,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Add `card.check_ranges("card", &mut range_errors);` between segmented_control and expander. Add a test that a negative card padding side gives ResolutionInvalid with the path `card.border.padding_left`.
 **Verdict:** CONFIRMED — validate.rs:156 builds `card`, but the check_ranges list at validate.rs:170-194 has no `card.check_ranges` call (grep finds none anywhere). The derived check_padding for card.border (gen_ranges.rs:127-139) therefore never runs, and a negative, NaN or inf card padding reaches ResolvedTheme. Also reported by R1-model (native-theme/src/resolve/validate.rs:192; CONFIRMED).
 **Triage:** fix — CONFIRMED bug; with the regression test `check_ranges_happy_path_zero_errors` extended to `card` and `text_area`
-**Status:** open
+**Status:** fixed in a2515313 and 828d2d2a (layout check hand-written, public types unchanged)
 
 #### M3-05 · bug · S2 · native-theme/src/model/border.rs:93
 **Claim:** A widget border's own `corner_radius_px` or `line_width_px` is never range-checked, so `[light.button.border] corner_radius_px = -4.0` or `line_width_px = nan` resolves Ok and reaches `ResolvedWidgetBorder`.
@@ -6842,7 +6846,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Have gen_ranges emit `check_non_negative` for `.corner_radius` and `.line_width` of every nested `ResolvedWidgetBorder`, next to `check_padding`, with paths `{prefix}.border.corner_radius` and `{prefix}.border.line_width`.
 **Verdict:** CONFIRMED — For a nested `ResolvedWidgetBorder`, gen_ranges.rs:127-141 emits only `check_padding`. `validate_border` (validate_helpers.rs:271-343) copies `corner_radius` and `line_width` without checking them, and `check_defaults_ranges` covers only the defaults border. So an explicit `-4.0` or `nan` on a widget border resolves Ok. The same archived egui spec line (:7768) records it as a known gap, not as intended. Also reported by R2-resolution (native-theme/src/resolve/validate_helpers.rs:461; CONFIRMED). Also reported by R4-presets-derive (native-theme-derive/src/gen_ranges.rs:311; CONFIRMED).
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in a2515313 and 828d2d2a (layout check hand-written, public types unchanged)
 
 #### M3-06 · bug · S2 · native-theme/src/resolve/validate_helpers.rs:708
 **Claim:** `defaults.focus_ring_offset_px = nan` (or `inf`) in a theme TOML passes validation, because focus_ring_offset is the one defaults f32 with no check at all. It is meant to allow negative values, but non-finite ones get through as well.
@@ -6850,7 +6854,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Reject non-finite values only: add a `check_finite(value, prefix, field, errors)` helper (RangeViolation with min/max None) and call it for `defaults.focus_ring_offset`.
 **Verdict:** CONFIRMED — validate_helpers.rs:708-709 deliberately skips focus_ring_offset to allow negative values, and no other finiteness check covers it (is_finite appears only at :362, :382, :404, :475). TOML `nan` and `inf` deserialize into f32, so they pass. An is_finite-only check would keep the negative case. Also reported by R1-model (native-theme/src/model/defaults.rs:122; CONFIRMED).
 **Triage:** fix — CONFIRMED bug; a finiteness check only, negative values stay legal as documented
-**Status:** open
+**Status:** fixed in a2515313 and 828d2d2a (layout check hand-written, public types unchanged)
 
 #### M3-07 · bug · S2 · native-theme/src/model/font.rs:331
 **Claim:** Merging an overlay `[light.text_scale.caption] size_px = 12.0` onto `ios` (which states `size_pt` plus `line_height_pt`) gives an entry that `to_toml` writes and `from_toml` then rejects, so a saved merged theme cannot be loaded again.
@@ -6858,7 +6862,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** The model handles mixed units, so drop the same-suffix rule at font.rs:331-338. If the rule must stay, enforce it in `TextScaleEntry::merge` (an overlay size in the other unit clears or converts the base line_height), and add a test that runs to_toml then from_toml after such a merge.
 **Verdict:** CONFIRMED — ios.toml:63-66 states `size_pt` and `line_height_pt`. `impl_merge!` (font.rs:368-370) merges per field, so the result holds `size: Px` with `line_height: Pt`. `From<TextScaleEntry>` (:343-365) writes `size_px` and `line_height_pt`, and `TryFrom` rejects that pair (:331-339), so a merged theme cannot be read back. No todo.md or ledger entry.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in df0f0691
 
 #### M3-08 · bug · S2 · native-theme/src/pipeline.rs:712
 **Claim:** On a KDE desktop (XDG_CURRENT_DESKTOP=KDE) with the `kde` feature off, which is the default since native-theme has no default features, from_system returns a mixed theme: the active variant has Adwaita colours, the inactive variant is full Breeze, `preset` is "kde-breeze", `name` is "Adwaita" and the icon theme is "breeze". lib.rs:643-645 documents the adwaita preset for this case.
@@ -6866,7 +6870,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Give the fallback one preset as both reader and merge base. One way is `preset_as_reader(preset, mode)` with `preset` from linux_preset_for_de (a full Breeze theme on KDE); the other is preset "adwaita" as lib.rs:643-645 documents (the behaviour before 66423ae7). Then add the test above.
 **Verdict:** CONFIRMED — With kde off, select_reader returns None for Kde (pipeline.rs:648-649), and the fallback runs preset_as_reader("adwaita") over linux_preset_for_de(Kde)="kde-breeze" (pipeline.rs:712-713). run_pipeline then keeps the full Breeze inactive variant (:99-111), name "Adwaita" (:46-50), preset "kde-breeze" (:137), and tier-1 icon_theme "breeze" from kde-breeze.toml:9, because Adwaita states its icon theme only at the top level (adwaita.toml:5). This contradicts lib.rs:643-645. Commit a3cb768d passed "adwaita-live" here, so this is a regression from the select_reader refactor.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in b345f5fd and 2bb1bef3 (docs: the portal answer decides an unknown desktop either way)
 
 #### M3-09 · bug · S2 · native-theme/src/pipeline.rs:707
 **Claim:** On desktops with no reader (XFCE, Cinnamon, MATE, LXQt, Sway, Hyprland, niri, COSMIC, Unknown, or KDE/GNOME built without their feature), a second from_system after the user toggles dark mode returns the old `mode`. The fallback reads the cached `system_is_dark()`, while every reader branch reads the mode fresh.
@@ -6874,7 +6878,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Use `crate::detect::detect_is_dark()` (uncached) in the fallback, as the macOS reader does. Alternatively, document on from_system that the fallback mode is cached until `invalidate_caches()`.
 **Verdict:** CONFIRMED — The fallback reads the cached system_is_dark() (pipeline.rs:707, detect.rs:140), while readers read the mode fresh, and M1-T6-01's cost check asked for uncached reads so a re-read is fresh. The impact is limited: detect.rs:121-123 documents invalidate_caches() before re-reading, and every in-tree watcher already calls it (egui watch.rs:99, all showcases). Only callers who skip that step get the old mode.
 **Triage:** fix — CONFIRMED bug (the verifier's note on its limited impact recorded; the fix is a fresh read in the fallback, matching the readers)
-**Status:** open
+**Status:** fixed in b345f5fd and 2bb1bef3 (docs: the portal answer decides an unknown desktop either way)
 
 #### M3-10 · bug · S2 · native-theme/src/lib.rs:613
 **Claim:** `sys.with_overlay(&a)?.with_overlay(&b)?` silently drops overlay `a`: each call replays from the reader output and the preset only, and the returned SystemTheme carries the base overlay_source unchanged.
@@ -6882,7 +6886,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Keep the accumulated overlay in OverlaySource (an `Option<Theme>` merged with each new overlay, `Theme::merge` already supports this) and replay it before the new one. Alternatively, document that each call replaces any earlier overlay.
 **Verdict:** CONFIRMED — with_overlay replays from self.overlay_source, which holds only the reader output and the preset (lib.rs:559-586), and copies overlay_source unchanged into the result (lib.rs:613). The second call therefore never sees overlay a. No doc says that overlays do not stack, and no test chains two overlays (merge_behavior.rs:206 chains Theme::merge only). It is not in docs/todo.md, whose :339 entry covers the icon theme only.
 **Triage:** fix — CONFIRMED bug; grouped with M3-41 (one replay function serves both)
-**Status:** open
+**Status:** fixed in c3ed1f4f
 
 #### M3-11 · api · api-break · native-theme/src/model/font.rs:137
 **Claim:** `impl Default for FontSize` returns `Px(0.0)`, a size that validation always rejects; nothing uses it outside its own test, and the project removed `Rgba::default()` for the same reason.
@@ -6890,7 +6894,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Delete `impl Default for FontSize` and its test (pre-1.0, so the break is acceptable).
 **Verdict:** CONFIRMED — The only caller of `FontSize::default()` is its own test (font.rs:756). The derived `Default`s hold `Option<FontSize>`, and the derive crate and validate_helpers never need it. docs/archive/v0.5.7_native-theme-api.md:2787 already named `Px(0.0)` as a cause of spurious errors. Removing it is cheap and fits 0.7.0's existing breaking changes, so it is worth doing. Also reported by API-native-theme (native-theme/src/model/font.rs:137; CONFIRMED).
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): remove
-**Status:** open
+**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7
 
 #### M3-12 · api · api-break · native-theme/src/presets.rs:101
 **Claim:** `PresetInfo` is a public struct with all-pub fields and no `#[non_exhaustive]`. Its `light_only` field can never be true.
@@ -6898,7 +6902,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** In 0.7.0 (already breaking): add `#[non_exhaustive]` and drop `light_only`, or give it a meaning a test checks. Optionally document the prefix rule for `platforms`.
 **Verdict:** CONFIRMED — PresetInfo has all-pub fields and no #[non_exhaustive] (presets.rs:101-113). Every entry sets light_only: false (:119-217), and all_presets_have_both_variants requires a dark variant in every preset. grep finds no reader of the field in native-theme/src or the connectors. The change pays for itself now: 0.7.0 is already a breaking release (M1), so dropping light_only and adding #[non_exhaustive] costs nothing extra, and later field additions stop being breaking.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): drop `light_only`, add `#[non_exhaustive]`
-**Status:** open
+**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7
 
 #### M3-13 · api · api-break · native-theme/src/model/resolved.rs:72
 **Claim:** The hand-written resolved types (`ResolvedTheme`, `ResolvedDefaults`, `ResolvedTextScale(Entry)`, `ResolvedIconSizes`, `ResolvedFontSpec`, `ResolvedDefaultsBorder`, `ResolvedWidgetBorder`, `ResolvedPadding`, `Resolved`) lack the `#[non_exhaustive]` that every generated `Resolved*Theme` carries, so adding a defaults field breaks downstream code while adding a widget field does not.
@@ -6906,7 +6910,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Mark the hand-written resolved structs `#[non_exhaustive]`, with a `ResolvedWidgetBorder`/`ResolvedPadding` constructor for egui's one literal. Otherwise record in the rationale why defaults-level types are exempt.
 **Verdict:** CONFIRMED — Only gen_structs.rs:30 emits `#[non_exhaustive]`; the hand-written structs (resolved.rs:15/37/54/72/158/258, border.rs:203/220/243, font.rs:242) have none. Adding it pays off for the output-only types (`ResolvedTheme`, `ResolvedDefaults`, `ResolvedTextScale`, `ResolvedTextScaleEntry`, `ResolvedIconSizes`, `Resolved`, both border types). `ResolvedPadding` and `ResolvedFontSpec`, though, are built with struct literals outside the crate (gpui geometry.rs:329, :703; showcase-gpui app.rs:1240, :1249), so those two would need constructors first.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): `#[non_exhaustive]` on the output-only structs; `ResolvedWidgetBorder` and `ResolvedPadding` stay constructible (egui builds them)
-**Status:** open
+**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7
 
 #### M3-14 · api · api-break · native-theme/src/lib.rs:246
 **Claim:** AccessibilityPreferences is a public struct with all-public fields and no #[non_exhaustive]. Any accessibility flag added later (the receiver work of M1-T6-03) breaks every downstream struct literal, which the egui connector already uses.
@@ -6914,7 +6918,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before 1.0, mark it `#[non_exhaustive]` and give callers `Default` + field assignment or `with_*` setters; convert the connector tests in the same change.
 **Verdict:** PLAUSIBLE — The fact holds: lib.rs:246-257 has public fields and no #[non_exhaustive]. The payoff is weak, though. M1-T6-03's decision (findings :680) adds a method and doc receiver tables, not a field. The project makes no compatibility promise before 1.0, and 0.7.0 already breaks. Adding the attribute would forbid both struct literals and ..Default::default() downstream, so it would need a const constructor for gpui's static UNSCALED (gpui lib.rs:725) and edits to dozens of connector tests. It is worth doing only if a new flag is actually planned (high contrast is an M2 decision).
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): `#[non_exhaustive]`, callers outside the crate use `Default` plus field assignment
-**Status:** open
+**Status:** fixed in 0beec967 (breaking, approved; `AccessibilityPreferences::DEFAULT` added)
 
 #### M3-15 · api · api-break · native-theme/src/model/resolved.rs:258
 **Claim:** `Resolved` does not record which variant it holds, so a `ColorMode::Dark` request on a light-only theme returns the light variant with nothing to tell it apart, and the gpui connector infers dark/light from background lightness with a documented misfire.
@@ -6922,7 +6926,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before: `pub struct Resolved { pub variant: ResolvedTheme, pub icon_set: IconSet, pub icon_theme: Option<Cow<'static, str>>, pub icon_theme_explicit: bool }`. After: `pub struct Resolved { pub mode: ColorMode, /* the variant actually resolved: Dark iff `self.dark` was used */ pub variant: ResolvedTheme, pub icon_set: IconSet, pub icon_theme: Option<Cow<'static, str>>, pub icon_theme_explicit: bool }`, set in `resolve_with` from which `Option` `pick_variant` took (split `pick_variant` into a `pub(crate)` helper returning `(ColorMode, &ThemeMode)`), and documented beside the cross-fallback at mod.rs:363-366.
 **Verdict:** CONFIRMED — `Resolved` (model/resolved.rs:258-273) has no mode field, and pick_variant falls back silently (model/mod.rs:374-375). As a result gpui's `from_preset(name, true)` passes is_dark=true into to_theme with a light palette for a light-only preset (connectors/native-theme-gpui/src/lib.rs:293-304). Callers can already check `theme.dark.is_none()` or `PresetInfo::light_only` before resolving, so the extra field mainly pays for connectors.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option); reclassified api-add → api-break by the session: `Resolved` has public fields and no `#[non_exhaustive]`, so a new field breaks struct literals (it gets the attribute with M3-13)
-**Status:** open
+**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7
 
 #### M3-16 · api · api-break · native-theme/src/lib.rs:151
 **Claim:** `native_theme::theme` and `native_theme::model` are the same public namespace, so a docs.rs reader following any README path (`native_theme::theme::Theme`) lands on a `theme` page that lists no items and is sent to `model::*`, and every model type is reachable by four paths.
@@ -6930,7 +6934,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before: `pub mod model;` + `pub mod theme { pub use crate::model::*; pub use crate::presets::PresetInfo; }`. After: `mod model;` (private) with `pub mod theme { pub use crate::model::{ColorMode, Theme, ThemeMode, ThemeDefaults, Resolved, ResolvedTheme, /* the explicit list now at model/mod.rs:59-83 */}; pub use crate::model::widgets::*; pub use crate::presets::PresetInfo; }`, the twelve sub-modules `pub(crate) mod`, so rustdoc inlines the types under `theme`. The only pub item not in the re-export list, `model::icons::detect_icon_theme` (icons.rs:588), needs a `theme` re-export or demotion (M4's icon call); update tests/reader_kde.rs:11 and the `theme` doc line.
 **Verdict:** CONFIRMED — lib.rs:111 `pub mod model` and lib.rs:151-154 `pub mod theme { pub use crate::model::*; pub use crate::presets::PresetInfo; }`. Rustdoc does not inline a glob re-export of a public module, so the `theme` page shows only the two `pub use` lines. Types in a public submodule (for example `FontSize`, model/mod.rs:47,71) are reachable at model::FontSize, model::font::FontSize, theme::FontSize and theme::font::FontSize. Not recorded in todo.md or the ledger.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): `theme` is the one public path, `model` private
-**Status:** open
+**Status:** fixed in aeb4e6e2 (breaking, approved)
 
 #### M3-17 · api · api-break · native-theme/src/error.rs:106
 **Claim:** `Theme::from_file(path)` on a missing or unreadable file returns `Error::Io(io::Error)` with no path, displayed as "I/O error: No such file or directory (os error 2)".
@@ -6938,7 +6942,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before: `Io(std::io::Error)` and `impl From<std::io::Error> for Error`. After: `Io { path: std::path::PathBuf, source: std::io::Error }`, built in `presets::from_file` as `Error::Io { path: path.as_ref().to_path_buf(), source }`, Display "cannot read theme file `{path}`: {source}", `source()` unchanged, `kind()` unchanged, the blanket `From` removed; update the tests at error.rs:575-585 and presets.rs:493.
 **Verdict:** CONFIRMED — presets.rs:319-321 calls `read_to_string(path)?`, converting into `Error::Io(io::Error)` (error.rs:106) with the path dropped. Display is "I/O error: {err}" (error.rs:174). Adding the path is a breaking change to the variant's shape, but pre-1.0 it pays off for anyone loading user theme files.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option): `Io { path, source }`, the blanket `From` removed
-**Status:** open
+**Status:** fixed in 1249724f (breaking, approved)
 
 #### M3-18 · api · api-add · native-theme/src/prelude.rs:14
 **Claim:** `use native_theme::prelude::*` leaves out `ColorMode`, the argument of every resolving call (`Theme::resolve`, `resolve_with`, `pick_variant`, `into_variant`, `SystemTheme::pick`), so the prelude's own smoke test spells `native_theme::theme::ColorMode::Dark`.
@@ -6946,7 +6950,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before: `pub use crate::theme::{ResolvedTheme, Theme};`. After: `pub use crate::theme::{ColorMode, Resolved, ResolvedTheme, Theme};`; update the item count in prelude.rs:9-12 and lib.rs:140-142, and the smoke test's two lists.
 **Verdict:** CONFIRMED — prelude.rs:14-20 exports 7 items plus Result and no ColorMode. tests/prelude_smoke.rs:13 spells `native_theme::theme::ColorMode::Dark`. Adding it is a one-line additive change and pays for itself, since every resolve call needs it. The smoke test's count of 8 would need updating.
 **Triage:** fix — api-add
-**Status:** open
+**Status:** fixed in 38502160
 
 #### M3-19 · api · api-add · native-theme/src/lib.rs:220
 **Claim:** The crate root re-exports six items (icon-set helpers, diagnostics, `ResolutionContext`) but none of the entry types `Theme`, `ResolvedTheme`, `ColorMode`, `Error`, `Rgba`, contrary to the v0.5.7 decision, so the README's own quick start mixes `native_theme::SystemTheme`, `native_theme::theme::Theme` and `native_theme::error::Error`.
@@ -6954,7 +6958,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Add at the root, next to lib.rs:239: `pub use color::Rgba; pub use error::Error; pub use theme::{ColorMode, Resolved, ResolvedTheme, Theme};` (existing paths stay valid), and make the README's imports use them. Whether the three icon helpers at :220 belong at the root is M4's (icons) call.
 **Verdict:** CONFIRMED — The public root re-exports are exactly six: lib.rs:206 (IconSetChoice, default_icon_choice, list_freedesktop_themes), :222 (DiagnosticEntry, PlatformPreset) and :225 (ResolutionContext). Theme, ColorMode, Error and Rgba are `pub(crate)` (lib.rs:184-218). The v0.5.7 §12 recommendation kept Theme, ResolvedTheme, Rgba, Error and Result at the root (archive/v0.5.7_native-theme-api.md:1399), but phase 76-02 removed them with no recorded reason (v0.5.7_planning-decision-log.md:1227). The README's quick start mixes root paths and `error::Error` (README.md:31,37). The change is additive and cheap, so it pays.
 **Triage:** fix — api-add (the three icon helpers' place at the root stays M4's call)
-**Status:** open
+**Status:** fixed in 38502160
 
 #### M3-20 · api · api-add · native-theme/src/resolve/validate_helpers.rs:83
 **Claim:** The paths that validation errors name are the model's Rust field names, not the TOML keys a theme author writes, and they carry no variant. `[dark.button] min_height_px = -1` is reported as `button.min_height`, and a missing `defaults.icon_sizes.toolbar_px` as `defaults.icon_sizes.toolbar`.
@@ -6962,7 +6966,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Have the derive emit the serde key (it already knows the renames for WidgetFieldInfo) in missing and range paths, and prefix pipeline and with_overlay errors with `light.` or `dark.`. Or document that paths are model paths, not TOML keys.
 **Verdict:** CONFIRMED — Range paths come from the field ident (gen_ranges.rs:43, `field_name = ident.to_string()`), so `min_height` is reported where the TOML key is `min_height_px` (widgets/mod.rs:56-58). check_padding names `padding_left` (validate_helpers.rs:458-478), and RangeViolation and ResolutionIncomplete carry no light/dark (error.rs:12-14, :109-118). The change pays for itself at low cost: the derive already emits serialized TOML names into inventory (resolve/mod.rs:22-45), and resolve_with knows the mode, so prefixing the variant is a wrapper. Pre-1.0, a change in the error strings is acceptable.
 **Triage:** fix — api-add: the derive emits the TOML key, pipeline and `with_overlay` errors carry `light.`/`dark.`
-**Status:** open
+**Status:** fixed in d036d207 (paths name the TOML key; `light.`/`dark.` prefixes; `layout.*` and `context.font_dpi` unprefixed)
 
 #### M3-21 · perf · S3 · native-theme/src/presets.rs:230
 **Claim:** The first `Theme::preset(name)` call in a process parses all 16 bundled TOMLs (9552 lines, 247 KB), even when only one is needed. That first call is pipeline.rs:35 on `SystemTheme::from_system()`.
@@ -6970,7 +6974,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Make the cache per entry: `static CACHE: [OnceLock<Parsed>; N]` indexed by the entry's position (or a `LazyLock` per entry), so `preset(name)` parses only the requested preset the first time. Add a timing assert or probe for the cold call.
 **Verdict:** CONFIRMED — One LazyLock<HashMap> (presets.rs:230-244) parses all 16 PRESET_ENTRIES on first access, and the 16 TOMLs add up to 9552 lines and 246759 bytes (wc). docs/archive/v0.5.1_native-theme-API.md:2359 had proposed one LazyLock per preset. The ledger's warm measurement of about 1 µs (findings.md:74-75) is a cache hit and does not show the cold cost. To confirm the impact, time the first Theme::preset("kde-breeze") in a fresh process against a single from_toml of one file.
 **Triage:** fix — perf, gated by a cold first-call timing in a fresh process (the M0 probe's warm medians cannot show it); dropped if the gain is below the spread
-**Status:** open
+**Status:** fixed in ec377f8e (cold first `Theme::preset("kde-breeze")` median 6334.9 µs [5641–16430] → 836.5 µs [743–2911], 21 fresh release processes each)
 
 #### M3-22 · perf · S3 · connectors/native-theme-iced/src/lib.rs:315
 **Claim:** Every iced and gpui `from_preset(name, is_dark)` call runs `ResolutionContext::from_system()`. On Linux with the kde or portal feature that is the forceFontDPI file reads plus an `xrdb -query` subprocess, about 1.3-3.5 ms against 21-34 µs for resolve_with, paid on every preset or light/dark switch.
@@ -6978,7 +6982,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Cache the detected font DPI in DetectionContext beside the icon theme (ledger alternative B), cleared by invalidate_caches, which the watchers already call, so that from_system costs microseconds after the first call. Or give the iced and gpui from_preset a context like egui's.
 **Verdict:** CONFIRMED — iced lib.rs:315 and gpui lib.rs:303 call `resolve_system()`, which builds `ResolutionContext::from_system()` (resolve/mod.rs:290-291) and runs the DPI chain on every call. M1-T3-01's fix covered only egui's three sites (findings.md:449-466). The ledger's Status line records the cost figures, resolve 1.28-3.50 ms against resolve_with 21-34 µs (findings.md:466). To confirm the per-call cost, add a timings.rs row for iced/gpui `from_preset` next to a from_preset variant that takes a prebuilt context. The ms cost only arises with the kde/portal feature and no forceFontDPI.
 **Triage:** scheduled: M5 (iced) and M6 (gpui), connector code; gate: the connectors' `from_preset` timing added in their Step 1
-**Status:** open
+**Status:** scheduled: M5 (iced), M6 (gpui); unchanged in M3
 
 #### M3-23 · perf · S3 · native-theme/src/pipeline.rs:636
 **Claim:** When XDG_CURRENT_DESKTOP is unset or unrecognised and the `portal` feature is on, every from_system / from_system_async call opens a new D-Bus session connection and lists activatable names to guess the desktop, though the desktop cannot change during the process. AccessibilityPreferences::from_system and every miss of the cached accessibility accessor do the same.
@@ -6986,7 +6990,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Cache the refined desktop (the portal answer, or the kdeglobals check) in DetectionContext next to `linux_desktop`, cleared by invalidate_caches, and have select_reader read it.
 **Verdict:** PLAUSIBLE — The code path holds: for LinuxDesktop::Unknown, each select_reader call runs detect_portal_backend, which opens Connection::session() and calls list_activatable_names (gnome/mod.rs:555-558, pipeline.rs:661-662). reader_accessibility re-runs select_reader on every cache miss (pipeline.rs:762, detect.rs:806-807). The cost is unmeasured, and the selected portal reader opens its own connection anyway. To confirm, time from_system with XDG_CURRENT_DESKTOP unset against XDG_CURRENT_DESKTOP=GNOME on a portal system, or count the Hello calls in dbus-monitor.
 **Triage:** scheduled: M4 (detection), PLAUSIBLE perf: needs a measurement on a session with `XDG_CURRENT_DESKTOP` unset
-**Status:** open
+**Status:** scheduled: M4 (detection); unchanged in M3
 
 #### M3-24 · bug · S4 · native-theme/src/model/widgets/mod.rs:12
 **Claim:** On all 27 `ThemeWidget` structs, `#[serde_with::skip_serializing_none]` comes after `#[derive(Serialize)]`, so it has no effect: serialising a widget struct to a non-TOML format writes `null` for every unset field.
@@ -6994,7 +6998,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Move `#[serde_with::skip_serializing_none]` above the `#[derive(...)]` line on each widget struct and on `LayoutTheme`.
 **Verdict:** CONFIRMED — Every widget struct puts `#[serde_with::skip_serializing_none]` on the line after `#[derive(..Serialize..)]` (e.g. widgets/mod.rs:11-12, :917-918). serde_with's own docs say it must come before the derive (serde_with_macros-3.24.0/src/lib.rs:216), and every other proxy and struct in the crate does it that way (font.rs:178-179, border.rs:22-23, defaults.rs:34). TOML hides the problem because toml omits `None`; a `serde_json::to_string(&ButtonTheme::default())` test would show the `null`s.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in fcb14daf
 
 #### M3-25 · bug · S4 · native-theme/src/pipeline.rs:334
 **Claim:** platform_preset_name() and select_reader keep separate desktop-to-preset mappings, and they disagree for LinuxDesktop::Unknown with a KDE portal or ~/.config/kdeglobals present: platform_preset_name says "adwaita" while from_system uses "kde-breeze". The doc claims linux_preset_for_de is the 'single source of truth' for both.
@@ -7002,7 +7006,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Have select_reader return the preset through one mapping that both functions call (e.g. a `refined_linux_desktop()` feeding linux_preset_for_de), or correct the doc so it does not claim one source.
 **Verdict:** CONFIRMED — The doc at pipeline.rs:333-334 calls linux_preset_for_de the single source of truth, but select_reader hard-codes its own literals (:645-693). For Unknown with a KDE portal or kdeglobals it returns "kde-breeze" (:665, :683), while platform_preset_name returns adwaita (:382 via :342). M1-T1-01 (ledger, scheduled for M2a) adopts one shared mapping for both call sites, but only for macOS/Windows OS versions, so it does not cover this Linux drift.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in b345f5fd and 2bb1bef3 (docs: the portal answer decides an unknown desktop either way)
 
 #### M3-26 · bug · S4 · native-theme/src/pipeline.rs:718
 **Claim:** On a target with no reader (iOS, FreeBSD, wasm, ...), from_system fails with 'platform not supported: unsupported': the error never names the platform, although the field documents an identifier such as "wasm" or "freebsd".
@@ -7010,7 +7014,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Pass `std::env::consts::OS` (a `&'static str`) in both places.
 **Verdict:** CONFIRMED — pipeline.rs:717-719 passes platform: "unsupported", so Display (error.rs:157-158) prints 'platform not supported: unsupported', against the field doc's 'wasm'/'freebsd' (error.rs:72). std::env::consts::OS is a &'static str and would fit the field.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in b345f5fd and 2bb1bef3 (docs: the portal answer decides an unknown desktop either way)
 
 #### M3-27 · bug · S4 · native-theme/src/color.rs:198
 **Claim:** A colour string with non-ASCII characters, e.g. `"#é0"` in a TOML file, gets a misleading error ('invalid red hex digit 'Ã'') or a byte-count length error ('#é' gives 'length 2'). The comment says such input cannot match the byte slots at all, which is wrong.
@@ -7018,7 +7022,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Reject `!hex.is_ascii()` first with a message that quotes the input string, and fix the comment.
 **Verdict:** CONFIRMED — "é0" is 3 bytes [0xC3,0xA9,'0'], so it matches the [r,g,b] arm and hex_nibble prints char::from(0xC3)='Ã' (color.rs:169-173, :203-206). "é" is 2 bytes and gives 'length 2' (:235-238). The input is still rejected, so the bug is only a misleading message, but the comment at :198-201, which says non-ASCII 'wouldn't match the single-byte slots', is wrong.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in 30c7b100
 
 #### M3-28 · bug · S4 · native-theme/src/presets/documented_sizes.rs:654
 **Claim:** The gate can pass for a preset it never looks at. A 17th bundled preset (e.g. the planned `macos-tahoe` or an `ios-26` rename) that is in neither `NativePreset::ALL` nor `UNSOURCED_PRESETS` goes unchecked by every test in the module.
@@ -7026,7 +7030,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Add the coverage test above, so that every bundled preset must be either a NativePreset with rows or an unsourced preset.
 **Verdict:** CONFIRMED — Every test in documented_sizes.rs iterates only NativePreset::ALL (:68-74) or UNSOURCED_PRESETS (:654-666). Nothing compares their union with list_presets() or PRESET_ENTRIES (grep for list_presets or PRESET_ in the file finds nothing), so a 17th preset in neither list goes unchecked.
 **Triage:** fix — CONFIRMED bug (a gate that can pass vacuously)
-**Status:** open
+**Status:** fixed in c01f1c2a
 
 #### M3-29 · bug · S4 · native-theme-derive/src/parse.rs:376
 **Claim:** The derive panics instead of returning a spanned compile error when `min_max_pair = "…"`, `resolved_name = "…"` or `inherit_from = "…"` holds a string that is not an identifier path (e.g. `min_max_pair = "max width"`, `resolved_name = ""`, `inherit_from = "defaults..color"` or `"defaults.border-color"`).
@@ -7034,7 +7038,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Parse all three with `syn::parse_str::<Ident>` (for inherit_from: each segment, after requiring the `defaults.` prefix) and return `Error::new(lit.span(), …)` on failure, as the `font` key does.
 **Verdict:** CONFIRMED — min_max_pair uses Ident::new(&lit.value(), …) (parse.rs:376), and resolved_name does the same (parse.rs:128). resolved_name is a theme_layer attribute, not a field attribute as the claim says. inherit_from's segments go through format_ident!("{}", s) (gen_inherit.rs:101-104). All three panic on an empty or non-identifier string, whereas the font attribute already uses syn::parse_str with a spanned error (parse.rs:225-233). This is a compile-time proc-macro panic only.
 **Triage:** fix — CONFIRMED bug: spanned `syn::Error`, never a panic in the macro
-**Status:** open
+**Status:** fixed in e299f0aa (messages pinned in 9b9c6072)
 
 #### M3-30 · bug · S4 · native-theme-derive/src/parse.rs:327
 **Claim:** Some field attributes that conflict are silently dropped, depending on their order. `#[theme(category = "soft_option", nested, resolved_type = "ResolvedFontSpec")]` becomes a plain soft option: the font is replaced whole on merge instead of merged, and it gets no nested validation and no font range check. `#[theme(check = "positive", range = "0.0..=1.0")]` keeps only the last check.
@@ -7042,7 +7046,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Return a spanned `Error` when `nested`/`resolved_type` meets a `category`, when a second range attribute appears, and when a range has min > max or a non-finite bound.
 **Verdict:** CONFIRMED — With category = "soft_option" set, `nested` is skipped (parse.rs:327), and if `nested` comes first, category overwrites it (parse.rs:314). resolved_type is then dropped by the `_ => {}` arm (parse.rs:404). The field ends up SoftOption whatever the order: whole-value merge (gen_merge.rs:38-43), no nested validation and no font check (gen_ranges.rs:146). check/range is last-wins because each assignment overwrites range_check (parse.rs:350, :365). Latent: grep finds no current field with a conflicting pair.
 **Triage:** fix — CONFIRMED bug: a conflicting attribute pair is a spanned compile error
-**Status:** open
+**Status:** fixed in e299f0aa (messages pinned in 9b9c6072)
 
 #### M3-31 · bug · S4 · native-theme-derive/src/gen_inherit.rs:218
 **Claim:** A struct marked `#[theme_layer(skip_inventory)]` that also declares `#[theme_inherit(border_kind = …)]` or `font = …` still registers BorderInheritanceInfo and FontInheritanceInfo rows. The widget and uniform registries skip it, so the drift tests would see a widget that does not exist.
@@ -7050,7 +7054,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Pass `layer` to gen_border_inherit and gen_font_inherit and skip only their `inventory::submit!` part when `skip_inventory` is set, keeping the generated methods.
 **Verdict:** CONFIRMED — gen_border_inherit and gen_font_inherit receive only InheritMeta (lib.rs:85-86) and always emit their inventory::submit! (gen_inherit.rs:218-221, :297-300). gen_uniform_submissions (gen_inherit.rs:54) and gen_inventory_submit (lib.rs:112) do honour skip_inventory. Latent: none of today's three skip_inventory structs (widgets/mod.rs:1027, :1063, :1637) declares theme_inherit.
 **Triage:** fix — CONFIRMED bug (latent: none of the three `skip_inventory` structs sets them today)
-**Status:** open
+**Status:** fixed in e299f0aa (messages pinned in 9b9c6072)
 
 #### M3-32 · bug · S4 · native-theme/src/presets.rs:366
 **Claim:** `preset_unknown_name_returns_unknown_preset` passes even when `preset("nonexistent")` returns some other error variant.
@@ -7058,7 +7062,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Replace the `else { return; }` with `else { panic!("expected UnknownPreset, got {err:?}") }`, or use `assert!(matches!(err, Error::UnknownPreset { ref name, .. } if name == "nonexistent"))`.
 **Verdict:** CONFIRMED — `let Error::UnknownPreset { name, .. } = err else { return; };` (presets.rs:366-368) returns early and passes on any other variant, ReaderFailed for example. It should use assert!(matches!(…)) or panic in the else branch.
 **Triage:** fix — CONFIRMED bug
-**Status:** open
+**Status:** fixed in c01f1c2a
 
 #### M3-33 · api · S4 · native-theme/src/error.rs:170
 **Claim:** `Error::NoVariant { mode }` displays "theme has no variant for Dark" although it is returned only when the theme has neither variant (a light-only theme asked for Dark silently gets light), so the message names a defect the theme does not have.
@@ -7066,7 +7070,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Change the Display arm to `write!(f, "theme defines neither a light nor a dark variant (requested {mode:?})")`; a rename to `NoVariants` is optional and breaking, the message alone fixes the actionability.
 **Verdict:** CONFIRMED — NoVariant is produced only when both variants are None (model/mod.rs:374-377), and its own doc says so (error.rs:91-95), yet Display prints "theme has no variant for {mode:?}" (error.rs:170-171). The message should say the theme has no light or dark variant.
 **Triage:** fix — S4 docs/message
-**Status:** open
+**Status:** fixed in fd9ddfcc (context.font_dpi prefix guard e53db9bb)
 
 #### M3-34 · api · S4 · native-theme/src/resolve/mod.rs:258
 **Claim:** `ThemeMode::into_resolved(&ctx)` with a `ResolutionContext { font_dpi: 0.0 | negative | NaN, .. }` (a literal the docs invite) reports the single bad input as `ResolutionInvalid` on `defaults.font.size` and every point-sized widget font, never naming the DPI.
@@ -7074,7 +7078,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** At the top of `into_resolved` (and `validate_with_dpi`), reject the context once: `if !(ctx.font_dpi.is_finite() && ctx.font_dpi > 0.0) { return Err(crate::Error::ResolutionInvalid { errors: vec![RangeViolation { path: "context.font_dpi".into(), value: f64::from(ctx.font_dpi), min: Some(0.0), max: None }] }); }` and say in `ResolutionContext::font_dpi`'s doc that it must be finite and positive.
 **Verdict:** CONFIRMED — validate_with_dpi (resolve/validate.rs:38-40) never checks the DPI. Pt sizes become 0, negative or NaN, and check_positive reports `defaults.font.size` and every pt widget font (validate_helpers.rs:382,656). For px-only themes a bad DPI passes silently. ResolutionContext's fields are pub (resolve/context.rs:40-63), and resolve_with has been public since bd12be93, so a literal is a real input. The fix is a single finite and >0 check reported as `font_dpi`.
 **Triage:** fix — S4: one `ResolutionInvalid` on `font_dpi` before the conversions
-**Status:** open
+**Status:** fixed in fd9ddfcc (context.font_dpi prefix guard e53db9bb)
 
 #### M3-35 · api · S4 · native-theme/src/model/mod.rs:518
 **Claim:** `Theme::is_empty` is documented as "true if the theme has no variants set" but also requires an empty `layout` and no `icon_set`/`icon_theme`, so `Theme::from_toml("icon_set = \"material\"")?.is_empty()` is `false` against the doc.
@@ -7082,7 +7086,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Doc: `/// Returns true when the theme states nothing: no variant, no layout value, no icon set and no icon theme.`
 **Verdict:** CONFIRMED — model/mod.rs:518-525 also requires an empty layout, no icon_set and no icon_theme, unlike the doc's "no variants set". The cited example as written would fail first with a missing `name`: Theme.name has no serde default (model/mod.rs:267). It needs `name = "x"` added to show `false`. The doc or the method should be fixed.
 **Triage:** fix — S4: the doc says what the code checks
-**Status:** open
+**Status:** fixed in fd9ddfcc (context.font_dpi prefix guard e53db9bb)
 
 #### M3-36 · api · S4 · native-theme/src/lib.rs:1
 **Claim:** The crate-level documentation a docs.rs reader meets is two sentences and six re-exports: the README with the quick start and recipes is attached only under `#[cfg(doctest)]`, so no entry point, recipe or module map is shown.
@@ -7090,7 +7094,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Write a `//!` quick start in lib.rs covering the five tasks: `let sys = SystemTheme::from_system()?; let t = sys.pick(sys.mode);`, `Theme::preset("nord")?.resolve(ColorMode::Dark)?.variant`, `sys.with_overlay(&Theme::from_toml(..)?)?`, a pointer to the connectors for applying, and `let _sub = native_theme::watch::on_theme_change(|_| { /* reload */ })?;` behind `watch`; plus a module map (`theme`, `prelude`, `icons`, `detect`, `watch`, `fonts`). Do not `#![doc = include_str!("../README.md")]`: its relative links and images (README.md:15-17, :120-122, :187-189) break on docs.rs; add the watch recipe to the README too.
 **Verdict:** CONFIRMED — lib.rs:1-6 is the whole `//!` crate doc, and README.md is attached only to `#[cfg(doctest)] ReadmeDoctests` (lib.rs:13-15), as it has been since 8485ac4e. This contradicts archive/v0.5.7_docs-overhaul-design.md:103 ('keep #[doc = include_str!]'). The fix needs its own crate-doc body: the README now uses relative image paths, which would break on docs.rs.
 **Triage:** fix — S4 docs: a `//!` quick start and module map in lib.rs, not `include_str!` of the README (its relative links break on docs.rs)
-**Status:** open
+**Status:** fixed in 4b40d61e
 
 #### M3-37 · api · S4 · native-theme-derive/src/lib.rs:1
 **Claim:** The derive crate has no crate-level rustdoc, so docs.rs shows two derive macros with helper-attribute docs and no sign that they are internal to native-theme (the generated `inventory::submit!(crate::resolve::WidgetFieldInfo …)` cannot compile elsewhere); the warning lives only in the crates.io README.
@@ -7098,7 +7102,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Add a `//!` block to native-theme-derive/src/lib.rs stating what the README's first paragraph states (internal to native-theme, the derives expand to `crate::resolve::*` paths, depend on `native-theme` instead), then the attribute reference now on `derive_theme_widget` (:21-42). Not `#![doc = include_str!("../README.md")]`, whose `../native-theme/` links break on docs.rs.
 **Verdict:** CONFIRMED — native-theme-derive/src/lib.rs:1-9 are plain `//` comments, not `//!`, so docs.rs shows no crate doc. The 'internal' warning exists only in native-theme-derive/README.md:3-8. The generated `crate::resolve::WidgetFieldInfo` (lib.rs:120) and `crate::resolve::validate_helpers` (gen_validate.rs:69) paths compile only inside native-theme. Minor docs fix.
 **Triage:** fix — S4 docs
-**Status:** open
+**Status:** fixed in 4b40d61e
 
 #### M3-38 · simplify · S4 · native-theme/src/model/font.rs:193
 **Claim:** The `(pt, px) -> Option<FontSize>` mapping and its inverse appear three times each in the font proxies.
@@ -7106,7 +7110,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Add `fn size_from_keys(pt: Option<f32>, px: Option<f32>, what: &str) -> Result<Option<FontSize>, String>` and `fn size_to_keys(Option<FontSize>) -> (Option<f32>, Option<f32>)`, and use them at all six sites.
 **Verdict:** CONFIRMED — The `(pt, px) -> Option<FontSize>` mapping appears at font.rs:192-197, :310-317 and :318-327, and its inverse at :210-214, :345-349 and :350-354. Two small helpers, a split and a join that takes the error message, would remove about 30 lines. It is a minor cleanup with no change in behaviour.
 **Triage:** fix — simplify (deletes code)
-**Status:** open
+**Status:** fixed in 53dc382a
 
 #### M3-39 · simplify · S4 · native-theme/src/resolve/validate_helpers.rs:160
 **Claim:** `require_font_opt`'s `Some(f)` branch repeats `require_font`'s whole body line for line: family, size conversion, weight, color, defined_size and style.
@@ -7114,7 +7118,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Replace the Some arm with `Some(f) => require_font(f, prefix, dpi, missing)`.
 **Verdict:** CONFIRMED — The `Some(f)` arm of require_font_opt (validate_helpers.rs:170-205) repeats require_font (:99-146) line for line, down to the style comment. It could be `Some(f) => require_font(f, prefix, dpi, missing)` with no change in behaviour.
 **Triage:** fix — simplify (deletes code)
-**Status:** open
+**Status:** fixed in 53dc382a
 
 #### M3-40 · simplify · S4 · docs/inheritance-rules.toml:234
 **Claim:** The `[uniform]` rule `list.alternate_row_background = "list.background_color"` describes an inheritance that the code has deliberately not had since G6. The rule is wrong, not the code.
@@ -7122,7 +7126,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Delete the `[uniform]` line and the `[wrong_safety_nets."list.alternate_row_background"]` entry, or move the field to the no-inheritance list. Drop `documented_only_rules` from inheritance.rs:754-757.
 **Verdict:** CONFIRMED — inheritance-rules.toml:234 states the rule, while the code guards that no resolver applies it (inheritance.rs:565-600) and the test lists it as 'documented only' (inheritance.rs:753-757). Ledger F8 (findings.md:1535, also :526) hands exactly this decision to M3 R2 as an open question, so the finding is not a duplicate. Removing the [uniform] line, and keeping only its [wrong_safety_nets] entry, matches the code and the archived reason ('alternate rows are always a tinted variant').
 **Triage:** fix — the rule removed from `docs/inheritance-rules.toml` and the test's 'documented only' entry with it; the code's G6 decision stands (closes M1 F8's open question)
-**Status:** open
+**Status:** fixed in 8e19cc79 (closes M1 F8's open question)
 
 #### M3-41 · simplify · S4 · native-theme/src/lib.rs:561
 **Claim:** with_overlay repeats run_pipeline's whole preset-plus-reader merge and the Single/Dual variant selection line for line, so a fix to one copy (such as the known todo.md:339 icon-theme fix) has to be repeated by hand in the other. Each copy also clones the cached preset twice.
@@ -7130,7 +7134,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Extract a single `fn merged_variants(src: &OverlaySource) -> Result<(ThemeMode, ThemeMode, LayoutTheme, Option<Cow<str>> /*tiers*/)>`, called by both functions, with with_overlay merging its overlay before the tiers. Inside it, take the inactive variant out of the cached preset copy before merging into that same copy, which removes the second clone.
 **Verdict:** CONFIRMED — lib.rs:561-586 repeats run_pipeline's Theme::preset plus clone plus merge and the Single/Dual selection (pipeline.rs:35-43, :99-117) line for line. presets::preset already clones the cached theme (presets.rs:252), and full_preset.clone() clones it a second time in both copies. The ledger's F3 deferred minor names only the full_preset local, not this duplication.
 **Triage:** fix — simplify, with M3-10
-**Status:** open
+**Status:** fixed in bdad0edf
 
 #### M3-42 · simplify · S4 · native-theme/src/lib.rs:43
 **Claim:** The `soft_option` arm of `impl_merge!` is dead: none of the eight invocations uses it, and the `soft_option` widget fields are merged by the derive, not by this macro.
@@ -7138,7 +7142,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Delete the `soft_option` matcher, its two expansions and its doc lines (lib.rs:21, :25, :43, :58-62, :79).
 **Verdict:** CONFIRMED — No impl_merge! invocation contains 'soft_option {' (a grep finds only the macro definition at lib.rs:43 and its doc at :21; there are 9 invocations counting the WithFont test). The soft_option fields carry the derive attribute #[theme(category = "soft_option")] (model/widgets/mod.rs:79 and others), so the arm is dead.
 **Triage:** fix — simplify (deletes code)
-**Status:** open
+**Status:** fixed in 53dc382a
 
 #### M3-43 · simplify · S4 · native-theme/src/error.rs:184
 **Claim:** ResolutionIncomplete's Display loops over an "icon set" category that field_category can never return, so the group is dead and an `icon_set` path would be listed under "widget fields".
@@ -7146,7 +7150,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Drop "icon set" from the list, or add an arm to field_category if a missing icon_set path is ever produced.
 **Verdict:** CONFIRMED — field_category returns only "root defaults", "text scale" or "widget fields" (error.rs:233-238), so the "icon set" group at error.rs:184 can never be filled. icon_set lives on Theme/SystemTheme, not on ThemeMode (resolve/tests.rs:1264, :1986), so no missing path names it today. The misfiling half of the claim is therefore moot, but the group is dead.
 **Triage:** fix — simplify (deletes code)
-**Status:** open
+**Status:** fixed in 53dc382a
 
 #### M3-44 · simplify · S4 · native-theme/src/presets.rs:16
 **Claim:** Each preset's key and name are kept by hand in four parallel tables plus the TOML `name`. The comment that tells a maintainer what to update names only two of the tables, and a disagreement between them goes undetected.
@@ -7154,7 +7158,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Make PRESET_INFOS the single table: add `source: include_str!(…)` to a private entry struct (or keep a parallel `const` checked by a test), derive PRESET_NAMES and the display name from it, and add a test that each TOML `name` equals its `display_name`.
 **Verdict:** CONFIRMED — PRESET_ENTRIES, PRESET_NAMES, PRESET_DISPLAY_NAMES and PRESET_INFOS repeat each key, and the TOML `name` repeats the display name. The comment at presets.rs:18 names only PRESET_NAMES, and the doc at :117-118 cites a PLATFORM_SPECIFIC table that does not exist. preset_names_match_list (:499) catches an INFOS key with no entry. Nothing compares PRESET_NAMES with ENTRIES, or display names with INFOS or the TOML; a key missing from DISPLAY_NAMES silently keeps the TOML's name (:236-240). docs/todo.md:594-596 even plans a rename in two of the copies.
 **Triage:** fix — simplify: one table, the others derived from it (net deletion)
-**Status:** open
+**Status:** fixed in 1058287a
 
 #### M3-45 · simplify · S4 · native-theme-derive/src/gen_inherit.rs:118
 **Claim:** The derive crate repeats the same helpers across modules: snake_case naming twice, Option-inner extraction twice, border-type detection twice, resolved-name computation three times, and the font range check also written out by hand in validate_helpers.
@@ -7162,7 +7166,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Move the shared helpers into one module (e.g. `parse.rs` or a `util.rs`) and compute the resolved ident once in derive_inner. Pass it to the generators. Replace the inlined font block with a `check_font(&font, prefix, field, errors)` helper in validate_helpers that formats only on error.
 **Verdict:** CONFIRMED — The duplicates are where the claim says. snake_case: lib.rs:128 and gen_inherit.rs:118; its comment at :116-117 calls the copy deliberate, a weak reason inside one crate. Option-inner: gen_structs.rs:99 and gen_validate.rs:171. Border type: gen_validate.rs:43 and gen_ranges.rs:187. The Resolved{} name: gen_structs.rs:19, gen_validate.rs:18 and gen_ranges.rs:14. The font size and weight checks sit inline at gen_ranges.rs:149-169, while check_defaults_ranges calls check_positive and check_range_u16 (validate_helpers.rs:656-678). The comment at :143-145 explains the inlining as avoiding a sub-prefix allocation.
 **Triage:** fix — simplify (deletes code)
-**Status:** open
+**Status:** fixed in 72967a81
 
 ### Mandatory questions — the reviewers' answers
 
@@ -7357,6 +7361,52 @@ Rulings for this plan:
 | T18 | M3-38, M3-39, M3-42, M3-43 | font proxy `(pt, px)` helpers; `require_font_opt`'s Some arm calls `require_font`; `impl_merge!`'s `soft_option` arm deleted; the "icon set" category dropped | simplify: net deletion, tests unchanged |
 | T19 | M3-40 | the `[uniform] list.alternate_row_background` line removed from docs/inheritance-rules.toml (its `wrong_safety_nets` entry stays; the section header's "currently inherits" sentence made true for the rest), `documented_only_rules` dropped from the uniform drift test | the drift test passes with no documented-only entry |
 | T20 | M3-33, M3-34, M3-35, M3-36, M3-37 | `NoVariant` Display names both variants missing; `into_resolved`/`validate_with_dpi` reject a non-finite or non-positive `font_dpi` once (`context.font_dpi`), its doc says so; `Theme::is_empty` doc; a `//!` quick start and module map in native-theme/src/lib.rs (not `include_str!` of the README) and a `watch` recipe in the README; a `//!` block in native-theme-derive/src/lib.rs | M3-34: a failing test first; docs: `cargo doc` and doctests pass |
+
+### Step 7 — fixes (2026-10-12)
+
+Subagent-driven, one session (Opus 5.5): an `implement` agent (Opus) per task or batch, a task reviewer per task, scoped re-reviews after fix rounds, one whole-branch review and one fix wave. Every task's gate is `./scripts/check_release.sh --commit` green before its code commit; every task's review ended clean (spec ✅), T9 and T11 after one fix round each.
+
+- T1 (M3-16): aeb4e6e2; check_release --commit green; review Approved.
+- T2 (M3-11, M3-12, M3-13, M3-15): e60575e0; green; review Approved.
+- T3 (M3-14): 0beec967; green; review Approved.
+- T4 (M3-17): 1249724f; green (23m 51s); review Approved.
+- T5 (M3-18, M3-19): 38502160; green; review Approved.
+- T6 (M3-20): d036d207; green; review (Opus) Approved. Decisions: `size_pt`/`size_px` named when stated, `size` when missing; `resolve`/`resolve_with` prefix the variant actually resolved; a bare `ThemeMode` no prefix; the connectors' `from_preset` errors stay unprefixed (M5–M7).
+- T7 (M3-01): 21b87466; green; review Approved.
+- T8 (M3-02): ce71649f; green; review Approved.
+- T9 (M3-03, M3-04, M3-05, M3-06): a2515313, fix round 1 828d2d2a (the soft-option change replaced by a hand-written layout check, public types unchanged, the Breaking line removed); green; review (Opus) Approved.
+- T10 (M3-07): df0f0691; green; review Approved.
+- T11 (M3-08, M3-09, M3-25, M3-26): b345f5fd, fix round 1 2bb1bef3 (docs and CHANGELOG: the portal answers first either way); green, the fix round's doc gates green; review (Opus) Needs fixes (one Important, the one-direction docs), then clean; `cargo check -p native-theme --target wasm32-unknown-unknown` passes (M3-26's branch).
+- T12 (M3-10, M3-41): c3ed1f4f, bdad0edf (non-test net −67); green; review (Opus) Approved, both accepted deviations verified.
+- T13 (M3-44, M3-21): 1058287a (presets.rs non-test +49/−184), ec377f8e (cold first `Theme::preset("kde-breeze")` median 6334.9 µs [5641–16430] → 836.5 µs [743–2911], 21 fresh release processes each); green; review Approved.
+- T14 (M3-24): fcb14daf; `to_toml` of the 17 presets byte-identical before and after; green; review Approved.
+- T15 (M3-27): 30c7b100; T16 (M3-28, M3-32): c01f1c2a; one implementer, one check_release, green; review Approved.
+- T17 (M3-29, M3-30, M3-31, M3-45): e299f0aa (14 parse tests failed first), 72967a81 (net −68); green; review (Opus) Approved.
+- T18 (M3-38, M3-39, M3-42, M3-43): 53dc382a (+61 −106); T19 (M3-40): 8e19cc79; one implementer, green (10m 47s); review Approved.
+- T20 (M3-33, M3-34, M3-35, M3-36, M3-37): fd9ddfcc, 4b40d61e; green; review Approved. Decisions: `context.font_dpi` unprefixed (context-level, like layout); the minimum reported as `f64::MIN_POSITIVE`; the README watch recipe `rust,ignore` like the README's other feature-gated examples.
+- Final whole-branch review (Opus, range 5c15bd6e..4b40d61e): ready with fixes; 0 Critical, 1 Important (the KDE reader's redundant `link.font.color` write blocked an overlay's `defaults.link_color` after T7), fixed in dfb947b9; its 6 Minor and the 9 deferred minors it put on the fix-now list fixed in 95e8e34f, e53db9bb, 824a6387, 9b9c6072; check_release --commit green. The scoped re-review (Opus): all 16 addressed; its two new minors and the fix wave's concerns are adjudicated in Step 8.
+
+Rulings of the session:
+- Ruling: M3-08 — the Linux fallback uses one preset as reader and base, the desktop's (KDE without `kde` → full kde-breeze, not adwaita); the lib.rs doc promising adwaita is corrected — why: Breeze is what a KDE user sees and what platform_preset_name already reports — cost if wrong: one preset name in the fallback and a doc line.
+- Ruling: M3-25 — select_reader's Linux presets come from linux_preset_for_de; platform_preset_name runs the same sync kdeglobals refinement for Unknown; the async portal probe stays in from_system only and both docs say so — why: platform_preset_name is sync and cannot run D-Bus; a KDE session with a portal almost always has kdeglobals — cost if wrong: Unknown + KDE portal + no kdeglobals still labels adwaita.
+- Ruling: T9's new range checks use T6's TOML-key path scheme — why: one scheme for every validation path — cost if wrong: path strings in tests.
+- Ruling: the next implementer starts while the previous task's read-only review runs; a fix round for the reviewed task waits until the running implementer commits — why: halves wall clock; implementers never overlap — cost if wrong: a fix commit lands after the next task's commit (history order only).
+- Ruling: T9 fix round 1 — replace the soft-option change with a hand-written layout check (same helpers, same paths), so ResolvedLayoutTheme and LayoutTheme keep their public shape and the Breaking line goes — why: the plan requires maintainer approval for every public-API break, and an equivalent non-breaking fix exists (four fields); ResolvedLayoutTheme being a dead public type is recorded for the maintainer as an M3 follow-up — cost if wrong: a few lines of hand-written check instead of generated code.
+- Ruling: T12 concern 1 — accept: no literal take-out of the inactive variant; one preset clone, merge leaves a Single reader's inactive variant as the preset's — why: same result with less code — cost if wrong: none.
+- Ruling: T12 concern 2 — the overlay's icon_theme/icon_set/layout now apply in with_overlay; the docs/todo.md entry is closed in Step 8's close docs pass (moved to docs/archive/todo_closed.md as M1 did) — why: the code now does what the entry asks, with a regression test — cost if wrong: one todo entry reopened.
+- Ruling: T13's in-place edits to docs/todo.md and new-os-version-guide.md (identifier swaps for removed tables) stand — why: the append-only rule protects findings and history; leaving names of tables that no longer exist would mislead, and the edits add no content — cost if wrong: two identifier swaps reverted.
+- Ruling: T15 and T16 go to one implementer (two commits, focused tests each, one check_release) — why: both are small single-file fixes and check_release costs ~20 min per run — cost if wrong: one review covers two tasks.
+- Ruling: the final review's Important is fixed now, in kde/colors.rs (M4's file) — why: M3's T7 introduced the regression, the fix is deleting one redundant write (same ForegroundLink value, inherited through defaults.link_color), so M4 would only inherit a known regression — cost if wrong: one reader line restored.
+- Ruling (adjudication, no second fix wave): the CHANGELOG word is fixed in the close docs pass; the fixture weakness, the kde-breeze link hover/active uncited values and the size_pt-key-with-px-value message go to docs/todo.md as [v0.7.0] entries for M4 (readers/presets) — why: none blocks M3's close and each belongs to M4's region or a preset-validator pass — cost if wrong: three small items carried one milestone.
+
+### Step 8 — close (2026-10-12)
+
+- Full `./scripts/check_release.sh` at 9b9c6072: 106 checks · 102 ✅ · 2 ⚠️ (tag v0.6.1 exists; soft semver-checks native-theme) · 2 ❌ expected (visual assets stale, compatibility claims stale — the release asset run), 9m 54s. Cross-target clippy (macOS, Windows, all/no features) green inside it.
+- `cargo semver-checks` (inside the full check): native-theme fails with 9 major lints, all approved breaks: the `model` paths and sub-module paths gone (M3-16: module_missing, struct/enum/trait/function_missing by old path), `#[non_exhaustive]` on Resolved, ResolvedTheme, ResolvedDefaults, ResolvedDefaultsBorder, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, PresetInfo, AccessibilityPreferences (M3-12/13/14/15), `Error::Io` tuple → struct variant (M3-17), fields `PresetInfo::light_only` (M3-12), `PlatformPreset::is_live`/`live_name` (M1), `GnomePortalData::font_dpi` (M2e); native-theme-build, -gpui, -iced, -egui, -egui-widgets pass; native-theme-derive is not checked by the script (internal crate).
+- Timings (`cargo test -p native-theme --release --all-features --test timings -- --ignored --nocapture --test-threads=1`, three runs, 2026-10-12): preset parse 0.95–1.81 µs (baseline 1.02–1.38); `resolve_with` 25–44 µs, max 53 (M1 measured 21–34; the added range checks of M3-03..06 and M3-34); `resolve` 3.35–4.25 ms, max 8.08 (baseline clusters 1.30–1.50 and 3.36–3.49 ms: the difference is the `xrdb -query` subprocess inside `ResolutionContext::from_system`, measured 1.3–3.4 ms, max 8.8 ms, alone on this machine today; M3 changed no detection code); `from_system` cold 83.3 ms on the first run after the build (cold disk cache), then 9.5 / 6.4 ms, warm 5.1 / 10.2 / 5.1 ms (baseline 9.12–9.66 / 3.63–8.30); accessibility 12.3–13.1 ms (baseline 8.35–12.15); freedesktop breeze cold 487 ms on the first run (cold cache), then 43–54 ms, warm 1.8–2.7 ms (baseline 37.6–40.9 / 1.76–2.07); Adwaita cold 6.4–6.7 ms, warm 3.3–3.6 ms (baseline 5.0–7.7 / 2.58–2.92). No path slower than its baseline beyond the run-to-run spread except `resolve_with`'s ~+5 µs median from the new checks. New probe: `preset_cold_first_call` (M3-21).
+- Residuals adjudicated (no second fix wave), entries appended to docs/todo.md: the KDE plain-read test cannot tell the reader's ForegroundLink from the preset's (same #1d99f3); kde-breeze states link hover/active colours (Breeze default blue, no citation), so they never follow a KDE scheme or overlay; an out-of-range `size_pt` is reported under the `size_pt` key with the px-converted value.
+- The docs/todo.md entry "`SystemTheme::with_overlay` — the overlay's icon theme is never read" moved to docs/archive/todo_closed.md (fixed by bdad0edf, M3-41); the CHANGELOG's native-theme-derive line names `#[theme(...)]` and `#[theme_layer(...)]`.
+- Cost: this session's 40 agent runs (17 implementer, 23 review/re-review/final review; Opus 5.5 implementers, Sonnet 5.5 and Opus 5.5 reviewers): 109k output tokens, 76.8M cache reads, about 7.5 hours wall clock.
 
 ## M4 — Core, part 2
 
