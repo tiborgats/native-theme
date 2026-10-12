@@ -13,7 +13,7 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::IconData;
-use crate::icons::{has_theme_index, icon_base_dirs};
+use crate::icons::{MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs};
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use std::path::{Component, Path, PathBuf};
 
@@ -386,21 +386,31 @@ fn load_icon_file(path: &Path, is_symbolic: bool, fg_color: Option<[u8; 3]>) -> 
 /// are expanded to RGBA in-place so downstream renderers only ever see
 /// 4-byte-per-pixel data.
 ///
-/// Returns `None` if the input is not a valid PNG, decoding fails, or
-/// the output buffer shape does not match `width * height * 4`.
+/// Returns `None` if the input is not a valid PNG, decoding fails, the
+/// decoded or RGBA buffer would exceed [`MAX_ICON_DECODE_BYTES`], or the
+/// output buffer shape does not match `width * height * 4`.
 fn decode_png_to_rgba(bytes: &[u8]) -> Option<IconData> {
     let mut decoder = png::Decoder::new(std::io::Cursor::new(bytes));
     decoder.set_transformations(
         png::Transformations::EXPAND | png::Transformations::STRIP_16 | png::Transformations::ALPHA,
     );
     let mut reader = decoder.read_info().ok()?;
-    let mut buf = vec![0u8; reader.output_buffer_size()?];
+    let buf_len = reader.output_buffer_size()?;
+    if buf_len > MAX_ICON_DECODE_BYTES {
+        return None;
+    }
+    let mut buf = Vec::new();
+    buf.try_reserve_exact(buf_len).ok()?;
+    buf.resize(buf_len, 0);
     let info = reader.next_frame(&mut buf).ok()?;
     buf.truncate(info.buffer_size());
 
     let (width, height) = (info.width, info.height);
     let pixel_count = (width as usize).checked_mul(height as usize)?;
     let rgba_len = pixel_count.checked_mul(4)?;
+    if rgba_len > MAX_ICON_DECODE_BYTES {
+        return None;
+    }
 
     let rgba = match info.color_type {
         png::ColorType::Rgba => buf,
@@ -473,7 +483,8 @@ fn fg_to_replacement(fg_color: Option<[u8; 3]>) -> String {
 /// into the correct vertical slice.
 ///
 /// Returns `None` if the SVG is not a sprite sheet (single-frame,
-/// non-multiple dimensions, or parse error).
+/// non-multiple dimensions, a non-finite viewBox or a width below 1, or
+/// parse error), or if its frames would exceed [`MAX_ICON_DECODE_BYTES`].
 fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
     let svg_str = std::str::from_utf8(svg_bytes).ok()?;
 
@@ -501,18 +512,26 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
     let [_, _, width, height] = parts.as_slice() else {
         return None;
     };
+    if !parts.iter().all(|v| v.is_finite()) {
+        return None;
+    }
     let (width, height) = (*width, *height);
-    if height <= width {
-        return None; // Single-frame, not a sprite sheet
+    if width < 1.0 || height <= width {
+        return None; // Degenerate, or single-frame: not a sprite sheet
     }
 
-    let frame_count = (height / width).round() as usize;
+    let frames_exact = height / width;
+    let frame_count = frames_exact.round() as usize;
     if frame_count < 2 {
         return None;
     }
 
-    // Verify exact division (within floating-point tolerance)
-    if (height - width * frame_count as f64).abs() > 0.01 {
+    // Verify exact division (within floating-point tolerance, in frames)
+    if (frames_exact - frame_count as f64).abs() > 0.01 {
+        return None;
+    }
+
+    if frame_count.checked_mul(svg_bytes.len())? > MAX_ICON_DECODE_BYTES {
         return None;
     }
 
@@ -1375,6 +1394,22 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_sprite_sheet_zero_width_returns_none() {
+        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 0 0.005"/>"#).is_none());
+    }
+
+    #[test]
+    fn test_parse_sprite_sheet_frames_over_decode_bound_returns_none() {
+        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 1 1000000000"/>"#).is_none());
+    }
+
+    #[test]
+    fn test_parse_sprite_sheet_non_finite_viewbox_returns_none() {
+        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 1 inf"/>"#).is_none());
+        assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 NaN 20"/>"#).is_none());
+    }
+
+    #[test]
     fn test_load_freedesktop_spinner_no_panic() {
         // Just verify the function doesn't panic -- result is theme-dependent
         let _result = load_freedesktop_spinner(None);
@@ -1555,6 +1590,55 @@ mod tests {
     fn decode_png_to_rgba_rejects_non_png_bytes() {
         assert!(decode_png_to_rgba(b"not a png at all").is_none());
         assert!(decode_png_to_rgba(&[]).is_none());
+    }
+
+    /// CRC-32 (ISO 3309, as PNG chunks use it), bitwise.
+    fn png_crc32(bytes: &[u8]) -> u32 {
+        let mut crc = 0xffff_ffff_u32;
+        for &byte in bytes {
+            crc ^= u32::from(byte);
+            for _ in 0..8 {
+                crc = if crc & 1 == 1 {
+                    (crc >> 1) ^ 0xedb8_8320
+                } else {
+                    crc >> 1
+                };
+            }
+        }
+        !crc
+    }
+
+    /// Append a PNG chunk (length, type, data, CRC over type and data).
+    fn push_png_chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
+        out.extend_from_slice(&u32::try_from(data.len()).unwrap().to_be_bytes());
+        let start = out.len();
+        out.extend_from_slice(kind);
+        out.extend_from_slice(data);
+        let crc = png_crc32(&out[start..]);
+        out.extend_from_slice(&crc.to_be_bytes());
+    }
+
+    #[test]
+    fn decode_png_to_rgba_rejects_huge_ihdr_dimensions() {
+        // A few bytes whose IHDR declares 1 000 000 x 1 000 000 8-bit RGBA.
+        let mut ihdr = Vec::new();
+        ihdr.extend_from_slice(&1_000_000_u32.to_be_bytes());
+        ihdr.extend_from_slice(&1_000_000_u32.to_be_bytes());
+        ihdr.extend_from_slice(&[8, 6, 0, 0, 0]);
+        let mut bytes = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+        push_png_chunk(&mut bytes, b"IHDR", &ihdr);
+        push_png_chunk(&mut bytes, b"IDAT", &[]);
+        push_png_chunk(&mut bytes, b"IEND", &[]);
+
+        assert!(decode_png_to_rgba(&bytes).is_none());
+    }
+
+    #[test]
+    fn png_crc32_matches_encoder_output() {
+        let bytes = encode_test_png(1, 1, png::ColorType::Rgba, &[1, 2, 3, 4]).unwrap();
+        // The IHDR chunk follows the 8-byte signature: length (4), type and data (17), CRC (4).
+        let crc = u32::from_be_bytes(bytes[29..33].try_into().unwrap());
+        assert_eq!(png_crc32(&bytes[12..29]), crc);
     }
 
     #[test]

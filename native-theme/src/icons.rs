@@ -11,6 +11,19 @@ use crate::model::{AnimatedIcon, IconData, IconProvider, IconRole, IconSet};
 #[allow(unused_imports)]
 use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 
+/// The largest buffer, in bytes, built while decoding an icon from outside
+/// data: a PNG's output buffer, a sprite sheet's frames (`frame_count ×
+/// svg_len`) and a rasterised image (`size² × 4`).
+///
+/// 64 MiB, the png crate's own default memory limit (`Limits::default()`,
+/// png-0.18.1 `src/decoder/mod.rs:81-87`): a 4096 × 4096 RGBA image, beyond
+/// any icon directory's size.
+#[cfg_attr(
+    not(all(target_os = "linux", feature = "system-icons")),
+    allow(dead_code)
+)]
+pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
+
 /// Identifies what icon to load: a semantic role, a platform-specific name,
 /// or a custom provider.
 ///
