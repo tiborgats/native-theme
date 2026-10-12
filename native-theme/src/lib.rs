@@ -652,8 +652,8 @@ impl SystemTheme {
     ///
     /// Every set honours `color`, as in
     /// [`load_custom_icon`](crate::icons::load_custom_icon): the system sets
-    /// load the icon in it, and a Material or Lucide SVG (or a provider's own
-    /// SVG) is coloured through
+    /// load the icon in it (freedesktop for a symbolic icon), and a Material
+    /// or Lucide SVG (or a provider's own SVG) is coloured through
     /// [`colorize_monochrome_svg`](crate::icons::colorize_monochrome_svg).
     /// `None` leaves each icon in the colour it loads in.
     ///

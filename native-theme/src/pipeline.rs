@@ -2209,6 +2209,50 @@ accent_color = "#0066cc"
         Ok(())
     }
 
+    /// `SystemTheme::icon` and `icon_indicator` hand the mode's icon theme to
+    /// the freedesktop loader: under a light variant theme that is not
+    /// installed both load nothing (the loader searches no other theme), and
+    /// the dark mode loads what `breeze-dark` itself gives, installed or not.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn icon_and_indicator_load_from_the_modes_freedesktop_theme() -> crate::Result<()> {
+        use crate::icons::{FreedesktopLoader, IconRole, is_freedesktop_theme_available};
+
+        const MISSING: &str = "native-theme-no-such-theme";
+        assert!(!is_freedesktop_theme_available(MISSING));
+        let mut theme = run_pipeline(
+            reader_from_preset("kde-breeze"),
+            "kde-breeze",
+            crate::ColorMode::Light,
+        )?;
+        theme.light_icon_theme = Some(std::borrow::Cow::Borrowed(MISSING));
+        let role = IconRole::ActionCopy;
+        for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            theme.mode = active;
+            assert_eq!(
+                theme.icon(role, crate::ColorMode::Light, None),
+                None,
+                "light icon from {MISSING} (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon_indicator(crate::ColorMode::Light),
+                None,
+                "light spinner from {MISSING} (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon(role, crate::ColorMode::Dark, None),
+                FreedesktopLoader::new(role).theme("breeze-dark").load(),
+                "dark icon from breeze-dark, kde-breeze.toml:415 (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon_indicator(crate::ColorMode::Dark),
+                FreedesktopLoader::load_indicator(Some("breeze-dark")),
+                "dark spinner from breeze-dark (active mode {active:?})"
+            );
+        }
+        Ok(())
+    }
+
     /// A Material system theme's icon comes back with the colour in its bytes.
     #[test]
     #[cfg(feature = "material-icons")]
@@ -2269,7 +2313,7 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Dark),
                 Some("breeze-dark"),
-                "kde-breeze.toml:410 names breeze-dark for dark (active mode {mode:?})"
+                "kde-breeze.toml:415 names breeze-dark for dark (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(mode),

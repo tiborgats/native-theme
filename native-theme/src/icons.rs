@@ -655,8 +655,9 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// provider's own SVG, is coloured through [`colorize_monochrome_svg`]. `None`
 /// leaves each icon in the colour it loads in. A freedesktop icon comes from
 /// the system's icon theme; [`SystemTheme::icon`](crate::SystemTheme::icon)
-/// takes the theme's own. For monochrome icons: a full-colour SVG the
-/// provider gives is recoloured too.
+/// takes the theme's own. A provider's own SVG is coloured as a monochrome
+/// icon, so give a colour only for monochrome icons; with `None` a
+/// full-colour SVG is returned unchanged.
 ///
 /// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
