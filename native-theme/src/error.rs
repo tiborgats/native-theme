@@ -244,8 +244,7 @@ impl fmt::Display for Error {
                 )?;
 
                 // Group fields by category, preserving insertion order within each group.
-                let categories: &[&str] =
-                    &["root defaults", "text scale", "widget fields", "icon set"];
+                let categories: &[&str] = &["root defaults", "text scale", "widget fields"];
                 for &cat in categories {
                     let fields: Vec<&str> = missing
                         .iter()

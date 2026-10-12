@@ -181,15 +181,38 @@ struct FontSpecRaw {
     color: Option<Rgba>,
 }
 
+/// Joins a proxy's two mutually-exclusive keys into one size; `both_set` is
+/// the error when both are given.
+fn size_from_keys(
+    pt: Option<f32>,
+    px: Option<f32>,
+    both_set: &str,
+) -> Result<Option<FontSize>, String> {
+    match (pt, px) {
+        (Some(v), None) => Ok(Some(FontSize::Pt(v))),
+        (None, Some(v)) => Ok(Some(FontSize::Px(v))),
+        (None, None) => Ok(None),
+        (Some(_), Some(_)) => Err(both_set.into()),
+    }
+}
+
+/// Splits a size into a proxy's `(pt, px)` keys.
+fn size_to_keys(size: Option<FontSize>) -> (Option<f32>, Option<f32>) {
+    match size {
+        Some(FontSize::Pt(v)) => (Some(v), None),
+        Some(FontSize::Px(v)) => (None, Some(v)),
+        None => (None, None),
+    }
+}
+
 impl TryFrom<FontSpecRaw> for FontSpec {
     type Error = String;
     fn try_from(raw: FontSpecRaw) -> Result<Self, Self::Error> {
-        let size = match (raw.size_pt, raw.size_px) {
-            (Some(v), None) => Some(FontSize::Pt(v)),
-            (None, Some(v)) => Some(FontSize::Px(v)),
-            (None, None) => None,
-            (Some(_), Some(_)) => return Err("font: set `size_pt` or `size_px`, not both".into()),
-        };
+        let size = size_from_keys(
+            raw.size_pt,
+            raw.size_px,
+            "font: set `size_pt` or `size_px`, not both",
+        )?;
         Ok(FontSpec {
             family: raw.family,
             size,
@@ -202,11 +225,7 @@ impl TryFrom<FontSpecRaw> for FontSpec {
 
 impl From<FontSpec> for FontSpecRaw {
     fn from(fs: FontSpec) -> Self {
-        let (size_pt, size_px) = match fs.size {
-            Some(FontSize::Pt(v)) => (Some(v), None),
-            Some(FontSize::Px(v)) => (None, Some(v)),
-            None => (None, None),
-        };
+        let (size_pt, size_px) = size_to_keys(fs.size);
         FontSpecRaw {
             family: fs.family,
             size_pt,
@@ -307,24 +326,16 @@ struct TextScaleEntryRaw {
 impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
     type Error = String;
     fn try_from(raw: TextScaleEntryRaw) -> Result<Self, Self::Error> {
-        let size = match (raw.size_pt, raw.size_px) {
-            (Some(v), None) => Some(FontSize::Pt(v)),
-            (None, Some(v)) => Some(FontSize::Px(v)),
-            (None, None) => None,
-            (Some(_), Some(_)) => {
-                return Err("text_scale: set `size_pt` or `size_px`, not both".into());
-            }
-        };
-        let line_height = match (raw.line_height_pt, raw.line_height_px) {
-            (Some(v), None) => Some(FontSize::Pt(v)),
-            (None, Some(v)) => Some(FontSize::Px(v)),
-            (None, None) => None,
-            (Some(_), Some(_)) => {
-                return Err(
-                    "text_scale: set `line_height_pt` or `line_height_px`, not both".into(),
-                );
-            }
-        };
+        let size = size_from_keys(
+            raw.size_pt,
+            raw.size_px,
+            "text_scale: set `size_pt` or `size_px`, not both",
+        )?;
+        let line_height = size_from_keys(
+            raw.line_height_pt,
+            raw.line_height_px,
+            "text_scale: set `line_height_pt` or `line_height_px`, not both",
+        )?;
         Ok(TextScaleEntry {
             size,
             weight: raw.weight,
@@ -335,16 +346,8 @@ impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
 
 impl From<TextScaleEntry> for TextScaleEntryRaw {
     fn from(e: TextScaleEntry) -> Self {
-        let (size_pt, size_px) = match e.size {
-            Some(FontSize::Pt(v)) => (Some(v), None),
-            Some(FontSize::Px(v)) => (None, Some(v)),
-            None => (None, None),
-        };
-        let (line_height_pt, line_height_px) = match e.line_height {
-            Some(FontSize::Pt(v)) => (Some(v), None),
-            Some(FontSize::Px(v)) => (None, Some(v)),
-            None => (None, None),
-        };
+        let (size_pt, size_px) = size_to_keys(e.size);
+        let (line_height_pt, line_height_px) = size_to_keys(e.line_height);
         TextScaleEntryRaw {
             size_pt,
             size_px,

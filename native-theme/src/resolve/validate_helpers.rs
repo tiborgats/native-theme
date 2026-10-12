@@ -76,24 +76,13 @@ fn padding_of(b: &WidgetBorderSpec) -> ResolvedPadding {
 // height) is one field with two keys; a range path names the key the theme
 // states, a missing path names the field (`size`, `line_height`).
 
-/// The TOML key of a font size: `size_pt` or `size_px` as the theme states
-/// it, `size` where it states none.
-fn font_size_key(size: Option<FontSize>) -> &'static str {
+/// The TOML key of a font size or a text-scale line height: the `_pt` or
+/// `_px` key as the theme states it, the field's name where it states none.
+fn size_key(size: Option<FontSize>, [name, pt, px]: [&'static str; 3]) -> &'static str {
     match size {
-        Some(FontSize::Pt(_)) => "size_pt",
-        Some(FontSize::Px(_)) => "size_px",
-        None => "size",
-    }
-}
-
-/// The TOML key of a text-scale line height: `line_height_pt` or
-/// `line_height_px` as the theme states it, `line_height` where it states
-/// none.
-fn line_height_key(line_height: Option<FontSize>) -> &'static str {
-    match line_height {
-        Some(FontSize::Pt(_)) => "line_height_pt",
-        Some(FontSize::Px(_)) => "line_height_px",
-        None => "line_height",
+        Some(FontSize::Pt(_)) => pt,
+        Some(FontSize::Px(_)) => px,
+        None => name,
     }
 }
 
@@ -188,41 +177,7 @@ pub(crate) fn require_font_opt(
             missing.push(prefix.to_string());
             resolved_font_spec_sentinel()
         }
-        Some(f) => {
-            let family = require(
-                &f.family,
-                &format!("{prefix}.family"),
-                missing,
-                empty_arc_str(),
-            );
-            let size = f.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
-                missing.push(format!("{prefix}.size"));
-                0.0
-            });
-            let weight_fallback: u16 = 0;
-            let weight = require(
-                &f.weight,
-                &format!("{prefix}.weight"),
-                missing,
-                weight_fallback,
-            );
-            let color = require(
-                &f.color,
-                &format!("{prefix}.color"),
-                missing,
-                Rgba::TRANSPARENT,
-            );
-            ResolvedFontSpec {
-                family,
-                size,
-                defined_size: f.size,
-                weight,
-                // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
-                // default when a theme omits italic/oblique (see require_font for full rationale).
-                style: f.style.unwrap_or(FontStyle::Normal),
-                color,
-            }
-        }
+        Some(f) => require_font(f, prefix, dpi, missing),
     }
 }
 
@@ -524,7 +479,10 @@ pub(crate) fn check_font(
 ) {
     if !font.size.is_finite() || font.size <= 0.0 {
         errors.push(crate::error::RangeViolation {
-            path: format!("{prefix}.{field}.{}", font_size_key(font.defined_size)),
+            path: format!(
+                "{prefix}.{field}.{}",
+                size_key(font.defined_size, ["size", "size_pt", "size_px"])
+            ),
             value: font.size as f64,
             min: Some(f64::MIN_POSITIVE),
             max: None,
@@ -907,13 +865,16 @@ pub(crate) fn check_defaults_ranges(
         check_positive(
             entry.size,
             prefix,
-            font_size_key(stated.and_then(|e| e.size)),
+            size_key(stated.and_then(|e| e.size), ["size", "size_pt", "size_px"]),
             errors,
         );
         check_positive(
             entry.line_height,
             prefix,
-            line_height_key(stated.and_then(|e| e.line_height)),
+            size_key(
+                stated.and_then(|e| e.line_height),
+                ["line_height", "line_height_pt", "line_height_px"],
+            ),
             errors,
         );
         check_range_u16(entry.weight, 100, 900, prefix, "weight", errors);
