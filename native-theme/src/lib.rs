@@ -691,7 +691,10 @@ impl SystemTheme {
     /// - **Linux:** the async implementation handles portal D-Bus calls when
     ///   the `portal` feature is enabled. Without a reader for the detected
     ///   desktop (feature disabled, or a desktop with no reader), returns the
-    ///   `adwaita` preset resolved in the detected light/dark mode.
+    ///   desktop's platform preset with no live reading (`kde-breeze` on KDE,
+    ///   `adwaita` elsewhere, as [`pipeline::platform_preset_name`] names
+    ///   it), resolved in the light/dark mode [`detect::detect_is_dark`]
+    ///   reads.
     /// - **Windows:** with the `windows` feature, reads the active variant and
     ///   merges it with the `windows-11` preset, the one Windows generation
     ///   ([`version_match`](Self::version_match) reports Windows 10 as

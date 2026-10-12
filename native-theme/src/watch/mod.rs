@@ -280,7 +280,7 @@ pub fn on_theme_change(
     {
         let _ = callback;
         Err(crate::Error::PlatformUnsupported {
-            platform: "unsupported",
+            platform: std::env::consts::OS,
         })
     }
 }

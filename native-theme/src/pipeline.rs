@@ -3,7 +3,7 @@
 use std::fmt;
 
 #[cfg(target_os = "linux")]
-use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop, system_is_dark};
+use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop};
 
 use crate::model::Theme;
 use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
@@ -608,8 +608,12 @@ pub(crate) fn windows_generation(running: OsVersion) -> (PlatformPreset, Version
 
 /// Map a Linux desktop environment to its matching platform preset.
 ///
-/// This is the single source of truth for the DE-to-preset mapping used
-/// by [`from_system_inner()`] and [`platform_preset_name()`].
+/// [`select_reader`] and [`platform_preset_name()`] both map a desktop
+/// through it, after [`refine_linux_desktop`] on `Unknown`. For `Unknown`,
+/// [`select_reader`] first asks the portal backend (async D-Bus, with the
+/// `portal` feature), which [`platform_preset_name()`] cannot: with the
+/// `kde` feature, a KDE portal backend and no `kdeglobals`, `from_system`
+/// uses `kde-breeze` where [`platform_preset_name()`] names `adwaita`.
 ///
 /// - KDE -> `PlatformPreset { name: "kde-breeze" }`
 /// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
@@ -622,6 +626,33 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
     }
 }
 
+/// `de`, with `Unknown` taken as KDE where a `kdeglobals` file exists (with
+/// the `kde` feature): the synchronous refinement [`select_reader`] and
+/// [`platform_preset_name()`] share.
+#[cfg(target_os = "linux")]
+fn refine_linux_desktop(de: LinuxDesktop) -> LinuxDesktop {
+    #[cfg(feature = "kde")]
+    {
+        refine_unknown_desktop(de, || crate::kde::kdeglobals_path().exists())
+    }
+    #[cfg(not(feature = "kde"))]
+    {
+        de
+    }
+}
+
+/// [`refine_linux_desktop`], with `kdeglobals_exists` asked only for `Unknown`.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn refine_unknown_desktop(
+    de: LinuxDesktop,
+    kdeglobals_exists: impl FnOnce() -> bool,
+) -> LinuxDesktop {
+    match de {
+        LinuxDesktop::Unknown if kdeglobals_exists() => LinuxDesktop::Kde,
+        other => other,
+    }
+}
+
 /// Map the current platform to its matching platform preset.
 ///
 /// The preset is the merge base in the OS-first pipeline: the platform
@@ -631,9 +662,15 @@ pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
 ///   `macos-tahoe` on 26 and later; `macos-monterey` without the `macos`
 ///   feature, which reads the version
 /// - Windows -> `PlatformPreset { name: "windows-11" }`, the one Windows generation
-/// - Linux KDE -> `PlatformPreset { name: "kde-breeze" }`
+/// - Linux KDE -> `PlatformPreset { name: "kde-breeze" }`; an unrecognised
+///   desktop with a `kdeglobals` file counts as KDE (with the `kde` feature)
 /// - Linux other/GNOME -> `PlatformPreset { name: "adwaita" }`
 /// - Unknown platform -> `PlatformPreset { name: "adwaita" }`
+///
+/// On an unrecognised Linux desktop `from_system` also asks the portal
+/// backend over D-Bus (with the `portal` feature), which this synchronous
+/// function does not: with the `kde` feature, a KDE portal backend and no
+/// `kdeglobals`, `from_system` uses `kde-breeze` where this names `adwaita`.
 ///
 /// Returns a [`PlatformPreset`] with the user-facing preset name. Showcase
 /// UIs use `preset.name` to build the "default (...)" label.
@@ -670,7 +707,7 @@ pub fn platform_preset_name() -> PlatformPreset {
     }
     #[cfg(target_os = "linux")]
     {
-        linux_preset_for_de(detect_linux_desktop())
+        linux_preset_for_de(refine_linux_desktop(detect_linux_desktop()))
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -957,14 +994,14 @@ async fn select_reader() -> Option<SelectedReader> {
             LinuxDesktop::Kde => {
                 return Some(SelectedReader::unversioned(
                     Box::new(crate::gnome::GnomePortalKdeReader),
-                    "kde-breeze",
+                    linux_preset_for_de(de).name,
                 ));
             }
             #[cfg(all(feature = "kde", not(feature = "portal")))]
             LinuxDesktop::Kde => {
                 return Some(SelectedReader::unversioned(
                     Box::new(crate::kde::KdeReader),
-                    "kde-breeze",
+                    linux_preset_for_de(de).name,
                 ));
             }
             #[cfg(not(feature = "kde"))]
@@ -973,7 +1010,7 @@ async fn select_reader() -> Option<SelectedReader> {
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
                 return Some(SelectedReader::unversioned(
                     Box::new(crate::gnome::GnomeReader),
-                    "adwaita",
+                    linux_preset_for_de(de).name,
                 ));
             }
             #[cfg(not(feature = "portal"))]
@@ -997,13 +1034,13 @@ async fn select_reader() -> Option<SelectedReader> {
                             #[cfg(feature = "kde")]
                             LinuxDesktop::Kde => Some(SelectedReader::unversioned(
                                 Box::new(crate::gnome::GnomePortalKdeReader),
-                                "kde-breeze",
+                                linux_preset_for_de(detected).name,
                             )),
                             #[cfg(not(feature = "kde"))]
                             LinuxDesktop::Kde => None,
                             LinuxDesktop::Gnome => Some(SelectedReader::unversioned(
                                 Box::new(crate::gnome::GnomeReader),
-                                "adwaita",
+                                linux_preset_for_de(detected).name,
                             )),
                             // detect_portal_backend only returns Kde or Gnome;
                             // any future extension falls back to Adwaita preset.
@@ -1014,10 +1051,11 @@ async fn select_reader() -> Option<SelectedReader> {
                 // Sync fallback: try kdeglobals, then Adwaita
                 #[cfg(feature = "kde")]
                 {
-                    if crate::kde::kdeglobals_path().exists() {
+                    let refined = refine_linux_desktop(de);
+                    if refined == LinuxDesktop::Kde {
                         return Some(SelectedReader::unversioned(
                             Box::new(crate::kde::KdeReader),
-                            "kde-breeze",
+                            linux_preset_for_de(refined).name,
                         ));
                     }
                 }
@@ -1075,20 +1113,28 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     }
     #[cfg(target_os = "linux")]
     {
-        let mode = if system_is_dark() {
-            crate::ColorMode::Dark
-        } else {
-            crate::ColorMode::Light
-        };
-        let preset = linux_preset_for_de(detect_linux_desktop()).name;
-        return run_pipeline(preset_as_reader("adwaita", mode)?, preset, mode);
+        return linux_fallback(platform_preset_name(), crate::detect::detect_is_dark());
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         Err(crate::Error::PlatformUnsupported {
-            platform: "unsupported",
+            platform: std::env::consts::OS,
         })
     }
+}
+
+/// The Linux theme where no reader is available: `preset` alone, as both
+/// the reader's output and the base it merges over, in the mode `is_dark`
+/// names. [`from_system_inner`] passes the uncached
+/// [`crate::detect::detect_is_dark`], as the readers read the mode fresh.
+#[cfg(target_os = "linux")]
+fn linux_fallback(preset: PlatformPreset, is_dark: bool) -> crate::Result<SystemTheme> {
+    let mode = if is_dark {
+        crate::ColorMode::Dark
+    } else {
+        crate::ColorMode::Light
+    };
+    run_pipeline(preset_as_reader(preset.name, mode)?, preset.name, mode)
 }
 
 /// Run `reader` and feed its output through [`run_pipeline`] onto `preset`,
@@ -1369,6 +1415,78 @@ ForegroundLink=41,128,185";
             "should fall back to Adwaita without kdeglobals"
         );
         Ok(())
+    }
+
+    /// The preset's own theme: both variants straight from the preset.
+    fn preset_theme(preset: &str) -> SystemTheme {
+        let theme = Theme::preset(preset).unwrap();
+        let reader = ReaderResult {
+            output: ReaderOutput::Dual {
+                light: Box::new(theme.light.unwrap_or_default()),
+                dark: Box::new(theme.dark.unwrap_or_default()),
+                is_dark: false,
+            },
+            name: theme.name,
+            icon_set: theme.icon_set,
+            layout: theme.layout,
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+        run_pipeline(reader, preset, crate::ColorMode::Light).unwrap()
+    }
+
+    #[test]
+    fn the_fallback_on_kde_is_the_whole_breeze_preset() {
+        let expected = preset_theme("kde-breeze");
+        for is_dark in [false, true] {
+            let st = linux_fallback(linux_preset_for_de(LinuxDesktop::Kde), is_dark).unwrap();
+            assert_eq!(st.preset, "kde-breeze");
+            assert_eq!(st.name, expected.name, "is_dark {is_dark}");
+            assert_eq!(st.light, expected.light, "is_dark {is_dark}");
+            assert_eq!(st.dark, expected.dark, "is_dark {is_dark}");
+            assert_eq!(
+                st.icon_theme_for(crate::ColorMode::Light),
+                expected.icon_theme_for(crate::ColorMode::Light)
+            );
+            assert_eq!(
+                st.icon_theme_for(crate::ColorMode::Dark),
+                expected.icon_theme_for(crate::ColorMode::Dark)
+            );
+        }
+    }
+
+    #[test]
+    fn the_fallback_on_other_desktops_is_the_whole_adwaita_preset() {
+        let expected = preset_theme("adwaita");
+        let st = linux_fallback(linux_preset_for_de(LinuxDesktop::Xfce), true).unwrap();
+        assert_eq!(st.preset, "adwaita");
+        assert_eq!(st.name, expected.name);
+        assert_eq!(st.light, expected.light);
+        assert_eq!(st.dark, expected.dark);
+    }
+
+    #[test]
+    fn the_fallback_mode_is_the_dark_reading_it_is_given() {
+        let preset = || linux_preset_for_de(LinuxDesktop::Unknown);
+        assert_eq!(
+            linux_fallback(preset(), true).unwrap().mode,
+            crate::ColorMode::Dark
+        );
+        assert_eq!(
+            linux_fallback(preset(), false).unwrap().mode,
+            crate::ColorMode::Light
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "kde")]
+    fn an_unknown_desktop_with_kdeglobals_maps_to_breeze() {
+        let preset = |de, exists| linux_preset_for_de(refine_unknown_desktop(de, || exists)).name;
+        assert_eq!(preset(LinuxDesktop::Unknown, true), "kde-breeze");
+        assert_eq!(preset(LinuxDesktop::Unknown, false), "adwaita");
+        assert_eq!(preset(LinuxDesktop::Kde, false), "kde-breeze");
+        assert_eq!(preset(LinuxDesktop::Gnome, true), "adwaita");
+        assert_eq!(preset(LinuxDesktop::Xfce, true), "adwaita");
     }
 
     // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --
