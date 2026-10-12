@@ -233,6 +233,19 @@ the file was pruned on 2026-10-11, not reordered.
 
       Decide per platform which further notification to observe, keeping one
       user action to one event.
+      Fixed by c951c587 (M4 T21, 2026-10-13): GNOME fires on the
+      `SettingChanged` of every key the reader reads (the portal's GNOME and
+      GTK backends forward the gsettings namespaces), KDE watches
+      `kdedefaults/kdeglobals`, macOS observes the system-colour,
+      scroller-style and accessibility-display notifications (and the
+      appearance one with `DeliverImmediately`), Windows subscribes to
+      `TextScaleFactorChanged`; one change fires once (300 ms debounce) on
+      every platform. Each reader module lists its sources under
+      `# Sources`, and the table test in `native-theme/src/watch/mod.rs`
+      checks each against its watcher. Still not watched on Windows: the
+      non-client fonts, high contrast and client-area animation, which
+      `WM_SETTINGCHANGE` reports only to a top-level window
+      (`native-theme/src/windows.rs`, "Sources not watched").
 - [ ] [v0.7.0] **KDE: the 300 ms throttle keeps the first event of a burst and drops
       the rest.** `last_fire` starts as `None` and the watcher fires on the
       first relevant event, then ignores every relevant event until 300 ms
