@@ -13,93 +13,6 @@ use std::sync::LazyLock;
 
 use crate::{Error, Result, Theme};
 
-/// All preset entries (name + embedded TOML source), parsed once into a HashMap.
-///
-/// To add a new preset, add it here and to [`PRESET_NAMES`].
-const PRESET_ENTRIES: &[(&str, &str)] = &[
-    // Platform presets
-    ("kde-breeze", include_str!("presets/kde-breeze.toml")),
-    ("adwaita", include_str!("presets/adwaita.toml")),
-    ("windows-11", include_str!("presets/windows-11.toml")),
-    (
-        "macos-monterey",
-        include_str!("presets/macos-monterey.toml"),
-    ),
-    ("macos-tahoe", include_str!("presets/macos-tahoe.toml")),
-    ("material-3", include_str!("presets/material-3.toml")),
-    ("ios-13", include_str!("presets/ios-13.toml")),
-    // Community presets
-    (
-        "catppuccin-latte",
-        include_str!("presets/catppuccin-latte.toml"),
-    ),
-    (
-        "catppuccin-frappe",
-        include_str!("presets/catppuccin-frappe.toml"),
-    ),
-    (
-        "catppuccin-macchiato",
-        include_str!("presets/catppuccin-macchiato.toml"),
-    ),
-    (
-        "catppuccin-mocha",
-        include_str!("presets/catppuccin-mocha.toml"),
-    ),
-    ("nord", include_str!("presets/nord.toml")),
-    ("dracula", include_str!("presets/dracula.toml")),
-    ("gruvbox", include_str!("presets/gruvbox.toml")),
-    ("solarized", include_str!("presets/solarized.toml")),
-    ("tokyo-night", include_str!("presets/tokyo-night.toml")),
-    ("one-dark", include_str!("presets/one-dark.toml")),
-];
-
-/// All available user-facing preset names.
-const PRESET_NAMES: &[&str] = &[
-    "kde-breeze",
-    "adwaita",
-    "windows-11",
-    "macos-monterey",
-    "macos-tahoe",
-    "material-3",
-    "ios-13",
-    "catppuccin-latte",
-    "catppuccin-frappe",
-    "catppuccin-macchiato",
-    "catppuccin-mocha",
-    "nord",
-    "dracula",
-    "gruvbox",
-    "solarized",
-    "tokyo-night",
-    "one-dark",
-];
-
-/// Known display names for bundled presets (borrowed from static strings).
-///
-/// After TOML deserialization the `Theme.name` field is `Cow::Owned` because
-/// TOML parsing cannot borrow into static memory. This map lets the cache
-/// replace the owned name with a `Cow::Borrowed` reference, avoiding a
-/// per-load `String` allocation for bundled preset names.
-const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
-    ("kde-breeze", "KDE Breeze"),
-    ("adwaita", "Adwaita"),
-    ("windows-11", "Windows 11"),
-    ("macos-monterey", "macOS Sonoma"),
-    ("macos-tahoe", "macOS Tahoe"),
-    ("material-3", "Material"),
-    ("ios-13", "iOS"),
-    ("catppuccin-latte", "Catppuccin Latte"),
-    ("catppuccin-frappe", "Catppuccin Frappe"),
-    ("catppuccin-macchiato", "Catppuccin Macchiato"),
-    ("catppuccin-mocha", "Catppuccin Mocha"),
-    ("nord", "Nord"),
-    ("dracula", "Dracula"),
-    ("gruvbox", "Gruvbox"),
-    ("solarized", "Solarized"),
-    ("tokyo-night", "Tokyo Night"),
-    ("one-dark", "One Dark"),
-];
-
 /// Structured information about a bundled preset.
 ///
 /// Returned by [`Theme::list_presets()`] and [`Theme::list_presets_for_platform()`]
@@ -117,99 +30,51 @@ pub struct PresetInfo {
     pub platforms: &'static [&'static str],
 }
 
-/// Structured metadata for all 17 user-facing presets.
-///
-/// Combines data from [`PRESET_NAMES`], [`PRESET_DISPLAY_NAMES`], and
-/// [`PLATFORM_SPECIFIC`] into a single array for richer preset enumeration.
-const PRESET_INFOS: &[PresetInfo] = &[
+/// Builds [`PRESET_INFOS`], [`PRESET_NAMES`] and [`PRESET_ENTRIES`] from one
+/// table, in the same order, so the three cannot disagree.
+macro_rules! bundled_presets {
+    ($($key:literal => $display_name:literal, $platforms:expr;)*) => {
+        /// Structured metadata for every bundled preset.
+        const PRESET_INFOS: &[PresetInfo] = &[$(PresetInfo {
+            key: $key,
+            display_name: $display_name,
+            platforms: $platforms,
+        }),*];
+
+        /// Every bundled preset's key.
+        const PRESET_NAMES: &[&str] = &[$($key),*];
+
+        /// Every bundled preset's key and embedded TOML source,
+        /// `presets/<key>.toml`.
+        const PRESET_ENTRIES: &[(&str, &str)] =
+            &[$(($key, include_str!(concat!("presets/", $key, ".toml")))),*];
+    };
+}
+
+// The bundled presets: key => display name, platform tags. To add a preset,
+// add its line here and its `presets/<key>.toml`, whose `name` is the display
+// name (a test checks it).
+bundled_presets! {
     // Platform presets
-    PresetInfo {
-        key: "kde-breeze",
-        display_name: "KDE Breeze",
-        platforms: &["linux-kde"],
-    },
-    PresetInfo {
-        key: "adwaita",
-        display_name: "Adwaita",
-        platforms: &["linux"],
-    },
-    PresetInfo {
-        key: "windows-11",
-        display_name: "Windows 11",
-        platforms: &["windows"],
-    },
-    PresetInfo {
-        key: "macos-monterey",
-        display_name: "macOS Sonoma",
-        platforms: &["macos"],
-    },
-    PresetInfo {
-        key: "macos-tahoe",
-        display_name: "macOS Tahoe",
-        platforms: &["macos"],
-    },
-    PresetInfo {
-        key: "material-3",
-        display_name: "Material",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "ios-13",
-        display_name: "iOS",
-        platforms: &["macos", "ios"],
-    },
+    "kde-breeze" => "KDE Breeze", &["linux-kde"];
+    "adwaita" => "Adwaita", &["linux"];
+    "windows-11" => "Windows 11", &["windows"];
+    "macos-monterey" => "macOS Sonoma", &["macos"];
+    "macos-tahoe" => "macOS Tahoe", &["macos"];
+    "material-3" => "Material", &[];
+    "ios-13" => "iOS", &["macos", "ios"];
     // Community presets
-    PresetInfo {
-        key: "catppuccin-latte",
-        display_name: "Catppuccin Latte",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "catppuccin-frappe",
-        display_name: "Catppuccin Frappe",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "catppuccin-macchiato",
-        display_name: "Catppuccin Macchiato",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "catppuccin-mocha",
-        display_name: "Catppuccin Mocha",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "nord",
-        display_name: "Nord",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "dracula",
-        display_name: "Dracula",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "gruvbox",
-        display_name: "Gruvbox",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "solarized",
-        display_name: "Solarized",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "tokyo-night",
-        display_name: "Tokyo Night",
-        platforms: &[],
-    },
-    PresetInfo {
-        key: "one-dark",
-        display_name: "One Dark",
-        platforms: &[],
-    },
-];
+    "catppuccin-latte" => "Catppuccin Latte", &[];
+    "catppuccin-frappe" => "Catppuccin Frappe", &[];
+    "catppuccin-macchiato" => "Catppuccin Macchiato", &[];
+    "catppuccin-mocha" => "Catppuccin Mocha", &[];
+    "nord" => "Nord", &[];
+    "dracula" => "Dracula", &[];
+    "gruvbox" => "Gruvbox", &[];
+    "solarized" => "Solarized", &[];
+    "tokyo-night" => "Tokyo Night", &[];
+    "one-dark" => "One Dark", &[];
+}
 
 /// Cached parse result. Uses `String` for the error type (not `Error`) because:
 /// - `Error` does not implement `Clone`, which is needed for cache retrieval
@@ -224,13 +89,13 @@ fn parse(toml_str: &str) -> Parsed {
 static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
     PRESET_ENTRIES
         .iter()
-        .map(|(key, toml_str)| {
+        .zip(PRESET_INFOS)
+        .map(|((key, toml_str), info)| {
             let mut result = parse(toml_str);
-            // Replace the TOML-deserialized owned name with a borrowed static string
-            if let Ok(ref mut theme) = result
-                && let Some((_, display_name)) = PRESET_DISPLAY_NAMES.iter().find(|(k, _)| k == key)
-            {
-                theme.name = Cow::Borrowed(display_name);
+            // The TOML name equals the display name (tested); borrowing the
+            // static one saves an owned `String` per load
+            if let Ok(ref mut theme) = result {
+                theme.name = Cow::Borrowed(info.display_name);
             }
             (*key, result)
         })
@@ -356,6 +221,20 @@ mod tests {
             "no bundled preset uses the shorthand any more, so this test no \
              longer proves the linter accepts it"
         );
+    }
+
+    /// The cache swaps each preset's TOML `name` for its display name, so
+    /// the two must be equal, or the swap would hide the TOML's.
+    #[test]
+    fn every_bundled_preset_toml_name_is_its_display_name() {
+        assert_eq!(PRESET_ENTRIES.len(), PRESET_INFOS.len());
+        for ((key, source), info) in PRESET_ENTRIES.iter().zip(PRESET_INFOS) {
+            let theme = from_toml(source).unwrap();
+            assert_eq!(
+                theme.name, info.display_name,
+                "preset {key}'s TOML name differs from its display name"
+            );
+        }
     }
 
     #[test]

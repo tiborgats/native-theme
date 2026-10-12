@@ -665,7 +665,7 @@ model, the platform presets and the three connectors
       READMEs) become `linux-material-3-*`, since the screenshot scripts name
       their output after the preset key, and the old PNGs are removed with
       `git rm`. The display name "Material 3" is set in
-      `PRESET_DISPLAY_NAMES` and the preset's `PresetInfo`
+      the preset's line of the `bundled_presets!` table
       (`native-theme/src/presets.rs`) when M2d rewrites the preset, with
       "Material 3 Expressive" for the second Material preset; the menus say
       "Material" until then. Nothing is renamed before
@@ -679,9 +679,9 @@ model, the platform presets and the three connectors
       (`connectors/native-theme-egui/README.md`, `native-theme-iced/README.md`,
       `native-theme-gpui/README.md`) become `macos-macos-monterey-*`, and the
       old PNGs are removed with `git rm`; `macos-monterey`'s display name and
-      TOML `name` become "macOS Monterey" (`PRESET_DISPLAY_NAMES` and its
-      `PresetInfo` in `native-theme/src/presets.rs`, `macos-monterey.toml`'s
-      `name`; "macOS Sonoma" until that run, ruled 2026-10-11). The run also
+      TOML `name` become "macOS Monterey" (its line of
+      the `bundled_presets!` table in `native-theme/src/presets.rs`,
+      `macos-monterey.toml`'s `name`; "macOS Sonoma" until that run, ruled 2026-10-11). The run also
       captures `macos-tahoe` (`.github/workflows/screenshots.yml`), and the
       three connector READMEs show `macos-macos-tahoe-{light,dark}.png` beside
       the Monterey pair (ruled 2026-10-11, Q5); no README links them before

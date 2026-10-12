@@ -259,10 +259,10 @@ COSMIC is used as the running example below because it is the closest real case:
    See `native-theme/src/kde/metrics.rs` for the pattern.
 4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default
    light and dark variants.
-5. **Register preset:** Add the entry to `PRESET_ENTRIES` in
-   `native-theme/src/presets.rs`, and to `PRESET_NAMES` if it should be
-   user-facing. `Theme::preset()` and `Theme::list_presets()` in
-   `native-theme/src/model/mod.rs` read from those tables — neither needs
+5. **Register preset:** Add its line (key, display name, platform tags) to the
+   `bundled_presets!` table in `native-theme/src/presets.rs`; the display name
+   must equal the TOML's `name`. `Theme::preset()` and `Theme::list_presets()`
+   in `native-theme/src/model/mod.rs` read from that table — neither needs
    editing.
 6. **Update dispatch:** Add a variant to `LinuxDesktop` in
    `native-theme/src/detect.rs` if the desktop is not recognized yet, then give
