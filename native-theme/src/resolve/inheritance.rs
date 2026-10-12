@@ -567,8 +567,9 @@ mod tests {
     // --- Regression guard: list.alternate_row_background NOT derived ---
     //
     // The rule `list.alternate_row_background <- list.background_color` was
-    // deprecated (see docs/inheritance-rules.toml [wrong_safety_nets] line
-    // 394-396; `why_wrong = "Alternate rows are always a tinted variant"`).
+    // deprecated (see docs/inheritance-rules.toml
+    // `[wrong_safety_nets."list.alternate_row_background"]`;
+    // `why_wrong = "Alternate rows are always a tinted variant"`).
     // Post-G6 it must NOT be re-introduced into any inheritance category.
     // Presets provide this field explicitly; no resolver populates it.
 
