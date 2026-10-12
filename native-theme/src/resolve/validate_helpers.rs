@@ -11,8 +11,8 @@ use crate::Rgba;
 use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
 use crate::model::font::{FontSize, FontStyle};
 use crate::model::{
-    DefaultsBorderSpec, FontSpec, IconSizes, LayoutTheme, ResolvedFontSpec, ResolvedLayoutTheme,
-    TextScale, TextScaleEntry, ThemeDefaults,
+    DefaultsBorderSpec, FontSpec, IconSizes, LayoutTheme, ResolvedFontSpec, TextScale,
+    TextScaleEntry, ThemeDefaults,
 };
 use std::sync::Arc;
 
@@ -547,23 +547,30 @@ pub(crate) fn check_widget_border(
 }
 
 /// Range-check the layout a theme states. Layout is shared by both variants,
-/// so its paths carry no variant table: `"layout.widget_gap_px"`.
+/// so its paths carry no variant table: `"layout.widget_gap_px"`. Each value
+/// the theme states must be finite and non-negative, as the fields'
+/// `check = "non_negative"` declares; the generated
+/// `ResolvedLayoutTheme::check_ranges` cannot run here, because it needs all
+/// four values and a theme may state any of them.
 ///
 /// # Errors
 ///
 /// Returns [`crate::Error::ResolutionInvalid`] if a stated value is out of
 /// range.
 pub(crate) fn check_layout(layout: &LayoutTheme) -> crate::Result<()> {
-    // Every layout field is a soft option: a theme may state none of them,
-    // so nothing is missing.
-    let mut missing = Vec::new();
-    let resolved =
-        ResolvedLayoutTheme::validate_widget(layout, "layout", DEFAULT_FONT_DPI, &mut missing);
-    if !missing.is_empty() {
-        return Err(crate::Error::ResolutionIncomplete { missing });
-    }
+    let key = LayoutTheme::toml_key;
+    let values = [
+        ("widget_gap", layout.widget_gap),
+        ("container_margin", layout.container_margin),
+        ("window_margin", layout.window_margin),
+        ("section_gap", layout.section_gap),
+    ];
     let mut errors = Vec::new();
-    resolved.check_ranges("layout", &mut errors);
+    for (field, value) in values {
+        if let Some(value) = value {
+            check_non_negative(value, "layout", key(field), &mut errors);
+        }
+    }
     if errors.is_empty() {
         Ok(())
     } else {

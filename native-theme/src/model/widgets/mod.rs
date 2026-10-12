@@ -1028,19 +1028,19 @@ pub struct LinkTheme {
 pub struct LayoutTheme {
     /// Space between adjacent widgets in logical pixels.
     #[serde(rename = "widget_gap_px")]
-    #[theme(category = "soft_option", check = "non_negative")]
+    #[theme(check = "non_negative")]
     pub widget_gap: Option<f32>,
     /// Padding inside containers in logical pixels.
     #[serde(rename = "container_margin_px")]
-    #[theme(category = "soft_option", check = "non_negative")]
+    #[theme(check = "non_negative")]
     pub container_margin: Option<f32>,
     /// Padding inside the main window in logical pixels.
     #[serde(rename = "window_margin_px")]
-    #[theme(category = "soft_option", check = "non_negative")]
+    #[theme(check = "non_negative")]
     pub window_margin: Option<f32>,
     /// Space between major content sections in logical pixels.
     #[serde(rename = "section_gap_px")]
-    #[theme(category = "soft_option", check = "non_negative")]
+    #[theme(check = "non_negative")]
     pub section_gap: Option<f32>,
 }
 

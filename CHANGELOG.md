@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `ResolvedTheme`, `ResolvedDefaults`, `ResolvedTextScale`, `ResolvedTextScaleEntry`, `ResolvedIconSizes`, `ResolvedDefaultsBorder` and `Resolved` are `#[non_exhaustive]`, as the generated `Resolved*Theme` widget structs already were, so they can no longer be built by struct literal outside the crate; a field added to them later is not a breaking change. `ResolvedWidgetBorder`, `ResolvedPadding` and `ResolvedFontSpec` stay constructible.
 - **native-theme**: `AccessibilityPreferences` is `#[non_exhaustive]`, so a flag added to it later is not a breaking change; outside the crate it is built from `AccessibilityPreferences::DEFAULT` or `default()` with its fields set, no longer by struct literal or `..Default::default()`.
 - **native-theme**: `Error::Io` is `Io { path, source }`: `Theme::from_file` names the file it could not read, displayed as "cannot read theme file `{path}`: {source}" (it was "I/O error: {source}", without the path). The blanket `impl From<std::io::Error> for Error` is gone, so `?` no longer turns an `io::Error` into a `native_theme::Error`.
-- **native-theme**: `ResolvedLayoutTheme`'s four fields are `Option<f32>`, as `LayoutTheme`'s are: a theme states each layout value or leaves it unset, and nothing inherits one. No function returns a `ResolvedLayoutTheme`.
 
 ### Added
 
