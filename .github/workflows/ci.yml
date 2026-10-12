@@ -104,8 +104,10 @@ jobs:
           - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
+          - { name: "Windows (windows, watch, system-icons)", os: windows-latest, flags: "--features windows,watch,system-icons" }
           - { name: "macOS (no features)", os: macos-latest, flags: "--no-default-features" }
           - { name: "macOS (macos)", os: macos-latest, flags: "--features macos" }
+          - { name: "macOS (macos, watch, system-icons)", os: macos-latest, flags: "--features macos,watch,system-icons" }
           - { name: "Linux (system-fonts)", os: ubuntu-latest, flags: "--features system-fonts" }
           - { name: "Windows (system-fonts)", os: windows-latest, flags: "--features system-fonts" }
           - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
