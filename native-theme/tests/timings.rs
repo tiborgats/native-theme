@@ -1,6 +1,6 @@
 //! Wall-clock timings of the paths the code review measures: preset parsing, resolution,
-//! the system reader, the accessibility reader and its cache, and icon loading. Ignored by default; run on
-//! the release profile, before and after a perf fix:
+//! the system reader, the GNOME reader, the accessibility reader and its cache, and icon loading.
+//! Ignored by default; run on the release profile, before and after a perf fix:
 //!
 //! `cargo test -p native-theme --release --all-features --test timings -- --ignored --nocapture --test-threads=1`
 
@@ -75,6 +75,28 @@ fn system_readers() {
     let first = start.elapsed();
     let cached = median(5, native_theme::detect::accessibility_preferences);
     println!("timing accessibility cached, after from_system: first {first:?}, then {cached:?}");
+}
+
+/// The GNOME reader through `from_system`, which selects it on GNOME: on another desktop with
+/// gsettings, run it as `XDG_CURRENT_DESKTOP=GNOME cargo test ... -- --ignored --exact gnome_reader`.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[test]
+#[ignore = "timing probe; run with --ignored --nocapture"]
+fn gnome_reader() {
+    use native_theme::detect::{LinuxDesktop, detect_linux_desktop};
+    if detect_linux_desktop() != LinuxDesktop::Gnome {
+        println!("timing gnome reader: skipped, XDG_CURRENT_DESKTOP is not GNOME");
+        return;
+    }
+    let start = Instant::now();
+    let first = native_theme::SystemTheme::from_system();
+    println!(
+        "timing gnome reader cold: {:?} (ok: {})",
+        start.elapsed(),
+        first.is_ok()
+    );
+    let warm = median(11, native_theme::SystemTheme::from_system);
+    println!("timing gnome reader warm: {warm:?}");
 }
 
 #[cfg(feature = "material-icons")]

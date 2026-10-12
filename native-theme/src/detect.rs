@@ -237,17 +237,18 @@ fn run_with_timeout(program: &str, args: &[&str], timeout: std::time::Duration) 
     }
 }
 
-/// Run a gsettings command with a 2-second timeout.
+/// Run `gsettings get <schema> <key>`, waiting up to `timeout`.
 ///
-/// Spawns `gsettings` with the given arguments, waits up to 2 seconds
-/// for completion, and returns the trimmed stdout on success.  Returns
-/// `None` if the command fails, times out, or produces empty output.
-///
-/// Used by [`detect_is_dark_inner()`] and [`crate::gnome::read_gsetting()`] to
-/// prevent gsettings from blocking indefinitely when D-Bus is unresponsive.
+/// Returns the trimmed stdout on success; `None` if the command fails, times
+/// out, or produces empty output. The timeout keeps gsettings from blocking
+/// indefinitely when D-Bus is unresponsive.
 #[cfg(target_os = "linux")]
-fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
-    let out = run_with_timeout("gsettings", args, SUBPROCESS_TIMEOUT)?;
+pub(crate) fn gsettings_get(
+    schema: &str,
+    key: &str,
+    timeout: std::time::Duration,
+) -> Option<String> {
+    let out = run_with_timeout("gsettings", &["get", schema, key], timeout)?;
     let trimmed = out.trim();
     if trimmed.is_empty() {
         None
@@ -522,6 +523,29 @@ fn kde_force_font_dpi(
         .or_else(|| kcmfontsrc().as_deref().and_then(parse_force_font_dpi))
 }
 
+/// Whether the colour scheme is dark: the portal's answer when it gave one,
+/// else gsettings' `org.gnome.desktop.interface` `color-scheme` read through
+/// `gsetting` (`prefer-dark` dark; `prefer-light` and `default` light);
+/// `None` when neither answers. [`detect_is_dark`] (no portal) and the GNOME
+/// reader both decide through it, so the two cannot disagree.
+#[cfg(target_os = "linux")]
+pub(crate) fn color_scheme_is_dark(
+    portal: Option<bool>,
+    gsetting: impl FnOnce(&str, &str) -> Option<String>,
+) -> Option<bool> {
+    if portal.is_some() {
+        return portal;
+    }
+    let val = gsetting("org.gnome.desktop.interface", "color-scheme")?;
+    if val.contains("prefer-dark") {
+        Some(true)
+    } else if val.contains("prefer-light") || val.contains("default") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching.
@@ -551,15 +575,10 @@ fn detect_is_dark_inner() -> bool {
         }
 
         // gsettings color-scheme (reliable on GNOME / GTK-based DEs)
-        if let Some(val) =
-            run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "color-scheme"])
-        {
-            if val.contains("prefer-dark") {
-                return true;
-            }
-            if val.contains("prefer-light") || val.contains("default") {
-                return false;
-            }
+        if let Some(dark) = color_scheme_is_dark(None, |schema, key| {
+            gsettings_get(schema, key, SUBPROCESS_TIMEOUT)
+        }) {
+            return dark;
         }
 
         // Fallback: read KDE's kdeglobals background luminance on a desktop
@@ -729,9 +748,11 @@ fn detect_reduced_motion_inner() -> bool {
     {
         // gsettings boolean output is bare "true\n" or "false\n" (no quotes)
         // enable-animations has INVERTED semantics: false => reduced motion preferred
-        if let Some(val) =
-            run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "enable-animations"])
-        {
+        if let Some(val) = gsettings_get(
+            "org.gnome.desktop.interface",
+            "enable-animations",
+            SUBPROCESS_TIMEOUT,
+        ) {
             return val.trim() == "false";
         }
         false
@@ -1017,12 +1038,6 @@ fn detect_icon_theme_inner() -> Result<String, IconThemeFailure> {
 }
 
 // === Crate-internal accessors ===
-
-/// Run `gsettings get <schema> <key>` with timeout.
-#[cfg(all(target_os = "linux", feature = "portal"))]
-pub(crate) fn gsettings_get(schema: &str, key: &str) -> Option<String> {
-    run_gsettings_with_timeout(&["get", schema, key])
-}
 
 /// The system font DPI, cached ([`DetectionContext::font_dpi`]).
 pub(crate) fn system_font_dpi() -> f32 {
