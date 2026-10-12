@@ -698,6 +698,24 @@ const UNSOURCED_PRESETS: [&str; 11] = [
     "ios-13",
 ];
 
+/// Every bundled preset is a `NativePreset` with rows or an unsourced preset,
+/// so no preset escapes the gates that iterate those two lists.
+#[test]
+fn every_bundled_preset_is_native_or_unsourced() {
+    let mut gated: Vec<&str> = NativePreset::ALL
+        .iter()
+        .map(|p| p.key())
+        .chain(UNSOURCED_PRESETS)
+        .collect();
+    gated.sort_unstable();
+    let mut bundled: Vec<&str> = crate::presets::list_presets()
+        .iter()
+        .map(|info| info.key)
+        .collect();
+    bundled.sort_unstable();
+    assert_eq!(gated, bundled);
+}
+
 /// A preset platform-facts does not cover cites no source for a size, so it
 /// states no padding side, `row_height`, `bar_height`, `item_gap` or
 /// `arrow_area_width`, and the toolkit's own sizes stand.

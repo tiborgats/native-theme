@@ -243,10 +243,10 @@ mod tests {
     #[test]
     fn preset_unknown_name_returns_unknown_preset() {
         let err = preset("nonexistent").unwrap_err();
-        let Error::UnknownPreset { name, .. } = err else {
-            return;
-        };
-        assert!(name.contains("nonexistent"));
+        assert!(
+            matches!(err, Error::UnknownPreset { ref name, .. } if name == "nonexistent"),
+            "expected UnknownPreset, got: {err:?}"
+        );
     }
 
     // NOTE: list_presets_returns_all_seventeen is covered by
