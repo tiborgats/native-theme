@@ -10,6 +10,7 @@
 // This follows the same pattern as src/windows.rs (the theme reader).
 #![allow(unsafe_code)]
 
+use std::marker::PhantomData;
 use std::sync::mpsc;
 
 use ::windows::Foundation::TypedEventHandler;
@@ -27,12 +28,14 @@ use super::ThemeChangeEvent;
 /// Balances a successful `CoInitializeEx` when dropped. Declared before the
 /// WinRT objects of the watcher thread, so it drops after them: every COM
 /// object is released before `CoUninitialize` unloads the thread's DLLs.
-struct ComGuard;
+/// The raw-pointer marker makes it `!Send`, so it stays on the thread that
+/// initialized COM.
+struct ComGuard(PhantomData<*const ()>);
 
 impl Drop for ComGuard {
     fn drop(&mut self) {
         // SAFETY: A `ComGuard` exists only after `CoInitializeEx` succeeded
-        // on this thread, and it is never sent to another thread.
+        // on this thread, and it is `!Send`, so it drops on that thread.
         unsafe { CoUninitialize() };
     }
 }
@@ -70,7 +73,7 @@ pub(crate) fn watch_windows(
             let _ = ready_tx.send(Err(setup_failed("CoInitializeEx", err)));
             return;
         }
-        let _com = ComGuard;
+        let _com = ComGuard(PhantomData);
 
         let settings = match UISettings::new() {
             Ok(s) => s,
@@ -112,12 +115,13 @@ pub(crate) fn watch_windows(
             // Run the message pump. GetMessageW blocks until a message
             // arrives. When WM_QUIT is posted (via PostThreadMessageW from
             // the shutdown closure), GetMessageW returns FALSE (0), breaking
-            // the loop.
+            // the loop; it returns -1 on an error, which ends the loop too
+            // instead of spinning on it.
             // SAFETY: GetMessageW and DispatchMessageW are standard Win32
             // message pump functions. We pass None for HWND (thread
             // messages), 0 for filter range (all messages).
             unsafe {
-                while GetMessageW(&mut msg, None, 0, 0).as_bool() {
+                while GetMessageW(&mut msg, None, 0, 0).0 > 0 {
                     DispatchMessageW(&msg);
                 }
             }
