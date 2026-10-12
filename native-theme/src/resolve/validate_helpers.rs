@@ -73,11 +73,12 @@ fn padding_of(b: &WidgetBorderSpec) -> ResolvedPadding {
 //
 // A validation path names the key a theme author writes in TOML: the field's
 // serde key, `_px`/`_pt` suffix included. A font size (and a text-scale line
-// height) is one field with two keys; a range path names the key the theme
-// states, a missing path names the field (`size`, `line_height`).
+// height) is one field with two keys; a range path names the key in the unit
+// the value carries, under the table it lands in (an inherited size too), a
+// missing path names the field (`size`, `line_height`).
 
 /// The TOML key of a font size or a text-scale line height: the `_pt` or
-/// `_px` key as the theme states it, the field's name where it states none.
+/// `_px` key of the value's unit, the field's name where there is no value.
 fn size_key(size: Option<FontSize>, [name, pt, px]: [&'static str; 3]) -> &'static str {
     match size {
         Some(FontSize::Pt(_)) => pt,
@@ -469,7 +470,7 @@ pub(crate) fn check_min_max(
 
 /// Check that a font's size is finite and strictly positive and its weight
 /// within 100..=900. Paths name the TOML key: `"{prefix}.{field}.weight"`,
-/// and for the size the key the theme states, `"{prefix}.{field}.size_pt"`
+/// and for the size the key in its value's unit, `"{prefix}.{field}.size_pt"`
 /// or `size_px`. Paths are only formatted in the error branches.
 pub(crate) fn check_font(
     font: &ResolvedFontSpec,

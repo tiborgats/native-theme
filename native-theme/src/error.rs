@@ -120,16 +120,22 @@ pub enum Error {
     /// theme author writes in TOML: `button.min_height_px`,
     /// `button.border.padding_left_px`, `defaults.icon_sizes.toolbar_px`.
     /// A path from a whole theme ([`Theme::resolve`](crate::Theme::resolve),
+    /// [`Theme::resolve_with`](crate::Theme::resolve_with),
     /// [`SystemTheme::from_system`](crate::SystemTheme::from_system),
     /// [`SystemTheme::with_overlay`](crate::SystemTheme::with_overlay))
     /// starts with the table of the variant that failed, `light.` or
-    /// `dark.`; a [`ThemeMode`](crate::theme::ThemeMode) resolved alone has
-    /// no variant table, so its paths start below it.
+    /// `dark.`, except a `layout.*` key and [`Error::ResolutionInvalid`]'s
+    /// `context.font_dpi`, which no variant holds; a
+    /// [`ThemeMode`](crate::theme::ThemeMode) resolved alone has no variant
+    /// table, so its paths start below it.
     ///
     /// A font size is one field with two keys, `size_pt` and `size_px` (a
     /// text-scale line height likewise, `line_height_pt` and
-    /// `line_height_px`): an out-of-range one is named by the key the theme
-    /// states, a missing one by the field, `size` (`line_height`).
+    /// `line_height_px`): an out-of-range one is named by the key in the
+    /// unit its value carries, under the table the value lands in (a
+    /// `button.font` that inherits a `defaults.font` in points is
+    /// `button.font.size_pt`), a missing one by the field, `size`
+    /// (`line_height`).
     ResolutionIncomplete {
         /// Dot-separated TOML paths of fields still `None` after resolution.
         missing: Vec<String>,
@@ -180,7 +186,10 @@ impl Error {
 impl Error {
     /// This error with each path it names prefixed by the table of the
     /// variant that failed: `light.` or `dark.`. Errors that name no path
-    /// are returned unchanged.
+    /// are returned unchanged, and so is `context.font_dpi`, which no
+    /// variant states. The theme-wide checks (`check_font_dpi`,
+    /// `check_layout`) belong before the variants resolve, as both callers
+    /// run them, so a `layout.*` path never reaches here.
     pub(crate) fn in_variant(self, mode: crate::theme::ColorMode) -> Self {
         let table = match mode {
             crate::theme::ColorMode::Light => "light",
@@ -196,9 +205,15 @@ impl Error {
             Error::ResolutionInvalid { errors } => Error::ResolutionInvalid {
                 errors: errors
                     .into_iter()
-                    .map(|rv| RangeViolation {
-                        path: format!("{table}.{}", rv.path),
-                        ..rv
+                    .map(|rv| {
+                        if rv.path.starts_with("context.") {
+                            rv
+                        } else {
+                            RangeViolation {
+                                path: format!("{table}.{}", rv.path),
+                                ..rv
+                            }
+                        }
                     })
                     .collect(),
             },
@@ -502,6 +517,28 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("[text scale]"), "got: {msg}");
         assert!(msg.contains("[root defaults]"), "got: {msg}");
+    }
+
+    #[test]
+    fn in_variant_prefixes_a_variant_path_and_not_the_context() {
+        let violation = |path: &str| RangeViolation {
+            path: path.into(),
+            value: 0.0,
+            min: Some(f64::MIN_POSITIVE),
+            max: None,
+        };
+        let err = Error::ResolutionInvalid {
+            errors: vec![
+                violation("context.font_dpi"),
+                violation("button.min_height_px"),
+            ],
+        }
+        .in_variant(crate::theme::ColorMode::Dark);
+        let Error::ResolutionInvalid { errors } = err else {
+            panic!("expected ResolutionInvalid, got: {err:?}");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["context.font_dpi", "dark.button.min_height_px"]);
     }
 
     #[test]
