@@ -28,14 +28,10 @@ pub struct AnimatedSvgHandles {
 #[must_use]
 pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => Some(iced_core::image::Handle::from_rgba(
-            *width,
-            *height,
-            data.clone(),
+        IconData::Rgba(rgba) => Some(iced_core::image::Handle::from_rgba(
+            rgba.width(),
+            rgba.height(),
+            rgba.data().to_vec(),
         )),
         _ => None,
     }
@@ -228,11 +224,14 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
 #[must_use]
 pub fn into_image_handle(data: IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => Some(iced_core::image::Handle::from_rgba(width, height, data)),
+        IconData::Rgba(rgba) => {
+            let (width, height) = (rgba.width(), rgba.height());
+            Some(iced_core::image::Handle::from_rgba(
+                width,
+                height,
+                rgba.into_data(),
+            ))
+        }
         _ => None,
     }
 }
@@ -373,11 +372,7 @@ mod tests {
 
     #[test]
     fn to_image_handle_with_rgba_returns_some() {
-        let data = IconData::Rgba {
-            width: 24,
-            height: 24,
-            data: vec![0u8; 24 * 24 * 4],
-        };
+        let data = IconData::rgba(24, 24, vec![0u8; 24 * 24 * 4]).unwrap();
         assert!(to_image_handle(&data).is_some());
     }
 
@@ -395,11 +390,7 @@ mod tests {
 
     #[test]
     fn to_svg_handle_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![255u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![255u8; 16 * 16 * 4]).unwrap();
         assert!(to_svg_handle(&data, None).is_none());
     }
 
@@ -435,11 +426,7 @@ mod tests {
 
     #[test]
     fn to_svg_handle_colored_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap();
         let color = iced_core::Color::WHITE;
         assert!(to_svg_handle(&data, Some(color)).is_none());
     }
@@ -593,11 +580,7 @@ mod tests {
     #[test]
     fn animated_frames_rgba_only_returns_none() {
         let anim = AnimatedIcon::frames(
-            vec![IconData::Rgba {
-                width: 16,
-                height: 16,
-                data: vec![0u8; 16 * 16 * 4],
-            }],
+            vec![IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap()],
             std::num::NonZeroU32::new(80).expect("test constant"),
         )
         .expect("non-empty frames");
@@ -655,11 +638,7 @@ mod tests {
 
     #[test]
     fn into_image_handle_with_rgba() {
-        let data = IconData::Rgba {
-            width: 24,
-            height: 24,
-            data: vec![0u8; 24 * 24 * 4],
-        };
+        let data = IconData::rgba(24, 24, vec![0u8; 24 * 24 * 4]).unwrap();
         assert!(into_image_handle(data).is_some());
     }
 
@@ -677,11 +656,7 @@ mod tests {
 
     #[test]
     fn into_svg_handle_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap();
         assert!(into_svg_handle(data, None).is_none());
     }
 
@@ -690,11 +665,7 @@ mod tests {
         let anim = AnimatedIcon::frames(
             vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
-                IconData::Rgba {
-                    width: 16,
-                    height: 16,
-                    data: vec![0u8; 16 * 16 * 4],
-                },
+                IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap(),
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
             std::num::NonZeroU32::new(80).expect("test constant"),

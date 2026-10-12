@@ -235,7 +235,7 @@ mod tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn material_icons_cover_all_roles() {
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             let svg = bundled_icon_svg(role, IconSet::Material);
             assert!(svg.is_some(), "Material icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn lucide_icons_cover_all_roles() {
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             let svg = bundled_icon_svg(role, IconSet::Lucide);
             assert!(svg.is_some(), "Lucide icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();

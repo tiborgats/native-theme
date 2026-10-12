@@ -345,17 +345,6 @@ impl AnimatedIcon {
             AnimatedIcon::Frames(_) => None,
         }
     }
-
-    /// Deprecated: Use [`AnimatedIcon::frames()`] instead.
-    #[deprecated(
-        since = "0.5.7",
-        note = "use AnimatedIcon::frames() which returns Result"
-    )]
-    #[must_use]
-    pub fn new_frames(frames: Vec<IconData>, frame_duration_ms: u32) -> Option<Self> {
-        let dur = NonZeroU32::new(frame_duration_ms)?;
-        Self::frames(frames, dur).ok()
-    }
 }
 
 #[cfg(test)]
@@ -596,28 +585,6 @@ mod tests {
     fn animation_accessor_returns_none_for_frames() {
         let icon = AnimatedIcon::frames(vec![test_icon("f1")], nz(83)).unwrap();
         assert!(icon.animation().is_none());
-    }
-
-    // === Deprecated new_frames() compatibility tests ===
-
-    #[test]
-    #[allow(deprecated)]
-    fn new_frames_valid() {
-        let anim = AnimatedIcon::new_frames(vec![test_icon("f1")], 83);
-        assert!(anim.is_some());
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn new_frames_rejects_empty() {
-        assert!(AnimatedIcon::new_frames(vec![], 83).is_none());
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn new_frames_rejects_zero_duration() {
-        let frames = vec![test_icon("f1")];
-        assert!(AnimatedIcon::new_frames(frames, 0).is_none());
     }
 
     // === Serde round-trip tests ===

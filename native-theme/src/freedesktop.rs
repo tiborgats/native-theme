@@ -435,14 +435,7 @@ fn decode_png_to_rgba(bytes: &[u8]) -> Option<IconData> {
         png::ColorType::Indexed => return None,
     };
 
-    if rgba.len() != rgba_len {
-        return None;
-    }
-    Some(IconData::Rgba {
-        width,
-        height,
-        data: rgba,
-    })
+    IconData::rgba(width, height, rgba)
 }
 
 /// Expand a packed pixel buffer to RGBA using the caller-provided per-pixel writer.
@@ -1537,14 +1530,10 @@ mod tests {
 
         let result = decode_png_to_rgba(&bytes);
         match result {
-            Some(IconData::Rgba {
-                width,
-                height,
-                data,
-            }) => {
-                assert_eq!(width, 2);
-                assert_eq!(height, 2);
-                assert_eq!(data, pixels.to_vec());
+            Some(IconData::Rgba(rgba)) => {
+                assert_eq!(rgba.width(), 2);
+                assert_eq!(rgba.height(), 2);
+                assert_eq!(rgba.data(), pixels.as_slice());
             }
             other => panic!("expected Rgba, got {other:?}"),
         }
@@ -1560,13 +1549,12 @@ mod tests {
         let bytes = encode_test_png(2, 1, png::ColorType::Rgb, &pixels).expect("test PNG encode");
 
         match decode_png_to_rgba(&bytes) {
-            Some(IconData::Rgba {
-                width,
-                height,
-                data,
-            }) => {
-                assert_eq!((width, height), (2, 1));
-                assert_eq!(data, vec![0xab, 0xcd, 0xef, 0xff, 0x11, 0x22, 0x33, 0xff]);
+            Some(IconData::Rgba(rgba)) => {
+                assert_eq!((rgba.width(), rgba.height()), (2, 1));
+                assert_eq!(
+                    rgba.into_data(),
+                    vec![0xab, 0xcd, 0xef, 0xff, 0x11, 0x22, 0x33, 0xff]
+                );
             }
             other => panic!("expected Rgba, got {other:?}"),
         }
@@ -1579,8 +1567,11 @@ mod tests {
             encode_test_png(2, 1, png::ColorType::Grayscale, &pixels).expect("test PNG encode");
 
         match decode_png_to_rgba(&bytes) {
-            Some(IconData::Rgba { data, .. }) => {
-                assert_eq!(data, vec![0x40, 0x40, 0x40, 0xff, 0xc0, 0xc0, 0xc0, 0xff]);
+            Some(IconData::Rgba(rgba)) => {
+                assert_eq!(
+                    rgba.into_data(),
+                    vec![0x40, 0x40, 0x40, 0xff, 0xc0, 0xc0, 0xc0, 0xff]
+                );
             }
             other => panic!("expected Rgba, got {other:?}"),
         }
@@ -1649,14 +1640,11 @@ mod tests {
         let result = load_freedesktop_icon_by_name("edit-copy", "AdwaitaLegacy", 24, None);
         let data = result.expect("edit-copy exists in AdwaitaLegacy 24x24/legacy");
         match data {
-            IconData::Rgba {
-                width,
-                height,
-                data,
-            } => {
+            IconData::Rgba(rgba) => {
+                let (width, height) = (rgba.width(), rgba.height());
                 assert!(width > 0 && height > 0);
                 assert_eq!(
-                    data.len(),
+                    rgba.data().len(),
                     (width as usize) * (height as usize) * 4,
                     "RGBA byte count must match width*height*4"
                 );

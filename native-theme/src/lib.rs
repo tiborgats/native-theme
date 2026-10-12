@@ -242,7 +242,7 @@ pub mod theme {
         EmptyFrameListError, FontSize, FontSpec, FontStyle, FrameList, FramesData, IconData,
         IconProvider, IconRole, IconSet, IconSizes, Resolved, ResolvedDefaults,
         ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
-        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder,
+        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder, RgbaData,
         TabIndicatorSide, TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode,
         TransformAnimation, TransformData, WidgetBorderSpec, icon_name, intern_font_family,
         system_icon_set, system_icon_theme,

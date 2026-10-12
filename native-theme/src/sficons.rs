@@ -112,11 +112,7 @@ pub(crate) fn load_sf_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Opt
     let mut data = rasterize(&cg_image, w, h)?;
     crate::color::unpremultiply_alpha(&mut data);
     crate::color::tint_monochrome(&mut data, fg_color);
-    Some(IconData::Rgba {
-        width: w,
-        height: h,
-        data,
-    })
+    IconData::rgba(w, h, data)
 }
 
 #[cfg(test)]
@@ -170,15 +166,10 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn rgba_dimensions_correct() {
-        if let Some(IconData::Rgba {
-            width,
-            height,
-            data,
-        }) = load_role(IconRole::ActionCopy)
-        {
+        if let Some(IconData::Rgba(rgba)) = load_role(IconRole::ActionCopy) {
             assert_eq!(
-                (width * height * 4) as usize,
-                data.len(),
+                (rgba.width() * rgba.height() * 4) as usize,
+                rgba.data().len(),
                 "RGBA buffer size must equal width * height * 4"
             );
         }

@@ -73,7 +73,8 @@ pub use font::{
 };
 pub use icon_sizes::IconSizes;
 pub use icons::{
-    IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
+    IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name, system_icon_set,
+    system_icon_theme,
 };
 pub use resolved::{
     Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,

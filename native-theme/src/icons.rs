@@ -772,6 +772,7 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
 /// All other variants represent an explicit user choice that is preserved
 /// across theme re-applications.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum IconSetChoice {
     /// Follow the theme preset's recommendation.
     ///
@@ -780,10 +781,10 @@ pub enum IconSetChoice {
     /// icon set is `Freedesktop`.
     ///
     /// This is the ONLY variant that gets overwritten on theme change.
-    /// It is only constructed via [`default_icon_choice()`], which
-    /// guarantees the theme is available (bundled sets are always
-    /// available; freedesktop themes are checked via
-    /// [`is_freedesktop_theme_available`] before returning this variant).
+    /// [`default_icon_choice()`] is the constructor that checks the theme
+    /// is available (bundled sets are always available; freedesktop themes
+    /// are checked via [`is_freedesktop_theme_available`] before it returns
+    /// this variant). A value built directly carries no such check.
     Default(String),
 
     /// Use the OS-configured icon theme.
@@ -1147,7 +1148,7 @@ mod load_icon_tests {
     fn load_icon_all_roles_material() {
         // Material has 42 of 42 roles mapped, all return Some
         let mut some_count = 0;
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             if MaterialLoader::new(role).load().is_some() {
                 some_count += 1;
             }
@@ -1163,7 +1164,7 @@ mod load_icon_tests {
     #[cfg(feature = "lucide-icons")]
     fn load_icon_all_roles_lucide() {
         let mut some_count = 0;
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             if LucideLoader::new(role).load().is_some() {
                 some_count += 1;
             }
@@ -1510,9 +1511,9 @@ mod spinner_rasterize_tests {
             if let IconData::Svg(cow) = first {
                 let result = crate::rasterize::rasterize_svg(cow, 24);
                 assert!(result.is_ok(), "lucide loader should rasterize");
-                if let Ok(IconData::Rgba { data, .. }) = &result {
+                if let Ok(IconData::Rgba(rgba)) = &result {
                     assert!(
-                        data.iter().any(|&b| b != 0),
+                        rgba.data().iter().any(|&b| b != 0),
                         "lucide loader rasterized to empty image"
                     );
                 }

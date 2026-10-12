@@ -321,7 +321,7 @@ fn theme_spec_with_one_variant_is_not_empty() {
 #[cfg(feature = "material-icons")]
 fn bundled_material_svg_starts_with_svg_tag() {
     use native_theme::icons::MaterialLoader;
-    for role in IconRole::ALL {
+    for role in IconRole::ALL.iter().copied() {
         if let Some(data) = MaterialLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
@@ -341,7 +341,7 @@ fn bundled_material_svg_starts_with_svg_tag() {
 #[cfg(feature = "lucide-icons")]
 fn bundled_lucide_svg_starts_with_svg_tag() {
     use native_theme::icons::LucideLoader;
-    for role in IconRole::ALL {
+    for role in IconRole::ALL.iter().copied() {
         if let Some(data) = LucideLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
@@ -372,7 +372,7 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 #[cfg(not(target_os = "macos"))]
 fn sf_symbols_returns_none_on_non_macos() {
     use native_theme::icons::SfSymbolsLoader;
-    for role in IconRole::ALL {
+    for role in IconRole::ALL.iter().copied() {
         assert!(
             SfSymbolsLoader::new(role).load().is_none(),
             "SfSymbols should not load on non-macOS for {role:?}"
@@ -384,7 +384,7 @@ fn sf_symbols_returns_none_on_non_macos() {
 #[cfg(not(target_os = "windows"))]
 fn segoe_icons_returns_none_on_non_windows() {
     use native_theme::icons::SegoeIconsLoader;
-    for role in IconRole::ALL {
+    for role in IconRole::ALL.iter().copied() {
         assert!(
             SegoeIconsLoader::new(role).load().is_none(),
             "SegoeIcons should not load on non-Windows for {role:?}"

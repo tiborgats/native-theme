@@ -2222,11 +2222,7 @@ fn install_leaves_no_stored_icon_texture_handle() {
     let (atlas, _) =
         crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
     atlas.install(&ctx);
-    let icon = crate::icons::IconData::Rgba {
-        width: 4,
-        height: 4,
-        data: vec![0; 64],
-    };
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
     let key = IconKey::name("raster", IconSet::Freedesktop);
     let before = ctx.tex_manager().read().num_allocated();
     let _ = to_image_source(&ctx, &key, &icon).unwrap();

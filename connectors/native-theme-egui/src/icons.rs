@@ -210,11 +210,7 @@ fn hashed_uri(bytes: &[u8], raster_size: Option<(u32, u32)>, svg: bool) -> Strin
 pub fn uri(icon: &IconData) -> String {
     match icon {
         IconData::Svg(bytes) => hashed_uri(bytes, None, true),
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => hashed_uri(data, Some((*width, *height)), false),
+        IconData::Rgba(rgba) => hashed_uri(rgba.data(), Some((rgba.width(), rgba.height())), false),
         _ => hashed_uri(icon.bytes(), None, false),
     }
 }
@@ -293,16 +289,12 @@ fn remember_uri(ctx: &egui::Context, uri: &str) {
 /// oversize test needs a `Context` and lives in [`to_image_source`] and [`to_image`].
 #[must_use]
 pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
-    let IconData::Rgba {
-        width,
-        height,
-        data,
-    } = icon
-    else {
+    let IconData::Rgba(rgba) = icon else {
         return None;
     };
-    let w = usize::try_from(*width).ok()?;
-    let h = usize::try_from(*height).ok()?;
+    let data = rgba.data();
+    let w = usize::try_from(rgba.width()).ok()?;
+    let h = usize::try_from(rgba.height()).ok()?;
     if w == 0 || h == 0 {
         return None;
     }
@@ -357,10 +349,10 @@ pub fn to_image_source(
                 bytes: egui::load::Bytes::from(final_bytes),
             })
         }
-        IconData::Rgba { width, height, .. } => {
+        IconData::Rgba(rgba) => {
             let max = ctx.input(|i| i.max_texture_side);
             let too_big = |side: u32| usize::try_from(side).map_or(true, |s| s > max);
-            if too_big(*width) || too_big(*height) {
+            if too_big(rgba.width()) || too_big(rgba.height()) {
                 return None;
             }
             let uri = uri(icon);
@@ -552,11 +544,7 @@ mod tests {
 
     fn rgba(side: u32) -> IconData {
         let n = usize::try_from(side).unwrap() * usize::try_from(side).unwrap() * 4;
-        IconData::Rgba {
-            width: side,
-            height: side,
-            data: vec![0; n],
-        }
+        IconData::rgba(side, side, vec![0; n]).unwrap()
     }
 
     fn bytes_of(source: &egui::ImageSource<'_>) -> (String, Vec<u8>) {
@@ -778,38 +766,11 @@ mod tests {
     /// T9, converters: `None` wherever epaint would assert (§9.3).
     #[test]
     fn to_color_image_refuses_what_epaint_would_assert_on() {
-        assert!(
-            to_color_image(&IconData::Rgba {
-                width: 0,
-                height: 4,
-                data: vec![]
-            })
-            .is_none()
-        );
-        assert!(
-            to_color_image(&IconData::Rgba {
-                width: 4,
-                height: 0,
-                data: vec![]
-            })
-            .is_none()
-        );
-        assert!(
-            to_color_image(&IconData::Rgba {
-                width: u32::MAX,
-                height: u32::MAX,
-                data: vec![]
-            })
-            .is_none()
-        );
-        assert!(
-            to_color_image(&IconData::Rgba {
-                width: 2,
-                height: 2,
-                data: vec![0; 15]
-            })
-            .is_none()
-        );
+        assert!(to_color_image(&IconData::rgba(0, 4, vec![]).unwrap()).is_none());
+        assert!(to_color_image(&IconData::rgba(4, 0, vec![]).unwrap()).is_none());
+        // An overflowing size and a buffer of another length are refused by the core.
+        assert!(IconData::rgba(u32::MAX, u32::MAX, vec![]).is_none());
+        assert!(IconData::rgba(2, 2, vec![0; 15]).is_none());
         assert!(to_color_image(&svg(PLAIN)).is_none());
         assert!(to_color_image(&rgba(2)).is_some());
     }
@@ -822,11 +783,7 @@ mod tests {
         let ctx = egui::Context::default();
         let max = ctx.input(|i| i.max_texture_side);
         let side = u32::try_from(max).unwrap() + 1;
-        let icon = IconData::Rgba {
-            width: side,
-            height: 1,
-            data: vec![0; usize::try_from(side).unwrap() * 4],
-        };
+        let icon = IconData::rgba(side, 1, vec![0; usize::try_from(side).unwrap() * 4]).unwrap();
         let key = IconKey::name("raster", IconSet::Freedesktop);
         assert!(to_image_source(&ctx, &key, &icon).is_none());
         assert!(to_image(&ctx, &key, &icon).is_none());

@@ -29,10 +29,10 @@ use resvg::usvg;
 /// let svg = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>";
 /// let result = rasterize_svg(svg, 24);
 /// assert!(result.is_ok());
-/// if let Ok(IconData::Rgba { width, height, data }) = result {
-///     assert_eq!(width, 24);
-///     assert_eq!(height, 24);
-///     assert_eq!(data.len(), 24 * 24 * 4);
+/// if let Ok(IconData::Rgba(rgba)) = result {
+///     assert_eq!(rgba.width(), 24);
+///     assert_eq!(rgba.height(), 24);
+///     assert_eq!(rgba.data().len(), 24 * 24 * 4);
 /// }
 /// # }
 /// ```
@@ -68,10 +68,9 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let mut data = pixmap.take();
     crate::color::unpremultiply_alpha(&mut data);
 
-    Ok(IconData::Rgba {
-        width: size,
-        height: size,
-        data,
+    IconData::rgba(size, size, data).ok_or_else(|| crate::Error::ReaderFailed {
+        reader: "svg_rasterizer",
+        source: format!("rasterized pixels do not fill {size}x{size}").into(),
     })
 }
 
@@ -87,14 +86,10 @@ mod tests {
         let result = rasterize_svg(VALID_SVG, 24);
         assert!(result.is_ok(), "valid SVG should produce Ok");
         match result.unwrap() {
-            IconData::Rgba {
-                width,
-                height,
-                data,
-            } => {
-                assert_eq!(width, 24);
-                assert_eq!(height, 24);
-                assert_eq!(data.len(), 24 * 24 * 4);
+            IconData::Rgba(rgba) => {
+                assert_eq!(rgba.width(), 24);
+                assert_eq!(rgba.height(), 24);
+                assert_eq!(rgba.data().len(), 24 * 24 * 4);
             }
             _ => panic!("expected IconData::Rgba"),
         }
@@ -111,9 +106,9 @@ mod tests {
         for size in [16, 24, 32, 48, 64] {
             let result = rasterize_svg(VALID_SVG, size);
             let icon = result.unwrap_or_else(|_| panic!("should produce output for size {size}"));
-            if let IconData::Rgba { data, .. } = icon {
+            if let IconData::Rgba(rgba) = icon {
                 assert_eq!(
-                    data.len(),
+                    rgba.data().len(),
                     (size * size * 4) as usize,
                     "output length mismatch for size {size}"
                 );
@@ -124,9 +119,9 @@ mod tests {
     #[test]
     fn rasterize_produces_non_empty_pixels() {
         let result = rasterize_svg(VALID_SVG, 24).unwrap();
-        if let IconData::Rgba { data, .. } = result {
+        if let IconData::Rgba(rgba) = result {
             // At least some pixels should be non-zero (red circle on transparent bg)
-            let non_zero = data.iter().any(|&b| b != 0);
+            let non_zero = rgba.data().iter().any(|&b| b != 0);
             assert!(non_zero, "rasterized output should contain non-zero pixels");
         }
     }
@@ -136,9 +131,9 @@ mod tests {
         // A semi-transparent SVG element
         let svg = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'><rect width='2' height='2' fill='white' fill-opacity='0.5'/></svg>";
         let result = rasterize_svg(svg, 2).unwrap();
-        if let IconData::Rgba { data, .. } = result {
+        if let IconData::Rgba(rgba) = result {
             // All pixels should be the same semi-transparent white
-            for pixel in data.as_chunks::<4>().0 {
+            for pixel in rgba.data().as_chunks::<4>().0 {
                 let &[r, _g, _b, a] = pixel;
                 if a > 0 {
                     // Straight alpha: R should be close to 255, not ~128

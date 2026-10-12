@@ -180,11 +180,7 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
         bgra_to_rgba(&mut pixels);
         crate::color::unpremultiply_alpha(&mut pixels);
 
-        Some(IconData::Rgba {
-            width,
-            height,
-            data: pixels,
-        })
+        IconData::rgba(width, height, pixels)
     }
 }
 
@@ -364,11 +360,7 @@ fn load_glyph_icon(codepoint: u32, size: i32, fg_color: Option<[u8; 3]>) -> Opti
         }
         crate::color::tint_monochrome(&mut rgba, fg_color);
 
-        Some(IconData::Rgba {
-            width: glyph_w,
-            height: glyph_h,
-            data: rgba,
-        })
+        IconData::rgba(glyph_w, glyph_h, rgba)
     }
 }
 
@@ -522,7 +514,7 @@ mod tests {
     fn stock_icon_returns_rgba() {
         let result = load_role(IconRole::DialogWarning);
         assert!(result.is_some(), "DialogWarning should return an icon");
-        if let Some(IconData::Rgba { .. }) = result {
+        if let Some(IconData::Rgba(_)) = result {
             // Stock icons should return RGBA
         } else {
             panic!("Expected IconData::Rgba for stock icon");
@@ -534,7 +526,7 @@ mod tests {
     fn glyph_icon_returns_rgba() {
         let result = load_role(IconRole::ActionCopy);
         assert!(result.is_some(), "ActionCopy should return an icon");
-        if let Some(IconData::Rgba { .. }) = result {
+        if let Some(IconData::Rgba(_)) = result {
             // Font glyph icons should return RGBA
         } else {
             panic!("Expected IconData::Rgba for glyph icon");
@@ -544,15 +536,10 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn rgba_dimensions_correct() {
-        if let Some(IconData::Rgba {
-            width,
-            height,
-            data,
-        }) = load_role(IconRole::DialogWarning)
-        {
+        if let Some(IconData::Rgba(rgba)) = load_role(IconRole::DialogWarning) {
             assert_eq!(
-                (width * height * 4) as usize,
-                data.len(),
+                (rgba.width() * rgba.height() * 4) as usize,
+                rgba.data().len(),
                 "RGBA buffer size must equal width * height * 4"
             );
         }

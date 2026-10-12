@@ -974,11 +974,7 @@ pub fn to_image_source(
                 svg_to_render_source(bytes, raster_size)
             }
         }
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => rgba_to_render_source(*width, *height, data),
+        IconData::Rgba(rgba) => rgba_to_render_source(rgba.width(), rgba.height(), rgba.data()),
         _ => None,
     }
 }
@@ -1249,15 +1245,10 @@ pub fn with_spin_animation(
 /// Returns `None` if rasterization fails (corrupt SVG, empty data).
 #[cfg(feature = "svg-rasterize")]
 fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
-    let Ok(IconData::Rgba {
-        width,
-        height,
-        data,
-    }) = native_theme::rasterize::rasterize_svg(svg_bytes, size)
-    else {
+    let Ok(IconData::Rgba(rgba)) = native_theme::rasterize::rasterize_svg(svg_bytes, size) else {
         return None;
     };
-    rgba_to_render_source(width, height, &data)
+    rgba_to_render_source(rgba.width(), rgba.height(), rgba.data())
 }
 
 /// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
@@ -1992,16 +1983,17 @@ mod tests {
 
     #[test]
     fn to_image_source_rgba_returns_a_decoded_image_in_gpuis_channel_order() {
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![
+        let rgba = IconData::rgba(
+            2,
+            2,
+            vec![
                 255, 0, 0, 255, // red
                 0, 255, 0, 255, // green
                 0, 0, 255, 255, // blue
                 255, 255, 0, 255, // yellow
             ],
-        };
+        )
+        .expect("a 2 x 2 buffer");
         let source = to_image_source(&rgba, None, None).expect("RGBA should convert");
         let image = rendered(source);
         assert_eq!(image.frame_count(), 1);
@@ -2331,13 +2323,14 @@ mod tests {
 
     #[test]
     fn into_image_source_rgba_returns_some() {
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![
+        let rgba = IconData::rgba(
+            2,
+            2,
+            vec![
                 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
             ],
-        };
+        )
+        .expect("a 2 x 2 buffer");
         let result = into_image_source(rgba, None, None);
         assert!(result.is_some(), "RGBA should convert");
     }

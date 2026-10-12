@@ -35,7 +35,7 @@ use serde::{Deserialize, Serialize};
 /// }
 ///
 /// // Iterate all roles
-/// assert_eq!(IconRole::ALL.len(), 42);
+/// assert!(IconRole::ALL.iter().any(|role| role.name() == "action-save"));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -217,8 +217,8 @@ impl IconRole {
 
     /// All icon role variants, useful for iteration and exhaustive testing.
     ///
-    /// Contains exactly 42 variants, one for each role, in declaration order.
-    pub const ALL: [IconRole; 42] = [
+    /// Contains every variant, one for each role, in declaration order.
+    pub const ALL: &'static [IconRole] = &[
         // Dialog (6)
         Self::DialogWarning,
         Self::DialogError,
@@ -285,8 +285,11 @@ impl IconRole {
 /// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// assert_eq!(svg.bytes(), b"<svg></svg>");
 ///
-/// let rgba = IconData::Rgba { width: 16, height: 16, data: vec![0; 16*16*4] };
+/// let rgba = IconData::rgba(16, 16, vec![0; 16 * 16 * 4]).unwrap();
 /// assert_eq!(rgba.bytes().len(), 16 * 16 * 4);
+///
+/// // A buffer that is not `width × height × 4` bytes is refused.
+/// assert_eq!(IconData::rgba(16, 16, vec![]), None);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -300,17 +303,21 @@ pub enum IconData {
     Svg(Cow<'static, [u8]>),
 
     /// Rasterized RGBA pixels (from macOS/Windows system APIs).
-    Rgba {
-        /// Image width in pixels.
-        width: u32,
-        /// Image height in pixels.
-        height: u32,
-        /// Raw RGBA pixel data (4 bytes per pixel, row-major).
-        data: Vec<u8>,
-    },
+    ///
+    /// Built with [`IconData::rgba`], which checks the buffer's length.
+    Rgba(RgbaData),
 }
 
 impl IconData {
+    /// Build an [`IconData::Rgba`] from `width × height` RGBA pixels.
+    ///
+    /// Returns `None` unless `data` holds exactly `width × height × 4` bytes
+    /// (4 bytes per pixel, row-major), or when that product overflows `usize`.
+    #[must_use]
+    pub fn rgba(width: u32, height: u32, data: Vec<u8>) -> Option<Self> {
+        RgbaData::new(width, height, data).map(IconData::Rgba)
+    }
+
     /// Borrow the underlying bytes regardless of variant or ownership.
     ///
     /// For `Svg`, returns the SVG content bytes.
@@ -319,8 +326,89 @@ impl IconData {
     pub fn bytes(&self) -> &[u8] {
         match self {
             IconData::Svg(cow) => cow,
-            IconData::Rgba { data, .. } => data,
+            IconData::Rgba(rgba) => rgba.data(),
         }
+    }
+}
+
+/// Rasterized RGBA pixels whose buffer holds exactly `width × height × 4` bytes.
+///
+/// The payload of [`IconData::Rgba`]. The fields are private, so every value
+/// went through [`IconData::rgba`]'s length check; deserializing checks it too.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::theme::IconData;
+///
+/// let icon = IconData::rgba(2, 1, vec![255, 0, 0, 255, 0, 0, 255, 255]).unwrap();
+/// if let IconData::Rgba(rgba) = &icon {
+///     assert_eq!((rgba.width(), rgba.height()), (2, 1));
+///     assert_eq!(rgba.data().len(), 2 * 4);
+/// }
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawRgbaData")]
+pub struct RgbaData {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl RgbaData {
+    fn new(width: u32, height: u32, data: Vec<u8>) -> Option<Self> {
+        let len = usize::try_from(width)
+            .ok()?
+            .checked_mul(usize::try_from(height).ok()?)?
+            .checked_mul(4)?;
+        (data.len() == len).then_some(Self {
+            width,
+            height,
+            data,
+        })
+    }
+
+    /// Image width in pixels.
+    #[must_use]
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Image height in pixels.
+    #[must_use]
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Raw RGBA pixel data (4 bytes per pixel, row-major), `width × height × 4` bytes.
+    #[must_use]
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Take the raw RGBA pixel data.
+    #[must_use]
+    pub fn into_data(self) -> Vec<u8> {
+        self.data
+    }
+}
+
+/// [`RgbaData`]'s serialized shape, checked by [`RgbaData::try_from`].
+#[derive(Deserialize)]
+struct RawRgbaData {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl TryFrom<RawRgbaData> for RgbaData {
+    type Error = String;
+
+    fn try_from(raw: RawRgbaData) -> Result<Self, Self::Error> {
+        let (width, height, len) = (raw.width, raw.height, raw.data.len());
+        Self::new(width, height, raw.data).ok_or_else(|| {
+            format!("RGBA data of {len} bytes does not match {width} x {height} x 4 bytes")
+        })
     }
 }
 
@@ -1422,7 +1510,7 @@ mod tests {
 
     #[test]
     fn icon_role_all_no_duplicates() {
-        let all = &IconRole::ALL;
+        let all = IconRole::ALL;
         for (i, role) in all.iter().enumerate() {
             for (j, other) in all.iter().enumerate() {
                 if i != j {
@@ -1472,23 +1560,64 @@ mod tests {
     #[test]
     fn icon_data_rgba_construct_and_match() {
         let pixels = vec![255, 0, 0, 255]; // 1 red pixel
-        let data = IconData::Rgba {
-            width: 1,
-            height: 1,
-            data: pixels.clone(),
-        };
+        let data = IconData::rgba(1, 1, pixels.clone()).unwrap();
         match data {
-            IconData::Rgba {
-                width,
-                height,
-                data,
-            } => {
-                assert_eq!(width, 1);
-                assert_eq!(height, 1);
-                assert_eq!(data, pixels);
+            IconData::Rgba(rgba) => {
+                assert_eq!(rgba.width(), 1);
+                assert_eq!(rgba.height(), 1);
+                assert_eq!(rgba.data(), pixels.as_slice());
+                assert_eq!(rgba.into_data(), pixels);
             }
             _ => panic!("Expected Rgba variant"),
         }
+    }
+
+    #[test]
+    fn icon_data_rgba_rejects_a_buffer_of_the_wrong_length() {
+        assert_eq!(IconData::rgba(16, 16, vec![]), None);
+        assert_eq!(IconData::rgba(1, 1, vec![0; 3]), None);
+        assert_eq!(IconData::rgba(1, 1, vec![0; 5]), None);
+        assert_eq!(IconData::rgba(2, 3, vec![0; 2 * 3 * 4 - 1]), None);
+        assert!(IconData::rgba(2, 3, vec![0; 2 * 3 * 4]).is_some());
+        assert!(IconData::rgba(0, 0, vec![]).is_some());
+    }
+
+    #[test]
+    fn icon_data_rgba_rejects_an_overflowing_size() {
+        assert_eq!(IconData::rgba(u32::MAX, u32::MAX, vec![]), None);
+    }
+
+    #[test]
+    fn icon_data_rgba_serializes_as_before() {
+        let icon = IconData::rgba(1, 1, vec![255, 0, 0, 255]).unwrap();
+        let json = serde_json::to_string(&icon).unwrap();
+        assert_eq!(
+            json,
+            r#"{"Rgba":{"width":1,"height":1,"data":[255,0,0,255]}}"#
+        );
+        let back: IconData = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, icon);
+
+        let toml_text = toml::to_string(&icon).unwrap();
+        let back: IconData = toml::from_str(&toml_text).unwrap();
+        assert_eq!(back, icon);
+    }
+
+    #[test]
+    fn icon_data_rgba_deserialize_rejects_a_short_buffer() {
+        let json = r#"{"Rgba":{"width":16,"height":16,"data":[0,0,0,0]}}"#;
+        let err = serde_json::from_str::<IconData>(json).unwrap_err();
+        assert!(
+            err.to_string().contains("16 x 16 x 4"),
+            "unexpected error: {err}"
+        );
+
+        let toml_text = "[Rgba]\nwidth = 16\nheight = 16\ndata = [0, 0, 0, 0]\n";
+        let err = toml::from_str::<IconData>(toml_text).unwrap_err();
+        assert!(
+            err.to_string().contains("16 x 16 x 4"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
@@ -1500,11 +1629,7 @@ mod tests {
 
     #[test]
     fn icon_data_derives_clone() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0; 16 * 16 * 4]).unwrap();
         let cloned = data.clone();
         assert_eq!(data, cloned);
     }
@@ -1923,7 +2048,7 @@ mod tests {
         // All 42 IconRole variants implement IconProvider -- iterate and call icon_name
         for role in IconRole::ALL {
             // All 42 roles are mapped for Material
-            let _name = IconProvider::icon_name(&role, IconSet::Material);
+            let _name = IconProvider::icon_name(role, IconSet::Material);
             // Just verifying it doesn't panic
         }
     }
@@ -1958,7 +2083,7 @@ mod tests {
             IconSet::Freedesktop,
         ];
         for &set in &system_sets {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 let is_known_gap = gaps.contains(&(set, role));
                 let is_mapped = icon_name(role, set).is_some();
                 if !is_known_gap {
@@ -1976,7 +2101,7 @@ mod tests {
     fn all_roles_have_bundled_svg() {
         use crate::bundled_icon_svg;
         for set in [IconSet::Material, IconSet::Lucide] {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 assert!(
                     bundled_icon_svg(role, set).is_some(),
                     "{role:?} has no bundled SVG for {set:?}"
@@ -1990,21 +2115,21 @@ mod tests {
     #[test]
     fn icon_name_exhaustive_all_sets() {
         // Material: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Material).is_some(),
                 "Material must map {role:?} to Some"
             );
         }
         // Lucide: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Lucide).is_some(),
                 "Lucide must map {role:?} to Some"
             );
         }
         // Freedesktop: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Freedesktop).is_some(),
                 "Freedesktop must map {role:?} to Some"
@@ -2041,7 +2166,7 @@ mod tests {
             IconSet::Lucide,
         ];
         for set in all_sets {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 if let Some(name) = icon_name(role, set) {
                     assert!(
                         !name.is_empty(),
@@ -2136,11 +2261,7 @@ mod tests {
         let svg = IconData::Svg(Cow::Borrowed(b"<svg/>"));
         assert_eq!(svg.bytes(), b"<svg/>");
 
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![1, 2, 3, 4],
-        };
+        let rgba = IconData::rgba(1, 1, vec![1, 2, 3, 4]).unwrap();
         assert_eq!(rgba.bytes(), &[1, 2, 3, 4]);
     }
 }
