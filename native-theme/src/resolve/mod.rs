@@ -237,6 +237,8 @@ impl ThemeMode {
     ///
     /// # Errors
     ///
+    /// Returns [`crate::Error::ResolutionInvalid`] with the one path
+    /// `context.font_dpi` if `ctx.font_dpi` is not finite and positive.
     /// Returns [`crate::Error::ResolutionIncomplete`] if any fields
     /// remain `None` after resolution, or
     /// [`crate::Error::ResolutionInvalid`] if range checks fail.

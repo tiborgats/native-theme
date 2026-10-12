@@ -512,6 +512,7 @@ impl Theme {
         ctx: &crate::resolve::ResolutionContext,
     ) -> crate::Result<Resolved> {
         let (picked_mode, variant_ref) = self.pick_variant_with_mode(mode)?;
+        crate::resolve::validate_helpers::check_font_dpi(ctx.font_dpi)?;
         crate::resolve::validate_helpers::check_layout(&self.layout)?;
 
         let tier1 = variant_ref.defaults.icon_theme.clone();
@@ -537,7 +538,8 @@ impl Theme {
         })
     }
 
-    /// Returns true if the theme has no variants set.
+    /// Returns true when the theme states nothing: no variant, no layout
+    /// value, no icon set and no icon theme. The name is not checked.
     pub fn is_empty(&self) -> bool {
         self.light.is_none()
             && self.dark.is_none()

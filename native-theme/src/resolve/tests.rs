@@ -2972,3 +2972,47 @@ fn theme_resolve_paths_name_the_variant() {
         "{missing:?}"
     );
 }
+
+/// A context whose font DPI is not finite and positive is one violation, on
+/// `context.font_dpi`, found before any point size is converted, so no font
+/// the DPI would spoil is reported. It is the context's, not a variant's:
+/// the path has no variant table.
+#[test]
+fn a_bad_font_dpi_is_one_context_violation() {
+    let theme = crate::Theme::preset("kde-breeze").unwrap();
+    let variant = theme.light.clone().unwrap();
+    let mut resolved = variant.clone();
+    resolved.resolve();
+    for font_dpi in [0.0, -96.0, f32::NAN, f32::INFINITY] {
+        let ctx = ResolutionContext {
+            font_dpi,
+            ..ResolutionContext::for_tests()
+        };
+        let results = [
+            (
+                "into_resolved",
+                variant.clone().into_resolved(&ctx).map(|_| ()),
+            ),
+            (
+                "validate_with_dpi",
+                resolved.validate_with_dpi(font_dpi).map(|_| ()),
+            ),
+            (
+                "resolve_with",
+                theme.resolve_with(crate::ColorMode::Dark, &ctx).map(|_| ()),
+            ),
+        ];
+        for (call, result) in results {
+            let Err(crate::Error::ResolutionInvalid { errors }) = result else {
+                panic!("{call} at {font_dpi}: expected ResolutionInvalid, got {result:?}");
+            };
+            let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+            assert_eq!(paths, ["context.font_dpi"], "{call} at {font_dpi}");
+            let value = errors[0].value;
+            assert!(
+                value == f64::from(font_dpi) || (value.is_nan() && font_dpi.is_nan()),
+                "{call} at {font_dpi}: value {value}"
+            );
+        }
+    }
+}

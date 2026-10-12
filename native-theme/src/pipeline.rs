@@ -115,6 +115,7 @@ pub(crate) fn replay(
     };
 
     // Shared across variants.
+    crate::resolve::validate_helpers::check_font_dpi(source.context.font_dpi)?;
     crate::resolve::validate_helpers::check_layout(&merged.layout)?;
 
     let light = merged
@@ -1587,6 +1588,25 @@ mod pipeline_tests {
     }
 
     // --- run_pipeline() tests ---
+
+    /// The reader's font DPI goes into the context both variants share: one
+    /// that is not finite and positive is one violation, on
+    /// `context.font_dpi`, with no variant table.
+    #[test]
+    fn run_pipeline_rejects_a_bad_reader_font_dpi_once() {
+        for font_dpi in [0.0, -1.0, f32::NAN] {
+            let reader = ReaderResult {
+                font_dpi: Some(font_dpi),
+                ..reader_from_preset("kde-breeze")
+            };
+            let result = run_pipeline(reader, "kde-breeze", crate::ColorMode::Light);
+            let Err(crate::Error::ResolutionInvalid { errors }) = result else {
+                panic!("font_dpi {font_dpi}: expected ResolutionInvalid");
+            };
+            let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+            assert_eq!(paths, ["context.font_dpi"], "font_dpi {font_dpi}");
+        }
+    }
 
     #[test]
     fn test_run_pipeline_produces_both_variants() {

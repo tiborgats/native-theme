@@ -92,7 +92,7 @@ pub enum Error {
         reason: &'static str,
     },
 
-    /// The theme has no variant for the requested color mode.
+    /// The theme has neither a light nor a dark variant.
     ///
     /// Returned by [`Theme::pick_variant()`](crate::Theme::pick_variant) and
     /// [`Theme::into_variant()`](crate::Theme::into_variant) when the theme
@@ -137,7 +137,10 @@ pub enum Error {
 
     /// Theme resolution found numeric values outside allowed ranges. Each
     /// violation's path is a TOML path, as [`Error::ResolutionIncomplete`]
-    /// describes.
+    /// describes, except `context.font_dpi`: the
+    /// [`ResolutionContext::font_dpi`](crate::ResolutionContext::font_dpi)
+    /// the resolution was given, which no theme states. A DPI that is not
+    /// finite and positive is that one violation, and no field is checked.
     ResolutionInvalid {
         /// One entry per out-of-range property.
         errors: Vec<RangeViolation>,
@@ -230,7 +233,10 @@ impl fmt::Display for Error {
                 write!(f, "theme watching unavailable: {reason}")
             }
             Error::NoVariant { mode } => {
-                write!(f, "theme has no variant for {mode:?}")
+                write!(
+                    f,
+                    "theme defines neither a light nor a dark variant (requested {mode:?})"
+                )
             }
             Error::Toml(err) => write!(f, "TOML error: {err}"),
             Error::Io { path, source } => {
@@ -475,6 +481,17 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(!msg.contains("hint:"), "got: {msg}");
+    }
+
+    #[test]
+    fn display_no_variant_says_both_variants_are_missing() {
+        let err = Error::NoVariant {
+            mode: crate::theme::ColorMode::Dark,
+        };
+        assert_eq!(
+            err.to_string(),
+            "theme defines neither a light nor a dark variant (requested Dark)"
+        );
     }
 
     #[test]

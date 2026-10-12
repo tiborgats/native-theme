@@ -38,7 +38,10 @@ use crate::model::DialogButtonOrder;
 /// ```
 #[derive(Clone, Debug)]
 pub struct ResolutionContext {
-    /// Font DPI for pt-to-px conversion.
+    /// Font DPI for pt-to-px conversion. It must be finite and positive:
+    /// resolution rejects any other value as one
+    /// [`Error::ResolutionInvalid`](crate::Error::ResolutionInvalid) on the
+    /// path `context.font_dpi`, before any point size is converted.
     ///
     /// [`from_system`](Self::from_system) detects it: 72.0 on macOS, 96.0 on
     /// Windows, 96.0 on a GNOME or Budgie desktop (with the `portal` feature;

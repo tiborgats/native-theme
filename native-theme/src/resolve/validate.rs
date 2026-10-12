@@ -26,16 +26,19 @@ impl ThemeMode {
     /// # Arguments
     ///
     /// * `font_dpi` -- Font DPI for pt-to-px conversion (e.g. 96.0 on
-    ///   Linux/Windows, 72.0 on macOS).
+    ///   Linux/Windows, 72.0 on macOS); finite and positive.
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::ResolutionIncomplete`] if any required fields
-    /// are still `None` after resolution. Returns
+    /// Returns [`crate::Error::ResolutionInvalid`] with the one path
+    /// `context.font_dpi` if `font_dpi` is not finite and positive, before
+    /// any field is read. Returns [`crate::Error::ResolutionIncomplete`] if
+    /// any required fields are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
     #[doc(hidden)]
     pub fn validate_with_dpi(&self, font_dpi: f32) -> crate::Result<ResolvedTheme> {
+        validate_helpers::check_font_dpi(font_dpi)?;
         let mut missing = Vec::new();
         let dpi = font_dpi;
 

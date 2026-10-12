@@ -564,6 +564,24 @@ pub(crate) fn check_layout(layout: &LayoutTheme) -> crate::Result<()> {
     }
 }
 
+/// Range-check the font DPI of a resolution context: it converts every point
+/// size, so it must be finite and positive. It is the context's, shared by
+/// both variants, so its path carries no variant table: `"context.font_dpi"`.
+///
+/// # Errors
+///
+/// Returns [`crate::Error::ResolutionInvalid`] with that one violation if
+/// `font_dpi` is not finite and positive.
+pub(crate) fn check_font_dpi(font_dpi: f32) -> crate::Result<()> {
+    let mut errors = Vec::new();
+    check_positive(font_dpi, "context", "font_dpi", &mut errors);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(crate::Error::ResolutionInvalid { errors })
+    }
+}
+
 /// Trait for nested types that can be validated from an Option wrapper.
 /// Used by `define_widget_pair!` generated `validate_widget()` methods
 /// to dispatch to the correct extraction function without knowing the
