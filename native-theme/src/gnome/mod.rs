@@ -9,31 +9,93 @@
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};
 
+use crate::model::font::{FontSize, FontStyle};
 use crate::model::{DialogButtonOrder, FontSpec};
 
-/// Known GNOME/Pango font weight modifiers mapped to CSS weight values.
-const WEIGHT_MODIFIERS: &[(&str, u16)] = &[
-    ("Ultra-Bold", 800),
-    ("UltraBold", 800),
-    ("Extra-Bold", 800),
-    ("ExtraBold", 800),
-    ("Semi-Bold", 600),
-    ("SemiBold", 600),
-    ("Demi-Bold", 600),
-    ("DemiBold", 600),
-    ("Ultra-Light", 200),
-    ("UltraLight", 200),
-    ("Extra-Light", 200),
-    ("ExtraLight", 200),
+/// Pango's weight words and their `PangoWeight` (`weight_map`, pango 1.58.2
+/// `pango/fonts.c:1311-1333`; the values `pango/pango-font.h:131-142`).
+const PANGO_WEIGHTS: &[(&str, i32)] = &[
     ("Thin", 100),
+    ("Ultra-Light", 200),
+    ("Extra-Light", 200),
     ("Light", 300),
+    ("Semi-Light", 350),
+    ("Demi-Light", 350),
+    ("Book", 380),
     ("Regular", 400),
-    ("Normal", 400),
     ("Medium", 500),
+    ("Semi-Bold", 600),
+    ("Demi-Bold", 600),
     ("Bold", 700),
-    ("Black", 900),
+    ("Ultra-Bold", 800),
+    ("Extra-Bold", 800),
     ("Heavy", 900),
+    ("Black", 900),
+    ("Ultra-Heavy", 1000),
+    ("Extra-Heavy", 1000),
+    ("Ultra-Black", 1000),
+    ("Extra-Black", 1000),
 ];
+
+/// `PANGO_WEIGHT_NORMAL`, the weight of a description without a weight word
+/// (`pango/pango-font.h:136`; `pfd_defaults`, `pango/fonts.c:63-82`).
+const PANGO_WEIGHT_NORMAL: i32 = 400;
+
+/// Pango's style words (`style_map`, `pango/fonts.c:1294-1299`).
+const PANGO_STYLES: &[(&str, FontStyle)] = &[
+    ("Roman", FontStyle::Normal),
+    ("Oblique", FontStyle::Oblique),
+    ("Italic", FontStyle::Italic),
+];
+
+/// Pango's stretch, variant, gravity and colour words (`width_map`,
+/// `variant_map`, `gravity_map`, `color_map`, `pango/fonts.c:1301-1309`,
+/// `:1335-1361`), each with the name of its `{field}=` prefix. The model's
+/// font has no field for any of them, so they are read only to know where the
+/// family ends, and dropped.
+const PANGO_DROPPED_FIELDS: &[(&str, &[(&str, ())])] = &[
+    (
+        "width",
+        &[
+            ("Ultra-Condensed", ()),
+            ("Extra-Condensed", ()),
+            ("Condensed", ()),
+            ("Semi-Condensed", ()),
+            ("Semi-Expanded", ()),
+            ("Expanded", ()),
+            ("Extra-Expanded", ()),
+            ("Ultra-Expanded", ()),
+        ],
+    ),
+    (
+        "variant",
+        &[
+            ("Small-Caps", ()),
+            ("All-Small-Caps", ()),
+            ("Petite-Caps", ()),
+            ("All-Petite-Caps", ()),
+            ("Unicase", ()),
+            ("Title-Caps", ()),
+        ],
+    ),
+    (
+        "gravity",
+        &[
+            ("Not-Rotated", ()),
+            ("South", ()),
+            ("Upside-Down", ()),
+            ("North", ()),
+            ("Rotated-Left", ()),
+            ("East", ()),
+            ("Rotated-Right", ()),
+            ("West", ()),
+        ],
+    ),
+    ("color", &[("With-Color", ()), ("Without-Color", ())]),
+];
+
+/// The largest size Pango reads (`parse_size`, `pango/fonts.c:1495-1519`).
+const PANGO_MAX_SIZE: f64 = 1_000_000.0;
 
 /// Convert an ashpd portal Color to an Rgba, returning None if any
 /// component is outside the [0.0, 1.0] range (per XDG spec: out-of-range
@@ -61,62 +123,192 @@ fn apply_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
     variant.tab.active_indicator_color = Some(*accent);
 }
 
-/// Parse a GNOME/Pango font string into a full FontSpec with weight extraction.
+/// Parse a GNOME font string (gsettings `font-name`, `monospace-font-name`,
+/// `titlebar-font`) as Pango's `pango_font_description_from_string` does
+/// (pango 1.58.2 `pango/fonts.c:1613-1729`): `[FAMILY-LIST] [STYLE-OPTIONS]
+/// [SIZE] [VARIATIONS] [FEATURES]`, such as `'Cantarell Bold Italic 11'`,
+/// `'Cantarell 15px'`, `'Cantarell 11 @wght=200'`.
 ///
-/// GNOME font strings can have weight words between the family name and size:
-/// `'Cantarell Bold 11'`, `'Inter Light 10.5'`, `'Noto Sans Semi-Bold 12'`.
+/// 1. A trailing `#features` and `@variations` word, in either order, are
+///    skipped: the model's font holds neither.
+/// 2. The size ([`pango_size`]): points, or pixels with a `px` suffix.
+/// 3. Style-option words, read right to left until one is not Pango's
+///    ([`PangoStyleOptions::apply`]): weight and style as the model holds
+///    them; stretch, variant, gravity and colour dropped.
+/// 4. The rest is the family list. Pango keeps the whole comma-separated list
+///    as the family (`"Cantarell,Sans"`) for fontconfig to try in turn; the
+///    model's family is one name, so it is the list's first non-empty one.
 ///
-/// The parser:
-/// 1. Strips quotes, parses the size number from the end
-/// 2. Checks the remaining text for known weight modifiers
-/// 3. Family = everything before the weight modifier (or before the size if none)
-/// 4. Default weight = 400 (Regular) if no modifier found
-///
-/// Returns `None` if the string is empty or cannot be parsed.
+/// Weight and style default to Pango's normal ones, as Pango sets both on
+/// every description. Returns `None` for a string without a family or without
+/// a positive, finite size: Pango reads `'Cantarell NaN'` as the family
+/// `Cantarell NaN` with no size, which names no font, so that font keeps the
+/// preset's.
 pub(crate) fn parse_gnome_font_to_fontspec(s: &str) -> Option<FontSpec> {
-    let trimmed = s.trim().trim_matches('\'');
-    if trimmed.is_empty() {
-        return None;
+    let mut rest = s.trim().trim_matches('\'');
+
+    // The last word runs back to whitespace, the one before it to a comma too.
+    let (before, word) = pango_last_word(rest, "");
+    let tail = ['#', '@'].into_iter().find(|mark| word.starts_with(*mark));
+    if tail.is_some() {
+        rest = before;
+    }
+    let (before, word) = pango_last_word(rest, ",");
+    if ['#', '@']
+        .into_iter()
+        .any(|mark| Some(mark) != tail && word.starts_with(mark))
+    {
+        rest = before;
     }
 
-    // Parse size from the end: split on the last space without manual slicing.
-    let (before_size, size_str) = trimmed.rsplit_once(' ')?;
-    let before_size = before_size.trim();
-    let size: f32 = size_str.parse().ok()?;
-    if before_size.is_empty() || size <= 0.0 {
-        return None;
+    let (before, word) = pango_last_word(rest, ",");
+    let size = pango_size(word)?;
+    rest = before;
+
+    let mut options = PangoStyleOptions {
+        weight: PANGO_WEIGHT_NORMAL,
+        style: Some(FontStyle::Normal),
+    };
+    loop {
+        let (before, word) = pango_last_word(rest, ",");
+        if word.is_empty() || !options.apply(word) {
+            break;
+        }
+        rest = before;
     }
 
-    // Check for weight modifiers at the end of the family string
-    let (family, weight) = extract_weight_from_family(before_size);
-
-    if family.is_empty() {
-        return None;
-    }
+    let family = rest
+        .split(',')
+        .map(|family| family.trim_matches(|c: char| c.is_ascii_whitespace()))
+        .find(|family| !family.is_empty())?;
 
     Some(FontSpec {
         family: Some(family.into()),
-        size: Some(crate::model::font::FontSize::Pt(size)),
-        weight: Some(weight),
+        size: Some(size),
+        // PangoWeight runs to 1000; `check_font` accepts CSS 100..=900
+        // (`resolve/validate_helpers.rs:492`).
+        weight: u16::try_from(options.weight.clamp(100, 900)).ok(),
+        style: options.style,
         ..Default::default()
     })
 }
 
-/// Extract a weight modifier from the end of a family string.
-///
-/// Returns (family_without_modifier, css_weight). If no modifier is found,
-/// returns the full string as family with weight 400.
-fn extract_weight_from_family(s: &str) -> (&str, u16) {
-    for &(modifier, weight) in WEIGHT_MODIFIERS {
-        if let Some(prefix) = s.strip_suffix(modifier) {
-            let family = prefix.trim_end();
-            if !family.is_empty() {
-                return (family, weight);
+/// Pango's `getword` (`pango/fonts.c:1478-1493`): after trailing whitespace,
+/// the last word of `s`, running back to whitespace or to a character of
+/// `stop`. Returns the text before the word, and the word. Whitespace is
+/// `g_ascii_isspace`'s (glib 2.88.3 `glib/gstrfuncs.c:262-267`), the set of
+/// [`char::is_ascii_whitespace`].
+fn pango_last_word<'a>(s: &'a str, stop: &str) -> (&'a str, &'a str) {
+    let s = s.trim_end_matches(|c: char| c.is_ascii_whitespace());
+    let word = s
+        .rsplit(|c: char| c.is_ascii_whitespace() || stop.contains(c))
+        .next()
+        .unwrap_or_default();
+    (s.strip_suffix(word).unwrap_or_default(), word)
+}
+
+/// Pango's `parse_size` (`pango/fonts.c:1495-1519`): a number of points, or
+/// of pixels when `px` follows it, up to [`PANGO_MAX_SIZE`]. A size of 0, which
+/// Pango reads as no size, and a NaN or infinite one, which is not a size to
+/// Pango, give `None`.
+fn pango_size(word: &str) -> Option<FontSize> {
+    let (number, pixels) = match word.strip_suffix("px") {
+        Some(number) => (number, true),
+        None => (word, false),
+    };
+    let size = number
+        .parse::<f64>()
+        .ok()
+        .filter(|size| *size > 0.0 && *size <= PANGO_MAX_SIZE)? as f32;
+    Some(if pixels {
+        FontSize::Px(size)
+    } else {
+        FontSize::Pt(size)
+    })
+}
+
+/// A Pango style-option word's value: a word of the field's table, or the
+/// integer after a `{field}=` prefix.
+enum PangoField<T> {
+    Word(T),
+    Int(i32),
+}
+
+/// Pango's `find_field` (`pango/fonts.c:1411-1447`): `word` as one of `map`'s
+/// words, or, after a `{what}=` prefix, as one of them or a non-negative
+/// integer (`parse_int`, `:1391-1409`).
+fn pango_find_field<T: Copy>(what: &str, map: &[(&str, T)], word: &str) -> Option<PangoField<T>> {
+    let (word, had_prefix) = match word.strip_prefix(what).and_then(|w| w.strip_prefix('=')) {
+        Some(value) => (value, true),
+        None => (word, false),
+    };
+    if let Some(&(_, value)) = map.iter().find(|(name, _)| pango_word_matches(name, word)) {
+        return Some(PangoField::Word(value));
+    }
+    if had_prefix {
+        return word
+            .parse::<i32>()
+            .ok()
+            .filter(|n| *n >= 0)
+            .map(PangoField::Int);
+    }
+    None
+}
+
+/// Pango's `field_matches` (`pango/fonts.c:1363-1389`): `word` is `name`
+/// ignoring ASCII case, any of `name`'s hyphens optional (`SemiBold` is
+/// `Semi-Bold`).
+fn pango_word_matches(name: &str, word: &str) -> bool {
+    let mut name = name.bytes();
+    for w in word.bytes() {
+        loop {
+            match name.next() {
+                Some(n) if n.eq_ignore_ascii_case(&w) => break,
+                Some(b'-') => {}
+                _ => return false,
             }
         }
     }
-    // No recognized modifier -- treat as Regular
-    (s, 400)
+    name.next().is_none()
+}
+
+/// What Pango's style-option words set, as the model's font holds it.
+struct PangoStyleOptions {
+    /// A `PangoWeight`.
+    weight: i32,
+    /// `None` for a `style=` integer that is no `PangoStyle`.
+    style: Option<FontStyle>,
+}
+
+impl PangoStyleOptions {
+    /// Read one word as Pango's `find_field_any` does (`pango/fonts.c:1449-1476`):
+    /// `Normal`, then the weight, style, stretch, variant, gravity and colour
+    /// fields in turn. Returns `false` when the word is none of them.
+    fn apply(&mut self, word: &str) -> bool {
+        if pango_word_matches("Normal", word) {
+            return true;
+        }
+        if let Some(weight) = pango_find_field("weight", PANGO_WEIGHTS, word) {
+            self.weight = match weight {
+                PangoField::Word(weight) | PangoField::Int(weight) => weight,
+            };
+            return true;
+        }
+        if let Some(style) = pango_find_field("style", PANGO_STYLES, word) {
+            self.style = match style {
+                PangoField::Word(style) => Some(style),
+                // `PangoStyle`'s values (`pango/pango-font.h:74-78`).
+                PangoField::Int(0) => Some(FontStyle::Normal),
+                PangoField::Int(1) => Some(FontStyle::Oblique),
+                PangoField::Int(2) => Some(FontStyle::Italic),
+                PangoField::Int(_) => None,
+            };
+            return true;
+        }
+        PANGO_DROPPED_FIELDS
+            .iter()
+            .any(|(what, map)| pango_find_field(what, map, word).is_some())
+    }
 }
 
 /// Read a single gsettings value, returning None if gsettings is unavailable or fails.
@@ -556,7 +748,6 @@ pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::model::font::FontSize;
 
     // === parse_gnome_font_to_fontspec with weight extraction ===
 
@@ -642,6 +833,127 @@ mod tests {
         let fs = parse_gnome_font_to_fontspec("'Cantarell Bold 11'").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Cantarell"));
         assert_eq!(fs.weight, Some(700));
+    }
+
+    #[test]
+    fn fontspec_non_finite_size_is_dropped() {
+        assert!(parse_gnome_font_to_fontspec("Cantarell NaN").is_none());
+        assert!(parse_gnome_font_to_fontspec("Cantarell inf").is_none());
+        assert!(parse_gnome_font_to_fontspec("Cantarell 0").is_none());
+        assert!(parse_gnome_font_to_fontspec("Cantarell -11").is_none());
+    }
+
+    #[test]
+    fn fontspec_style_word() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell Italic 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
+        assert_eq!(fs.weight, Some(400));
+        assert_eq!(fs.style, Some(FontStyle::Italic));
+    }
+
+    #[test]
+    fn fontspec_weight_and_style_words() {
+        let fs = parse_gnome_font_to_fontspec("Noto Sans Bold Italic 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
+        assert_eq!(fs.weight, Some(700));
+        assert_eq!(fs.style, Some(FontStyle::Italic));
+    }
+
+    #[test]
+    fn fontspec_pixel_size() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell 15px").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(FontSize::Px(15.0)));
+    }
+
+    #[test]
+    fn fontspec_variations_and_features_are_skipped() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell 11 @wght=200").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
+        let fs =
+            parse_gnome_font_to_fontspec("Cantarell Italic Light 15 @wght=200 #tnum=1").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(FontSize::Pt(15.0)));
+        assert_eq!(fs.weight, Some(300));
+        assert_eq!(fs.style, Some(FontStyle::Italic));
+    }
+
+    #[test]
+    fn fontspec_first_family_of_a_list() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell, Sans 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
+        let fs = parse_gnome_font_to_fontspec("Cantarell,Bold 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.weight, Some(700));
+    }
+
+    /// Pango's words match ignoring ASCII case, and a hyphen of its table's
+    /// word may be left out (`field_matches`, pango 1.58.2 `pango/fonts.c:1363-1389`).
+    #[test]
+    fn fontspec_words_ignore_case_and_hyphens() {
+        let fs = parse_gnome_font_to_fontspec("Inter semibold OBLIQUE 10").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Inter"));
+        assert_eq!(fs.weight, Some(600));
+        assert_eq!(fs.style, Some(FontStyle::Oblique));
+    }
+
+    /// Pango's Semi-Light, Book and Ultra-Black (`pango/fonts.c:1311-1333`) are
+    /// `PANGO_WEIGHT_SEMILIGHT` 350, `PANGO_WEIGHT_BOOK` 380 and
+    /// `PANGO_WEIGHT_ULTRAHEAVY` 1000 (pango 1.58.2 `pango/pango-font.h:131-142`),
+    /// the last clamped to the 900 that `check_font` accepts.
+    #[test]
+    fn fontspec_pango_only_weights() {
+        let weight = |s| parse_gnome_font_to_fontspec(s).unwrap().weight;
+        assert_eq!(weight("Inter Semi-Light 10"), Some(350));
+        assert_eq!(weight("Inter Book 10"), Some(380));
+        assert_eq!(weight("Inter Ultra-Black 10"), Some(900));
+        assert_eq!(weight("Inter weight=650 10"), Some(650));
+    }
+
+    /// Stretch, variant and gravity words are Pango's, so they leave the family,
+    /// and the model has no field for them.
+    #[test]
+    fn fontspec_stretch_variant_gravity_words_leave_the_family() {
+        let fs =
+            parse_gnome_font_to_fontspec("Noto Sans Condensed Small-Caps Rotated-Left 9").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(fs.size, Some(FontSize::Pt(9.0)));
+        assert_eq!(fs.weight, Some(400));
+        assert_eq!(fs.style, Some(FontStyle::Normal));
+    }
+
+    /// Pango reads the words right to left and stops at the first that is not
+    /// one of its own: the rest is the family, and of two weights the leftmost
+    /// wins.
+    #[test]
+    fn fontspec_family_ends_at_the_first_unknown_word() {
+        let fs = parse_gnome_font_to_fontspec("DejaVu Sans Mono Book 10").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("DejaVu Sans Mono"));
+        assert_eq!(fs.weight, Some(380));
+        let fs = parse_gnome_font_to_fontspec("Noto Sans Bold Mono 10").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Noto Sans Bold Mono"));
+        assert_eq!(fs.weight, Some(400));
+        let fs = parse_gnome_font_to_fontspec("Inter Bold Light 10").unwrap();
+        assert_eq!(fs.weight, Some(700));
+    }
+
+    #[test]
+    fn non_finite_font_size_keeps_the_presets_font() {
+        let mut data = default_gnome_data();
+        data.font_name = Some("Cantarell NaN".to_string());
+        data.monospace_font_name = Some("Source Code Pro inf".to_string());
+        let reader = build_gnome_spec_pure(&data).unwrap();
+        let preset = crate::Theme::preset("adwaita").unwrap().light.unwrap();
+        assert_eq!(reader_mode(&reader).defaults.font, preset.defaults.font);
+        assert_eq!(
+            reader_mode(&reader).defaults.mono_font,
+            preset.defaults.mono_font
+        );
+        assert!(crate::pipeline::run_pipeline(reader, "adwaita", crate::ColorMode::Light).is_ok());
     }
 
     // === portal_color_to_rgba tests ===
@@ -903,36 +1215,6 @@ mod tests {
             variant.dialog.button_order,
             Some(DialogButtonOrder::PrimaryRight),
         );
-    }
-
-    // === extract_weight_from_family tests ===
-
-    #[test]
-    fn extract_weight_bold() {
-        let (family, weight) = extract_weight_from_family("Cantarell Bold");
-        assert_eq!(family, "Cantarell");
-        assert_eq!(weight, 700);
-    }
-
-    #[test]
-    fn extract_weight_no_modifier() {
-        let (family, weight) = extract_weight_from_family("Cantarell");
-        assert_eq!(family, "Cantarell");
-        assert_eq!(weight, 400);
-    }
-
-    #[test]
-    fn extract_weight_demi_bold() {
-        let (family, weight) = extract_weight_from_family("Source Sans Demi-Bold");
-        assert_eq!(family, "Source Sans");
-        assert_eq!(weight, 600);
-    }
-
-    #[test]
-    fn extract_weight_black() {
-        let (family, weight) = extract_weight_from_family("Inter Black");
-        assert_eq!(family, "Inter");
-        assert_eq!(weight, 900);
     }
 
     // === build_gnome_spec_pure tests (no ashpd types, no I/O) ===
