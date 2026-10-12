@@ -5608,6 +5608,7 @@ version = "0.6.1"
 dependencies = [
  "arc-swap",
  "ashpd",
+ "async-io",
  "async-trait",
  "block2 0.6.2",
  "configparser",

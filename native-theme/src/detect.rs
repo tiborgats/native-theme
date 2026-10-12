@@ -14,7 +14,7 @@ pub use icon_theme::{detect_icon_theme, system_icon_set, system_icon_theme};
 /// Prevents D-Bus-dependent tools from blocking indefinitely when the
 /// session bus is unresponsive or the display server is unavailable.
 #[cfg(target_os = "linux")]
-const SUBPROCESS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+pub(crate) const SUBPROCESS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]

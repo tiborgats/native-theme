@@ -621,7 +621,8 @@ pub(crate) fn build_theme(
 /// from the `org.freedesktop.appearance` portal namespace via ashpd.
 ///
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
-/// (no D-Bus session, sandboxed environment, or old portal version).
+/// (no D-Bus session, sandboxed environment, or old portal version) or does
+/// not answer within [`PORTAL_DEADLINE`].
 ///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
 /// by [`pipeline::select_reader`]; external consumers should use
@@ -633,27 +634,36 @@ impl crate::reader::ThemeReader for GnomeReader {
     async fn read(&self) -> crate::Result<crate::ReaderResult> {
         let base = crate::Theme::preset("adwaita")?;
 
-        // Try to connect to the portal. If unavailable, return Adwaita defaults.
-        let settings = match ashpd::desktop::settings::Settings::new().await {
-            Ok(s) => s,
-            Err(_) => {
-                return build_theme(
-                    base,
-                    ColorScheme::NoPreference,
-                    None,
-                    Contrast::NoPreference,
-                    None,
-                );
+        // Connect to the portal and read the four appearance settings, each
+        // of which can fail independently, all within one deadline. If the
+        // portal is unavailable or does not answer in time, return Adwaita
+        // defaults.
+        let portal = with_deadline(
+            async {
+                let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+                let scheme = settings.color_scheme().await.unwrap_or_default();
+                let accent = settings.accent_color().await.ok();
+                let contrast = settings.contrast().await.unwrap_or_default();
+                let reduced_motion = settings.reduced_motion().await.ok();
+                Some((scheme, accent, contrast, reduced_motion))
+            },
+            PORTAL_DEADLINE,
+        )
+        .await
+        .flatten();
+
+        match portal {
+            Some((scheme, accent, contrast, reduced_motion)) => {
+                build_theme(base, scheme, accent, contrast, reduced_motion)
             }
-        };
-
-        // Read the four appearance settings. Each can fail independently.
-        let scheme = settings.color_scheme().await.unwrap_or_default();
-        let accent = settings.accent_color().await.ok();
-        let contrast = settings.contrast().await.unwrap_or_default();
-        let reduced_motion = settings.reduced_motion().await.ok();
-
-        build_theme(base, scheme, accent, contrast, reduced_motion)
+            None => build_theme(
+                base,
+                ColorScheme::NoPreference,
+                None,
+                Contrast::NoPreference,
+                None,
+            ),
+        }
     }
 }
 
@@ -665,8 +675,8 @@ impl crate::reader::ThemeReader for GnomeReader {
 /// applied to accent, selection, and focus_ring_color fields on the reader's
 /// variant.
 ///
-/// Falls back to the KDE-only base if the portal is unavailable or provides
-/// no accent color.
+/// Falls back to the KDE-only base if the portal is unavailable, does not
+/// answer within [`PORTAL_DEADLINE`], or provides no accent color.
 ///
 /// Requires both `kde` and `portal` features.
 ///
@@ -687,15 +697,19 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
             <crate::kde::KdeReader as crate::reader::ThemeReader>::read(&crate::kde::KdeReader)
                 .await?;
 
-        // Try to get accent color from portal
-        let settings = match ashpd::desktop::settings::Settings::new().await {
-            Ok(s) => s,
-            Err(_) => return Ok(result),
-        };
-
-        let accent = match settings.accent_color().await {
-            Ok(color) => color,
-            Err(_) => return Ok(result),
+        // Try to get accent color from portal, within one deadline
+        let accent = with_deadline(
+            async {
+                let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+                settings.accent_color().await.ok()
+            },
+            PORTAL_DEADLINE,
+        )
+        .await
+        .flatten();
+        let accent = match accent {
+            Some(color) => color,
+            None => return Ok(result),
         };
 
         let rgba = match portal_color_to_rgba(&accent) {
@@ -718,30 +732,86 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
     }
 }
 
-/// Detect which desktop portal backend is running via D-Bus activatable names.
+/// Detect which desktop portal backend is running from the session bus names.
 ///
-/// Checks the session bus for activatable service names containing
-/// `portal.desktop.kde` or `portal.desktop.gnome` to infer the desktop
-/// environment when `XDG_CURRENT_DESKTOP` is ambiguous or unset.
+/// Looks for a bus name containing `portal.desktop.kde` or
+/// `portal.desktop.gnome` to infer the desktop environment when
+/// `XDG_CURRENT_DESKTOP` is ambiguous or unset. A backend that owns its name
+/// (running) is preferred over one that is only activatable (installed); see
+/// [`choose_portal_backend`].
 ///
-/// Returns `None` if D-Bus is unavailable or no recognized portal backend
-/// is found.
+/// Returns `None` if D-Bus is unavailable, does not answer within
+/// [`PORTAL_DEADLINE`], or no single portal backend is found.
 pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
-    let connection = ashpd::zbus::Connection::session().await.ok()?;
-    let proxy = ashpd::zbus::fdo::DBusProxy::new(&connection).await.ok()?;
-    let names = proxy.list_activatable_names().await.ok()?;
+    let (running, activatable) = with_deadline(
+        async {
+            let connection = ashpd::zbus::Connection::session().await.ok()?;
+            let proxy = ashpd::zbus::fdo::DBusProxy::new(&connection).await.ok()?;
+            let running = proxy.list_names().await.ok()?;
+            let activatable = proxy.list_activatable_names().await.ok()?;
+            Some((running, activatable))
+        },
+        PORTAL_DEADLINE,
+    )
+    .await??;
 
-    for name in &names {
-        let name_str = name.as_str();
-        if name_str.contains("portal.desktop.kde") {
-            return Some(super::LinuxDesktop::Kde);
+    let running: Vec<&str> = running.iter().map(|n| n.as_str()).collect();
+    let activatable: Vec<&str> = activatable.iter().map(|n| n.as_str()).collect();
+    choose_portal_backend(&running, &activatable)
+}
+
+/// One deadline for all the D-Bus calls of one portal read together.
+///
+/// zbus sets no method timeout of its own (zbus-5.19.0
+/// `src/connection/builder.rs:660`, `method_timeout: None`), and ashpd's
+/// shared connection is a plain `zbus::Connection::session()` (ashpd-0.13.13
+/// `src/proxy.rs:36-44`), so a hung or slow-starting portal backend would
+/// block `from_system` for as long as the bus lets the call wait. Ruled equal
+/// to the subprocess bound the same path already gives each gsettings read.
+const PORTAL_DEADLINE: std::time::Duration = crate::detect::SUBPROCESS_TIMEOUT;
+
+/// Await `fut`, or return `None` once `deadline` has passed.
+async fn with_deadline<F: std::future::Future>(
+    fut: F,
+    deadline: std::time::Duration,
+) -> Option<F::Output> {
+    let mut fut = std::pin::pin!(fut);
+    let mut timer = async_io::Timer::after(deadline);
+    std::future::poll_fn(|cx| {
+        if let std::task::Poll::Ready(out) = fut.as_mut().poll(cx) {
+            return std::task::Poll::Ready(Some(out));
         }
-        if name_str.contains("portal.desktop.gnome") {
-            return Some(super::LinuxDesktop::Gnome);
+        if std::pin::Pin::new(&mut timer).poll(cx).is_ready() {
+            return std::task::Poll::Ready(None);
+        }
+        std::task::Poll::Pending
+    })
+    .await
+}
+
+/// Pick the desktop from the portal backends among the bus's names.
+///
+/// A running backend (`running`, the names with an owner) decides before an
+/// activatable one (`activatable`, the installed `.service` files, in no
+/// order the D-Bus spec defines). When a KDE and a GNOME backend match at the
+/// same level the answer is `None`, and the caller's fallback decides.
+fn choose_portal_backend(running: &[&str], activatable: &[&str]) -> Option<super::LinuxDesktop> {
+    fn backend_in(names: &[&str]) -> Result<Option<super::LinuxDesktop>, ()> {
+        let kde = names.iter().any(|n| n.contains("portal.desktop.kde"));
+        let gnome = names.iter().any(|n| n.contains("portal.desktop.gnome"));
+        match (kde, gnome) {
+            (true, true) => Err(()),
+            (true, false) => Ok(Some(super::LinuxDesktop::Kde)),
+            (false, true) => Ok(Some(super::LinuxDesktop::Gnome)),
+            (false, false) => Ok(None),
         }
     }
 
-    None
+    match backend_in(running) {
+        Ok(Some(desktop)) => Some(desktop),
+        Ok(None) => backend_in(activatable).ok().flatten(),
+        Err(()) => None,
+    }
 }
 
 #[cfg(test)]
@@ -1388,5 +1458,68 @@ mod tests {
             let rp: Box<dyn crate::reader::ThemeReader> = Box::new(super::GnomePortalKdeReader);
             let _ = &rp;
         }
+    }
+
+    // === portal deadline and backend choice (M4-26, M4-28) ===
+
+    const KDE_BACKEND: &str = "org.freedesktop.impl.portal.desktop.kde";
+    const GNOME_BACKEND: &str = "org.freedesktop.impl.portal.desktop.gnome";
+
+    #[test]
+    fn portal_backend_running_preferred_over_activatable() {
+        assert_eq!(
+            choose_portal_backend(&[KDE_BACKEND], &[GNOME_BACKEND, KDE_BACKEND]),
+            Some(crate::LinuxDesktop::Kde)
+        );
+    }
+
+    #[test]
+    fn portal_backend_both_running_is_none() {
+        assert_eq!(
+            choose_portal_backend(&[GNOME_BACKEND, KDE_BACKEND], &[GNOME_BACKEND, KDE_BACKEND]),
+            None
+        );
+    }
+
+    #[test]
+    fn portal_backend_only_activatable_gnome() {
+        assert_eq!(
+            choose_portal_backend(&["org.freedesktop.DBus"], &[GNOME_BACKEND]),
+            Some(crate::LinuxDesktop::Gnome)
+        );
+    }
+
+    #[test]
+    fn portal_backend_both_activatable_none_running_is_none() {
+        assert_eq!(
+            choose_portal_backend(&[], &[KDE_BACKEND, GNOME_BACKEND]),
+            None
+        );
+        assert_eq!(choose_portal_backend(&[], &[]), None);
+    }
+
+    #[test]
+    fn deadline_ends_a_future_that_never_completes() {
+        let deadline = std::time::Duration::from_millis(100);
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let start = std::time::Instant::now();
+            let out = pollster::block_on(with_deadline(std::future::pending::<()>(), deadline));
+            let _ = tx.send((out, start.elapsed()));
+        });
+        let (out, elapsed) = rx
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("with_deadline did not return within 5 s");
+        assert_eq!(out, None);
+        assert!(elapsed >= deadline, "returned after {elapsed:?}");
+    }
+
+    #[test]
+    fn deadline_passes_a_ready_value_through() {
+        let out = pollster::block_on(with_deadline(
+            std::future::ready(7),
+            std::time::Duration::from_secs(5),
+        ));
+        assert_eq!(out, Some(7));
     }
 }
