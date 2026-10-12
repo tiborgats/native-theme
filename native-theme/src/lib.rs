@@ -180,7 +180,7 @@ pub mod fonts;
 ///
 /// Requires the `portal` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "portal"))]
-pub mod gnome;
+pub(crate) mod gnome;
 /// Icon loading and dispatch.
 pub mod icons;
 /// KDE theme reader.
