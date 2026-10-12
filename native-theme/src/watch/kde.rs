@@ -318,4 +318,48 @@ mod tests {
         );
         assert!(drop_returns(subscription));
     }
+
+    /// A callback that drops its own subscription: the drop returns instead
+    /// of joining the watcher thread from itself, and the thread exits once
+    /// the callback returns (M4-89).
+    #[test]
+    fn a_callback_that_drops_its_subscription_returns_and_the_thread_exits() {
+        /// Sends on `0` when dropped: the watcher thread owns the callback,
+        /// so this drops when the thread exits.
+        struct OnDrop(mpsc::Sender<()>);
+
+        impl Drop for OnDrop {
+            fn drop(&mut self) {
+                let _ = self.0.send(());
+            }
+        }
+
+        let dir = temp_config_dir("drop-in-callback");
+        let slot: Arc<std::sync::Mutex<Option<super::super::ThemeSubscription>>> =
+            Arc::new(std::sync::Mutex::new(None));
+        let (dropped_tx, dropped_rx) = mpsc::channel();
+        let (exited_tx, exited_rx) = mpsc::channel();
+        let subscription = {
+            let slot = Arc::clone(&slot);
+            let exited = OnDrop(exited_tx);
+            super::watch_kde_dir(dir.0.clone(), move |_| {
+                let _ = &exited;
+                let subscription = slot.lock().unwrap().take();
+                drop(subscription);
+                let _ = dropped_tx.send(());
+            })
+            .unwrap()
+        };
+        *slot.lock().unwrap() = Some(subscription);
+
+        write_kdeglobals(&dir, 0);
+        assert!(
+            dropped_rx.recv_timeout(TIMEOUT).is_ok(),
+            "dropping the subscription from its own callback did not return"
+        );
+        assert!(
+            exited_rx.recv_timeout(TIMEOUT).is_ok(),
+            "the watcher thread did not exit after its callback dropped the subscription"
+        );
+    }
 }

@@ -106,14 +106,19 @@ pub enum ThemeChangeEvent {
 ///
 /// # Dropping
 ///
-/// Drop the subscription from another thread than the callback's: `Drop`
-/// joins the watcher thread, and a callback that drops it would join itself.
-/// A callback that is running when the drop starts finishes before the drop
-/// returns, and none runs after it. On macOS, where there is no watcher
-/// thread, dropping removes the observer and waits for a callback already
-/// queued to finish; dropped from inside the callback, it returns without
-/// waiting, and a notification already queued can still run the callback
-/// once.
+/// `Drop` joins the watcher thread: a callback that is running when the drop
+/// starts finishes before the drop returns, and none runs after it. A
+/// callback may drop its own subscription: the drop then runs on the watcher
+/// thread, so it does not join it but detaches it, and the thread exits once
+/// the callback returns. On macOS, where there is no watcher thread,
+/// dropping removes the observer and waits for a callback already queued to
+/// finish; dropped from inside the callback, it returns without waiting, and
+/// a notification already queued can still run the callback once.
+///
+/// Because the drop waits for the callback, it deadlocks if a callback waits
+/// on a lock the dropping thread holds, or, on macOS, dispatches
+/// synchronously to the main thread while the main thread drops the
+/// subscription.
 ///
 /// # Important
 ///
@@ -198,8 +203,13 @@ impl Drop for ThemeSubscription {
         }
         // Drop the sender to signal shutdown (receiver sees Disconnected).
         drop(self.shutdown_tx.take());
-        // Join the background thread so it finishes cleanly.
-        if let Some(handle) = self.thread.take() {
+        // Join the background thread so it finishes cleanly. A callback that
+        // drops its own subscription runs on that thread, and a thread that
+        // joins itself fails (EDEADLK): dropping the handle detaches the
+        // thread instead, which exits once the callback returns.
+        if let Some(handle) = self.thread.take()
+            && handle.thread().id() != std::thread::current().id()
+        {
             let _ = handle.join();
         }
     }
@@ -207,7 +217,8 @@ impl Drop for ThemeSubscription {
 
 /// Call `callback` with [`ThemeChangeEvent::Changed`], containing a panic:
 /// a callback that panics loses that one event, and the watcher keeps
-/// running.
+/// running. This holds with the default `panic = "unwind"`; under
+/// `panic = "abort"` a panicking callback aborts the process.
 #[cfg(any(
     test,
     all(target_os = "linux", any(feature = "kde", feature = "portal")),
@@ -330,8 +341,10 @@ fn fire_debounced<T>(
 /// callback fires once per burst, 300 ms after the last.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
-/// the watcher keeps running. Drop the returned [`ThemeSubscription`] from
-/// another thread than the callback's (see its "Dropping" section).
+/// the watcher keeps running (with the default `panic = "unwind"`; under
+/// `panic = "abort"` the process aborts). A callback may drop the returned
+/// [`ThemeSubscription`]; see its "Dropping" section for what a drop waits
+/// for.
 ///
 /// On Linux the backend is the one of the desktop the reader is chosen by:
 /// KDE's for KDE (with the `kde` feature), GNOME's for GNOME and Budgie (with
