@@ -244,10 +244,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 
     // KDE-02: link.visited
     variant.link.visited_text_color = get_color(ini, "Colors:View", "ForegroundVisited");
-    // link.font.color from View/ForegroundLink
-    if let Some(color) = get_color(ini, "Colors:View", "ForegroundLink") {
-        variant.link.font.get_or_insert_default().color = Some(color);
-    }
+    // link.font.color: not set here -- it inherits View/ForegroundLink from
+    // defaults.link_color, so an overlay's link_color recolours link text.
 
     // === KDE-01: Window Manager title bar colors ===
     variant.window.title_bar_background = get_color(ini, "WM", "activeBackground");

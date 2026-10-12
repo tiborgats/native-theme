@@ -929,6 +929,34 @@ BackgroundNormal=49,54,59
         assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
     }
 
+    /// Link text takes `ForegroundLink` through `defaults.link_color`, so a
+    /// plain read resolves it to that colour.
+    #[test]
+    fn link_text_resolves_to_foreground_link() -> crate::Result<()> {
+        let st = crate::pipeline::run_pipeline(
+            from_kde_content(BREEZE_DARK_FULL)?,
+            "kde-breeze",
+            crate::ColorMode::Dark,
+        )?;
+        assert_eq!(st.dark.link.font.color, Rgba::rgb(29, 153, 243));
+        Ok(())
+    }
+
+    /// An overlay's `defaults.link_color` recolours link text on top of a
+    /// KDE read: the reader states no `link.font.color` of its own.
+    #[test]
+    fn an_overlay_link_color_recolours_link_text() -> crate::Result<()> {
+        let st = crate::pipeline::run_pipeline(
+            from_kde_content(BREEZE_DARK_FULL)?,
+            "kde-breeze",
+            crate::ColorMode::Dark,
+        )?;
+        let overlay = crate::Theme::from_toml("[dark.defaults]\nlink_color = \"#ff0000\"")?;
+        let customised = st.with_overlay(&overlay)?;
+        assert_eq!(customised.dark.link.font.color, Rgba::rgb(255, 0, 0));
+        Ok(())
+    }
+
     // === KDE-06: Accessibility ===
 
     #[test]
