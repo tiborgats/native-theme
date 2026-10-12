@@ -136,27 +136,13 @@ fn reader_font_dpi(
         .unwrap_or_else(chain)
 }
 
-/// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).
+/// Read a single key from `kcmfontsrc` in the user's config directory
+/// ([`crate::detect::xdg_config_home`]).
 ///
-/// Returns `None` if the file is missing, unreadable, or the key is not found.
+/// Returns `None` if there is no config directory, the file is missing or
+/// unreadable, or the key is not found.
 pub(crate) fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
-    let path = if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
-        if config_home.is_empty() {
-            None
-        } else {
-            Some(std::path::PathBuf::from(config_home).join("kcmfontsrc"))
-        }
-    } else {
-        None
-    }
-    .or_else(|| {
-        std::env::var("HOME").ok().map(|h| {
-            std::path::PathBuf::from(h)
-                .join(".config")
-                .join("kcmfontsrc")
-        })
-    })?;
-
+    let path = crate::detect::xdg_config_home()?.join("kcmfontsrc");
     let content = std::fs::read_to_string(path).ok()?;
     let mut ini = create_kde_parser();
     ini.read(content).ok()?;
@@ -346,7 +332,7 @@ fn kdeglobals_files() -> Vec<std::path::PathBuf> {
 }
 
 /// `kdeglobals` in each of `config_dirs` (`$XDG_CONFIG_DIRS`), last first,
-/// then the user's `user_file`.
+/// then the user's `user_file`, which is `None` without a config directory.
 ///
 /// KConfig reads every `kdeglobals` `QStandardPaths::locateAll` finds, in
 /// reverse, so the user's file comes last and wins (kconfig
@@ -356,10 +342,11 @@ fn kdeglobals_files() -> Vec<std::path::PathBuf> {
 /// `:403-413` at 512d45ad). Plasma puts `kdedefaults` beside the user's file
 /// first in `$XDG_CONFIG_DIRS` (plasma-workspace
 /// `startkde/startplasma.cpp:419-426` at 8bd4f86a); it is added there when
-/// `config_dirs` lacks it, for a process started outside Plasma's session.
+/// `config_dirs` lacks it, for a process started outside Plasma's session;
+/// without a `user_file` there is no `kdedefaults` either.
 fn kdeglobals_files_pure(
     config_dirs: Option<&str>,
-    user_file: std::path::PathBuf,
+    user_file: Option<std::path::PathBuf>,
 ) -> Vec<std::path::PathBuf> {
     let mut dirs: Vec<std::path::PathBuf> = Vec::new();
     for dir in config_dirs
@@ -375,7 +362,10 @@ fn kdeglobals_files_pure(
     if dirs.is_empty() {
         dirs.push(std::path::PathBuf::from("/etc/xdg"));
     }
-    if let Some(defaults) = user_file.parent().map(|dir| dir.join("kdedefaults"))
+    if let Some(defaults) = user_file
+        .as_deref()
+        .and_then(std::path::Path::parent)
+        .map(|dir| dir.join("kdedefaults"))
         && !dirs.contains(&defaults)
     {
         dirs.insert(0, defaults);
@@ -385,7 +375,9 @@ fn kdeglobals_files_pure(
         .rev()
         .map(|dir| dir.join("kdeglobals"))
         .collect();
-    if !files.contains(&user_file) {
+    if let Some(user_file) = user_file
+        && !files.contains(&user_file)
+    {
         files.push(user_file);
     }
     files
@@ -455,44 +447,10 @@ pub(crate) fn parse_rgb(value: &str) -> Option<Rgba> {
     Some(Rgba::rgb(r, g, b))
 }
 
-/// Resolve the path to the kdeglobals file.
-///
-/// Checks XDG_CONFIG_HOME (non-empty), then $HOME/.config/kdeglobals,
-/// then /etc/xdg/kdeglobals as last resort.
-pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
-    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
-        && !config_home.is_empty()
-    {
-        return std::path::PathBuf::from(config_home).join("kdeglobals");
-    }
-    if let Ok(home) = std::env::var("HOME") {
-        return std::path::PathBuf::from(home)
-            .join(".config")
-            .join("kdeglobals");
-    }
-    // Last resort fallback
-    std::path::PathBuf::from("/etc/xdg/kdeglobals")
-}
-
-/// Pure version of [`kdeglobals_path`] for testing.
-///
-/// Accepts XDG_CONFIG_HOME and HOME values as parameters instead of
-/// reading environment variables, following the `_pure` suffix convention
-/// (established in Phase 63).
-#[cfg(test)]
-fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> std::path::PathBuf {
-    if let Some(config_home) = xdg_config_home
-        && !config_home.is_empty()
-    {
-        return std::path::PathBuf::from(config_home).join("kdeglobals");
-    }
-    if let Some(home) = home {
-        return std::path::PathBuf::from(home)
-            .join(".config")
-            .join("kdeglobals");
-    }
-    // Last resort fallback
-    std::path::PathBuf::from("/etc/xdg/kdeglobals")
+/// The user's kdeglobals file, in the user's config directory
+/// ([`crate::detect::xdg_config_home`]); `None` without one.
+pub(crate) fn kdeglobals_path() -> Option<std::path::PathBuf> {
+    crate::detect::xdg_config_home().map(|dir| dir.join("kdeglobals"))
 }
 
 /// Detect whether the active KDE theme is dark based on background luminance.
@@ -558,31 +516,6 @@ mod tests {
     #[test]
     fn parse_rgb_empty_string() {
         assert_eq!(parse_rgb(""), None);
-    }
-
-    // === kdeglobals_path_pure tests ===
-
-    #[test]
-    fn kdeglobals_path_respects_xdg_config_home() {
-        let path = kdeglobals_path_pure(Some("/tmp/test"), Some("/home/user"));
-        assert_eq!(path, std::path::PathBuf::from("/tmp/test/kdeglobals"));
-    }
-
-    #[test]
-    fn kdeglobals_path_falls_back_to_home_config() {
-        let path = kdeglobals_path_pure(None, Some("/home/testuser"));
-        assert_eq!(
-            path,
-            std::path::PathBuf::from("/home/testuser")
-                .join(".config")
-                .join("kdeglobals")
-        );
-    }
-
-    #[test]
-    fn kdeglobals_path_fallback_to_etc_xdg() {
-        let path = kdeglobals_path_pure(None, None);
-        assert_eq!(path, std::path::PathBuf::from("/etc/xdg/kdeglobals"));
     }
 
     // === is_dark_theme tests ===
@@ -915,7 +848,7 @@ BackgroundNormal=49,54,59
     fn kdeglobals_files_follow_plasmas_config_dirs() {
         let files = kdeglobals_files_pure(
             Some("/home/u/.config/kdedefaults:/etc/xdg"),
-            "/home/u/.config/kdeglobals".into(),
+            Some("/home/u/.config/kdeglobals".into()),
         );
         assert_eq!(
             files,
@@ -937,7 +870,8 @@ BackgroundNormal=49,54,59
             "/home/u/.config/kdeglobals",
         ]);
         for config_dirs in [None, Some(""), Some("relative:")] {
-            let files = kdeglobals_files_pure(config_dirs, "/home/u/.config/kdeglobals".into());
+            let files =
+                kdeglobals_files_pure(config_dirs, Some("/home/u/.config/kdeglobals".into()));
             assert_eq!(files, expected, "{config_dirs:?}");
         }
     }
@@ -946,7 +880,7 @@ BackgroundNormal=49,54,59
     fn kdeglobals_files_read_the_config_dirs_last_first_once_each() {
         let files = kdeglobals_files_pure(
             Some("/opt/a:/opt/b:/opt/a"),
-            "/home/u/.config/kdeglobals".into(),
+            Some("/home/u/.config/kdeglobals".into()),
         );
         assert_eq!(
             files,
@@ -956,6 +890,20 @@ BackgroundNormal=49,54,59
                 "/home/u/.config/kdedefaults/kdeglobals",
                 "/home/u/.config/kdeglobals",
             ])
+        );
+    }
+
+    /// Without a config directory there is no user file and no
+    /// `kdedefaults` beside it: only the config dirs' files.
+    #[test]
+    fn kdeglobals_files_without_a_config_directory_are_the_config_dirs() {
+        assert_eq!(
+            kdeglobals_files_pure(None, None),
+            paths(&["/etc/xdg/kdeglobals"])
+        );
+        assert_eq!(
+            kdeglobals_files_pure(Some("/opt/a:/opt/b"), None),
+            paths(&["/opt/b/kdeglobals", "/opt/a/kdeglobals"])
         );
     }
 
@@ -982,7 +930,7 @@ BackgroundNormal=49,54,59
         .unwrap();
         let files = kdeglobals_files_pure(
             Some(dir.join("xdg").to_str().unwrap()),
-            dir.join("kdeglobals"),
+            Some(dir.join("kdeglobals")),
         );
         let result = from_kde_ini(&read_kconfig_files(&files).expect("the files are readable"));
         assert_eq!(result.name, "BreezeDark");

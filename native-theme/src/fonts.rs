@@ -277,10 +277,11 @@ fn face_in_file(path: &std::path::Path, weight: u16, style: FontStyle) -> Option
 /// `%{family[0]}` is that match's first family name (`FcPatternFormat(3)`).
 /// The pattern is `family` with the characters fontconfig's name syntax
 /// reserves in a family — `\`, `-`, `:` and `,` — each preceded by a `\`
-/// (fontconfig user's guide, "Font Names"). `None` when `fc-match` cannot be run or fails,
-/// prints nothing, or prints a family caselessly equal to `family`: the
-/// system has that family, and [`system_face`] finds it by name. Each call
-/// starts a process, so call it when a theme changes, not per frame.
+/// (fontconfig user's guide, "Font Names"). `None` when `fc-match` cannot be
+/// run, fails, does not finish within 2 s, prints nothing, or prints a family
+/// caselessly equal to `family`: the system has that family, and
+/// [`system_face`] finds it by name. Each call starts a process, so call it
+/// when a theme changes, not per frame.
 ///
 /// macOS, Windows and every other platform: `None`. Their own fallback for a
 /// missing family is not implemented: no code path of this crate reads it.
@@ -298,15 +299,11 @@ pub fn substitute_family(family: &str) -> Option<String> {
     not(target_os = "android")
 ))]
 fn platform_substitute(family: &str) -> Option<String> {
-    let output = std::process::Command::new("fc-match")
-        .arg("--format=%{family[0]}")
-        .arg(fontconfig_family(family))
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let printed = String::from_utf8(output.stdout).ok()?;
+    let printed = crate::detect::stdout_with_timeout(
+        "fc-match",
+        &["--format=%{family[0]}", &fontconfig_family(family)],
+        crate::detect::SUBPROCESS_TIMEOUT,
+    )?;
     let matched = printed.trim();
     if matched.is_empty() || unicase::UniCase::new(matched) == unicase::UniCase::new(family) {
         return None;

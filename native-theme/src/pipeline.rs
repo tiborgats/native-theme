@@ -752,10 +752,11 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         }
 
         // Check gsettings availability
-        match std::process::Command::new("gsettings")
-            .arg("--version")
-            .output()
-        {
+        match crate::detect::run_with_timeout(
+            "gsettings",
+            &["--version"],
+            crate::detect::SUBPROCESS_TIMEOUT,
+        ) {
             Ok(output) if output.status.success() => {
                 let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 diagnostics.push(DiagnosticEntry::ToolAvailable {
@@ -764,6 +765,9 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
                 });
             }
             Ok(_) => {
+                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
+            }
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
                 diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
             }
             Err(_) => {
@@ -777,17 +781,20 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         // Check KDE config files
         #[cfg(feature = "kde")]
         {
-            let path = crate::kde::kdeglobals_path();
-            if path.exists() {
-                diagnostics.push(DiagnosticEntry::ConfigFound {
-                    name: "KDE kdeglobals",
-                    path,
-                });
-            } else {
-                diagnostics.push(DiagnosticEntry::ConfigMissing {
-                    name: "KDE kdeglobals",
-                    path,
-                });
+            match crate::kde::kdeglobals_path() {
+                Some(path) if path.exists() => {
+                    diagnostics.push(DiagnosticEntry::ConfigFound {
+                        name: "KDE kdeglobals",
+                        path,
+                    });
+                }
+                Some(path) => {
+                    diagnostics.push(DiagnosticEntry::ConfigMissing {
+                        name: "KDE kdeglobals",
+                        path,
+                    });
+                }
+                None => diagnostics.push(DiagnosticEntry::EnvVarMissing("HOME")),
             }
         }
 

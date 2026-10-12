@@ -10,11 +10,13 @@ mod icon_theme;
 pub(crate) use icon_theme::IconThemeFailure;
 pub use icon_theme::{detect_icon_theme, system_icon_set, system_icon_theme};
 
-/// Timeout for subprocess commands (gsettings, xrdb, xrandr).
+/// Timeout for subprocess commands ([`run_with_timeout`]: gsettings, xrdb,
+/// xrandr, xfconf-query, fc-match, macOS `defaults`).
 ///
 /// Prevents D-Bus-dependent tools from blocking indefinitely when the
 /// session bus is unresponsive or the display server is unavailable.
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) const SUBPROCESS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Desktop environments recognized on Linux.
@@ -167,7 +169,7 @@ pub(crate) fn refine_desktop(
 fn kdeglobals_exists() -> bool {
     #[cfg(feature = "kde")]
     {
-        crate::kde::kdeglobals_path().exists()
+        crate::kde::kdeglobals_path().is_some_and(|path| path.exists())
     }
     #[cfg(not(feature = "kde"))]
     {
@@ -239,66 +241,192 @@ pub fn detect_is_dark() -> bool {
 }
 
 /// The longest pause between two polls of a running command.
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 const POLL_INTERVAL_CAP: std::time::Duration = std::time::Duration::from_millis(50);
 
 /// The pauses between polls of a running command: 1 ms, doubling up to
 /// [`POLL_INTERVAL_CAP`], so a command that exits in a few milliseconds is
 /// seen to exit within a few milliseconds, and a slow one costs a poll per
 /// 50 ms.
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn poll_intervals() -> impl Iterator<Item = std::time::Duration> {
     std::iter::successors(Some(std::time::Duration::from_millis(1)), |pause| {
         Some(pause.saturating_mul(2).min(POLL_INTERVAL_CAP))
     })
 }
 
-/// Run `program` with `args`, waiting up to `timeout` for it to exit.
+/// Run `program` with `args` and its stdin closed, waiting up to `timeout`
+/// for it to exit and for its stdout and stderr to close.
 ///
-/// Returns its stdout when it exits successfully; `None` when it cannot be
-/// spawned, exits unsuccessfully or outlives `timeout`, in which case it
-/// is killed. The command is polled at [`poll_intervals`]. A killed command
-/// is reaped; one the kill fails on is left unreaped rather than waited
-/// for, so `timeout` stays a bound on the call.
-#[cfg(target_os = "linux")]
-fn run_with_timeout(program: &str, args: &[&str], timeout: std::time::Duration) -> Option<String> {
-    use std::io::Read;
+/// Its output is what [`std::process::Command::output`] gives, an
+/// unsuccessful exit included. Both pipes are read while the command runs,
+/// each on a thread of its own, so a command that prints more than a pipe
+/// holds (65,536 bytes on Linux, pipe(7)) is not stalled until it is
+/// killed. The error is the spawn's, a reader thread's that cannot be
+/// started, or one of kind [`std::io::ErrorKind::TimedOut`] when the command
+/// outlives `timeout` or a process it started still holds its output open
+/// at `timeout`. A command that has not exited is killed and reaped on
+/// every error; one the kill fails on is left unreaped rather than waited
+/// for, and a reader still blocked at `timeout` is left to end when the pipe
+/// closes, so `timeout` stays a bound on the call. The command is polled at
+/// [`poll_intervals`].
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn run_with_timeout(
+    program: &str,
+    args: &[&str],
+    timeout: std::time::Duration,
+) -> std::io::Result<std::process::Output> {
+    use std::process::{Child, Command, Stdio};
+    use std::sync::mpsc::{Receiver, RecvTimeoutError};
     use std::time::Instant;
 
+    fn kill_and_reap(child: &mut Child) {
+        if child.kill().is_ok() {
+            let _ = child.wait();
+        }
+    }
+
+    let timed_out = || {
+        std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            format!("timed out after {timeout:?}"),
+        )
+    };
+
     let start = Instant::now();
-    let mut child = std::process::Command::new(program)
+    let mut child = Command::new(program)
         .args(args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .ok()?;
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let readers = read_on_a_thread(child.stdout.take())
+        .and_then(|stdout| Ok((stdout, read_on_a_thread(child.stderr.take())?)));
+    let (stdout, stderr) = match readers {
+        Ok(readers) => readers,
+        Err(e) => {
+            kill_and_reap(&mut child);
+            return Err(e);
+        }
+    };
 
     let mut intervals = poll_intervals();
-    loop {
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                let mut buf = String::new();
-                if let Some(mut stdout) = child.stdout.take() {
-                    let _ = stdout.read_to_string(&mut buf);
-                }
-                return Some(buf);
-            }
-            Ok(Some(_)) => return None,
+            Ok(Some(status)) => break status,
             Ok(None) => {
                 let elapsed = start.elapsed();
                 if elapsed >= timeout {
-                    if child.kill().is_ok() {
-                        let _ = child.wait();
-                    }
-                    return None;
+                    kill_and_reap(&mut child);
+                    return Err(timed_out());
                 }
                 let pause = intervals.next().unwrap_or(POLL_INTERVAL_CAP);
                 std::thread::sleep(pause.min(timeout.saturating_sub(elapsed)));
             }
-            Err(_) => return None,
+            Err(e) => {
+                kill_and_reap(&mut child);
+                return Err(e);
+            }
+        }
+    };
+
+    let received = |reader: Receiver<Vec<u8>>| {
+        reader
+            .recv_timeout(timeout.saturating_sub(start.elapsed()))
+            .map_err(|e| match e {
+                RecvTimeoutError::Timeout => timed_out(),
+                RecvTimeoutError::Disconnected => {
+                    std::io::Error::other("the output reader stopped without a result")
+                }
+            })
+    };
+    Ok(std::process::Output {
+        status,
+        stdout: received(stdout)?,
+        stderr: received(stderr)?,
+    })
+}
+
+/// Read `pipe` to its end on a new thread, which sends what it read; an
+/// absent pipe is read as empty. The error is the thread's spawn error.
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn read_on_a_thread(
+    pipe: Option<impl std::io::Read + Send + 'static>,
+) -> std::io::Result<std::sync::mpsc::Receiver<Vec<u8>>> {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    match pipe {
+        Some(mut pipe) => {
+            std::thread::Builder::new()
+                .name("native-theme-subprocess-output".to_string())
+                .spawn(move || {
+                    let mut read = Vec::new();
+                    let _ = pipe.read_to_end(&mut read);
+                    let _ = sender.send(read);
+                })?;
+        }
+        None => {
+            let _ = sender.send(Vec::new());
         }
     }
+    Ok(receiver)
 }
+
+/// The stdout of `program` run with `args` ([`run_with_timeout`]) when it
+/// exits successfully within `timeout` and prints UTF-8; `None` otherwise.
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn stdout_with_timeout(
+    program: &str,
+    args: &[&str],
+    timeout: std::time::Duration,
+) -> Option<String> {
+    let output = run_with_timeout(program, args, timeout).ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8(output.stdout).ok()
+}
+
+/// The user's config directory: `$XDG_CONFIG_HOME`, else `$HOME/.config`;
+/// `None` without either ([`xdg_config_home_from`] of the environment).
+#[cfg(target_os = "linux")]
+pub(crate) fn xdg_config_home() -> Option<std::path::PathBuf> {
+    xdg_config_home_from(
+        std::env::var_os("XDG_CONFIG_HOME").as_deref(),
+        std::env::var_os("HOME").as_deref(),
+    )
+}
+
+/// The config directory `$XDG_CONFIG_HOME` (`var`) names: itself when it is
+/// absolute, else `<home>/.config` when `home` is non-empty, else `None`.
+///
+/// The XDG Base Directory Specification 0.8: "If `$XDG_CONFIG_HOME` is
+/// either not set or empty, a default equal to `$HOME/.config` should be
+/// used", and "All paths set in these environment variables must be
+/// absolute. If an implementation encounters a relative path in any of
+/// these variables it should consider the path invalid and ignore it"
+/// (<https://specifications.freedesktop.org/basedir-spec/0.8/>).
+#[cfg(target_os = "linux")]
+fn xdg_config_home_from(
+    var: Option<&std::ffi::OsStr>,
+    home: Option<&std::ffi::OsStr>,
+) -> Option<std::path::PathBuf> {
+    var.map(std::path::PathBuf::from)
+        .filter(|dir| dir.is_absolute())
+        .or_else(|| {
+            home.filter(|home| !home.is_empty())
+                .map(|home| std::path::Path::new(home).join(".config"))
+        })
+}
+
+/// Why [`xdg_config_home`] is `None`.
+#[cfg(target_os = "linux")]
+pub(crate) const CONFIG_HOME_UNRESOLVED: &str = "the config directory is unresolved: \
+    $XDG_CONFIG_HOME is not an absolute path and $HOME is unset or empty";
 
 /// Run `gsettings get <schema> <key>`, waiting up to `timeout`.
 ///
@@ -311,7 +439,7 @@ pub(crate) fn gsettings_get(
     key: &str,
     timeout: std::time::Duration,
 ) -> Option<String> {
-    let out = run_with_timeout("gsettings", &["get", schema, key], timeout)?;
+    let out = stdout_with_timeout("gsettings", &["get", schema, key], timeout)?;
     let trimmed = out.trim();
     if trimmed.is_empty() {
         None
@@ -326,7 +454,7 @@ pub(crate) fn gsettings_get(
 /// or the output does not contain a valid positive `Xft.dpi` value.
 #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn read_xft_dpi() -> Option<f32> {
-    let out = run_with_timeout("xrdb", &["-query"], SUBPROCESS_TIMEOUT)?;
+    let out = stdout_with_timeout("xrdb", &["-query"], SUBPROCESS_TIMEOUT)?;
     // Parse "Xft.dpi:\t96" from multi-line output
     for line in out.lines() {
         if let Some(rest) = line.strip_prefix("Xft.dpi:")
@@ -350,7 +478,7 @@ fn read_xft_dpi() -> Option<f32> {
 /// (X resources) before calling this.
 #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn detect_physical_dpi() -> Option<f32> {
-    let out = run_with_timeout("xrandr", &[], SUBPROCESS_TIMEOUT)?;
+    let out = stdout_with_timeout("xrandr", &[], SUBPROCESS_TIMEOUT)?;
     parse_xrandr_dpi(&out)
 }
 
@@ -666,12 +794,9 @@ fn detect_is_dark_inner() -> bool {
         }
 
         // Fallback: gtk-3.0/settings.ini for DEs that set the GTK dark preference
-        let config_home = std::env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| {
-            let home = std::env::var("HOME").unwrap_or_default();
-            format!("{home}/.config")
-        });
-        let ini_path = format!("{config_home}/gtk-3.0/settings.ini");
-        if let Ok(content) = std::fs::read_to_string(&ini_path) {
+        if let Some(content) = xdg_config_home()
+            .and_then(|dir| std::fs::read_to_string(dir.join("gtk-3.0/settings.ini")).ok())
+        {
             for line in content.lines() {
                 let trimmed = line.trim();
                 if trimmed.starts_with("gtk-application-prefer-dark-theme")
@@ -701,15 +826,12 @@ fn detect_is_dark_inner() -> bool {
         }
         #[cfg(not(feature = "macos"))]
         {
-            if let Ok(output) = std::process::Command::new("defaults")
-                .args(["read", "-g", "AppleInterfaceStyle"])
-                .output()
-                && output.status.success()
-            {
-                let val = String::from_utf8_lossy(&output.stdout);
-                return val.trim().eq_ignore_ascii_case("dark");
-            }
-            false
+            stdout_with_timeout(
+                "defaults",
+                &["read", "-g", "AppleInterfaceStyle"],
+                SUBPROCESS_TIMEOUT,
+            )
+            .is_some_and(|value| value.trim().eq_ignore_ascii_case("dark"))
         }
     }
 
@@ -1793,25 +1915,33 @@ mod subprocess_tests {
             eprintln!("skipped: echo is not installed");
             return;
         }
-        let out = run_with_timeout("echo", &["hi"], SUBPROCESS_TIMEOUT);
+        let out = stdout_with_timeout("echo", &["hi"], SUBPROCESS_TIMEOUT);
         assert_eq!(out.as_deref().map(str::trim), Some("hi"));
     }
 
+    /// An unsuccessful exit is an output, with its status and its stderr;
+    /// [`stdout_with_timeout`] gives `None` for it.
     #[test]
-    fn run_with_timeout_returns_none_for_a_failing_command() {
-        if !on_path("false") {
-            eprintln!("skipped: false is not installed");
+    fn run_with_timeout_returns_the_status_and_stderr_of_a_failing_command() {
+        if !on_path("sh") {
+            eprintln!("skipped: sh is not installed");
             return;
         }
-        assert_eq!(run_with_timeout("false", &[], SUBPROCESS_TIMEOUT), None);
+        let output =
+            run_with_timeout("sh", &["-c", "echo oops >&2; exit 3"], SUBPROCESS_TIMEOUT).unwrap();
+        assert_eq!(output.status.code(), Some(3));
+        assert_eq!(output.stderr, b"oops\n");
+        assert_eq!(
+            stdout_with_timeout("sh", &["-c", "exit 3"], SUBPROCESS_TIMEOUT),
+            None
+        );
     }
 
     #[test]
-    fn run_with_timeout_returns_none_for_a_missing_program() {
-        assert_eq!(
-            run_with_timeout("nt-test-no-such-program", &[], SUBPROCESS_TIMEOUT),
-            None
-        );
+    fn run_with_timeout_reports_a_missing_program_as_not_found() {
+        let error =
+            run_with_timeout("nt-test-no-such-program", &[], SUBPROCESS_TIMEOUT).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     }
 
     /// A command that exits at once with no output gives an empty stdout;
@@ -1824,32 +1954,121 @@ mod subprocess_tests {
         }
         let start = Instant::now();
         assert_eq!(
-            run_with_timeout("true", &[], SUBPROCESS_TIMEOUT).as_deref(),
+            stdout_with_timeout("true", &[], SUBPROCESS_TIMEOUT).as_deref(),
             Some("")
         );
         eprintln!("`true` ran in {:?}", start.elapsed());
     }
 
+    /// Whether a process runs with exactly the command line `cmdline`.
+    fn running(cmdline: &str) -> Vec<PathBuf> {
+        std::fs::read_dir("/proc")
+            .unwrap()
+            .flatten()
+            .map(|entry| entry.path().join("cmdline"))
+            .filter(|path| std::fs::read(path).is_ok_and(|bytes| bytes == cmdline.as_bytes()))
+            .collect()
+    }
+
+    /// A command that outlives the timeout is killed and reaped, and the
+    /// call ends about the timeout after it began.
     #[test]
     fn run_with_timeout_kills_a_command_that_outlives_the_timeout() {
         if !on_path("sleep") {
             eprintln!("skipped: sleep is not installed");
             return;
         }
+        let timeout = Duration::from_millis(100);
         let seconds = format!("5.{}", std::process::id());
         let start = Instant::now();
-        let out = run_with_timeout("sleep", &[&seconds], Duration::from_millis(100));
+        let error = run_with_timeout("sleep", &[&seconds], timeout).unwrap_err();
         let elapsed = start.elapsed();
-        assert_eq!(out, None);
-        assert!(elapsed < Duration::from_secs(1), "took {elapsed:?}");
-        let cmdline = format!("sleep\0{seconds}\0");
-        let still_running: Vec<PathBuf> = std::fs::read_dir("/proc")
-            .unwrap()
-            .flatten()
-            .map(|entry| entry.path().join("cmdline"))
-            .filter(|path| std::fs::read(path).is_ok_and(|bytes| bytes == cmdline.as_bytes()))
-            .collect();
+        assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
+        assert_eq!(error.to_string(), "timed out after 100ms");
+        assert!(
+            elapsed >= timeout && elapsed < Duration::from_secs(1),
+            "took {elapsed:?}"
+        );
+        let still_running = running(&format!("sleep\0{seconds}\0"));
         assert!(still_running.is_empty(), "not killed: {still_running:?}");
+    }
+
+    /// 100 KiB is more than a Linux pipe holds (65,536 bytes, pipe(7)), so
+    /// the command finishes only if its stdout is read while it runs.
+    #[test]
+    fn run_with_timeout_returns_all_of_an_output_larger_than_a_pipe() {
+        if !on_path("sh") || !on_path("head") {
+            eprintln!("skipped: sh or head is not installed");
+            return;
+        }
+        let out = stdout_with_timeout(
+            "sh",
+            &["-c", "head -c 102400 /dev/zero"],
+            SUBPROCESS_TIMEOUT,
+        );
+        assert_eq!(out.map(|out| out.len()), Some(102_400));
+    }
+
+    /// A process the command leaves running with its stdout keeps the pipe
+    /// open after the command exits; the call still ends at the deadline.
+    #[test]
+    fn run_with_timeout_ends_at_the_deadline_when_a_grandchild_holds_stdout() {
+        if !on_path("sh") || !on_path("sleep") {
+            eprintln!("skipped: sh or sleep is not installed");
+            return;
+        }
+        let script = format!("sleep 3.{} & echo hi", std::process::id());
+        let start = Instant::now();
+        let error =
+            run_with_timeout("sh", &["-c", &script], Duration::from_millis(100)).unwrap_err();
+        let elapsed = start.elapsed();
+        assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
+        assert!(elapsed < Duration::from_secs(1), "took {elapsed:?}");
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod config_home_tests {
+    use super::*;
+    use std::ffi::OsStr;
+    use std::path::PathBuf;
+
+    fn config_home(var: Option<&str>, home: Option<&str>) -> Option<PathBuf> {
+        xdg_config_home_from(var.map(OsStr::new), home.map(OsStr::new))
+    }
+
+    #[test]
+    fn an_absolute_xdg_config_home_is_the_config_directory() {
+        assert_eq!(
+            config_home(Some("/tmp/cfg"), Some("/home/u")),
+            Some(PathBuf::from("/tmp/cfg"))
+        );
+        assert_eq!(
+            config_home(Some("/tmp/cfg"), None),
+            Some(PathBuf::from("/tmp/cfg"))
+        );
+    }
+
+    /// Unset, empty and relative are each "not set" (the XDG Base Directory
+    /// Specification ignores a relative path).
+    #[test]
+    fn an_unset_empty_or_relative_xdg_config_home_falls_back_to_home() {
+        for var in [None, Some(""), Some("relative/cfg"), Some(".config")] {
+            assert_eq!(
+                config_home(var, Some("/home/u")),
+                Some(PathBuf::from("/home/u/.config")),
+                "{var:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn without_xdg_config_home_and_home_there_is_no_config_directory() {
+        for home in [None, Some("")] {
+            for var in [None, Some(""), Some("relative")] {
+                assert_eq!(config_home(var, home), None, "{var:?} {home:?}");
+            }
+        }
     }
 }
 

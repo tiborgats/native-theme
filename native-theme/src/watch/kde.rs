@@ -17,14 +17,11 @@ use super::ThemeChangeEvent;
 pub(crate) fn watch_kde(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
-    let kdeglobals = crate::kde::kdeglobals_path();
-    let config_dir = kdeglobals
-        .parent()
-        .ok_or_else(|| crate::Error::ReaderFailed {
+    let config_dir =
+        crate::detect::xdg_config_home().ok_or_else(|| crate::Error::ReaderFailed {
             reader: "kde_watcher",
-            source: "no parent directory for kdeglobals path".into(),
-        })?
-        .to_path_buf();
+            source: crate::detect::CONFIG_HOME_UNRESOLVED.into(),
+        })?;
 
     let watched_names: &[&std::ffi::OsStr] = &[
         std::ffi::OsStr::new("kdeglobals"),

@@ -68,10 +68,11 @@ pub fn system_icon_set() -> IconSet {
 /// - [`Error::ReaderFailed`](crate::Error::ReaderFailed) with `reader`
 ///   `"icon-theme"` on Linux when no source names a theme. Its message names
 ///   each source tried and why it gave no name: the config directory could
-///   not be resolved (`$XDG_CONFIG_HOME` and `$HOME` both unset or empty), a
-///   file could not be read or lacks the key, or a command was not found,
-///   exited unsuccessfully or printed no name. On an unrecognised desktop it
-///   names both attempts, KDE's and GNOME's.
+///   not be resolved (no absolute `$XDG_CONFIG_HOME`, and `$HOME` unset or
+///   empty), a file could not be read or lacks the key, or a command was not
+///   found, exited unsuccessfully, printed no name or did not finish within
+///   2 s. On an unrecognised desktop it names both attempts, KDE's and
+///   GNOME's.
 /// - [`Error::PlatformUnsupported`](crate::Error::PlatformUnsupported) on a
 ///   platform other than Linux, macOS, iOS and Windows.
 ///
@@ -305,9 +306,7 @@ fn unknown_desktop_icon_theme(
 fn config_dir_unresolved(source: &str) -> SourceFailure {
     SourceFailure {
         source: source.to_string(),
-        reason: "the config directory is unresolved: $XDG_CONFIG_HOME and $HOME are both \
-                 unset or empty"
-            .to_string(),
+        reason: crate::detect::CONFIG_HOME_UNRESOLVED.to_string(),
     }
 }
 
@@ -329,7 +328,7 @@ fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
 /// feature, so without the KDE reader.
 #[cfg(all(target_os = "linux", not(feature = "kde")))]
 fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
-    kde_icon_theme(xdg_config_dir().as_deref(), |path| {
+    kde_icon_theme(crate::detect::xdg_config_home().as_deref(), |path| {
         std::fs::read_to_string(path)
     })
 }
@@ -375,9 +374,11 @@ fn kde_icon_theme(
 fn gsettings_icon_theme(schema: &str) -> Result<String, SourceFailure> {
     gsettings_icon_theme_from(
         schema,
-        std::process::Command::new("gsettings")
-            .args(["get", schema, "icon-theme"])
-            .output(),
+        crate::detect::run_with_timeout(
+            "gsettings",
+            &["get", schema, "icon-theme"],
+            crate::detect::SUBPROCESS_TIMEOUT,
+        ),
     )
 }
 
@@ -402,11 +403,11 @@ const XFCONF_ICON_THEME_ARGS: [&str; 4] = ["-c", "xsettings", "-p", "/Net/IconTh
 /// Read icon theme from XFCE's xfconf-query.
 #[cfg(target_os = "linux")]
 fn detect_xfce_icon_theme() -> Result<String, SourceFailure> {
-    xfce_icon_theme_from(
-        std::process::Command::new("xfconf-query")
-            .args(XFCONF_ICON_THEME_ARGS)
-            .output(),
-    )
+    xfce_icon_theme_from(crate::detect::run_with_timeout(
+        "xfconf-query",
+        &XFCONF_ICON_THEME_ARGS,
+        crate::detect::SUBPROCESS_TIMEOUT,
+    ))
 }
 
 /// The icon theme in `xfconf-query -c xsettings -p /Net/IconThemeName`'s
@@ -432,6 +433,7 @@ fn command_icon_theme(
 ) -> Result<String, SourceFailure> {
     let reason = match output {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => "command not found".to_string(),
+        Err(e) if e.kind() == std::io::ErrorKind::TimedOut => e.to_string(),
         Err(e) => format!("could not run ({e})"),
         Ok(output) if !output.status.success() => {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -454,7 +456,7 @@ fn command_icon_theme(
 /// Read icon theme from LXQt's config file.
 #[cfg(target_os = "linux")]
 fn detect_lxqt_icon_theme() -> Result<String, SourceFailure> {
-    lxqt_icon_theme(xdg_config_dir().as_deref(), |path| {
+    lxqt_icon_theme(crate::detect::xdg_config_home().as_deref(), |path| {
         std::fs::read_to_string(path)
     })
 }
@@ -484,23 +486,6 @@ fn lxqt_icon_theme(
         .find(|value| !value.is_empty())
         .map(str::to_string)
         .ok_or_else(|| failure("`icon_theme` is absent or empty".to_string()))
-}
-
-/// Resolve `$XDG_CONFIG_HOME`, falling back to `$HOME/.config`.
-///
-/// Returns `None` when both `$XDG_CONFIG_HOME` and `$HOME` are unset,
-/// avoiding a bogus `/tmp/.config` fallback.
-#[cfg(target_os = "linux")]
-fn xdg_config_dir() -> Option<std::path::PathBuf> {
-    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
-        && !config_home.is_empty()
-    {
-        return Some(std::path::PathBuf::from(config_home));
-    }
-    std::env::var("HOME")
-        .ok()
-        .filter(|h| !h.is_empty())
-        .map(|h| std::path::PathBuf::from(h).join(".config"))
 }
 
 /// Read a value from INI `content` by section and key.
@@ -572,6 +557,13 @@ mod tests {
         Err(std::io::Error::from(std::io::ErrorKind::NotFound))
     }
 
+    fn timed_out() -> std::io::Result<Output> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            "timed out after 2s",
+        ))
+    }
+
     // === KDE: kdeglobals ===
 
     #[cfg(not(feature = "kde"))]
@@ -638,6 +630,19 @@ mod tests {
             "got: {failure}"
         );
         assert!(failure.contains("command not found"), "got: {failure}");
+    }
+
+    #[test]
+    fn gsettings_that_timed_out_says_so() {
+        let failure = gsettings_icon_theme_from("org.gnome.desktop.interface", timed_out())
+            .unwrap_err()
+            .to_string();
+        assert!(
+            failure.contains("gsettings get org.gnome.desktop.interface icon-theme"),
+            "got: {failure}"
+        );
+        assert!(failure.contains("timed out after 2s"), "got: {failure}");
+        assert!(!failure.contains("could not run"), "got: {failure}");
     }
 
     #[test]
