@@ -1,4 +1,31 @@
-// KDE theme reader -- reads kdeglobals INI file and maps to Theme
+//! KDE theme reader: reads the kdeglobals INI files and maps them to a Theme.
+//!
+//! # Sources
+//!
+//! The files the reader reads that the user's settings write, each a path in
+//! the user's config directory (`$XDG_CONFIG_HOME`, else `~/.config`); the
+//! watcher observes each of them:
+//!
+//! - `kdeglobals`: the colours, fonts, icon theme, accessibility flags and,
+//!   on X11, `forceFontDPI`.
+//! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
+//!   file, read under it as KConfig cascades them.
+//! - `kcmfontsrc`: `forceFontDPI` where kdeglobals has none, on X11.
+//! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
+//!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
+//!   xdg-desktop-portal-kde gives the application palette's highlight
+//!   colour (`src/settings.cpp:279-283` at v6.7.5), which the colour scheme
+//!   in kdeglobals sets.
+//!
+//! # Sources not watched
+//!
+//! - `$XDG_CONFIG_DIRS/kdeglobals` (`/etc/xdg/kdeglobals`): the system's
+//!   files, which the distribution or an administrator writes, not the user's
+//!   settings.
+//! - `Xft.dpi` (`xrdb -query`) and `xrandr`: the rest of the font DPI
+//!   chain, read from the X server, not from a settings file.
+//! - The icon theme's `index.theme`: its sizes, which the icon theme's
+//!   package writes.
 
 /// KDE color group parsing and mapping.
 pub(crate) mod colors;

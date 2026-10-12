@@ -1,10 +1,12 @@
-//! Windows theme change watcher using UISettings::ColorValuesChanged.
+//! Windows theme change watcher using the `UISettings` change events.
 //!
 //! Creates a background thread with COM STA initialization and a
-//! `GetMessageW`/`DispatchMessageW` message pump. The `UISettings`
-//! `ColorValuesChanged` event fires whenever the user changes the system
-//! color scheme. Shutdown is handled by posting `WM_QUIT` to the watcher
-//! thread via `PostThreadMessageW` from the `ThemeSubscription` Drop handler.
+//! `GetMessageW`/`DispatchMessageW` message pump. The `UISettings` events
+//! `ColorValuesChanged` and `TextScaleFactorChanged` fire whenever the user
+//! changes the system colours or the text scale; their handlers post a thread message to the pump, which
+//! fires the callback on the watcher thread. Shutdown is handled by posting
+//! `WM_QUIT` to the watcher thread via `PostThreadMessageW` from the
+//! `ThemeSubscription` Drop handler.
 
 // Windows FFI via the `windows` crate -- no safe alternative for COM/WinRT bindings.
 // This follows the same pattern as src/windows.rs (the theme reader).
@@ -19,11 +21,26 @@ use ::windows::Win32::Foundation::{LPARAM, WPARAM};
 use ::windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
 use ::windows::Win32::System::Threading::GetCurrentThreadId;
 use ::windows::Win32::UI::WindowsAndMessaging::{
-    DispatchMessageW, GetMessageW, MSG, PM_NOREMOVE, PeekMessageW, PostThreadMessageW, WM_QUIT,
-    WM_USER,
+    DispatchMessageW, GetMessageW, KillTimer, MSG, PM_NOREMOVE, PeekMessageW, PostThreadMessageW,
+    SetTimer, WM_APP, WM_QUIT, WM_TIMER, WM_USER,
 };
+use ::windows::core::{IInspectable, Ref};
 
 use super::ThemeChangeEvent;
+
+/// The `UISettings` events the watcher subscribes to: the Windows reader's
+/// sources (`windows.rs`, "Sources").
+#[cfg(test)]
+pub(super) const SUBSCRIBED_EVENTS: [&str; 2] = [COLOR_VALUES_CHANGED, TEXT_SCALE_FACTOR_CHANGED];
+
+/// `UISettings::ColorValuesChanged`, for `UISettings.GetColorValue`.
+const COLOR_VALUES_CHANGED: &str = "ColorValuesChanged";
+
+/// `UISettings::TextScaleFactorChanged`, for `UISettings.TextScaleFactor`.
+const TEXT_SCALE_FACTOR_CHANGED: &str = "TextScaleFactorChanged";
+
+/// The thread message an event handler posts to the watcher thread.
+const WM_THEME_CHANGED: u32 = WM_APP;
 
 /// Balances a successful `CoInitializeEx` when dropped. Declared before the
 /// WinRT objects of the watcher thread, so it drops after them: every COM
@@ -42,13 +59,15 @@ impl Drop for ComGuard {
 
 /// Spawn a background thread that watches for Windows theme changes.
 ///
-/// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`,
-/// and runs a `GetMessageW`/`DispatchMessageW` message pump. The callback
-/// fires on the background thread whenever the system color values change
-/// (e.g. the user switches between light and dark mode).
+/// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`
+/// and `UISettings::TextScaleFactorChanged`, and runs a `GetMessageW`/`DispatchMessageW` message
+/// pump. The callback fires on the background thread, once per burst of
+/// events, 300ms after the last of them (a thread timer the pump receives),
+/// whenever the system colours change (e.g. the user switches between light
+/// and dark mode or picks an accent colour) or the text scale does.
 ///
-/// Returns once the thread has its message queue and the subscription is in
-/// place, or with `Error::ReaderFailed` when a setup step failed.
+/// Returns once the thread has its message queue and the subscriptions are
+/// in place, or with `Error::ReaderFailed` when a setup step failed.
 pub(crate) fn watch_windows(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
@@ -75,31 +94,10 @@ pub(crate) fn watch_windows(
         }
         let _com = ComGuard(PhantomData);
 
-        let settings = match UISettings::new() {
-            Ok(s) => s,
-            Err(err) => {
-                let _ = ready_tx.send(Err(setup_failed("UISettings::new", err)));
-                return;
-            }
-        };
-
-        // Create the event handler that fires the callback on color changes.
-        let handler = TypedEventHandler::new(move |_sender, _args| {
-            super::fire(&callback);
-            Ok(())
-        });
-
-        let token = match settings.ColorValuesChanged(&handler) {
-            Ok(t) => t,
-            Err(err) => {
-                let _ = ready_tx.send(Err(setup_failed("ColorValuesChanged", err)));
-                return;
-            }
-        };
-
-        // Create this thread's message queue before announcing the thread
-        // ID: PostThreadMessageW fails on a thread without one, and the
-        // WM_QUIT of a drop would be lost.
+        // Create this thread's message queue before subscribing and before
+        // announcing the thread ID: PostThreadMessageW fails on a thread
+        // without one, and the message of an event, or the WM_QUIT of a
+        // drop, would be lost.
         let mut msg = MSG::default();
         // SAFETY: `msg` is a valid, writable MSG. PM_NOREMOVE leaves any
         // message in the queue; the call only makes sure the queue exists.
@@ -111,7 +109,48 @@ pub(crate) fn watch_windows(
         // calling thread's ID.
         let thread_id = unsafe { GetCurrentThreadId() };
 
+        let settings = match UISettings::new() {
+            Ok(s) => s,
+            Err(err) => {
+                let _ = ready_tx.send(Err(setup_failed("UISettings::new", err)));
+                return;
+            }
+        };
+
+        // The handlers only post a message to this thread, so the callback
+        // runs on it alone, never twice at once, whichever thread raises the
+        // event.
+        let post_changed = move |_sender: Ref<'_, UISettings>, _args: Ref<'_, IInspectable>| {
+            // SAFETY: PostThreadMessageW is safe to call from any thread;
+            // the thread's message queue exists. A failure (the thread has
+            // ended) loses only this message.
+            unsafe {
+                let _ = PostThreadMessageW(thread_id, WM_THEME_CHANGED, WPARAM(0), LPARAM(0));
+            }
+            Ok(())
+        };
+        let color_handler = TypedEventHandler::new(post_changed);
+        let text_scale_handler = TypedEventHandler::new(post_changed);
+
+        let color_token = match settings.ColorValuesChanged(&color_handler) {
+            Ok(t) => t,
+            Err(err) => {
+                let _ = ready_tx.send(Err(setup_failed(COLOR_VALUES_CHANGED, err)));
+                return;
+            }
+        };
+        let text_scale_token = match settings.TextScaleFactorChanged(&text_scale_handler) {
+            Ok(t) => t,
+            Err(err) => {
+                let _ = settings.RemoveColorValuesChanged(color_token);
+                let _ = ready_tx.send(Err(setup_failed(TEXT_SCALE_FACTOR_CHANGED, err)));
+                return;
+            }
+        };
+
         if ready_tx.send(Ok(thread_id)).is_ok() {
+            // The thread timer of the pending burst, 0 for none.
+            let mut timer: usize = 0;
             // Run the message pump. GetMessageW blocks until a message
             // arrives. When WM_QUIT is posted (via PostThreadMessageW from
             // the shutdown closure), GetMessageW returns FALSE (0), breaking
@@ -119,18 +158,46 @@ pub(crate) fn watch_windows(
             // instead of spinning on it.
             // SAFETY: GetMessageW and DispatchMessageW are standard Win32
             // message pump functions. We pass None for HWND (thread
-            // messages), 0 for filter range (all messages).
+            // messages), 0 for filter range (all messages). SetTimer and
+            // KillTimer with no window create and destroy a thread timer of
+            // this thread, whose WM_TIMER comes with no window and its ID in
+            // `wParam` (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer).
             unsafe {
                 while GetMessageW(&mut msg, None, 0, 0).0 > 0 {
-                    DispatchMessageW(&msg);
+                    let thread_message = msg.hwnd.is_invalid();
+                    if thread_message && msg.message == WM_THEME_CHANGED {
+                        // Restart the window: the callback fires once, after
+                        // the last event of a burst.
+                        if timer != 0 {
+                            let _ = KillTimer(None, timer);
+                        }
+                        timer = SetTimer(None, 0, super::DEBOUNCE_MS, None);
+                        if timer == 0 {
+                            super::fire(&callback);
+                        }
+                    } else if thread_message
+                        && msg.message == WM_TIMER
+                        && timer != 0
+                        && msg.wParam.0 == timer
+                    {
+                        let _ = KillTimer(None, timer);
+                        timer = 0;
+                        super::fire(&callback);
+                    } else {
+                        DispatchMessageW(&msg);
+                    }
+                }
+                if timer != 0 {
+                    let _ = KillTimer(None, timer);
                 }
             }
         }
 
-        // Cleanup: unregister the event handler (ignore errors -- the
-        // UISettings may already be torn down). `handler` and `settings` drop
-        // here, before `_com` uninitializes COM.
-        let _ = settings.RemoveColorValuesChanged(token);
+        // Cleanup: unregister the event handlers (ignore errors -- the
+        // UISettings may already be torn down). The handlers and `settings`
+        // drop here, before `_com` uninitializes COM.
+        let _ = settings.RemoveColorValuesChanged(color_token);
+        let _ = settings.RemoveTextScaleFactorChanged(text_scale_token);
     });
 
     // Receive the thread ID, or the setup error, from the background thread.

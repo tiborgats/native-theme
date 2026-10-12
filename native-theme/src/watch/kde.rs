@@ -1,17 +1,25 @@
 //! KDE theme change watcher using inotify on the config directory.
 
 use std::sync::mpsc;
-use std::time::{Duration, Instant};
 
 use notify::Watcher;
 
 use super::ThemeChangeEvent;
 
+/// The files the watcher observes, each a path in the config directory: the
+/// KDE reader's sources that the user's settings write (`kde/mod.rs`,
+/// "Sources").
+pub(super) const WATCHED_FILES: &[&str] = &["kdeglobals", "kcmfontsrc", "kdedefaults/kdeglobals"];
+
+/// The subdirectory of the config directory that holds Plasma's defaults.
+const KDEDEFAULTS: &str = "kdedefaults";
+
 /// Watch the user's config directory for KDE theme config file changes.
 ///
 /// Watches the config directory ([`crate::detect::xdg_config_home`],
-/// typically `~/.config/`), where `kdeglobals` lives, in `NonRecursive`
-/// mode, filtering events to the `kdeglobals` and `kcmfontsrc` filenames.
+/// typically `~/.config/`), where `kdeglobals` lives, and its `kdedefaults`
+/// subdirectory, each in `NonRecursive` mode, filtering events to the paths
+/// of [`WATCHED_FILES`].
 pub(crate) fn watch_kde(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
@@ -25,12 +33,13 @@ pub(crate) fn watch_kde(
 
 /// Watch `config_dir` as [`watch_kde`] watches the config directory.
 ///
-/// The inotify watch is set up on the calling thread, so a failure to set
-/// it up is returned. The callback fires once per burst of relevant events:
-/// 300ms after the last of them. The debounce window spans KDE's
-/// multi-write config pattern (`QSaveFile` atomic writes), so the callback
-/// runs after the last write has landed. The background thread checks the
-/// shutdown channel on every iteration, at least every 200ms.
+/// The inotify watch of `config_dir` is set up on the calling thread, so a
+/// failure to set it up is returned. `kdedefaults` is watched where it
+/// exists, and from its creation where it does not; its creation counts as
+/// a change. The callback fires once per burst of relevant events, 300ms
+/// after the last of them ([`super::fire_debounced`]). The debounce window
+/// spans KDE's multi-write config pattern (`QSaveFile` atomic writes), so
+/// the callback runs after the last write has landed.
 fn watch_kde_dir(
     config_dir: std::path::PathBuf,
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
@@ -46,72 +55,50 @@ fn watch_kde_dir(
     watcher
         .watch(&config_dir, notify::RecursiveMode::NonRecursive)
         .map_err(|err| setup_failed("watching the config directory", err))?;
+    let defaults_dir = config_dir.join(KDEDEFAULTS);
+    // Absent until Plasma creates it: then its creation event adds the watch.
+    let _ = watcher.watch(&defaults_dir, notify::RecursiveMode::NonRecursive);
 
-    let watched_names: Vec<std::ffi::OsString> = ["kdeglobals", "kcmfontsrc"]
+    let watched_paths: Vec<std::path::PathBuf> = WATCHED_FILES
         .iter()
-        .map(std::ffi::OsString::from)
+        .map(|file| config_dir.join(file))
         .collect();
 
     let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
 
     let thread = std::thread::spawn(move || {
-        // The watcher lives as long as the thread: dropping it would close
-        // the notify channel and stop delivering events.
-        let _watcher = watcher;
-
-        let debounce = Duration::from_millis(300);
-        let poll = Duration::from_millis(200);
-        // When the last relevant event not yet fired arrived.
-        let mut pending: Option<Instant> = None;
-
-        loop {
-            match shutdown_rx.try_recv() {
-                Ok(()) | Err(mpsc::TryRecvError::Disconnected) => break,
-                Err(mpsc::TryRecvError::Empty) => {}
+        let is_relevant = |event: notify::Result<notify::Event>| {
+            // A notify error is ignored.
+            let Ok(event) = event else {
+                return false;
+            };
+            // Only consider mutations: KDE's QSaveFile pattern produces
+            // Modify/Create/Remove events on rename. Access events
+            // (file Open/Read/Close) fire whenever any process — KDE
+            // Plasma, our own freedesktop_icons lookup, the user — just
+            // *reads* the file. Treating reads as "theme changed" causes
+            // a feedback loop: we read kdeglobals, the watcher fires,
+            // the consumer reloads its theme (re-reading kdeglobals),
+            // which fires the watcher again.
+            let is_mutation = matches!(
+                event.kind,
+                notify::EventKind::Modify(_)
+                    | notify::EventKind::Create(_)
+                    | notify::EventKind::Remove(_)
+            );
+            if !is_mutation {
+                return false;
             }
-
-            let wait = pending.map_or(poll, |last| {
-                debounce.saturating_sub(last.elapsed()).min(poll)
-            });
-            match rx.recv_timeout(wait) {
-                Ok(Ok(event)) => {
-                    // Only consider mutations: KDE's QSaveFile pattern produces
-                    // Modify/Create/Remove events on rename. Access events
-                    // (file Open/Read/Close) fire whenever any process — KDE
-                    // Plasma, our own freedesktop_icons lookup, the user — just
-                    // *reads* the file. Treating reads as "theme changed" causes
-                    // a feedback loop: we read kdeglobals, the watcher fires,
-                    // the consumer reloads its theme (re-reading kdeglobals),
-                    // which fires the watcher again.
-                    let is_mutation = matches!(
-                        event.kind,
-                        notify::EventKind::Modify(_)
-                            | notify::EventKind::Create(_)
-                            | notify::EventKind::Remove(_)
-                    );
-                    let is_relevant = event.paths.iter().any(|p| {
-                        p.file_name()
-                            .is_some_and(|n| watched_names.iter().any(|w| *w == n))
-                    });
-                    if is_mutation && is_relevant {
-                        pending = Some(Instant::now());
-                    }
-                }
-                Ok(Err(_)) => {
-                    // notify error -- ignore
-                }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    // notify watcher was dropped -- exit.
-                    break;
-                }
+            let defaults_created = matches!(event.kind, notify::EventKind::Create(_))
+                && event.paths.contains(&defaults_dir);
+            if defaults_created {
+                let _ = watcher.watch(&defaults_dir, notify::RecursiveMode::NonRecursive);
             }
-
-            if pending.is_some_and(|last| last.elapsed() >= debounce) {
-                pending = None;
-                super::fire(&callback);
-            }
-        }
+            defaults_created || event.paths.iter().any(|path| watched_paths.contains(path))
+        };
+        // The thread owns the watcher while the loop runs: dropping it
+        // would close the notify channel and stop delivering events.
+        super::fire_debounced(&rx, &shutdown_rx, is_relevant, &callback);
     });
 
     Ok(super::ThemeSubscription::new(shutdown_tx, thread, None))
@@ -215,6 +202,59 @@ mod tests {
         assert!(
             event_rx.recv_timeout(Duration::from_secs(1)).is_err(),
             "the burst fired more than one event"
+        );
+        assert!(drop_returns(subscription));
+    }
+
+    /// A write to `kdedefaults/kdeglobals`, which the KDE reader reads
+    /// beneath the user's file, fires (`docs/todo.md`, the watcher entry).
+    #[test]
+    fn a_write_to_kdedefaults_fires() {
+        let dir = temp_config_dir("kdedefaults");
+        std::fs::create_dir_all(dir.0.join("kdedefaults")).unwrap();
+        let (event_tx, event_rx) = mpsc::channel();
+        let subscription = super::watch_kde_dir(dir.0.clone(), move |_| {
+            let _ = event_tx.send(());
+        })
+        .unwrap();
+
+        std::fs::write(
+            dir.0.join("kdedefaults/kdeglobals"),
+            "[Icons]\nTheme=breeze\n",
+        )
+        .unwrap();
+        assert!(
+            event_rx.recv_timeout(TIMEOUT).is_ok(),
+            "no event after kdedefaults/kdeglobals changed"
+        );
+        assert!(drop_returns(subscription));
+    }
+
+    /// A `kdedefaults` directory created after the watcher started is
+    /// watched too: its creation fires, and so does a later write to its
+    /// `kdeglobals`.
+    #[test]
+    fn a_kdedefaults_created_later_is_watched() {
+        let dir = temp_config_dir("kdedefaults-later");
+        let (event_tx, event_rx) = mpsc::channel();
+        let subscription = super::watch_kde_dir(dir.0.clone(), move |_| {
+            let _ = event_tx.send(());
+        })
+        .unwrap();
+
+        std::fs::create_dir_all(dir.0.join("kdedefaults")).unwrap();
+        assert!(
+            event_rx.recv_timeout(TIMEOUT).is_ok(),
+            "no event after kdedefaults was created"
+        );
+        std::fs::write(
+            dir.0.join("kdedefaults/kdeglobals"),
+            "[Icons]\nTheme=breeze\n",
+        )
+        .unwrap();
+        assert!(
+            event_rx.recv_timeout(TIMEOUT).is_ok(),
+            "no event after kdedefaults/kdeglobals changed"
         );
         assert!(drop_returns(subscription));
     }

@@ -220,6 +220,73 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     }));
 }
 
+/// How long a watcher waits after the last notification of a burst before
+/// it fires: one user action can raise several notifications (KDE writes its
+/// files in several steps, `QSaveFile`'s atomic writes; GNOME's portal sends
+/// a gsettings key and the `org.freedesktop.appearance` setting it maps to),
+/// and the callback fires once for all of them.
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
+    all(target_os = "macos", feature = "macos"),
+    all(target_os = "windows", feature = "windows"),
+))]
+const DEBOUNCE_MS: u32 = 300;
+
+/// [`DEBOUNCE_MS`] as a [`Duration`](std::time::Duration).
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal")),
+    all(target_os = "macos", feature = "macos"),
+))]
+const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_MS as u64);
+
+/// Fire `callback` once per burst of relevant messages from `events`,
+/// [`DEBOUNCE`] after the last of them; `is_relevant` sorts them. Returns
+/// when `events` disconnects or `shutdown` is signalled or disconnected,
+/// which is checked on every iteration, at least every 200ms.
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
+fn fire_debounced<T>(
+    events: &mpsc::Receiver<T>,
+    shutdown: &mpsc::Receiver<()>,
+    mut is_relevant: impl FnMut(T) -> bool,
+    callback: &impl Fn(ThemeChangeEvent),
+) {
+    use std::time::{Duration, Instant};
+
+    let poll = Duration::from_millis(200);
+    // When the last relevant message not yet fired arrived.
+    let mut pending: Option<Instant> = None;
+
+    loop {
+        match shutdown.try_recv() {
+            Ok(()) | Err(mpsc::TryRecvError::Disconnected) => break,
+            Err(mpsc::TryRecvError::Empty) => {}
+        }
+
+        let wait = pending.map_or(poll, |last| {
+            DEBOUNCE.saturating_sub(last.elapsed()).min(poll)
+        });
+        match events.recv_timeout(wait) {
+            Ok(message) => {
+                if is_relevant(message) {
+                    pending = Some(Instant::now());
+                }
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+
+        if pending.is_some_and(|last| last.elapsed() >= DEBOUNCE) {
+            pending = None;
+            fire(callback);
+        }
+    }
+}
+
 /// Start watching for OS theme changes.
 ///
 /// The `callback` is invoked on a **background thread** whenever the OS
@@ -251,6 +318,17 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// The callback then runs on a private serial queue, never on the main
 /// thread and never twice at once.
 ///
+/// The watcher observes what the platform's reader reads (each reader
+/// module lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals`
+/// and `kcmfontsrc` in the config directory; on GNOME and Budgie the
+/// portal's `SettingChanged` for the `org.freedesktop.appearance` settings
+/// and the `org.gnome.desktop.interface`, `org.gnome.desktop.wm.preferences`
+/// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
+/// the appearance, system-colour, scroller-style and accessibility-display
+/// notifications; on Windows `UISettings::ColorValuesChanged` and
+/// `TextScaleFactorChanged`. One change can raise several of them, so the
+/// callback fires once per burst, 300 ms after the last.
+///
 /// A callback that panics loses that one event: the panic is contained, and
 /// the watcher keeps running. Drop the returned [`ThemeSubscription`] from
 /// another thread than the callback's (see its "Dropping" section).
@@ -273,10 +351,11 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// (it does not exist, or the inotify limits are reached); GNOME and Budgie,
 /// the watcher thread could not connect to the session bus or subscribe to
 /// the portal's `SettingChanged` signal; Windows, the watcher thread did not
-/// start or could not subscribe to `UISettings::ColorValuesChanged`. The KDE
-/// backend sets up its watch on the calling thread, and the GNOME and
-/// Windows backends return only once their thread is subscribed; the macOS
-/// backend registers its observer on the calling thread and does not fail.
+/// start or could not subscribe to `UISettings::ColorValuesChanged` or
+/// `TextScaleFactorChanged`. The KDE backend sets up its watch on the
+/// calling thread, and the GNOME and Windows backends return only once their
+/// thread is subscribed; the macOS backend registers its observer on the
+/// calling thread and does not fail.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
@@ -405,6 +484,244 @@ mod tests {
         assert_eq!(linux_backend(desktop), None);
     }
 
+    /// The source-to-notification table (M1-T6-08): for each reader, every
+    /// source its module lists under `# Sources`, and the notification its
+    /// watcher observes for it: a file in the config directory (KDE), a
+    /// `namespace key` of the portal's `SettingChanged` (GNOME), a
+    /// notification name (macOS) or a `UISettings` event (Windows).
+    const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
+        ("kde", "kdeglobals", "kdeglobals"),
+        ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
+        ("kde", "kcmfontsrc", "kcmfontsrc"),
+        // xdg-desktop-portal-kde's accent is the palette's highlight, which
+        // the colour scheme in kdeglobals sets.
+        (
+            "kde",
+            "org.freedesktop.appearance accent-color",
+            "kdeglobals",
+        ),
+        (
+            "gnome",
+            "org.freedesktop.appearance color-scheme",
+            "org.freedesktop.appearance color-scheme",
+        ),
+        (
+            "gnome",
+            "org.freedesktop.appearance accent-color",
+            "org.freedesktop.appearance accent-color",
+        ),
+        (
+            "gnome",
+            "org.freedesktop.appearance contrast",
+            "org.freedesktop.appearance contrast",
+        ),
+        (
+            "gnome",
+            "org.freedesktop.appearance reduced-motion",
+            "org.freedesktop.appearance reduced-motion",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface color-scheme",
+            "org.gnome.desktop.interface color-scheme",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface enable-animations",
+            "org.gnome.desktop.interface enable-animations",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface font-name",
+            "org.gnome.desktop.interface font-name",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface monospace-font-name",
+            "org.gnome.desktop.interface monospace-font-name",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface text-scaling-factor",
+            "org.gnome.desktop.interface text-scaling-factor",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface overlay-scrolling",
+            "org.gnome.desktop.interface overlay-scrolling",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface icon-theme",
+            "org.gnome.desktop.interface icon-theme",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.wm.preferences titlebar-font",
+            "org.gnome.desktop.wm.preferences titlebar-font",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.a11y.interface high-contrast",
+            "org.gnome.desktop.a11y.interface high-contrast",
+        ),
+        (
+            "macos",
+            "AppleInterfaceStyle",
+            "AppleInterfaceThemeChangedNotification",
+        ),
+        ("macos", "NSColor", "NSSystemColorsDidChangeNotification"),
+        (
+            "macos",
+            "NSScroller.preferredScrollerStyle",
+            "NSPreferredScrollerStyleDidChangeNotification",
+        ),
+        (
+            "macos",
+            "NSWorkspace.accessibilityDisplayOptions",
+            "NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification",
+        ),
+        ("windows", "UISettings.GetColorValue", "ColorValuesChanged"),
+        (
+            "windows",
+            "UISettings.TextScaleFactor",
+            "TextScaleFactorChanged",
+        ),
+    ];
+
+    /// Each reader's module source, whose docs list its sources.
+    const READER_MODULES: &[(&str, &str)] = &[
+        ("kde", include_str!("../kde/mod.rs")),
+        ("gnome", include_str!("../gnome/mod.rs")),
+        ("macos", include_str!("../macos.rs")),
+        ("windows", include_str!("../windows.rs")),
+    ];
+
+    /// The sources a reader module lists: the first code span of each item
+    /// of its `# Sources` doc section.
+    fn listed_sources(module: &'static str) -> Vec<&'static str> {
+        module
+            .lines()
+            .skip_while(|line| line.trim_end() != "//! # Sources")
+            .skip(1)
+            .take_while(|line| line.starts_with("//!") && !line.starts_with("//! #"))
+            .filter_map(|line| line.strip_prefix("//! - `"))
+            .filter_map(|item| item.split('`').next())
+            .collect()
+    }
+
+    /// The notifications the table gives for `reader`'s sources.
+    #[cfg(any(
+        all(target_os = "linux", any(feature = "kde", feature = "portal")),
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows"),
+    ))]
+    fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
+        SOURCE_NOTIFICATIONS
+            .iter()
+            .filter(move |(row_reader, _, _)| *row_reader == reader)
+            .map(|(_, _, notification)| *notification)
+    }
+
+    /// Every source a reader lists has a row in [`SOURCE_NOTIFICATIONS`],
+    /// and every row names a listed source.
+    #[test]
+    fn every_listed_source_has_a_table_row() {
+        for (reader, module) in READER_MODULES {
+            let sources = listed_sources(module);
+            assert!(!sources.is_empty(), "{reader}: no `# Sources` list");
+            for source in &sources {
+                assert!(
+                    SOURCE_NOTIFICATIONS
+                        .iter()
+                        .any(|(r, s, _)| r == reader && s == source),
+                    "{reader}: the source `{source}` has no row in SOURCE_NOTIFICATIONS"
+                );
+            }
+            for (_, source, _) in SOURCE_NOTIFICATIONS.iter().filter(|(r, _, _)| r == reader) {
+                assert!(
+                    sources.contains(source),
+                    "{reader}: the row for `{source}` names a source the reader does not list"
+                );
+            }
+        }
+    }
+
+    /// The KDE watcher observes the file of every KDE row.
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    #[test]
+    fn the_kde_watcher_observes_every_kde_source() {
+        for file in table_notifications("kde") {
+            assert!(
+                kde::WATCHED_FILES.contains(&file),
+                "the KDE watcher does not observe `{file}`"
+            );
+        }
+    }
+
+    /// The GNOME watcher fires on the `SettingChanged` of every GNOME row.
+    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[test]
+    fn the_gnome_watcher_observes_every_gnome_source() {
+        for setting in table_notifications("gnome") {
+            let (namespace, key) = setting.split_once(' ').unwrap();
+            assert!(
+                gnome::watches(namespace, key),
+                "the GNOME watcher ignores the SettingChanged of `{setting}`"
+            );
+        }
+    }
+
+    /// Every gsettings key the GNOME reader reads is a listed source.
+    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[test]
+    fn the_gnome_reader_lists_every_gsetting_it_reads() {
+        let sources = listed_sources(include_str!("../gnome/mod.rs"));
+        let mut read = Vec::new();
+        let _ = crate::gnome::build_theme(
+            None,
+            None,
+            ashpd::desktop::settings::Contrast::default(),
+            None,
+            |schema, key| {
+                read.push(format!("{schema} {key}"));
+                None
+            },
+        );
+        assert!(!read.is_empty());
+        for setting in &read {
+            assert!(
+                sources.contains(&setting.as_str()),
+                "the GNOME reader reads `{setting}`, which its `# Sources` do not list"
+            );
+        }
+    }
+
+    /// The macOS watcher observes the notification of every macOS row.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn the_macos_watcher_observes_every_macos_source() {
+        let observed: Vec<&str> = macos::registrations().iter().map(|r| r.name_id).collect();
+        for notification in table_notifications("macos") {
+            assert!(
+                observed.contains(&notification),
+                "the macOS watcher does not observe `{notification}`"
+            );
+        }
+    }
+
+    /// The Windows watcher subscribes to the event of every Windows row.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    #[test]
+    fn the_windows_watcher_observes_every_windows_source() {
+        for event in table_notifications("windows") {
+            assert!(
+                windows::SUBSCRIBED_EVENTS.contains(&event),
+                "the Windows watcher does not subscribe to `{event}`"
+            );
+        }
+    }
+
     #[test]
     fn theme_change_event_is_debug_clone_eq() {
         let event = ThemeChangeEvent::Changed;
@@ -479,6 +796,39 @@ mod tests {
         fire(&callback);
         fire(&callback);
         assert_eq!(calls.load(Ordering::SeqCst), 2);
+    }
+
+    /// A burst of relevant messages fires once, after the last of them; an
+    /// irrelevant one fires nothing; `fire_debounced` returns when its
+    /// channel disconnects.
+    #[test]
+    fn fire_debounced_fires_once_per_burst() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::time::{Duration, Instant};
+
+        let (events_tx, events_rx) = mpsc::channel::<bool>();
+        let (_shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
+        let sender = std::thread::spawn(move || {
+            for relevant in [true, false, true, true] {
+                let _ = events_tx.send(relevant);
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            let last = Instant::now();
+            std::thread::sleep(DEBOUNCE * 3);
+            let _ = events_tx.send(false);
+            std::thread::sleep(DEBOUNCE * 2);
+            last
+        });
+
+        let fired = std::sync::Mutex::new(Vec::new());
+        let calls = AtomicUsize::new(0);
+        fire_debounced(&events_rx, &shutdown_rx, |relevant| relevant, &|_| {
+            calls.fetch_add(1, Ordering::SeqCst);
+            fired.lock().unwrap().push(Instant::now());
+        });
+        let last = sender.join().unwrap();
+        assert_eq!(calls.load(Ordering::SeqCst), 1, "a burst fires once");
+        assert!(fired.lock().unwrap().iter().all(|at| *at >= last));
     }
 
     #[test]

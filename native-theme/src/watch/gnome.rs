@@ -4,18 +4,60 @@ use std::sync::mpsc;
 
 use super::ThemeChangeEvent;
 
+/// The `SettingChanged` namespaces and keys the watcher fires on: the GNOME
+/// reader's sources (`gnome/mod.rs`, "Sources"). The portal's GNOME and GTK
+/// backends forward a change of a key in `org.gnome.desktop.interface`,
+/// `org.gnome.desktop.wm.preferences` or `org.gnome.desktop.a11y.interface`
+/// under its schema's name, and the `org.freedesktop.appearance` settings
+/// with them (xdg-desktop-portal-gnome 51.0 `src/settings.c:389-438`,
+/// `:444-455`; xdg-desktop-portal-gtk 1.15.3 `src/settings.c:266-297`,
+/// `:303-314`), and the portal passes each on (xdg-desktop-portal 1.22.1
+/// `src/settings.c:240-250`).
+const WATCHED: &[(&str, &str)] = &[
+    ("org.freedesktop.appearance", "color-scheme"),
+    ("org.freedesktop.appearance", "accent-color"),
+    ("org.freedesktop.appearance", "contrast"),
+    ("org.freedesktop.appearance", "reduced-motion"),
+    ("org.gnome.desktop.interface", "color-scheme"),
+    ("org.gnome.desktop.interface", "enable-animations"),
+    ("org.gnome.desktop.interface", "font-name"),
+    ("org.gnome.desktop.interface", "monospace-font-name"),
+    ("org.gnome.desktop.interface", "text-scaling-factor"),
+    ("org.gnome.desktop.interface", "overlay-scrolling"),
+    ("org.gnome.desktop.interface", "icon-theme"),
+    ("org.gnome.desktop.wm.preferences", "titlebar-font"),
+    ("org.gnome.desktop.a11y.interface", "high-contrast"),
+];
+
+/// Whether the watcher fires on the `SettingChanged` of `namespace` `key`.
+pub(super) fn watches(namespace: &str, key: &str) -> bool {
+    WATCHED.contains(&(namespace, key))
+}
+
+/// Whether `signal`, a `SettingChanged`, is of a setting the watcher fires
+/// on ([`watches`]); a body that does not decode is not.
+fn is_watched(signal: &ashpd::zbus::Message) -> bool {
+    signal
+        .body()
+        .deserialize::<(&str, &str, ashpd::zbus::zvariant::Value<'_>)>()
+        .is_ok_and(|(namespace, key, _)| watches(namespace, key))
+}
+
 /// Spawn a background thread that watches for GNOME theme changes via D-Bus.
 ///
 /// Subscribes to the `SettingChanged` signal on the
-/// `org.freedesktop.portal.Settings` interface, filtered to the
-/// `org.freedesktop.appearance` namespace. Uses `zbus::blocking` so no
-/// async runtime (tokio) is exposed to the consumer.
+/// `org.freedesktop.portal.Settings` interface, and fires on the settings of
+/// [`WATCHED`], once per burst, 300ms after the last of them
+/// ([`super::fire_debounced`]): one change raises a gsettings key's signal
+/// and its `org.freedesktop.appearance` setting's. Uses `zbus::blocking` so
+/// no async runtime (tokio) is exposed to the consumer.
 ///
-/// The signal iterator is blocking -- it waits for the next D-Bus signal.
-/// Dropping the [`ThemeSubscription`](super::ThemeSubscription) closes the
-/// bus connection first (its platform shutdown), which ends the iterator, and
-/// then drops the `shutdown_tx` sender, which the loop also checks between
-/// signals.
+/// The signal iterator is blocking -- it waits for the next D-Bus signal --
+/// so it runs on a thread of its own, which passes the watched signals to
+/// the watcher thread's debounce. Dropping the
+/// [`ThemeSubscription`](super::ThemeSubscription) closes the bus connection
+/// first (its platform shutdown), which ends the iterator and its thread,
+/// and then drops the `shutdown_tx` sender, which the debounce also checks.
 ///
 /// Returns once the thread is subscribed, or with `Error::ReaderFailed` when
 /// a setup step failed.
@@ -57,12 +99,9 @@ pub(crate) fn watch_gnome(
             }
         };
 
-        // Subscribe to SettingChanged signals filtered by namespace.
-        // Argument 0 is the namespace string; filtering server-side avoids
-        // unnecessary traffic from unrelated portal settings.
-        let signals = match proxy
-            .receive_signal_with_args("SettingChanged", &[(0, "org.freedesktop.appearance")])
-        {
+        // Subscribe to every SettingChanged: the watched settings span four
+        // namespaces, and `is_watched` picks them.
+        let signals = match proxy.receive_signal("SettingChanged") {
             Ok(s) => s,
             Err(err) => {
                 let _ = ready_tx.send(Err(setup_failed("subscribing to SettingChanged", err)));
@@ -74,20 +113,21 @@ pub(crate) fn watch_gnome(
             return;
         }
 
+        let (changed_tx, changed_rx) = mpsc::channel::<()>();
         // Ends when the connection is closed from `ThemeSubscription::drop`:
         // the closed socket ends zbus's message stream, and the iterator
         // returns `None`.
-        for signal in signals {
-            // Check shutdown between signals (best-effort early exit).
-            match shutdown_rx.try_recv() {
-                Ok(()) | Err(mpsc::TryRecvError::Disconnected) => break,
-                Err(mpsc::TryRecvError::Empty) => {}
+        let signal_thread = std::thread::spawn(move || {
+            for signal in signals {
+                if is_watched(&signal) && changed_tx.send(()).is_err() {
+                    break;
+                }
             }
-
-            // We only need the notification, not the signal payload.
-            let _ = signal;
-            super::fire(&callback);
-        }
+        });
+        // Returns when the signal thread ends or the subscription is dropped.
+        super::fire_debounced(&changed_rx, &shutdown_rx, |()| true, &callback);
+        drop(changed_rx);
+        let _ = signal_thread.join();
     });
 
     // Receive the connection, or the setup error, from the watcher thread.
@@ -121,9 +161,72 @@ pub(crate) fn watch_gnome(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use std::sync::mpsc;
     use std::time::Duration;
+
+    use ashpd::zbus::zvariant::Value;
+
+    /// A `SettingChanged` signal for `namespace` `key`, as the portal sends it.
+    fn setting_changed(namespace: &str, key: &str, value: Value<'_>) -> ashpd::zbus::Message {
+        ashpd::zbus::Message::signal(
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.Settings",
+            "SettingChanged",
+        )
+        .unwrap()
+        .build(&(namespace, key, value))
+        .unwrap()
+    }
+
+    /// The watcher picks a watched setting out of every `SettingChanged`,
+    /// in a gsettings namespace as in `org.freedesktop.appearance`, and
+    /// ignores the rest.
+    #[test]
+    fn a_watched_setting_is_picked_and_the_rest_ignored() {
+        let watched = [
+            (
+                "org.gnome.desktop.interface",
+                "font-name",
+                Value::from("Cantarell 11"),
+            ),
+            (
+                "org.gnome.desktop.a11y.interface",
+                "high-contrast",
+                Value::from(true),
+            ),
+            (
+                "org.freedesktop.appearance",
+                "color-scheme",
+                Value::from(1u32),
+            ),
+        ];
+        for (namespace, key, value) in watched {
+            assert!(
+                super::is_watched(&setting_changed(namespace, key, value)),
+                "{namespace} {key} is not picked"
+            );
+        }
+        let ignored = [
+            (
+                "org.gnome.desktop.interface",
+                "clock-format",
+                Value::from("24h"),
+            ),
+            (
+                "org.gnome.desktop.sound",
+                "theme-name",
+                Value::from("freedesktop"),
+            ),
+        ];
+        for (namespace, key, value) in ignored {
+            assert!(
+                !super::is_watched(&setting_changed(namespace, key, value)),
+                "{namespace} {key} is picked"
+            );
+        }
+    }
 
     /// egui spec §10.2: dropping the subscription must not wait for the next
     /// `org.freedesktop.appearance` signal. It discriminates only where a

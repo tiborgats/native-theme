@@ -4,6 +4,30 @@
 //!
 //! Returns only what the desktop states, a sparse variant the pipeline
 //! merges over the Adwaita preset.
+//!
+//! # Sources
+//!
+//! Each a `namespace key` pair: a portal setting of `org.freedesktop.appearance`,
+//! or a gsettings key, which the portal's GNOME and GTK backends forward under
+//! its schema's name. The watcher observes each through the portal's
+//! `SettingChanged` signal.
+//!
+//! - `org.freedesktop.appearance color-scheme`: light or dark.
+//! - `org.freedesktop.appearance accent-color`: the accent colour.
+//! - `org.freedesktop.appearance contrast`: high contrast.
+//! - `org.freedesktop.appearance reduced-motion`: reduced motion.
+//! - `org.gnome.desktop.interface color-scheme`: light or dark, where the
+//!   portal gives none.
+//! - `org.gnome.desktop.interface enable-animations`: reduced motion, where
+//!   the portal gives none.
+//! - `org.gnome.desktop.interface font-name`: the UI font.
+//! - `org.gnome.desktop.interface monospace-font-name`: the monospace font.
+//! - `org.gnome.desktop.interface text-scaling-factor`: the text scale.
+//! - `org.gnome.desktop.interface overlay-scrolling`: overlay scroll bars.
+//! - `org.gnome.desktop.interface icon-theme`: the icon theme.
+//! - `org.gnome.desktop.wm.preferences titlebar-font`: the title bar font.
+//! - `org.gnome.desktop.a11y.interface high-contrast`: high contrast, where
+//!   the portal reports none.
 
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};

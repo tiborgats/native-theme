@@ -6,6 +6,32 @@
 //! in logical pixels (see `logical_system_metric`), and the fonts are read at
 //! 96 DPI and reported with a `font_dpi` of 96, so their points resolve to
 //! logical pixels too (see `LOGICAL_DPI`).
+//!
+//! # Sources
+//!
+//! What the reader reads that the user's settings change and a `UISettings`
+//! event reports; the watcher subscribes to each event:
+//!
+//! - `UISettings.GetColorValue`: the accent colour and its shades, the
+//!   foreground and background.
+//! - `UISettings.TextScaleFactor`: the text scale.
+//!
+//! # Sources not watched
+//!
+//! Each is reported by a message Windows sends to top-level windows, which
+//! the watcher, without a window, does not receive: `WM_SETTINGCHANGE` with
+//! the `SPI_SET*` action in `wParam` for the `SystemParametersInfo` ones
+//! (<https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-settingchange>),
+//! `WM_SYSCOLORCHANGE`
+//! (<https://learn.microsoft.com/en-us/windows/win32/gdi/wm-syscolorchange>)
+//! and `WM_DWMCOLORIZATIONCOLORCHANGED`
+//! (<https://learn.microsoft.com/en-us/windows/win32/dwm/wm-dwmcolorizationcolorchanged>).
+//!
+//! - `SPI_GETNONCLIENTMETRICS`: the fonts.
+//! - `SPI_GETHIGHCONTRAST`: high contrast.
+//! - `SPI_GETCLIENTAREAANIMATION`: reduced motion.
+//! - `GetSysColor`: the per-widget colours.
+//! - `DwmGetColorizationColor`: the title bar colour.
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};

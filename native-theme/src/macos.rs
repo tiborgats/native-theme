@@ -2,6 +2,23 @@
 //! resolves both light and dark appearance variants via NSAppearance, reads
 //! system/monospace/per-widget fonts via NSFont, scrollbar overlay mode, and
 //! accessibility flags.
+//!
+//! # Sources
+//!
+//! What the reader reads that the user's settings change; the watcher
+//! observes each through the notification that reports it:
+//!
+//! - `AppleInterfaceStyle`: light or dark, the global user default.
+//! - `NSColor`: the semantic colours, the accent and highlight colours among
+//!   them, read under both appearances.
+//! - `NSScroller.preferredScrollerStyle`: overlay scroll bars.
+//! - `NSWorkspace.accessibilityDisplayOptions`: reduce motion, increase
+//!   contrast and reduce transparency.
+//!
+//! # Sources not watched
+//!
+//! - `NSFont`: the system, monospaced, menu, tool-tip and title-bar fonts,
+//!   which System Settings has no setting for.
 
 // Objective-C FFI via objc2 -- no safe alternative
 #![allow(unsafe_code)]
