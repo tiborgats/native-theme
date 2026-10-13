@@ -5,7 +5,8 @@
 // 1. Stock icons via SHGetStockIconInfo (13 SIID_ prefixed roles), and
 //    IDI_QUESTION via LoadIconW -- full-colour
 // 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (27 glyph
-//    roles) -- monochrome, drawn in the requested colour or white
+//    roles) -- monochrome, drawn in the requested colour or white on the
+//    font's size x size em box
 //
 // Both pipelines produce IconData::Rgba with correct RGBA byte order and
 // straight (non-premultiplied) alpha. Returns None when the name is not
@@ -125,64 +126,102 @@ fn gray8_to_rgba(gray: u8) -> [u8; 4] {
 ///
 /// Uses GetIconInfo to obtain the color bitmap, then GetDIBits with a
 /// top-down 32-bit BITMAPINFOHEADER to extract BGRA pixels. Converts
-/// to RGBA and applies unpremultiply.
+/// to RGBA and applies unpremultiply. `None` when a GDI call fails or the
+/// bitmap is over the decode bound
+/// ([`raster_bytes_in_bound`](crate::icons::raster_bytes_in_bound)).
 #[cfg(target_os = "windows")]
 unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
-    unsafe {
-        let mut icon_info = ICONINFO::default();
-        GetIconInfo(hicon, &mut icon_info).ok()?;
+    let mut icon_info = ICONINFO::default();
+    // SAFETY: `hicon` is an icon handle (the caller's contract) and
+    // `icon_info` is a live ICONINFO for GetIconInfo to fill.
+    unsafe { GetIconInfo(hicon, &mut icon_info) }.ok()?;
 
-        // Get bitmap dimensions
-        let mut bmp = BITMAP::default();
+    // SAFETY: GetIconInfo's colour bitmap belongs to this function and is
+    // selected into no device context.
+    let bitmap = unsafe { bitmap_bgra(icon_info.hbmColor) };
+
+    // SAFETY: GetIconInfo created both bitmaps for the caller to delete, and
+    // neither is used after this. A failed delete has no recovery.
+    unsafe {
+        let _ = DeleteObject(icon_info.hbmColor.into());
+        let _ = DeleteObject(icon_info.hbmMask.into());
+    }
+
+    let (width, height, mut pixels) = bitmap?;
+    // Convert BGRA to RGBA and fix premultiplied alpha
+    bgra_to_rgba(&mut pixels);
+    crate::color::unpremultiply_alpha(&mut pixels);
+
+    IconData::rgba(width, height, pixels)
+}
+
+/// The width, height and top-down 32-bit BGRA pixels of a bitmap, read
+/// with GetDIBits; `None` when a GDI call fails, when GetDIBits copies
+/// fewer than all the rows, or for a bitmap that is empty or over the
+/// decode bound.
+///
+/// # Safety
+///
+/// `hbm` is a bitmap handle selected into no device context, as GetDIBits
+/// requires.
+#[cfg(target_os = "windows")]
+unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
+    let mut bmp = BITMAP::default();
+    // SAFETY: `bmp` is a live BITMAP of the size passed, for GetObjectW to
+    // fill; it returns 0 on failure.
+    let written = unsafe {
         GetObjectW(
-            icon_info.hbmColor.into(),
+            hbm.into(),
             mem::size_of::<BITMAP>() as i32,
             Some(&mut bmp as *mut _ as *mut _),
-        );
+        )
+    };
+    if written == 0 {
+        return None;
+    }
 
-        let width = bmp.bmWidth as u32;
-        let height = bmp.bmHeight as u32;
+    let width = u32::try_from(bmp.bmWidth).ok()?;
+    let height = u32::try_from(bmp.bmHeight).ok()?;
+    let bytes = crate::icons::raster_bytes_in_bound(width, height)?;
 
-        if width == 0 || height == 0 {
-            // A failed delete of a bitmap we own has no recovery.
-            let _ = DeleteObject(icon_info.hbmColor.into());
-            let _ = DeleteObject(icon_info.hbmMask.into());
-            return None;
-        }
+    // Set up BITMAPINFOHEADER for 32-bit top-down BGRA
+    let mut bmi = BITMAPINFO::default();
+    bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
+    bmi.bmiHeader.biWidth = bmp.bmWidth;
+    bmi.bmiHeader.biHeight = bmp.bmHeight.checked_neg()?; // negative = top-down
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB.0;
 
-        // Set up BITMAPINFOHEADER for 32-bit top-down BGRA
-        let mut bmi = BITMAPINFO::default();
-        bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
-        bmi.bmiHeader.biWidth = width as i32;
-        bmi.bmiHeader.biHeight = -(height as i32); // negative = top-down
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB.0;
+    let mut pixels = vec![0u8; bytes];
 
-        let mut pixels = vec![0u8; (width * height * 4) as usize];
-
-        let hdc = CreateCompatibleDC(None);
+    // SAFETY: a memory DC compatible with the screen, deleted below.
+    let hdc = unsafe { CreateCompatibleDC(None) };
+    if hdc.is_invalid() {
+        return None;
+    }
+    // SAFETY: `pixels` holds `height` rows of `width` 32-bit pixels, the
+    // layout `bmi` asks for, so GetDIBits writes inside it; `hdc` is live and
+    // `hbm` is selected into no DC (the caller's contract).
+    let lines = unsafe {
         GetDIBits(
             hdc,
-            icon_info.hbmColor,
+            hbm,
             0,
             height,
             Some(pixels.as_mut_ptr() as *mut _),
             &mut bmi,
             DIB_RGB_COLORS,
-        );
-        let _ = DeleteDC(hdc);
+        )
+    };
+    // SAFETY: `hdc` was created above and is not used after this.
+    let _ = unsafe { DeleteDC(hdc) };
 
-        // Cleanup bitmaps. A failed delete of a bitmap we own has no recovery.
-        let _ = DeleteObject(icon_info.hbmColor.into());
-        let _ = DeleteObject(icon_info.hbmMask.into());
-
-        // Convert BGRA to RGBA and fix premultiplied alpha
-        bgra_to_rgba(&mut pixels);
-        crate::color::unpremultiply_alpha(&mut pixels);
-
-        IconData::rgba(width, height, pixels)
+    // GetDIBits returns the number of scan lines copied, 0 on failure.
+    if u32::try_from(lines).ok() != Some(height) {
+        return None;
     }
+    Some((width, height, pixels))
 }
 
 /// Load a stock system icon by its SIID_ name.
@@ -238,6 +277,9 @@ fn load_idi_icon() -> Option<IconData> {
 #[cfg(target_os = "windows")]
 unsafe fn try_create_font(hdc: HDC, face_name: &str, em_height: u32) -> Option<HFONT> {
     let height = i32::try_from(em_height).ok()?.checked_neg()?;
+    // SAFETY: `hdc` is a live DC (the caller's contract); `wide_name` is
+    // NUL-terminated and outlives CreateFontW; the font is deselected again
+    // before it is returned, and deleted on every path that does not.
     unsafe {
         let wide_name: Vec<u16> = face_name.encode_utf16().chain(std::iter::once(0)).collect();
 
@@ -268,13 +310,15 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, em_height: u32) -> Option<H
         let len = GetTextFaceW(hdc, Some(&mut actual_name));
         SelectObject(hdc, old);
 
-        if len == 0 {
-            let _ = DeleteObject(font.into());
-            return None;
-        }
-
-        let actual = String::from_utf16_lossy(&actual_name[..len as usize]);
-        if actual.trim_end_matches('\0') != face_name {
+        let actual = usize::try_from(len)
+            .ok()
+            .filter(|&len| len > 0)
+            .and_then(|len| actual_name.get(..len))
+            .map(String::from_utf16_lossy);
+        let loaded = actual
+            .as_deref()
+            .map(|actual| actual.trim_end_matches('\0'));
+        if loaded != Some(face_name) {
             // Font was substituted -- not actually available
             let _ = DeleteObject(font.into());
             return None;
@@ -284,11 +328,81 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, em_height: u32) -> Option<H
     }
 }
 
-/// Render a font glyph to RGBA pixels via GetGlyphOutlineW, from the font
-/// created at `size` pixels em height.
+/// Where GetGlyphOutlineW puts a glyph's black box: its size, and its
+/// upper left corner relative to the character cell's origin, which is at
+/// the left of the cell on the baseline (GLYPHMETRICS,
+/// <https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-glyphmetrics>,
+/// and GetGlyphOutlineW's remarks,
+/// <https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getglyphoutlinew>);
+/// `origin_y` counts up from the baseline.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct GlyphBox {
+    /// `gmBlackBoxX`
+    width: u32,
+    /// `gmBlackBoxY`
+    height: u32,
+    /// `gmptGlyphOrigin.x`
+    origin_x: i32,
+    /// `gmptGlyphOrigin.y`
+    origin_y: i32,
+}
+
+/// Draw a GGO_GRAY8_BITMAP black box onto the `size × size` em box of the
+/// font created at `size` pixels em height, whose ascent is `ascent`.
+///
+/// The box's upper left corner lands at `(origin_x, ascent − origin_y)`,
+/// ink outside the em box is clipped, and every pixel is white with the
+/// glyph's coverage as alpha ([`gray8_to_rgba`]). `gray` holds the box's
+/// rows, each DWORD-aligned (GetGlyphOutlineW's remarks).
+///
+/// Returns `None` for an empty box, a `gray` shorter than its rows, and a
+/// `size` of 0 or over the decode bound.
+fn glyph_canvas(gray: &[u8], glyph: GlyphBox, ascent: i32, size: u32) -> Option<Vec<u8>> {
+    if !crate::icons::raster_size_in_bound(size) || glyph.width == 0 || glyph.height == 0 {
+        return None;
+    }
+    let glyph_w = usize::try_from(glyph.width).ok()?;
+    let glyph_h = usize::try_from(glyph.height).ok()?;
+    let pitch = glyph_w.checked_add(3)? & !3;
+    if gray.len() < pitch.checked_mul(glyph_h)? {
+        return None;
+    }
+    let rows = gray
+        .chunks(pitch)
+        .take(glyph_h)
+        .map(|row| row.get(..glyph_w))
+        .collect::<Option<Vec<_>>>()?;
+
+    let top = i64::from(ascent).checked_sub(i64::from(glyph.origin_y))?;
+    let left = i64::from(glyph.origin_x);
+    let size = usize::try_from(size).ok()?;
+    let mut canvas = vec![gray8_to_rgba(0); size.checked_mul(size)?];
+    for (y, out_row) in canvas.chunks_exact_mut(size).enumerate() {
+        let Some(row) = box_offset(y, top).and_then(|y| rows.get(y)) else {
+            continue;
+        };
+        for (x, pixel) in out_row.iter_mut().enumerate() {
+            if let Some(&gray) = box_offset(x, left).and_then(|x| row.get(x)) {
+                *pixel = gray8_to_rgba(gray);
+            }
+        }
+    }
+    Some(canvas.into_flattened())
+}
+
+/// The black box's row or column under canvas position `at`, for a box
+/// that starts at `start`; `None` before the box.
+fn box_offset(at: usize, start: i64) -> Option<usize> {
+    usize::try_from(i64::try_from(at).ok()?.checked_sub(start)?).ok()
+}
+
+/// Render a font glyph to RGBA pixels via GetGlyphOutlineW, on the
+/// `size × size` em box of the font created at `size` pixels em height
+/// ([`glyph_canvas`]).
 ///
 /// Tries Segoe Fluent Icons first (Win11), then Segoe MDL2 Assets (Win10).
-/// Returns None if neither font is available (caller falls back to bundled).
+/// Returns None if neither font is available (caller falls back to bundled)
+/// or a GDI call fails.
 ///
 /// Uses GGO_GRAY8_BITMAP which produces a 65-level grayscale alpha mask
 /// (values 0-64), converted to RGBA with scaled alpha and a white
@@ -298,81 +412,120 @@ fn load_glyph_icon(codepoint: u32, size: u32, fg_color: Option<[u8; 3]>) -> Opti
     if !crate::icons::raster_size_in_bound(size) {
         return None;
     }
-    unsafe {
-        let hdc = CreateCompatibleDC(None);
+    // SAFETY: a memory DC compatible with the screen, deleted below.
+    let hdc = unsafe { CreateCompatibleDC(None) };
+    if hdc.is_invalid() {
+        return None;
+    }
 
-        // Try Segoe Fluent Icons first (Win11), then Segoe MDL2 Assets (Win10)
-        let font = try_create_font(hdc, "Segoe Fluent Icons", size)
-            .or_else(|| try_create_font(hdc, "Segoe MDL2 Assets", size));
+    // Try Segoe Fluent Icons first (Win11), then Segoe MDL2 Assets (Win10)
+    // SAFETY: `hdc` is the live DC created above.
+    let font = unsafe {
+        try_create_font(hdc, "Segoe Fluent Icons", size)
+            .or_else(|| try_create_font(hdc, "Segoe MDL2 Assets", size))
+    };
 
-        let font = match font {
-            Some(f) => f,
-            None => {
-                let _ = DeleteDC(hdc);
-                return None;
-            }
-        };
+    let rgba = font.and_then(|font| {
+        // SAFETY: `hdc` and `font` are live; render_glyph selects the font
+        // back out before it returns.
+        let rgba = unsafe { render_glyph(hdc, font, codepoint, size) };
+        // SAFETY: `font` was created by try_create_font, is selected into no
+        // DC and is not used after this.
+        let _ = unsafe { DeleteObject(font.into()) };
+        rgba
+    });
+    // SAFETY: `hdc` was created above and is not used after this.
+    let _ = unsafe { DeleteDC(hdc) };
 
-        let old_font = SelectObject(hdc, font.into());
+    let mut rgba = rgba?;
+    crate::color::tint_monochrome(&mut rgba, fg_color);
+    IconData::rgba(size, size, rgba)
+}
 
-        // Identity matrix (no transform)
-        let mat2 = MAT2 {
-            eM11: FIXED { fract: 0, value: 1 },
-            eM12: FIXED { fract: 0, value: 0 },
-            eM21: FIXED { fract: 0, value: 0 },
-            eM22: FIXED { fract: 0, value: 1 },
-        };
+/// Draw `codepoint` of `font` onto the `size × size` em box
+/// ([`glyph_canvas`]), with `font` selected into `hdc` meanwhile.
+///
+/// # Safety
+///
+/// `hdc` is a live device context and `font` a live font.
+#[cfg(target_os = "windows")]
+unsafe fn render_glyph(hdc: HDC, font: HFONT, codepoint: u32, size: u32) -> Option<Vec<u8>> {
+    // SAFETY: both handles are live (the caller's contract); the previous
+    // font is selected back before this function returns.
+    let old_font = unsafe { SelectObject(hdc, font.into()) };
+    // SAFETY: `hdc` is live with `font` selected.
+    let outline = unsafe { glyph_outline(hdc, codepoint) };
+    // SAFETY: `old_font` is the object SelectObject replaced in `hdc`.
+    unsafe { SelectObject(hdc, old_font) };
+    let (gray, glyph, ascent) = outline?;
+    glyph_canvas(&gray, glyph, ascent, size)
+}
 
-        let mut gm = GLYPHMETRICS::default();
+/// The GGO_GRAY8_BITMAP black box of `codepoint` in the font selected into
+/// `hdc`, where GetGlyphOutlineW puts it, and the font's ascent
+/// (TEXTMETRICW `tmAscent`). `None` when a call fails, for a glyph with no
+/// bitmap, and for a buffer over the decode bound.
+///
+/// # Safety
+///
+/// `hdc` is a live device context.
+#[cfg(target_os = "windows")]
+unsafe fn glyph_outline(hdc: HDC, codepoint: u32) -> Option<(Vec<u8>, GlyphBox, i32)> {
+    let mut tm = TEXTMETRICW::default();
+    // SAFETY: `hdc` is live (the caller's contract) and `tm` is a live
+    // TEXTMETRICW for GetTextMetricsW to fill.
+    if !unsafe { GetTextMetricsW(hdc, &mut tm) }.as_bool() {
+        return None;
+    }
 
-        // First call: get buffer size
-        let buf_size = GetGlyphOutlineW(hdc, codepoint, GGO_GRAY8_BITMAP, &mut gm, 0, None, &mat2);
+    // Identity matrix (no transform)
+    let mat2 = MAT2 {
+        eM11: FIXED { fract: 0, value: 1 },
+        eM12: FIXED { fract: 0, value: 0 },
+        eM21: FIXED { fract: 0, value: 0 },
+        eM22: FIXED { fract: 0, value: 1 },
+    };
 
-        if buf_size == GDI_ERROR as u32 || buf_size == 0 {
-            SelectObject(hdc, old_font);
-            let _ = DeleteObject(font.into());
-            let _ = DeleteDC(hdc);
-            return None;
-        }
+    let mut gm = GLYPHMETRICS::default();
 
-        // Second call: get the grayscale bitmap
-        let mut gray_buf = vec![0u8; buf_size as usize];
+    // First call: get buffer size
+    // SAFETY: with no buffer GetGlyphOutlineW only fills `gm`, a live
+    // GLYPHMETRICS, and reads `mat2`.
+    let buf_size =
+        unsafe { GetGlyphOutlineW(hdc, codepoint, GGO_GRAY8_BITMAP, &mut gm, 0, None, &mat2) };
+    if buf_size == GDI_ERROR as u32 || buf_size == 0 {
+        return None;
+    }
+    let len = usize::try_from(buf_size)
+        .ok()
+        .filter(|&len| len <= crate::icons::MAX_ICON_DECODE_BYTES)?;
+
+    // Second call: get the grayscale bitmap
+    let mut gray = vec![0u8; len];
+    // SAFETY: `gray` holds the `buf_size` bytes passed as the buffer's size,
+    // so GetGlyphOutlineW writes inside it.
+    let written = unsafe {
         GetGlyphOutlineW(
             hdc,
             codepoint,
             GGO_GRAY8_BITMAP,
             &mut gm,
             buf_size,
-            Some(gray_buf.as_mut_ptr() as *mut _),
+            Some(gray.as_mut_ptr() as *mut _),
             &mat2,
-        );
-
-        SelectObject(hdc, old_font);
-        let _ = DeleteObject(font.into());
-        let _ = DeleteDC(hdc);
-
-        let glyph_w = gm.gmBlackBoxX;
-        let glyph_h = gm.gmBlackBoxY;
-
-        if glyph_w == 0 || glyph_h == 0 {
-            return None;
-        }
-
-        // GGO_GRAY8_BITMAP rows are DWORD-aligned
-        let pitch = ((glyph_w + 3) & !3) as usize;
-
-        // Convert grayscale (0-64) to RGBA (white with scaled alpha)
-        let mut rgba = Vec::with_capacity((glyph_w * glyph_h * 4) as usize);
-        for y in 0..glyph_h as usize {
-            for x in 0..glyph_w as usize {
-                let gray = gray_buf[y * pitch + x];
-                rgba.extend_from_slice(&gray8_to_rgba(gray));
-            }
-        }
-        crate::color::tint_monochrome(&mut rgba, fg_color);
-
-        IconData::rgba(glyph_w, glyph_h, rgba)
+        )
+    };
+    if written == GDI_ERROR as u32 {
+        return None;
     }
+
+    let glyph = GlyphBox {
+        width: gm.gmBlackBoxX,
+        height: gm.gmBlackBoxY,
+        origin_x: gm.gmptGlyphOrigin.x,
+        origin_y: gm.gmptGlyphOrigin.y,
+    };
+    Some((gray, glyph, tm.tmAscent))
 }
 
 /// Parse a hex codepoint string like "0xE8BB" or "0xe8bb" to a u32.
@@ -399,8 +552,9 @@ fn parse_hex_codepoint(name: &str) -> Option<u32> {
 /// - `"0xE8BB"` -- hex codepoint for Segoe Fluent Icons glyph
 /// - `"ChromeClose"` -- named Segoe Fluent Icons glyph
 ///
-/// A glyph is drawn at `size` pixels em height, [`DEFAULT_ICON_SIZE`] where
-/// it is `None`, and in `fg_color` where it is given, white otherwise; the
+/// A glyph is drawn on its font's `size × size` em box, at `size` pixels
+/// em height, [`DEFAULT_ICON_SIZE`] where it is `None`, and in `fg_color`
+/// where it is given, white otherwise; the
 /// stock and dialog icons are full-colour at the system's large icon size
 /// and ignore both.
 ///
@@ -494,6 +648,109 @@ mod tests {
         // gray=32 -> half alpha: (32 * 255) / 64 = 127
         let pixel = gray8_to_rgba(32);
         assert_eq!(pixel, [255, 255, 255, 127]);
+    }
+
+    /// A GGO_GRAY8_BITMAP buffer of `rows`, each padded to `pitch` bytes.
+    fn gray_rows<R: AsRef<[u8]>>(rows: &[R], pitch: usize) -> Vec<u8> {
+        rows.iter()
+            .flat_map(|row| {
+                let mut padded = row.as_ref().to_vec();
+                padded.resize(pitch, 0);
+                padded
+            })
+            .collect()
+    }
+
+    fn alpha_at(canvas: &[u8], size: usize, x: usize, y: usize) -> u8 {
+        canvas[(y * size + x) * 4 + 3]
+    }
+
+    /// A bar and a square, glyphs of different ink, both fill the
+    /// `size × size` em box.
+    #[test]
+    fn glyph_canvas_is_the_em_box_whatever_the_ink() {
+        let bar = GlyphBox {
+            width: 6,
+            height: 1,
+            origin_x: 1,
+            origin_y: 4,
+        };
+        let square = GlyphBox {
+            width: 4,
+            height: 4,
+            origin_x: 2,
+            origin_y: 6,
+        };
+        let bar = glyph_canvas(&gray_rows(&[&[64; 6]], 8), bar, 7, 8).unwrap();
+        let square = glyph_canvas(&gray_rows(&[&[64; 4]; 4], 4), square, 7, 8).unwrap();
+        assert_eq!(bar.len(), 8 * 8 * 4);
+        assert_eq!(square.len(), 8 * 8 * 4);
+    }
+
+    /// The black box lands at `(origin_x, ascent - origin_y)`, and the rest
+    /// of the em box is transparent white.
+    #[test]
+    fn glyph_canvas_places_the_black_box_at_its_origin() {
+        let glyph = GlyphBox {
+            width: 2,
+            height: 2,
+            origin_x: 2,
+            origin_y: 5,
+        };
+        let canvas = glyph_canvas(&gray_rows(&[&[64, 32], &[16, 0]], 4), glyph, 7, 8).unwrap();
+        assert_eq!(alpha_at(&canvas, 8, 2, 2), 255);
+        assert_eq!(alpha_at(&canvas, 8, 3, 2), 127);
+        assert_eq!(alpha_at(&canvas, 8, 2, 3), 63);
+        let ink = canvas.chunks(4).filter(|pixel| pixel[3] != 0).count();
+        assert_eq!(ink, 3, "only the black box is drawn");
+        assert!(canvas.chunks(4).all(|pixel| pixel[..3] == [255, 255, 255]));
+    }
+
+    /// Ink outside the em box is clipped, on every side.
+    #[test]
+    fn glyph_canvas_clips_the_black_box() {
+        let glyph = GlyphBox {
+            width: 6,
+            height: 6,
+            origin_x: -1,
+            origin_y: 5,
+        };
+        let canvas = glyph_canvas(&gray_rows(&[&[64; 6]; 6], 8), glyph, 3, 4).unwrap();
+        assert_eq!(canvas.len(), 4 * 4 * 4);
+        // Rows 2 to 5 and columns 1 to 4 of the box fill the canvas.
+        assert!((0..4).all(|y| (0..4).all(|x| alpha_at(&canvas, 4, x, y) == 255)));
+        let far = GlyphBox {
+            width: 2,
+            height: 2,
+            origin_x: i32::MAX,
+            origin_y: i32::MIN,
+        };
+        let canvas = glyph_canvas(&gray_rows(&[&[64; 2]; 2], 4), far, i32::MAX, 4).unwrap();
+        assert!(canvas.chunks(4).all(|pixel| pixel[3] == 0));
+    }
+
+    /// A buffer shorter than `pitch × height`, an empty black box and a size
+    /// outside the decode bound give no canvas.
+    #[test]
+    fn glyph_canvas_rejects_what_it_cannot_draw() {
+        let glyph = GlyphBox {
+            width: 5,
+            height: 2,
+            origin_x: 0,
+            origin_y: 0,
+        };
+        // pitch 8, so two rows need 16 bytes
+        assert!(glyph_canvas(&[64; 15], glyph, 0, 8).is_none());
+        assert!(glyph_canvas(&[64; 16], glyph, 0, 8).is_some());
+        let empty = GlyphBox { width: 0, ..glyph };
+        assert!(glyph_canvas(&[], empty, 0, 8).is_none());
+        assert!(glyph_canvas(&[64; 16], glyph, 0, 0).is_none());
+        assert!(glyph_canvas(&[64; 16], glyph, 0, 4097).is_none());
+        let wide = GlyphBox {
+            width: u32::MAX,
+            ..glyph
+        };
+        assert!(glyph_canvas(&[64; 16], wide, 0, 8).is_none());
     }
 
     #[test]
@@ -653,6 +910,23 @@ mod tests {
             large.height(),
             small.height()
         );
+    }
+
+    /// "Remove" (U+E738, a bar) and "ChromeMaximize" (U+E922, a square)
+    /// have different ink; both come back as the 32 × 32 em box.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn load_by_name_glyphs_of_different_ink_share_the_em_box() {
+        for name in ["Remove", "ChromeMaximize"] {
+            let Some(IconData::Rgba(rgba)) = load_windows_icon_by_name(name, Some(32), None) else {
+                panic!("{name} should load as RGBA");
+            };
+            assert_eq!((rgba.width(), rgba.height()), (32, 32), "{name}");
+            assert!(
+                rgba.data().chunks(4).any(|pixel| pixel[3] != 0),
+                "{name} has ink"
+            );
+        }
     }
 
     #[cfg(target_os = "windows")]

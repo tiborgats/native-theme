@@ -50,18 +50,20 @@ fn extract_cgimage(image: &NSImage) -> Option<Retained<CGImage>> {
 /// Rasterize a CGImage to an RGBA pixel buffer using CGBitmapContext.
 ///
 /// Creates a bitmap context with PremultipliedLast alpha format,
-/// draws the image into it, and returns the raw RGBA pixel buffer.
+/// draws the image into it, and returns the raw RGBA pixel buffer. `None`
+/// for a side of 0 or a raster over the decode bound
+/// ([`raster_bytes_in_bound`](crate::icons::raster_bytes_in_bound)).
 fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
-    if width == 0 || height == 0 {
-        return None;
-    }
+    let buf_size = crate::icons::raster_bytes_in_bound(width, height)?;
     let color_space = CGColorSpace::new_device_rgb()?;
-    let bytes_per_row = (width as usize) * 4;
-    let buf_size = bytes_per_row * (height as usize);
+    let bytes_per_row = usize::try_from(width).ok()?.checked_mul(4)?;
     let mut buffer = vec![0u8; buf_size];
 
     let bitmap_info = CGImageAlphaInfo::PremultipliedLast.0;
 
+    // SAFETY: `buffer` holds `height` rows of `bytes_per_row` bytes, the
+    // layout the context is created with, and outlives the context, which
+    // is dropped at the end of this function.
     let context = unsafe {
         CGBitmapContextCreate(
             buffer.as_mut_ptr() as *mut c_void,
@@ -98,7 +100,9 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 ///
 /// Returns `None` if the symbol name doesn't exist on this macOS version,
 /// or if `size` is 0 or its `size² × 4` bytes exceed the decode bound
-/// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)).
+/// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)), or if
+/// the image AppKit draws for it does, counted in pixels (twice the points
+/// on a 2× display).
 ///
 /// # Examples
 ///
@@ -117,8 +121,8 @@ pub(crate) fn load_sf_icon_by_name(
     }
     let image = load_symbol(name, f64::from(size))?;
     let cg_image = extract_cgimage(&image)?;
-    let w = CGImage::width(Some(&cg_image)) as u32;
-    let h = CGImage::height(Some(&cg_image)) as u32;
+    let w = u32::try_from(CGImage::width(Some(&cg_image))).ok()?;
+    let h = u32::try_from(CGImage::height(Some(&cg_image))).ok()?;
     let mut data = rasterize(&cg_image, w, h)?;
     crate::color::unpremultiply_alpha(&mut data);
     crate::color::tint_monochrome(&mut data, fg_color);
@@ -220,6 +224,17 @@ mod tests {
     fn load_sf_icon_by_name_size_out_of_bound_returns_none() {
         assert!(load_sf_icon_by_name("doc.on.doc", Some(0), None).is_none());
         assert!(load_sf_icon_by_name("doc.on.doc", Some(u32::MAX), None).is_none());
+    }
+
+    /// The bound is on the pixels drawn, not the points asked for.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn rasterize_over_the_decode_bound_returns_none() {
+        let image = load_symbol("doc.on.doc", f64::from(DEFAULT_ICON_SIZE)).unwrap();
+        let cg_image = extract_cgimage(&image).unwrap();
+        assert!(rasterize(&cg_image, 8192, 2049).is_none());
+        assert!(rasterize(&cg_image, 0, 16).is_none());
+        assert!(rasterize(&cg_image, 16, 16).is_some());
     }
 
     #[cfg(target_os = "macos")]

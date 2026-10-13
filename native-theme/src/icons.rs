@@ -38,12 +38,28 @@ pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
     allow(dead_code)
 )]
 pub(crate) fn raster_size_in_bound(size: u32) -> bool {
-    let size = u64::from(size);
-    size > 0
-        && size
-            .checked_mul(size)
-            .and_then(|area| area.checked_mul(4))
-            .is_some_and(|bytes| bytes <= MAX_ICON_DECODE_BYTES as u64)
+    raster_bytes_in_bound(size, size).is_some()
+}
+
+/// The bytes of a `width × height` RGBA raster (`width × height × 4`) where
+/// they are inside [`MAX_ICON_DECODE_BYTES`]; `None` for a side of 0 or a
+/// raster over the bound.
+#[cfg_attr(
+    not(all(
+        any(target_os = "macos", target_os = "windows"),
+        feature = "system-icons"
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn raster_bytes_in_bound(width: u32, height: u32) -> Option<usize> {
+    if width == 0 || height == 0 {
+        return None;
+    }
+    u64::from(width)
+        .checked_mul(u64::from(height))?
+        .checked_mul(4)
+        .filter(|&bytes| bytes <= MAX_ICON_DECODE_BYTES as u64)
+        .and_then(|bytes| usize::try_from(bytes).ok())
 }
 
 /// The red, green and blue of a loader's foreground colour; the alpha is
@@ -1441,6 +1457,19 @@ mod load_icon_tests {
         assert!(raster_size_in_bound(4096));
         assert!(!raster_size_in_bound(4097));
         assert!(!raster_size_in_bound(u32::MAX));
+    }
+
+    #[test]
+    fn raster_bytes_in_bound_is_the_decode_bound() {
+        assert_eq!(raster_bytes_in_bound(0, 16), None);
+        assert_eq!(raster_bytes_in_bound(16, 0), None);
+        assert_eq!(raster_bytes_in_bound(3, 2), Some(24));
+        assert_eq!(
+            raster_bytes_in_bound(8192, 2048),
+            Some(MAX_ICON_DECODE_BYTES)
+        );
+        assert_eq!(raster_bytes_in_bound(8192, 2049), None);
+        assert_eq!(raster_bytes_in_bound(u32::MAX, u32::MAX), None);
     }
 
     #[test]
