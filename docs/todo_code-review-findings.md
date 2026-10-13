@@ -11,7 +11,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M1 | done (2026-10-11) |
 | M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
 | M3 | done (2026-10-12) |
-| M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Steps 7–8 next |
+| M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 (close) in progress |
 | M5–M9 | not started |
 
 ## Baseline (M0, 2026-10-11)
@@ -7464,7 +7464,7 @@ The final whole-branch review triaged every deferred minor of the task reviews; 
 
 ## M4 — Core, part 2
 
-**Status:** Steps 1–6 done 2026-10-12 (stop point A; review, verify, triage, the maintainer's api-break round; the fix plan). Next: Step 7 (T1–T33). Read-only review on Opus 5.5 (session) after M3's stop point B; nothing changed in code.
+**Status:** Steps 1–7 done (Steps 1–6 2026-10-12: stop point A; review, verify, triage, the maintainer's api-break round; the fix plan. Step 7 2026-10-12/13: T1–T36, the final whole-branch review and its fix wave, the close's workflow fix 5eb7ab1c). Step 8 (close) in progress. Read-only review on Opus 5.5 (session) after M3's stop point B.
 
 ### Step 1 — inventory
 
@@ -7518,7 +7518,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** In the watcher thread, call `PeekMessageW(&mut msg, None, WM_USER, WM_USER, PM_NOREMOVE)` to create the queue, and send the thread ID only after that and after a successful `ColorValuesChanged` (see the setup-failure finding). The constructor then knows that a posted `WM_QUIT` will arrive.
 **Verdict:** CONFIRMED — windows.rs:44-47 sends the thread ID before any message queue exists. The queue appears only with CoInitializeEx(STA) at :55, whose hidden OLE window creates it, or with GetMessageW at :94. Microsoft's PostThreadMessage docs say the call fails when the target thread has no queue and recommend PeekMessage to create one first. So a drop between :47 and :55 posts a WM_QUIT that is lost (:121, result ignored), and GetMessageW then blocks forever. The window is narrow; a Windows test that drops right after on_theme_change returns would show it.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 1cea9fb6 and 4bcdb1a6 (its gate harness corrected in 35bd7f32); the Windows test is known-unrun until the next CI run
 *Source:* R2#0, R3#0.
 
 #### M4-02 · bug · S1 · native-theme/src/watch/macos.rs:114
@@ -7528,7 +7528,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Move `shutdown_rx` into the thread. Loop `while shutdown_rx.try_recv() == Err(Empty) { CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.25, false) }`, with `stop()` kept to make a running loop return early. A stop that arrives before the loop runs then costs at most one timeout slice.
 **Verdict:** CONFIRMED — Apple's CF source (apple-oss-distributions/CF CFRunLoop.c) has CFRunLoopStop set the stopped flag only `if (rl->_currentMode)`, and CFRunLoopRunSpecific resets the flag when it pushes per-run data. A stop() from macos.rs:267 that arrives after the handshake (:210) but before CFRunLoop::run() (:244) is therefore lost. run() then blocks for as long as the distributed-notification observer keeps a source in the default mode, and Drop's join (mod.rs:188) hangs.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 35bd7f32 and b5465d23 (re-specified: the observer on a serial `NSOperationQueue`, no watcher thread; delivery needs the application's main run loop, documented); the macOS test is known-unrun until the next CI run
 *Source:* R2#1, R3#1.
 
 #### M4-03 · bug · S1 · native-theme/src/freedesktop.rs:509
@@ -7537,7 +7537,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Reject non-finite values and a width below 1 before dividing. Compare the remainder relative to width (`(height / width).fract()`-style), not with an absolute 0.01. Refuse a frame_count above a named maximum the maintainer sets, returning None instead of building frames.
 **Verdict:** CONFIRMED — freedesktop.rs:509: with width 0, `(height/width)` is inf and `as usize` saturates to usize::MAX. The 0.01 check at :515 then compares 0.005 against 0 and passes, and `(0..usize::MAX).map(..).collect()` (TrustedLen) calls Vec::with_capacity(usize::MAX), which panics with capacity overflow. `0 0 1 1e9` passes both checks and asks for 1e9 SVG copies. No guard, test, todo or ledger entry covers it.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in b4c77447
 *Source:* R4#0.
 
 #### M4-04 · bug · S1 · native-theme/src/freedesktop.rs:397
@@ -7546,7 +7546,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Bound the allocation before making it. Return None when `output_buffer_size` exceeds a named cap chosen for icons, or when width/height exceed it. Allocate with `Vec::try_reserve_exact` so a failed allocation is None, not an abort.
 **Verdict:** CONFIRMED — png-0.18.1 checks only that output_buffer_size does not overflow (decoder/mod.rs:216-225). Its 64 MiB Limits leaves the caller's buffer out (:155-157), and IHDR is only checked for zero (stream.rs:1753), so freedesktop.rs:397 `vec![0u8; ~4e12]` fails in alloc_zeroed and handle_alloc_error aborts. Whether it aborts depends on vm.overcommit: under the default heuristic mode the 4 TB calloc fails; under mode 1 it would succeed lazily and the decode would then just fail.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in b4c77447
 *Source:* R4#1.
 
 #### M4-05 · api · api-break · native-theme/src/model/icons.rs:221
@@ -7556,7 +7556,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Make it `pub const ALL: &'static [IconRole] = &[...]`, matching native-theme-build's output. Keep the count check in the unit test (:1314), not in the type.
 **Verdict:** CONFIRMED — model/icons.rs:221 `pub const ALL: [IconRole; 42]` on an enum marked #[non_exhaustive] (:41), so adding a role changes a public type. native-theme-build emits `&[Self]` (codegen.rs:127). The archived API review (docs/archive/v0.5.1_native-theme-API.md:884-960) dealt only with keeping the array in sync, not with its type. Internal callers use `for role in IconRole::ALL` by value and would need `.iter().copied()`.
 **Triage:** maintainer — approved 2026-10-12 (Q1 item 1): `pub const ALL: &'static [IconRole]`.
-**Status:** open
+**Status:** fixed in 90589e08 (breaking, approved)
 *Source:* R4#6, API#8.
 
 #### M4-06 · api · api-break · native-theme/src/icons.rs:761
@@ -7565,7 +7565,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add `#[non_exhaustive]`, and either reword the Default doc to say that default_icon_choice is the constructor that checks availability, or make the guarantee real with a private field behind an accessor.
 **Verdict:** CONFIRMED — icons.rs:761-762 derives with no #[non_exhaustive], and the Default doc (:771-775) says it is "only constructed via default_icon_choice()". Any crate can build `IconSetChoice::Default(any_string)`, so the guarantee is unenforced. No todo or ledger entry; the ledger mentions IconSetChoice only for the root re-export (todo_code-review-findings.md:6957).
 **Triage:** maintainer — approved 2026-10-12 (Q1 item 2): `#[non_exhaustive]`, the `Default(String)` doc names `default_icon_choice` as the checking constructor.
-**Status:** open
+**Status:** fixed in 90589e08 (breaking, approved)
 *Source:* R4#7.
 
 #### M4-07 · api · api-break · native-theme/src/model/icons.rs:303
@@ -7575,7 +7575,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Make Rgba's fields private behind a checked constructor (`IconData::rgba(w, h, data) -> Option<Self>`) plus accessors, so an IconData::Rgba always holds w*h*4 bytes.
 **Verdict:** CONFIRMED — model/icons.rs:303-310: the Rgba fields are public. #[non_exhaustive] on the enum does not stop anyone constructing the variant, and the derived Deserialize skips any check too, so a checked constructor needs a custom Deserialize as well. The connectors already re-validate: egui icons.rs:309, gpui icons.rs:1311.
 **Triage:** maintainer — approved 2026-10-12 (Q1 item 3): `IconData::Rgba(RgbaData)` with private fields, `IconData::rgba(w, h, data) -> Option<Self>` checked, accessors, a checking `Deserialize`; the connectors drop their re-validation in M5–M7 (iced passes the fields to `Handle::from_rgba` unchecked today).
-**Status:** open
+**Status:** fixed in 90589e08 (breaking, approved)
 *Source:* R4#8, API#11.
 
 #### M4-08 · api · api-break · native-theme/src/model/animated.rs:348
@@ -7585,7 +7585,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Delete `new_frames` and its three tests, and add a CHANGELOG line.
 **Verdict:** CONFIRMED — animated.rs:350-358 is the workspace's only #[deprecated] item. Outside its own three tests (animated.rs:601-620) it is referenced only in docs/archive/v0.5.7_native-theme-api-2.md. No todo.md or ledger entry keeps it, and 0.7.0 already accepts breaking changes (M1).
 **Triage:** maintainer — approved 2026-10-12 (Q1 item 4): `AnimatedIcon::new_frames` and its three tests deleted.
-**Status:** open
+**Status:** fixed in 90589e08 (breaking, approved)
 *Source:* R5#7, API#9.
 
 #### M4-09 · api · api-break · native-theme-build/src/error.rs:99
@@ -7594,7 +7594,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add a source or mapping file field (and the role for MissingSvg) to these variants. Make `list` a small enum or &'static str. Have the InvalidIconName message state the rule that actually failed.
 **Verdict:** CONFIRMED — error.rs:99-102 (ThemeOverlap), :109-114 (DuplicateTheme), :128-133 (BundledDeAware) and :82-87 (InvalidIdentifier) have no file field. MissingSvg has only `path` (error.rs:20-23). The InvalidIconName Display always ends with 'free of control characters' (error.rs:246-249), even when validate.rs:461-463 rejected the name for '/', '\\' or '..'.
 **Triage:** maintainer — approved 2026-10-12 (Q4 item 12, delegated): the four variants gain the mapping file, `MissingSvg` the role, `InvalidIconName` names the rule that failed.
-**Status:** open
+**Status:** fixed in c70fe05b (breaking, approved)
 *Source:* R6#4.
 
 #### M4-10 · api · api-break · native-theme-build/src/error.rs:280
@@ -7604,7 +7604,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Use one rule: either accessors for rerun_paths on both types, or the field private on both with `rerun_paths()`.
 **Verdict:** CONFIRMED — BuildErrors has a public `rerun_paths` field and private `errors` behind accessors (error.rs:280-284). GenerateOutput has a private rerun_paths behind an accessor and public other fields (lib.rs:204-213). GenerateOutput's getter was the recorded choice (docs/archive/v0.5.2_native-theme-build_api.md:256-290, against making the field public), so the consistent fix is BuildErrors::rerun_paths().
 **Triage:** maintainer — delegated 2026-10-12 (Q4 item 13, "the very best long-term solution"); decided by the session: every field of both result types private, read through accessors (`GenerateOutput::{output_path, warnings, role_count, bundled_theme_count, svg_count, total_svg_bytes, rerun_paths}`, `BuildErrors::{errors, rerun_paths}`). Why: the v0.5.2 reason for the `rerun_paths` getter (a public field can be mutated and cannot gain validation without a break, `docs/archive/v0.5.2_native-theme-build_api.md:256-290`) holds for the six other fields too: mutating `output_path` before `emit_cargo_directives()` writes the code where `include!` does not look, and `svg_count` / `total_svg_bytes` are computed values (wrong today, M4 entry on the double count). In-tree only the build crate's integration tests read the fields.
-**Status:** open
+**Status:** fixed in c70fe05b (breaking, approved); `GenerateOutput::code` behind an accessor too (ruling)
 *Source:* R6#17, API#15.
 
 #### M4-11 · api · api-break · native-theme/src/lib.rs:256
@@ -7615,7 +7615,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** lib.rs:256 `pub mod freedesktop;` → `pub(crate) mod freedesktop;`, :260 `pub mod macos;` → `pub(crate) mod macos;` (the `not(macos)` arm at :262 is already `pub(crate)`), :272 `pub mod sficons;` → `pub(crate) mod sficons;`, :276 `pub mod windows;` → `pub(crate) mod windows;`, :284 `pub mod winicons;` → `pub(crate) mod winicons;`; kde/mod.rs:4 `pub mod colors;` → `pub(crate) mod colors;`, :6 `pub mod fonts;` → `pub(crate) mod fonts;`; gnome/mod.rs:142 `pub struct GnomePortalData` → `pub(crate) struct GnomePortalData` (fields `pub(crate)`); kde/mod.rs:21 `pub fn from_kde_content_pure(..)` → `#[doc(hidden)] pub fn from_kde_content_pure(..)` (or move `tests/reader_kde.rs` into `kde/mod.rs`'s test module and make it `pub(crate)`). Drop the "platform modules" bullet at lib.rs:100-101 (keep `kde` and `gnome` there only while they still have a pub item). The `kde` and `gnome` module docs at lib.rs:181-192 stay. CHANGELOG breaking line: "the platform modules are private".
 **Verdict:** CONFIRMED — grep finds no `pub` item in freedesktop.rs, macos.rs, sficons.rs, windows.rs, winicons.rs, kde/colors.rs or kde/fonts.rs, yet lib.rs:256-284 and kde/mod.rs:4,6 declare them `pub mod`. `GnomePortalData` (gnome/mod.rs:142) is consumed only by private fns. The only outside user is tests/reader_kde.rs:10. M3 deferred this to M4 (ledger :7317, "M4 readers, flagged there"), and the archived layout keeps readers `pub(crate)` (archive/v0.5.7_native-theme-api.md:1390-1391).
 **Triage:** maintainer — approved 2026-10-12 (Q3 item 8): the seven modules `pub(crate)`, `GnomePortalData` `pub(crate)`, `from_kde_content_pure` `#[doc(hidden)]`.
-**Status:** open
+**Status:** fixed in 2c9d969b and eaf4dc90 (breaking, approved); `gnome` private too (ruling)
 *Source:* API#2, R3#14, R1#16.
 
 #### M4-12 · api · api-break · native-theme/src/lib.rs:319
@@ -7624,7 +7624,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Delete lib.rs:319 and the bullet at :80-82 ("and the icon-set choice ([`IconSetChoice`], [`default_icon_choice`], [`list_freedesktop_themes`])"); the items keep their one path `native_theme::icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes}` (icons.rs:762, :880, :919). No caller changes; CHANGELOG breaking line. Call on the open question: no, they do not belong at the root.
 **Verdict:** REJECTED as a new finding — Already known: M3-19 (ledger :6955-6962, Triage "the three icon helpers' place at the root stays M4's call"; m4-known.md). The facts hold (lib.rs:319, and no caller uses the root path), so the reviewer's "no" can feed that open decision, but it is not a new finding. The facts hold; the open decision is answered at triage.
 **Triage:** maintainer — approved 2026-10-12 (Q3 item 9, M3-19's open question): the crate-root re-export of the three helpers removed; they stay in `icons`.
-**Status:** open
+**Status:** fixed in 2c9d969b (breaking, approved)
 *Source:* API#3.
 
 #### M4-13 · api · api-break · native-theme/src/lib.rs:238
@@ -7633,7 +7633,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Move the three to `detect` and the Linux detection code with them (detect.rs or a `detect/icon_theme.rs` submodule). Before: `native_theme::theme::{detect_icon_theme, system_icon_theme, system_icon_set}`; after: `pub fn native_theme::detect::system_icon_theme() -> crate::Result<String>`, `pub fn native_theme::detect::detect_icon_theme() -> crate::Result<String>`, `pub fn native_theme::detect::system_icon_set() -> IconSet`. Remove lib.rs:238 and the two names at :247-248; update the 11 call sites, the doc links at detect.rs:146, :875, lib.rs:592, model/mod.rs:286, :311, resolve/context.rs:67, :79, :83, and the module docs at lib.rs:176 / detect.rs:1 to "OS detection: dark mode, reduced motion, accessibility preferences, icon theme and set, desktop environment". CHANGELOG breaking line. Call on the open question: `detect`.
 **Verdict:** REJECTED as a new finding — Already known: M3-16 (ledger :6931ff and T1 :7344, "its place is M4's call"; m4-known.md). Supporting the reviewer's call: the archived layout puts `icon_theme()`, `icon_set()` and `detect_icon_theme()` in `detect::` (archive/v0.5.7_native-theme-api.md:1373-1378). The facts hold; the open decision is answered at triage.
 **Triage:** maintainer — approved 2026-10-12 (Q3 item 10, M3-16's open question): `detect_icon_theme`, `system_icon_theme`, `system_icon_set` move to `detect` (the v0.5.7 layout, `docs/archive/v0.5.7_native-theme-api.md:1373-1378`).
-**Status:** open
+**Status:** fixed in 2c9d969b (breaking, approved)
 *Source:* API#4.
 
 #### M4-14 · api · api-break · native-theme/src/icons.rs:151
@@ -7642,7 +7642,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Before: `pub fn color(mut self, rgb: [u8; 3]) -> Self` / `pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self` on `FreedesktopLoader`, `SfSymbolsLoader`, `SegoeIconsLoader`. After: `pub fn color(mut self, color: Rgba) -> Self` / `pub fn color_opt(mut self, color: Option<Rgba>) -> Self`, doc "its alpha is ignored: the glyph keeps its own coverage"; the private `fg_color: Option<[u8; 3]>` fields and `load_freedesktop_icon_by_name(.., fg_color: Option<[u8; 3]>)` (freedesktop.rs:343-348), `load_sf_icon_by_name` (sficons.rs:106) and `load_windows_icon_by_name` (winicons.rs:405) can stay internal or take `Rgba` too. Five connector call sites simplify to `.color(c)`. Do it in the same release as M1-T6-06's runtime-set function, which will take the same colour parameter.
 **Verdict:** CONFIRMED — `color`/`color_opt` take `[u8; 3]` on all three system loaders (icons.rs:151, :157, :291, :297, :361, :367), while `colorize_monochrome_svg` takes `Rgba` (icons.rs:587). The benefit is overstated: only egui's three sites hold an `Rgba` and would become `.color(c)` (egui icons.rs:431, :437, :440). gpui and iced convert from Hsla/iced Color (gpui icons.rs:1328, iced icons.rs:260) and would still convert.
 **Triage:** maintainer — approved 2026-10-12 (Q2 item 6): `.color(Rgba)` / `.color_opt(Option<Rgba>)`, alpha ignored, with M1-T6-06's runtime-set function.
-**Status:** open
+**Status:** fixed in 34d6d1f7 (breaking, approved)
 *Source:* API#5.
 
 #### M4-15 · api · api-break · native-theme/src/icons.rs:556
@@ -7651,7 +7651,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Before: `pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon>`. After: `pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<AnimatedIcon>` dispatching `IconSet::Freedesktop => FreedesktopLoader::load_indicator(theme)`, `Material`/`Lucide` as today (`theme` documented as ignored only where the set has no themes — the same wording `IconSetChoice::freedesktop_theme` uses at icons.rs:847-850), plus `impl SystemTheme { pub fn icon_indicator(&self, mode: ColorMode) -> Option<AnimatedIcon> { load_icon_indicator(self.icon_set, self.icon_theme_for(mode)) } }` beside the planned `SystemTheme::icon`. The three connector sites collapse to one call each in M5–M7.
 **Verdict:** CONFIRMED — `load_icon_indicator` passes `None` as the freedesktop theme (icons.rs:556-563), and all three spinners re-dispatch by hand: egui-widgets spinner.rs:117-118, gpui widgets/spinner.rs:216-217, iced spinner.rs. M1-T6-06's decision (ledger :796) covers the runtime-set icon function and `SystemTheme::icon` but not the indicator. This extends that item rather than duplicating it.
 **Triage:** maintainer — approved 2026-10-12 (Q2 item 7): `load_icon_indicator(set, theme: Option<&str>)` plus `SystemTheme::icon_indicator(mode)`; the connectors' spinners collapse to one call in M5–M7.
-**Status:** open
+**Status:** fixed in f1371e70 and 6e5c151d (breaking, approved); the connectors adopt the core functions in M5–M7
 *Source:* API#6.
 
 #### M4-16 · api · api-break · native-theme/src/icons.rs:145
@@ -7660,7 +7660,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Before: `pub fn size(mut self, size: u16) -> Self`. After: `pub fn size(mut self, size: u32) -> Self` (one integer pixel type across `size`, `rasterize_svg` and `IconData::Rgba`), with the freedesktop-icons bound applied inside: `u16::try_from(size).unwrap_or(u16::MAX)` at the `with_size` call, documented ("sizes above 65535 look up the largest directory"). Use the same `u32` for M1-T6-07's `SfSymbolsLoader::size` and `SegoeIconsLoader::size`. The egui `IconKey.size` becomes `Option<u32>`.
 **Verdict:** CONFIRMED — `FreedesktopLoader::size(u16)` (icons.rs:145) mirrors freedesktop-icons' `with_size(u16)` (freedesktop.rs:277). egui keeps `size: Option<u16>` with an `as u16` cast (egui icons.rs:70, :121) only to feed it. The type matters for M1-T6-07's planned `.size()` on the other loaders. This is a consistency point, not a bug.
 **Triage:** maintainer — approved 2026-10-12 (Q2 item 5): `size(u32)`, clamped to `u16` inside; M1-T6-07's new `.size()` takes `u32` too.
-**Status:** open
+**Status:** fixed in 34d6d1f7 (breaking, approved)
 *Source:* API#10.
 
 #### M4-17 · api · api-break · native-theme/src/model/icons.rs:357
@@ -7669,7 +7669,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Maintainer's call; if done now: `IconSet::SegoeIcons` → `IconSet::SegoeFluent` (drop the `#[serde(rename)]`, `rename_all` gives `segoe-fluent`), `SegoeIconsLoader` → `SegoeFluentLoader`, `schema.rs:10` → `("segoe-fluent", "IconSet::SegoeFluent")`; `from_name`/`name` unchanged in behaviour. Before: `pub struct SegoeIconsLoader<'a>` / `IconSet::SegoeIcons`; after: `pub struct SegoeFluentLoader<'a>` / `IconSet::SegoeFluent`. CHANGELOG breaking line. If not done, record the decision so the mismatch is not re-raised.
 **Verdict:** CONFIRMED — The mismatch holds: `IconSet::SegoeIcons` uses `#[serde(rename = "segoe-fluent")]` (model/icons.rs:357-358), and schema.rs:10 maps `segoe-fluent`. No decision is recorded in archive, todo or ledger. Against renaming: the set also serves SHGetStockIconInfo stock icons and the MDL2 fallback (winicons.rs:5-7, :38-39), so "Fluent" is narrower than what the set holds. Maintainer's call.
 **Triage:** maintainer — delegated 2026-10-12 (Q4 item 14); decided by the session: rename to `IconSet::SegoeFluent` / `SegoeFluentLoader`, serialized names unchanged. Why: every serialized name is already `segoe-fluent` (TOML, `windows-11.toml:16-17`, the build schema, the README), so the rename changes no data; `SegoeIcons` does not cover the stock icons either, so the mismatch buys no accuracy; "Segoe" keeps the set apart from Microsoft's separate open-source Fluent UI System Icons, should that ever be bundled. The variant's doc states what the set holds: Segoe Fluent Icons glyphs (Segoe MDL2 Assets on Windows 10, same code points, `winicons.rs:298-299`) and the shell's stock icons (`SHGetStockIconInfo`, `LoadIconW`).
-**Status:** open
+**Status:** fixed in 34d6d1f7 (breaking, approved)
 *Source:* API#18.
 
 #### M4-18 · api · api-break · native-theme/src/lib.rs:241
@@ -7678,7 +7678,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Only if done together with the two moves above and M1-T6-06's new function (all landing in `icons`): lib.rs:240-249 drop `AnimatedIcon, EmptyFrameListError, FrameList, FramesData, IconData, IconProvider, IconRole, TransformAnimation, TransformData, icon_name` from `theme` and `pub use crate::model::{..}` them from `icons` (icons.rs), so `native_theme::icons::{IconRole, IconData, IconProvider, AnimatedIcon, MaterialLoader, ..}` is one import; codegen.rs:138 `impl {crate_path}::theme::IconProvider` → `impl {crate_path}::icons::IconProvider` (the `IconSet` paths stay `theme::IconSet`). Before: `native_theme::theme::IconRole`; after: `native_theme::icons::IconRole`. If not done, leave as is and record it: the README then keeps its two imports.
 **Verdict:** CONFIRMED — The icon data types are re-exported from `theme` (lib.rs:240-249), so the README icon example imports from both `icons` and `theme` (README.md:142-143). The archived v0.5.7 layout puts IconRole, IconSet, IconData, IconProvider, AnimatedIcon and TransformAnimation in `icons::` (archive/v0.5.7_native-theme-api.md:1380-1385), so the move matches the recorded design. "Only consumers are the loaders" is loose, since connectors use them too. Maintainer's call.
 **Triage:** maintainer — approved 2026-10-12 (Q3 item 11): the icon data types move from `theme` to `icons` (`docs/archive/v0.5.7_native-theme-api.md:1380-1385`); `codegen.rs`'s `IconProvider` path with them.
-**Status:** open
+**Status:** fixed in 2c9d969b (breaking, approved)
 *Source:* API#20.
 
 #### M4-19 · api · api-add · native-theme-build/src/codegen.rs:116
@@ -7687,7 +7687,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Emit docs from the data already at hand. codegen.rs:118 before: `pub enum {enum_name} {{`; after: `/// Icon roles generated by native-theme-build from `{config.name}`; each variant is a role that [`IconProvider`] maps to its platform identifiers.` then `pub enum {enum_name} {{`; :120 before `    {variant},`; after `    /// The `{role}` icon role.` + `    {variant},`; :127 before `    pub const ALL: &[Self] = &[`; after `    /// Every variant, in declaration order.` + the constant. Add an assertion to `compile_generated_code` with `#![deny(missing_docs)]` prepended to the written `lib.rs`. No signature changes.
 **Verdict:** CONFIRMED — codegen.rs:116-131 writes the enum, its variants and `ALL` with no doc comments. A consumer that `include!`s the file (README.md:59, lib.rs:99) into a publicly reachable module under `#![warn(missing_docs)]` gets one warning per item. The warning appears only when the enum is exported.
 **Triage:** fix — api-add.
-**Status:** open
+**Status:** fixed in c70fe05b
 *Source:* API#12.
 
 #### M4-20 · bug · S2 · native-theme/src/kde/mod.rs:249
@@ -7696,7 +7696,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Read `SmallDefault`, `ToolbarDefault`, `DesktopDefault`, `DialogDefault` and `PanelDefault` from `[Icon Theme]`, and leave a missing key as None so the preset or the KIconLoader fallback in platform-facts applies. Drop the Directories heuristics, and rebuild the test on the real Breeze header.
 **Verdict:** CONFIRMED — I ran the heuristic in kde/mod.rs:222-306 on /usr/share/icons/breeze/index.theme and got small 12 (from actions/12, :147), toolbar 22 and large 32. The file's own [Icon Theme] keys say SmallDefault=16 (:128) and DesktopDefault=48 (:122), matching platform-facts.md:702-705 and kde-breeze.toml:84-89. The reader's values merge over the preset's.
 **Triage:** fix — CONFIRMED bug. The changed value comes from the source the entry cites; the fix runs through the `preset-validator` (triage rule).
-**Status:** open
+**Status:** fixed in 56b687bc and 09dc0180 (KIconTheme's search order, its C++ fallback for an omitted key); kde-breeze validator PASS on scope after T36
 *Source:* R1#0.
 
 #### M4-21 · bug · S2 · native-theme/src/kde/mod.rs:381
@@ -7705,7 +7705,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Treat an unreadable or missing kdeglobals as empty content. Read it with `String::from_utf8_lossy`. Make the parse tolerant: skip the bad lines (pre-filter them, or a small KConfig-style line parser) rather than fail the read. The preset then supplies whatever the file does not.
 **Verdict:** CONFIRMED — KdeReader::read (kde/mod.rs:380-384) returns ReaderFailed when read_to_string fails, which covers both a missing file and a non-UTF-8 byte. configparser 3.3.0 ini.rs:904-909 errors on an unclosed '[', and :941-943 errors with 'Key cannot be empty' on a line starting with '='. read_through_pipeline (pipeline.rs:1154) passes the error up with `?`, so there is no preset fallback.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 598959b9; `kcmfonts` read with the same KConfig parser in b42b1568
 *Source:* R1#1.
 
 #### M4-22 · bug · S2 · native-theme/src/kde/mod.rs:59
@@ -7714,7 +7714,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Build one INI the way KConfig cascades: /etc/xdg/kdeglobals, then kdedefaults/kdeglobals, then the user file, each layered with configparser's `read_and_append` (ini.rs:660ff), with a missing file counting as empty. Parse once and take the name, flags, colours, fonts, icon theme and icon sizes from the merged result.
 **Verdict:** CONFIRMED — On this machine ~/.config/kdeglobals has only ColorSchemeHash (:136), while ~/.config/kdedefaults/kdeglobals:2 has ColorScheme=BreezeDark, so name falls back to "KDE" (kde/mod.rs:59-61). The kdedefaults cascade (:393-409) fills only icon_theme, and it runs after from_kde_content has already computed icon sizes (:121-123), so a theme found that way gets no sizes.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 598959b9 and b4fe3e5a; the icon-theme detection reads the same cascade since 62c13acf (ruling)
 *Source:* R1#2.
 
 #### M4-23 · bug · S2 · native-theme/src/kde/mod.rs:415
@@ -7723,7 +7723,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Set `defaults.enable_inline_comments = false` in create_kde_parser. Only whole-line comments are then dropped (ini.rs:885), which is all KConfig honours.
 **Verdict:** CONFIRMED — create_kde_parser (kde/mod.rs:415-420) keeps configparser's defaults: enable_inline_comments true (ini.rs:222) with comment symbols ';' and '#' (:203), and parse cuts each value at the first one (ini.rs:893-898). Note: the hex-colour case is moot today, because parse_rgb (:426) accepts only R,G,B anyway.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 598959b9
 *Source:* R1#3.
 
 #### M4-24 · bug · S2 · native-theme/src/gnome/mod.rs:86
@@ -7732,7 +7732,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Use `!size.is_finite() || size <= 0.0`, as kde/fonts.rs does, so a bad value drops only that font and the preset's stays.
 **Verdict:** CONFIRMED — gnome/mod.rs:85-86 only checks `size <= 0.0`, and Rust's f32 parse accepts "NaN" and "inf". check_font (resolve/validate_helpers.rs:481) then rejects the non-finite size, and replay passes the error up with `?` (pipeline.rs:95-101), so the whole read fails.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in f7bfb8ef
 *Source:* R1#4.
 
 #### M4-25 · bug · S2 · native-theme/src/gnome/mod.rs:83
@@ -7741,7 +7741,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Parse per Pango: strip a trailing `#features` / `@variations`, then take the size (with `px` giving FontSize::Px). Peel any number of trailing style, variant, weight and stretch words, case-insensitively, mapping weight and style. Take the first family of the comma list.
 **Verdict:** CONFIRMED — extract_weight_from_family (gnome/mod.rs:110-121) strips one case-sensitive weight word only when it is the last word, so 'Cantarell Italic 11' and 'Noto Sans Bold Italic 11' keep the style words in the family. A last token of '15px' or '@wght=200' fails the f32 parse (:85) and returns None, and 'Cantarell, Sans' stays as the family. No test or todo entry covers these.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in f7bfb8ef
 *Source:* R1#5.
 
 #### M4-26 · bug · S2 · native-theme/src/gnome/mod.rs:443
@@ -7751,7 +7751,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Race the portal block (and detect_portal_backend) against a timer, using async-io's Timer, which ashpd's `async-io` feature already pulls in, or build the connection with `method_timeout` and use `Settings::with_connection`. Give the whole reader one overall deadline rather than 2 s per subprocess.
 **Verdict:** CONFIRMED — Settings::new goes to ashpd proxy.rs:80-89, which builds the proxy and awaits get_property("version") with no timeout of its own. zbus 5.19 builder.rs:660 defaults method_timeout to None, and gnome/mod.rs:443-460 and :497-505 add no deadline. How long it actually blocks depends on the bus: dbus-broker (active here) has no reply timeout, and dbus-daemon's session.conf:69 allows a 120 s service start. Not in todo.md or the ledger.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 45a82aba (one 2 s deadline per portal block, ruling) and 150f43d4 (the GNOME reader's `gsettings` reads share one deadline)
 *Source:* R1#6, R2#9.
 
 #### M4-27 · bug · S2 · native-theme/src/gnome/mod.rs:445
@@ -7760,7 +7760,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** When the portal gives no colour scheme, fall back to `gsettings get org.gnome.desktop.interface color-scheme`, as detect does. Better, share one helper so the reader and system_is_dark cannot disagree.
 **Verdict:** CONFIRMED — When Settings::new fails, GnomeReader passes ColorScheme::NoPreference (gnome/mod.rs:447-452), and a failed color_scheme() also falls back to the default (:457), so is_dark is false (:388). detect_is_dark_inner (detect.rs:526-534) falls back to `gsettings get … color-scheme`, so the two answers can differ.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 150f43d4
 *Source:* R1#7.
 
 #### M4-28 · bug · S2 · native-theme/src/gnome/mod.rs:540
@@ -7770,7 +7770,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Prefer a backend that is running (`list_names` / `NameHasOwner`) over one that is only activatable. If both kinds match, return None and let the kdeglobals or adwaita fallback decide, rather than taking the first hit.
 **Verdict:** CONFIRMED — detect_portal_backend (gnome/mod.rs:540-558) returns the first name in list_activatable_names that contains kde or gnome, without checking which backend is running. Activatable names come from the service files, and this machine has both gtk and kde impl portals installed. M3-23 records only the cost of this call, not the ambiguity.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 45a82aba
 *Source:* R1#8, R2#7.
 
 #### M4-29 · bug · S2 · native-theme/src/kde/fonts.rs:50
@@ -7779,7 +7779,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Map the Qt6 weight with `u16::try_from(raw_weight).ok().map(|w| w.clamp(100, 900))`, or return None for out-of-range, so one bad font falls back to the preset.
 **Verdict:** CONFIRMED — kde/fonts.rs:50 casts the Qt6 weight with `raw_weight as u16` and no range check: 950 passes through, and 65537 wraps to 1. check_font (validate_helpers.rs:491) rejects weights outside 100..=900, and the error fails the whole pipeline.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 9ed0ca92, f8b4cd65 and ef4972e5 (Qt's legacy weight table; any Qt6 integer weight clamped as `setWeight` clamps it)
 *Source:* R1#10.
 
 #### M4-30 · bug · S2 · native-theme/src/kde/mod.rs:149
@@ -7788,7 +7788,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Parse as `u32` and drop 0, matching the kcfg type, and fall through to Xft.dpi on failure. Whatever the 6.8 decision, apply it to both copies (see the duplication finding).
 **Verdict:** CONFIRMED — parse_force_font_dpi (kde/mod.rs:143-146) and detect_font_dpi (:160-167) accept any f32 above 0, so inf gets through. check_font_dpi then fails run_pipeline on inf (pipeline.rs:89 → validate_helpers.rs:374,576). This parse bug is distinct from the known 'Plasma 6.8 ignores forceFontDPI' item, though dropping the key would remove it too.
 **Triage:** fix — CONFIRMED bug. Reported as `bug S3`; the session files it as S2 (wrong output, no slowness).
-**Status:** open
+**Status:** fixed in 9ed0ca92 (`forceFontDPI` a `u32 > 0`, on X11 only, ruling); read from `kcmfonts`, the file Plasma opens, in 49e0067a
 *Source:* R1#11.
 
 #### M4-31 · bug · S2 · native-theme/src/kde/mod.rs:335
@@ -7798,7 +7798,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Search `crate::icons::icon_base_dirs()` after checking `is_theme_name(theme_name)`, and delete the hand-rolled search.
 **Verdict:** CONFIRMED — find_index_theme_path (kde/mod.rs:335-367) hardcodes ~/.local/share/icons, never searches ~/.icons or $XDG_DATA_HOME, and validates no theme name. With XDG_DATA_DIRS set to "", the split gives only the skipped empty entry (:351-356), so no system directory is searched. By contrast, icons.rs:678-705 and is_theme_name (:711) handle all of these; is_theme_name is private and would need pub(crate).
 **Triage:** fix — CONFIRMED bug; with R4's duplicate claim (the reader re-implements `icon_base_dirs`): the reader uses the icon loader's base list.
-**Status:** open
+**Status:** fixed in 56b687bc and 09dc0180
 *Source:* R1#12, R4#10.
 
 #### M4-32 · bug · S2 · native-theme/src/watch/kde.rs:47
@@ -7808,7 +7808,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Send each backend's setup result (`Ok(handle)` or `Err(reason)`) through the handshake channel only after the subscription or watch is in place, and map `Err` to `Error::ReaderFailed`. KDE can instead build the notify watcher on the calling thread and move it into the thread.
 **Verdict:** CONFIRMED — KDE has no handshake: recommended_watcher or watch failing ends the thread silently (kde.rs:45-55), yet :109 returns Ok. GNOME sends the connection (gnome.rs:35) before the Proxy and receive_signal_with_args steps (:40-58), each of which can fail with a bare return. Windows sends the thread ID (windows.rs:47) before CoInitializeEx, UISettings::new and ColorValuesChanged (:55-84). The doc at mod.rs:221-225 promises an error only for the earlier failures.
 **Triage:** fix — CONFIRMED bug: the doc promises `ReaderFailed` when the backend cannot start; behavioural, no signature change, so not an api-break question (the API reviewer filed it as one).
-**Status:** open
+**Status:** fixed in 1cea9fb6 (Windows), 35bd7f32 and b5465d23 (macOS), 7988c1ec (KDE, GNOME); the macOS, Windows and GNOME setup-error paths are known-unrun
 *Source:* R2#2, API#0.
 
 #### M4-33 · bug · S2 · native-theme/src/watch/mod.rs:188
@@ -7817,7 +7817,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add one helper in watch/mod.rs that every backend calls, `fn fire(cb: &impl Fn(ThemeChangeEvent)) { let _ = std::panic::catch_unwind(AssertUnwindSafe(|| cb(ThemeChangeEvent::Changed))); }`, and document that a panicking callback is contained and the watcher keeps running.
 **Verdict:** CONFIRMED — Windows: TypedEventHandler's Invoke is `unsafe extern "system"` (windows-0.62.2 src/Windows/Foundation/mod.rs:2547), and with MSRV 1.88 a panic that leaves it aborts the process. Linux: the panic ends the KDE or GNOME thread, and the join result is discarded (mod.rs:188). macOS: block2 0.6.2 invokes the block as `extern "C-unwind"` (src/traits.rs:39, :105), so the panic unwinds through Foundation, past CFRunLoop::run (macos.rs:244), and skips removeObserver (:250-253). No docs or archive entry chooses this behaviour.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 7988c1ec and f7a38745 (a callback that drops its own subscription detaches the thread)
 *Source:* R2#3.
 
 #### M4-34 · bug · S2 · native-theme/src/watch/kde.rs:63
@@ -7826,7 +7826,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Check `shutdown_rx.try_recv()` at the top of every loop iteration, not only on timeout. Alternatively, give KDE a platform shutdown that drops or wakes the notify sender so that `recv_timeout` returns `Disconnected`.
 **Verdict:** CONFIRMED — notify 8.2.0's inotify mask includes OPEN (src/inotify.rs:427), so any open of an entry directly in ~/.config wakes recv_timeout with Ok. The shutdown channel is checked only on Timeout (kde.rs:94-100), and the Access-event `continue` (:79-81) loops back without checking it. So Drop's join waits until there is a gap of at least 200 ms between events.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 7988c1ec
 *Source:* R2#4.
 
 #### M4-35 · bug · S2 · native-theme/src/detect.rs:805
@@ -7835,7 +7835,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Tag each slot with an invalidation generation (an `AtomicU64` bumped by every `invalidate_*`). Each filler records the generation before detecting and stores with `compare_and_swap` against the empty slot it loaded, or skips the store when the generation has moved.
 **Verdict:** CONFIRMED — Each filler loads, detects and stores unconditionally: is_dark (detect.rs:803-808), prefers_reduced_motion (:817-822), reader_accessibility_with (:853-860) and icon_theme_with (:891-897). An invalidate_* (:916-937) that lands between the detect and the store is overwritten by the value detected before the change. A test could drive icon_theme_with with a closure that blocks while invalidate_icon_theme runs, then check that the slot still holds the old value.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 58a2ad72
 *Source:* R2#5.
 
 #### M4-36 · bug · S2 · native-theme/src/watch/mod.rs:233
@@ -7844,7 +7844,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Have the watcher dispatch on the same refined desktop the reader uses: one shared function, which the M3-23 cache of the refined desktop could serve. Unknown-refined-to-KDE then gets `watch_kde` and Unknown-with-GNOME-portal gets `watch_gnome`.
 **Verdict:** CONFIRMED — on_theme_change dispatches on the raw detect_linux_desktop() (watch/mod.rs:233-245), so Unknown gets WatchUnavailable. select_reader refines Unknown through detect_portal_backend and then refine_linux_desktop (pipeline.rs:1033-1065) and runs the KDE or GNOME reader. M3's T11 row (ledger :7354) unifies only the pipeline's mapping, and docs/todo.md:2624 covers only the DPI half, so the watcher mismatch is not recorded anywhere.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 62c13acf and 7553e77d
 *Source:* R2#6.
 
 #### M4-37 · bug · S2 · native-theme/src/detect.rs:200
@@ -7853,7 +7853,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Drain stdout while waiting: a helper thread doing `read_to_end`, joined with the same deadline, or non-blocking reads inside the poll loop. Kill and reap on the `try_wait` error path too. The general helper docs/todo.md:2639 asks for should get the same treatment.
 **Verdict:** CONFIRMED — detect.rs:204-212 calls read_to_string only after try_wait reports an exit. A child whose output exceeds the pipe capacity blocks in write and never exits, so it is killed at the deadline (:215-219) and the call returns None. The Err path at :224 returns without killing the child. Practical triggers are rare (xrdb -query rarely passes 64 KiB). A test running `head -c 70000 /dev/zero` through run_with_timeout would show the None.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 6c2327d4
 *Source:* R2#8.
 
 #### M4-38 · bug · S2 · native-theme/src/windows.rs:418
@@ -7862,7 +7862,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Stop writing `button.primary_text_color`, so it inherits `defaults.accent_text_color` from the preset (or read `UISettings` and state the Fluent value if a live source exists). Then settle `primary_background` against WinUI's `AccentFillColorDefault` and the facts row :1175.
 **Verdict:** CONFIRMED — windows.rs:418 sets primary_text_color = fg, the UIColorType::Foreground (:534): black in light mode over AccentDark1 (:409), white in dark mode over AccentLight1. platform-facts.md:1176 gives ← defaults.accent_text_color, which is TextOnAccentFillColorPrimary L #fff / D #000 (:1049), and the preset states that value (windows-11.toml:55, :552). This override is not in m4-known's M2b list.
 **Triage:** fix — CONFIRMED bug. The changed value comes from the source the entry cites; the fix runs through the `preset-validator` (triage rule). Severity lowered from the reviewer's S1 by the session: wrong output on one platform is the plan's S2.
-**Status:** open
+**Status:** fixed in 8c133614, 8ccdbed0 and 01116bd1 (the label inherits `accent_text_color`; outside high contrast the reader's accent fills are `AccentFillColorDefault`, under it `COLOR_HIGHLIGHT` with `COLOR_HIGHLIGHTTEXT` text). The related note's preset half: windows-11 states `checked_background` as `AccentFillColorDefault` (9284f52b); its static `primary_background` stays on the accent until M5 (ruling, ee75ad7e; docs/todo.md)
 *Source:* R3#2.
 
 #### M4-39 · bug · S2 · native-theme/src/windows.rs:416
@@ -7871,7 +7871,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Remove the three assignments so the preset's sourced values stand, or read a live source the facts row names (COLOR_HIGHLIGHT for selection). Update the two tests to assert the fields are None.
 **Verdict:** CONFIRMED — windows.rs:414, :416 and :425-428 set selection_background = accent, surface_color = bg and disabled_text_color = the fg/bg midpoint, with no source. platform-facts.md:1055 (COLOR_HIGHLIGHT), :1050 (CardBackgroundFillColorDefault) and :1060 (TextFillColorDisabled) say otherwise, and the tests at :797, :1272 and :1292 pin the derived values. m4-known lists only list.selection_*, not these defaults.
 **Triage:** fix — CONFIRMED bug. The changed value comes from the source the entry cites; the fix runs through the `preset-validator` (triage rule).
-**Status:** open
+**Status:** fixed in 8c133614 and 8ccdbed0
 *Source:* R3#3.
 
 #### M4-40 · bug · S2 · native-theme/src/watch/macos.rs:42
@@ -7880,7 +7880,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Store a `CFRetained<CFRunLoop>` in the wrapper (`unsafe impl Send`, sound because CF retain/release and CFRunLoopStop are thread-safe), so `stop()` on a loop whose thread has exited is a harmless no-op. Also return Err if `run()` returned before shutdown was asked for.
 **Verdict:** PLAUSIBLE — SendableCFRunLoop (watch/macos.rs:160, :172) is unretained: once the thread drops `run_loop` and exits, stop() at :267 can read freed memory. That needs CFRunLoop::run() (:244) to return on its own, which happens only if the distributed-notification observer adds no source to this thread's run loop. Confirming it needs a macOS run that checks whether run() returns at once (kCFRunLoopRunFinished).
 **Triage:** fix — PLAUSIBLE, folded into the macOS watcher's rewrite for the S1 drop hang (same code): the wrapper holds a retained run loop; gate: that entry's subscribe-and-drop test on the macOS leg.
-**Status:** open
+**Status:** fixed in 35bd7f32 and b5465d23 (no watcher thread, so no run loop to hold)
 *Source:* R3#4.
 
 #### M4-41 · bug · S2 · native-theme/src/watch/windows.rs:105
@@ -7889,7 +7889,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Drop `handler` and `settings` explicitly (or hold them in a guard declared after a COM guard) before `CoUninitialize`. Send a `Result<u32, Error>` over the channel after `ColorValuesChanged` succeeds, and map an Err to `Error::ReaderFailed`.
 **Verdict:** CONFIRMED — `settings` and `handler` are still in scope at CoUninitialize (watch/windows.rs:105; also :81), so Rust releases them afterwards, against Microsoft's rule that every COM object is released before CoUninitialize. The id is sent at :47 before the failing steps at :56, :63 and :79, so watch_windows returns Ok(:125) with a thread that has exited, and Drop then posts to a thread id that is no longer valid.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 1cea9fb6 and 4bcdb1a6
 *Source:* R3#5.
 
 #### M4-42 · bug · S2 · native-theme/src/winicons.rs:347
@@ -7898,7 +7898,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Allocate a size×size canvas (with the font made at `-size`, an em height, or using TEXTMETRIC tmAscent) and copy the black box in at (gmptGlyphOrigin.x, ascent - gmptGlyphOrigin.y), clipped. M1-T6-07's `.size(px)` work needs the em box anyway.
 **Verdict:** CONFIRMED — winicons.rs:365-383 builds the raster at gmBlackBoxX × gmBlackBoxY and ignores gmptGlyphOrigin, so each glyph comes back at its ink-box size. M1-T6-07 (ledger :800) assumes the raster is 'at that pixel size' and schedules only .size(px), so this defect is not recorded there.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in d1469e46 and aed8b5f1 (the em box starts at `tmAscent − tmInternalLeading`); the Windows test is known-unrun
 *Source:* R3#6.
 
 #### M4-43 · bug · S2 · native-theme/src/winicons.rs:163
@@ -7907,7 +7907,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Return None (after the existing cleanup) when `hdc.is_invalid()` or when `GetDIBits` returns anything other than `height`.
 **Verdict:** CONFIRMED — winicons.rs:163-172 ignores both an invalid hdc and GetDIBits' return value, then returns Some on the zero-filled buffer allocated at :161, giving a transparent icon. Only the zero-size check at :145 returns None.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in d1469e46 (no test: a GDI failure cannot be induced)
 *Source:* R3#7.
 
 #### M4-44 · bug · S2 · native-theme/src/macos.rs:442
@@ -7916,7 +7916,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** In `read_macos`, check `os_version().major >= 11` (already read for the generation table), or use objc2's `available!` macro (objc2-0.6.4 src/macros/available.rs:132), and return `Error::ReaderFailed` below it. In `load_sf_icon_by_name`, return None. Or document the minimum version.
 **Verdict:** PLAUSIBLE — read_macos calls performAsCurrentDrawingAppearance (macos.rs:441, :456), which Apple documents as macOS 11+; objc2-app-kit 0.3.2 does not encode availability. No version gate exists, and the generation table starts at 12 (pipeline.rs:514). The exact failure on 10.15 (exception unwind, abort, or objc2 debug verification) needs a run there.
 **Triage:** defer (docs/todo.md) — PLAUSIBLE and unreproducible: no GitHub runner is older than macOS 14; the fix phase states in the README the oldest macOS the reader supports (11, the first with `performAsCurrentDrawingAppearance`, as the verifier read it), the runtime gate stays a todo entry.
-**Status:** open
+**Status:** the README states macOS 11 as the macOS reader's minimum (d0589b3a); the runtime gate is deferred (docs/todo.md)
 *Source:* R3#8.
 
 #### M4-45 · bug · S2 · native-theme/src/windows.rs:141
@@ -7925,7 +7925,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Map `lf_weight <= 0` to `None` (so the preset weight stands), clamp the rest, and change the test.
 **Verdict:** CONFIRMED — windows.rs:141 clamps lfWeight 0 (FW_DONTCARE) to 100. The test at :717 pins weight 0 → 100 as ordinary clamping, without considering FW_DONTCARE.
 **Triage:** fix — CONFIRMED bug. The changed value comes from the source the entry cites; the fix runs through the `preset-validator` (triage rule).
-**Status:** open
+**Status:** fixed in 8f1ba008
 *Source:* R3#9.
 
 #### M4-46 · bug · S2 · native-theme/src/icons.rs:145
@@ -7934,7 +7934,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Clamp the size before the lookup: `size.min(i16::MAX as u16)` (a type bound, not a theme value). Alternatively, document and enforce a maximum in `FreedesktopLoader::size`.
 **Verdict:** CONFIRMED — freedesktop-icons-0.4.0 theme/directories.rs:35 does `size as i16` (32768 becomes -32768), and :39 `scaled_size - scaled_requested_size` overflows. It runs on the closest-size pass (theme/mod.rs:78-84) after the exact pass misses. The workspace's dev profile overrides only opt-level (Cargo.toml:31-35), so overflow checks stay on in deps. icons.rs:145 passes any u16 through unchecked (freedesktop.rs:277).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in ec23bb1b
 *Source:* R4#2.
 
 #### M4-47 · bug · S2 · native-theme/src/freedesktop.rs:590
@@ -7943,7 +7943,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Pass the symbolic spinner's bytes through `normalize_gtk_symbolic(bytes, "currentColor")`, as load_icon_file does for `-symbolic` files, so connectors colour it like any other symbolic icon.
 **Verdict:** CONFIRMED — freedesktop.rs:587-596 wraps the raw bytes of process-working-symbolic, while load_icon_file runs normalize_gtk_symbolic for -symbolic files (:366-368). gpui's colorize_svg (connectors/native-theme-gpui/src/icons.rs:1356-1390) replaces only currentColor or black, so a child fill="#2e3436" survives. The installed Adwaita here has dropped the icon (Adwaita 48, docs/archive/v0.4.0-animated-icons.md:37), so this shows only with older Adwaita or another GTK-convention theme.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in ec23bb1b
 *Source:* R4#3.
 
 #### M4-48 · bug · S2 · native-theme/src/icons.rs:724
@@ -7952,7 +7952,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Take one snapshot of the installed theme names (a OnceLock built over icon_base_dirs at the first call of any of the three) and have has_theme_index and list_freedesktop_themes read it, so listed, available and searched agree. At minimum, correct the :661-663 claim and the list/available docs.
 **Verdict:** CONFIRMED — has_theme_index (icons.rs:724) and list_freedesktop_themes re-read the filesystem on each call. The lookup uses freedesktop-icons' `THEMES: Lazy` (theme/mod.rs:15) and cached_theme_chain/stems (freedesktop.rs:99, :226), so they disagree, which contradicts :661-663. The loader doc (icons.rs:96-100) does record the restart behaviour, so what is left to fix is the list/available disagreement and the :661-663 claim.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in ec23bb1b
 *Source:* R4#4.
 
 #### M4-49 · bug · S2 · native-theme/src/model/icons.rs:726
@@ -7961,7 +7961,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Pick the Unknown desktop's icon-theme source with the same refinement select_reader uses (portal backend, then kdeglobals presence), or take the icon theme from the selected reader's output where one ran, so one rule decides both.
 **Verdict:** CONFIRMED — With portal on and a GNOME backend, select_reader's Unknown arm (pipeline.rs:1033-1050) picks GnomeReader, which sets tier-1 icon_theme from gsettings (gnome/mod.rs:405-406). Meanwhile detect_linux_icon_theme's Unknown arm (model/icons.rs:726-729) tries kdeglobals first. It is the icon-theme counterpart of docs/todo.md:2624 (font DPI), which does not cover this case, and no ledger entry does.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 62c13acf and 7553e77d
 *Source:* R4#5.
 
 #### M4-50 · bug · S2 · native-theme/src/rasterize.rs:64
@@ -7970,7 +7970,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Use `tiny_skia::Transform::from_scale(scale, scale).post_translate(offset_x, offset_y)` (equivalently `from_row(scale, 0.0, 0.0, scale, offset_x, offset_y)`), and add the non-square test above.
 **Verdict:** CONFIRMED — In tiny-skia-path 0.12.0 (the version resvg 0.48.1 uses), `post_scale` is `post_concat(from_scale)` = concat(scale, self), so the translation gets scaled too (its own test at transform.rs:493-495 turns tx 1.2 into 2.4). For 10x5 at size 100: scale 10, offset_y 25, so y maps to 10y+250, which is outside the 100px pixmap. Every test (rasterize.rs:83-150) uses a square viewBox. (I ran one read-only `cargo tree --offline` to confirm the resvg version.)
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in fd5e41aa
 *Source:* R5#0.
 
 #### M4-51 · bug · S2 · native-theme/src/rasterize.rs:58
@@ -7979,7 +7979,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Allocate the buffer fallibly: `let mut v = Vec::new(); v.try_reserve_exact(len)` mapped to Err, then `v.resize(len, 0)` and `Pixmap::from_vec(v, IntSize::from_wh(size, size)?)`. Alternatively, document a maximum size and reject anything above it with Err. Fix the doc either way.
 **Verdict:** CONFIRMED — tiny-skia-0.12.0 pixmap.rs:43-53 `Pixmap::new` only checks for size overflow, then runs an infallible `vec![0; data_len]` (its own comment says it cannot check the allocation), so a failed 40 GB allocation calls handle_alloc_error and aborts. With overcommit it may instead get OOM-killed in unpremultiply_alpha. Either way the Err that rasterize.rs:18-19 documents for a failed allocation never comes back.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in fd5e41aa
 *Source:* R5#1.
 
 #### M4-52 · bug · S2 · native-theme-build/src/schema.rs:21
@@ -7989,7 +7989,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add the six variants to DE_TABLE; the maintainer picks the TOML keys. Base the drift test on native-theme instead of a hand list, for example by running every XDG token parse_linux_desktop knows through it, or through a public list of variants. Update the three cosmic-is-unknown tests.
 **Verdict:** CONFIRMED — DE_TABLE (schema.rs:21-29) has 7 keys, but LinuxDesktop (native-theme/src/detect.rs:17-46) also has Hyprland/Sway/River/Niri/Wayfire/CosmicDe, and parse_linux_desktop returns CosmicDe for "COSMIC" (detect.rs:104). validate_de_keys (validate.rs:233-238) warns, and de_key_to_variant drops the arm (codegen.rs:47-52). The drift test the v0.5.4 archive relied on to catch this (docs/archive/v0.5.4_native-theme-build.md:1350-1354) checks a hand list of 7 (schema.rs:329-336), so it missed the drift.
 **Triage:** fix — CONFIRMED bug and api-add: the six missing desktop keys, and a test that ties `DE_TABLE` to `LinuxDesktop`'s variants.
-**Status:** open
+**Status:** fixed in b8f228bf; the drift tests read `detect.rs` at run time since ca714653 and fail on a moved one since 5eb7ab1c
 *Source:* R6#0, API#13.
 
 #### M4-53 · bug · S2 · native-theme-build/src/codegen.rs:99
@@ -7998,7 +7998,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Either document that each generated file needs its own module, or stop emitting the `extern crate` (crate_path() already covers renamed dependencies). The maintainer decides, since the extern crate was a recorded design choice.
 **Verdict:** CONFIRMED — codegen.rs:97-102 writes `extern crate native_theme;` into every file generated with the default path. Two `include!`s in one module therefore declare the same extern crate twice, which is E0259. Neither lib.rs:99-113 nor README.md:59 tells users to give each file its own module. The extern crate was a recorded choice (docs/archive/v0.5.1_native-theme-build-API.md:1847-1916), and no ledger or todo entry mentions this conflict.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 9d53b9f7
 *Source:* R6#1.
 
 #### M4-54 · bug · S2 · native-theme-build/src/lib.rs:698
@@ -8007,7 +8007,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Have the per-file pass check roles only, and check the enum name once on the merged config (lib.rs:768), which holds the name that is actually used.
 **Verdict:** CONFIRMED — The per-file validate_identifiers(config, Some(file_path)) at lib.rs:698 checks config.name (validate.rs:278-298) whatever enum_name_override says. A "3d-icons" name gives InvalidIdentifier even though the merged check at lib.rs:768 validates the override name, which is the one actually used.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 5b940d7d
 *Source:* R6#2.
 
 #### M4-55 · perf · S3 · native-theme/src/gnome/mod.rs:406
@@ -8016,7 +8016,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Have build_gnome_variant return the icon theme it already read, or have build_gnome_variant_pure set `defaults.icon_theme`, and delete the second read at :406-407.
 **Verdict:** CONFIRMED — build_gnome_variant reads icon-theme at gnome/mod.rs:351 into GnomePortalData, which build_gnome_variant_pure never reads (:244-245). build_theme then spawns the same gsettings again at :406-407. To confirm, count the `gsettings get org.gnome.desktop.interface icon-theme` execve calls in one from_system under strace -f -e trace=execve; expect 2 or more.
 **Triage:** fix — perf; gate: the GNOME reader's `gsettings` spawn count (one per key) and a before/after timing; it also deletes code.
-**Status:** open
+**Status:** fixed in 150f43d4 (one `gsettings` spawn per key: 25 → 13 icon-theme spawns per 12 reads; the timing is re-run at Step 8, ruling)
 *Source:* R1#9.
 
 #### M4-56 · perf · S3 · native-theme/src/freedesktop.rs:165
@@ -8025,7 +8025,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Drop ".xpm" from ICON_FILE_ENDINGS. The superset only needs the endings freedesktop-icons can return. Keep `.xmp`, since a hit on it decides which chain theme answers.
 **Verdict:** CONFIRMED — freedesktop-icons-0.4.0 builds only .svg, .png and .xmp paths (theme/mod.rs:105-150; no xpm anywhere in src), and lookup_in_chain does not use with_cache (freedesktop.rs:274-280). So an .xpm-only stem that passes the prefilter (:165, :208-212) always takes the uncached miss path and returns None. No rationale for .xpm is recorded beyond the doc line. To confirm the cost, time 20 FreedesktopLoader loads of an .xpm-only name in a test theme with and without .xpm in ICON_FILE_ENDINGS.
 **Triage:** fix — perf; gate: the freedesktop timing probe with an `.xpm`-only name, before/after on the release profile; dropped if the gain is below the noise floor. Reported as perf S4; filed S3 (the miss path it re-enters is the 47–66 ms one).
-**Status:** open
+**Status:** fixed in a622a831 (the `.xpm`-only probe median 2.738 ms [2.278–2.741] → 311 ns [310–331])
 *Source:* R4#12.
 
 #### M4-57 · bug · S4 · native-theme/src/kde/fonts.rs:36
@@ -8034,7 +8034,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** When field 1 is -1 and field 2 is positive, return FontSize::Px(field2). Map field 5 (0, 1, 2) to FontStyle.
 **Verdict:** CONFIRMED — parse_qt_font_with_weight drops a font whose field 1 is -1, because of the `size <= 0.0` check (kde/fonts.rs:35-37), and it never reads field 2 or field 5. A QFont::toString string set by pixel size therefore falls back to the preset font.
 **Triage:** fix — CONFIRMED bug. The changed value comes from the source the entry cites; the fix runs through the `preset-validator` (triage rule).
-**Status:** open
+**Status:** fixed in 9ed0ca92, f8b4cd65 and ef4972e5 (a pixel-sized body gives pixel headings, qtdeclarative cited)
 *Source:* R1#17.
 
 #### M4-58 · bug · S4 · native-theme/src/detect.rs:553
@@ -8043,7 +8043,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Use one helper for the config directory (empty or relative means unset, then $HOME/.config) and call it from both detect.rs and kde/mod.rs.
 **Verdict:** CONFIRMED — detect.rs:553-556 falls back only when the variable is unset (unwrap_or_else on Err), so XDG_CONFIG_HOME="" reads /gtk-3.0/settings.ini. kde::kdeglobals_path treats an empty value as unset (kde/mod.rs:442-446). kde/mod.rs:190 and model/icons.rs:928-934 are two more copies of the lookup. None of them rejects a relative path, as the XDG spec requires.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 6c2327d4
 *Source:* R2#10.
 
 #### M4-59 · bug · S4 · native-theme/src/detect.rs:588
@@ -8052,7 +8052,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Make `run_with_timeout` `cfg(unix)` and use it for `defaults`, or document that this path is unbounded.
 **Verdict:** CONFIRMED — detect.rs:588-596 runs `defaults read -g AppleInterfaceStyle` with Command::output() and no bound, while run_with_timeout is cfg(target_os = "linux") only (:192). docs/todo.md:2639 covers only Linux icon-theme detection, so this is not recorded.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 6c2327d4
 *Source:* R2#13.
 
 #### M4-60 · bug · S4 · native-theme/src/winicons.rs:361
@@ -8061,7 +8061,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Iterate `gray_buf.chunks(pitch).take(glyph_h)` with `row.get(..glyph_w)`, return None when `buf_size < pitch * glyph_h`, and compute the buffer sizes with `checked_mul`, returning None on overflow.
 **Verdict:** CONFIRMED — The OS-sized arithmetic and indexing are there: unchecked u32 products at winicons.rs:161 and :364, `gray_buf[y * pitch + x]` at :367 with no check of buf_size against pitch*glyph_h, and `&actual_name[..len as usize]` at :273. This breaks the strict no-panic rule. The point about the lint seeing only Linux features is already known (m4-known: M1's close, strict-panic CI lints the Linux feature set only).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in d1469e46
 *Source:* R3#10.
 
 #### M4-61 · bug · S4 · native-theme/src/rasterize.rs:40
@@ -8070,7 +8070,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Build the options with `image_href_resolver: usvg::ImageHrefResolver { resolve_data: usvg::ImageHrefResolver::default_data_resolver(), resolve_string: Box::new(|_, _| None) }`, so only inline data: images are used.
 **Verdict:** CONFIRMED — rasterize.rs:40 uses `usvg::Options::default()`. In usvg-0.48.1, options.rs:106/116 sets resources_dir None and the default ImageHrefResolver, and image.rs:85-103 `default_string_resolver` calls `std::fs::read(get_abs_path(href))`, which is the bare relative path (options.rs:130-134), i.e. relative to the CWD. It is not feature-gated, and sub-SVGs load through load_sub_svg.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in fd5e41aa
 *Source:* R5#2.
 
 #### M4-62 · bug · S4 · native-theme/src/model/bundled.rs:27
@@ -8079,7 +8079,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Remove the two examples (bundled.rs:20-34, :192-203), or point them at `MaterialLoader` / `LucideLoader`, whose results do not depend on the platform.
 **Verdict:** CONFIRMED — Doctest bundled.rs:27-34 runs (rustdoc runs doctests on pub(crate) items). On macOS+system-icons, icons.rs:308-313 maps ActionCopy to "doc.on.doc" through load_sf_icon_by_name, and sficons.rs:192-198's macOS test asserts that same symbol returns Some, so the `is_none()` assert fails. CI never runs native-theme tests on macOS with system-icons (ci.yml:107-111), which is why it went unseen. The second doctest (:197-203, name "check") probably passes, since that is not an SF Symbol name.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in fd5e41aa
 *Source:* R5#5.
 
 #### M4-63 · bug · S4 · native-theme-build/src/lib.rs:779
@@ -8088,7 +8088,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Run the merged-config checks only when there is more than one source, and only for what crosses files. Or deduplicate the error list before returning it, and skip the theme-directory step for themes that are already unknown.
 **Verdict:** CONFIRMED — For a single source: validate_themes runs per file with a hint (lib.rs:702) and again on the merged config with None (lib.rs:779). The bundled loop then finds no `materal` directory and pushes IoRead (lib.rs:802-811), giving three errors. ThemeOverlap is also reported twice, per file (lib.rs:690) and merged (lib.rs:715).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 5b940d7d
 *Source:* R6#3.
 
 #### M4-64 · bug · S4 · native-theme-build/src/error.rs:392
@@ -8097,7 +8097,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Build a single line from e.message() and e.span(), with the span converted to line:column against the content, for example '<path>:3:9: invalid type ...'. Or emit one directive per message line.
 **Verdict:** CONFIRMED — In toml 1.1.5, de::Error's Display is multi-line: a 'TOML parse error at line..' header, a snippet and a caret line, then the message (~/.cargo/registry/src/*/toml-1.1.5+spec-1.1.0/src/de/error.rs:116-160). IoParse.reason = e.to_string() (lib.rs:530-532, :315-316, :900), and error.rs:392 prints it in one `cargo::error=` println, so only the first line becomes the directive.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 649e4bed (the `cargo::error` line carries the cause and position; `IoParse` kept, ruling)
 *Source:* R6#5.
 
 #### M4-65 · bug · S4 · native-theme-build/src/schema.rs:75
@@ -8106,7 +8106,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add `#[serde(expecting = "an icon name string or an inline table of desktop = icon name pairs with a `default` key")]` to MappingValue.
 **Verdict:** CONFIRMED — MappingValue is `#[serde(untagged)]` with no `expecting` attribute (schema.rs:73-80). serde_derive 1.0.229 uses 'data did not match any variant of untagged enum X' unless `cattrs.expecting()` is set (serde_derive-1.0.229/src/de/enum_untagged.rs:38-42), so the proposed attribute would work.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 8d429a38
 *Source:* R6#6.
 
 #### M4-66 · bug · S4 · native-theme-build/src/codegen.rs:400
@@ -8115,7 +8115,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Pass base_dir through escape_rust_str. Do the backslash replacement only when cfg!(windows). Return a BuildError for a base directory that is not valid UTF-8 instead of embedding the lossy string.
 **Verdict:** CONFIRMED — base_dir_str is built with to_string_lossy().replace('\\','/') whatever the OS (lib.rs:961-969). codegen.rs:392-401 interpolates {base_dir} into the include_bytes! literal without escape_rust_str (which only escapes icon_name). So a '"' breaks the literal, a Unix '\\' becomes '/', and non-UTF-8 bytes become U+FFFD.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 753b6b20; the Windows backslash rewrite is known-unrun
 *Source:* R6#7.
 
 #### M4-67 · bug · S4 · native-theme-build/src/validate.rs:260
@@ -8124,7 +8124,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Require every character of the PascalCase result to be ASCII alphanumeric or '_' (or check XID), and write `::core::option::Option` in the generated signatures.
 **Verdict:** CONFIRMED — heck 0.5.0 splits words only on !is_alphanumeric (heck-0.5.0/src/lib.rs:101), so '²' (category No, not XID_Continue) survives, and is_valid_ident_start checks only the first character (validate.rs:257-262). For the enum name "option", `pub enum Option` shadows the prelude, and the generated `-> Option<&str>` (codegen.rs:209-212) would then be E0107. RUST_KEYWORDS (validate.rs:17-22) does not cover prelude names.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 9d53b9f7 and 3759af0a (`::std::option::Option`, which an edition-2015 crate root has, ruling)
 *Source:* R6#8.
 
 #### M4-68 · bug · S4 · native-theme-build/src/validate.rs:182
@@ -8133,7 +8133,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Compare fs::canonicalize(&path) against fs::canonicalize(theme_dir), keeping the current branch as the fallback when canonicalize fails.
 **Verdict:** CONFIRMED — validate.rs:185-190 joins a relative target onto path.parent() without normalising. Path::starts_with compares components and keeps '..', so theme_dir/../shared/play.svg still starts_with(theme_dir) and no warning is given.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 869370e9
 *Source:* R6#9.
 
 #### M4-69 · bug · S4 · native-theme-build/src/lib.rs:1012
@@ -8142,7 +8142,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Collect svg_paths (and the rerun paths) in a BTreeSet.
 **Verdict:** CONFIRMED — check_orphan_svgs_and_collect_paths pushes one path per mapping value (lib.rs:1009-1018) into a Vec, so two roles mapped to one SVG push it twice. svg_count = svg_paths.len() and the byte sum (lib.rs:977-988) count it twice, contradicting the field doc 'Total number of SVG files embedded' (lib.rs:200).
 **Triage:** fix — CONFIRMED bug; the counts become accessors (Q4 item 13).
-**Status:** open
+**Status:** fixed in c70fe05b
 *Source:* R6#10.
 
 #### M4-70 · bug · S4 · native-theme-build/src/lib.rs:221
@@ -8151,7 +8151,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Print the warnings before std::fs::write, and correct the UnwrapOrExit comment.
 **Verdict:** CONFIRMED — The doc at lib.rs:219-221 says warnings are printed before the write, but the code (lib.rs:226-230) writes first and returns on `?` before the warnings loop. The UnwrapOrExit comment 'We don't have the paths here' (lib.rs:258-260) is stale: BuildErrors carries rerun_paths and emit_cargo_errors prints them (error.rs:386-394).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in c70fe05b
 *Source:* R6#11.
 
 #### M4-71 · bug · S4 · native-theme-build/src/codegen.rs:111
@@ -8160,7 +8160,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Compare the last `::` segment against the base set, or reject paths whose last segment is in the base set with InvalidDerive.
 **Verdict:** CONFIRMED — validate_rust_path accepts 'core::hash::Hash' (lib.rs:149-178). The dedup at codegen.rs:105-113 compares the whole string against bare names, so the result is `#[derive(.., Hash, core::hash::Hash)]`: two impls, E0119. This contradicts the derive() doc ('Duplicates with the base set ... are deduplicated', lib.rs:409-410).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 9d53b9f7
 *Source:* R6#12.
 
 #### M4-72 · simplify · S4 · native-theme/src/kde/mod.rs:104
@@ -8169,7 +8169,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Split the pure part into a function over `&Ini` returning (ThemeMode, is_dark, name, accessibility). from_kde_content_pure and from_kde_content then share one parse.
 **Verdict:** CONFIRMED — from_kde_content parses the INI (kde/mod.rs:104-109), then calls from_kde_content_pure, which parses the same content again (:25-30). It then builds a Theme (:66-87) that :114-120 immediately takes apart again.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 598959b9 (the simplify half: kde/mod.rs −64, detect.rs −6, ruling)
 *Source:* R1#13.
 
 #### M4-73 · simplify · S4 · native-theme/src/kde/mod.rs:160
@@ -8178,7 +8178,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Have the reader use the shared detect chain, cached as M3-22 plans, with its in-memory forceFontDPI as the first step. One copy then gets the cache and the 6.8 change.
 **Verdict:** CONFIRMED — kde/mod.rs:160-182 repeats detect_system_font_dpi's chain (detect.rs:446-465; read_kde_force_font_dpi says it 'mirrors' it, :469). The M3-22 core-half plan (ledger :6985) caches only detect::system_font_dpi, so KdeReader would keep calling xft_dpi/physical_dpi on each read. To confirm, strace one from_system on KDE with forceFontDPI unset and count the xrdb spawns.
 **Triage:** fix — with M3-22's core half: one cached DPI chain in `detect`, which the KDE reader reads instead of its copy.
-**Status:** open
+**Status:** fixed in 9ed0ca92 and f8b4cd65 (one cached DPI chain in `detect`, M3-22's core half); `kcmfonts` in 49e0067a; the re-read recipe calls `detect::invalidate_caches()` first (ce178506, ruling)
 *Source:* R1#14.
 
 #### M4-74 · simplify · S4 · native-theme/src/gnome/mod.rs:395
@@ -8187,7 +8187,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Return the sparse OS variant, as KdeReader does, and drop `base`, the preset clone, the button_order line and the unused `scheme` parameter.
 **Verdict:** CONFIRMED — GnomeReader clones the full adwaita variant and merges its sparse output over it (gnome/mod.rs:386-401). replay then merges that result onto Theme::preset("adwaita") again (pipeline.rs:76-81), and that is always the preset for this reader (pipeline.rs:1015-1019, :1046-1049). button_order PrimaryRight (:248) repeats adwaita.toml:317/:695, and `scheme` is discarded (:368).
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 150f43d4
 *Source:* R1#15.
 
 #### M4-75 · simplify · S4 · native-theme/src/detect.rs:541
@@ -8196,7 +8196,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Extract `fn kdeglobals_is_dark() -> Option<bool>` and call it at both places. The fallback can skip it when the KDE branch has already tried.
 **Verdict:** CONFIRMED — The same read, parse and is_dark_theme block appears at detect.rs:514-523 (KDE branch) and :541-549 (fallback). On KDE with an unreadable or unparseable kdeglobals, gsettings is tried and then the fallback reads the file a second time.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 598959b9 and b4fe3e5a
 *Source:* R2#12.
 
 #### M4-76 · simplify · S4 · native-theme/src/macos.rs:192
@@ -8205,7 +8205,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** `let traits = traits_obj.downcast_ref::<NSDictionary>()?; let w = traits.objectForKey(weight_key)?.downcast_ref::<NSNumber>()?.doubleValue();`
 **Verdict:** CONFIRMED — objc2 0.6.4 has AnyObject::downcast_ref (runtime/mod.rs:1489), and extern_class! implements DowncastTarget for NSDictionary<AnyObject, AnyObject> (macros/extern_class.rs:283; NSDictionary.rs:17 defaults both type parameters to AnyObject). Checked downcasts can therefore replace the two pointer casts at macos.rs:192-196.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 23f8f381
 *Source:* R3#11.
 
 #### M4-77 · simplify · S4 · native-theme/src/macos.rs:436
@@ -8214,7 +8214,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Add `fn read_variant(app: &NSAppearance) -> (ThemeDefaults, PerWidgetColors)` and `fn apply_per_widget(v: &mut ThemeMode, pw: PerWidgetColors)` and map both over `[(&light_appearance, &mut theme.light), …]`. Or pass the PerWidgetColors into `build_theme`'s `variant` closure.
 **Verdict:** CONFIRMED — macos.rs:436-464 (the appearance reads) and :469-490 (the per-widget colour application) are written twice, once for light and once for dark, about 50 lines in all.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 23f8f381
 *Source:* R3#12.
 
 #### M4-78 · simplify · S4 · native-theme/src/windows.rs:83
@@ -8223,7 +8223,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Have detect.rs call `crate::windows::is_dark_mode(&win_color_to_rgba(fg))`. Drop the `dpi` parameter and use `LOGICAL_DPI`. Add `inactive_caption` to `SysColors` and remove the extra parameter.
 **Verdict:** CONFIRMED — The BT.601 test is written twice, at windows.rs:83-86 and detect.rs:613-614. Every production call passes `dpi` as LOGICAL_DPI (:121), so its `dpi == 0` branch (:136) is dead and only tests vary it. COLOR_INACTIVECAPTION is read outside SysColors, at :307-309 and :554.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in bd478697
 *Source:* R3#13.
 
 #### M4-79 · simplify · S4 · native-theme/src/icons.rs:957
@@ -8232,7 +8232,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Define one predicate, an icon theme being an index.theme whose [Icon Theme] group has Directories, and use it for both functions through one INI key reader (ini_value already does group-aware key lookup).
 **Verdict:** CONFIRMED — /usr/share/icons/default/index.theme (Inherits only) and breeze_cursors/index.theme (no Directories) pass has_theme_index (icons.rs:724-729). list_freedesktop_themes skips `default` by name and checks `line.starts_with("Directories=")` with no group or whitespace handling (:941, :960). That parser is separate from ini_value (model/icons.rs:951) and the Inherits parser (freedesktop.rs:26-37).
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 76c2d56f and ec23bb1b
 *Source:* R4#9.
 
 #### M4-80 · simplify · S4 · native-theme/src/model/icons.rs:933
@@ -8241,7 +8241,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** One `xdg_config_home()` helper (absolute, non-empty, else `$HOME/.config` with a non-empty HOME, else None) used by all four sites, and one per-desktop icon-theme read that both the readers and detect_icon_theme call.
 **Verdict:** CONFIRMED — With HOME="" and no XDG_CONFIG_HOME, xdg_config_dir (model/icons.rs:933-943) gives None, but kdeglobals_path (kde/mod.rs:447-450) gives the relative `.config/kdeglobals`. Both accept a relative XDG_CONFIG_HOME. More copies exist at kde/mod.rs:190 and detect.rs:553.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 62c13acf (one per-desktop icon-theme read) and 6c2327d4 (one config-dir helper)
 *Source:* R4#11.
 
 #### M4-81 · simplify · S4 · native-theme/src/model/bundled.rs:51
@@ -8250,7 +8250,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Make `bundled_icon_svg(role, set)` return `icon_name(role, set).and_then(|n| bundled_icon_by_name(n, set))` and delete the two 65-line tables. The spinners can take `bundled_icon_svg(IconRole::StatusBusy, set)`.
 **Verdict:** CONFIRMED — bundled.rs:51-181 and icons.rs:1178-1300 hold the same role-to-file mapping twice. A mechanical diff shows they agree today (42 Material roles, 42 Lucide). The only cross-check is is_some coverage (icons.rs:1977-1981, bundled.rs:237/270), so nothing would catch drift. icons.rs loaders use bundled_icon_svg for IconId::Role and bundled_icon_by_name for names (icons.rs:430-433, 490-493).
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 9486603f
 *Source:* R5#4.
 
 #### M4-82 · simplify · S4 · native-theme/src/spinners.rs:136
@@ -8259,7 +8259,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Declare `const SPIN_FRAME_DURATION: NonZeroU32 = NonZeroU32::MIN.saturating_add(41)` (const fn, panic-free). Have `svg_to_spin_frames` return a `FrameList` or Option. Then either return `AnimatedIcon::transform(..Spin..)` on a parse failure or document that the result is a still frame, and delete the dead branches.
 **Verdict:** CONFIRMED — svg_to_spin_frames (spinners.rs:31-131) returns a non-empty Vec on every path, so `AnimatedIcon::frames` (animated.rs:251-259, Err only for an empty list) never fails. `NonZeroU32::new(42)` is never None either, so both fallbacks at spinners.rs:139-154 are dead. A malformed SVG becomes a single-frame Frames animation, i.e. a still image, which contradicts the doc at :133-135.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 9486603f
 *Source:* R5#6.
 
 #### M4-83 · simplify · S4 · native-theme-build/src/lib.rs:303
@@ -8268,7 +8268,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Implement it as `IconGenerator::new().source(toml_path).generate_with_env(env)`.
 **Verdict:** CONFIRMED — generate_icons_with_env (lib.rs:303-338) duplicates the builder's per-source path. It requires CARGO_MANIFEST_DIR unconditionally, while generate_with_env makes it optional for absolute paths (lib.rs:493-501), and it lacks the is_dir check (lib.rs:521-526). Only the error message differs for a directory (read_to_string fails), but the two have drifted.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 2c85e9bb
 *Source:* R6#13.
 
 #### M4-84 · simplify · S4 · native-theme-build/src/lib.rs:885
@@ -8277,7 +8277,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Extract a load_and_validate_mapping(theme_dir, kind) helper that returns the mapping, and run the bundled-only checks after it.
 **Verdict:** CONFIRMED — The bundled loop (lib.rs:799-881) and the system loop (lib.rs:884-937) repeat the existence check, read, parse, validate_mapping, validate_mapping_values, validate_de_keys and the two error arms almost verbatim.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 2c85e9bb
 *Source:* R6#14.
 
 #### M4-85 · simplify · S4 · native-theme-build/src/codegen.rs:167
@@ -8286,7 +8286,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Write one function, `de_dispatch(de_map) -> Option<Vec<(variant, name)>>`, used by both places, and emit `{crate_path}::detect::detect_linux_desktop()` inside the OnceLock.
 **Verdict:** CONFIRMED — has_any_de_aware_mappings (codegen.rs:167-200) works out separately from generate_icon_name (codegen.rs:280-298) whether dispatch is needed. They agree today only because validation rejects unknown roles and missing defaults. The OnceLock body (codegen.rs:236) re-implements the public native_theme::detect::detect_linux_desktop() (detect.rs:76-80). This is a maintainability item, not a present bug.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 2c85e9bb
 *Source:* R6#15.
 
 #### M4-86 · simplify · S4 · native-theme-build/src/validate.rs:450
@@ -8295,7 +8295,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Call value.all_names(), drop the trim, and replace PipelineResult's Option<SizeReport> with a plain field, or return the GenerateOutput parts directly.
 **Verdict:** CONFIRMED — validate.rs:450-453 rebuilds MappingValue::all_names (schema.rs:99-104). validate_rust_path already rejects any whitespace (lib.rs:169-174), so extra.trim() (codegen.rs:108) never changes anything. size_report is Some on every path with empty errors (lib.rs:982), so the None arm at lib.rs:1131 cannot be reached.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 2c85e9bb
 *Source:* R6#16.
 
 #### M4-87 · api · S4 · native-theme/src/rasterize.rs:42
@@ -8304,7 +8304,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Return a Parse-kind error for the usvg failure, plus an explicit invalid-argument error for zero or oversized sizes. At minimum, rename the reader to `svg-rasterizer` and document the kind.
 **Verdict:** CONFIRMED — error.rs:176 maps every ReaderFailed to ErrorKind::Platform, and rasterize.rs:42-45 and :59-62 wrap both a usvg parse error and a zero size as ReaderFailed{reader:"svg_rasterizer"}. The ledger (todo_code-review-findings.md:7321) records only the analogous toml-serializer case, as an unreported minor, not this one. The reader name's underscore matches the `*_watcher` names, so the rename is cosmetic.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** renamed (`svg-rasterizer`) and documented in fd5e41aa, per the plan ruling (no new variant or kind)
 *Source:* R5#3.
 
 #### M4-88 · api · S4 · native-theme-build/src/codegen.rs:232
@@ -8313,7 +8313,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** codegen.rs:219-238 before: the `static CACHED_DE ... get_or_init(..)` block; after: `#[cfg(target_os = "linux")] let de = {crate_path}::detect::system().linux_desktop();` (one line, the crate's cache, invalidated with the rest). Update the generated-code comment and the `generate_code` doc at codegen.rs:68-72; the integration test `de_aware_mapping_generates_de_dispatch_code` (tests/integration.rs:394) asserts the new call. No public signature changes.
 **Verdict:** CONFIRMED — The generated `icon_name` keeps its own `static CACHED_DE: OnceLock` (codegen.rs:219-238), while `detect::system().linux_desktop()` (detect.rs:908-915) is cleared by `invalidate_all` (:950-951). `invalidate_caches()` cannot reach the generated cache. The practical impact is small because the env var rarely changes in-process.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2c85e9bb, 130ad069 and 64a58f9f (the generated `icon_name` reads the refined desktop, ruling)
 *Source:* API#14.
 
 #### M4-89 · api · S4 · native-theme/src/watch/mod.rs:30
@@ -8322,7 +8322,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Move :30-39 to a `//` comment or to `ThemeSubscription::new`'s own doc (:147-156 already says the same), keeping the public page to the RAII model and the three shutdown phases. Add to the `ThemeSubscription` doc (:104-125) and `on_theme_change` (:193-197): "Drop the subscription from another thread than the callback's: `Drop` joins the watcher thread, and a callback that drops it would join itself." No signature change.
 **Verdict:** CONFIRMED — The public module page documents the `pub(crate)` constructor with a bracketed pseudo-link (watch/mod.rs:30-39). Neither `ThemeSubscription` (:104-125) nor `on_theme_change` (:193-197) warns against dropping from the callback. `Drop` calls `handle.join()` unconditionally (:185-187); std documents that a thread joining itself may panic or deadlock, so a guard (compare thread ids) would be safer than a doc line alone.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 7988c1ec and f7a38745; the re-read recipe in ce178506
 *Source:* API#16.
 
 #### M4-90 · api · S4 · native-theme/README.md:141
@@ -8331,7 +8331,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** README.md:141 and :156 ```` ```rust,ignore ```` → ```` ```rust,no_run ```` (add `# fn main() {` wrappers only if the `let` bindings need them — they do not); README.md:120 → ```` ```rust,no_run ```` with the body wrapped in `# #[cfg(feature = "watch")] # { ... # }` and `# Ok::<(), native_theme::Error>(())` as lib.rs:66-73 does. The README doctest then compiles the icon and watch recipes on every `cargo test -p native-theme`.
 **Verdict:** CONFIRMED — The icon blocks at README.md:141 and :156 are `rust,ignore`, although `MaterialLoader`, `FreedesktopLoader::theme` and `prefers_reduced_motion` compile on every feature set (icons.rs:121, :165, :410; detect.rs:659). The watch block at :120 is an M3 deferred minor (ledger :7386 decision, :7449), so that part is already known.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 443f8141
 *Source:* API#17.
 
 #### M4-91 · api · S4 · native-theme/src/rasterize.rs:43
@@ -8340,7 +8340,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** One style, kebab as the two newest names use: `"svg_rasterizer"` → `"svg-rasterizer"`, `"kde_watcher"` → `"kde-watcher"`, `"gnome_watcher"` → `"gnome-watcher"`, `"macos_watcher"` → `"macos-watcher"`, `"windows_watcher"` → `"windows-watcher"`, `"preset_cache"` → `"preset-cache"`; a test over the literal list (or a `const` per name in error.rs) prevents a third style. No signature change.
 **Verdict:** CONFIRMED — Reader names come in two styles: kebab (`"icon-theme"`, `"toml-serializer"`) and snake (`"svg_rasterizer"` rasterize.rs:43/:60, `"kde_watcher"`, `"gnome_watcher"`, `"macos_watcher"`, `"windows_watcher"`, `"preset_cache"`). No test or connector matches these strings.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 443f8141 and 79a9f2ae
 *Source:* API#19.
 #### M4-92 · bug · S4 · native-theme/src/watch/macos.rs:34
 **Claim:** 18 of the 38 `unsafe` blocks, fns and impls in `macos.rs`, `sficons.rs`, `windows.rs`, `winicons.rs`, `watch/macos.rs` and `watch/windows.rs` carry no `SAFETY:` comment stating the invariant they rely on (R3's unsafe audit, below).
@@ -8348,7 +8348,7 @@ Cross-checks made by the session before triage:
 **Fix (session):** A `// SAFETY:` comment on each, stating the invariant the audit names; no code change.
 **Verdict:** not separately verified — the audit rows come from R3's reading; a comment-only change, checked in the fix task's review against each block.
 **Triage:** fix — docs only (S4).
-**Status:** open
+**Status:** fixed in 8baf84f7
 *Source:* session, from R3's unsafe audit.
 
 ### Rejected
@@ -8672,7 +8672,7 @@ Two checks the triage left to this step:
 **Evidence:** icons.rs:891 `IconSet::SfSymbols | IconSet::SegoeIcons => true`; the doc above it (:870-878) says "bundled sets are always available", and these two are not bundled; the loaders' code is `cfg(all(target_os = "macos", feature = "system-icons"))` and `cfg(all(target_os = "windows", feature = "system-icons"))` (icons.rs:308, :378; modules at lib.rs:271, :283).
 **Fix:** `IconSet::SfSymbols => cfg!(all(target_os = "macos", feature = "system-icons"))`, `IconSet::SegoeFluent => cfg!(all(target_os = "windows", feature = "system-icons"))`; the doc names the condition; a test on the host that `default_icon_choice(IconSet::SfSymbols, Some("x"))` is `System` off macOS.
 **Triage:** fix — bug (found by the session in Step 6, from R4's question).
-**Status:** open
+**Status:** fixed in ec23bb1b
 *Source:* session (Step 6), R4 note.
 
 **Gates** (the template's): **bug** a failing test first, then the fix, then it passes; **perf** a timing before and after on the release profile (`native-theme/tests/timings.rs`, or a probe added there), the gain above the spread recorded; **simplify** tests unchanged except deleted tests of deleted code, `git diff --stat` a net deletion; **api** every caller in the workspace compiles (connectors, showcases, doc examples), a CHANGELOG `[Unreleased]` line. Every task ends with `./scripts/check_release.sh --commit` green before its code commit. A task that touches `cfg(target_os = "macos")` or `cfg(target_os = "windows")` code also passes both cross-target clippy commands of M0 Step 3 (`cargo clippy -p native-theme --all-features --all-targets --target x86_64-apple-darwin -- -D warnings`, the same with `x86_64-pc-windows-msvc`), which compile its new tests. A task that changes a value a reader writes cites the value's source and runs the `preset-validator` over the preset that value overrides.
@@ -8727,6 +8727,158 @@ Rulings for this plan:
 | T31 | M4-90, M4-91, `docs/todo.md:986` | the README icon and watch examples `rust,no_run` (the README doctest compiles them); every `ReaderFailed` name kebab-case, one `const` per name in error.rs and a test over the list; `check_font` reports a stated `size_pt` in points | the README doctest; the name test; a failing `size_pt = -3` message test first (`got -3`) |
 | T32 | strict-panic CI (M1 close) | `check_strict_panic.sh` legs for `--target x86_64-apple-darwin` and `x86_64-pc-windows-msvc` with each platform's features (`rustup target add` in the job) | the script passes locally for both targets (after T2–T31; any hit fixed in the file's own task style, recorded) |
 | T33 | M4-92 | a `SAFETY:` comment on every `unsafe` block, fn and impl left in the six FFI files, stating the invariant R3's audit table gives | `grep` count: every `unsafe` in the six files has a `SAFETY:` comment within the three lines above it (a check added to `check_release.sh` or a test over the sources); cross-target clippy |
+
+### Step 7 — fixes (2026-10-12/13)
+
+Subagent-driven, one session (Opus 5.5): an `implement` agent (Opus or Sonnet) per task, a task reviewer per task (Sonnet or Opus), scoped re-reviews after fix rounds, the `preset-validator` after every task that changed a value a reader or a preset states, one whole-branch review and one fix wave. Every task's gate is `./scripts/check_release.sh --commit` green before its code commit (a fix round runs it on the committed tree); a task that touched `cfg(target_os = "macos")` or `cfg(target_os = "windows")` code also passed both cross-target clippy commands. Every task's review ended clean (spec ✅). The macOS and Windows runtime tests are *known-unrun* until T1's CI legs run at the maintainer's next pull request or push to `main` (the plan's ruling). T34, T35 and T36 were added during Step 7: T34 the kde-breeze preset task the plan missed (`docs/todo.md`, "kde-breeze: link hover and active colours stated without a source", with the preset findings of the kde-breeze validator after T11: uncited font blocks, the button and tooltip font-colour value rows); T35 the windows-11 preset after T22 (the validator's preset items: the title bar first, since T22 left the live title bar translucent, then the selection, the accent-derived and fallback colours, the safety nets, the shadow flags and the stale facts rows); T36 the kde-breeze preset and the KDE reader against the facts (the validator after T34: V3–V11, W2, the reader's colour rows and the `forceFontDPI` source).
+
+- T1 (CI gap, R3): 9ed71649 (macOS and Windows test legs); green; review Approved. The legs first run at the next CI run.
+- T2 (M4-01, M4-41, M4-32 Windows): 1cea9fb6; fix round 1 4bcdb1a6 (`ComGuard` `!Send`, the pump stops on a `GetMessageW` error); green, cross-target clippy green; review (Opus) Approved, both cheap minors taken in the round by ruling. The review's gate defect (the harness spawned its helper between subscribe and drop) was fixed by T3, in 35bd7f32. Windows test known-unrun.
+- T3 (M4-02, M4-40, M4-32 macOS): 35bd7f32; review (Opus) Needs fixes, one Critical (distributed notifications are delivered through the main thread's run loop, so a watcher thread's run loop never receives them); re-specified (`m4-T3-respec.md`), fix round 1 b5465d23 (the observer on a serial `NSOperationQueue`, no thread, unsafe blocks 6 → 3); green; re-review (Opus) clean. macOS tests known-unrun.
+- T4 (M4-03, M4-04): b4c77447 (`MAX_ICON_DECODE_BYTES`); the tests panicked or aborted first; green; review Approved.
+- T5 (M4-05, M4-06, M4-07, M4-08): 90589e08; workspace and connectors compile; green (79/79); review (Opus) Approved. Four platform tests known-unrun.
+- T6 (M4-11, M4-12, M4-13, M4-18): 2c9d969b (`detect/icon_theme.rs`); fix round 1 eaf4dc90 (`gnome` private too, by ruling); green; review Approved.
+- T7 (M4-14, M4-16, M4-17, M1-T6-07): 34d6d1f7 (the Segoe font at its em height, `icons::raster_size_in_bound`); green; review (Opus) Approved. Platform size tests known-unrun.
+- T8 (M1-T6-06, M4-15): f1371e70; review (Opus) Needs fixes, one Important (the gate tested the private `with_icon_source` seam, not `SystemTheme::icon` / `icon_indicator`); fix round 1 6e5c151d (the gate through the public methods, failed first); green; re-review clean.
+- T9 (M4-09, M4-10, M4-19, M4-69, M4-70): c70fe05b; the gates failed first (count 2 against 1, the lost warning, four missing docs); green; review Approved.
+- T10 (M4-21, M4-22, M4-23, M4-72, M4-75, `docs/todo.md:964`): 598959b9 (the KConfig cascade, `XDG_CONFIG_DIRS` included, cited to kconfig.cpp, qstandardpaths_unix.cpp and startplasma.cpp); fix round 1 b4fe3e5a (a kdeglobals without a window background says nothing about darkness, and three test minors), by ruling; green; review (Opus) Approved, re-review clean.
+- T11 (M4-29, M4-30, M4-57, M4-73, M3-22 core, `forceFontDPI`): 9ed0ca92; perf (release, three runs): `resolve` of kde-breeze about 3.5 ms → 36 µs, warm `from_system` 5.28 → 1.25 ms; review (Opus) Needs fixes, one Important (the `Theme::resolve` doc still said `xrdb`/`xrandr` may run on every call); kde-breeze validator WARN; fix round 1 f8b4cd65 (Qt's legacy weight table, `qfont.cpp:147-174` v6.11.2; clamp, not drop; facts rows); its item 4 (no headings from a pixel-sized body) was withdrawn as a misread of Kirigami, and fix round 2 ef4972e5 restored pixel headings with the qtdeclarative citation and clamps any integer weight as Qt's `setWeight` does; green; re-review clean after two rounds. The kde-breeze validator re-run moved into T34.
+- T12 (M4-20, M4-31): 56b687bc (the theme's `*Default` keys; the gate failed first on the breeze-icons 6.30.0 header); review (Opus) Needs fixes, one Important (system dirs searched first, where KIconTheme searches the user's first, `kicontheme.cpp:382`, `:395-405`); fix round 1 09dc0180 (KIconTheme's order, its C++ fallbacks for an omitted key, `kicontheme.cpp:160-167` v6.31.0, a search without a home); green; re-review clean.
+- T13 (M4-24, M4-25): f7bfb8ef (Pango 1.58.2 `fonts.c:1613-1729`); 11 tests failed first; green; review Approved.
+- T14 (M4-26, M4-28): 45a82aba (a 2 s deadline per portal block, `SUBPROCESS_TIMEOUT`; a running backend first); four of six new tests failed on stubs of the old behaviour; green; review (Opus) Approved.
+- T15 (M4-27, M4-55, M4-74): 150f43d4 (+243/−353); icon-theme `gsettings` spawns 25 → 13 per 12 reads; the timing, under heavy host load, moved inside the spread (medians 70.3 → 58.4 ms, 51.0 → 43.4 ms) and is re-run at Step 8 by ruling; green; review Approved.
+- T16 (M4-36, M4-49, `docs/todo.md:2624`, `run_pipeline`'s mode): 62c13acf, 52d67659 (docs/todo.md); review (Opus) Needs fixes, two Importants (the refined-desktop cache cleared no derived slot; a kdeglobals-only KDE refinement got the GNOME-portal KDE reader); fix round 1 7553e77d (both, plus `detect_is_dark`'s refined-desktop branch), on T17's generations; green (80/80) and cross-target; re-review clean.
+- T17 (M4-35): 58a2ad72 (a `CacheSlot<T>` with a generation per slot, `invalidate_font_dpi`); four interleaving tests failed first; green and cross-target; review (Opus) Approved.
+- T18 (M4-37, M4-58, M4-59, M4-80 config dir, `docs/todo.md:2639`): 6c2327d4, 52e1ab19 (docs/todo.md); the 100 KiB and grandchild tests failed first; green and cross-target; review (Opus) Approved (config-dir part −79/+58). macOS `defaults` and BSD `fc-match` compiled only.
+- T19 (M1-T6-04): 107ab86d (one reduced-motion read per platform, no OR in the pipeline); the dispatch tests failed first; the equality test passes because this host's sources agree; green and cross-target; review (Opus) Approved. macOS and Windows tests known-unrun.
+- T20 (M4-32 KDE and GNOME, M4-33, M4-34, `docs/todo.md:236`, M4-89): 7988c1ec, bc031886 (docs/todo.md); four KDE tests failed first, the watch tests 14/14 ten times; review (Opus) Needs fixes, one Important (a callback dropping its own subscription made `join` assert on EDEADLK); fix round 1 f7a38745 (the guard detaches instead; the test failed first with EDEADLK); green (80/80); re-review clean. The macOS, Windows and GNOME self-drop and setup-error paths are known-unrun.
+- T21 (`docs/todo.md:200`, M1-T6-08): c951c587, ec2672b6 (docs/todo.md); four tests failed first; review (Opus) Needs fixes, one Important (Windows high contrast has `AccessibilitySettings::HighContrastChanged`, no window needed); fix round 1 71db4793 (`HighContrastChanged`, `AnimationsEnabledChanged` optional below Windows 10 2004, the docs/todo.md Windows and macOS notes); green and cross-target; re-review clean. macOS and Windows known-unrun.
+- T22 (M4-38, M4-39, the M2b overrides, `docs/todo.md:727` I1): 8c133614, 255161d7 (docs/todo.md); the pure tests failed first; review (Opus) Needs fixes, one Important (under high contrast the selection text kept the preset's `#ffffff`); windows-11 validator FAIL (reader items → the fix round, preset items → T35); fix round 1 8ccdbed0 (six items: HC selected text, HC progress border, no accent under HC, link and info from the shades, accent fills `AccentFillColorDefault`, a stale comment) and 01116bd1 (HC `accent_text_color` = `COLOR_HIGHLIGHTTEXT`, by ruling); green (79/79) and cross-target; re-review (Opus) verified every citation at microsoft-ui-xaml 8463f45. The maintainer held the phase after T22 (2026-10-13) and lifted the hold before T24. Windows runtime known-unrun.
+- T23 (M4-45, M4-78, M2b-19, `AdvancedEffectsEnabled`): 8f1ba008, bd478697 (simplify +12/−23); three tests failed first; green and cross-target; review Approved. The tooltip-font validator check moved to T35.
+- T24 (M4-76, M4-77, M4-44 docs, `docs/todo.md:949`): 23f8f381 (simplify −21, two `unsafe` blocks gone), e6c5c737 (the groove width AppKit gives the user's scroller style, by ruling over the fixed 15/16), d0589b3a (README: macOS 11); the scroller test failed first; review (Opus) Needs fixes, one Important (CHANGELOG `[Unreleased]` still called the groove the preset's 16); the macOS presets' scroll bar validator: 13 of 24 values agree; fix round 1 b41bab4b (the CHANGELOG line, merged scroll bar fields, the docs/todo.md rows); green; re-review clean. macOS known-unrun.
+- T25 (M4-46, M4-47, M4-48, M4-79, M4-56, M4-93, and M4-94 below): 76c2d56f (simplify +37/−68), ec23bb1b, a622a831 (perf: the `.xpm`-only probe median 2.738 ms [2.278–2.741] → 311 ns [310–331]); 10 tests failed first, the real `i16` overflow among them; green; review (Opus) Approved.
+- T26 (M4-42, M4-43, M4-60): d1469e46 (strict-panic hits on the Windows target in winicons.rs 7 → 0); review (Opus) Needs fixes, one Important (the canvas placed from the cell top: the em box starts at `tmAscent − tmInternalLeading`); fix round 1 aed8b5f1 (that ascent, checked; the host test failed first, 9 against 7; the gate asserts placement; the bottom clip); green and cross-target; re-review clean. Windows and macOS runtime known-unrun; M4-43 has no test (a GDI failure is not inducible).
+- T27 (M4-50, M4-51, M4-61, M4-87, M4-62): fd5e41aa; three tests failed first (the abort shown under `ulimit -v 8000000`, exit 134); green and cross-target, `--no-default-features --features svg-rasterize` included; review Approved.
+- T28 (M4-81, M4-82): 9486603f (+35/−172); the equivalence test green before the tables were deleted; green; review Approved.
+- T29 (M4-52, M4-53, M4-54, M4-63, M4-64, M4-65, M4-66, M4-67, M4-68, M4-71): b8f228bf, 9d53b9f7, 5b940d7d, 649e4bed, 8d429a38, 753b6b20, 869370e9; every test failed first; green (80/80) and cross-target; review (Opus) Needs fixes, one Important (`::core::option::Option` fails in an edition-2015 consumer, E0433); fix round 1 3759af0a (`::std::option::Option`, by ruling; the compile tests build an edition-2015 and a 2021 crate, 2015 failed first); green; re-review clean. The Windows backslash rewrite is known-unrun.
+- T30 (M4-83, M4-84, M4-85, M4-86, M4-88): c1373b1f (a relative base dir named like an absolute one stays relative, test failed first), 2c85e9bb (+270/−400 for the task); green; review (Opus) Approved; fix round 1 130ad069 (`DetectionContext::refined_linux_desktop_sync` public) and 64a58f9f (the generated `icon_name` reads it; DE-aware generated code compiled on editions 2015 and 2021; a portable absolute path; `de_dispatch`), by ruling; green (80/80); re-review clean.
+- T31 (M4-90, M4-91, `docs/todo.md:986`): 443f8141, d592b101 (docs/todo.md); the `size_pt` test failed first (−4 against −3); green; review Approved; fix round 1 79a9f2ae (the text-scale check reports a stated size in its unit, by ruling; a `reader_names!` macro builds the consts and `ALL`; per-const `cfg_attr`); green; re-review clean.
+- T32 (strict-panic CI, M1 close): c373fdb0 (CI and check_release run the strict panic lints for the macOS and Windows targets, four runs each, no hit; a reverted `v[0]` probe showed the lint reaches platform code); check_release 83/83; review Approved. The CI step is known-unrun until the next CI run.
+- T33 (M4-92): 8baf84f7 (14 `SAFETY:` comments; `tests/unsafe_safety_comments.rs` over all of `native-theme/src` failed first on 14); green and cross-target; review Approved.
+- T34 (added in Step 7): fd4abc64, f38b9251 (docs/todo.md); the regression test failed first; green; review Approved (Breeze `.colors` v6.7.5 and Kirigami `LinkButton` v6.31.0 checked); the kde-breeze validator re-run (for T11, T12 and T34) FAIL on items no entry tracked, which became T36.
+- T35 (added in Step 7): bcb1d2c2, 2a1f3315, 965bc461; tests failed first; green (84/84) and cross-target; review (Opus) Approved; windows-11 validator after T35 FAIL (24 groups, about 425 of 480 values verified); fix round 1 9284f52b, 26f70cc1 (the reader's link hover and pressed text from the accent shades), ee75ad7e (`primary_background` stays on the accent, by ruling), 1950007c (the iced test asks for the nine soft options windows-11 still sources); the link tests failed first; green (84/84) and cross-target; re-review clean. The stopping rule applied: the remaining validator findings are docs/todo.md entries.
+- T36 (added in Step 7): d0c80538 (reader), a7da50c7 (preset), 37760fa6 (an egui probe for `menu.icon_size`); five reader tests failed first; green (a second check_release after the egui mapping fix); review (Opus) Needs fixes, one Important (Plasma 6.7.5 opens `kcmfonts`, not `kcmfontsrc`); fix round 1 49e0067a (`kcmfonts`, reader and watcher; the test failed first), 97defd1c (one font merge), 74fc414d (the dark disabled switch thumb is the handle's Disabled shade); green; re-review clean; the kde-breeze validator after T36 PASS on scope.
+- Final whole-branch review (Opus, range ef80ad6d..74fc414d): ready with fixes; 0 Critical, 5 Important (a watched `kcmfonts` change re-read with a stale cached DPI through the documented core recipe; four CHANGELOG `[Unreleased]` lines a later task made false), 15 Minor; the cross-task cache, dispatch and drop interactions hold; lib tests 1152/0 at 74fc414d. Important 1 was fixed in the contract by ruling (the watch docs, recipes and CHANGELOG call `detect::invalidate_caches()` before the re-read). Fix wave (one implementer, Opus, 15 items): ce178506 (watch docs and the CHANGELOG), ca714653 (unique temp dirs per test; the packaged build crate's tests compile and skip what needs the sibling crate), b42b1568 (`kcmfonts` through `read_kconfig`, failed first; stale names, comments and citations); green (84/84, 9m 44s) and cross-target. The scoped re-review (Opus): all 15 addressed; one new Important (the 0.7.0 publish order: native-theme-build dev-depends on native-theme of the same version, and publish.yml published build first) and one Minor (`detect_rs()` skipped inside the workspace too), both ruled into the Step 8 close and fixed in 5eb7ab1c (check_release --commit green, 83/83).
+
+Interruptions: the weekly usage limit (HTTP 429) stopped the agents twice. The final whole-branch review's first dispatch ended before it wrote a report and was re-dispatched after the reset. The fix wave's implementer stopped while on items 6 and 12, with uncommitted edits in the tree (14 files, +146/−66); it was resumed after the reset from item 6 on the same tree, which was not discarded.
+
+M4-94 (no entry before Step 7; named by the T12 reviewer, recorded by ruling for T25): the icon loader's base directories were searched in freedesktop-icons 0.4.0's order (`theme/paths.rs:14-33`, the data dirs first), so a user's copy of a system theme lost to the system copy. Fixed in ec23bb1b: `icon_base_dirs` follows the Icon Theme Specification 0.13 (*Directory Layout*: `~/.icons`, then the data dirs, "in that order"; the first `index.theme` found is used), with `$XDG_DATA_HOME/icons` first among the data dirs (an inference: the specification does not name it). freedesktop-icons still takes an icon from the first copy that has it in its own order (`src/lib.rs:297-305`); that is documented, not forked.
+
+Pre-flight scan (shared files and interfaces, producer → consumer), before T1:
+
+| Tasks | Shared | Finding |
+|---|---|---|
+| T2, T3 → T20, T21 | watch/mod.rs, backends | T2 writes the subscribe-and-drop timeout harness; T3, T20 reuse it. T20's `fire` helper wraps every backend incl. T2/T3's rewritten ones (T20 after, fine). |
+| T4 → T5 | `IconData::Rgba` built in decode_png_to_rgba | T4 before T5; T5 converts T4's construction to `IconData::rgba`. |
+| T5 → T26, T27 | `IconData::Rgba` shape | after T5, use the checked constructor. |
+| T6 → T16, T18, T25, T30 | detect_icon_theme et al. move to `detect`; icon types to `icons` | later tasks use new paths (by symbol). |
+| T7 → T8, T25, T26 | `Rgba` colour, `SegoeFluent`, `.size(u32)` | T8 uses Rgba; T25 adds the i16 bound after T7's u16 clamp; T26 uses T7's em-height size. |
+| T9 → T29, T30 | build crate accessors/variants | later build tasks use accessors. |
+| T10 → T11, T12, T21 | KDE cascade parse | T11/T12 read from the merged INI; T21 watches kdedefaults. |
+| T11 → T17 | new DPI slot in DetectionContext | T17's generation must cover T11's slot (carry in T17 dispatch). |
+| T13, T14, T15, T19 | gnome/mod.rs | different functions; T15's shared colour-scheme helper and T19's portal reduced-motion read both via pollster (same pattern). |
+| T14 → T16 | detect_portal_backend (deadline, running-first) | T16 consumes it. |
+| T18 ↔ T11 | run_with_timeout | T11's xrdb/xrandr already go through it; T18 changes its internals only. |
+| T19, T22, T23 | windows.rs | T22 before T23; T19 touches only the animation read. |
+| T27 → T31 | "svg-rasterizer" name | T31's const list includes it. |
+| T30 | detect::system() | already `pub` (detect.rs:959); plan's "needs detect public" holds. |
+| T32, T33 | all FFI files | last, after every unsafe/panic change. |
+
+Rulings of the session (the progress ledger's wording):
+
+- Ruling: T19's gate is a pure test of the per-desktop dispatch (KDE kdeglobals answer used, not gsettings) plus the lib.rs consistency test made an equality — why: the row's "fails first if the sources differ" is host-dependent — cost if wrong: none (stricter gate).
+- Ruling: T2 minor 1 is treated as a gate defect and fixed now, by T3's implementer, since T3 is editing the same harness (subscribe and drop both inside the helper thread) — why: a bug gate that cannot fail before the fix is no gate, and T3/T20 reuse it — cost if wrong: one harness edit in T3's commit.
+- Ruling: T2 minors 2 and 3 get one small fix round on T2's implementer after T3 commits (windows.rs only) — why: both are cheap and make a SAFETY claim and the pump defensively true; T3 is in watch/ now — cost if wrong: one small commit.
+- Ruling: T3 is re-specified (m4-T3-respec.md): no macOS watcher thread; the observer is registered with a serial NSOperationQueue so the callback runs off the main thread, delivery needs the app's main run loop (documented, Apple's page cited); drop removes the observer — why: Apple's current doc says delivery is via the process's (usually main) run loop, so any design that waits on a background run loop is dead, and every GUI toolkit runs the main loop — cost if wrong: a CLI process without a main run loop gets no macOS events (documented), and the design is checked only on the macOS CI leg.
+- Ruling: T3 minor (a) carried into T20 (watch docs and shutdown semantics, M4-89): either wait for the queue to drain after removeObserver (skipped when dropped on that queue) or document it — why: T20 owns the drop contract across backends — cost if wrong: one more macOS callback after drop until T20.
+- Ruling: the AppKit suspension (Apple's `suspended` doc, developer.apple.com/documentation/foundation/distributednotificationcenter/suspended: NSApplication suspends distributed delivery while the app is inactive; the block API registers with the default Coalesce behaviour) is carried into T21: register AppleInterfaceThemeChangedNotification through addObserver:selector:name:object:suspensionBehavior: with DeliverImmediately (a define_class! observer) so a change made in System Settings reaches a background app at once — why: T21 owns which notifications each watcher observes; today's code delivers on reactivation, a timing gap not a lost event — cost if wrong: macOS apps update on refocus until T21.
+- Ruling: `gnome` becomes `pub(crate)` too (in T6's fix round) — why: the maintainer approved making every public module with no public item crate-private (Q3, M4-11), and `gnome` became one by the approved `GnomePortalData` change; `kde` stays public because its `#[doc(hidden)]` `from_kde_content_pure` serves the integration test tests/reader_kde.rs — cost if wrong: one module path restored.
+- Ruling: T7 minor 1 (the size guard bounds requested points, not the allocated raster) is carried into T26: check `w × h × 4 <= MAX_ICON_DECODE_BYTES` on the actual CGImage / glyph dimensions before the copy, in sficons.rs and winicons.rs — why: T26 owns the platform raster arithmetic (M4-60), and the docs promise a memory bound — cost if wrong: a Retina SF raster up to 4× the bound until T26.
+- Ruling: `GenerateOutput::code()` accessor stands — why: the decision was "every field of both result types private behind accessors", and the list omitted `code` only by oversight — cost if wrong: one accessor.
+- Ruling: T10's simplify gate is met by the parse code M4-72/M4-75 name (kde/mod.rs −64, detect.rs −6), not by the whole diff (+191 with the cascade and 9 tests) — why: the row joins bug fixes, which add code, with a simplify half; the template's net-deletion gate applies to the simplify half — cost if wrong: none (the code is reviewed either way).
+- Ruling: icon_theme.rs's own kdeglobals reader (detect's KDE icon-theme branch) moves onto T10's cascade in T16, with the one per-desktop icon-theme read (M4-80) — why: T16 owns that read; M4-22's "icon theme set only in kdedefaults" case is otherwise only half fixed — cost if wrong: detect_icon_theme misses a kdedefaults-only theme until T16.
+- Ruling: T10 Minor 1 (kdeglobals_is_dark answers Some(false) for any readable cascade file without [Colors:Window] BackgroundNormal, so a colourless /etc/xdg/kdeglobals now stops the non-KDE dark fallback before gtk-3.0/settings.ini) is fixed in a T10 fix round, with Minors 4 (a `;` assertion, a kdedefaults-only icon-theme sizes assertion, temp dirs removed) and 6 (CHANGELOG scope) — why: Minor 1 is a regression this diff widened, and all three are a few lines in the same code — cost if wrong: one small extra commit. The round waits for T11 (same file) to commit.
+- Ruling: T11 fix round 1 takes the review Important plus validator items 2–5 (m4-T11-fix1.md): Qt's own legacy-weight table, clamp instead of drop (facts :567), no heading derivation from a Px body unless Kirigami's source says otherwise, facts rows for pixelSize/style/weight conversion — why: each is a reader value the facts must back, in T11's own code — cost if wrong: one more fix round.
+- Ruling: the plan missed `docs/todo.md:975` (kde-breeze link hover/active colours, a scheduled item); it becomes T34, a kde-breeze preset task with the validator's preset findings (uncited font blocks, button/tooltip font-colour value rows) — why: the triage carried it into Step 6 and no task held it — cost if wrong: none.
+- Ruling: Qt6 field 16 `styleName` goes to docs/todo.md ([1.0], research: does a set styleName override fields 4/5 in Qt's matching, qfont.cpp at a pinned tag) in Step 8's docs pass — why: unverified, and no user report — cost if wrong: a KDE font with a styleName may render another weight than reported.
+- Ruling: the kde-breeze preset-validator re-run after T11's fix round is done in T34 (the kde-breeze preset task), which runs the validator over the whole preset anyway — why: one validator pass instead of two — cost if wrong: a reader/preset disagreement found at T34 instead of now.
+- Ruling: the controller's fix-1 item 4 is withdrawn (my reading of Kirigami was wrong); fix round 2 (m4-T11-fix2.md) restores Px(body × factor) with the qtdeclarative citation, clamps any integer weight as Qt's setWeight does, and adds the ≥10-field condition to the facts — why: the re-reviewer fetched qquickvaluetypes.cpp and qfont.cpp at v6.11.2 — cost if wrong: none beyond the round. Round 2 waits for T12 to commit.
+- Ruling: T12 fix round 1 searches the same directory set in KDE's order (XDG data home, then XDG data dirs, then ~/.icons, per kicontheme.cpp:382/:395-405), with a test where a user copy and a system copy differ — why: the sizes describe what KDE draws — cost if wrong: none. Waits for T11's round 2 to commit.
+- Ruling: the icon loader's own base-dir order (freedesktop-icons 0.4.0 theme/paths.rs:14-34 and our theme_chain, system first) is checked against the Icon Theme Specification's lookup order in T25 (freedesktop task), as finding M4-94 recorded in Step 8 — why: T25 owns the loader's search; the T12 reviewer found the departure but it is outside T12 — cost if wrong: a user-installed copy of a system theme loses to the system copy in the loader until T25.
+- Ruling: T12 fix round 1 also takes Minors 1–3: a found index.theme that omits a key gives KIconTheme's own C++ fallback for that group (kicontheme.cpp:160-167 at v6.31.0: Desktop 32, Toolbar/MainToolbar 22, Small 16, Panel 48, Dialog 32 — values cited, re-read by the implementer), not None; the doc comment says so; the search keeps XDG data dirs when there is no home — why: these are the sizes KDE draws for such a theme, from KDE's source — cost if wrong: a theme without *Default keys gets KDE's fallback rather than the preset's.
+- Ruling: M4-26's remaining half — one overall bound for the GNOME reader's gsettings reads, not 2 s each — goes to T15 (the GNOME variant build, which already changes the gsettings reads for M4-55): the reads share one deadline (remaining time passed to each run_with_timeout), so the reader as a whole is bounded — why: T15 owns those reads; T14's row named only the portal block — cost if wrong: a hung gsettings costs up to 18 s until T15.
+- Ruling: T14's "one deadline" is one per portal block (the GNOME reader's, the KDE-with-portal reader's, detect_portal_backend), worst case 2 s + 2 s on an unrecognised desktop when the probe answers and the portal then stalls — why: a shared budget would change detect_portal_backend's signature, which T16 keeps; every block is bounded, which is what M4-26 asks — cost if wrong: up to 4 s instead of 2 s in that one case.
+- Ruling: T15's perf gate is met by the spawn count (one per key, 25 → 13 icon-theme spawns), the mechanical part; the timing is re-run on a quiet host at Step 8 with the other timings — why: the host was under heavy load, and a removed subprocess cannot be slower — cost if wrong: none (the code is simpler either way).
+- Ruling: the reader's dark mode does not read GTK_THEME, which detect_is_dark_inner checks first — recorded as a docs/todo.md entry in Step 8's docs pass (decide whether GTK_THEME is a GNOME setting the reader should follow) — why: M4-27 covered portal-absent vs gsettings, now one function; GTK_THEME is a developer override, not a GNOME setting — cost if wrong: a GTK_THEME=Adwaita:dark session reads dark in detect, light in the reader.
+- Ruling: T16 fix round 1 (m4-T16-fix1.md) takes both Importants and the detect_is_dark refined-desktop branch (so system_is_dark agrees with SystemTheme::mode on Unknown + KDE); it waits for T17 (same DetectionContext) and builds on its generations — why: both Importants are regressions of the task's own promise; detect_is_dark is the same disagreement class — cost if wrong: one more round.
+- Ruling: T18's simplify gate for M4-80's config-dir half is met by four copies replaced by one helper with only the deleted tests of deleted code changed, as for T10 — why: the row joins bug fixes that add code — cost if wrong: none. M4-80's icon-theme half was done in T16 (62c13acf).
+- Ruling: T20 fix round 1 (m4-T20-fix1.md) takes the Important (thread-id guard in Drop, detach instead of join) and Minors 3–4 (unwind qualifier, deadlock sentence) — why: the Important is a runtime panic in library code; the two doc lines are on the same contract — cost if wrong: none.
+- Ruling: T21 fix round 1 (m4-T21-fix1.md): HighContrastChanged handler; AnimationsEnabledChanged for client-area animation on the M2b probe agreement (stated as agreement, not identity); the two comments; the docs/todo.md Windows and macOS notes — why: the brief allows only window-needing gaps to stay unwatched; the probe is the only evidence for the animation pair — cost if wrong: an animation change that only one API reports fires nothing or one extra event. Waits for T20's round.
+- Ruling: the two extra removals stand — UISettings Foreground/Background give the mode's plain black/white, not a user choice the preset cannot know (the preset states WinUI's text and background); DwmGetColorizationColor was written whether or not the user turned on "Show accent colour on title bars", so it was wrong for most users — and the gap (title bar in the accent when that setting is on) becomes a docs/todo.md entry in Step 8, needing a sourced read of that setting — why: the ruling's "writes only" list and no sourced read of the toggle — cost if wrong: a Windows user with accent title bars sees the preset's title bar colour until that entry lands.
+- Ruling: T22 fix round 1 writes selection_text_color = COLOR_HIGHLIGHTTEXT under high contrast, citing docs/platform-facts.md:1056 (the facts are the project's source of truth; a WinUI brush citation is added if one exists), fixes the CHANGELOG sentence, and under high contrast does not write the user's accent colours (the HC mapping or preset decides; map an accent field to a system colour only with a WinUI HighContrast citation) — why: an unreadable selection and accent fills that ignore the high-contrast palette defeat high contrast — cost if wrong: one more round. The round also takes the preset-validator's findings if it reports reader issues; it waits for T23.
+- Ruling: T22 fix round 1 (m4-T22-fix1.md) takes the reader items 1–6; the font-size mix stays under the plan ruling (fonts kept) and its todo.md entry — why: they are the reader's own writes, each with a facts row or an upstream citation — cost if wrong: one more round.
+- Ruling: new task T35 — windows-11 preset after T22: the validator's preset items (#1–5, W1, W2, W7, W8, shadow flags, the stale facts rows), each value from an upstream source or left as a docs/todo.md entry; the title bar (#2) first, since T22 made the live title bar translucent: state a sourced title_bar_background (and its text/inactive colours) or, if Windows 11's caption colour has no source, rule then — why: preset data needs sourcing research the reader task cannot do; the regression must not ship — cost if wrong: a live Windows title bar drawn translucent until T35.
+- Ruling: the windows-11 tooltip-font validator check is done in T35's windows-11 validator pass (the preset's 9 pt equals lfStatusFont −12 at 96 DPI) — why: one validator pass — cost if wrong: a disagreement found at T35.
+- Ruling: under high contrast accent_text_color = COLOR_HIGHLIGHTTEXT (generic.xaml:2056, the HC accent button's text) — why: under HC the accent fills it pairs with are COLOR_HIGHLIGHT (item 2), and text on a highlight is HighlightText; Common_themeresources_any.xaml:426's WindowText is text on the window, not on an accent fill — cost if wrong: one mapping. Added to the same fix round (one more small commit), then one scoped re-review over bd478697..HEAD.
+- Ruling: the live AppKit read stands over the fixed 15/16 — why: it is what AppKit draws on the running version (macOS 26 gives 17), and design constants in the reader are ruled out (M1-T1-02) — cost if wrong: none (a live value). Leftovers for the final docs pass: CHANGELOG Changed ~60 stale next to the new Fixed line; docs/todo.md:2357 row says the reader reads no scrollerWidth; thumb_width per style not written (docs/todo.md entry in Step 8).
+- Ruling: the append-only rule protects findings, ledgers and history; an [Unreleased] CHANGELOG line that describes this release's behaviour and that a later task made false is corrected in place — why: the CHANGELOG states what 0.7.0 does; a false line misleads users — cost if wrong: none (git keeps the old wording). T24 fix round 1 rewords :67 (with the validator's reader findings, if any); it waits for T25.
+- Ruling: T24 fix round 1 also updates docs/todo.md:2373-2374 (the row no longer says the reader reads no scrollerWidth; the legacy-style mix recorded as a limitation needing the knob rectangle in the OS probe and a legacy track colour source) — why: no sourced legacy values exist, so recording is the only honest fix — cost if wrong: none. Deferred to Step 8's docs pass (append): Tahoe's missing thumb_color/thumb_hover_color, monterey thumb_active_color unsourced, the off-by-one refs (:390, :1135), the stale macos.rs refs in the :1009 entry, facts :1280/:177 citing probe 15.
+- Ruling: my dispatch's "ascent from tmAscent" was imprecise; T26 fix round 1 uses ascent = tmAscent − tmInternalLeading (checked arithmetic; equal to today when the leading is 0), cites both docs pages, and adds a pure test with a nonzero internal leading — why: the em box is what `.size` promises — cost if wrong: none. Waits for T27.
+- Ruling: the M4-64 form stands — the finding asks that the cargo::error line carry the cause and position, which it now does; the compact path:line:col form would break the public IoParse variant for no user gain — cost if wrong: a reworded message.
+- Ruling: generated signatures use `::std::option::Option` (test, CHANGELOG updated) — why: the generated code already depends on std, and the finding's goal (not the prelude Option that a user enum can shadow) holds on every edition — cost if wrong: none. T29 fix round 1 waits for T30 (same crate).
+- Ruling: native-theme gains a public cached accessor of the refined desktop's sync value (`DetectionContext::refined_linux_desktop()` or the existing sync variant made pub, documented as "the desktop the readers use"), and the generated icon_name reads it — why: T16's point is one desktop decision for every per-desktop choice; a DE-aware icon mapping that disagrees with the icon theme picks a name the theme may not have — cost if wrong: one additive public method. Taken into T30's fix round (with the review's findings).
+- Ruling: T30 fix round 1 (m4-T30-fix1.md) = the refined-desktop accessor ruling + Minors 1–3 (a committed compile test for DE-aware generated code, the Windows-portable absolute path in the escape test, de_dispatch's redundant check) — why: item 1 changes generated code that today no committed test compiles — cost if wrong: none. Waits for T29's round.
+- Ruling: the text-scale check's px-for-size_pt report is fixed in T31's fix round (same defect as docs/todo.md:986, same file) — why: one rule for stated-unit reporting — cost if wrong: none.
+- Ruling: new task T36 — kde-breeze preset and KDE reader against the facts (m4-T36-brief.md): the untracked V3–V11 and W2, the reader rows and D1 — why: each is a wrong or unsourced value the facts already decide (or a facts value fetchable from the pinned .colors), the same class as T35 for windows-11, and the reader rows are M4's own scope — cost if wrong: one more task. Tracked items stay where they are; R1/R2/D3 go to the final review / Step 8.
+- Ruling (stopping rule): T35 gets one fix round (m4-T35-fix1.md) of sourced or removal-only items; every other windows-11 validator finding goes to Step 8's docs/todo.md pass, and there is no further windows-11 validator loop in M4 — why: each audit pass surfaces older preset debt (M2b's area), and research-needing items belong to a preset-fidelity pass, not M4's reader review — cost if wrong: those items stay open one milestone, listed.
+- Ruling: T36 fix round 1 reads `kcmfonts` (failing test first), corrects facts :713/:714/:1123/:1775 in place (they describe the file; keep the lines), the CHANGELOG line and docs; takes the review's cheap Minors (the dark switch.disabled_thumb_color left unsourced after the thumb change → remove so it inherits or source it; the duplicated font merge) and the final kde-breeze validator's reader items if any — why: a reader read of a file Plasma never writes — cost if wrong: none. Waits for T35's round and the validator.
+- Ruling: windows-11's static primary_background stays on the accent for M4, and an M5 item is recorded (docs/todo.md, Step 8): the iced connector derives the primary hover from primary_background, not the accent, after which windows-11 states AccentFillColorDefault (facts :1175) — why: the contract lives in iced (M5's scope) and the live reader is already right per the facts; changing the connector here is out of M4 — cost if wrong: the static windows-11 preset's primary button is #0078d4 instead of #0067c0, and live Windows themes give iced a primary hover from the plain accent, until M5.
+- Ruling: the happy_path_size_report flake (temp dir AlreadyExists) is fixed in the final fix wave (a unique temp dir per test) — why: a flaky test in the gate wastes reruns and hides real failures — cost if wrong: none.
+- Ruling: Important 1 is fixed in the contract, not the cache: the watch docs, recipes and CHANGELOG say to call detect::invalidate_caches() before re-reading — why: every DetectionContext slot (dark mode, icon theme, DPI) is cached the same way and the connectors already invalidate; caching the DPI is the M3-22 perf gain — cost if wrong: a core user who skips the call reads a stale DPI until they invalidate.
+- Ruling (residual, load-bearing, no second fix wave): the Step 8 close task reorders publish.yml to derive → native-theme → build (native-theme does not depend on build; the order comment :197-204 corrected), fixes the order check_release.sh prints, and makes detect_rs() fail when ../native-theme/Cargo.toml exists but detect.rs does not — why: the dev-dependency fix is right (the published crate's tests now compile), and the release order is what was wrong; the change touches no published code — cost if wrong: a workflow order reverted. Nothing is published or pushed by it.
+
+Stopping rule: after T35's validator the session ruled one fix round of sourced or removal-only items per preset task, with no further validator loop in M4, and every other finding to docs/todo.md in Step 8; the same rule applies to T36 (kde-breeze). Both tasks closed under it.
+
+### Step 8 — minors left deferred (2026-10-13)
+
+The final whole-branch review triaged every deferred minor of the task reviews (`.superpowers/sdd/todo_code-review-plan/m4-final-review.md`, not in git); the fix wave fixed its "fix before merge" list, and these stay deferred, each with its reason. Those the review sent to `docs/todo.md` have entries there (Step 8's docs pass).
+
+- **T2:** `PostThreadMessageW`'s result is discarded. Only a full 10,000-message queue fails it, and that loses one event.
+- **T5:** the `RgbaData` doctest asserts under an `if let`; the egui connector's `to_color_image` length re-check is now unreachable (deleted in M7); `rasterize`'s "pixels do not fill" error is unreachable.
+- **T8:** the egui `atlas.rs:316-319` doc still shows the old `load_icon_indicator(set)` (M7).
+- **T10:** a `[A][B` line is not filtered (configparser takes the last `]`; rare); `kdedefaults` is derived from `/etc/xdg` when `HOME` and `XDG_CONFIG_HOME` are unset (harmless: the file is absent); an extra variant clone in `from_kde_content_pure` (polish).
+- **T11:** Qt font-string edge cases on strings Plasma does not write: 5–9-field strings are accepted where Qt rejects them, and a non-integer weight drops the font (Qt reads 0 and clamps it). A huge `forceFontDPI` is accepted: no source gives a bound.
+- **T12:** a negative `index.theme` size takes KDE's fallback (KConfig returns it as is, and it is not a valid size); `parse_icon_sizes_from_index_theme`'s environment reader has no direct test (its pure parts are tested).
+- **T13:** the unit-valued `PANGO_DROPPED_FIELDS` tables (cosmetic); no test for the `width=` / `variant=` integers or `style=3`.
+- **T14:** a reader timeout drops reads already answered (the colour scheme before a hung accent read); `Result<Option<_>, ()>` in the backend helper (an enum would read better); no symmetric backend test (running GNOME and both installed → GNOME); a hung bus daemon can leave the probe's connection and executor thread alive.
+- **T15:** `color_scheme_is_dark`'s unknown-value → `None` is untested; the reader does not read `GTK_THEME` (docs/todo.md, ruled).
+- **T16:** button order and `presets::detect_platform` still decide by the raw desktop; `invalidate_linux_desktop()` alone clears no derived slot; preset-only apps never get the portal's answer (the M3-25 split, documented). docs/todo.md.
+- **T17:** a test copies `finish_fill` by hand; a test cannot tell an empty slot from an invisible stale entry; the Thread Safety doc omits that a read overlapping an invalidation may return the previous value (linearizable).
+- **T18:** a command exiting right at the deadline may be `TimedOut` and lose its output; `stdout_with_timeout` is `None` when only stderr is held open. Both are bounded and conservative.
+- **T19:** the connector docs' copies of the old "3.2 ms gsettings" claim (gpui `lib.rs:271-272`, gpui README `:179-181`, iced README `:353-355`) are M5–M6's; readerless desktops read `enable-animations` but not the text-scaling factor or high contrast (docs/todo.md).
+- **T20:** the KDE trailing debounce has no maximum wait (docs/todo.md); a due fire is checked after the shutdown check (prompt, verified); deliberate test panics print the default hook's message.
+- **T21:** `SUBSCRIBED_EVENTS` is built from constants, not from the subscription calls, so the table test can pass with a subscription missing; the KDE portal accent's mapping to the kdeglobals watch is uncited; `kdedefaults` is re-watched only on `Create` (a rename into place is missed); a macOS burst holds an `NSOperationQueue` thread up to 300 ms; the `on_theme_change` error doc line is over-long and does not say `AnimationsEnabledChanged` is optional.
+- **T23:** the tooltip takes `lfStatusFont`'s family and weight where the facts give the tooltip's family and weight ← `defaults.font`. The final review deferred it to the windows-11 list; since then 2a1f3315 extended the facts rows (Segoe UI 400 on the three probe images, as `lfMessageFont`), and the windows-11 validator after T35 found the tooltip font agrees with the facts, so nothing is left open.
+- **T24:** off the main thread the reader keeps the preset's groove width, as it does `overlay_mode`; no test of the bool → `NSScrollerStyle` mapping (macOS-only).
+- **T25:** `listed_themes_are_available` holds by construction; the default-parent test skips unless `/usr/share/icons/default` inherits Adwaita; `$XDG_DATA_HOME`'s place in the base-dir order is an inference (cite GTK's search path); the first snapshot's cost is untimed.
+- **T26:** a hand-reflowed doc line.
+- **T27:** the centring test asserts the boundary rows loosely; the size bound is checked before parsing (a size error wins over bad bytes, the same kind); the test's temp file is named by pid (and cleaned).
+- **T28:** the untested dead transform-spin fallback in `spinners.rs` (removal needs an `Option` chain through its callers); `spinners.rs`'s `include_bytes!` is a third copy of the `StatusBusy` mapping (M4-81's follow-up: `bundled_icon_svg(IconRole::StatusBusy, set)`).
+- **T29:** extras are deduped by exact string only (`Ord` and `core::cmp::Ord` give E0119); `toml_error_reason` drops a span that is not on a char boundary silently (a comment would say so); a dangling relative symlink is not warned; raw user strings in the other `cargo::error=` lines.
+- **T33:** the checker accepts a `SAFETY:` comment near the block, not only directly above it; its string toggle is naive; `hicon_to_rgba` and `try_create_font` state their contracts in `//` comments, not `# Safety` rustdoc; `windows.rs`'s `lpszDefaultScheme` null is unstated.
+- **T35:** windows-11's line heights are cited but not machine-checked, since the no-line-height test skips the preset; the dark scroll thumb's wrong fallback and the other windows-11 validator findings are docs/todo.md entries (stopping rule). From the T35 review: under high contrast the title bar follows the WinUI TitleBar control's HC brushes, while a Win32 caption DWM draws may use the contrast theme's own caption colours (no source checked either way); `over_the_preset_the_selection_is_the_accent` checks light mode only; `input.focus_border_color` states the colour of WinUI's 2 px bottom line, which the model's field puts on the whole focused border (for M5–M7's connectors).
+- **Final review Minors the fix wave did not take:** P1-2 the `watch` module docs say a drop always joins (a callback's own drop detaches); P1-3 the macOS self-drop doc over-warns; P1-4 the over-long `# Errors` line (T21's); P2-1 `accessibility_preferences`' docs say the watcher misses changes it now reports (`detect.rs`); P2-2 `prefers_reduced_motion` and the reader's accessibility block are two caches a system read refreshes unequally; P3-2 the KDE icon sizes and the icon lookup search the base dirs in different (both cited) orders; P7-1 `refined_linux_desktop_sync` stats kdeglobals on every generated `icon_name` call before a system read. P2-2, P3-2 and P7-1 are docs/todo.md entries.
+
 
 ## M5 — iced connector
 
