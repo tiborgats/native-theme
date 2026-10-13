@@ -596,7 +596,7 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4553-4560 for fills and edges, :4697 and
+    // inside it (gpui-pre window.rs:4687-4694 for fills and edges, :4697 and
     // :4746 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
@@ -778,7 +778,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip border",
             "border",
             t.border,
-            "gpui-component/tooltip.rs:118",
+            "gpui-component/tooltip.rs:119",
         ),
     ];
     if text {
@@ -786,7 +786,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/tooltip.rs:115",
+            "gpui-component/tooltip.rs:116",
         ));
     }
     claims

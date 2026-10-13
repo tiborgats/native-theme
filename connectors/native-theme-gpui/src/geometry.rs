@@ -55,7 +55,7 @@
 //! today — [`status_bar`] and [`dialog_description`] displace
 //! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — three
 //! displace `foreground`: [`list_item`], [`radio`] and [`select`], and
-//! [`title_bar`] displaces nothing (`title_bar.rs:328-343` paints the fill and
+//! [`title_bar`] displaces nothing (`title_bar.rs:331-346` paints the fill and
 //! the border, then refines). Those four change no pixel over the bundled
 //! presets, because a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
@@ -155,7 +155,7 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
 ///
 /// The platform's `defaults.line_height` becomes the control's line height:
 /// each receiving widget takes the refinement after its own line height
-/// (`button/button.rs:732` → `:733`, `input/input.rs:773` → `:793`) or sets
+/// (`button/button.rs:743` → `:744`, `input/input.rs:783` → `:803`) or sets
 /// none (`list/list_item.rs:198-209`, `select.rs:542-553`,
 /// `combobox.rs:981-998`), so the platform's wins. `stated` is the control's
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
@@ -174,8 +174,8 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
     }
 }
 
-/// `Button` (gpui-component `src/button/button.rs:669-706` → refined at `:733`).
-/// The label's text size is set on an inner element (`:741-749`), Tier U.
+/// `Button` (gpui-component `src/button/button.rs:680-717` → refined at `:744`).
+/// The label's text size is set on an inner element (`:752-760`), Tier U.
 ///
 /// Height by the control-height rule (module doc), through `h`.
 #[must_use]
@@ -187,7 +187,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
         // The weight, and deliberately not the size. This refinement lands on
-        // the button's outer element (`button/button.rs:733`), and GPUI
+        // the button's outer element (`button/button.rs:744`), and GPUI
         // cascades text style to descendants: the label is a child that sets
         // its own size from the `Size` enum (`button_text_size`, which maps
         // to `text_xs`/`text_sm`/`text_base`) and so would overrule a size
@@ -206,7 +206,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 ///
 /// gpui-component sets the label's size from the `Size` enum on the content
 /// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
-/// `src/button/button.rs:749`) after the button's own refinement (`:733`), so
+/// `src/button/button.rs:760`) after the button's own refinement (`:744`), so
 /// a size given to [`button`] would be shadowed; since 0.7.1 that size is
 /// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
 /// element's children are the one public route under it (`:772`): a label
@@ -240,7 +240,7 @@ pub fn button_label(n: Native<'_>) -> StyleRefinement {
     with_text(line, &n.resolved.button.font, n)
 }
 
-/// `Toggle` (`src/button/toggle.rs:174-179` → `:214`): [`button_label`]'s
+/// `Toggle` (`src/button/toggle.rs:182-187` → `:222`): [`button_label`]'s
 /// text — `button.font`'s size and weight and the platform's line height.
 ///
 /// gpui-component sets `text_sm` on a `Size::Medium` Toggle's root before
@@ -254,33 +254,33 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
     button_label(n)
 }
 
-/// `Input` root (`src/input/input.rs:778-788` → `:793`).
+/// `Input` root (`src/input/input.rs:788-798` → `:803`).
 ///
 /// Height by the control-height rule (module doc), through `h`. The rule is
 /// for a single-line field: a multi-line `Input` sets its own height before
-/// this refinement (`input/input.rs:780-783`), which the rule's `h` would
+/// this refinement (`input/input.rs:790-793`), which the rule's `h` would
 /// replace, so a caller that wants a multi-line height sets it after this
 /// builder, fully qualified as `Styled::h(input, height)`. Method syntax
 /// reaches `Input::h` instead (`input/input.rs:292-296`, "Multi-line only"),
 /// which shadows `Styled::h` and only records the height that upstream
-/// applies at `:782`, before the caller's refinement at `:793`, so the
+/// applies at `:792`, before the caller's refinement at `:803`, so the
 /// rule's `h` would still replace it. The padding is a single-line field's too:
-/// upstream pads only a single-line root (`input/input.rs:774-776`), so a
+/// upstream pads only a single-line root (`input/input.rs:784-786`), so a
 /// caller that refines a multi-line `Input` or a `Textarea` uses
 /// [`text_area`] instead, or clears this refinement's padding as well.
 ///
 /// The stated padding sides reach the root: upstream pads a single-line
-/// field (`input_px`/`input_py`, `input/input.rs:775`) before the refinement
-/// at `:793`, so the refinement wins, and the field's text element has no
+/// field (`input_px`/`input_py`, `input/input.rs:785`) before the refinement
+/// at `:803`, so the refinement wins, and the field's text element has no
 /// padding of its own to double it. One exception: an `Input` with a suffix
 /// takes its right padding from upstream *after* the refinement
-/// (`input/input.rs:810`, `this.pr(self.size.input_px())`), so there the
+/// (`input/input.rs:820`, `this.pr(self.size.input_px())`), so there the
 /// platform's right side does not arrive.
 ///
 /// When refining an `InputGroup` or `NumberInput` frame, clear the padding
-/// sides: the inner Input already pads (`input/group.rs:265-286` and
+/// sides: the inner Input already pads (`input/group.rs:267-288` and
 /// `input/number_input.rs:158-165` each render an `Input`, which pads itself
-/// at `input/input.rs:774-776`).
+/// at `input/input.rs:784-786`).
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
@@ -294,8 +294,8 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:778-788`
-/// → `:793`).
+/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:788-798`
+/// → `:803`).
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
 /// padding, corner radius and line width in place of the input's (the
@@ -510,25 +510,25 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:587-597, 672-673` → `:677`); width through
+/// `Dialog` (`src/dialog/dialog.rs:633-643, 723-724` → `:728`); width through
 /// [`dialog_max_width`] and `Dialog::max_w`. The radius is the dialog's own
 /// (`dialog.border.corner_radius`), which upstream would otherwise take from
-/// `radius_lg` (`:672`); the two differ on Adwaita.
+/// `radius_lg` (`:723`); the two differ on Adwaita.
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
 /// dialog to what is left of the viewport *after* applying this style -- in
 /// 0.7.1 the view's height less twice the `lg` spacing token and the layer's
-/// offset (`:576-584`), set by `max_h` at `:682`, after the refinement at
-/// `:677`.
+/// offset (`:576-584`), set by `max_h` at `:733`, after the refinement at
+/// `:728`.
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
 /// refinement. Kept here for an application-drawn dialog and for the day
 /// upstream takes a `max_h` prop (spec v0.5.9 §4, E18).
 ///
 /// Upstream reads the four padding sides back out of this style
-/// (`dialog/dialog.rs:589-601`), starting from 16px on each side, so
+/// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so
 /// an unstated side keeps that 16px. It also reuses them as gaps: the gap
-/// between the dialog's sections is `max(top, 8px)` (`:676`), and a
-/// `DialogContent`'s gap is the bottom padding (`:707`). A platform that
+/// between the dialog's sections is `max(top, 8px)` (`:727`), and a
+/// `DialogContent`'s gap is the bottom padding (`:758`). A platform that
 /// states 32 top and 24 bottom, as GNOME does (docs/platform-facts.md §2.22),
 /// therefore also spaces the sections by 32 and the content by 24.
 #[must_use]
@@ -540,12 +540,12 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         .rounded(px(d.border.corner_radius.max(0.0)))
 }
 
-/// `InputGroupButton` (`src/input/group.rs:590-593` → `:596`): the platform's
+/// `InputGroupButton` (`src/input/group.rs:597-600` → `:596`): the platform's
 /// button radius, and nothing else.
 ///
 /// gpui-component scales a control's radius with its size — an in-group
 /// button is `XSmall` and gets `radius / 2`, `Button` does the same for its
-/// small and large roundings (`src/button/button.rs:636-638`) — where
+/// small and large roundings (`src/button/button.rs:647-649`) — where
 /// native-theme records one radius per widget, whatever its size. [`button`]
 /// already restores it for a `Button`; this does the same for the button
 /// nested in a field, whose height, width and padding the group sets so that
@@ -584,7 +584,7 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
 /// refines a plain `div()` and leaves the frame to the application, where
 /// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
-/// `bordered` (`src/table/data_table.rs:167-171`). Apply this to a `List` or a
+/// `bordered` (`src/table/data_table.rs:181-185`). Apply this to a `List` or a
 /// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
 /// or to the box an application draws around one, and the three agree. There
 /// is no tree theme in the model: a tree is a list view, and reads
@@ -756,9 +756,9 @@ pub fn combobox(n: Native<'_>) -> StyleRefinement {
     with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
 }
 
-/// `TitleBar` (`src/title_bar.rs:335` → `:343`); the height has no theme field.
+/// `TitleBar` (`src/title_bar.rs:338` → `:346`); the height has no theme field.
 ///
-/// Upstream sets no text colour on the bar (`:328-343` paints the fill and the
+/// Upstream sets no text colour on the bar (`:331-346` paints the fill and the
 /// border, then refines), so the route is open and the carried colour displaces
 /// nothing. It is worth carrying: the KDE reader states
 /// `window.title_bar_font.color` from `[WM] activeForeground`, which a colour
@@ -891,7 +891,7 @@ pub fn scrollbar_gutter(n: Native<'_>) -> StyleRefinement {
 
 // --- Builder helpers (spec §9.3) ----------------------------------------------
 
-/// For `Dialog::max_w` (`src/dialog/dialog.rs:466`).
+/// For `Dialog::max_w` (`src/dialog/dialog.rs:497`).
 #[must_use]
 pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
@@ -902,7 +902,7 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 ///
 /// A single-line `Input` takes it through `StyledExt::refine_style`, the
 /// caller's style, which `Input` refines its root with last
-/// (`src/input/input.rs:793`). Above a text-scaling factor of 1 the rule's
+/// (`src/input/input.rs:803`). Above a text-scaling factor of 1 the rule's
 /// height is automatic, so the field then grows around its own drawn text
 /// and padding -- upstream's, unless the caller also gives it the
 /// platform's.
@@ -915,8 +915,8 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// The fill of an `Input` root (`src/input/input.rs:706-717`, painted at
-/// `:785`, refined at `:793`), for a field built with `disabled`: the
+/// The fill of an `Input` root (`src/input/input.rs:707-718`, painted at
+/// `:795`, refined at `:803`), for a field built with `disabled`: the
 /// platform's `input.background_color`, or disabled its
 /// `input.disabled_background`. Apply it after [`input`].
 ///
@@ -925,7 +925,7 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// field with `Theme::input_background`, which is the window's `background`
 /// in a light theme and `input` mixed with transparent in a dark one
 /// (`theme/mod.rs:485-491`), and a disabled one with `input` mixed with
-/// transparent at half opacity (`input/input.rs:98-101`, `:713-717`); the
+/// transparent at half opacity (`input/input.rs:98-101`, `:714-718`); the
 /// `input` token is the field's border (`contract.rs`'s `input` row), so
 /// neither fill can be the platform's. The fill is painted before the
 /// caller's refinement, so the refinement's wins -- in either state, which is
@@ -969,7 +969,7 @@ fn unit(opacity: f32) -> f32 {
 /// Colour, not geometry, carried because no `ThemeColor` field reaches it:
 /// upstream paints a disabled Default button with `input_background()` at
 /// half opacity and its label with `muted_foreground` at half opacity
-/// (`src/button/button.rs:1316-1362`, the label at `:1327`), literals of its
+/// (`src/button/button.rs:1333-1379`, the label at `:1344`), literals of its
 /// own. Its disabled
 /// style replays the caller's refinement over its own (`:797-803`), so the
 /// refinement's colours win there -- and at rest too (`:733`), which is why
@@ -1038,7 +1038,7 @@ pub fn link(n: Native<'_>) -> StyleRefinement {
 // the system path. There is no receiver to map these into: gpui-component's
 // `Theme::spacing_tokens()` returns `SpacingTokens::default()` with no field
 // behind it (`theme/mod.rs:588-590`), so its one reader, a `Dialog`'s viewport
-// margin (`dialog/dialog.rs:576`), gets that default whatever a theme says.
+// margin (`dialog/dialog.rs:616`), gets that default whatever a theme says.
 // `None` means the platform specifies nothing (platform-facts §2.20).
 
 /// Space between adjacent widgets.
@@ -1651,7 +1651,7 @@ mod tests {
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child
     /// afterwards, and it labels the title bar with nothing at all
-    /// (`title_bar.rs:328-343`) -- so the day a source states
+    /// (`title_bar.rs:331-346`) -- so the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
     /// reader does from `[WM] activeForeground`, the element is painted with it
     /// instead of silently keeping the window's.
@@ -1720,7 +1720,7 @@ mod tests {
                     "{at}: select text"
                 );
                 // Upstream sets no colour on the bar at all
-                // (`title_bar.rs:328-343`), so the route is open and nothing
+                // (`title_bar.rs:331-346`), so the route is open and nothing
                 // is displaced -- and the KDE reader does state the field,
                 // from `[WM] activeForeground` (`native-theme/src/kde/colors.rs`).
                 assert_eq!(

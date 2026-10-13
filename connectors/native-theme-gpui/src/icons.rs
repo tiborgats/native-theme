@@ -924,7 +924,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// of the feature: the source is an
 /// `ImageSource::Image(Image::from_bytes(ImageFormat::Svg, bytes))` holding
 /// the SVG bytes, colorized first when `color` is `Some`, and gpui decodes it
-/// with its own resvg (gpui-pre `src/platform.rs:3298-3301`). That costs two
+/// with its own resvg (gpui-pre `src/platform.rs:3351-3354`). That costs two
 /// things. gpui decodes it in the background, so an element holding it paints
 /// nothing the first time it comes up (gpui-pre `src/elements/img.rs:534-553`).
 /// And gpui chooses the raster size, twice the SVG's own size
@@ -938,7 +938,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// carries a decoded [`gpui::RenderImage`], which takes a tile in each
 /// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2983-2993`,
+/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
 /// `src/window.rs:5037-5048`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
@@ -1257,7 +1257,7 @@ fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
 /// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
 ///
 /// Without `svg-rasterize` this crate has no rasterizer of its own; gpui
-/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3298-3301`),
+/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3351-3354`),
 /// in the background and at twice the SVG's own size
 /// (`src/svg_renderer.rs:81, 200-206`), so `size` is not used. The bytes are
 /// not parsed here: this returns `Some` for any input, and an SVG gpui cannot
@@ -1290,7 +1290,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// A [`RenderImage`] the caller keeps holds a tile in each window's sprite
 /// atlas from the first frame that draws it, and nothing releases that tile on
 /// its own: gpui frees one only through `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2983-2993`,
+/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
 /// `src/window.rs:5037-5048`), which its own image cache calls when it evicts
 /// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
@@ -2002,7 +2002,7 @@ mod tests {
         assert_eq!(image.frame_count(), 1);
         // A `RenderImage` holds BGRA, which is what gpui's own decoder leaves
         // behind: it converts to RGBA8 and then swaps each pixel's first and
-        // third byte (gpui-pre `src/platform.rs:3196-3199`).
+        // third byte (gpui-pre `src/platform.rs:3249-3252`).
         assert_eq!(
             image.as_bytes(0),
             Some(

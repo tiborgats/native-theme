@@ -56,7 +56,7 @@ WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` r
 
 # A widget whose state the toolkit only builds fallibly, which the showcase
 # cannot hold without a panic path (v0.6.0-rc1 gpui-kit 0.7 rationale K12).
-Questionnaire = "it and its parts take an `Entity<QuestionnaireState>`, whose only constructor returns `Result` (gpui-base questionnaire/state.rs:48-51) while gpui builds entities infallibly (gpui-pre app.rs:3109); no `Default` or unchecked constructor exists, and upstream's own tests unwrap it (questionnaire/components.rs:1480). Shown once upstream offers an infallible constructor (docs/todo.md)"
+Questionnaire = "it and its parts take an `Entity<QuestionnaireState>`, whose only constructor returns `Result` (gpui-base questionnaire/state.rs:48-51) while gpui builds entities infallibly (gpui-pre app.rs:3229); no `Default` or unchecked constructor exists, and upstream's own tests unwrap it (questionnaire/components.rs:1480). Shown once upstream offers an infallible constructor (docs/todo.md)"
 QuestionnaireActions = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:1246), excepted with it"
 QuestionnaireChoice = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:700), excepted with it"
 QuestionnaireChoices = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:616), excepted with it"
@@ -168,7 +168,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283, recommended_rendering_mode is Subpixel; drawn at :495-541) wherever the window is opaque (gpui-pre src/window.rs:4773-4790), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour (gpui can be switched to grayscale with App::set_text_rendering_mode, gpui-pre src/app.rs:1620: a choice the theme data does not make)"
+reason = "the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283, recommended_rendering_mode is Subpixel; drawn at :502-548) wherever the window is opaque (gpui-pre src/window.rs:4907-4924), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour (gpui can be switched to grayscale with App::set_text_rendering_mode, gpui-pre src/app.rs:1740: a choice the theme data does not make)"
 keys = [
     "hover@chrome.menu_bar.help.text",
     "menu@kde-breeze/light:chrome.menu_bar.help.text",
@@ -426,7 +426,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :495-541) wherever the window is opaque (gpui-pre src/window.rs:4773-4790), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
+reason = "the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :502-548) wherever the window is opaque (gpui-pre src/window.rs:4907-4924), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
 keys = [
     "hover@chrome.side_panel.settings.mode_label.text",
     "menu@kde-breeze/light:chrome.side_panel.settings.mode_label.text",
@@ -615,7 +615,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "toolkit limit, adwaita: gpui-pre-wgpu loads every face at Weight::NORMAL (src/cosmic_text_system.rs:410-413, :568-571) and measures and rasterizes glyphs with no variation coordinates (glyph_metrics(&[]) at :443, :242; the swash scaler without variations at :519-524), so Adwaita Sans, one variable face (wght 100-900), is drawn and laid out at its default instance where text_scale states 700 or 800; fontconfig's named instances are instances of the same file, which fontdb lists as one face (r12/todo-gpui.md)"
+reason = "toolkit limit, adwaita: gpui-pre-wgpu loads every face at Weight::NORMAL (src/cosmic_text_system.rs:410-413, :575-578) and measures and rasterizes glyphs with no variation coordinates (glyph_metrics(&[]) at :450, :242; the swash scaler without variations at :526-531), so Adwaita Sans, one variable face (wght 100-900), is drawn and laid out at its default instance where text_scale states 700 or 800; fontconfig's named instances are instances of the same file, which fontdb lists as one face (r12/todo-gpui.md)"
 keys = [
     "adwaita:basic.buttons.heading.w",
     "adwaita:basic.checkboxes.heading.w",
@@ -642,7 +642,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:682-685, hovered at :1149, border_color at :1013), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:842-848, a second is debug-asserted) and refines it after a group hover (:3454, :3473), so no style the application gives reaches the hovered edge; the model states no hovered button edge, and iced and egui keep button.border.color"
+reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:693-696, hovered at :1149, border_color at :1013), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:842-848, a second is debug-asserted) and refines it after a group hover (:3454, :3473), so no style the application gives reaches the hovered edge; the model states no hovered button edge, and iced and egui keep button.border.color"
 keys = [
     "hover@basic.buttons.default.border",
 ]
@@ -750,7 +750,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "toolkit limit: gpui fades each primitive on its own (gpui-pre src/window.rs:4561-4569 paint_quad, :4634-4637 paint_path), so under checkbox.disabled_opacity the faded checked fill shows through the faded mark, where a platform fading the control as one shows the mark over the page alone; a colour composited in advance would need the page's colour under the control, which the widget does not know"
+reason = "toolkit limit: gpui fades each primitive on its own (gpui-pre src/window.rs:4695-4703 paint_quad, :4768-4771 paint_path), so under checkbox.disabled_opacity the faded checked fill shows through the faded mark, where a platform fading the control as one shows the mark over the page alone; a colour composited in advance would need the page's colour under the control, which the widget does not know"
 keys = [
     "adwaita/dark:basic.checkboxes.disabled.mark.mark",
     "material-3:basic.checkboxes.disabled.mark.mark",
@@ -764,7 +764,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "the theme states no checkbox.radio_dot_diameter_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: half the circle, iced_widget 0.14.2 src/radio.rs:409-433) | theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:239), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size | theme silence: material-3 and catppuccin-mocha state no checkbox.radio_dot_diameter_px (None), so the selected radio button's dot is each toolkit's own size (egui-widgets RadioButton: egui's own radio dot, egui-0.36.2/src/widgets/radio_button.rs)"
+reason = "the theme states no checkbox.radio_dot_diameter_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: half the circle, iced_widget 0.14.2 src/radio.rs:409-433) | theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size | theme silence: material-3 and catppuccin-mocha state no checkbox.radio_dot_diameter_px (None), so the selected radio button's dot is each toolkit's own size (egui-widgets RadioButton: egui's own radio dot, egui-0.36.2/src/widgets/radio_button.rs)"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.x",
     "catppuccin-mocha:basic.radios.option_a.dot.y",
@@ -773,7 +773,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:239), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size"
+reason = "theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.mark",
 ]
@@ -821,7 +821,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "sized by, or centred on, a line of text whose own width differs within R-shape (each toolkit's shaper hints and kerns the theme font on its own: iced cosmic-text 0.15.0, egui epaint, gpui the platform text system): the difference moves the control's far edge, the box after it, or a centred label's left edge by a fraction of a pixel that R-snap can round either way | toolkit limit of iced and gpui, egui follows the theme: adwaita states text_scale.section_heading weight 700 and dialog_title / display 800 over a variable Adwaita Sans (wght 100-900); egui sets the wght axis (FontTweak::coords, native-theme-egui fonts::weight_coords) and lays out the bold advances, gpui draws the default instance and iced lays out the 400 advances (see for-gpui.md / their proposals); every column width and position after a heading follows | toolkit limit, adwaita: gpui-pre-wgpu loads every face at Weight::NORMAL (src/cosmic_text_system.rs:410-413, :568-571) and measures and rasterizes glyphs with no variation coordinates (glyph_metrics(&[]) at :443, :242; the swash scaler without variations at :519-524), so Adwaita Sans, one variable face (wght 100-900), is drawn and laid out at its default instance where text_scale states 700 or 800; fontconfig's named instances are instances of the same file, which fontdb lists as one face (r12/todo-gpui.md)"
+reason = "sized by, or centred on, a line of text whose own width differs within R-shape (each toolkit's shaper hints and kerns the theme font on its own: iced cosmic-text 0.15.0, egui epaint, gpui the platform text system): the difference moves the control's far edge, the box after it, or a centred label's left edge by a fraction of a pixel that R-snap can round either way | toolkit limit of iced and gpui, egui follows the theme: adwaita states text_scale.section_heading weight 700 and dialog_title / display 800 over a variable Adwaita Sans (wght 100-900); egui sets the wght axis (FontTweak::coords, native-theme-egui fonts::weight_coords) and lays out the bold advances, gpui draws the default instance and iced lays out the 400 advances (see for-gpui.md / their proposals); every column width and position after a heading follows | toolkit limit, adwaita: gpui-pre-wgpu loads every face at Weight::NORMAL (src/cosmic_text_system.rs:410-413, :575-578) and measures and rasterizes glyphs with no variation coordinates (glyph_metrics(&[]) at :450, :242; the swash scaler without variations at :526-531), so Adwaita Sans, one variable face (wght 100-900), is drawn and laid out at its default instance where text_scale states 700 or 800; fontconfig's named instances are instances of the same file, which fontdb lists as one face (r12/todo-gpui.md)"
 keys = [
     "adwaita:basic.text_inputs.heading.w",
     "adwaita:basic.typography.dialog_title.w",
@@ -865,7 +865,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "in the --open-menu captures only: gpui dispatches a key along the focused element's path alone (gpui-pre src/window.rs:5884-5885), so a menu that answers the keyboard holds the focus while it is open, as gpui-component's AppMenu gives its popup the focus (src/menu/app_menu_bar.rs:197-200); the focused field shows unfocused until the menu closes and hands the focus back"
+reason = "in the --open-menu captures only: gpui dispatches a key along the focused element's path alone (gpui-pre src/window.rs:6022-6023), so a menu that answers the keyboard holds the focus while it is open, as gpui-component's AppMenu gives its popup the focus (src/menu/app_menu_bar.rs:197-200); the focused field shows unfocused until the menu closes and hands the focus back"
 keys = [
     "menu@basic.text_inputs.focused.border",
     "rest@material-3:basic.text_inputs.focused.border",
@@ -983,7 +983,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "glyph coverage: catppuccin-mocha's caption is 9 px (text_scale.caption), drawn in Noto Sans, fontconfig's substitute for the Inter the capture machine lacks; iced places the Typography column at a fractional x (898.4, five Fill columns; its layout keeps fractions) and cosmic-text rasterises each glyph at its subpixel offset (cosmic-text 0.15.0 src/glyph_cache.rs:35-58, SubpixelBin), so every 9 px stem spreads over two pixels and no pixel reaches defaults.font.color (#64667d / #b3bbd7 against #4c4f69 / #cdd6f4); gpui's darkest pixel misses it as well (#635878 / #bacee7) | the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :495-541) wherever the window is opaque (gpui-pre src/window.rs:4773-4790), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
+reason = "glyph coverage: catppuccin-mocha's caption is 9 px (text_scale.caption), drawn in Noto Sans, fontconfig's substitute for the Inter the capture machine lacks; iced places the Typography column at a fractional x (898.4, five Fill columns; its layout keeps fractions) and cosmic-text rasterises each glyph at its subpixel offset (cosmic-text 0.15.0 src/glyph_cache.rs:35-58, SubpixelBin), so every 9 px stem spreads over two pixels and no pixel reaches defaults.font.color (#64667d / #b3bbd7 against #4c4f69 / #cdd6f4); gpui's darkest pixel misses it as well (#635878 / #bacee7) | the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :502-548) wherever the window is opaque (gpui-pre src/window.rs:4907-4924), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
 keys = [
     "catppuccin-mocha:basic.typography.caption.text",
     "kde-breeze:basic.typography.caption.text",

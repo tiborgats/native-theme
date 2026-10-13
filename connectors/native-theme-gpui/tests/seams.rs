@@ -550,7 +550,7 @@ fn probed_button(
     styled(Button::new("b").child(text_probe()), s)
 }
 /// An Input whose prefix is the text probe: the prefix is the root's first
-/// child (`input/input.rs:798`), so its left edge is where the root's
+/// child (`input/input.rs:808`), so its left edge is where the root's
 /// padding ends, and it lays out one line of the root's text style.
 fn probed_input(
     s: Option<&StyleRefinement>,
@@ -611,8 +611,8 @@ const TRIGGER_BORDER: f32 = 1.0;
 
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
-/// upstream pads each root before the refinement (`input/input.rs:775` then
-/// `:793`, `select.rs:551` then `:553`, `combobox.rs:996` then `:998`), so the
+/// upstream pads each root before the refinement (`input/input.rs:785` then
+/// `:803`, `select.rs:551` then `:553`, `combobox.rs:996` then `:998`), so the
 /// platform's side is the one drawn.
 ///
 /// The left side is measured: it is where the first child starts. At least
@@ -821,8 +821,8 @@ fn without_right(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, an Input with no suffix is laid
 /// out with the stated right padding side: upstream pads a single-line root
-/// (`input/input.rs:774-776`) before the refinement (`:793`), and only a
-/// suffix pads the right side again after it (`:810`). The right side has no
+/// (`input/input.rs:784-786`) before the refinement (`:803`), and only a
+/// suffix pads the right side again after it (`:820`). The right side has no
 /// child to measure it by, so it is measured as the width it adds: the
 /// Input's width under the refinement, less its width under the same
 /// refinement with a right side of 0. At least one preset states a right side
@@ -871,14 +871,14 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, a Textarea refined as
 /// `geometry::input`'s doc says -- the padding sides cleared -- draws no
-/// padding: upstream pads only a single-line root (`input/input.rs:774-776`),
+/// padding: upstream pads only a single-line root (`input/input.rs:784-786`),
 /// so a multi-line root's inset is 0, and the refinement's padding must not
 /// reach it. The inset has no child to measure it by, so it is measured as
 /// the size it adds: the Textarea's size with the padding cleared equals its
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:793`): at least
+/// Left in, the refinement's padding would reach the root (`:803`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]
@@ -1045,7 +1045,7 @@ fn bare_label(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harne
 /// label passed as a Medium Button's child and refined with
 /// `geometry::button_label` is as wide as the same text refined alone.
 /// Upstream sets the label's size on the content element
-/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:749`), which
+/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:760`), which
 /// is `text_sm` at Medium and which the child's own size overrules; unstyled,
 /// the child takes that `text_sm`.
 #[gpui::test]
@@ -1091,7 +1091,7 @@ fn toggled_probe(
 /// Under every native preset, at its own DPI, at text scale 1 and 1.5: the
 /// text inside a Medium Toggle refined with `geometry::toggle` is as wide as
 /// the same text refined alone. Upstream sets `text_sm` on a Medium Toggle's
-/// root (`button/toggle.rs:174-179`) before the caller's refinement (`:214`);
+/// root (`button/toggle.rs:182-187`) before the caller's refinement (`:222`);
 /// unrefined, the text takes that `text_sm`.
 #[gpui::test]
 fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {

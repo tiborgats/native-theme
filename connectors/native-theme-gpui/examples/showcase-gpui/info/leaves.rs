@@ -1099,7 +1099,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:748-751)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:758-761)",
     ),
     (
         "basic.text_area",
@@ -2079,7 +2079,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:788)",
+        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:798)",
     ),
     (
         "",

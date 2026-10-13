@@ -413,7 +413,7 @@ pub fn tab_row(
                 "bar",
                 "tab_bar",
                 t.tab_bar,
-                "gpui-component/tab/tab_bar.rs:369",
+                "gpui-component/tab/tab_bar.rs:371",
             ))
             .color(claim(
                 "label",
@@ -443,7 +443,7 @@ pub fn tab_row(
                 "rule under the bar",
                 "border",
                 t.border,
-                "gpui-component/tab/tab_bar.rs:512",
+                "gpui-component/tab/tab_bar.rs:553",
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
@@ -664,13 +664,13 @@ pub fn segmented(
                 "track",
                 "tab_bar_segmented",
                 t.tab_bar_segmented,
-                "gpui-component/tab/tab_bar.rs:391",
+                "gpui-component/tab/tab_bar.rs:393",
             ))
             .color(claim(
                 "selected segment",
                 "background",
                 t.background,
-                "gpui-component/tab/tab_bar.rs:258",
+                "gpui-component/tab/tab_bar.rs:260",
             ))
             .color(claim(
                 "label",
@@ -804,26 +804,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:705, :790-795).
+    // style (button/button.rs:716, :801-806).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1285",
+                "gpui-component/button/button.rs:1302",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:992",
+                "gpui-component/button/button.rs:1009",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1061",
             ))
             .not_themeable(
                 "hover",
@@ -834,31 +834,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:978",
+            "gpui-component/button/button.rs:995",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:992",
+            "gpui-component/button/button.rs:1009",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1044",
+            "gpui-component/button/button.rs:1061",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1122",
+            "gpui-component/button/button.rs:1139",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1206",
+            "gpui-component/button/button.rs:1223",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))

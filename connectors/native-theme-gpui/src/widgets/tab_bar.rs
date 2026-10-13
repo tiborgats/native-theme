@@ -59,7 +59,7 @@ pub struct TabLook {
     pub padding_bottom: Option<Pixels>,
     /// `tab.item_gap`: the space between neighbouring tabs; where the theme
     /// states none, gpui-component's for its `TabVariant::Tab`, none
-    /// (tab/tab_bar.rs:366-369).
+    /// (tab/tab_bar.rs:368-371).
     pub gap: Pixels,
     /// The line that marks the selected tab, where the theme states its
     /// colour, width and side.
@@ -82,7 +82,7 @@ pub struct TabIndicator {
 
 /// The space between tabs where `tab.item_gap` is unstated: gpui-component
 /// lays the tabs of its default variant, `TabVariant::Tab`, with no gap
-/// (tab/tab_bar.rs:366-369).
+/// (tab/tab_bar.rs:368-371).
 const TAB_GAP: f32 = 0.;
 
 /// A stated side, `None` where it is unstated, or `Err` where it is not a

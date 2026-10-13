@@ -151,7 +151,7 @@ impl InfoRegistry {
     ///
     /// A target that was not drawn is no longer hovered. gpui sends no hover
     /// end to an element it stopped drawing, and drops that element's state
-    /// with the frame (gpui-pre `window.rs:1146-1150`); drawn again under the
+    /// with the frame (gpui-pre `window.rs:1196-1200`); drawn again under the
     /// pointer, it starts from not hovered and reports the hover anew
     /// (`elements/div.rs:3154-3163`). Nor does a frame that only takes a
     /// target away send any hover change, so the choice is revisited here.

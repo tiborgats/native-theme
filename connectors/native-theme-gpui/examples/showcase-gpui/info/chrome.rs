@@ -102,13 +102,13 @@ fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
             "bg",
             "title_bar",
             t.title_bar,
-            "gpui-component/title_bar.rs:340",
+            "gpui-component/title_bar.rs:343",
         ))
         .color(claim(
             "border",
             "title_bar_border",
             t.title_bar_border,
-            "gpui-component/title_bar.rs:338",
+            "gpui-component/title_bar.rs:341",
         ));
     if !controls {
         return info;
@@ -117,43 +117,43 @@ fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
         "window control text",
         "foreground",
         t.foreground,
-        "gpui-component/title_bar.rs:217",
+        "gpui-component/title_bar.rs:219",
     ))
     .color(claim(
         "control hover",
         "secondary_hover",
         t.secondary_hover,
-        "gpui-component/title_bar.rs:181",
+        "gpui-component/title_bar.rs:182",
     ))
     .color(claim(
         "control hover icon",
         "secondary_foreground",
         t.secondary_foreground,
-        "gpui-component/title_bar.rs:172",
+        "gpui-component/title_bar.rs:173",
     ))
     .color(claim(
         "control pressed",
         "secondary_active",
         t.secondary_active,
-        "gpui-component/title_bar.rs:190",
+        "gpui-component/title_bar.rs:191",
     ))
     .color(claim(
         "close hover",
         "danger",
         t.danger,
-        "gpui-component/title_bar.rs:179",
+        "gpui-component/title_bar.rs:180",
     ))
     .color(claim(
         "close hover icon",
         "danger_foreground",
         t.danger_foreground,
-        "gpui-component/title_bar.rs:170",
+        "gpui-component/title_bar.rs:171",
     ))
     .color(claim(
         "close pressed",
         "danger_active",
         t.danger_active,
-        "gpui-component/title_bar.rs:188",
+        "gpui-component/title_bar.rs:189",
     ))
 }
 
@@ -321,7 +321,7 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu separator",
         "border",
         t.border,
-        "gpui-component/menu/popup_menu.rs:1257",
+        "gpui-component/menu/popup_menu.rs:1276",
     ))
     .config(
         "menu border-radius",
@@ -611,13 +611,13 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
             "active underline",
             "primary",
             t.primary,
-            "gpui-component/tab/tab_bar.rs:275",
+            "gpui-component/tab/tab_bar.rs:277",
         ))
         .color(claim(
             "bottom rule",
             "border",
             t.border,
-            "gpui-component/tab/tab_bar.rs:512",
+            "gpui-component/tab/tab_bar.rs:553",
         ))
         .not_themeable(
             "tab fill",
@@ -625,7 +625,7 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
         )
         .not_themeable(
             "fill",
-            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:268-275). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:270-277). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
         )
         .not_themeable(
             "corners",
@@ -711,13 +711,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
         GhostContent::Icon => (
@@ -725,13 +725,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -739,13 +739,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
     };
@@ -761,27 +761,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1223",
+        "gpui-component/button/button.rs:1240",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1168-1174).
+/// in dark mode (button/button.rs:1185-1191).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1171",
+            "gpui-component/button/button.rs:1188",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1169",
+            "gpui-component/button/button.rs:1186",
         )
     }
 }
@@ -1153,19 +1153,19 @@ pub(super) fn dialog_surface(
         "bg",
         "background",
         t.background,
-        "gpui-component/dialog/dialog.rs:669",
+        "gpui-component/dialog/dialog.rs:720",
     ))
     .color(claim(
         "border",
         "border",
         t.border,
-        "gpui-component/dialog/dialog.rs:671",
+        "gpui-component/dialog/dialog.rs:722",
     ))
     .color(claim(
         "backdrop",
         "overlay",
         t.overlay,
-        "gpui-component/dialog/dialog.rs:324",
+        "gpui-component/dialog/dialog.rs:327",
     ))
     .not_themeable(
         "fill",
@@ -1215,7 +1215,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:636; gpui-base dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base dialog.rs:613)",
     )
 }
 
@@ -1343,7 +1343,7 @@ pub(super) fn sheet_surface(
             "backdrop",
             "overlay",
             t.overlay,
-            "gpui-component/dialog/dialog.rs:324",
+            "gpui-component/dialog/dialog.rs:327",
         ))
         .not_themeable(
             "fill",
@@ -1512,20 +1512,20 @@ pub fn preference_switch(
             "track",
             "primary",
             t.primary,
-            "gpui-component/switch.rs:175",
+            "gpui-component/switch.rs:183",
         )),
         (false, false) => info.color(claim(
             "track",
             "switch",
             t.switch,
-            "gpui-component/switch.rs:176",
+            "gpui-component/switch.rs:184",
         )),
     };
     info.color(claim(
         "thumb",
         "switch_thumb",
         t.switch_thumb,
-        "gpui-component/switch.rs:182",
+        "gpui-component/switch.rs:190",
     ))
     .not_themeable(
         "size",

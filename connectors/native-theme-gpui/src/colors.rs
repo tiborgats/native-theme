@@ -153,7 +153,7 @@ pub fn to_theme_color(
     let d = &resolved.defaults;
     // The window's own fill, which the model states and which inherits
     // `defaults.background_color`; upstream's `background` token is the window
-    // surface (`title_bar.rs:341`, `tab/tab.rs:249`).
+    // surface (`title_bar.rs:344`, `tab/tab.rs:249`).
     let bg = rgba_to_hsla(resolved.window.background_color);
     let fg = rgba_to_hsla(d.text_color);
 
@@ -256,7 +256,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     // `accent` is upstream's item highlight, not the platform's accent colour
     // (gpui-component `src/theme/schema.rs:254-255`); see `ResolvedColors`.
     // `Toggle` reads the same token for its pressed state
-    // (`src/button/toggle.rs:155, 202`), where Adwaita, Windows 11 and Material
+    // (`src/button/toggle.rs:163, 210`), where Adwaita, Windows 11 and Material
     // would want `segmented_control.active_background`; the menu family has
     // seven readers to its one, and no value serves both. Tier U.
     tc.accent = c.menu_hover_bg;
@@ -270,7 +270,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1182, 1258, 1300` against `:1176, 1253, 1293`), so
+    // (`button/button.rs:1199, 1258, 1300` against `:1176, 1253, 1293`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -328,7 +328,7 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 /// The 28 `button*` fields gpui-component reads for `Button`
-/// (`src/button/button.rs:972-1037`) take the values the semantic fields their
+/// (`src/button/button.rs:989-1054`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:642-647, 936-941`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
@@ -406,11 +406,11 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.table_even = tc.list_even;
     tc.table_head = c.list_header_bg;
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1820`): `list.header_font.color`, not the muted
+    // `table/state.rs:1853`): `list.header_font.color`, not the muted
     // foreground upstream falls back to (`theme/schema.rs:1011`).
     tc.table_head_foreground = c.list_header_fg;
     // The grid line between rows and columns (`table/table.rs:203`,
-    // `table/state.rs:1475`), which the model states as `list.grid_color`.
+    // `table/state.rs:1504`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
@@ -433,7 +433,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.tab_active_foreground = c.tab_active_fg;
     tc.tab_bar = c.tab_bar_bg;
     // The track a `TabBar` paints for its `Segmented` variant
-    // (`tab/tab_bar.rs:391`). `ResolvedTabTheme` has no segmented field, but
+    // (`tab/tab_bar.rs:393`). `ResolvedTabTheme` has no segmented field, but
     // `SegmentedControlTheme` is the model's struct for exactly this control,
     // so the token takes its background (Issue 42). The active segment is not
     // reachable: upstream fills it with `tokens.background`
@@ -514,7 +514,7 @@ fn assign_misc(
     // `accessibilityDisplayShouldReduceTransparency` asks for no
     // semitransparent backgrounds ("use only opaque windows"), and an opaque
     // scrim would hide the whole window. Transparent black is upstream's own
-    // colour for no overlay (dialog/dialog.rs:319-321); the backdrop still
+    // colour for no overlay (dialog/dialog.rs:322-324); the backdrop still
     // takes the clicks, whatever its colour.
     let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
     tc.overlay = if reduce_transparency {

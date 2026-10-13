@@ -111,7 +111,7 @@ const ROWS: &[Row] = &[
     // handle (`touch_selection/handle.rs:96`) and the time field's selected
     // segment (`time/time_field.rs:135`). It also fills a token input's chips
     // (`input/token.rs:50-51`) and outlines a table's or list's
-    // secondary-selected row (`table/state.rs:2261`, `list/list_item.rs:272`),
+    // secondary-selected row (`table/state.rs:2295`, `list/list_item.rs:272`),
     // so it is not only a text selection. The documented meaning decides the
     // model's counterpart: `input.selection_background`, which inherits
     // `defaults.text_selection_background` and in turn
@@ -123,7 +123,7 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
-    // The link's own text (`link.rs:76`, `button/button.rs:1036`), which the
+    // The link's own text (`link.rs:76`, `button/button.rs:1053`), which the
     // model states as `link.font.color` -- the one font colour that inherits
     // `defaults.link_color` instead of `defaults.font.color`.
     Row {
@@ -135,7 +135,7 @@ const ROWS: &[Row] = &[
     // `link_hover` and `link_active` are upstream's hovered and pressed link
     // *text* colours ("Hover link text color", `theme_color.rs:180-181`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1182, 1258, 1300`) over the transparent fill that
+    // (`button/button.rs:1199, 1258, 1300`) over the transparent fill that
     // variant paints in every state (`:1176, 1253, 1293`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
@@ -409,7 +409,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1820`), which the model states as `list.header_font`.
+    // `table/state.rs:1853`), which the model states as `list.header_font`.
     Row {
         slot: "table_head_foreground",
         native: |r| r.list.header_font.color,
@@ -417,7 +417,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The line between rows and columns (`table/table.rs:203, 343, 415`,
-    // `table/state.rs:1475, 1578, 2030, 2289`), which the model states as
+    // `table/state.rs:1504, 1607, 2063, 2323`), which the model states as
     // `list.grid_color` rather than as the generic border.
     Row {
         slot: "table_row_border",
@@ -450,7 +450,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The track a segmented tab bar paints itself with
-    // (`tab/tab_bar.rs:391`, the `TabVariant::Segmented` arm). The model
+    // (`tab/tab_bar.rs:393`, the `TabVariant::Segmented` arm). The model
     // states it in `SegmentedControlTheme`, a struct of its own -- the
     // justification this row used to carry was about `ResolvedTabTheme`,
     // which indeed has no segmented field, and stopped there.
@@ -939,7 +939,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    `:201` while hovered) -- the window token, not one of its \
                    own -- so a platform that tints the active segment has \
                    nowhere to put the tint. `tab_bar_segmented` takes the \
-                   track around it (`tab/tab_bar.rs:391`).",
+                   track around it (`tab/tab_bar.rs:393`).",
     },
     NoReceiver {
         field: "segmented_control.active_text_color",
@@ -956,7 +956,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         stated_none: &[],
         native: |r| r.segmented_control.font.color,
         evidence: "a `TabBar` labels every segment from the tab family -- \
-                   `tab_foreground` on the bar (`tab/tab_bar.rs:500`) and on \
+                   `tab_foreground` on the bar (`tab/tab_bar.rs:541`) and on \
                    an idle segment (`tab/tab.rs:154`), `tab_active_foreground` \
                    on the selected one (`:247`) -- and those two tokens are \
                    `tab.font.color` and `tab.active_text_color` by their rows. \
@@ -969,7 +969,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         evidence: "a segmented `TabBar` paints no border at all: the bottom \
                    rule is drawn only for the `Underline` and `Tab` variants \
                    and takes the shared `border` token \
-                   (`tab/tab_bar.rs:501-515`), which the `border` row gives \
+                   (`tab/tab_bar.rs:542-556`), which the `border` row gives \
                    `defaults.border.color`.",
     },
     NoReceiver {
@@ -1701,7 +1701,7 @@ const PAIRS: &[Pair] = &[
     // emitted side is what it paints (`TabLook`). Without it, gpui-component's
     // idle tab paints `transparent` in every variant (`tab/tab.rs:132, 143,
     // 150, 155, 160`), so its label lands on the bar -- a live surface
-    // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted
+    // (`tab/tab_bar.rs:371`, `tab/tab.rs:309`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
     // `tokens.tab`, which nothing in 0.7.1 reads, keeps its row but takes no
@@ -1732,7 +1732,7 @@ const PAIRS: &[Pair] = &[
     },
     // The header row upstream paints: `table_head_foreground` on
     // `tokens.table_head` (`table/table.rs:199-200`,
-    // `table/state.rs:1819-1820`), over the window behind the table.
+    // `table/state.rs:1852-1853`), over the window behind the table.
     Pair {
         what: "table head text",
         native: |r, _| {
@@ -1879,23 +1879,23 @@ const REPORTED: &[Reported] = &[
     },
     // Upstream's title bar has no text colour of its own: its children
     // inherit, and the one thing it paints itself -- the window controls --
-    // takes `foreground` on its own element (`title_bar.rs:217`), where a
+    // takes `foreground` on its own element (`title_bar.rs:219`), where a
     // refinement on the bar cannot reach it. Its fill is a gradient, not a
-    // flat `title_bar` (`:21-35`, applied at `:339`), so the emitted side is
+    // flat `title_bar` (`:22-36`, applied at `:342`), so the emitted side is
     // measured against whichever end is the worse of the two. The bar's own
     // label is not what is reported here: `geometry::title_bar` carries
     // `window.title_bar_font.color` onto the bar, and upstream sets nothing
-    // there to displace it (`:328-343`).
+    // there to displace it (`:331-346`).
     Reported {
         what: "title bar text",
         why: "ThemeColor has no title-bar foreground: upstream paints the \
               window controls with `foreground` set on their own element \
-              (title_bar.rs:217), out of reach of a refinement on the bar, \
+              (title_bar.rs:219), out of reach of a refinement on the bar, \
               over a gradient from a 55/45 mix of title_bar and background to \
-              title_bar (:21-35, :339) -- measured at the worse end. The bar's \
+              title_bar (:22-36, :342) -- measured at the worse end. The bar's \
               own label does reach the platform's colour: geometry::title_bar \
               carries window.title_bar_font.color and upstream sets nothing \
-              there to displace it (:328-343)",
+              there to displace it (:331-346)",
         native: |r| {
             (
                 rgba_to_hsla(r.window.title_bar_font.color),
@@ -1916,8 +1916,8 @@ const REPORTED: &[Reported] = &[
 /// The end of upstream's title-bar gradient that contrasts worse with `fg`.
 ///
 /// `TitleBar` fills itself with `default_title_bar_background(title_bar,
-/// background)` (`title_bar.rs:339`), a vertical gradient from a 55/45 mix of
-/// the two tokens to `title_bar` alone (`:21-35`). The mix is upstream's
+/// background)` (`title_bar.rs:342`), a vertical gradient from a 55/45 mix of
+/// the two tokens to `title_bar` alone (`:22-36`). The mix is upstream's
 /// arithmetic, reproduced here with its own factors so the reported ratio is
 /// the one a user can actually read at the worse end of the bar.
 fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {

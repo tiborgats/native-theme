@@ -465,7 +465,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 /// Table, List and Tree are framed alike, and by the list theme.
 ///
 /// The `DataTable` draws a frame of its own from `Theme::radius` and
-/// `Theme::border` (gpui-component `src/table/data_table.rs:167-171`); the
+/// `Theme::border` (gpui-component `src/table/data_table.rs:181-185`); the
 /// `List` and the `Tree` draw none — both only refine a plain `div()`
 /// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
 /// `RenderOnce for Tree`) — so the box around them is the showcase's own
@@ -2662,7 +2662,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 }
 
 /// Upstream's Underline TabBar pads neither itself nor its tabs
-/// (tab/tab.rs:79-81, tab/tab_bar.rs:393-402): it leaves the inset to the
+/// (tab/tab.rs:79-81, tab/tab_bar.rs:395-404): it leaves the inset to the
 /// container it is in. So each of the showcase's two TabBars is inset by
 /// `layout.container_margin`, the padding the side panel's settings and the
 /// inspector's content take: its first tab starts that far from the edge of
@@ -3682,7 +3682,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
 /// `text_sm`, sizing.rs:340, without a native theme) plus the theme's button
-/// padding, or the `px_2` on either side (button/button.rs:672-674) where it
+/// padding, or the `px_2` on either side (button/button.rs:683-685) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
@@ -4008,7 +4008,7 @@ fn settle_on(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1037). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1054). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -4774,7 +4774,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1334-1338) -- in
+/// `input_background()` at half opacity (button/button.rs:1351-1355) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -8274,8 +8274,8 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
 /// padding (spec §3.6), the reported defect. Under kde-breeze that is
 /// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
 /// the frame's inner edge: upstream draws the frame with `border_1`
-/// (dialog/dialog.rs:670) and pads each section inside it with the
-/// refinement's sides (dialog/dialog.rs:589-601, :705-707).
+/// (dialog/dialog.rs:721) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:635-647, :756-758).
 #[gpui::test]
 fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);

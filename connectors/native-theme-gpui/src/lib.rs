@@ -212,7 +212,7 @@ pub fn to_theme(
     theme.mode = mode;
     theme.font_family = font_family(&d.font.family);
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
-    // to font_size (gpui-component src/root.rs:436), so scaling these two sizes scales every rem-relative
+    // to font_size (gpui-component src/root.rs:440), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(d.font.size * s);
     theme.mono_font_family = font_family(&d.mono_font.family);
@@ -922,7 +922,7 @@ fn apply_inner(
     // leaves the refresh to such a caller (gpui-component
     // src/theme/mod.rs:468-469), where its own `Theme::change` refreshes every
     // window (`:334`) -- and `refresh_windows` schedules every window (gpui-pre
-    // src/app.rs:1237).
+    // src/app.rs:1308).
     cx.refresh_windows();
 }
 
@@ -1029,11 +1029,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:1863-1865`), delivered
-/// after the pending mark is removed (`:2020-2024`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1983-1985`), delivered
+/// after the pending mark is removed (`:2140-2144`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2330-2342`)
+/// The subscription activates through a deferred effect (`src/app.rs:2450-2462`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next

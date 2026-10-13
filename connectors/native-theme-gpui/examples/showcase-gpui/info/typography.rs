@@ -231,19 +231,19 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "edge",
             "input",
             t.input,
-            "gpui-component/input/input.rs:788",
+            "gpui-component/input/input.rs:798",
         ))
         // Painted at a literal 85% of the style block's border
-        // (gpui-base input/base/element.rs:3093).
+        // (gpui-base input/base/element.rs:3121).
         .color(claim(
             "indent guides, border at 85%",
             "border",
             t.border.opacity(0.85),
-            "gpui-base/input/base/element.rs:3093",
+            "gpui-base/input/base/element.rs:3121",
         ))
         // Unhighlighted text is painted in the colour the element inherits
         // (gpui-base input/base/element.rs:2542), not the style block's
-        // foreground, and Input sets none (input/input.rs:706): so the
+        // foreground, and Input sets none (input/input.rs:707): so the
         // colour the showcase sets on its window.
         .color(claim(
             "unhighlighted text, inherited",
@@ -270,7 +270,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-component/input/input.rs:559",
         ))
         // The current line's number takes the style block's foreground
-        // (gpui-base input/base/element.rs:2892).
+        // (gpui-base input/base/element.rs:2920).
         .color(claim(
             "current line number",
             "foreground",

@@ -1514,7 +1514,7 @@ fn main() {
                     // In the application because a `#[gpui::test]` cannot
                     // ask: `TestAppContext::build` gives gpui's
                     // `NoopTextSystem` (gpui-pre 0.3.8
-                    // src/app/test_context.rs:131, src/platform/test/platform.rs:125-132).
+                    // src/app/test_context.rs:131, src/platform/test/platform.rs:126-133).
                     {
                         let mono = showcase_entity.read(cx).original_mono_font.family.clone();
                         let names = cx.text_system().all_font_names();
