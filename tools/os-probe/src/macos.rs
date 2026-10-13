@@ -11,15 +11,15 @@ use std::path::Path;
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
-use objc2::{ClassType, MainThreadMarker, Message, sel};
+use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message, sel};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
     NSBezelStyle, NSBitmapImageRep, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox,
     NSControl, NSControlSize, NSControlStateValueOff, NSControlStateValueOn, NSFont, NSMenu,
     NSMenuItem, NSOutlineView, NSPopUpButton, NSProgressIndicator, NSProgressIndicatorStyle,
-    NSScreen, NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider,
-    NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableView,
-    NSTableViewStyle, NSTextField, NSTextView, NSView, NSWorkspace,
+    NSScreen, NSScrollView, NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl,
+    NSSlider, NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch,
+    NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTextView, NSView, NSWorkspace,
 };
 use objc2_foundation::{
     NSArray, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion, NSPoint,
@@ -36,6 +36,12 @@ const RENDER_MARGIN: f64 = 8.0;
 /// Width given to the controls that stretch (text fields, sliders, progress
 /// bars) when `sizeToFit` leaves them narrower, in points.
 const STRETCH_WIDTH: f64 = 160.0;
+
+/// The scroll view the table-header probe puts its NSTableView in, in points.
+const TABLE_SCROLL_SIZE: NSSize = NSSize::new(400.0, 300.0);
+
+/// The width of the table-header probe's one column, in points.
+const TABLE_COLUMN_WIDTH: f64 = 120.0;
 
 /// The two appearances: the TOML key and the NSAppearanceName.
 const APPEARANCES: [(&str, &str); 2] = [
@@ -581,6 +587,7 @@ fn metrics_table(mtm: MainThreadMarker) -> Table {
         "effectiveStyle",
         out::text(table_style_name(table_view.effectiveStyle())),
     );
+    out::put_table(&mut table, "header", table_header_table(mtm));
     out::put_table(&mut t, "NSTableView", table);
 
     let mut outline = Table::new();
@@ -623,6 +630,106 @@ fn metrics_table(mtm: MainThreadMarker) -> Table {
         ),
     );
     out::put_table(&mut t, "NSMenu", menu_t);
+    t
+}
+
+/// The header of a new NSTableView, per appearance, for its default style
+/// and for `NSTableViewStyleFullWidth`.
+fn table_header_table(mtm: MainThreadMarker) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "a new NSTableView with one {TABLE_COLUMN_WIDTH} pt NSTableColumn, made the document view of a new {} x {} pt NSScrollView whose appearance is set per run, all inside NSAppearance performAsCurrentDrawingAppearance:; setStyle: before setDocumentView: (none for default), then tile on the scroll view and the table; heights in points",
+            TABLE_SCROLL_SIZE.width, TABLE_SCROLL_SIZE.height
+        )),
+    );
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        let result = RefCell::new(Table::new());
+        {
+            let block = RcBlock::new(|| {
+                let mut per_style = Table::new();
+                out::put_table(
+                    &mut per_style,
+                    "default",
+                    table_header(mtm, &appearance, None),
+                );
+                out::put_table(
+                    &mut per_style,
+                    "fullWidth",
+                    table_header(mtm, &appearance, Some(NSTableViewStyle::FullWidth)),
+                );
+                *result.borrow_mut() = per_style;
+            });
+            appearance.performAsCurrentDrawingAppearance(&block);
+        }
+        out::put_table(&mut t, key, result.into_inner());
+    }
+    t
+}
+
+/// One header measurement: `style` is set with `setStyle:` when given.
+fn table_header(
+    mtm: MainThreadMarker,
+    appearance: &NSAppearance,
+    style: Option<NSTableViewStyle>,
+) -> Table {
+    let mut t = Table::new();
+    let scroll = NSScrollView::initWithFrame(
+        NSScrollView::alloc(mtm),
+        NSRect::new(NSPoint::new(0.0, 0.0), TABLE_SCROLL_SIZE),
+    );
+    scroll.setAppearance(Some(appearance));
+    let table_view = NSTableView::new(mtm);
+    let column = NSTableColumn::initWithIdentifier(NSTableColumn::alloc(mtm), &ns("column"));
+    column.setTitle(&ns("Column"));
+    column.setWidth(TABLE_COLUMN_WIDTH);
+    table_view.addTableColumn(&column);
+    if let Some(style) = style {
+        table_view.setStyle(style);
+    }
+    scroll.setDocumentView(Some(&table_view));
+    scroll.tile();
+    table_view.tile();
+    out::put(
+        &mut t,
+        "style",
+        out::text(table_style_name(table_view.style())),
+    );
+    out::put(
+        &mut t,
+        "effectiveStyle",
+        out::text(table_style_name(table_view.effectiveStyle())),
+    );
+    match table_view.headerView() {
+        Some(header) => {
+            out::put(
+                &mut t,
+                "headerView_height",
+                out::float(header.frame().size.height),
+            );
+            out::put(&mut t, "headerView_frame_xywh", rect(header.frame()));
+            out::put(
+                &mut t,
+                "headerRectOfColumn_0_xywh",
+                rect(header.headerRectOfColumn(0)),
+            );
+        }
+        None => out::put(
+            &mut t,
+            "headerView_height",
+            out::unavailable("headerView is nil"),
+        ),
+    }
     t
 }
 
