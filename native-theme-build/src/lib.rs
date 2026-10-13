@@ -1012,16 +1012,34 @@ fn run_pipeline(
     // Compute base_dir for codegen -- strip manifest_dir prefix when available
     // so include_bytes! paths are relative (e.g., "icons/material/play.svg")
     // instead of absolute (e.g., "/home/user/project/icons/material/play.svg")
-    // Normalize to forward slashes so generated include_bytes! paths are valid
-    // on all platforms (backslashes in Rust string literals are escape sequences).
-    let base_dir_str = if let Some(mdir) = manifest_dir {
-        base_dir
-            .strip_prefix(mdir)
-            .unwrap_or(base_dir)
-            .to_string_lossy()
-            .replace('\\', "/")
+    let relative_base = match manifest_dir {
+        Some(mdir) => base_dir.strip_prefix(mdir).unwrap_or(base_dir),
+        None => base_dir.as_path(),
+    };
+    // include_bytes! takes a string, so a path that is not UTF-8 cannot be
+    // named; a lossy one would name a file that does not exist
+    let Some(base_dir_str) = relative_base.to_str() else {
+        errors.push(BuildError::IoOther {
+            message: format!(
+                "base directory {} is not valid UTF-8, so include_bytes! cannot name it",
+                base_dir.display()
+            ),
+        });
+        return PipelineResult {
+            code: String::new(),
+            errors,
+            warnings,
+            rerun_paths,
+            size_report: None,
+            output_filename,
+        };
+    };
+    // A Windows path's separators become `/`, which include_bytes! takes on
+    // every host; on Unix a `\\` is part of a file name and stays
+    let base_dir_str = if cfg!(windows) {
+        base_dir_str.replace('\\', "/")
     } else {
-        base_dir.to_string_lossy().replace('\\', "/")
+        base_dir_str.to_string()
     };
 
     // Step 4: Generate code
@@ -3313,6 +3331,78 @@ bundled-themes = ["material"]
     }
 
     // === Issue 34: enum_name normalization in codegen ===
+
+    #[cfg(unix)]
+    #[test]
+    fn pipeline_keeps_a_unix_backslash_and_escapes_a_quote_in_the_base_dir() {
+        let root = create_fixture_dir("quoted_base_dir");
+        let dir = root.join("we\"ird\\dir");
+        write_fixture(&dir, "material/mapping.toml", "play-pause = \"pp\"\n");
+        write_fixture(&dir, "material/pp.svg", SVG_STUB);
+        let config: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"play-pause\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        let literal = format!(
+            "include_bytes!(\"{}/we\\\"ird\\\\dir/material/pp.svg\")",
+            root.display()
+        );
+        assert!(
+            result.code.contains(&literal),
+            "expected `{literal}`. code:\n{}",
+            result.code
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn pipeline_rejects_a_base_dir_that_is_not_utf8() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let root = create_fixture_dir("non_utf8_base_dir");
+        let dir = root.join(std::ffi::OsStr::from_bytes(b"icons\xff"));
+        write_fixture(&dir, "material/mapping.toml", "play-pause = \"pp\"\n");
+        write_fixture(&dir, "material/pp.svg", SVG_STUB);
+        let config: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"play-pause\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::IoOther { message } if message.contains("not valid UTF-8")
+            )),
+            "errors: {:?}; code:\n{}",
+            result.errors,
+            result.code
+        );
+        assert!(result.code.is_empty(), "code:\n{}", result.code);
+
+        let _ = fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn pipeline_enum_name_override_normalized() {

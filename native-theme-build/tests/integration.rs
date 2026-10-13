@@ -803,14 +803,17 @@ fn compile_generated_code() {
 
 /// Two generated files `include!`d into one module compile together, as
 /// does an enum named `option` (whose `pub enum Option` shadows the
-/// prelude's) with base derives also given by path.
+/// prelude's) with base derives also given by path, and on Unix the
+/// `include_bytes!` paths of a directory whose name has a `"` and a `\`.
 #[test]
 fn compile_generated_files_in_one_module() {
     // Each file gets a directory whose mappings hold only its roles (an
     // unmapped role or an unknown one is an error); the include_bytes!
     // paths point into it, so it stays until the check has run.
     let generate = |name: &str, roles: &[&str], derives: &[&str]| {
-        let dir = create_temp_dir(&format!("one_module_{name}"));
+        // On Unix a `"` and a `\` may be part of a directory name
+        let quoted = if cfg!(unix) { "_we\"ird\\dir" } else { "" };
+        let dir = create_temp_dir(&format!("one_module_{name}{quoted}"));
         for theme in ["material", "sf-symbols"] {
             copy_dir_recursive(&fixtures_dir().join(theme), &dir.join(theme));
             let mapping = fs::read_to_string(dir.join(theme).join("mapping.toml")).unwrap();

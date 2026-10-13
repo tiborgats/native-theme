@@ -373,6 +373,8 @@ fn generate_icon_svg(
     let is_absolute_base = base_dir.starts_with('/')
         || base_dir.starts_with('\\')
         || base_dir.as_bytes().get(1).is_some_and(|&b| b == b':');
+    // The base directory is a string literal's content, as the icon name is
+    let base_dir = escape_rust_str(base_dir);
 
     // Only bundled themes produce icon_svg arms
     for theme_name in &config.bundled_themes {
@@ -1215,6 +1217,16 @@ system-themes = ["sf-symbols"]
         assert!(
             output.contains("material/play_pause.svg"),
             "should have valid SVG paths. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_escapes_the_base_dir() {
+        let (config, mappings) = sample_config_and_mappings();
+        let output = generate_code(&config, &mappings, "/tmp/we\"ird\\dir", "native_theme", &[]);
+        assert!(
+            output.contains(r#"include_bytes!("/tmp/we\"ird\\dir/material/play_pause.svg")"#),
+            "the base_dir is a string literal's content. output:\n{output}"
         );
     }
 
