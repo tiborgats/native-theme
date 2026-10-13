@@ -222,14 +222,20 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
             Some(translucent(text, frame_contrast(ini)));
     }
 
-    // Popover (from View)
-    variant.popover.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
-    if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
-        variant.popover.font.get_or_insert_default().color = Some(color);
+    // Popover and separator: not set here (docs/platform-facts.md §2.16,
+    // §2.18). A popover inherits the window's colours, as qqc2-desktop-style's
+    // Popup fills the Window set's; a separator inherits the border colour.
+
+    // Combo box (docs/platform-facts.md §2.24): the Button set.
+    variant.combo_box.background_color = button_bg;
+    if let Some(color) = button_fg {
+        variant.combo_box.font.get_or_insert_default().color = Some(color);
     }
 
-    // Separator
-    variant.separator.line_color = get_color(ini, "Colors:Window", "ForegroundInactive");
+    // Menu text (docs/platform-facts.md §2.6): the window text.
+    if let Some(color) = window_fg {
+        variant.menu.font.get_or_insert_default().color = Some(color);
+    }
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas)
     variant.list.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -688,6 +694,38 @@ inactiveForeground=161,169,177
         assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
     }
 
+    // === Combo box from Button, menu text from Window ===
+
+    /// docs/platform-facts.md §2.24 and §2.6's KDE cells: the combo box in
+    /// the Button set, the menu text in the Window set's foreground.
+    #[test]
+    fn test_combo_box_from_button_and_menu_text_from_window() {
+        let v = populate_fixture(
+            "[Colors:Window]\nBackgroundNormal=1,1,1\nForegroundNormal=2,2,2\n\n\
+             [Colors:Button]\nBackgroundNormal=3,3,3\nForegroundNormal=4,4,4\n",
+        );
+        assert_eq!(v.combo_box.background_color, Some(Rgba::rgb(3, 3, 3)));
+        assert_eq!(
+            v.combo_box.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(4, 4, 4))
+        );
+        assert_eq!(
+            v.menu.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(2, 2, 2))
+        );
+    }
+
+    /// docs/platform-facts.md §2.16 and §2.18's KDE cells: a popover takes
+    /// the window's colours and a separator the border colour, by
+    /// inheritance, so the reader states neither.
+    #[test]
+    fn test_popover_and_separator_are_inherited() {
+        let v = populate_fixture(BREEZE_DARK);
+        assert!(v.popover.background_color.is_none());
+        assert!(v.popover.font.is_none());
+        assert!(v.separator.line_color.is_none());
+    }
+
     // === Sidebar None when Complementary missing ===
 
     #[test]
@@ -824,8 +862,16 @@ DecorationFocus=61,174,233
         );
         assert!(v.input.caret_color.is_some(), "input.caret_color missing");
         assert!(
-            v.separator.line_color.is_some(),
-            "separator.line_color missing"
+            v.combo_box.background_color.is_some(),
+            "combo_box.background_color missing"
+        );
+        assert!(
+            v.combo_box.font.as_ref().and_then(|f| f.color).is_some(),
+            "combo_box.font.color missing"
+        );
+        assert!(
+            v.menu.font.as_ref().and_then(|f| f.color).is_some(),
+            "menu.font.color missing"
         );
         assert!(
             v.list.background_color.is_some(),

@@ -6,11 +6,11 @@
 //! the user's config directory (`$XDG_CONFIG_HOME`, else `~/.config`); the
 //! watcher observes each of them:
 //!
-//! - `kdeglobals`: the colours, fonts, icon theme, accessibility flags and,
-//!   on X11, `forceFontDPI`.
+//! - `kdeglobals`: the colours, fonts, icon theme and accessibility flags.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
-//! - `kcmfontsrc`: `forceFontDPI` where kdeglobals has none, on X11.
+//! - `kcmfontsrc`: `forceFontDPI`, on X11, the file the fonts KCM writes it
+//!   to and krdb reads it from (`docs/platform-facts.md:713`).
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
 //!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
 //!   xdg-desktop-portal-kde gives the application palette's highlight
@@ -41,9 +41,8 @@ use crate::model::IconSizes;
 /// in `tests/reader_kde.rs` import it from outside the crate. See doc 1 section C6
 /// and Phase 79-02 decision for rationale.
 ///
-/// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
-/// extract `forceFontDPI` from the INI content as an X11 session reads it (the
-/// session type is not checked), falling back to `None` (no DPI set).
+/// `font_dpi` is returned as given: kdeglobals holds no font DPI
+/// (`forceFontDPI` lives in kcmfontsrc, `docs/platform-facts.md:713`).
 /// Icon sizes are NOT populated (requires filesystem access).
 #[doc(hidden)]
 pub fn from_kde_content_pure(
@@ -58,12 +57,7 @@ pub fn from_kde_content_pure(
         is_dark,
     };
     let theme = output.to_theme(&name, None, &crate::LayoutTheme::default());
-    // Font DPI: use provided value, or try extracting forceFontDPI from INI content
-    Ok((
-        theme,
-        font_dpi.or_else(|| parse_force_font_dpi(&ini)),
-        accessibility,
-    ))
+    Ok((theme, font_dpi, accessibility))
 }
 
 /// The variant, its darkness, the scheme name and the accessibility flags
@@ -118,12 +112,8 @@ fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
         name: std::borrow::Cow::Owned(name),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        // I/O: forceFontDPI (X11), then the cached chain (kcmfontsrc -> xrdb -> xrandr -> 96.0)
-        font_dpi: Some(reader_font_dpi(
-            ini,
-            crate::detect::session_type().as_deref(),
-            crate::detect::system_font_dpi,
-        )),
+        // I/O: the cached chain (kcmfontsrc forceFontDPI on X11 -> xrdb -> xrandr -> 96.0)
+        font_dpi: Some(crate::detect::system_font_dpi()),
         accessibility,
     }
 }
@@ -134,29 +124,6 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResu
     let mut ini = create_kde_parser();
     read_kconfig(&mut ini, content);
     Ok(from_kde_ini(&ini))
-}
-
-/// Extract forceFontDPI from the parsed INI content
-/// ([`crate::detect::parse_force_font_dpi`]), as an X11 session reads it.
-/// This is the pure (no I/O) portion of DPI detection.
-fn parse_force_font_dpi(ini: &configparser::ini::Ini) -> Option<f32> {
-    crate::detect::parse_force_font_dpi(&ini.get("General", "forceFontDPI")?)
-}
-
-/// The KDE reader's font DPI: on a session that reads it
-/// ([`crate::detect::reads_force_font_dpi`]) the `forceFontDPI` of the
-/// kdeglobals in `ini`, else `chain`, the system's cached DPI chain
-/// ([`crate::detect::system_font_dpi`]: `forceFontDPI` on X11 from the
-/// kdeglobals and kcmfontsrc files, `Xft.dpi`, xrandr, 96.0).
-fn reader_font_dpi(
-    ini: &configparser::ini::Ini,
-    session_type: Option<&str>,
-    chain: impl FnOnce() -> f32,
-) -> f32 {
-    crate::detect::reads_force_font_dpi(session_type)
-        .then(|| parse_force_font_dpi(ini))
-        .flatten()
-        .unwrap_or_else(chain)
 }
 
 /// Read a single key from `kcmfontsrc` in the user's config directory
@@ -1202,6 +1169,36 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
+    /// The colour scheme's Button and Window colours reach the combo box, the
+    /// menu text and the popover over `kde-breeze`, which states Breeze's
+    /// values beneath them (docs/platform-facts.md §2.24, §2.6, §2.16), and
+    /// the separator is the border colour (§2.18).
+    #[test]
+    fn scheme_colours_reach_the_combo_box_menu_and_popover() -> crate::Result<()> {
+        let content = "[Colors:Window]\nBackgroundNormal=10,20,30\nForegroundNormal=200,210,220\n\n\
+                       [Colors:Button]\nBackgroundNormal=40,50,60\nForegroundNormal=230,240,250\n\n\
+                       [Colors:View]\nBackgroundNormal=70,80,90\nForegroundNormal=1,2,3\n";
+        let st = crate::pipeline::run_pipeline(from_kde_content(content)?, "kde-breeze")?;
+        assert_eq!(st.dark.combo_box.background_color, Rgba::rgb(40, 50, 60));
+        assert_eq!(st.dark.combo_box.font.color, Rgba::rgb(230, 240, 250));
+        assert_eq!(st.dark.menu.font.color, Rgba::rgb(200, 210, 220));
+        assert_eq!(st.dark.popover.background_color, Rgba::rgb(10, 20, 30));
+        assert_eq!(st.dark.popover.font.color, Rgba::rgb(200, 210, 220));
+        assert_eq!(st.dark.separator.line_color, st.dark.defaults.border.color);
+        Ok(())
+    }
+
+    /// `menuFont` sets the menu's family, size, weight and style and keeps
+    /// the colour the colour scheme gave it.
+    #[test]
+    fn the_menu_font_keeps_the_window_text_colour() -> crate::Result<()> {
+        let result = from_kde_content(BREEZE_DARK_FULL)?;
+        let font = reader_mode(&result).menu.font.clone().unwrap_or_default();
+        assert_eq!(font.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(font.color, Some(Rgba::rgb(239, 240, 241)));
+        Ok(())
+    }
+
     // === KDE-06: Accessibility ===
 
     #[test]
@@ -1223,42 +1220,21 @@ AnimationDurationFactor=1.0
         assert!(!accessibility.reduce_motion);
     }
 
+    /// `forceFontDPI` lives in kcmfontsrc, which the fonts KCM writes it to
+    /// and krdb reads it from (docs/platform-facts.md:713); a kdeglobals key
+    /// of that name is no font DPI: the reader's is the system chain's.
     #[test]
-    fn test_force_font_dpi_sets_font_dpi() {
-        let (_theme, dpi, _accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, None).unwrap();
-        // forceFontDPI=120 in [General] -> font_dpi=120.0 (raw DPI, not divided by 96)
-        assert_eq!(dpi, Some(120.0));
-    }
-
-    fn general_ini(content: &str) -> configparser::ini::Ini {
-        let mut ini = create_kde_parser();
-        read_kconfig(&mut ini, &format!("[General]\n{content}\n"));
-        ini
-    }
-
-    #[test]
-    fn the_reader_takes_kdeglobals_force_font_dpi_on_x11() {
-        let ini = general_ini("forceFontDPI=120");
-        assert_eq!(reader_font_dpi(&ini, Some("x11"), || 96.0), 120.0);
-    }
-
-    #[test]
-    fn the_reader_ignores_force_font_dpi_on_wayland() {
-        let ini = general_ini("forceFontDPI=120");
-        for session in [Some("wayland"), None] {
-            assert_eq!(reader_font_dpi(&ini, session, || 96.0), 96.0, "{session:?}");
-        }
-    }
-
-    #[test]
-    fn a_zero_or_infinite_force_font_dpi_is_the_chains() {
-        for value in ["0", "inf"] {
-            let ini = general_ini(&format!("forceFontDPI={value}"));
-            assert_eq!(reader_font_dpi(&ini, Some("x11"), || 96.0), 96.0, "{value}");
-            let (_theme, dpi, _accessibility) =
-                from_kde_content_pure(&format!("[General]\nforceFontDPI={value}\n"), None).unwrap();
-            assert_eq!(dpi, None, "{value}");
-        }
+    fn a_kdeglobals_force_font_dpi_is_not_the_font_dpi() -> crate::Result<()> {
+        let content = "[General]\nforceFontDPI=120\n";
+        let (_theme, dpi, _accessibility) = from_kde_content_pure(content, None)?;
+        assert_eq!(dpi, None);
+        let (_theme, dpi, _accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, Some(96.0))?;
+        assert_eq!(dpi, Some(96.0));
+        assert_eq!(
+            from_kde_content(content)?.font_dpi,
+            Some(crate::detect::system_font_dpi())
+        );
+        Ok(())
     }
 
     #[test]
@@ -1270,7 +1246,7 @@ BackgroundNormal=49,54,59
         let (_theme, dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
         assert!(!accessibility.reduce_motion);
         assert_eq!(accessibility.text_scaling_factor, 1.0);
-        // No forceFontDPI in content -> None from pure function
+        // No font DPI given -> None from pure function
         assert!(dpi.is_none());
     }
 

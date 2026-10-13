@@ -98,15 +98,6 @@ fn breeze_dark_fixture_colors_and_fonts() {
     assert_eq!(toolbar_font.size, Some(FontSize::Pt(8.0)));
 }
 
-#[test]
-fn breeze_dark_fixture_dpi_from_ini() {
-    let content = include_str!("fixtures/kde/breeze-dark.ini");
-    // Pass None to let INI extraction (forceFontDPI=120) be used
-    let (theme, font_dpi, _accessibility) = from_kde_content_pure(content, None).unwrap();
-    let _v = theme.dark.as_ref().unwrap();
-    assert_eq!(font_dpi, Some(120.0));
-}
-
 // === Breeze Light ===
 
 #[test]
@@ -159,11 +150,12 @@ fn custom_accent_fixture() {
 #[test]
 fn high_dpi_fixture() {
     let content = include_str!("fixtures/kde/high-dpi.ini");
-    // Pass None to let INI extraction of forceFontDPI=192
+    // forceFontDPI=192 in kdeglobals is no font DPI: Plasma keeps the key in
+    // kcmfontsrc (docs/platform-facts.md:713)
     let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
     let _v = theme.dark.as_ref().unwrap();
 
-    assert_eq!(font_dpi, Some(192.0));
+    assert_eq!(font_dpi, None);
     // forceFontDPI must NOT set text_scaling_factor (Fix 5 from research)
     assert_eq!(accessibility.text_scaling_factor, 1.0);
     // AnimationDurationFactor=1.0 -> reduce_motion=false
@@ -273,13 +265,4 @@ fn malformed_values_fixture() {
 
     // Button ForegroundNormal="256,0,0" (out of u8 range) -> None
     assert!(v.button.font.is_none());
-}
-
-#[test]
-fn malformed_values_fixture_dpi_fallback() {
-    let content = include_str!("fixtures/kde/malformed-values.ini");
-    // Pass None: forceFontDPI="not_a_number" can't parse -> font_dpi is None
-    let (theme, font_dpi, _accessibility) = from_kde_content_pure(content, None).unwrap();
-    let _v = theme.dark.as_ref().unwrap();
-    assert!(font_dpi.is_none());
 }

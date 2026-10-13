@@ -188,10 +188,15 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
     }
 
     // KDE-03: Per-widget fonts
+    // Merge into existing FontSpec to preserve .color set by populate_colors.
     if let Some(menu_str) = ini.get("General", "menuFont")
         && let Some(spec) = parse_qt_font_with_weight(&menu_str)
     {
-        variant.menu.font = Some(spec);
+        let font = variant.menu.font.get_or_insert_default();
+        font.family = spec.family;
+        font.size = spec.size;
+        font.weight = spec.weight;
+        font.style = spec.style;
     }
 
     if let Some(toolbar_str) = ini.get("General", "toolBarFont")

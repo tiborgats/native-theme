@@ -616,15 +616,16 @@ fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
 /// Detect the font DPI for the current system.
 ///
 /// Used by [`ThemeMode::into_resolved()`] as a fallback when no OS reader
-/// has provided `font_dpi`, and by the KDE reader after its own kdeglobals'
-/// `forceFontDPI`. Returns the platform-appropriate DPI for converting
-/// typographic points to logical pixels.
+/// has provided `font_dpi`, and by the KDE reader as its own. Returns the
+/// platform-appropriate DPI for converting typographic points to logical
+/// pixels.
 ///
 /// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`);
 ///   the desktop is [`DetectionContext::refined_linux_desktop_sync`]'s, so an
 ///   unrecognised one counts as the reader's
 /// - **Linux, `kde` feature** (any other desktop): on an X11 session
-///   `forceFontDPI` (`kde_force_font_dpi`), then `Xft.dpi` → xrandr → 96.0
+///   kcmfontsrc's `forceFontDPI` (`kde_force_font_dpi`), then `Xft.dpi` →
+///   xrandr → 96.0
 /// - **Linux, `portal` feature without `kde`** (any other desktop): `Xft.dpi` → xrandr → 96.0;
 ///   neither feature: 96.0
 /// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
@@ -653,11 +654,9 @@ fn detect_system_font_dpi() -> f32 {
 
     #[cfg(all(target_os = "linux", feature = "kde"))]
     {
-        if let Some(dpi) = kde_force_font_dpi(
-            session_type().as_deref(),
-            || crate::kde::read_kdeglobals().and_then(|ini| ini.get("General", "forceFontDPI")),
-            || crate::kde::read_kcmfontsrc_key("General", "forceFontDPI"),
-        ) {
+        if let Some(dpi) = kde_force_font_dpi(session_type().as_deref(), || {
+            crate::kde::read_kcmfontsrc_key("General", "forceFontDPI")
+        }) {
             return dpi;
         }
     }
@@ -702,22 +701,19 @@ pub(crate) fn parse_force_font_dpi(value: &str) -> Option<f32> {
 }
 
 /// KDE's `forceFontDPI` on a session that reads it
-/// ([`reads_force_font_dpi`]): from kdeglobals, then from kcmfontsrc, the
-/// first that [`parse_force_font_dpi`] accepts. Neither file is read on any
-/// other session.
+/// ([`reads_force_font_dpi`]), from kcmfontsrc, where [`parse_force_font_dpi`]
+/// accepts it. Plasma keeps the key in that file alone: the fonts KCM writes
+/// it there and krdb reads it there (`docs/platform-facts.md:713`). The file
+/// is not read on any other session.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn kde_force_font_dpi(
     session_type: Option<&str>,
-    kdeglobals: impl FnOnce() -> Option<String>,
     kcmfontsrc: impl FnOnce() -> Option<String>,
 ) -> Option<f32> {
     if !reads_force_font_dpi(session_type) {
         return None;
     }
-    kdeglobals()
-        .as_deref()
-        .and_then(parse_force_font_dpi)
-        .or_else(|| kcmfontsrc().as_deref().and_then(parse_force_font_dpi))
+    kcmfontsrc().as_deref().and_then(parse_force_font_dpi)
 }
 
 /// Whether the colour scheme is dark: the portal's answer when it gave one,
@@ -1612,32 +1608,24 @@ mod force_font_dpi_tests {
             Some("120".to_string())
         };
         for session in [Some("wayland"), None] {
-            assert_eq!(kde_force_font_dpi(session, file, file), None, "{session:?}");
+            assert_eq!(kde_force_font_dpi(session, file), None, "{session:?}");
         }
         assert_eq!(reads.get(), 0, "a file was read off X11");
     }
 
     #[test]
-    fn an_unset_or_bad_kdeglobals_key_falls_through_to_kcmfontsrc() {
-        for kdeglobals in [None, Some("0"), Some("inf")] {
+    fn an_x11_session_takes_a_valid_kcmfontsrc_key() {
+        assert_eq!(
+            kde_force_font_dpi(Some("x11"), || Some("144".into())),
+            Some(144.0)
+        );
+        for kcmfontsrc in [None, Some("0"), Some("inf")] {
             assert_eq!(
-                kde_force_font_dpi(
-                    Some("x11"),
-                    || kdeglobals.map(String::from),
-                    || Some("144".to_string())
-                ),
-                Some(144.0),
-                "kdeglobals {kdeglobals:?}"
+                kde_force_font_dpi(Some("x11"), || kcmfontsrc.map(String::from)),
+                None,
+                "kcmfontsrc {kcmfontsrc:?}"
             );
         }
-        assert_eq!(
-            kde_force_font_dpi(Some("x11"), || Some("0".into()), || Some("inf".into())),
-            None
-        );
-        assert_eq!(
-            kde_force_font_dpi(Some("x11"), || Some("120".into()), || Some("144".into())),
-            Some(120.0)
-        );
     }
 }
 

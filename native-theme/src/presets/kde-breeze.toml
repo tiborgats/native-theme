@@ -321,10 +321,8 @@ hover_background = "#93cee9"
 color = "#232629"
 [light.popover]
 # background_color not stated: platform-facts.md:1405 (§2.16), ← defaults.background_color
+# font.color not stated: platform-facts.md:1407 (§2.16), ← defaults.font.color
 
-
-[light.popover.font]
-color = "#232629"
 [light.separator]
 # line_color not stated: platform-facts.md:1426 (§2.18), ← defaults.border.color
 
@@ -732,10 +730,8 @@ hover_background = "#2e4a5e"
 color = "#fcfcfc"
 [dark.popover]
 # background_color not stated: platform-facts.md:1405 (§2.16), ← defaults.background_color
+# font.color not stated: platform-facts.md:1407 (§2.16), ← defaults.font.color
 
-
-[dark.popover.font]
-color = "#fcfcfc"
 [dark.separator]
 # line_color not stated: platform-facts.md:1426 (§2.18), ← defaults.border.color
 

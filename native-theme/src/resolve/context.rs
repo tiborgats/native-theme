@@ -50,16 +50,15 @@ pub struct ResolutionContext {
     /// the DPI; an unrecognised desktop counts as the one
     /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) reads,
     /// its portal backend's once a system read has asked it), and on other
-    /// Linux desktops KDE's `forceFontDPI` on an X11
+    /// Linux desktops KDE's kcmfontsrc `forceFontDPI` on an X11
     /// session (with the `kde` feature), then `Xft.dpi`, then xrandr's
     /// physical DPI (with `kde` or `portal`), then 96.0; 96.0 elsewhere. The
     /// detected DPI is cached until
     /// [`invalidate_caches()`](crate::detect::invalidate_caches). When the
     /// OS theme is read
     /// ([`SystemTheme::from_system`](crate::SystemTheme::from_system)), the
-    /// reader's own DPI replaces it: KDE's the `forceFontDPI` of the
-    /// kdeglobals it read (X11), then this same cached chain; GNOME's 96.0,
-    /// macOS's 72.0 and Windows' 96.0.
+    /// reader's own DPI replaces it: KDE's this same cached chain; GNOME's
+    /// 96.0, macOS's 72.0 and Windows' 96.0.
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,
     /// `PrimaryRight` elsewhere).
