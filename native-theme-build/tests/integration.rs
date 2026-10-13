@@ -727,41 +727,57 @@ fn golden_syntax_check() {
     );
 }
 
-/// Writes `files` under `src/` of a temp Cargo project with native-theme as
-/// a path dependency and the fixture SVGs (the `include_bytes!` paths
-/// reference `CARGO_MANIFEST_DIR`), and runs `cargo check` on it. Returns
+/// Writes `files` under `src/` of two crates of a temp Cargo workspace, one
+/// on edition 2015 (a Cargo.toml without `edition`) and one on 2021, each
+/// with native-theme as a path dependency and the fixture SVGs (the
+/// `include_bytes!` paths reference `CARGO_MANIFEST_DIR`), and runs
+/// `cargo check --workspace` on it, so native-theme is built once. Returns
 /// the compiler's stderr when the check fails, and `Ok` when `cargo` is not
 /// available.
 fn cargo_check(suffix: &str, files: &[(&str, &str)]) -> Result<(), String> {
-    let dir = create_temp_dir(suffix);
-    let src_dir = dir.join("src");
-    fs::create_dir_all(&src_dir).unwrap();
-    for (name, content) in files {
-        fs::write(src_dir.join(name), content).unwrap();
-    }
+    const EDITIONS: [&str; 2] = ["2015", "2021"];
 
+    let dir = create_temp_dir(suffix);
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let fixture_src = manifest_dir.join("tests/fixtures");
-    if fixture_src.exists() {
-        copy_dir_recursive(&fixture_src, &dir.join("tests/fixtures"));
-    }
-
     let native_theme_path = manifest_dir.join("../native-theme");
-    let cargo_toml = format!(
-        r#"[package]
-name = "compile-check"
+
+    for edition in EDITIONS {
+        let crate_dir = dir.join(format!("edition-{edition}"));
+        let src_dir = crate_dir.join("src");
+        fs::create_dir_all(&src_dir).unwrap();
+        for (name, content) in files {
+            fs::write(src_dir.join(name), content).unwrap();
+        }
+        if fixture_src.exists() {
+            copy_dir_recursive(&fixture_src, &crate_dir.join("tests/fixtures"));
+        }
+        let cargo_toml = format!(
+            r#"[package]
+name = "compile-check-{edition}"
 version = "0.0.0"
-edition = "2021"
+edition = "{edition}"
 
 [dependencies]
 native-theme = {{ path = "{}" }}
 "#,
-        native_theme_path.display()
-    );
-    fs::write(dir.join("Cargo.toml"), cargo_toml).unwrap();
+            native_theme_path.display()
+        );
+        fs::write(crate_dir.join("Cargo.toml"), cargo_toml).unwrap();
+    }
+    let members = EDITIONS
+        .iter()
+        .map(|edition| format!("\"edition-{edition}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
+    fs::write(
+        dir.join("Cargo.toml"),
+        format!("[workspace]\nmembers = [{members}]\nresolver = \"2\"\n"),
+    )
+    .unwrap();
 
     let result = std::process::Command::new("cargo")
-        .args(["check", "--quiet"])
+        .args(["check", "--quiet", "--workspace"])
         .current_dir(&dir)
         .output();
 

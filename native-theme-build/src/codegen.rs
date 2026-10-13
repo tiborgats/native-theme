@@ -264,7 +264,7 @@ fn generate_icon_name(
 
     let _ = writeln!(
         out,
-        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::core::option::Option<&str> {{"
+        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<&str> {{"
     );
     if needs_de {
         // Issue 21: say in the generated code where the desktop comes from
@@ -296,7 +296,7 @@ fn generate_icon_svg(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> ::core::option::Option<std::borrow::Cow<'static, [u8]>> {{"
+        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {{"
     );
     let _ = writeln!(out, "        match (self, set) {{");
 
@@ -1053,20 +1053,24 @@ system-themes = ["sf-symbols"]
     }
 
     #[test]
-    fn generated_signatures_use_core_option() {
+    fn generated_signatures_use_std_option() {
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains(") -> ::core::option::Option<&str> {"),
+            output.contains(") -> ::std::option::Option<&str> {"),
             "icon_name's return type. output:\n{output}"
         );
         assert!(
-            output.contains(") -> ::core::option::Option<std::borrow::Cow<'static, [u8]>> {"),
+            output.contains(") -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {"),
             "icon_svg's return type. output:\n{output}"
         );
         assert!(
             !output.contains("> Option<"),
             "an enum named Option shadows a bare `Option`. output:\n{output}"
+        );
+        assert!(
+            !output.contains("::core::"),
+            "an edition-2015 crate root has no `core`. output:\n{output}"
         );
     }
 
