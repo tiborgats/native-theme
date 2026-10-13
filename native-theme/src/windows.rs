@@ -107,7 +107,7 @@ struct AccessibilityData {
 
 /// Convert a `windows::UI::Color` to our `Rgba` type.
 #[cfg(all(target_os = "windows", feature = "windows"))]
-fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
+pub(crate) fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
     crate::Rgba::new(c.R, c.G, c.B, c.A)
 }
 
@@ -115,7 +115,7 @@ fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
 ///
 /// Uses BT.601 luminance coefficients. A light foreground (luminance > 128)
 /// indicates a dark background, i.e., dark mode.
-fn is_dark_mode(fg: &crate::Rgba) -> bool {
+pub(crate) fn is_dark_mode(fg: &crate::Rgba) -> bool {
     let luma = 0.299 * (fg.r as f32) + 0.587 * (fg.g as f32) + 0.114 * (fg.b as f32);
     luma > 128.0
 }
@@ -153,26 +153,17 @@ pub(crate) const LOGICAL_DPI: u32 = 96;
 /// (already CSS 100-900 scale, clamped), with `FW_DONTCARE` (0) no weight.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW) -> FontSpec {
-    logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, LOGICAL_DPI)
+    logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight)
 }
 
 /// Testable core of logfont_to_fontspec: takes raw field values.
-fn logfont_to_fontspec_raw(
-    face_name: &[u16; 32],
-    lf_height: i32,
-    lf_weight: i32,
-    dpi: u32,
-) -> FontSpec {
+fn logfont_to_fontspec_raw(face_name: &[u16; 32], lf_height: i32, lf_weight: i32) -> FontSpec {
     // Truncate at the NUL terminator without panic-prone slicing: `slice::split`
     // on the sentinel yields the pre-NUL prefix as its first item, fallback to
     // the full name if there is no NUL (per LOGFONTW's 32-char fixed buffer).
     let trimmed = face_name.split(|&c| c == 0).next().unwrap_or(face_name);
     let family = String::from_utf16_lossy(trimmed);
-    let points = if dpi == 0 {
-        0.0
-    } else {
-        lf_height.unsigned_abs() as f32 * 72.0 / dpi as f32
-    };
+    let points = lf_height.unsigned_abs() as f32 * 72.0 / LOGICAL_DPI as f32;
     // FW_DONTCARE is 0 (windows 0.62.2 Win32/Graphics/Gdi/mod.rs:4998): the
     // default weight, which the preset states.
     let weight = (lf_weight > 0).then(|| lf_weight.clamp(100, 900) as u16);
@@ -716,7 +707,7 @@ mod tests {
         for (i, ch) in "Segoe UI".encode_utf16().enumerate() {
             face[i] = ch;
         }
-        let fs = logfont_to_fontspec_raw(&face, -16, 400, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 400);
         assert_eq!(fs.family.as_deref(), Some("Segoe UI"));
         assert_eq!(fs.size, Some(FontSize::Pt(12.0))); // abs(16) * 72 / 96 = 12
         assert_eq!(fs.weight, Some(400));
@@ -725,7 +716,7 @@ mod tests {
     #[test]
     fn logfont_to_fontspec_bold_weight_700() {
         let face: [u16; 32] = [0; 32];
-        let fs = logfont_to_fontspec_raw(&face, -16, 700, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 700);
         assert_eq!(fs.weight, Some(700));
     }
 
@@ -733,10 +724,10 @@ mod tests {
     fn logfont_to_fontspec_weight_clamped_to_range() {
         let face: [u16; 32] = [0; 32];
         // Weight below 100 gets clamped
-        let fs = logfont_to_fontspec_raw(&face, -16, 50, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 50);
         assert_eq!(fs.weight, Some(100));
         // Weight above 900 gets clamped
-        let fs = logfont_to_fontspec_raw(&face, -16, 1000, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 1000);
         assert_eq!(fs.weight, Some(900));
     }
 
@@ -744,9 +735,9 @@ mod tests {
     #[test]
     fn logfont_to_fontspec_weight_dontcare_is_no_weight() {
         let face: [u16; 32] = [0; 32];
-        let fs = logfont_to_fontspec_raw(&face, -16, 0, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 0);
         assert_eq!(fs.weight, None);
-        let fs = logfont_to_fontspec_raw(&face, -16, -400, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, -400);
         assert_eq!(fs.weight, None);
     }
 

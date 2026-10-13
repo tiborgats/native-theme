@@ -839,7 +839,6 @@ fn detect_is_dark_inner() -> bool {
     {
         #[cfg(feature = "windows")]
         {
-            // BT.601 luminance: light foreground indicates dark background.
             let Ok(settings) = ::windows::UI::ViewManagement::UISettings::new() else {
                 return false;
             };
@@ -848,8 +847,7 @@ fn detect_is_dark_inner() -> bool {
             else {
                 return false;
             };
-            let luma = 0.299 * (fg.R as f32) + 0.587 * (fg.G as f32) + 0.114 * (fg.B as f32);
-            luma > 128.0
+            crate::windows::is_dark_mode(&crate::windows::win_color_to_rgba(fg))
         }
         #[cfg(not(feature = "windows"))]
         {
