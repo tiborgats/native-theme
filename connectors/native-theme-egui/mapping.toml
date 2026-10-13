@@ -764,6 +764,7 @@ sinks   = [{ path = "spacing.icon_spacing", scope = "menu" }]
 ["menu.icon_size"]
 verdict   = "derived"
 tested_by = "T18(a)"
+probe     = 20.0
 
 ["menu.hover_background"]
 verdict = "scoped"

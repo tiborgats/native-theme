@@ -150,7 +150,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `menu.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `menu.hover_background` | SCOPED | «menu» `visuals.widgets.hovered.weak_bg_fill`; «menu» `visuals.widgets.active.weak_bg_fill`; «menu» `visuals.widgets.open.weak_bg_fill` |  |
 | `menu.hover_text_color` | SCOPED | «menu» `visuals.widgets.hovered.fg_stroke.color`; «menu» `visuals.widgets.active.fg_stroke.color`; «menu» `visuals.widgets.open.fg_stroke.color` |  |
-| `menu.icon_size` | DERIVED | → T18(a) |  |
+| `menu.icon_size` | DERIVED | → T18(a) | probe `20.0` |
 | `menu.icon_text_gap` | SCOPED | «menu» `spacing.icon_spacing` |  |
 | `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y` |  |
 | `menu.separator_color` | SCOPED | «menu» `visuals.widgets.noninteractive.bg_stroke.color` |  |
