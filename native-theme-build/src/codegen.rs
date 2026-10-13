@@ -65,8 +65,10 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 /// - `impl {crate_path}::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
-/// on `{crate_path}::detect::system().linux_desktop()`, native-theme's cached
-/// desktop, which `detect::invalidate_caches()` clears. On non-Linux, the default value is used.
+/// on `{crate_path}::detect::system().refined_linux_desktop_sync()`, the desktop
+/// native-theme's platform readers use (`XDG_CURRENT_DESKTOP`, refined by the
+/// portal or `kdeglobals` where it names none), whose cache
+/// `detect::invalidate_caches()` clears. On non-Linux, the default value is used.
 pub(crate) fn generate_code(
     config: &MasterConfig,
     mappings: &BTreeMap<String, ThemeMapping>,
@@ -159,20 +161,20 @@ pub(crate) fn generate_code(
     out
 }
 
-/// The DE-specific arms of a DE-aware value with a default: each known
-/// desktop key's `LinuxDesktop` path and escaped name. `None` when the value
-/// needs no runtime dispatch: no default, no known desktop key, or (Issue 53)
+/// The DE-specific arms of a DE-aware value whose default is `default`:
+/// each known desktop key's `LinuxDesktop` path and escaped name. `None` when
+/// the value needs no runtime dispatch: no known desktop key, or (Issue 53)
 /// every desktop key names the default.
 fn de_dispatch(
     de_map: &BTreeMap<String, String>,
+    default: &str,
     crate_path: &str,
 ) -> Option<Vec<(String, String)>> {
-    let default = de_map.get("default")?;
     let entries: Vec<(String, &String)> = de_map
         .iter()
         .filter_map(|(key, name)| de_key_to_qualified_variant(key, crate_path).map(|v| (v, name)))
         .collect();
-    if entries.iter().all(|(_, name)| *name == default) {
+    if entries.iter().all(|(_, name)| name.as_str() == default) {
         return None;
     }
     Some(
@@ -225,7 +227,7 @@ fn generate_icon_name(
                 };
                 let escaped_default = escape_rust_str(default_name);
                 let de_entries = match mv {
-                    MappingValue::DeAware(de_map) => de_dispatch(de_map, crate_path),
+                    MappingValue::DeAware(de_map) => de_dispatch(de_map, default_name, crate_path),
                     MappingValue::Simple(_) => None,
                 };
                 let Some(de_entries) = de_entries else {
@@ -270,12 +272,12 @@ fn generate_icon_name(
         // Issue 21: say in the generated code where the desktop comes from
         let _ = writeln!(
             out,
-            "        // native-theme's cached desktop; detect::invalidate_caches() clears it"
+            "        // the desktop native-theme's readers use; detect::invalidate_caches() clears it"
         );
         let _ = writeln!(out, "        #[cfg(target_os = \"linux\")]");
         let _ = writeln!(
             out,
-            "        let de = {crate_path}::detect::system().linux_desktop();"
+            "        let de = {crate_path}::detect::system().refined_linux_desktop_sync();"
         );
     }
     let _ = writeln!(out, "        match (self, set) {{");
@@ -777,8 +779,9 @@ play-pause = { kde = "media-playback-start", default = "play" }
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("let de = native_theme::detect::system().linux_desktop();"),
-            "DE-aware codegen should read native-theme's cached desktop. output:\n{output}"
+            output
+                .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
+            "DE-aware codegen should read the desktop native-theme's readers use. output:\n{output}"
         );
     }
 
@@ -844,7 +847,7 @@ play-pause = { default = "play" }
         );
         // Should NOT contain cfg gating or the desktop read for this mapping
         assert!(
-            !output.contains("linux_desktop()"),
+            !output.contains("refined_linux_desktop_sync()"),
             "DE-aware with only default should not read the desktop. output:\n{output}"
         );
     }
@@ -985,7 +988,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("my_crate::detect::system().linux_desktop()"),
+            output.contains("my_crate::detect::system().refined_linux_desktop_sync()"),
             "DE-aware codegen should use custom crate path. output:\n{output}"
         );
         assert!(
@@ -1143,9 +1146,14 @@ system-themes = ["sf-symbols"]
     #[test]
     fn generated_code_escapes_the_base_dir() {
         let (config, mappings) = sample_config_and_mappings();
-        let output = generate_code(&config, &mappings, "/tmp/we\"ird\\dir", "native_theme", &[]);
+        // An absolute directory on the host: a drive letter on Windows
+        let root = if cfg!(windows) { "C:" } else { "" };
+        let base_dir = format!("{root}/tmp/we\"ird\\dir");
+        let output = generate_code(&config, &mappings, &base_dir, "native_theme", &[]);
         assert!(
-            output.contains(r#"include_bytes!("/tmp/we\"ird\\dir/material/play_pause.svg")"#),
+            output.contains(&format!(
+                r#"include_bytes!("{root}/tmp/we\"ird\\dir/material/play_pause.svg")"#
+            )),
             "the base_dir is a string literal's content. output:\n{output}"
         );
     }
@@ -1173,7 +1181,7 @@ system-themes = ["sf-symbols"]
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
             output.contains(
-                "// native-theme's cached desktop; detect::invalidate_caches() clears it"
+                "// the desktop native-theme's readers use; detect::invalidate_caches() clears it"
             ),
             "should have the desktop cache comment. output:\n{output}"
         );
@@ -1205,7 +1213,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         // All DE overrides equal default, should collapse to simple arm
         assert!(
-            !output.contains("linux_desktop()"),
+            !output.contains("refined_linux_desktop_sync()"),
             "all-same DE-aware should collapse. output:\n{output}"
         );
         assert!(

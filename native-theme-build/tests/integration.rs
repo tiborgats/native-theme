@@ -430,8 +430,8 @@ reveal = { kde = "view-visible", default = "view-reveal" }
     assert!(
         output
             .code()
-            .contains("let de = native_theme::detect::system().linux_desktop();"),
-        "should read native-theme's cached desktop. code:\n{}",
+            .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
+        "should read the desktop native-theme's readers use. code:\n{}",
         output.code()
     );
     assert!(
@@ -802,17 +802,25 @@ native-theme = {{ path = "{}" }}
 #[test]
 fn compile_generated_code() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+    // A DE-aware mapping: `icon_name` binds the desktop native-theme reads
+    let desktop = generate_fixture(&fixtures_dir().join("desktop-icons.toml"));
+    assert!(desktop.code().contains("let de ="), "{}", desktop.code());
 
     // The generated code as lib.rs, under the lint a crate that `include!`s
-    // it into a public module meets
+    // it into a public module meets; an unused `de` would be an error
     let lib_rs = format!(
-        "#![deny(missing_docs)]\n//! compile check\n{}",
+        "#![deny(missing_docs, unused)]\n//! compile check\n{}\n\
+         /// DE-aware icons.\npub mod desktop {{\ninclude!(\"desktop_icons.rs\");\n}}\n",
         output.code()
     );
-    if let Err(stderr) = cargo_check("compile_check", &[("lib.rs", &lib_rs)]) {
+    if let Err(stderr) = cargo_check(
+        "compile_check",
+        &[("lib.rs", &lib_rs), ("desktop_icons.rs", desktop.code())],
+    ) {
         panic!(
-            "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
-            output.code()
+            "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}\n--- desktop ---\n{}",
+            output.code(),
+            desktop.code()
         );
     }
 }
