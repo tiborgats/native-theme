@@ -78,8 +78,14 @@ pub(crate) type ThemeMapping = BTreeMap<String, MappingValue>;
 /// - `Simple`: a direct icon name string.
 /// - `DeAware`: a table mapping desktop environment names to icon names,
 ///   with a required `"default"` key.
+///
+/// The `expecting` text is the whole message serde gives a value of neither
+/// form (it replaces "data did not match any variant of untagged enum").
 #[derive(Deserialize, Clone)]
-#[serde(untagged)]
+#[serde(
+    untagged,
+    expecting = "expected an icon name string or an inline table of desktop = icon name pairs with a `default` key"
+)]
 pub(crate) enum MappingValue {
     /// A plain icon name string (e.g., `"play_pause"`).
     Simple(String),

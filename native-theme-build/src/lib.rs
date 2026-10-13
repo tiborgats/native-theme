@@ -1301,6 +1301,25 @@ bogus = "nope"
     }
 
     #[test]
+    fn mapping_value_of_the_wrong_type_names_the_expected_forms() {
+        for toml_str in [
+            "play = 5",
+            "play = [\"a\"]",
+            "play = { kde = 1, default = \"x\" }",
+        ] {
+            let err = toml::from_str::<BTreeMap<String, MappingValue>>(toml_str)
+                .err()
+                .unwrap_or_else(|| panic!("{toml_str} should not parse"));
+            assert_eq!(
+                err.message(),
+                "expected an icon name string or an inline table of desktop = icon name \
+                 pairs with a `default` key",
+                "{toml_str}"
+            );
+        }
+    }
+
+    #[test]
     fn theme_mapping_mixed_values() {
         let toml_str = r#"
 play-pause = "play_pause"
