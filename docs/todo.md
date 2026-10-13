@@ -1052,6 +1052,11 @@ model, the platform presets and the three connectors
       follow a KDE colour scheme or an overlay's `defaults.link_color`.
       Find a source for each, or state none so they inherit `link.font.color`
       (`docs/inheritance-rules.toml:290-291`).
+      Fixed by fd4abc64: both keys removed, they inherit `link.font.color`;
+      a Qt link keeps `palette(link)` hovered and pressed. Kirigami's
+      `LinkButton` alone darkens a pressed link, `Qt.darker(linkColor)`
+      (kirigami v6.31.0 `templates/LinkButton.qml:66`, `:87-93`), which the
+      model does not derive.
 
 ### Validation: an out-of-range `size_pt` is reported with its px value
 
