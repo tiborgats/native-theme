@@ -253,7 +253,7 @@ impl fmt::Display for BuildError {
             Self::DuplicateTheme { theme, list, file } => {
                 write!(
                     f,
-                    "theme \"{theme}\" appears more than once in {list} in {file}"
+                    "theme \"{theme}\" appears more than once in {list} of {file}"
                 )
             }
             Self::InvalidIconName {

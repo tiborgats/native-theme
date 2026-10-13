@@ -728,8 +728,9 @@ fn run_pipeline(
         let dup_theme_errors = validate::validate_no_duplicate_themes(config, file_path);
         errors.extend(dup_theme_errors);
 
-        // Per-file identifier validation (provides file context for collisions)
-        let file_id_errors = validate::validate_identifiers(config, Some(file_path));
+        // Per-file role identifier validation (provides file context for
+        // collisions); the enum name is checked once, on the merged config
+        let file_id_errors = validate::validate_role_identifiers(config, Some(file_path));
         errors.extend(file_id_errors);
 
         // Per-file theme validation (provides file context for unknown themes)
@@ -737,17 +738,29 @@ fn run_pipeline(
         errors.extend(file_theme_errors);
     }
 
-    // Step 1: Check for duplicate roles across all files
+    // Step 1: Check what crosses files: duplicate roles, PascalCase
+    // collisions between roles of different files
     if configs.len() > 1 {
         let dup_errors = validate::validate_no_duplicate_roles(configs);
         errors.extend(dup_errors);
+        let collision_errors = validate::validate_cross_file_collisions(configs);
+        errors.extend(collision_errors);
     }
 
     // Step 2: Merge configs first so validation uses the merged role list
     let merged = merge_configs(configs, enum_name_override, &mut warnings);
 
-    // Issue 8: Post-merge theme overlap validation (catches cross-file overlap)
-    let overlap_errors = validate::validate_theme_overlap(&merged, None);
+    // Issue 8: Post-merge theme overlap validation, for the themes one file
+    // bundles and another loads from the system (an overlap inside one file
+    // was reported above)
+    let overlap_errors = validate::validate_theme_overlap(&merged, None)
+        .into_iter()
+        .filter(|e| match e {
+            BuildError::ThemeOverlap { theme, .. } => !configs.iter().any(|(_, config)| {
+                config.bundled_themes.contains(theme) && config.system_themes.contains(theme)
+            }),
+            _ => true,
+        });
     errors.extend(overlap_errors);
 
     // Warn about empty themes (likely misconfiguration)
@@ -759,11 +772,21 @@ fn run_pipeline(
         );
     }
 
+    // The enum name actually used: the override, else the first file's name
+    let name_file = match enum_name_override {
+        Some(_) => None,
+        None => configs.first().map(|(path, _)| path.as_str()),
+    };
+    let name_errors = validate::validate_enum_name(&merged.name, name_file);
+    let name_is_valid = name_errors.is_empty();
+    errors.extend(name_errors);
+
     // Issue 39: Derive output_filename from merged.name (single source of truth)
     let output_filename = format!("{}.rs", merged.name.to_snake_case());
 
     // Issue 37: Validate output_filename is not just ".rs" after snake_case
-    if output_filename == ".rs" {
+    // (a name that has no PascalCase either was reported above)
+    if output_filename == ".rs" && name_is_valid {
         errors.push(BuildError::InvalidIdentifier {
             name: merged.name.clone(),
             reason: "snake_case conversion produces an empty filename".to_string(),
@@ -797,22 +820,10 @@ fn run_pipeline(
         }
     }
 
-    // Step 2b: Validate identifiers on merged config (catches cross-file collisions).
-    // Per-file validation above provides file context for within-file collisions;
-    // this merged call catches collisions between roles from different files.
-    let id_errors = validate::validate_identifiers(&merged, None);
-    errors.extend(id_errors);
-
     // Track rerun paths for all master TOML files
     for (file_path, _config) in configs {
         rerun_paths.insert(PathBuf::from(file_path));
     }
-
-    // Validate theme names on the merged config (catches cross-file theme issues).
-    // Per-file validation above provides file context for per-file unknown themes;
-    // this merged call validates the combined theme lists after merge.
-    let theme_errors = validate::validate_themes(&merged, None);
-    errors.extend(theme_errors);
 
     // Use the first base_dir as the reference for loading themes.
     // For multi-file, all configs sharing a theme must use the same base_dir.
@@ -833,8 +844,11 @@ fn run_pipeline(
         };
     };
 
-    // Process bundled themes
+    // Process bundled themes (an unknown theme was reported per file)
     for theme_name in &merged.bundled_themes {
+        if !schema::is_known_theme(theme_name) {
+            continue;
+        }
         let theme_dir = base_dir.join(theme_name);
 
         // Issue 20: Early check for theme directory existence
@@ -917,8 +931,12 @@ fn run_pipeline(
         }
     }
 
-    // Process system themes (no SVG validation)
+    // Process system themes (no SVG validation); a theme also bundled was
+    // read above and reported as a ThemeOverlap
     for theme_name in &merged.system_themes {
+        if !schema::is_known_theme(theme_name) || merged.bundled_themes.contains(theme_name) {
+            continue;
+        }
         let theme_dir = base_dir.join(theme_name);
 
         // Issue 20: Early check for theme directory existence
@@ -2248,6 +2266,266 @@ bundled-themes = ["material"]
     }
 
     #[test]
+    fn pipeline_checks_the_enum_name_override_not_the_file_name() {
+        let dir = create_fixture_dir("enum_name_override_checked");
+        write_fixture(&dir, "material/mapping.toml", "play-pause = \"pp\"\n");
+        write_fixture(&dir, "material/pp.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "3d-icons"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            Some("AppIcon"),
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.is_empty(),
+            "the unused name \"3d-icons\" should not be checked: {:?}",
+            result.errors
+        );
+        assert!(result.code.contains("pub enum AppIcon"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_ignores_an_unused_second_file_name() {
+        let dir = create_fixture_dir("second_name_unused");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"pp\"\nskip-forward = \"sf\"\n",
+        );
+        write_fixture(&dir, "material/pp.svg", SVG_STUB);
+        write_fixture(&dir, "material/sf.svg", SVG_STUB);
+
+        let config_a: MasterConfig = toml::from_str(
+            "name = \"app-icons\"\nroles = [\"play-pause\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+        let config_b: MasterConfig =
+            toml::from_str("name = \"3d-icons\"\nroles = [\"skip-forward\"]\n").unwrap();
+
+        let result = run_pipeline(
+            &[
+                ("a.toml".to_string(), config_a),
+                ("b.toml".to_string(), config_b),
+            ],
+            &[dir.clone(), dir.clone()],
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.is_empty(),
+            "only the first file's name is used: {:?}",
+            result.errors
+        );
+        assert!(result.code.contains("pub enum AppIcons"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_reports_an_invalid_enum_name_once_with_its_file() {
+        let dir = create_fixture_dir("enum_name_once");
+        let config: MasterConfig = toml::from_str("name = \"3d-icons\"\nroles = []\n").unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert_eq!(result.errors.len(), 1, "{:?}", result.errors);
+        assert!(
+            matches!(
+                &result.errors[0],
+                BuildError::InvalidIdentifier { name, source_file, .. }
+                    if name == "3d-icons" && source_file.as_deref() == Some("test.toml")
+            ),
+            "{:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_reports_an_unknown_theme_once() {
+        let dir = create_fixture_dir("unknown_theme_once");
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["materal"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert_eq!(result.errors.len(), 1, "{:?}", result.errors);
+        assert!(
+            matches!(
+                &result.errors[0],
+                BuildError::UnknownTheme { theme, source_file }
+                    if theme == "materal" && source_file.as_deref() == Some("test.toml")
+            ),
+            "{:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_reports_an_invalid_role_once() {
+        let dir = create_fixture_dir("invalid_role_once");
+        write_fixture(&dir, "material/mapping.toml", "self = \"self_icon\"\n");
+        write_fixture(&dir, "material/self_icon.svg", SVG_STUB);
+        let config: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"self\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert_eq!(result.errors.len(), 1, "{:?}", result.errors);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_reports_a_theme_overlap_once() {
+        let dir = create_fixture_dir("overlap_once");
+        // The mapping misses the role, so a theme read twice reports it twice.
+        write_fixture(&dir, "material/mapping.toml", "");
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+system-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        let overlaps = result
+            .errors
+            .iter()
+            .filter(|e| matches!(e, BuildError::ThemeOverlap { .. }))
+            .count();
+        let missing = result
+            .errors
+            .iter()
+            .filter(|e| matches!(e, BuildError::MissingRole { .. }))
+            .count();
+        assert_eq!((overlaps, missing), (1, 1), "{:?}", result.errors);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_detects_cross_file_overlap_and_collision() {
+        let dir = create_fixture_dir("cross_file_checks");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"pp\"\nplay_pause = \"pp\"\n",
+        );
+        write_fixture(&dir, "material/pp.svg", SVG_STUB);
+        let config_a: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"play-pause\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+        let config_b: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"play_pause\"]\nsystem-themes = [\"material\"]\n",
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[
+                ("a.toml".to_string(), config_a),
+                ("b.toml".to_string(), config_b),
+            ],
+            &[dir.clone(), dir.clone()],
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        let overlaps: Vec<_> = result
+            .errors
+            .iter()
+            .filter(|e| matches!(e, BuildError::ThemeOverlap { .. }))
+            .collect();
+        let collisions: Vec<_> = result
+            .errors
+            .iter()
+            .filter(|e| matches!(e, BuildError::IdentifierCollision { .. }))
+            .collect();
+        assert!(
+            matches!(
+                overlaps.as_slice(),
+                [BuildError::ThemeOverlap { theme, source_file: None }] if theme == "material"
+            ),
+            "{:?}",
+            result.errors
+        );
+        assert!(
+            matches!(
+                collisions.as_slice(),
+                [BuildError::IdentifierCollision { pascal, .. }] if pascal == "PlayPause"
+            ),
+            "{:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn pipeline_detects_duplicate_role_in_file() {
         let dir = create_fixture_dir("dup_in_file");
         write_fixture(
@@ -2647,9 +2925,9 @@ bundled-themes = ["material"]
         let msg = err.to_string();
         assert!(msg.contains("material"), "should contain theme name");
         assert!(msg.contains("bundled-themes"), "should contain list name");
-        assert!(
-            msg.contains("icons/icons.toml"),
-            "should contain the file: {msg}"
+        assert_eq!(
+            msg,
+            "theme \"material\" appears more than once in bundled-themes of icons/icons.toml"
         );
     }
 

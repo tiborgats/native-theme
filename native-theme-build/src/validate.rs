@@ -293,41 +293,45 @@ fn identifier_problem(pascal: &str) -> Option<String> {
     None
 }
 
-/// Validate identifiers produced from role names and the enum name.
+/// Validate the identifier produced from the enum name, the one the merged
+/// config uses (the `.enum_name()` override, else the first file's `name`).
 ///
 /// Checks:
 /// - PascalCase conversion produces a non-empty result.
 /// - Result is ASCII letters, digits and underscores, a letter or underscore
 ///   first (valid Rust identifier).
 /// - Result is not a Rust keyword.
-/// - No two roles produce the same PascalCase variant (collision).
 ///
-/// When `file_hint` is `Some`, it is included in `InvalidIdentifier` and
-/// `IdentifierCollision` errors for per-file context. Pass `None` when
-/// validating a merged config where per-file context is lost.
-pub(crate) fn validate_identifiers(
+/// `file_hint` is the file that declares the name, `None` for the override.
+pub(crate) fn validate_enum_name(name: &str, file_hint: Option<&str>) -> Vec<BuildError> {
+    let enum_pascal = name.to_upper_camel_case();
+    let reason = if enum_pascal.is_empty() {
+        Some("PascalCase conversion produces an empty string".to_string())
+    } else {
+        identifier_problem(&enum_pascal)
+    };
+    reason
+        .map(|reason| BuildError::InvalidIdentifier {
+            name: name.to_string(),
+            reason,
+            source_file: file_hint.map(String::from),
+        })
+        .into_iter()
+        .collect()
+}
+
+/// Validate identifiers produced from one file's role names.
+///
+/// Checks each role as [`validate_enum_name`] checks the enum name, and that
+/// no two roles produce the same PascalCase variant (collision).
+///
+/// `file_hint` is included in `InvalidIdentifier` and `IdentifierCollision`
+/// errors for per-file context.
+pub(crate) fn validate_role_identifiers(
     config: &MasterConfig,
     file_hint: Option<&str>,
 ) -> Vec<BuildError> {
     let mut errors = Vec::new();
-
-    // Check enum name
-    let enum_pascal = config.name.to_upper_camel_case();
-    if enum_pascal.is_empty() {
-        errors.push(BuildError::InvalidIdentifier {
-            name: config.name.clone(),
-            reason: "PascalCase conversion produces an empty string".to_string(),
-            source_file: file_hint.map(String::from),
-        });
-    } else if let Some(reason) = identifier_problem(&enum_pascal) {
-        errors.push(BuildError::InvalidIdentifier {
-            name: config.name.clone(),
-            reason,
-            source_file: file_hint.map(String::from),
-        });
-    }
-
-    // Check role names + collision detection
     let mut seen: HashMap<String, &str> = HashMap::new();
 
     for role in &config.roles {
@@ -356,6 +360,47 @@ pub(crate) fn validate_identifiers(
             });
         } else {
             seen.insert(pascal, role.as_str());
+        }
+    }
+
+    errors
+}
+
+/// Validate that no two roles from different files produce the same
+/// PascalCase variant.
+///
+/// A collision inside one file is [`validate_role_identifiers`]'s, and the
+/// same role in two files is a `DuplicateRole`
+/// ([`validate_no_duplicate_roles`]), so neither is reported here. The
+/// errors carry no `source_file`: the roles come from two files.
+pub(crate) fn validate_cross_file_collisions(
+    configs: &[(String, MasterConfig)],
+) -> Vec<BuildError> {
+    let mut errors = Vec::new();
+    // PascalCase -> (role, index of its file), the first role seen.
+    let mut seen: HashMap<String, (&str, usize)> = HashMap::new();
+
+    for (index, (_path, config)) in configs.iter().enumerate() {
+        for role in &config.roles {
+            let pascal = role.to_upper_camel_case();
+            if pascal.is_empty() {
+                continue;
+            }
+            match seen.get(&pascal) {
+                Some(&(first_role, first_index)) => {
+                    if first_index != index && first_role != role {
+                        errors.push(BuildError::IdentifierCollision {
+                            role_a: first_role.to_string(),
+                            role_b: role.clone(),
+                            pascal,
+                            source_file: None,
+                        });
+                    }
+                }
+                None => {
+                    seen.insert(pascal, (role.as_str(), index));
+                }
+            }
         }
     }
 
@@ -949,12 +994,13 @@ mod tests {
         assert_eq!(errors.len(), 2);
     }
 
-    // === validate_identifiers tests ===
+    // === validate_enum_name / validate_role_identifiers tests ===
 
     #[test]
     fn identifiers_valid() {
         let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let mut errors = validate_role_identifiers(&config, None);
+        errors.extend(validate_enum_name(&config.name, None));
         assert!(
             errors.is_empty(),
             "valid identifiers should produce no errors"
@@ -964,8 +1010,7 @@ mod tests {
     #[test]
     fn identifier_enum_name_empty_pascal() {
         // A name of only dashes produces empty PascalCase
-        let config = make_config("---", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_enum_name("---", None);
         assert!(
             errors.iter().any(|e| {
                 matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -979,7 +1024,7 @@ mod tests {
     fn identifier_role_is_keyword() {
         // "r#self" -> PascalCase "Self" which is a keyword
         let config = make_config("app-icon", &["self"], &[], &[]);
-        let errors = validate_identifiers(&config, Some("icons/icons.toml"));
+        let errors = validate_role_identifiers(&config, Some("icons/icons.toml"));
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -994,8 +1039,7 @@ mod tests {
     #[test]
     fn identifier_enum_name_is_keyword() {
         // "self" -> PascalCase "Self" which is a Rust keyword
-        let config = make_config("self", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_enum_name("self", None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -1009,7 +1053,7 @@ mod tests {
     fn identifier_collision_detected() {
         // "play_pause" and "play-pause" both become "PlayPause"
         let config = make_config("app-icon", &["play_pause", "play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_role_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::IdentifierCollision { pascal, .. }
@@ -1022,7 +1066,7 @@ mod tests {
     #[test]
     fn identifier_no_collision_different_variants() {
         let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_role_identifiers(&config, None);
         assert!(
             !errors
                 .iter()
@@ -1034,7 +1078,7 @@ mod tests {
     #[test]
     fn identifier_role_starts_with_digit() {
         let config = make_config("app-icon", &["3d-rotate"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_role_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -1046,8 +1090,7 @@ mod tests {
 
     #[test]
     fn identifier_enum_name_starts_with_digit() {
-        let config = make_config("3d-icons", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_enum_name("3d-icons", None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -1061,7 +1104,7 @@ mod tests {
     fn identifier_role_with_a_non_identifier_character() {
         // heck keeps '²' (alphanumeric), which is not XID_Continue
         let config = make_config("app-icon", &["x²"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_role_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -1073,8 +1116,7 @@ mod tests {
 
     #[test]
     fn identifier_enum_name_with_a_non_identifier_character() {
-        let config = make_config("x²-icons", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_enum_name("x²-icons", None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
@@ -1087,7 +1129,7 @@ mod tests {
     #[test]
     fn identifier_role_all_digits() {
         let config = make_config("app-icon", &["123"], &[], &[]);
-        let errors = validate_identifiers(&config, None);
+        let errors = validate_role_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
