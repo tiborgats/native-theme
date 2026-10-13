@@ -1,7 +1,7 @@
 //! macOS theme reader: reads semantic NSColor values with P3-to-sRGB conversion,
 //! resolves both light and dark appearance variants via NSAppearance, reads
-//! system/monospace/per-widget fonts via NSFont, scrollbar overlay mode, and
-//! accessibility flags.
+//! system/monospace/per-widget fonts via NSFont, the scroll bar style and its
+//! width, and accessibility flags.
 //!
 //! # Sources
 //!
@@ -11,7 +11,8 @@
 //! - `AppleInterfaceStyle`: light or dark, the global user default.
 //! - `NSColor`: the semantic colours, the accent and highlight colours among
 //!   them, read under both appearances.
-//! - `NSScroller.preferredScrollerStyle`: overlay scroll bars.
+//! - `NSScroller.preferredScrollerStyle`: overlay scroll bars, and the groove
+//!   width AppKit gives that style.
 //! - `NSWorkspace.accessibilityDisplayOptions`: reduce motion, increase
 //!   contrast and reduce transparency.
 //!
@@ -27,8 +28,8 @@
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
-    NSAppearance, NSColor, NSColorSpace, NSFont, NSFontTraitsAttribute, NSFontWeightRegular,
-    NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
+    NSAppearance, NSColor, NSColorSpace, NSControlSize, NSFont, NSFontTraitsAttribute,
+    NSFontWeightRegular, NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_foundation::{NSDictionary, NSNumber, NSProcessInfo, NSString};
@@ -178,13 +179,33 @@ fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
     }
 }
 
-/// Read scrollbar overlay mode from NSScroller.preferredScrollerStyle.
-///
-/// Returns `true` if the preferred scroller style is overlay, `false` for legacy.
+/// The scroll bar for the user's scroller style: `overlay` (else legacy)
+/// and the groove width AppKit gives that style, `width_for(overlay)`.
+/// The width differs per style and macOS version: legacy 15 and overlay 16
+/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1280).
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn scrollbar_for_style(overlay: bool, width_for: impl Fn(bool) -> f64) -> crate::ScrollbarTheme {
+    crate::ScrollbarTheme {
+        groove_width: Some(width_for(overlay) as f32),
+        overlay_mode: Some(overlay),
+        ..Default::default()
+    }
+}
+
+/// Read the scroll bar from `NSScroller.preferredScrollerStyle` and
+/// `scrollerWidth(for: .regular, scrollerStyle:)` for that style.
 /// Requires main thread (MainThreadMarker).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
-    Some(NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay)
+fn read_scrollbar(mtm: objc2::MainThreadMarker) -> crate::ScrollbarTheme {
+    let overlay = NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay;
+    scrollbar_for_style(overlay, |overlay| {
+        let style = if overlay {
+            NSScrollerStyle::Overlay
+        } else {
+            NSScrollerStyle::Legacy
+        };
+        NSScroller::scrollerWidthForControlSize_scrollerStyle(NSControlSize::Regular, style, mtm)
+    })
 }
 
 /// The running macOS version, from `NSProcessInfo.operatingSystemVersion`
@@ -432,7 +453,7 @@ fn build_theme(
 /// Uses `NSAppearance::performAsCurrentDrawingAppearance` (macOS 11+) to scope
 /// semantic color resolution to each appearance. Reads ~25 NSColor semantic
 /// colors per variant with P3-to-sRGB conversion, per-widget fonts with weight,
-/// scrollbar overlay mode, and accessibility flags.
+/// the scroll bar style and width, and accessibility flags.
 ///
 /// # Errors
 ///
@@ -494,14 +515,16 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
 
     let mut theme = build_theme(light_defaults, dark_defaults, &widget_fonts);
 
-    // Scrollbar overlay mode (appearance-independent, requires main thread).
-    let overlay_mode = objc2::MainThreadMarker::new().and_then(read_scrollbar_style);
+    // The scroll bar is appearance-independent and requires the main thread.
+    let scrollbar = objc2::MainThreadMarker::new().map(read_scrollbar);
     for (variant, pw) in [(&mut theme.light, light_pw), (&mut theme.dark, dark_pw)] {
         let Some(v) = variant else { continue };
         if let Some(pw) = pw {
             apply_per_widget(v, pw);
         }
-        v.scrollbar.overlay_mode = overlay_mode;
+        if let Some(scrollbar) = &scrollbar {
+            v.scrollbar = scrollbar.clone();
+        }
     }
 
     // Accessibility flags (appearance-independent).
@@ -838,6 +861,24 @@ mod tests {
             light.scrollbar.overlay_mode.is_none(),
             "overlay_mode starts None (set by from_macos)"
         );
+    }
+
+    /// The groove width is the one AppKit gives the user's scroller style,
+    /// not the overlay style's always (docs/platform-facts.md:1280: legacy 15,
+    /// overlay 16 on macOS 14.8.9).
+    #[test]
+    fn scrollbar_for_style_takes_the_styles_width() {
+        let width_for = |overlay: bool| if overlay { 16.0 } else { 15.0 };
+        let overlay = scrollbar_for_style(true, width_for);
+        assert_eq!(overlay.overlay_mode, Some(true));
+        assert_eq!(
+            overlay.groove_width,
+            Some(16.0),
+            "the overlay style's width"
+        );
+        let legacy = scrollbar_for_style(false, width_for);
+        assert_eq!(legacy.overlay_mode, Some(false));
+        assert_eq!(legacy.groove_width, Some(15.0), "the legacy style's width");
     }
 
     #[test]
