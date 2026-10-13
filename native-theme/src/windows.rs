@@ -322,6 +322,11 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // SystemControlHighlightAccentBrush (generic.xaml:2055), the accent button's and the
     // checked ToggleButton's fill below; the fills that inherit the accent follow it.
     variant.defaults.accent_color = Some(colors.highlight);
+    // The text on that accent: AccentButtonForeground = SystemControlHighlightAltAccentBrush
+    // (generic.xaml:2056). TextOnAccentFillColorPrimaryBrush is WindowText under high contrast
+    // (Common_themeresources_any.xaml:426), but there it is text on the AccentFill brushes,
+    // which are COLOR_WINDOW (:453), not on the COLOR_HIGHLIGHT accent above.
+    variant.defaults.accent_text_color = Some(colors.highlight_text);
     // HyperlinkForeground = SystemControlHyperlinkTextBrush (Hyperlink_themeresources.xaml:10;
     // generic.xaml:2083), SystemColorHotlightColor.
     variant.defaults.link_color = Some(colors.hotlight);
@@ -1057,6 +1062,7 @@ mod tests {
         assert_eq!(v.defaults.selection_background, Some(c.highlight));
         assert_eq!(v.defaults.selection_text_color, Some(c.highlight_text));
         assert_eq!(v.defaults.accent_color, Some(c.highlight));
+        assert_eq!(v.defaults.accent_text_color, Some(c.highlight_text));
         assert_eq!(v.defaults.link_color, Some(c.hotlight));
         assert_eq!(v.defaults.info_color, Some(c.window_text));
         assert_eq!(
