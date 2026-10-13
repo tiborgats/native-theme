@@ -816,6 +816,20 @@ model, the platform presets and the three connectors
       layer, so hovering such a light button turns it dark grey. The code
       predates M2; M4 decides with the rest of this entry whether the reader
       writes Win32 colours into the dark variant at all.
+      I1 fixed by 8c133614 (M4 T22, 2026-10-13): the reader writes no
+      `GetSysColor` colour outside high contrast, in either variant, nor the
+      DWM colorization, `UISettings`' foreground and background, the accent
+      focus ring and selection or `SM_CXFOCUSBORDER`; outside high contrast
+      it writes light or dark, the accent colours, the text scale, the
+      non-client fonts and the accessibility flags, and the preset states
+      the rest. Under high contrast it maps WinUI 3's HighContrast
+      dictionaries (8463f45) to the system colours, cited per field in
+      `apply_sys_colors` (`native-theme/src/windows.rs`). Still open here:
+      the preset's `tab.active_background` and `button.checked_background`;
+      the reader's `button.primary_background` and `checked_background`
+      from AccentDark1 / AccentLight1 outside high contrast, against
+      `AccentFillColorDefault` = `SystemAccentColorDark1` /
+      `SystemAccentColorLight2` (M4-38's related note).
 
 ### windows-11: the switch's off-track outline
 
