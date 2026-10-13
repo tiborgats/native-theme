@@ -85,6 +85,8 @@ size_pt =10.0
 weight = 400
 
 [light.defaults.icon_sizes]
+# platform-facts.md:1132-1136 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
+# Desktop 48, Dialog 32 and Panel 48, Breeze's sizes
 toolbar_px = 22.0
 small_px = 16.0
 large_px = 48.0
@@ -112,6 +114,9 @@ weight = 400
 # from the body font.
 
 [light.window]
+# platform-facts.md:1147 (§2.2): [WM] activeBackground 227,229,231 (BreezeLight.colors:197, breeze v6.7.5)
+title_bar_background = "#e3e5e7"
+# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 239,240,241 (BreezeLight.colors:200, breeze v6.7.5)
 inactive_title_bar_background = "#eff0f1"
 # platform-facts.md:1154 (§2.2): [WM] inactiveForeground 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
 inactive_title_bar_text_color = "#707d8a"
@@ -148,6 +153,8 @@ background_color = "#ffffff"
 min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
+# platform-facts.md:1191 (§2.4): [Colors:View] ForegroundInactive 112,125,138 (BreezeLight.colors:119, breeze v6.7.5)
+placeholder_color = "#707d8a"
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f3f3f3"
 disabled_text_color = "#aaabac"
@@ -158,6 +165,8 @@ disabled_text_color = "#aaabac"
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
+# platform-facts.md:1199 (§2.4): no shadow
+shadow_enabled = false
 
 [light.text_area.border]
 # platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
@@ -190,6 +199,8 @@ unchecked_border_color = "#c6c8c9"
 [light.checkbox.border]
 # platform-facts.md:1209 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
 color = "#3daee9"
+# platform-facts.md:1215 (§2.5): no shadow
+shadow_enabled = false
 
 [light.tooltip]
 background_color = "#f7f7f7"
@@ -231,6 +242,8 @@ fill_color = "#72c2eb"
 # platform-facts.md:1307-1308 (§2.10): WindowText #232629 at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
 color = "#23262933"
 line_width_px = 1.0
+# platform-facts.md:1306 (§2.10): no shadow
+shadow_enabled = false
 
 [light.tab]
 min_width_px = 80.0
@@ -264,6 +277,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
 # row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
+# platform-facts.md:1242 (§2.6): KIconLoader's Small, 16
+icon_size_px = 16.0
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
@@ -275,7 +290,15 @@ disabled_text_color = "#a0a1a3"
 # platform-facts.md:1235-1236 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
+
+[light.menu.font]
+# platform-facts.md:1233 (§2.6): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+color = "#232629"
 [light.list]
+# platform-facts.md:1379 (§2.15): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
+background_color = "#ffffff"
+# platform-facts.md:1387 (§2.15): [Colors:Header] BackgroundNormal 222,224,226 (BreezeLight.colors:59, breeze v6.7.5)
+header_background = "#dee0e2"
 # platform-facts.md:1382 (§2.15): [Colors:View] BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
 alternate_row_background = "#f7f7f7"
 # row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
@@ -289,6 +312,14 @@ disabled_text_color = "#aaabac"
 # platform-facts.md:1390-1391 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
+
+[light.list.item_font]
+# platform-facts.md:1381 (§2.15): [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123, breeze v6.7.5)
+color = "#232629"
+
+[light.list.header_font]
+# platform-facts.md:1386 (§2.15): [Colors:Header] ForegroundNormal 35,38,41 (BreezeLight.colors:67, breeze v6.7.5)
+color = "#232629"
 [light.toolbar]
 # bar_height not stated: platform-facts.md:1351 (§2.13), (none), sizes to content
 # platform-facts.md:1352 (§2.13): ToolBar_ItemSpacing = 0
@@ -332,6 +363,7 @@ hover_color = "#bcc0bf"
 
 [light.switch]
 unchecked_background = "#bcc0bf"
+# platform-facts.md:1473 (§2.21): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 thumb_background = "#fcfcfc"
 track_width_px = 36.0
 track_height_px = 18.0
@@ -360,6 +392,8 @@ padding_vertical_px = 10.0
 
 [light.link]
 underline_enabled = true
+# platform-facts.md:1623 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
+visited_text_color = "#9b59b6"
 background_color = "#00000000"
 # platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
@@ -378,6 +412,8 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
+# platform-facts.md:1545 (§2.24): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
+background_color = "#fcfcfc"
 min_height_px = 32.0
 min_width_px = 120.0
 # platform-facts.md:1553 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
@@ -394,12 +430,22 @@ disabled_text_color = "#a8a9aa"
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
+# platform-facts.md:1556 (§2.24): no shadow
+shadow_enabled = false
+
+[light.combo_box.font]
+# platform-facts.md:1547 (§2.24): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
+color = "#232629"
 [light.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
 hover_background = "#dee0e2"
+
+[light.segmented_control.border]
+# platform-facts.md:1575 (§2.25): no shadow
+shadow_enabled = false
 
 
 [light.card]
@@ -415,6 +461,10 @@ content_indent_px = 20.0
 frame_enabled = false
 hover_background = "#dee0e2"
 arrow_color = "#232629"
+
+[light.expander.border]
+# platform-facts.md:1612 (§2.27): no shadow
+shadow_enabled = false
 
 # === Dark variant (BreezeDark.colors) ===
 
@@ -491,6 +541,8 @@ size_pt =10.0
 weight = 400
 
 [dark.defaults.icon_sizes]
+# platform-facts.md:1132-1136 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
+# Desktop 48, Dialog 32 and Panel 48, Breeze's sizes
 toolbar_px = 22.0
 small_px = 16.0
 large_px = 48.0
@@ -518,6 +570,8 @@ weight = 400
 # from the body font.
 
 [dark.window]
+# platform-facts.md:1147 (§2.2): [WM] activeBackground 39,44,49 (BreezeDark.colors:204, breeze v6.7.5)
+title_bar_background = "#272c31"
 # platform-facts.md:1153 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:207, breeze v6.7.5)
 inactive_title_bar_background = "#202428"
 # platform-facts.md:1154 (§2.2): [WM] inactiveForeground 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
@@ -555,6 +609,8 @@ background_color = "#141618"
 min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
+# platform-facts.md:1191 (§2.4): [Colors:View] ForegroundInactive 161,169,177 (BreezeDark.colors:120, breeze v6.7.5)
+placeholder_color = "#a1a9b1"
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#131517"
 disabled_text_color = "#606263"
@@ -565,6 +621,8 @@ disabled_text_color = "#606263"
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
+# platform-facts.md:1199 (§2.4): no shadow
+shadow_enabled = false
 
 [dark.text_area.border]
 # platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
@@ -597,6 +655,8 @@ unchecked_border_color = "#4c4e51"
 [dark.checkbox.border]
 # platform-facts.md:1209 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
 color = "#3daee9"
+# platform-facts.md:1215 (§2.5): no shadow
+shadow_enabled = false
 
 [dark.tooltip]
 # platform-facts.md:1251 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)
@@ -639,6 +699,8 @@ fill_color = "#3584ae"
 # platform-facts.md:1307-1308 (§2.10): WindowText #fcfcfc at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
 color = "#fcfcfc33"
 line_width_px = 1.0
+# platform-facts.md:1306 (§2.10): no shadow
+shadow_enabled = false
 
 [dark.tab]
 min_width_px = 80.0
@@ -673,6 +735,8 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
 # row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
+# platform-facts.md:1242 (§2.6): KIconLoader's Small, 16
+icon_size_px = 16.0
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
@@ -684,7 +748,15 @@ disabled_text_color = "#686a6c"
 # platform-facts.md:1235-1236 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
+
+[dark.menu.font]
+# platform-facts.md:1233 (§2.6): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+color = "#fcfcfc"
 [dark.list]
+# platform-facts.md:1379 (§2.15): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
+background_color = "#141618"
+# platform-facts.md:1387 (§2.15): [Colors:Header] BackgroundNormal 41,44,48 (BreezeDark.colors:60, breeze v6.7.5)
+header_background = "#292c30"
 # platform-facts.md:1382 (§2.15): [Colors:View] BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
 alternate_row_background = "#1d1f22"
 # row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
@@ -698,6 +770,14 @@ disabled_text_color = "#606263"
 # platform-facts.md:1390-1391 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
+
+[dark.list.item_font]
+# platform-facts.md:1381 (§2.15): [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124, breeze v6.7.5)
+color = "#fcfcfc"
+
+[dark.list.header_font]
+# platform-facts.md:1386 (§2.15): [Colors:Header] ForegroundNormal 252,252,252 (BreezeDark.colors:68, breeze v6.7.5)
+color = "#fcfcfc"
 [dark.toolbar]
 # bar_height not stated: platform-facts.md:1351 (§2.13), (none), sizes to content
 # platform-facts.md:1352 (§2.13): ToolBar_ItemSpacing = 0
@@ -741,7 +821,8 @@ hover_color = "#4d545b"
 
 [dark.switch]
 unchecked_background = "#4d545b"
-thumb_background = "#fcfcfc"
+# platform-facts.md:1473 (§2.21): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+thumb_background = "#292c30"
 track_width_px = 36.0
 track_height_px = 18.0
 thumb_diameter_px = 18.0
@@ -769,6 +850,8 @@ padding_vertical_px = 10.0
 
 [dark.link]
 underline_enabled = true
+# platform-facts.md:1623 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
+visited_text_color = "#9b59b6"
 background_color = "#00000000"
 # platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
@@ -787,6 +870,8 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
+# platform-facts.md:1545 (§2.24): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+background_color = "#292c30"
 min_height_px = 32.0
 min_width_px = 120.0
 # platform-facts.md:1553 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
@@ -803,12 +888,22 @@ disabled_text_color = "#6d6f72"
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
+# platform-facts.md:1556 (§2.24): no shadow
+shadow_enabled = false
+
+[dark.combo_box.font]
+# platform-facts.md:1547 (§2.24): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+color = "#fcfcfc"
 [dark.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
 hover_background = "#31363b"
+
+[dark.segmented_control.border]
+# platform-facts.md:1575 (§2.25): no shadow
+shadow_enabled = false
 
 
 [dark.card]
@@ -824,6 +919,10 @@ content_indent_px = 20.0
 frame_enabled = false
 hover_background = "#31363b"
 arrow_color = "#fcfcfc"
+
+[dark.expander.border]
+# platform-facts.md:1612 (§2.27): no shadow
+shadow_enabled = false
 
 
 [layout]
