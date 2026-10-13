@@ -353,8 +353,8 @@ fn kde_icon_theme(
     let mut reasons = Vec::new();
     for path in &paths {
         match read(path) {
-            Ok(content) => match ini_value(&content, "Icons", "Theme") {
-                Some(theme) => return Ok(theme),
+            Ok(content) => match crate::icons::ini_value(&content, "Icons", "Theme") {
+                Some(theme) => return Ok(theme.to_string()),
                 None => reasons.push(format!(
                     "{}: `[Icons] Theme` is absent or empty",
                     path.display()
@@ -486,35 +486,6 @@ fn lxqt_icon_theme(
         .find(|value| !value.is_empty())
         .map(str::to_string)
         .ok_or_else(|| failure("`icon_theme` is absent or empty".to_string()))
-}
-
-/// Read a value from INI `content` by section and key.
-///
-/// Simple line-based parser — no external crate needed. Handles `[Section]`
-/// headers and `Key=Value` lines. Returns `None` if the section/key is
-/// missing or the value is empty.
-#[cfg(all(target_os = "linux", not(feature = "kde")))]
-fn ini_value(content: &str, section: &str, key: &str) -> Option<String> {
-    let target_section = format!("[{}]", section);
-    let mut in_section = false;
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('[') {
-            in_section = trimmed == target_section;
-            continue;
-        }
-        if in_section && let Some(value) = trimmed.strip_prefix(key) {
-            let value = value.trim_start();
-            if let Some(value) = value.strip_prefix('=') {
-                let value = value.trim();
-                if !value.is_empty() {
-                    return Some(value.to_string());
-                }
-            }
-        }
-    }
-    None
 }
 
 #[cfg(test)]

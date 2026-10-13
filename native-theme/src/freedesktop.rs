@@ -13,7 +13,7 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::IconData;
-use crate::icons::{MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs};
+use crate::icons::{MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs, ini_value};
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use std::path::{Component, Path, PathBuf};
 
@@ -26,24 +26,13 @@ const FREEDESKTOP_SPIN_DURATION_MS: u32 = 1000;
 /// The themes listed by the `Inherits=` key of an `index.theme`'s
 /// `[Icon Theme]` group, in order.
 fn inherits(index: &str) -> Vec<&str> {
-    let mut in_icon_theme = false;
-    for line in index.lines().map(str::trim) {
-        if let Some(group) = line.strip_prefix('[').and_then(|l| l.strip_suffix(']')) {
-            in_icon_theme = group == "Icon Theme";
-            continue;
-        }
-        if in_icon_theme
-            && let Some((key, value)) = line.split_once('=')
-            && key.trim() == "Inherits"
-        {
-            return value
-                .split(',')
-                .map(str::trim)
-                .filter(|parent| !parent.is_empty())
-                .collect();
-        }
-    }
-    Vec::new()
+    ini_value(index, "Icon Theme", "Inherits").map_or_else(Vec::new, |value| {
+        value
+            .split(',')
+            .map(str::trim)
+            .filter(|parent| !parent.is_empty())
+            .collect()
+    })
 }
 
 /// The parents `theme` declares, from every `index.theme` it has in

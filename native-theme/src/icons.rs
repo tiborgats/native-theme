@@ -926,6 +926,27 @@ pub(crate) fn has_theme_index(theme: &str, bases: &[std::path::PathBuf]) -> bool
             .any(|base| base.join(theme).join("index.theme").exists())
 }
 
+/// The value of `key` in the `[section]` group of the INI `content`,
+/// trimmed: `None` if the group or key is missing or the value empty.
+#[cfg(target_os = "linux")]
+pub(crate) fn ini_value<'a>(content: &'a str, section: &str, key: &str) -> Option<&'a str> {
+    let mut in_section = false;
+    for line in content.lines().map(str::trim) {
+        if let Some(group) = line.strip_prefix('[') {
+            in_section = group.strip_suffix(']') == Some(section);
+            continue;
+        }
+        if in_section
+            && let Some((name, value)) = line.split_once('=')
+            && name.trim() == key
+            && !value.trim().is_empty()
+        {
+            return Some(value.trim());
+        }
+    }
+    None
+}
+
 /// Check whether a freedesktop icon theme is installed on this system.
 ///
 /// Looks for the theme's `index.theme` file in the icon base directories
@@ -1100,8 +1121,8 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
 ///
 /// Scans the icon base directories the freedesktop icon lookup searches
 /// (`$XDG_DATA_DIRS/icons/`, `$XDG_DATA_HOME/icons/` and `~/.icons/`) for
-/// subdirectories containing an `index.theme` file with a `Directories=`
-/// line (per the freedesktop Icon Theme Specification).  This filters
+/// subdirectories containing an `index.theme` file whose `[Icon Theme]`
+/// group lists `Directories` (per the freedesktop Icon Theme Specification).  This filters
 /// out cursor-only themes that lack application icons.
 ///
 /// Excludes `hicolor` (the specification's shared theme for application
@@ -1119,7 +1140,6 @@ pub fn list_freedesktop_themes() -> Vec<String> {
     #[cfg(target_os = "linux")]
     {
         use std::collections::BTreeSet;
-        use std::io::BufRead;
 
         let mut themes = BTreeSet::new();
 
@@ -1144,21 +1164,10 @@ pub fn list_freedesktop_themes() -> Vec<String> {
                     continue;
                 }
 
-                let index_path = path.join("index.theme");
-                let file = match std::fs::File::open(&index_path) {
-                    Ok(f) => f,
-                    Err(_) => continue,
-                };
-
-                // Check if index.theme contains a Directories= line.
-                // Cursor-only themes omit this line.
-                let reader = std::io::BufReader::new(file);
-                let has_directories = reader
-                    .lines()
-                    .map_while(Result::ok)
-                    .any(|line| line.starts_with("Directories="));
-
-                if has_directories {
+                // Cursor-only themes list no Directories.
+                if std::fs::read_to_string(path.join("index.theme"))
+                    .is_ok_and(|index| ini_value(&index, "Icon Theme", "Directories").is_some())
+                {
                     themes.insert(name);
                 }
             }
