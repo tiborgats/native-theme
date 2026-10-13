@@ -123,7 +123,8 @@ use native_theme::watch::on_theme_change;
 
 let _subscription = on_theme_change(|_event| {
     // Runs on a background thread. The event carries no theme: tell the UI
-    // thread to call `SystemTheme::from_system()` again.
+    // thread to call `detect::invalidate_caches()`, then
+    // `SystemTheme::from_system()` again.
 })?;
 # }
 # Ok::<(), native_theme::Error>(())

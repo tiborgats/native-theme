@@ -60,14 +60,16 @@
 //! resolved yourself into the toolkit's theme.
 //!
 //! Watch for OS theme changes (the `watch` feature). The callback runs on a
-//! background thread and carries no theme: read the OS theme again. Keep the
-//! subscription alive; dropping it stops watching:
+//! background thread and carries no theme: clear the detection caches, which
+//! hold the font DPI, dark mode and icon theme the reader uses, and read the
+//! OS theme again. Keep the subscription alive; dropping it stops watching:
 //!
 //! ```no_run
 //! # #[cfg(feature = "watch")]
 //! # {
 //! let _subscription = native_theme::watch::on_theme_change(|_event| {
-//!     // Tell the UI thread to call `SystemTheme::from_system()` again.
+//!     // Tell the UI thread to call `detect::invalidate_caches()`, then
+//!     // `SystemTheme::from_system()` again.
 //! })?;
 //! # }
 //! # Ok::<(), native_theme::Error>(())

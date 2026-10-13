@@ -33,8 +33,11 @@
 //! # Signal-only events
 //!
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
-//! re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme.
+//! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
+//! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
+//! to get the updated theme: the detection values the reader uses (the font
+//! DPI, dark mode, the icon theme, the accessibility preferences) stay cached
+//! until the caches are cleared.
 //!
 //! # Example
 //!
@@ -48,6 +51,7 @@
 //!
 //! // On your UI thread:
 //! // if let Ok(event) = rx.try_recv() {
+//! //     native_theme::detect::invalidate_caches();
 //! //     let theme = native_theme::SystemTheme::from_system()?;
 //! //     // re-apply theme ...
 //! // }
@@ -73,8 +77,10 @@ use std::thread::JoinHandle;
 ///
 /// This enum carries no theme data -- it is a notification only.
 /// When you receive an event, call
+/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), then
 /// [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-/// to read the updated theme.
+/// to read the updated theme; without the first call, the reader's detection
+/// values (the font DPI, dark mode, the icon theme) are the cached ones.
 ///
 /// # Non-exhaustive
 ///
@@ -317,11 +323,20 @@ fn fire_debounced<T>(
 ///
 /// // On UI thread:
 /// // match rx.try_recv() {
-/// //     Ok(ThemeChangeEvent::Changed) => { /* re-read theme */ }
+/// //     Ok(ThemeChangeEvent::Changed) => {
+/// //         native_theme::detect::invalidate_caches();
+/// //         let theme = native_theme::SystemTheme::from_system()?;
+/// //         // re-apply theme ...
+/// //     }
 /// //     _ => {}
 /// // }
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
+///
+/// Clear the detection caches before the re-read, as above: the reader's
+/// detection values (the font DPI, dark mode, the icon theme, the
+/// accessibility preferences) are cached until
+/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches).
 ///
 /// On macOS the change arrives as a distributed notification, which is
 /// delivered through the process's main run loop, so the application must be
