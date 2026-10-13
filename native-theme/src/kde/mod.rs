@@ -135,11 +135,12 @@ pub(crate) fn read_kcmfonts_key(section: &str, key: &str) -> Option<String> {
     kcmfonts_key_in(&crate::detect::xdg_config_home()?, section, key)
 }
 
-/// [`read_kcmfonts_key`] in the config directory `config_dir`.
+/// [`read_kcmfonts_key`] in the config directory `config_dir`, the file read
+/// as KConfig reads it ([`read_kconfig`]), its bytes decoded lossily.
 fn kcmfonts_key_in(config_dir: &std::path::Path, section: &str, key: &str) -> Option<String> {
-    let content = std::fs::read_to_string(config_dir.join("kcmfonts")).ok()?;
+    let bytes = std::fs::read(config_dir.join("kcmfonts")).ok()?;
     let mut ini = create_kde_parser();
-    ini.read(content).ok()?;
+    read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
     ini.get(section, key)
 }
 
@@ -858,6 +859,31 @@ BackgroundNormal=49,54,59
         assert_eq!(
             kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
             Some("144")
+        );
+    }
+
+    /// `kcmfonts` is read as KConfig reads it ([`read_kconfig`]): a stray
+    /// line, or a byte that is not UTF-8, loses that line, not the file.
+    #[test]
+    fn kcmfonts_keeps_its_keys_past_a_stray_line() {
+        let dir = temp_config_dir("kcmfonts-stray");
+        std::fs::write(
+            dir.0.join("kcmfonts"),
+            "[Stray\n[General]\nforceFontDPI=144\n",
+        )
+        .unwrap();
+        assert_eq!(
+            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
+            Some("144")
+        );
+        std::fs::write(
+            dir.0.join("kcmfonts"),
+            b"[General]\nName=\xff\nforceFontDPI=120\n",
+        )
+        .unwrap();
+        assert_eq!(
+            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
+            Some("120")
         );
     }
 

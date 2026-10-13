@@ -1600,10 +1600,11 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
 #[test]
 fn test_gnome_resolve_validate() {
     // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
-    // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
-    // (gsettings calls return None). Both icon_set and icon_theme are Theme-level
-    // (shared) after the G4 migration; KDE remains the one exception with
-    // per-variant icon_theme overrides.
+    // The GNOME reader's variant is sparse (build_gnome_variant_pure): it sets
+    // only what the portal and gsettings answer, and the adwaita preset under
+    // it states the rest, dialog.button_order included. Both icon_set and
+    // icon_theme are Theme-level (shared) after the G4 migration; KDE remains
+    // the one exception with per-variant icon_theme overrides.
     let adwaita = crate::Theme::preset("adwaita").unwrap();
 
     // Pick dark variant from adwaita (matches GNOME PreferDark path).
@@ -1612,7 +1613,7 @@ fn test_gnome_resolve_validate() {
         .clone()
         .expect("adwaita should have dark variant");
 
-    // Apply what build_gnome_variant() would set.
+    // The adwaita preset's dialog.button_order, which the reader leaves to it.
     variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
 
     // Simulate GNOME reader font output (gsettings font-name on a GNOME system).

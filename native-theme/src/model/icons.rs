@@ -1479,7 +1479,7 @@ mod tests {
             .iter()
             .filter(|r| icon_name(**r, IconSet::SegoeFluent).is_some())
             .count();
-        assert_eq!(some_count, 41, "Segoe Icons should have 41 mappings");
+        assert_eq!(some_count, 41, "Segoe Fluent should have 41 mappings");
     }
 
     #[test]

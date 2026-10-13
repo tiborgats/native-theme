@@ -383,7 +383,7 @@ fn sf_symbols_returns_none_on_non_macos() {
 
 #[test]
 #[cfg(not(target_os = "windows"))]
-fn segoe_icons_returns_none_on_non_windows() {
+fn segoe_fluent_returns_none_on_non_windows() {
     use native_theme::icons::SegoeFluentLoader;
     for role in IconRole::ALL.iter().copied() {
         assert!(

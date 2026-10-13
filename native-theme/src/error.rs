@@ -154,7 +154,7 @@ pub enum Error {
 
     /// A platform reader failed with a platform-specific error.
     ReaderFailed {
-        /// Reader name (e.g. `"kde"`, `"windows"`, `"icon-theme"`).
+        /// Reader name (e.g. `"windows"`, `"icon-theme"`, `"kde-watcher"`).
         reader: &'static str,
         /// The underlying error.
         source: Box<dyn std::error::Error + Send + Sync>,
@@ -376,8 +376,6 @@ macro_rules! reader_names {
 /// The `reader` name of every [`Error::ReaderFailed`], lowercase kebab-case.
 pub(crate) mod reader_names {
     reader_names! {
-        #[cfg(test)]
-        KDE = "kde";
         #[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
         WINDOWS = "windows";
         #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
@@ -456,7 +454,7 @@ mod tests {
     #[test]
     fn kind_platform_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: reader_names::KDE,
+            reader: reader_names::ICON_THEME,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         assert_eq!(err.kind(), ErrorKind::Platform);
@@ -705,7 +703,7 @@ mod tests {
     #[test]
     fn source_some_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: reader_names::KDE,
+            reader: reader_names::ICON_THEME,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         let source = std::error::Error::source(&err);

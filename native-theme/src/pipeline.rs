@@ -764,17 +764,14 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
                     version,
                 });
             }
-            Ok(_) => {
-                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
-            }
-            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
-            }
-            Err(_) => {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 diagnostics.push(DiagnosticEntry::ToolMissing {
                     name: "gsettings",
                     impact: "dark mode and icon theme detection may be limited",
                 });
+            }
+            Ok(_) | Err(_) => {
+                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
             }
         }
 
@@ -2304,7 +2301,7 @@ accent_color = "#0066cc"
                 assert_eq!(
                     source,
                     (crate::IconSet::Freedesktop, Some(expected.to_owned())),
-                    "kde-breeze.toml:16 and :415 (active mode {active:?}, asked {mode:?})"
+                    "kde-breeze.toml:16 and :473 (active mode {active:?}, asked {mode:?})"
                 );
                 assert_eq!(theme.icon_theme_for(mode), Some(expected));
             }
@@ -2341,7 +2338,7 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon(role, crate::ColorMode::Dark, None),
                 FreedesktopLoader::new(role).theme("breeze-dark").load(),
-                "dark icon from breeze-dark, kde-breeze.toml:415 (active mode {active:?})"
+                "dark icon from breeze-dark, kde-breeze.toml:473 (active mode {active:?})"
             );
             assert_eq!(
                 theme.icon_indicator(crate::ColorMode::Dark),
@@ -2408,7 +2405,7 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Dark),
                 Some("breeze-dark"),
-                "kde-breeze.toml:415 names breeze-dark for dark (active mode {mode:?})"
+                "kde-breeze.toml:473 names breeze-dark for dark (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(mode),
