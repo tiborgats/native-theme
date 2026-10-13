@@ -147,13 +147,14 @@ fn first_in_chain(
 
 /// The file name endings freedesktop-icons 0.4.0 tries for a name in a
 /// theme directory: `.svg`, `.png` and `.xmp` (sic,
-/// `freedesktop-icons-0.4.0/src/theme/mod.rs:107-150`), and `.xpm`, the
-/// extension the Icon Theme Specification names.
-const ICON_FILE_ENDINGS: [&str; 4] = [".svg", ".png", ".xmp", ".xpm"];
+/// `freedesktop-icons-0.4.0/src/theme/mod.rs:107-150`). It never tries
+/// `.xpm`, the extension the Icon Theme Specification names, so a name a
+/// theme has only as `.xpm` cannot be found there.
+const ICON_FILE_ENDINGS: [&str; 3] = [".svg", ".png", ".xmp"];
 
 /// Every name an icon file in `theme`'s directories under `bases` could be
-/// found by: the file name of each `.svg`, `.png`, `.xmp` or `.xpm` file at
-/// any depth, without that ending.
+/// found by: the file name of each `.svg`, `.png` or `.xmp` file at any
+/// depth, without that ending.
 ///
 /// freedesktop-icons builds a theme's candidates as `<base>/<theme>/
 /// <index.theme section>/<name>.<ending>`, and [`first_in_chain`] keeps a
@@ -1093,9 +1094,7 @@ mod tests {
         stems.sort();
         assert_eq!(
             stems,
-            [
-                "flat", "home", "nested", "pixmap", "upstream", "via-dir", "via-file"
-            ]
+            ["flat", "home", "nested", "upstream", "via-dir", "via-file"]
         );
         assert!(theme_icon_stems("no-such-theme", &fx.bases).is_empty());
     }

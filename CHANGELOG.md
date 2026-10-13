@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: the first `Theme::preset(name)` in a process parses that preset's TOML alone, not all 17 bundled ones, and each preset is parsed on its own first use: a cold `Theme::preset("kde-breeze")` took a median 0.84 ms instead of 6.3 ms (21 fresh processes each, release build, on one Linux machine). `SystemTheme::from_system()` makes that call for its platform preset.
 - **native-theme**: a Segoe glyph is drawn from the font created at its size as the em height (CreateFontW with a negative height); the 32 pixels it was drawn at were the font's cell height, which includes the internal leading.
 - **native-theme**: the font DPI that `ResolutionContext::from_system()` detects, which `Theme::resolve` and `ThemeMode::resolve_system` use, and the KDE reader's DPI after its own `forceFontDPI` are one chain, detected once and cached until `detect::invalidate_caches()`: `Theme::resolve` no longer runs `xrdb -query` on every call, so resolving `kde-breeze` took a median 36 µs instead of 3.5 ms, and a warm `SystemTheme::from_system()` 1.25 ms instead of 5.3 ms (three release runs each, on one KDE Wayland machine).
+- **native-theme**: a freedesktop icon name a theme has only as an `.xpm` file, which the lookup never returns, is `None` at once: it passed the index of the theme's file names and ran freedesktop-icons' whole fallback search on every load (2.3–2.7 ms per load, a release build; about 310 ns now).
 
 ### Fixed
 
