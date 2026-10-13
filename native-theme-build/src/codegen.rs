@@ -370,9 +370,8 @@ fn generate_icon_svg(
 
     // Issue 51: Detect absolute base_dir -- when absolute, emit include_bytes!
     // directly without wrapping in concat!(env!("CARGO_MANIFEST_DIR"), ...).
-    let is_absolute_base = base_dir.starts_with('/')
-        || base_dir.starts_with('\\')
-        || base_dir.as_bytes().get(1).is_some_and(|&b| b == b':');
+    // The host's rules decide, as rustc runs include_bytes! on the host.
+    let is_absolute_base = std::path::Path::new(base_dir).is_absolute();
     // The base directory is a string literal's content, as the icon name is
     let base_dir = escape_rust_str(base_dir);
 
@@ -1228,6 +1227,21 @@ system-themes = ["sf-symbols"]
             output.contains(r#"include_bytes!("/tmp/we\"ird\\dir/material/play_pause.svg")"#),
             "the base_dir is a string literal's content. output:\n{output}"
         );
+    }
+
+    #[test]
+    fn generated_code_relative_base_dir_named_like_an_absolute_one_stays_relative() {
+        let (config, mappings) = sample_config_and_mappings();
+        for base_dir in ["\\x", "a:"] {
+            let output = generate_code(&config, &mappings, base_dir, "native_theme", &[]);
+            let escaped = escape_rust_str(base_dir);
+            assert!(
+                output.contains(&format!(
+                    "include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{escaped}/material/play_pause.svg\"))"
+                )),
+                "{base_dir:?} is relative on this host. output:\n{output}"
+            );
+        }
     }
 
     // === Issue 21: OnceLock caching comment ===
