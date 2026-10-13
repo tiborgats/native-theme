@@ -136,10 +136,11 @@ disabled_text_color = "#0000005c"
 active_background = "#f5f5f5"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#f9f9f900"
-# platform-facts.md:1175, :1181 (§2.3): AccentButtonBackground and ToggleButtonBackgroundChecked =
-# AccentFillColorDefault = SystemAccentColorDark1, UISettings AccentDark1 #0067c0 for the accent above
-# (OS probe, Windows 11 25H2); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF (:1182)
-primary_background = "#0067c0"
+# platform-facts.md:1181 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorDark1,
+# UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2);
+# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF (:1182). primary_background, the
+# same brush (:1175), stays ← accent_color: the iced connector derives the primary button's hover from
+# the accent and requires the two equal (native-theme-iced contract.rs, the_primary_pair_is_the_accent_pair)
 checked_background = "#0067c0"
 checked_text_color = "#ffffff"
 
@@ -692,10 +693,11 @@ disabled_text_color = "#ffffff5d"
 active_background = "#272727"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"
-# platform-facts.md:1175, :1181 (§2.3): AccentButtonBackground and ToggleButtonBackgroundChecked =
-# AccentFillColorDefault = SystemAccentColorLight2, UISettings AccentLight2 #4cc2ff for the accent above
-# (OS probe, Windows 11 25H2); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000 (:1182)
-primary_background = "#4cc2ff"
+# platform-facts.md:1181 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorLight2,
+# UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2);
+# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000 (:1182). primary_background, the
+# same brush (:1175), stays ← accent_color: the iced connector derives the primary button's hover from
+# the accent and requires the two equal (native-theme-iced contract.rs, the_primary_pair_is_the_accent_pair)
 checked_background = "#4cc2ff"
 checked_text_color = "#000000"
 
