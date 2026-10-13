@@ -9,7 +9,7 @@
 //! - `kdeglobals`: the colours, fonts, icon theme and accessibility flags.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
-//! - `kcmfontsrc`: `forceFontDPI`, on X11, the file the fonts KCM writes it
+//! - `kcmfonts`: `forceFontDPI`, on X11, the file the fonts KCM writes it
 //!   to and krdb reads it from (`docs/platform-facts.md:713`).
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
 //!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
@@ -42,7 +42,7 @@ use crate::model::IconSizes;
 /// and Phase 79-02 decision for rationale.
 ///
 /// `font_dpi` is returned as given: kdeglobals holds no font DPI
-/// (`forceFontDPI` lives in kcmfontsrc, `docs/platform-facts.md:713`).
+/// (`forceFontDPI` lives in kcmfonts, `docs/platform-facts.md:713`).
 /// Icon sizes are NOT populated (requires filesystem access).
 #[doc(hidden)]
 pub fn from_kde_content_pure(
@@ -112,7 +112,7 @@ fn from_kde_ini(ini: &configparser::ini::Ini) -> crate::ReaderResult {
         name: std::borrow::Cow::Owned(name),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
-        // I/O: the cached chain (kcmfontsrc forceFontDPI on X11 -> xrdb -> xrandr -> 96.0)
+        // I/O: the cached chain (kcmfonts forceFontDPI on X11 -> xrdb -> xrandr -> 96.0)
         font_dpi: Some(crate::detect::system_font_dpi()),
         accessibility,
     }
@@ -126,14 +126,18 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ReaderResu
     Ok(from_kde_ini(&ini))
 }
 
-/// Read a single key from `kcmfontsrc` in the user's config directory
+/// Read a single key from `kcmfonts` in the user's config directory
 /// ([`crate::detect::xdg_config_home`]).
 ///
 /// Returns `None` if there is no config directory, the file is missing or
 /// unreadable, or the key is not found.
-pub(crate) fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
-    let path = crate::detect::xdg_config_home()?.join("kcmfontsrc");
-    let content = std::fs::read_to_string(path).ok()?;
+pub(crate) fn read_kcmfonts_key(section: &str, key: &str) -> Option<String> {
+    kcmfonts_key_in(&crate::detect::xdg_config_home()?, section, key)
+}
+
+/// [`read_kcmfonts_key`] in the config directory `config_dir`.
+fn kcmfonts_key_in(config_dir: &std::path::Path, section: &str, key: &str) -> Option<String> {
+    let content = std::fs::read_to_string(config_dir.join("kcmfonts")).ok()?;
     let mut ini = create_kde_parser();
     ini.read(content).ok()?;
     ini.get(section, key)
@@ -844,6 +848,19 @@ BackgroundNormal=49,54,59
         TempConfigDir(dir)
     }
 
+    /// Plasma's fonts KCM and krdb open `forceFontDPI`'s file by the name
+    /// `kcmfonts`, and KConfig adds no `rc` to a name it is given
+    /// (docs/platform-facts.md:713).
+    #[test]
+    fn force_font_dpi_is_read_from_kcmfonts() {
+        let dir = temp_config_dir("kcmfonts");
+        std::fs::write(dir.0.join("kcmfonts"), "[General]\nforceFontDPI=144\n").unwrap();
+        assert_eq!(
+            kcmfonts_key_in(&dir.0, "General", "forceFontDPI").as_deref(),
+            Some("144")
+        );
+    }
+
     fn paths(paths: &[&str]) -> Vec<std::path::PathBuf> {
         paths.iter().map(std::path::PathBuf::from).collect()
     }
@@ -1220,20 +1237,16 @@ AnimationDurationFactor=1.0
         assert!(!accessibility.reduce_motion);
     }
 
-    /// `forceFontDPI` lives in kcmfontsrc, which the fonts KCM writes it to
+    /// `forceFontDPI` lives in kcmfonts, which the fonts KCM writes it to
     /// and krdb reads it from (docs/platform-facts.md:713); a kdeglobals key
-    /// of that name is no font DPI: the reader's is the system chain's.
+    /// of that name is no font DPI and does not replace the one given.
     #[test]
     fn a_kdeglobals_force_font_dpi_is_not_the_font_dpi() -> crate::Result<()> {
         let content = "[General]\nforceFontDPI=120\n";
         let (_theme, dpi, _accessibility) = from_kde_content_pure(content, None)?;
         assert_eq!(dpi, None);
-        let (_theme, dpi, _accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, Some(96.0))?;
-        assert_eq!(dpi, Some(96.0));
-        assert_eq!(
-            from_kde_content(content)?.font_dpi,
-            Some(crate::detect::system_font_dpi())
-        );
+        let (_theme, dpi, _accessibility) = from_kde_content_pure(content, Some(144.0))?;
+        assert_eq!(dpi, Some(144.0));
         Ok(())
     }
 

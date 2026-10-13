@@ -9,7 +9,7 @@ use super::ThemeChangeEvent;
 /// The files the watcher observes, each a path in the config directory: the
 /// KDE reader's sources that the user's settings write (`kde/mod.rs`,
 /// "Sources").
-pub(super) const WATCHED_FILES: &[&str] = &["kdeglobals", "kcmfontsrc", "kdedefaults/kdeglobals"];
+pub(super) const WATCHED_FILES: &[&str] = &["kdeglobals", "kcmfonts", "kdedefaults/kdeglobals"];
 
 /// The subdirectory of the config directory that holds Plasma's defaults.
 const KDEDEFAULTS: &str = "kdedefaults";

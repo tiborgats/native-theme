@@ -333,7 +333,7 @@ fn fire_debounced<T>(
 ///
 /// The watcher observes what the platform's reader reads (each reader
 /// module lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals`
-/// and `kcmfontsrc` in the config directory; on GNOME and Budgie the
+/// and `kcmfonts` in the config directory; on GNOME and Budgie the
 /// portal's `SettingChanged` for the `org.freedesktop.appearance` settings
 /// and the `org.gnome.desktop.interface`, `org.gnome.desktop.wm.preferences`
 /// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
@@ -508,7 +508,7 @@ mod tests {
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         ("kde", "kdeglobals", "kdeglobals"),
         ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
-        ("kde", "kcmfontsrc", "kcmfontsrc"),
+        ("kde", "kcmfonts", "kcmfonts"),
         // xdg-desktop-portal-kde's accent is the palette's highlight, which
         // the colour scheme in kdeglobals sets.
         (

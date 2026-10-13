@@ -100,7 +100,7 @@ over the platform preset:
   detected desktop environment
 - **`icon_theme`** -- stated at the Theme level by the adwaita, macOS and
   Windows presets; KDE's reader supplies it per variant
-- **`font_dpi`** -- filled by the platform reader: KDE's from kcmfontsrc's
+- **`font_dpi`** -- filled by the platform reader: KDE's from `kcmfonts`'
   `forceFontDPI` (on X11), `Xft.dpi` or the display, GNOME's a fixed 96 (GNOME's text-scaling factor
   goes to `text_scaling_factor`, not into the DPI), macOS's a fixed 72, and
   Windows' a fixed 96, since it reads its fonts at 96 DPI so that they
