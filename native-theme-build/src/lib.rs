@@ -347,8 +347,12 @@ fn generate_icons_with_env(
 
     let content = std::fs::read_to_string(&resolved)
         .map_err(|e| BuildErrors::io_read(resolved.display().to_string(), e.to_string()))?;
-    let config: MasterConfig = toml::from_str(&content)
-        .map_err(|e| BuildErrors::io_parse(resolved.display().to_string(), e.to_string()))?;
+    let config: MasterConfig = toml::from_str(&content).map_err(|e| {
+        BuildErrors::io_parse(
+            resolved.display().to_string(),
+            toml_error_reason(&content, &e),
+        )
+    })?;
 
     let base_dir = resolved
         .parent()
@@ -567,7 +571,10 @@ impl IconGenerator {
             let content = std::fs::read_to_string(&resolved)
                 .map_err(|e| BuildErrors::io_read(resolved.display().to_string(), e.to_string()))?;
             let config: MasterConfig = toml::from_str(&content).map_err(|e| {
-                BuildErrors::io_parse(resolved.display().to_string(), e.to_string())
+                BuildErrors::io_parse(
+                    resolved.display().to_string(),
+                    toml_error_reason(&content, &e),
+                )
             })?;
 
             let file_path_str = resolved.to_string_lossy().to_string();
@@ -918,7 +925,7 @@ fn run_pipeline(
                 Err(e) => {
                     errors.push(BuildError::IoParse {
                         path: mapping_path_str,
-                        reason: e.to_string(),
+                        reason: toml_error_reason(&content, &e),
                     });
                 }
             },
@@ -977,7 +984,7 @@ fn run_pipeline(
                 Err(e) => {
                     errors.push(BuildError::IoParse {
                         path: mapping_path_str,
-                        reason: e.to_string(),
+                        reason: toml_error_reason(&content, &e),
                     });
                 }
             },
@@ -1048,6 +1055,32 @@ fn run_pipeline(
         rerun_paths,
         size_report,
         output_filename,
+    }
+}
+
+/// The reason of an `IoParse` error: `e`'s message on one line, after the
+/// line and column in `content` where its span starts. toml's `Display` of
+/// the error spans several lines (a header, the snippet, then the message),
+/// and a `cargo::error=` directive is one line.
+fn toml_error_reason(content: &str, e: &toml::de::Error) -> String {
+    let message = e
+        .message()
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("; ");
+    match e.span().and_then(|span| content.get(..span.start)) {
+        Some(before) => {
+            let line = before.matches('\n').count().saturating_add(1);
+            let column = before
+                .rsplit('\n')
+                .next()
+                .map_or(0, |current| current.chars().count())
+                .saturating_add(1);
+            format!("line {line}, column {column}: {message}")
+        }
+        None => message,
     }
 }
 
@@ -3769,5 +3802,71 @@ bundled-themes = ["material"]
 
         let _ = fs::remove_dir_all(&dir);
         let _ = fs::remove_dir_all(&out);
+    }
+
+    #[test]
+    fn a_master_toml_type_error_is_one_line_with_its_cause() {
+        let dir = create_fixture_dir("parse_error_one_line");
+        write_fixture(&dir, "icons.toml", "name = \"x\"\nroles = \"a\"\n");
+        let vars = [("OUT_DIR", dir.as_path())];
+
+        let errors = IconGenerator::new()
+            .source(dir.join("icons.toml"))
+            .generate_with_env(&env_table(&vars))
+            .err()
+            .unwrap_or_else(|| panic!("expected a parse error"));
+
+        let [error] = errors.errors() else {
+            panic!("expected one error: {errors}");
+        };
+        let msg = error.to_string();
+        assert!(
+            !msg.contains('\n'),
+            "a cargo::error= line is one line: {msg:?}"
+        );
+        assert!(
+            msg.ends_with(
+                "icons.toml: line 2, column 9: invalid type: string \"a\", expected a sequence"
+            ),
+            "{msg:?}"
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_mapping_syntax_error_is_one_line_with_its_cause() {
+        let dir = create_fixture_dir("mapping_parse_error_one_line");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"a\"\nplay-pause = \"b\"\n",
+        );
+        let config: MasterConfig = toml::from_str(
+            "name = \"test\"\nroles = [\"play-pause\"]\nbundled-themes = [\"material\"]\n",
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        let [error] = result.errors.as_slice() else {
+            panic!("expected one error: {:?}", result.errors);
+        };
+        let msg = error.to_string();
+        assert!(
+            !msg.contains('\n'),
+            "a cargo::error= line is one line: {msg:?}"
+        );
+        assert!(msg.contains("mapping.toml: line 2, column 1: "), "{msg:?}");
+        assert!(msg.contains("duplicate key"), "{msg:?}");
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }
