@@ -175,12 +175,20 @@ pub(crate) fn check_orphan_svgs(
             && meta.file_type().is_symlink()
             && let Ok(target) = fs::read_link(&path)
         {
-            let resolved = if target.is_absolute() {
-                target.clone()
-            } else {
-                path.parent().unwrap_or(Path::new(".")).join(&target)
+            // Path::starts_with keeps `..`, so the resolved paths are compared;
+            // a dangling link, which has none, is compared as written
+            let inside = match (fs::canonicalize(&path), fs::canonicalize(theme_dir)) {
+                (Ok(resolved), Ok(theme_dir)) => resolved.starts_with(theme_dir),
+                _ => {
+                    let resolved = if target.is_absolute() {
+                        target.clone()
+                    } else {
+                        path.parent().unwrap_or(Path::new(".")).join(&target)
+                    };
+                    resolved.starts_with(theme_dir)
+                }
             };
-            if !resolved.starts_with(theme_dir) {
+            if !inside {
                 let file_name = path
                     .file_name()
                     .map(|n| n.to_string_lossy())
@@ -844,6 +852,79 @@ mod tests {
         assert!(warnings.is_empty(), "no orphans expected");
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlink_with_a_relative_target_outside_the_theme_dir_is_warned() {
+        let root = std::env::temp_dir().join(format!(
+            "native_theme_test_symlink_outside_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("material");
+        fs::create_dir_all(&dir).unwrap();
+        fs::create_dir_all(root.join("shared")).unwrap();
+        fs::write(root.join("shared/play.svg"), "<svg/>").unwrap();
+        std::os::unix::fs::symlink("../shared/play.svg", dir.join("play.svg")).unwrap();
+
+        let mapping = make_mapping(vec![("play-pause", MappingValue::Simple("play".into()))]);
+        let warnings = check_orphan_svgs(&mapping, &dir, "material");
+        assert!(
+            matches!(warnings.as_slice(), [w] if w.contains("play.svg") && w.contains("points outside")),
+            "{warnings:?}"
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlink_with_a_target_inside_the_theme_dir_is_not_warned() {
+        let root = std::env::temp_dir().join(format!(
+            "native_theme_test_symlink_inside_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("material");
+        fs::create_dir_all(dir.join("sub")).unwrap();
+        fs::write(dir.join("sub/play.svg"), "<svg/>").unwrap();
+        fs::write(dir.join("pause_real.svg"), "<svg/>").unwrap();
+        std::os::unix::fs::symlink("sub/play.svg", dir.join("play.svg")).unwrap();
+        // `..` that comes back into the theme directory
+        std::os::unix::fs::symlink("../material/pause_real.svg", dir.join("pause.svg")).unwrap();
+
+        let mapping = make_mapping(vec![
+            ("play-pause", MappingValue::Simple("play".into())),
+            ("pause", MappingValue::Simple("pause".into())),
+            ("pause-real", MappingValue::Simple("pause_real".into())),
+        ]);
+        let warnings = check_orphan_svgs(&mapping, &dir, "material");
+        assert!(warnings.is_empty(), "{warnings:?}");
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dangling_symlink_outside_the_theme_dir_is_warned() {
+        let root = std::env::temp_dir().join(format!(
+            "native_theme_test_symlink_dangling_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("material");
+        fs::create_dir_all(&dir).unwrap();
+        std::os::unix::fs::symlink("/nonexistent/play.svg", dir.join("play.svg")).unwrap();
+
+        let mapping = make_mapping(vec![("play-pause", MappingValue::Simple("play".into()))]);
+        let warnings = check_orphan_svgs(&mapping, &dir, "material");
+        assert!(
+            matches!(warnings.as_slice(), [w] if w.contains("points outside")),
+            "{warnings:?}"
+        );
+
+        let _ = fs::remove_dir_all(&root);
     }
 
     // === validate_no_duplicate_roles tests (VAL-06) ===
