@@ -93,6 +93,7 @@ struct SysColors {
     btn_text: crate::Rgba,
     highlight: crate::Rgba,
     highlight_text: crate::Rgba,
+    hotlight: crate::Rgba,
     gray_text: crate::Rgba,
 }
 
@@ -284,6 +285,7 @@ fn read_sys_colors() -> SysColors {
         btn_text: sys_color(COLOR_BTNTEXT),
         highlight: sys_color(COLOR_HIGHLIGHT),
         highlight_text: sys_color(COLOR_HIGHLIGHTTEXT),
+        hotlight: sys_color(COLOR_HOTLIGHT),
         gray_text: sys_color(COLOR_GRAYTEXT),
     }
 }
@@ -313,6 +315,18 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // TextControlSelectionHighlightColor = SystemControlHighlightAccentBrush
     // (generic.xaml:2666, :2055); COLOR_HIGHLIGHT, docs/platform-facts.md:1055.
     variant.defaults.selection_background = Some(colors.highlight);
+    // COLOR_HIGHLIGHTTEXT, docs/platform-facts.md:1056; no style in the theme resources or
+    // generic.xaml sets a selected-text foreground (a text box sets only
+    // SelectionHighlightColor, TextBox_themeresources.xaml:183).
+    variant.defaults.selection_text_color = Some(colors.highlight_text);
+    // SystemControlHighlightAccentBrush (generic.xaml:2055), the accent button's and the
+    // checked ToggleButton's fill below; the fills that inherit the accent follow it.
+    variant.defaults.accent_color = Some(colors.highlight);
+    // HyperlinkForeground = SystemControlHyperlinkTextBrush (Hyperlink_themeresources.xaml:10;
+    // generic.xaml:2083), SystemColorHotlightColor.
+    variant.defaults.link_color = Some(colors.hotlight);
+    // SystemFillColorAttentionBrush (Common_themeresources_any.xaml:493).
+    variant.defaults.info_color = Some(colors.window_text);
     // SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuterBrush
     // (Common_themeresources.xaml:43; Common_themeresources_any.xaml:472).
     variant.defaults.focus_ring_color = Some(colors.window_text);
@@ -351,6 +365,13 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // (ListViewItem_themeresources.xaml:85, :91).
     variant.list.selection_background = Some(colors.highlight);
     variant.list.selection_text_color = Some(colors.highlight_text);
+    // ProgressBarBorderThemeThickness is 1 in HighContrast (ProgressBar_themeresources.xaml:13;
+    // docs/platform-facts.md:1308).
+    variant
+        .progress_bar
+        .border
+        .get_or_insert_default()
+        .line_width = Some(1.0);
 }
 
 /// Read accessibility settings (WIN-04).
@@ -440,22 +461,27 @@ fn build_theme(
 ) -> crate::ReaderResult {
     let dark = is_dark_mode(&fg);
 
-    // Primary button background: In light mode use AccentDark1 (shades[0]), in dark mode
-    // use AccentLight1 (shades[3]). Fall back to accent if shade unavailable.
-    let primary_bg = if dark {
-        accent_shades[3].unwrap_or(accent)
-    } else {
-        accent_shades[0].unwrap_or(accent)
-    };
+    // `accent_shades` is [Dark1, Dark2, Dark3, Light1, Light2, Light3]; WinUI 3's
+    // SystemAccentColor* resources are those UISettings shades
+    // (SystemThemingInterop.cpp:262-291, microsoft-ui-xaml 8463f45).
+    let [dark1, dark2, _, _, light2, light3] = accent_shades;
 
     let mut variant = crate::ThemeMode::default();
 
     // --- The accent colours, which the user sets ---
     variant.defaults.accent_color = Some(accent);
+    // The accent button and a checked ToggleButton are filled with
+    // `AccentFillColorDefault`: AccentDark1 light, AccentLight2 dark
+    // (docs/platform-facts.md:1175, :1181); the accent if the shade is unavailable.
+    let primary_bg = if dark { light2 } else { dark1 }.unwrap_or(accent);
     variant.button.primary_background = Some(primary_bg);
-    // A checked ToggleButton is filled with the accent button's brush,
-    // `AccentFillColorDefault` (docs/platform-facts.md §2.3).
     variant.button.checked_background = Some(primary_bg);
+    // `HyperlinkForeground` = `AccentTextFillColorPrimary`: AccentDark2 light,
+    // AccentLight3 dark (docs/platform-facts.md:1054).
+    variant.defaults.link_color = if dark { light3 } else { dark2 };
+    // `SystemFillColorAttention`: the accent light, AccentLight2 dark
+    // (docs/platform-facts.md:1086).
+    variant.defaults.info_color = if dark { light2 } else { Some(accent) };
 
     // --- Defaults-level font (message font) ---
     variant.defaults.font = fonts.msg;
@@ -786,39 +812,49 @@ mod tests {
         assert_eq!(light_theme().name, "Windows");
     }
 
+    /// The shades in `read_accent_shades`' order: Dark1, Dark2, Dark3,
+    /// Light1, Light2, Light3, a distinct value each.
+    const SHADES: [Option<crate::Rgba>; 6] = [
+        Some(crate::Rgba::rgb(0, 0, 1)),
+        Some(crate::Rgba::rgb(0, 0, 2)),
+        Some(crate::Rgba::rgb(0, 0, 3)),
+        Some(crate::Rgba::rgb(0, 0, 4)),
+        Some(crate::Rgba::rgb(0, 0, 5)),
+        Some(crate::Rgba::rgb(0, 0, 6)),
+    ];
+
+    /// Light mode: the accent fill is AccentDark1, the link AccentDark2, the
+    /// informational fill the accent (docs/platform-facts.md:1175, :1181,
+    /// :1054, :1086).
     #[test]
     fn build_theme_accent_shades_light_mode() {
         let accent = crate::Rgba::rgb(0, 120, 215);
-        let dark1 = crate::Rgba::rgb(0, 90, 170);
-        let mut shades = [None; 6];
-        shades[0] = Some(dark1);
         let theme = build_theme(
             accent,
             crate::Rgba::rgb(0, 0, 0),
-            shades,
+            SHADES,
             default_fonts(),
             None,
             None,
             None,
         );
-        // In light mode, AccentDark1 is not directly used in ThemeMode (old primary_background
-        // is no longer a field). But the logic still selects primary_background -- which is not set on the
-        // new model. This is fine: the resolve() pipeline handles it.
-        // Just verify the core defaults are set.
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
+        assert_eq!(variant.button.primary_background, SHADES[0]);
+        assert_eq!(variant.button.checked_background, SHADES[0]);
+        assert_eq!(variant.defaults.link_color, SHADES[1]);
+        assert_eq!(variant.defaults.info_color, Some(accent));
     }
 
+    /// Dark mode: the accent fill is AccentLight2, the link AccentLight3, the
+    /// informational fill AccentLight2.
     #[test]
     fn build_theme_accent_shades_dark_mode() {
         let accent = crate::Rgba::rgb(0, 120, 215);
-        let light1 = crate::Rgba::rgb(60, 160, 240);
-        let mut shades = [None; 6];
-        shades[3] = Some(light1);
         let theme = build_theme(
             accent,
             crate::Rgba::rgb(255, 255, 255),
-            shades,
+            SHADES,
             default_fonts(),
             None,
             None,
@@ -826,6 +862,31 @@ mod tests {
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
+        assert_eq!(variant.button.primary_background, SHADES[4]);
+        assert_eq!(variant.button.checked_background, SHADES[4]);
+        assert_eq!(variant.defaults.link_color, SHADES[5]);
+        assert_eq!(variant.defaults.info_color, SHADES[4]);
+    }
+
+    /// A shade that fails to read leaves the link and informational colours
+    /// to the preset; the accent fill falls back to the accent
+    /// (docs/platform-facts.md:1175).
+    #[test]
+    fn build_theme_without_shades_leaves_link_to_the_preset() {
+        let accent = crate::Rgba::rgb(0, 120, 215);
+        let theme = build_theme(
+            accent,
+            crate::Rgba::rgb(255, 255, 255),
+            [None; 6],
+            default_fonts(),
+            None,
+            None,
+            None,
+        );
+        let variant = reader_mode(&theme);
+        assert_eq!(variant.button.primary_background, Some(accent));
+        assert_eq!(variant.defaults.link_color, None);
+        assert_eq!(variant.defaults.info_color, None);
     }
 
     // === Per-widget font tests (WIN-01) ===
@@ -918,6 +979,7 @@ mod tests {
             btn_text: crate::Rgba::rgb(4, 4, 4),
             highlight: crate::Rgba::rgb(5, 5, 5),
             highlight_text: crate::Rgba::rgb(6, 6, 6),
+            hotlight: crate::Rgba::rgb(8, 8, 8),
             gray_text: crate::Rgba::rgb(7, 7, 7),
         }
     }
@@ -993,6 +1055,14 @@ mod tests {
         assert_eq!(v.defaults.surface_color, Some(c.window_bg));
         assert_eq!(v.defaults.disabled_text_color, Some(c.gray_text));
         assert_eq!(v.defaults.selection_background, Some(c.highlight));
+        assert_eq!(v.defaults.selection_text_color, Some(c.highlight_text));
+        assert_eq!(v.defaults.accent_color, Some(c.highlight));
+        assert_eq!(v.defaults.link_color, Some(c.hotlight));
+        assert_eq!(v.defaults.info_color, Some(c.window_text));
+        assert_eq!(
+            v.progress_bar.border.as_ref().and_then(|b| b.line_width),
+            Some(1.0)
+        );
         assert_eq!(v.defaults.focus_ring_color, Some(c.window_text));
         assert_eq!(v.button.background_color, Some(c.btn_face));
         assert_eq!(font_color(&v.button.font), Some(c.btn_text));
@@ -1015,7 +1085,6 @@ mod tests {
         assert_eq!(v.window.inactive_title_bar_background, None);
         assert_eq!(v.window.inactive_title_bar_text_color, None);
         assert_eq!(v.defaults.focus_ring_width, None);
-        assert_eq!(v.defaults.accent_color, Some(crate::Rgba::rgb(0, 120, 215)));
     }
 
     // === Logical system metrics ===
