@@ -504,13 +504,17 @@ padding_left_px = 16.0
 padding_vertical_px = 0.0
 
 [light.window]
-# Interactive state colors (platform-facts.md section 2.2 Windows)
-# no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
-# and return #bfcddb and #000000 on Windows 11 25H2 (platform-facts.md:1153-1154, OS probe
-# probe.toml:338, :418); what an unsupported index returns is not what Windows draws, so those
-# values are not a source for these
-inactive_title_bar_background = "#f1f1f1"
-inactive_title_bar_text_color = "#1a1a1a99"
+# platform-facts.md:1147 (§2.2): the title bar's default background is Mica, the TitleBar control
+# transparent over it; Mica's solid fallback SolidBackgroundFillColorBase #F3F3F3 (background_color)
+title_bar_background = "#f3f3f3"
+# platform-facts.md:1153 (§2.2): Mica shows that fallback when the window deactivates
+inactive_title_bar_background = "#f3f3f3"
+# platform-facts.md:1154 (§2.2): TitleBarDeactivatedForegroundBrush = TextFillColorTertiary #72000000
+inactive_title_bar_text_color = "#00000072"
+
+[light.window.title_bar_font]
+# platform-facts.md:1152 (§2.2): TitleBarForegroundBrush = TextFillColorPrimary #E4000000
+color = "#000000e4"
 
 # === Dark variant ===
 
@@ -1000,13 +1004,17 @@ padding_left_px = 16.0
 padding_vertical_px = 0.0
 
 [dark.window]
-# Interactive state colors (platform-facts.md section 2.2 Windows)
-# no source ❓: COLOR_INACTIVECAPTION and COLOR_INACTIVECAPTIONTEXT are not supported on Windows 10+
-# (platform-facts.md:1153-1154); the OS probe read light mode only (#bfcddb and #000000,
-# probe.toml:338, :418), and what an unsupported index returns is not what Windows draws, so those
-# values are not a source for these
-inactive_title_bar_background = "#2b2b2b"
-inactive_title_bar_text_color = "#ffffff99"
+# platform-facts.md:1147 (§2.2): the title bar's default background is Mica, the TitleBar control
+# transparent over it; Mica's solid fallback SolidBackgroundFillColorBase #202020 (background_color)
+title_bar_background = "#202020"
+# platform-facts.md:1153 (§2.2): Mica shows that fallback when the window deactivates
+inactive_title_bar_background = "#202020"
+# platform-facts.md:1154 (§2.2): TitleBarDeactivatedForegroundBrush = TextFillColorTertiary #87FFFFFF
+inactive_title_bar_text_color = "#ffffff87"
+
+[dark.window.title_bar_font]
+# platform-facts.md:1152 (§2.2): TitleBarForegroundBrush = TextFillColorPrimary #FFFFFF
+color = "#ffffff"
 
 
 [layout]

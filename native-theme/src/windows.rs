@@ -308,8 +308,7 @@ fn read_sys_colors() -> SysColors {
 /// <https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-resource-dictionary>,
 /// updated 2026-08-28). A `SystemColor*Color` resource is GetSysColor of its
 /// index (`dxaml/xcp/components/theming/FrameworkTheming.cpp:145-157`,
-/// `:219-231`; `theminginterop/SystemThemingInterop.cpp:202`). WinUI 3 does
-/// not draw the window caption, so the title bar colours stay the preset's.
+/// `:219-231`; `theminginterop/SystemThemingInterop.cpp:202`).
 fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // TextFillColorPrimaryBrush (Common_themeresources_any.xaml:416).
     variant.defaults.text_color = Some(colors.window_text);
@@ -377,6 +376,16 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // (ListViewItem_themeresources.xaml:85, :91).
     variant.list.selection_background = Some(colors.highlight);
     variant.list.selection_text_color = Some(colors.highlight_text);
+    // The TitleBar control is transparent over the window's backdrop (TitleBar.xaml:12),
+    // which under high contrast is the user's background in place of Mica,
+    // SolidBackgroundFillColorBaseBrush above, active and inactive; its title text is
+    // TitleBarForegroundBrush = SystemControlForegroundBaseHighBrush, inactive
+    // TitleBarDeactivatedForegroundBrush = SystemControlDisabledBaseMediumLowBrush
+    // (TitleBar_themeresources.xaml:54-55; generic.xaml:2039, :2026; docs/platform-facts.md:1147-1154).
+    variant.window.title_bar_background = Some(colors.window_bg);
+    variant.window.inactive_title_bar_background = Some(colors.window_bg);
+    variant.window.title_bar_font.get_or_insert_default().color = Some(colors.btn_text);
+    variant.window.inactive_title_bar_text_color = Some(colors.gray_text);
     // ProgressBarBorderThemeThickness is 1 in HighContrast (ProgressBar_themeresources.xaml:13;
     // docs/platform-facts.md:1308).
     variant
@@ -1096,12 +1105,41 @@ mod tests {
         assert_eq!(font_color(&v.tooltip.font), Some(c.window_text));
         assert_eq!(v.list.selection_background, Some(c.highlight));
         assert_eq!(v.list.selection_text_color, Some(c.highlight_text));
-        // WinUI 3 does not draw the window caption: no HighContrast brush.
-        assert_eq!(v.window.title_bar_background, None);
-        assert_eq!(font_color(&v.window.title_bar_font), None);
-        assert_eq!(v.window.inactive_title_bar_background, None);
-        assert_eq!(v.window.inactive_title_bar_text_color, None);
+        assert_eq!(v.window.title_bar_background, Some(c.window_bg));
+        assert_eq!(font_color(&v.window.title_bar_font), Some(c.btn_text));
+        assert_eq!(v.window.inactive_title_bar_background, Some(c.window_bg));
+        assert_eq!(v.window.inactive_title_bar_text_color, Some(c.gray_text));
         assert_eq!(v.defaults.focus_ring_width, None);
+    }
+
+    /// Outside high contrast the title bar over the windows-11 preset is the
+    /// window's Mica fallback, opaque, active and inactive; its text is the
+    /// TitleBar control's primary and, inactive, tertiary text.
+    #[test]
+    fn outside_high_contrast_the_title_bar_is_the_window_background() {
+        let mut base = crate::Theme::preset("windows-11").unwrap();
+        let r = reader_with_high_contrast(Some(false));
+        base.merge(&r.output.to_theme(&r.name, r.icon_set, &r.layout));
+        let tertiary = [
+            (base.light.clone().unwrap(), crate::Rgba::new(0, 0, 0, 0x72)),
+            (
+                base.dark.clone().unwrap(),
+                crate::Rgba::new(255, 255, 255, 0x87),
+            ),
+        ];
+        for (mut mode, tertiary_text) in tertiary {
+            mode.resolve_all();
+            let resolved = mode.validate().unwrap();
+            let window_bg = resolved.defaults.background_color;
+            assert_eq!(window_bg.a, 255);
+            assert_eq!(resolved.window.title_bar_background, window_bg);
+            assert_eq!(resolved.window.inactive_title_bar_background, window_bg);
+            assert_eq!(
+                resolved.window.title_bar_font.color,
+                resolved.defaults.text_color
+            );
+            assert_eq!(resolved.window.inactive_title_bar_text_color, tertiary_text);
+        }
     }
 
     // === Logical system metrics ===
