@@ -373,7 +373,8 @@ hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#a8acab"
 disabled_checked_background = "#3daee980"
 disabled_unchecked_background = "#bcc0bf80"
-disabled_thumb_color = "#fcfcfc80"
+# platform-facts.md:1473 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+disabled_thumb_color = "#f0f0f0"
 
 [light.dialog]
 button_order = "primary_left"
@@ -831,7 +832,8 @@ hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#596068"
 disabled_checked_background = "#3daee980"
 disabled_unchecked_background = "#4d545b80"
-disabled_thumb_color = "#fcfcfc80"
+# platform-facts.md:1473 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+disabled_thumb_color = "#272a2e"
 
 [dark.dialog]
 button_order = "primary_left"
