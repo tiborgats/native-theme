@@ -493,7 +493,8 @@ fn build_theme(
     // `accent_shades` is [Dark1, Dark2, Dark3, Light1, Light2, Light3]; WinUI 3's
     // SystemAccentColor* resources are those UISettings shades
     // (SystemThemingInterop.cpp:262-291, microsoft-ui-xaml 8463f45).
-    let [dark1, dark2, _, _, light2, light3] = accent_shades;
+    let [dark1, dark2, dark3, _, light2, light3] = accent_shades;
+    let high_contrast = accessibility.and_then(|a| a.high_contrast) == Some(true);
 
     let mut variant = crate::ThemeMode::default();
 
@@ -511,6 +512,14 @@ fn build_theme(
     // `SystemFillColorAttention`: the accent light, AccentLight2 dark
     // (docs/platform-facts.md:1086).
     variant.defaults.info_color = if dark { light2 } else { Some(accent) };
+    // `HyperlinkForegroundPointerOver` and `HyperlinkForegroundPressed`: AccentDark3 and
+    // AccentDark1 light, AccentLight3 and AccentLight2 dark (Hyperlink_themeresources.xaml:16-17,
+    // :6-7; Common_themeresources_any.xaml:298-299, :94-95). Not under high contrast, where
+    // the user's accent colours are not written.
+    if !high_contrast {
+        variant.link.hover_text_color = if dark { light3 } else { dark3 };
+        variant.link.active_text_color = if dark { light2 } else { dark1 };
+    }
 
     // --- Defaults-level font (message font) ---
     variant.defaults.font = fonts.msg;
@@ -527,7 +536,6 @@ fn build_theme(
 
     // --- The high-contrast colours (WIN-03); outside high contrast the
     // GetSysColor indices are classic Win32 values WinUI 3 does not draw ---
-    let high_contrast = accessibility.and_then(|a| a.high_contrast) == Some(true);
     if let (true, Some(colors)) = (high_contrast, sys_colors) {
         apply_sys_colors(&mut variant, colors);
     }
@@ -872,6 +880,8 @@ mod tests {
         assert_eq!(variant.button.primary_background, SHADES[0]);
         assert_eq!(variant.button.checked_background, SHADES[0]);
         assert_eq!(variant.defaults.link_color, SHADES[1]);
+        assert_eq!(variant.link.hover_text_color, SHADES[2]);
+        assert_eq!(variant.link.active_text_color, SHADES[0]);
         assert_eq!(variant.defaults.info_color, Some(accent));
     }
 
@@ -894,6 +904,8 @@ mod tests {
         assert_eq!(variant.button.primary_background, SHADES[4]);
         assert_eq!(variant.button.checked_background, SHADES[4]);
         assert_eq!(variant.defaults.link_color, SHADES[5]);
+        assert_eq!(variant.link.hover_text_color, SHADES[5]);
+        assert_eq!(variant.link.active_text_color, SHADES[4]);
         assert_eq!(variant.defaults.info_color, SHADES[4]);
     }
 
@@ -1093,6 +1105,10 @@ mod tests {
         assert_eq!(v.defaults.accent_color, Some(c.highlight));
         assert_eq!(v.defaults.accent_text_color, Some(c.highlight_text));
         assert_eq!(v.defaults.link_color, Some(c.hotlight));
+        // No HighContrast mapping is stated for the link's hover and pressed
+        // text, and the user's accent shades are not written under high contrast.
+        assert_eq!(v.link.hover_text_color, None);
+        assert_eq!(v.link.active_text_color, None);
         assert_eq!(v.defaults.info_color, Some(c.window_text));
         assert_eq!(
             v.progress_bar.border.as_ref().and_then(|b| b.line_width),
