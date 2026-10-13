@@ -59,6 +59,7 @@ accent_text_color = "#ffffff"
 
 # platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
 disabled_opacity = 1.0
+# platform-facts.md:1030 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -72,11 +73,13 @@ line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [light.defaults.font]
+# platform-facts.md:571 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Noto Sans"
 size_pt =10.0
 weight = 400
 
 [light.defaults.mono_font]
+# platform-facts.md:572 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Hack"
 size_pt =10.0
 weight = 400
@@ -138,6 +141,7 @@ padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 [light.button.font]
+# platform-facts.md:1166 (§2.3): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
 color = "#232629"
 [light.input]
 background_color = "#ffffff"
@@ -198,6 +202,7 @@ padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [light.tooltip.font]
+# platform-facts.md:1256 (§2.7): [Colors:Tooltip] ForegroundNormal 35,38,41 (BreezeLight.colors:109, breeze v6.7.5)
 color = "#232629"
 [light.scrollbar]
 groove_width_px = 21.0
@@ -360,8 +365,12 @@ underline_enabled = true
 background_color = "#00000000"
 # platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
-hover_text_color = "#2980b9"
-active_text_color = "#2980b9"
+# No hover_text_color or active_text_color: they inherit link.font.color
+# (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
+# in every state and a hover only emits linkHovered (qtbase ef55f427,
+# qtexthtmlparser.cpp:2057-2068, qwidgettextcontrol.cpp:2983-2991); Kirigami's
+# LinkButton keeps linkColor while hovered and darkens it pressed, Qt.darker
+# (kirigami v6.31.0 templates/LinkButton.qml:66, :87-93), which no key derives.
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
 disabled_text_color = "#a3cae2"
 
@@ -458,6 +467,7 @@ accent_text_color = "#fcfcfc"
 
 # platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
 disabled_opacity = 1.0
+# platform-facts.md:1030 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -471,11 +481,13 @@ line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [dark.defaults.font]
+# platform-facts.md:571 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Noto Sans"
 size_pt =10.0
 weight = 400
 
 [dark.defaults.mono_font]
+# platform-facts.md:572 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Hack"
 size_pt =10.0
 weight = 400
@@ -537,6 +549,7 @@ padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 [dark.button.font]
+# platform-facts.md:1166 (§2.3): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.input]
 # platform-facts.md:1186 (§2.4): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
@@ -599,6 +612,7 @@ padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [dark.tooltip.font]
+# platform-facts.md:1256 (§2.7): [Colors:Tooltip] ForegroundNormal 252,252,252 (BreezeDark.colors:110, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.scrollbar]
 groove_width_px = 21.0
@@ -762,8 +776,12 @@ underline_enabled = true
 background_color = "#00000000"
 # platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
-hover_text_color = "#1d99f3"
-active_text_color = "#1d99f3"
+# No hover_text_color or active_text_color: they inherit link.font.color
+# (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
+# in every state and a hover only emits linkHovered (qtbase ef55f427,
+# qtexthtmlparser.cpp:2057-2068, qwidgettextcontrol.cpp:2983-2991); Kirigami's
+# LinkButton keeps linkColor while hovered and darkens it pressed, Qt.darker
+# (kirigami v6.31.0 templates/LinkButton.qml:66, :87-93), which no key derives.
 # platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
 disabled_text_color = "#164160"
 

@@ -1179,6 +1179,18 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
+    /// A hovered and a pressed link keep `ForegroundLink` too: `kde-breeze`
+    /// states neither colour, so both inherit `link.font.color`.
+    #[test]
+    fn link_hover_and_active_text_follow_foreground_link() -> crate::Result<()> {
+        let content = "[Colors:Window]\nBackgroundNormal=49,54,59\n\n\
+                       [Colors:View]\nForegroundLink=246,116,0\n";
+        let st = crate::pipeline::run_pipeline(from_kde_content(content)?, "kde-breeze")?;
+        assert_eq!(st.dark.link.hover_text_color, Rgba::rgb(246, 116, 0));
+        assert_eq!(st.dark.link.active_text_color, Rgba::rgb(246, 116, 0));
+        Ok(())
+    }
+
     /// An overlay's `defaults.link_color` recolours link text on top of a
     /// KDE read: the reader states no `link.font.color` of its own.
     #[test]
