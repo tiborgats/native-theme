@@ -578,6 +578,24 @@ run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
+# The macOS and Windows code, with each platform's features; CI's clippy job
+# runs the same four. The targets are the cross-target clippy section's.
+NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
+for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+    if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
+        print_info "skipped strict-panic ($target): target not installed (rustup target add $target)"
+        continue
+    fi
+    if [ "$target" = "x86_64-apple-darwin" ]; then
+        platform_feature=macos
+    else
+        platform_feature=windows
+    fi
+    run_check "strict-panic (native-theme, $platform_feature features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --features "$platform_feature,$NT_PLATFORM_FEATURES"
+    run_check "strict-panic (native-theme, no features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --no-default-features
+done
 run_check "strict-panic (native-theme-derive)" \
     bash scripts/check_strict_panic.sh -p native-theme-derive --lib
 run_check "strict-panic (native-theme-build)" \

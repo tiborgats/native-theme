@@ -11,10 +11,11 @@
 #   Process exit:       exit
 #   Result fn panics:   panic_in_result_fn
 #
-# The arguments are clippy's, before the `--`: the package, `--lib` and the
-# features.
+# The arguments are clippy's, before the `--`: the package, `--lib`, the
+# features and, for the macOS and Windows code, the target.
 #
 #   scripts/check_strict_panic.sh -p native-theme-iced --lib
+#   scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme --lib --features macos
 #
 # native-theme and the connectors deny `clippy::unwrap_used` and
 # `clippy::expect_used` in their crate roots; the rest of the list is enforced
