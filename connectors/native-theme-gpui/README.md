@@ -70,10 +70,10 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.7.1 |
-| `gpui-base` | 0.7.1 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.8 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.7.1 |
+| `gpui-component` | 0.7.3 |
+| `gpui-base` | 0.7.3 |
+| `gpui-pre` (GPUI, named `gpui` here) | 0.3.9 |
+| `gpui-kit` (dev-dependency: the showcase) | 0.7.3 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
@@ -102,7 +102,7 @@ the CHANGELOG.
 [dependencies]
 native-theme = "0.6"
 native-theme-gpui = "0.6"
-gpui-kit = "0.7.1"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
