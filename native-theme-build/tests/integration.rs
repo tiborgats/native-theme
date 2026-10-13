@@ -727,38 +727,25 @@ fn golden_syntax_check() {
     );
 }
 
-/// #33: Verify generated code compiles by writing a temp Cargo project and running `cargo check`.
-///
-/// This goes beyond `golden_syntax_check` (string matching) by actually invoking the
-/// Rust compiler. Skips gracefully if `cargo` is unavailable or the build fails for
-/// environmental reasons (e.g., missing toolchain components in CI).
-#[test]
-fn compile_generated_code() {
-    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
-
-    let dir = create_temp_dir("compile_check");
+/// Writes `files` under `src/` of a temp Cargo project with native-theme as
+/// a path dependency and the fixture SVGs (the `include_bytes!` paths
+/// reference `CARGO_MANIFEST_DIR`), and runs `cargo check` on it. Returns
+/// the compiler's stderr when the check fails, and `Ok` when `cargo` is not
+/// available.
+fn cargo_check(suffix: &str, files: &[(&str, &str)]) -> Result<(), String> {
+    let dir = create_temp_dir(suffix);
     let src_dir = dir.join("src");
     fs::create_dir_all(&src_dir).unwrap();
+    for (name, content) in files {
+        fs::write(src_dir.join(name), content).unwrap();
+    }
 
-    // Write the generated code as lib.rs, under the lint a crate that
-    // `include!`s it into a public module meets
-    fs::write(
-        src_dir.join("lib.rs"),
-        format!(
-            "#![deny(missing_docs)]\n//! compile check\n{}",
-            output.code()
-        ),
-    )
-    .unwrap();
-
-    // Copy fixture SVGs so include_bytes! paths resolve (they reference CARGO_MANIFEST_DIR)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let fixture_src = manifest_dir.join("tests/fixtures");
     if fixture_src.exists() {
         copy_dir_recursive(&fixture_src, &dir.join("tests/fixtures"));
     }
 
-    // Write a minimal Cargo.toml with native-theme as a path dependency
     let native_theme_path = manifest_dir.join("../native-theme");
     let cargo_toml = format!(
         r#"[package]
@@ -773,28 +760,128 @@ native-theme = {{ path = "{}" }}
     );
     fs::write(dir.join("Cargo.toml"), cargo_toml).unwrap();
 
-    // Run cargo check
     let result = std::process::Command::new("cargo")
         .args(["check", "--quiet"])
         .current_dir(&dir)
         .output();
 
-    // Clean up
     let _ = fs::remove_dir_all(&dir);
 
     match result {
-        Ok(output_cmd) => {
-            if !output_cmd.status.success() {
-                let stderr = String::from_utf8_lossy(&output_cmd.stderr);
-                panic!(
-                    "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
-                    output.code()
-                );
-            }
+        Ok(output_cmd) if !output_cmd.status.success() => {
+            Err(String::from_utf8_lossy(&output_cmd.stderr).into_owned())
         }
+        Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("skipping compile_generated_code: cargo not available ({e})");
+            eprintln!("skipping cargo check: cargo not available ({e})");
+            Ok(())
         }
+    }
+}
+
+/// #33: Verify generated code compiles by writing a temp Cargo project and running `cargo check`.
+///
+/// This goes beyond `golden_syntax_check` (string matching) by actually invoking the
+/// Rust compiler. Skips gracefully if `cargo` is unavailable.
+#[test]
+fn compile_generated_code() {
+    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+
+    // The generated code as lib.rs, under the lint a crate that `include!`s
+    // it into a public module meets
+    let lib_rs = format!(
+        "#![deny(missing_docs)]\n//! compile check\n{}",
+        output.code()
+    );
+    if let Err(stderr) = cargo_check("compile_check", &[("lib.rs", &lib_rs)]) {
+        panic!(
+            "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
+            output.code()
+        );
+    }
+}
+
+/// Two generated files `include!`d into one module compile together, as
+/// does an enum named `option` (whose `pub enum Option` shadows the
+/// prelude's) with base derives also given by path.
+#[test]
+fn compile_generated_files_in_one_module() {
+    // Each file gets a directory whose mappings hold only its roles (an
+    // unmapped role or an unknown one is an error); the include_bytes!
+    // paths point into it, so it stays until the check has run.
+    let generate = |name: &str, roles: &[&str], derives: &[&str]| {
+        let dir = create_temp_dir(&format!("one_module_{name}"));
+        for theme in ["material", "sf-symbols"] {
+            copy_dir_recursive(&fixtures_dir().join(theme), &dir.join(theme));
+            let mapping = fs::read_to_string(dir.join(theme).join("mapping.toml")).unwrap();
+            let kept: String = mapping
+                .lines()
+                .filter(|line| roles.iter().any(|r| line.starts_with(&format!("{r} "))))
+                .map(|line| format!("{line}\n"))
+                .collect();
+            fs::write(dir.join(theme).join("mapping.toml"), kept).unwrap();
+        }
+        let roles_list = roles
+            .iter()
+            .map(|r| format!("\"{r}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        write_file(
+            &dir,
+            "icons.toml",
+            &format!(
+                "name = \"{name}\"\nroles = [{roles_list}]\n\
+                 bundled-themes = [\"material\"]\nsystem-themes = [\"sf-symbols\"]\n"
+            ),
+        );
+        let mut generator = IconGenerator::new()
+            .source(dir.join("icons.toml"))
+            .output_dir(&dir);
+        for derive in derives {
+            generator = generator.derive(derive);
+        }
+        let code = generator
+            .generate()
+            .unwrap_or_else(|e| panic!("{name}: expected no errors: {e}"))
+            .code()
+            .to_string();
+        (code, dir)
+    };
+    let (media, media_dir) = generate("media-icons", &["play-pause"], &[]);
+    let (nav, nav_dir) = generate("nav-icons", &["skip-forward"], &[]);
+    let (option, option_dir) = generate(
+        "option",
+        &["play-pause", "skip-forward"],
+        &["core::hash::Hash", "std::fmt::Debug", "core::clone::Clone"],
+    );
+
+    let lib_rs = "#![deny(missing_docs)]\n\
+                  //! compile check\n\
+                  /// Two generated files in one module.\n\
+                  pub mod icons {\n\
+                  include!(\"media_icons.rs\");\n\
+                  include!(\"nav_icons.rs\");\n\
+                  }\n\
+                  /// An enum named `Option`.\n\
+                  pub mod option {\n\
+                  include!(\"option.rs\");\n\
+                  }\n";
+    let result = cargo_check(
+        "one_module_check",
+        &[
+            ("lib.rs", lib_rs),
+            ("media_icons.rs", &media),
+            ("nav_icons.rs", &nav),
+            ("option.rs", &option),
+        ],
+    );
+    for dir in [media_dir, nav_dir, option_dir] {
+        let _ = fs::remove_dir_all(dir);
+    }
+    if let Err(stderr) = result {
+        panic!(
+            "generated code failed to compile:\n{stderr}\n\n--- media ---\n{media}\n--- nav ---\n{nav}\n--- option ---\n{option}"
+        );
     }
 }
 

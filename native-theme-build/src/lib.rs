@@ -111,7 +111,6 @@
 //!   variant per role, `#[non_exhaustive]`, and an `ALL` constant listing
 //!   every variant. The enum, its variants and `ALL` carry doc comments, so
 //!   the file compiles under `#![deny(missing_docs)]`.
-//! - `extern crate native_theme;` when the default crate path is used.
 //! - An `IconProvider` implementation with `icon_name()` returning the
 //!   platform-specific identifier and `icon_svg()` returning
 //!   `include_bytes!(...)` data for bundled themes.
@@ -429,11 +428,10 @@ impl IconGenerator {
 
     /// Sets the crate path. Replaces any previous value.
     ///
-    /// Defaults to `"native_theme"`. When the default is used, the generated
-    /// file includes `extern crate native_theme;` to support Cargo aliases.
-    ///
-    /// Set this to a custom path (e.g. `"my_crate::native_theme"`) when
-    /// re-exporting native-theme from another crate.
+    /// Defaults to `"native_theme"`. Set this to the name a renamed
+    /// dependency has (`nt` for `nt = { package = "native-theme" }`), or to a
+    /// path (e.g. `"my_crate::native_theme"`) when re-exporting native-theme
+    /// from another crate.
     pub fn crate_path(mut self, path: &str) -> Self {
         // Issue 2: store raw input, validate in generate()
         self.crate_path = Some(path.to_string());
@@ -441,7 +439,8 @@ impl IconGenerator {
     }
 
     /// Adds an extra derive. Multiple calls accumulate. Duplicates with the
-    /// base set (`Debug, Clone, Copy, PartialEq, Eq, Hash`) are deduplicated.
+    /// base set (`Debug, Clone, Copy, PartialEq, Eq, Hash`) are deduplicated,
+    /// a path such as `core::hash::Hash` by its last segment.
     ///
     /// ```rust,no_run
     /// use native_theme_build::UnwrapOrExit;
@@ -2436,7 +2435,7 @@ bundled-themes = ["material"]
     }
 
     #[test]
-    fn pipeline_default_crate_path_emits_extern_crate() {
+    fn pipeline_default_crate_path_emits_no_extern_crate() {
         let dir = create_fixture_dir("default_crate_path");
         write_fixture(
             &dir,
@@ -2469,8 +2468,8 @@ bundled-themes = ["material"]
             result.errors
         );
         assert!(
-            result.code.contains("extern crate native_theme;"),
-            "default crate path should emit extern crate. code:\n{}",
+            !result.code.contains("extern crate"),
+            "default crate path should not emit extern crate. code:\n{}",
             result.code
         );
 

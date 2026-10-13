@@ -266,19 +266,39 @@ pub(crate) fn validate_theme_overlap(
         .collect()
 }
 
-/// Check whether a PascalCase identifier starts with a valid Rust identifier character.
-fn is_valid_ident_start(pascal: &str) -> bool {
-    pascal
+/// Why a PascalCase name is not a Rust identifier the generated code can
+/// declare, or `None` when it is one.
+///
+/// heck keeps every alphanumeric character, `'²'` too, so each character is
+/// checked: ASCII letters, digits and `_`, a letter or `_` first.
+fn identifier_problem(pascal: &str) -> Option<String> {
+    let first = pascal.chars().next()?;
+    if !(first.is_ascii_alphabetic() || first == '_') {
+        return Some(format!(
+            "\"{pascal}\" starts with a non-letter character; \
+             Rust identifiers must begin with a letter or underscore"
+        ));
+    }
+    if let Some(c) = pascal
         .chars()
-        .next()
-        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        .find(|c| !(c.is_ascii_alphanumeric() || *c == '_'))
+    {
+        return Some(format!(
+            "\"{pascal}\" contains '{c}'; identifiers are ASCII letters, digits and underscores"
+        ));
+    }
+    if RUST_KEYWORDS.contains(&pascal) {
+        return Some(format!("\"{pascal}\" is a Rust keyword"));
+    }
+    None
 }
 
 /// Validate identifiers produced from role names and the enum name.
 ///
 /// Checks:
 /// - PascalCase conversion produces a non-empty result.
-/// - Result starts with a letter or underscore (valid Rust identifier).
+/// - Result is ASCII letters, digits and underscores, a letter or underscore
+///   first (valid Rust identifier).
 /// - Result is not a Rust keyword.
 /// - No two roles produce the same PascalCase variant (collision).
 ///
@@ -299,19 +319,10 @@ pub(crate) fn validate_identifiers(
             reason: "PascalCase conversion produces an empty string".to_string(),
             source_file: file_hint.map(String::from),
         });
-    } else if !is_valid_ident_start(&enum_pascal) {
+    } else if let Some(reason) = identifier_problem(&enum_pascal) {
         errors.push(BuildError::InvalidIdentifier {
             name: config.name.clone(),
-            reason: format!(
-                "\"{enum_pascal}\" starts with a non-letter character; \
-                 Rust identifiers must begin with a letter or underscore"
-            ),
-            source_file: file_hint.map(String::from),
-        });
-    } else if RUST_KEYWORDS.contains(&enum_pascal.as_str()) {
-        errors.push(BuildError::InvalidIdentifier {
-            name: config.name.clone(),
-            reason: format!("\"{enum_pascal}\" is a Rust keyword"),
+            reason,
             source_file: file_hint.map(String::from),
         });
     }
@@ -329,19 +340,10 @@ pub(crate) fn validate_identifiers(
             });
             continue;
         }
-        if !is_valid_ident_start(&pascal) {
+        if let Some(reason) = identifier_problem(&pascal) {
             errors.push(BuildError::InvalidIdentifier {
                 name: role.clone(),
-                reason: format!(
-                    "\"{pascal}\" starts with a non-letter character; \
-                     Rust identifiers must begin with a letter or underscore"
-                ),
-                source_file: file_hint.map(String::from),
-            });
-        } else if RUST_KEYWORDS.contains(&pascal.as_str()) {
-            errors.push(BuildError::InvalidIdentifier {
-                name: role.clone(),
-                reason: format!("\"{pascal}\" is a Rust keyword"),
+                reason,
                 source_file: file_hint.map(String::from),
             });
         }
@@ -1052,6 +1054,33 @@ mod tests {
                     if name == "3d-icons" && reason.contains("non-letter"))
             ),
             "should reject digit-starting enum name: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_role_with_a_non_identifier_character() {
+        // heck keeps '²' (alphanumeric), which is not XID_Continue
+        let config = make_config("app-icon", &["x²"], &[], &[]);
+        let errors = validate_identifiers(&config, None);
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
+                    if name == "x²" && reason.contains("'²'"))
+            ),
+            "should reject '²': {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_enum_name_with_a_non_identifier_character() {
+        let config = make_config("x²-icons", &["play-pause"], &[], &[]);
+        let errors = validate_identifiers(&config, None);
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason, .. }
+                    if name == "x²-icons" && reason.contains("'²'"))
+            ),
+            "should reject '²': {errors:?}"
         );
     }
 
