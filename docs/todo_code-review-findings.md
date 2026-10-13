@@ -11,7 +11,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M1 | done (2026-10-11) |
 | M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
 | M3 | done (2026-10-12) |
-| M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 (close) in progress |
+| M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 done 2026-10-13 (stop point B) |
 | M5–M9 | not started |
 
 ## Baseline (M0, 2026-10-11)
@@ -743,7 +743,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** Make the shared read cover the portal too (pollster::block_on on Linux, same order as the GNOME reader: portal, then gsettings), so there really is one source. Choose the Windows API in M2b before coding. Keep prefers_reduced_motion/detect_reduced_motion as the public face of that one read.
 
 **Decision:** adopt with the critic's changes (round 4): one read per platform shared by the readers and `prefers_reduced_motion()` (KDE kdeglobals; GNOME portal then gsettings via pollster; macOS NSWorkspace; Windows the API M2b chooses), the OR removed; lands in M4's fix phase after M2b's choice.
-**Status:** scheduled: M4 (detect and readers)
+**Status:** scheduled: M4 (detect and readers) **M4:** fixed in T19 (107ab86d): one read per platform, the OR removed.
 
 ### M1-T6-05 · no API break · AccessibilityPreferences::from_system re-runs the whole platform reader
 
@@ -805,7 +805,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** No union builder with ignored options. Move load_custom_via_builder into core as a public runtime-set function whose every option is honoured by every set: colour applied in the loader for the system sets, and via colorize_monochrome_svg for Material/Lucide, tied to todo:475's single colouriser. Add SystemTheme::icon(id, color), which fills the freedesktop theme internally from icon_theme_for(mode), so no caller-set option can be dropped. Keep the five typed loaders.
 
 **Decision:** adopt the critic's form (round 4): `load_custom_via_builder` moves into core as a runtime-set function whose every option every set honours (colour via the single colouriser for Material/Lucide, docs/todo.md:475), plus `SystemTheme::icon(id, color)`; the five typed loaders stay; no union builder.
-**Status:** scheduled: M4 (core), M5–M7 (connectors drop their copies)
+**Status:** scheduled: M4 (core), M5–M7 (connectors drop their copies) **M4:** core done in T8 (f1371e70, 6e5c151d): `icons::load_custom_icon`, `SystemTheme::icon`, `icon_indicator`; the connectors drop their copies in M5–M7.
 
 ### M1-T6-07 · no API break · System icons on macOS and Windows: fixed-size, fixed-colour rasters
 
@@ -836,7 +836,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** Adopt .size(px) on SfSymbolsLoader and SegoeIconsLoader now (additive, sized from the theme's icon_sizes). Make .scale() conditional on an M2b/M4 measurement on the macOS leg of what CGImageForProposedRect(null) returns at 2x, and on Windows at 150%/200%. Keep Segoe-as-SVG as an M4/M6 item, as proposed.
 
 **Decision:** adopt the critic's form (round 4): `.size(px)` on `SfSymbolsLoader` and `SegoeIconsLoader`; `.scale()` only after an M2b/M4 measurement on the macOS and Windows legs; Segoe outlines as SVG an M4/M6 item.
-**Status:** scheduled: M4 (icons)
+**Status:** scheduled: M4 (icons) **M4:** `.size(u32)` done in T7 (34d6d1f7); `.scale()` and Segoe outlines deferred to docs/todo.md (plan ruling).
 
 ### M1-T6-08 · no API break · Watchers: keep the payload-less event; the gaps are listed
 
@@ -3120,7 +3120,7 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/Common_themeresources.xaml#L15-L16 , #L29-L30 ; https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/Common_themeresources_any.xaml#L54-L55 , #L258-L259 ; https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/dxaml/xcp/core/core/elements/DependencyProperty.cpp#L27… [G1 Windows 10] https://github.com/microsoft/microsoft-ui-xaml/blob/232a16e5ddfc22c9a1b79a2c51abeb9a39a94494/dev/CommonStyles/Common_themeresources.xaml#L21 , #L35 ; Common_themeresources_any.xaml#L76-L77 , #L333-L334 at the same tag Note: NEW, not on todo.md. windows-11.toml:29 and :437 state focus_ring_color #0078d4 (accent). WinUI's focus visual is black/white, not the accent.
 **Verdict:** CONFIRMED — Read at both tags: in DependencyProperty.cpp:278-301 the primary brush uses SystemAccentColor only when AreRevealFocusRectsEnabled(), otherwise SystemControlFocusVisualPrimaryBrush; the WinAppSDK FocusVisualPrimaryBrush page (updated 2026-09-30) says the outer colour is typically solid black, so the ring is not the accent colour. Confirmed value: SystemControlFocusVisualPrimaryBrush = FocusStrokeColorOuterBrush: L #E4000000, D #FFFFFF; secondary = FocusStrokeColorInner: L #B3FFFFFF, D #B3000000 (2.5.1 Common_themeresources.xaml:15-16, :29-30;….
 **Triage:** fix — Read at both tags: in DependencyProperty.cpp:278-301 the primary brush uses SystemAccentColor only when AreRevealFocusRectsEnabled(), otherwise SystemControlFocusVisualPrimaryBrush; the WinAppSDK FocusVisualPrimaryBrush page (updated 2026-09-30) says the outer colour is typically solid black, so the ring is not the accent colour.
-**Status:** fixed in Step 7 (E5, E70, E71; eff33489); the reader's accent (M2b-P01) in M4
+**Status:** fixed in Step 7 (E5, E70, E71; eff33489); the reader's accent (M2b-P01) in M4 **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-06 · bug · S2 · docs/platform-facts.md:1106
 **Claim:** `focus_ring_offset` (2.1.5 Focus Ring): the cell says Fluent: 0px default margin (outset); G2 Windows 11 WinAppSDK 2.5.1 (= 8463f45): FrameworkElement default 0, but 'A different runtime default is often provided by individual control templates'. DefaultButtonStyle and AccentButtonStyle set FocusVisualMargin -3 (ring 3px outside); CheckBox -7,-3,-7,-3; G1 Windows 10 UWP docs: same default 0 and the same template-override remark.
@@ -3148,7 +3148,7 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G1+G2] https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.advancedeffectsenabled (git 3abc0b43, updated 2025-11-21); https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings (version table) Note: Windows does expose this setting; native-theme/src/windows.rs:536 also says 'Windows does not expose this setting'. Not on todo.md.
 **Verdict:** CONFIRMED — Read on the page (updated 2025-11-21, git 3abc0b43), so the row's '(none)' is wrong; correction: AdvancedEffectsEnabledChanged is also listed as introduced in 10.0.15063.0, not 1903. Confirmed value: UISettings.AdvancedEffectsEnabled: 'Gets a value that indicates whether the system Transparency effects setting is enabled' (introduced 10.0.15063.0, UniversalApiContract v4).
 **Triage:** fix — Read on the page (updated 2025-11-21, git 3abc0b43), so the row's '(none)' is wrong; correction: AdvancedEffectsEnabledChanged is also listed as introduced in 10.0.15063.0, not 1903.
-**Status:** fixed in Step 7 (E8; eff33489); reading AdvancedEffectsEnabled and windows.rs:462's comment in M4 (the line was :536 before 507b1975)
+**Status:** fixed in Step 7 (E8; eff33489); reading AdvancedEffectsEnabled and windows.rs:462's comment in M4 (the line was :536 before 507b1975) **M4:** done in T23 (8f1ba008): reduce_transparency from AdvancedEffectsEnabled.
 
 #### M2b-10 · bug · S2 · docs/platform-facts.md:1132
 **Claim:** `toolbar (Windows)` (2.1.8 Icon Sizes): the cell says Fluent AppBarButton: 20; G2 WinUI 3 pin / 2.5.1 8463f45 = 2.5.1: 16 (AppBarButtonContentHeight, generic.xaml:19462); G2 docs ms.date 2025-02-26: 20x20 (doc).
@@ -3162,21 +3162,21 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (git 92672624, updated 2024-02-22, read 2026-10-11) [G1 Windows 10] same URL Note: Chapter 1 (:355-365) already says these constants are unsupported, but §2.2 cites them bare; the reader reads it (native-theme/src/windows.rs:312). No supported replacement named by the doc; what the caption text really is needs the probe. Not on todo.md.
 **Verdict:** CONFIRMED — Read on the GetSysColor page (updated 2024-02-22, git 92672624, read 2026-10-11); the page has no per-release split, so Windows 10 22H2 and Windows 11 are the same. Confirmed value: COLOR_CAPTIONTEXT (9): 'Windows 10 or greater: This value is not supported.'; supported on Windows 10/11: WINDOW, WINDOWTEXT, HOTLIGHT, GRAYTEXT, HIGHLIGHTTEXT, HIGHLIGHT, BTNTEXT, 3DFACE.
 **Triage:** fix — CONFIRMED; chapter 1 (:355-365) already marks the index unsupported, the chapter 2 cell lacks the caveat. The reader reads it (windows.rs:304-313): M4.
-**Status:** fixed in Step 7 (E11; eff33489); the reader's index in M4 (M2b-P02)
+**Status:** fixed in Step 7 (E11; eff33489); the reader's index in M4 (M2b-P02) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-12 · bug · S4 · docs/platform-facts.md:1153
 **Claim:** `inactive_title_bar_background` (2.2 Window chrome): the cell says COLOR_INACTIVECAPTION; G2 Windows 11 25H2: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:359-360). Not on todo.md.
 **Verdict:** CONFIRMED — Read on the same GetSysColor page, read 2026-10-11. Confirmed value: COLOR_INACTIVECAPTION (3): 'Windows 10 or greater: This value is not supported.' (COLOR_INACTIVECAPTIONTEXT on row 1154 carries the same note).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E12, E99, E100; eff33489); the reader's index in M4
+**Status:** fixed in Step 7 (E12, E99, E100; eff33489); the reader's index in M4 **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-13 · bug · S4 · docs/platform-facts.md:1154
 **Claim:** `inactive_title_bar_text_color` (2.2 Window chrome): the cell says COLOR_INACTIVECAPTIONTEXT; G2 Windows 11 25H2: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:313).
 **Verdict:** CONFIRMED — The live page marks COLOR_INACTIVECAPTIONTEXT unsupported on Windows 10 or greater (covers both 22H2 and 25H2), but platform-facts.md:358-364 already says so; the §2.2 row just doesn't carry the caveat, so this is not a new discovery. Confirmed value: COLOR_INACTIVECAPTIONTEXT: 'Windows 10 or greater: This value is not supported.' (GetSysColor page, git 92672624, updated 2024-02-22, read 2026-10-11; also raw sdk-api nf-winuser-getsyscolor.md:385-38….
 **Triage:** fix — As :1152 (verifier: chapter 1 already says so).
-**Status:** fixed in Step 7 (E13, E99, E100; eff33489); the reader's index in M4 (M2b-P02)
+**Status:** fixed in Step 7 (E13, E99, E100; eff33489); the reader's index in M4 (M2b-P02) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-14 · bug · S2 · docs/platform-facts.md:1179
 **Claim:** `hover_background` (2.3 Button): the cell says (Fluent) SubtleFillColorSecondary overlay; G2 Windows 11 WinUI 3 2.5.1: ButtonBackgroundPointerOver = ControlFillColorSecondaryBrush (L #80F9F9F9, D #15FFFFFF), a replacement fill, not an overlay; G1 Windows 10 (WinUI 2 Version1) WinUI 2.8.7: SolidColorBrush SystemBaseHighColor Opacity 0.1.
@@ -3197,35 +3197,35 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (git 92672624, read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:304). WinUI 3 menu: MenuFlyoutPresenterBackground = DesktopAcrylicTransparentBrush (MenuFlyout_themeresources.xaml:40, :202). Not on todo.md.
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already lists COLOR_MENU as 'not supported' (still returns values), so this is not new. Confirmed value: COLOR_MENU: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E17; eff33489); the reader's index in M4 (M2b-P04)
+**Status:** fixed in Step 7 (E17; eff33489); the reader's index in M4 (M2b-P04) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-17 · bug · S4 · docs/platform-facts.md:1233
 **Claim:** `font.color` (2.6 Menu): the cell says COLOR_MENUTEXT; G2 Windows 11 25H2: COLOR_MENUTEXT: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:305). WinUI 3: MenuFlyoutItemForeground = TextFillColorPrimaryBrush (MenuFlyout_themeresources.xaml:11, :177).
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already records it, so this is not new. Confirmed value: COLOR_MENUTEXT: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E18; eff33489); the reader's index in M4 (M2b-P04)
+**Status:** fixed in Step 7 (E18; eff33489); the reader's index in M4 (M2b-P04) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-18 · bug · S4 · docs/platform-facts.md:1251
 **Claim:** `background_color` (2.7 Tooltip): the cell says COLOR_INFOBK; G2 Windows 11 25H2: COLOR_INFOBK: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:306). WinUI 3: ToolTip Background = ToolTipBackgroundBrush; ToolTipBackground = SystemControlBackgroundChromeMediumLowBrush (ToolTip_themeresources.xaml:8, :32, :44).
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already records it, so this is not new. Confirmed value: COLOR_INFOBK: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E19; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names the brush the default style draws, `ToolTipBackgroundBrush` (the acrylic, fallback #F9F9F9 / #2C2C2C), and the preset states it (ad574abc)
+**Status:** fixed in Step 7 (E19; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names the brush the default style draws, `ToolTipBackgroundBrush` (the acrylic, fallback #F9F9F9 / #2C2C2C), and the preset states it (ad574abc) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-19 · bug · S2 · docs/platform-facts.md:1253
 **Claim:** `font.size` (2.7 Tooltip): the cell says ← defaults.font; G2 Windows 11 WinUI 3 2.5.1: ToolTipContentThemeFontSize 12 (not the 14 body size); Win32 tooltips use lfStatusFont ('font used in status bars and tooltips'); G1 Windows 10 (WinUI 2 Version1) WinUI 2.8.7: ToolTipContentThemeFontSize 12.
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/ToolTip_themeresources.xaml#L5 , #L29 , #L49 (identical at 8463f45); https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nonclientmetricsw (read 2026-10-11) [G1 Windows 10 (WinUI 2 Version1)] https://github.com/microsoft/microsoft-ui-xaml/blob/232a16e5ddfc22c9a1b79a2c51abeb9a39a94494/dev/CommonStyles/ToolTip_rs1_themeresources_v1.xaml#L9 Note: Inheritance cell contradicted by both WinUI and Win32 sources (1252 family likewise → lfStatusFont for Win32). Not on todo.md.
 **Verdict:** PLAUSIBLE — ToolTipContentThemeFontSize is 12 at ToolTip_themeresources.xaml:5/:29 and used at :49 (ba3a8d59 = 8463f451; v2.8.7 ToolTip_rs1_themeresources_v1.xaml:9), and NONCLIENTMETRICSW says lfStatusFont is 'the font used in status bars and tooltips', but 12 epx equals Windows defaults.font (lfMessageFont 9pt = 12 epx at 96 DPI, platform-facts.md:285, :291-292, :1026), so the 'not 14' contrast is wrong and only the row's source field (lfStatusFont rather than defaults.font) differs.
 **Triage:** maintainer (Step 3 probe) — PLAUSIBLE: WinUI 3 ToolTipContentThemeFontSize is 12 and Win32 tooltips use lfStatusFont; a probe shows lfStatusFont's size at 96 DPI.
-**Status:** fixed in Step 7 from the probe (E20, E78; eff33489): 12, lfStatusFont −12 on all three images; the reader's tooltip font in M4
+**Status:** fixed in Step 7 from the probe (E20, E78; eff33489): 12, lfStatusFont −12 on all three images; the reader's tooltip font in M4 **M4:** done in T23 (8f1ba008): the tooltip font from lfStatusFont.
 
 #### M2b-20 · bug · S4 · docs/platform-facts.md:1256
 **Claim:** `font.color` (2.7 Tooltip): the cell says COLOR_INFOTEXT; G2 Windows 11 25H2: COLOR_INFOTEXT: 'Windows 10 or greater: This value is not supported.'; G1 Windows 10 22H2: same.
 **Evidence:** [G2 Windows 11] https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor (read 2026-10-11) [G1 Windows 10] same URL Note: Reader reads it (windows.rs:307). WinUI 3 ToolTipForeground = TextFillColorPrimaryBrush (ToolTip_themeresources.xaml:7, :31).
 **Verdict:** CONFIRMED — The live page says this word for word, but platform-facts.md:358-364 already records it, so this is not new. Confirmed value: COLOR_INFOTEXT: 'Windows 10 or greater: This value is not supported.' (GetSysColor, git 92672624, read 2026-10-11).
 **Triage:** fix — As :1152.
-**Status:** fixed in Step 7 (E21; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names `ToolTipForegroundBrush` = `TextFillColorPrimary`, and the preset states `#000000e4` / `#ffffff` (ad574abc)
+**Status:** fixed in Step 7 (E21; eff33489); the reader's index in M4 (M2b-P05); in Step 7b the cell names `ToolTipForegroundBrush` = `TextFillColorPrimary`, and the preset states `#000000e4` / `#ffffff` (ad574abc) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-21 · bug · S2 · docs/platform-facts.md:1283
 **Claim:** `overlay_mode` (2.8 Scrollbar): the cell says (none) — always persistent; G2 Windows 11 25H2: UISettings.AutoHideScrollBars: true if 'Automatically hide scroll bars in Windows' is set; WinUI 3 ScrollBar collapses to a panning indicator by default; G1 Windows 10 22H2: same API, 'Windows 10, version 1903 (introduced in 10.0.18362.0)'.
@@ -3295,14 +3295,14 @@ Step 6 triage: 34 fix, 2 maintainer (Step 3 probe).
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml#L20 , #L172 , #L75 , #L227 (identical at 8463f45) Note: The section otherwise cites WinUI 3 ListView (row height, padding, hover). Not on todo.md.
 **Verdict:** CONFIRMED — ListViewItem_themeresources.xaml:20/:172 and :75/:227 hold these values, and ListViewItemPresenter at :256 binds SelectedBackground and SelectionIndicatorBrush to them, with the indicator enabled at :57/:209. Confirmed value: ListViewItemBackgroundSelected = SubtleFillColorSecondaryBrush; ListViewItemSelectionIndicatorBrush = AccentFillColorDefaultBrush (SelectionIndicatorVisualEnabled True).
 **Triage:** fix — ListViewItem_themeresources.xaml:20/:172 and :75/:227 hold these values, and ListViewItemPresenter at :256 binds SelectedBackground and SelectionIndicatorBrush to them, with the indicator enabled at :57/:209.
-**Status:** fixed in Step 7 (E32, E91, E92; eff33489); the reader's COLOR_HIGHLIGHT override in M4
+**Status:** fixed in Step 7 (E32, E91, E92; eff33489); the reader's COLOR_HIGHLIGHT override in M4 **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-31 · bug · S2 · docs/platform-facts.md:1384
 **Claim:** `selection_text_color` (2.15 List/Table): the cell says ← defaults.selection_text_color (COLOR_HIGHLIGHTTEXT); G2 Windows 11 WinUI 3 2.5.1: ListViewItemForegroundSelected = TextFillColorPrimaryBrush.
 **Evidence:** [G2 Windows 11] https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml#L26 , #L178 (identical at 8463f45)
 **Verdict:** CONFIRMED — ListViewItem_themeresources.xaml:26/:178 hold this value, and the presenter binds SelectedForeground to it (:256). Confirmed value: ListViewItemForegroundSelected = TextFillColorPrimaryBrush.
 **Triage:** fix — ListViewItem_themeresources.xaml:26/:178 hold this value, and the presenter binds SelectedForeground to it (:256).
-**Status:** fixed in Step 7 (E33, E91, E92; eff33489); the reader's COLOR_HIGHLIGHTTEXT override in M4
+**Status:** fixed in Step 7 (E33, E91, E92; eff33489); the reader's COLOR_HIGHLIGHTTEXT override in M4 **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-32 · bug · S2 · docs/platform-facts.md:1405
 **Claim:** `background_color` (2.16 Popover): the cell says (Fluent) Flyout bg = defaults.surface_color; G2 Windows 11 (WinUI 3) WinAppSDK 2.5.1 (= 8463f45 = main 48df672, same blobs): FlyoutPresenterBackground = AcrylicInAppFillColorDefaultBrush: Light AcrylicBrush TintColor #FCFCFC, TintOpacity 0, FallbackColor #F9F9F9, TintLuminosityOpacity 0.85; Dark TintColor #2C2C2C, TintOpacity 0.15, FallbackColor #2C2C2C, TintLuminosityOpacity 0.96; G1 Windows 10 (WinUI 2 Version1) WinUI 2.8.7: FlyoutPresenterBackground = AcrylicBackgroundFillColorDefaultBrush (contract7) / SystemControlBackgroundChromeMediumLowBrush (pre-contract7).
@@ -3372,35 +3372,35 @@ I did not suggest replacement values anywhere. Each one needs the maintainer to 
 **Evidence:** windows-11-live.toml declares no focus_ring_color; the OS reader sets it to the accent. That follows the differing row, and would need to change with it if the researcher's FocusStrokeColorOuter claim is confirmed.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** M4 — the reader follows the facts row M2b-05 corrects; changes with it.
-**Status:** no change in Step 7 (M4); after E5 the reader's accent contradicts the facts row
+**Status:** no change in Step 7 (M4); after E5 the reader's accent contradicts the facts row **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-P02 · bug · S2 · native-theme/src/windows.rs:331
 **Claim:** `window.title_bar_font.color (reader; caption_text read at :312)` (other): preset GetSysColor(COLOR_CAPTIONTEXT), facts COLOR_CAPTIONTEXT (docs/platform-facts.md:1152).
 **Evidence:** The live merge base (windows-11-live.toml) takes this colour from the reader, which reads an index the researcher reports as 'Windows 10 or greater: This value is not supported.'
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** M4 — the reader reads GetSysColor indices Microsoft marks unsupported on Windows 10+ (M2b-11…20); what it reads instead is M4's.
-**Status:** no change in Step 7 (M4)
+**Status:** no change in Step 7 (M4) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-P03 · bug · S2 · native-theme/src/windows.rs:328
 **Claim:** `input.placeholder_color (reader, feeds windows-11-live)` (other): preset GetSysColor(COLOR_GRAYTEXT), facts (Fluent) TextPlaceholderColor (docs/platform-facts.md:1191).
 **Evidence:** The reader's source matches neither the facts row (TextPlaceholderColor) nor the researcher (TextFillColorSecondaryBrush). This is a mismatch already, regardless of the differing claim.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** fix — the reader's COLOR_GRAYTEXT matches neither the facts nor WinUI (TextFillColorSecondary, M2b-15); with M2b-15 in Step 7, the reader in M4.
-**Status:** facts fixed in Step 7 (E16; eff33489); the reader's COLOR_GRAYTEXT in M4
+**Status:** facts fixed in Step 7 (E16; eff33489); the reader's COLOR_GRAYTEXT in M4 **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-P04 · bug · S2 · native-theme/src/windows.rs:322
 **Claim:** `menu.background_color / menu.font.color (reader :322-323; read at :304-305)` (other): preset GetSysColor(COLOR_MENU) / GetSysColor(COLOR_MENUTEXT), facts COLOR_MENU / COLOR_MENUTEXT (docs/platform-facts.md:1227, :1233).
 **Evidence:** The live merge base gets its menu colours from indices the researcher reports unsupported on Windows 10+.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** M4 — as M2b-P02.
-**Status:** no change in Step 7 (M4)
+**Status:** no change in Step 7 (M4) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-P05 · bug · S2 · native-theme/src/windows.rs:324
 **Claim:** `tooltip.background_color / tooltip.font.color (reader :324-325; read at :306-307)` (other): preset GetSysColor(COLOR_INFOBK) / GetSysColor(COLOR_INFOTEXT), facts COLOR_INFOBK / COLOR_INFOTEXT (docs/platform-facts.md:1251, :1256).
 **Evidence:** The live merge base gets its tooltip colours from indices the researcher reports unsupported on Windows 10+.
 **Verdict:** preset-validator (Step 4); not re-verified.
 **Triage:** M4 — as M2b-P02.
-**Status:** no change in Step 7 (M4)
+**Status:** no change in Step 7 (M4) **M4:** the reader no longer writes this outside high contrast; under high contrast it maps WinUI's HighContrast dictionaries (T22: 8c133614, 8ccdbed0, 01116bd1).
 
 #### M2b-P06 · bug · S2 · native-theme/src/presets/windows-11.toml:80
 **Claim:** `light.button.background_color` (other): preset #fdfdfd, facts COLOR_BTNFACE (docs/platform-facts.md:1164).
@@ -6338,21 +6338,21 @@ Step 6 triage: 6 fix.
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/ui/main.qml#L424-426 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/fontsaasettingsbase.kcfg#L8-11 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc ; https://invent.kde.org/plasma/plasma-workspace/-/commit/fe367323b30bfa239243b2164d75faacb1be15e7 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/startkde/plasma-setup-xwayland/main.cpp#L47-58 ; https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/kcms/kconf_update/plasma6.0-remove-dpi-settings.cpp#L25 Note: The cell is right for 6.7.5 (latest stable). It is wrong for Plasma 6.8, which ships 2026-10-14: there Plasma neither writes nor reads forceFontDPI, yet native-theme/src/detect.rs:437-444 still reads it, so a stale value would be honoured. The kconf_update path is kcms/fonts/kconf_update/ (the citation URL above omits 'fonts/'; the correct path is kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp#L25). The citation should be pinned. This is not on todo.md: todo.md:2583 asks a different D…
 **Verdict:** CONFIRMED — Every cited value holds at the pinned tags (I grepped all three repos at v6.7.5 and v6.7.91), but the migration file's path is wrong: it is kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp:25, not kcms/kconf_update/. Confirmed value: Plasma 6.7.5 (cc1ab796): forceFontDPI UInt default 0 'Force font DPI on X11' (fontsaasettingsbase.kcfg:8-11); KCM row visible only when Qt.platform.pluginName === "xcb" (main.qml:426); krdb xftDpi() r….
 **Triage:** fix — Correct for Plasma 6.7.5; Plasma 6.8 (6.8.0 due 2026-10-14) drops forceFontDPI. Fix in Step 7 once v6.8.0 is tagged; the verifier also found the migration file's path wrong (kcms/fonts/kconf_update/...). The KDE reader reads forceFontDPI: M4.
-**Status:** fixed in Step 7 (E1, E14), `6b21927a`; re-check at Plasma v6.8.0 (due 2026-10-14; cited at Beta 2, v6.7.91); the KDE reader's and `detect.rs`'s `forceFontDPI` read, which Plasma 6.8 neither writes nor reads: M4 (docs/todo.md, the logical-versus-physical DPI entry)
+**Status:** fixed in Step 7 (E1, E14), `6b21927a`; re-check at Plasma v6.8.0 (due 2026-10-14; cited at Beta 2, v6.7.91); the KDE reader's and `detect.rs`'s `forceFontDPI` read, which Plasma 6.8 neither writes nor reads: M4 (docs/todo.md, the logical-versus-physical DPI entry) **M4:** done in T11 (9ed0ca92) and T36 (49e0067a): forceFontDPI read on X11 only, from `kcmfonts`.
 
 #### M2e-02 · bug · S2 · docs/platform-facts.md:714
 **Claim:** `Scale factor` (1.3.7 Accessibility): the cell says forceFontDPI / 96 (from kcmfontsrc); pinned (cell) / latest stable Plasma 6.7.5: forceFontDPI is meaningful only on X11 (default 0 = unset). The Wayland path is kwinrc [Xwayland] Scale*96.; Plasma 6.8 (beta) Plasma 6.7.91: Plasma has no forceFontDPI any more; Xft.dpi = kwinrc [Xwayland] Scale × 96..
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.91/startkde/plasma-setup-xwayland/main.cpp#L47-58 Note: Same cause as line 713. From 6.8 the ratio has no Plasma-side source.
 **Verdict:** PLAUSIBLE — krdb.cpp:328-341 at v6.7.5 and plasma-setup-xwayland/main.cpp:47-58 at v6.7.91 do read forceFontDPI on X11 only and set Xft.dpi from kwinrc [Xwayland] Scale*96 on Wayland, but that value is the Xft.dpi handed to X11 clients, so mapping it to the row's general 'Scale factor' (native Wayland output scale) needs a measurement.
 **Triage:** fix — As :713; PLAUSIBLE because the Wayland path (kwinrc [Xwayland] Scale x 96) is Xwayland's DPI, not a text scale.
-**Status:** fixed in Step 7 (E2), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01
+**Status:** fixed in Step 7 (E2), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01 **M4:** as M2e-01 (T11, T36).
 
 #### M2e-03 · bug · S2 · docs/platform-facts.md:1123
 **Claim:** `text_scaling_factor` (2.1.7 Accessibility): the cell says `forceFontDPI` / 96; pinned (cell) / latest stable Plasma 6.7.5: forceFontDPI is read on X11 only.; Plasma 6.8 (beta) Plasma 6.7.91: forceFontDPI was dropped from Plasma (c675077b8, fe367323b); no Plasma component reads it..
 **Evidence:** [pinned (cell) / latest stable] https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-341 [Plasma 6.8 (beta)] https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc Note: Same as lines 713-714. Needs a 6.8 decision: either keep it as a legacy X11 key or read nothing on KDE.
 **Verdict:** CONFIRMED — krdb.cpp at v6.7.5 reads it only in the non-Wayland branch, and git grep at v6.7.91 finds it only in the kconf_update migration; the cited commit c675077b8 alone removes only the KCM and kcfg, while krdb's removal is fe367323b. Confirmed value: 6.7.5: forceFontDPI read on X11 only (krdb.cpp:340, inside the non-Wayland branch). 6.8 beta (v6.7.91): no reader left; c675077b8 dropped the kcfg/KCM, fe367323b dropped krdb..
 **Triage:** fix — As :713.
-**Status:** fixed in Step 7 (E6), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01
+**Status:** fixed in Step 7 (E6), `6b21927a`; re-check at v6.8.0; reader: M4, as M2e-01 **M4:** as M2e-01 (T11, T36).
 
 #### M2e-04 · bug · S2 · docs/platform-facts.md:728
 **Claim:** `org.gnome.desktop.interface document-font-name default` (1.4.1 Fonts): the cell says Adwaita Sans 11 (GNOME 48+); pinned (cell) gsettings-desktop-schemas 48.0 (= frozen 'master' e8599d1 for this key): 'Adwaita Sans 11'; latest stable gsettings-desktop-schemas 51.0 (1db238b6): 'Adwaita Sans 12'.
@@ -6994,7 +6994,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Cache the detected font DPI in DetectionContext beside the icon theme (ledger alternative B), cleared by invalidate_caches, which the watchers already call, so that from_system costs microseconds after the first call. Or give the iced and gpui from_preset a context like egui's.
 **Verdict:** CONFIRMED — iced lib.rs:315 and gpui lib.rs:303 call `resolve_system()`, which builds `ResolutionContext::from_system()` (resolve/mod.rs:290-291) and runs the DPI chain on every call. M1-T3-01's fix covered only egui's three sites (findings.md:449-466). The ledger's Status line records the cost figures, resolve 1.28-3.50 ms against resolve_with 21-34 µs (findings.md:466). To confirm the per-call cost, add a timings.rs row for iced/gpui `from_preset` next to a from_preset variant that takes a prebuilt context. The ms cost only arises with the kde/portal feature and no forceFontDPI.
 **Triage:** scheduled: M5 (iced) and M6 (gpui), connector code; gate: the connectors' `from_preset` timing added in their Step 1
-**Status:** scheduled: M5 (iced), M6 (gpui); unchanged in M3. **Re-scheduled 2026-10-12 (orchestrating session; the maintainer may veto):** the core half moves to M4 (detection): cache the detected font DPI in `DetectionContext` beside the icon theme, cleared by `invalidate_caches` (the reviewer's first fix), which removes the per-call `xrdb` from `Theme::resolve` and `ThemeMode::resolve_system` for every caller; M5 and M6 only confirm it with their `from_preset` timing gate.
+**Status:** scheduled: M5 (iced), M6 (gpui); unchanged in M3. **Re-scheduled 2026-10-12 (orchestrating session; the maintainer may veto):** the core half moves to M4 (detection): cache the detected font DPI in `DetectionContext` beside the icon theme, cleared by `invalidate_caches` (the reviewer's first fix), which removes the per-call `xrdb` from `Theme::resolve` and `ThemeMode::resolve_system` for every caller; M5 and M6 only confirm it with their `from_preset` timing gate. **M4:** core half done in T11 (9ed0ca92): the cached font DPI in DetectionContext, cleared by invalidate_caches (T17 generations).
 
 #### M3-23 · perf · S3 · native-theme/src/pipeline.rs:636
 **Claim:** When XDG_CURRENT_DESKTOP is unset or unrecognised and the `portal` feature is on, every from_system / from_system_async call opens a new D-Bus session connection and lists activatable names to guess the desktop, though the desktop cannot change during the process. AccessibilityPreferences::from_system and every miss of the cached accessibility accessor do the same.
@@ -7464,7 +7464,7 @@ The final whole-branch review triaged every deferred minor of the task reviews; 
 
 ## M4 — Core, part 2
 
-**Status:** Steps 1–7 done (Steps 1–6 2026-10-12: stop point A; review, verify, triage, the maintainer's api-break round; the fix plan. Step 7 2026-10-12/13: T1–T36, the final whole-branch review and its fix wave, the close's workflow fix 5eb7ab1c). Step 8 (close) in progress. Read-only review on Opus 5.5 (session) after M3's stop point B.
+**Status:** Steps 1–7 done (Steps 1–6 2026-10-12: stop point A; review, verify, triage, the maintainer's api-break round; the fix plan. Step 7 2026-10-12/13: T1–T36, the final whole-branch review and its fix wave, the close's workflow fix 5eb7ab1c). Step 8 (close) done 2026-10-13 (stop point B). Read-only review on Opus 5.5 (session) after M3's stop point B.
 
 ### Step 1 — inventory
 
@@ -8879,6 +8879,16 @@ The final whole-branch review triaged every deferred minor of the task reviews (
 - **T35:** windows-11's line heights are cited but not machine-checked, since the no-line-height test skips the preset; the dark scroll thumb's wrong fallback and the other windows-11 validator findings are docs/todo.md entries (stopping rule). From the T35 review: under high contrast the title bar follows the WinUI TitleBar control's HC brushes, while a Win32 caption DWM draws may use the contrast theme's own caption colours (no source checked either way); `over_the_preset_the_selection_is_the_accent` checks light mode only; `input.focus_border_color` states the colour of WinUI's 2 px bottom line, which the model's field puts on the whole focused border (for M5–M7's connectors).
 - **Final review Minors the fix wave did not take:** P1-2 the `watch` module docs say a drop always joins (a callback's own drop detaches); P1-3 the macOS self-drop doc over-warns; P1-4 the over-long `# Errors` line (T21's); P2-1 `accessibility_preferences`' docs say the watcher misses changes it now reports (`detect.rs`); P2-2 `prefers_reduced_motion` and the reader's accessibility block are two caches a system read refreshes unequally; P3-2 the KDE icon sizes and the icon lookup search the base dirs in different (both cited) orders; P7-1 `refined_linux_desktop_sync` stats kdeglobals on every generated `icon_name` call before a system read. P2-2, P3-2 and P7-1 are docs/todo.md entries.
 
+
+### Step 8 — close (2026-10-13)
+
+- Full `./scripts/check_release.sh` after the close commits (5eb7ab1c, dc5b47be, 2ca74471): 110 checks · 104 ✅ · 4 ⚠️ (tag v0.6.1 exists; soft semver-checks native-theme and native-theme-build; cargo audit) · 2 ❌ expected (visual assets stale, compatibility claims stale — the release asset run), 12m 06s. Cross-target clippy (macOS, Windows, all/no features, os-probe) and the new cross-target strict-panic steps green inside it.
+- `cargo semver-checks` (inside the full check): native-theme 13 major lints, all approved breaks — M4's: `IconSetChoice` `#[non_exhaustive]` (M4-06), `IconData::Rgba` struct → tuple variant (M4-07), `AnimatedIcon::new_frames` gone (M4-08), the platform modules and `gnome` private and `from_kde_content_pure` doc-hidden (M4-11), the crate-root icon helpers gone (M4-12), `load_icon_indicator`'s parameter (M4-15), `IconSet::SegoeIcons` → `SegoeFluent` (M4-17), `IconData`/`IconProvider`/`icon_name`/`AnimatedIcon` moved from `theme` to `icons` (M4-18); the rest are M3's (the `model` paths, `#[non_exhaustive]` outputs, `PresetInfo::light_only`, `Error::Io`). native-theme-build 3 major lints: every field of `GenerateOutput` and `BuildErrors` private (M4-10). The four connectors: no change. `target/semver-checks` removed.
+- `cargo audit`: three new advisories against quinn-proto 0.11.17 (RUSTSEC-2026-0338, -0340, -0343; remote panics), pulled in by the gpui connector's networking stack: lockfile bump to 0.11.19 in 6be497b4 (`check_release.sh --commit` green); the remaining findings are the allowed "unmaintained" warnings.
+- Timings (`target/release/deps/timings-*` `--ignored --nocapture --test-threads=1`, three runs on a quiet host, load average 0.2, 2026-10-13): preset parse 0.97–1.22 µs (M3 close 0.95–1.81); `resolve_with` 26.5–36.2 µs (25–44); `resolve` 26.6–30.2 µs (M3 close 3.35–4.25 ms: T11's cached font DPI); warm `from_system` 1.01–1.03 ms (M3 Step 2 measured 4.67–7.94 ms); accessibility 0.90–0.98 ms, cached 50 ns; cold first `Theme::preset("kde-breeze")` 0.65 ms (M3 0.84); freedesktop breeze cold 37–39 ms after the first run's 269 ms (page cache), warm 1.74–1.80 ms; `.xpm`-only name 287–374 µs cold, 250 ns warm (T25 measured 2.74 ms before); GNOME reader (`XDG_CURRENT_DESKTOP=GNOME`, on this KDE host) 30–48 ms cold, 25.3–25.6 ms warm. No path is slower than its baseline beyond the spread.
+- Ledger statuses: every M4-01..M4-93 entry carries its outcome (dc5b47be); the earlier entries that pointed at M4 (M1-T6-04/06/07, M2b-05/11–13/16–18/20/30/31, M2b-P01..P05, M2b-09/M2b-19, M2e-01..03, M3-22) carry their M4 outcome on their status lines. docs/todo.md: 22 entries added, 8 fully fixed entries moved to docs/archive/todo_closed.md (2ca74471).
+- Known-unrun until the next CI run (a pull request or a push to main): every macOS and Windows runtime test written in this phase (both watchers, the Segoe raster, SF Symbols bounds, the Windows reader's high-contrast path, the scroller width), the new `windows,watch,system-icons` and `macos,watch,system-icons` legs, and the cross-target strict-panic step.
+- Cost: about 120 agent runs this phase (36 tasks' implementers and fix rounds, task reviews and re-reviews, 7 preset-validator runs, the final review twice and its fix wave, the close), Opus 5.5 implementers, Opus 5.5 and Sonnet 5.5 reviewers; two weekly-usage-limit stops (the final review re-dispatched, the fix wave resumed from its uncommitted tree).
 
 ## M5 — iced connector
 
