@@ -65,7 +65,9 @@ standing rules in `CLAUDE.md`, the memory index, `docs/platform-facts.md`,
 | M2 | Platform fidelity, one part per platform: M2a macOS (with `macos-tahoe`, D4), M2b Windows, M2c iOS (small, D5), M2d `material-3` and `material-3-expressive` (D6), M2e KDE and GNOME currency | `platform-facts.md` (1.8k lines) + 6 platform presets | 2–3 + verifiers per part | A, B per part |
 | M3 | Core, part 1: model, resolution, pipeline, presets loading, derive macro | ~11k | 5 + 5 verifiers | A, B |
 | M4 | Core, part 2: platform readers, detection, watching, fonts, icons, build crate | ~11k | 5 + 5 verifiers | A, B |
+| G1 | GPUI Kit 0.7.3: floors, citations, `Diff`, the `gpui-fast` feature, the probe's new measurements (D10) | gpui connector + OS probe | per-task SDD reviews | end |
 | M5 | iced connector | ~6k | 3 + 3 verifiers | A, B |
+| G2 | GPUI Kit 0.7.3's elements as theme data: `tooltip.show_delay_ms`, `dialog.entrance`, `list.header_height_px` in core and all three connectors (D10); after M5's fix phase | core + 3 connectors | per-task SDD reviews | end |
 | M6 | gpui connector and its `widgets` | ~13k | 5 + 5 verifiers | A, B |
 | M7 | egui connector and `native-theme-egui-widgets` | ~13.5k | 5 + 5 verifiers | A, B |
 | M8 | Cross-cutting: connector parity, shared code, test quality, scripts and CI, docs | ~8k scripts + sampling | 4 + 4 verifiers | A, B |
@@ -266,6 +268,14 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   (macOS 27 preview) image is measured now, and a `macos-golden-gate` preset still waits for
   GitHub's non-preview image (D4). Windows 10 is decided after the probe: if `windows-2022`'s
   OS-drawn values match `windows-2025`'s, `windows-11` covers 10 and says so.
+- **D10 — GPUI Kit 0.7.3 as milestones G1 and G2 (maintainer, 2026-10-13/14).** GPUI Kit 0.7.3
+  (2026-10-12) is handled by two milestones designed in
+  `docs/todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, executed by
+  subagent-driven development: G1 (compatibility, citations, `Diff`, a `gpui-fast` feature, the
+  OS probe's new measurements) and G2 (three new theme values with receivers in all three
+  connectors). Order: **G1 → M5's fix phase → G2 → M6, M7.** M5's review phase ran while the
+  documents were reviewed and is at stop point A; its fix phase starts when G1 closes. The
+  maintainer approved the documents, G2's API breaks, and the pushes and probe dispatch during G1.
 ---
 
 ## The finding ledger
@@ -930,7 +940,9 @@ Split so each part can stop on its own:
 
 ## Resuming
 
-A new session: read this file, then the ledger. The current milestone is the first whose
+A new session: read this file, then the ledger. Between M4 and M6 the order is D10's (G1 → M5's
+fix phase → G2); G1 and G2 resume from their SDD ledger
+(`.superpowers/sdd/todo_v0.7.0_gpui-kit-0.7.3-plan/progress.md`) and `git log`. The current milestone is the first whose
 *Status* line in the ledger is not `done`; inside it, the first unchecked step of the
 template. If the last step started was Step 2 and its Workflow did not finish, re-run it
 (Workflow resume works only inside the session that started it). If it was Step 7, re-run

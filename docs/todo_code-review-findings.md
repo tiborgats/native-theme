@@ -13,6 +13,8 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M3 | done (2026-10-12) |
 | M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 done 2026-10-13 (stop point B) |
 | M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 waits for G1 (native-theme-f1) |
+| G1 | in progress (2026-10-14; D10, docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
+| G2 | not started (after M5's fix phase) |
 | M6–M9 | not started |
 
 ## Baseline (M0, 2026-10-11)
