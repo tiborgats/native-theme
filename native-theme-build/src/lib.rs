@@ -3235,9 +3235,6 @@ bundled-themes = ["material"]
         )
         .unwrap();
 
-        // Create a base_dir path with backslashes (as Windows would produce)
-        let base_with_backslash = PathBuf::from(dir.to_string_lossy().replace('/', "\\"));
-
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
             // Use normal dir for filesystem operations, but verify normalization logic
@@ -3264,7 +3261,6 @@ bundled-themes = ["material"]
             );
         }
 
-        let _ = fs::remove_dir_all(&base_with_backslash);
         let _ = fs::remove_dir_all(&dir);
     }
 

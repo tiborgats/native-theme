@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use native_theme_build::IconGenerator;
 
@@ -9,12 +10,18 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
+/// A new, empty directory for one caller: the counter keeps two tests that
+/// pass the same `suffix`, which run in parallel, out of each other's way.
 fn create_temp_dir(suffix: &str) -> PathBuf {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
     let dir = std::env::temp_dir().join(format!(
-        "native_theme_integ_{suffix}_{}",
-        std::process::id()
+        "native_theme_integ_{suffix}_{}_{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
     ));
-    if let Err(e) = fs::remove_dir_all(&dir) {
+    if let Err(e) = fs::remove_dir_all(&dir)
+        && e.kind() != std::io::ErrorKind::NotFound
+    {
         eprintln!("test cleanup warning: {e}");
     }
     fs::create_dir_all(&dir).unwrap();
@@ -45,11 +52,13 @@ fn write_file(dir: &Path, path: &str, content: &str) {
 /// Helper: run the pipeline on a single fixture TOML file.
 fn generate_fixture(toml_path: &Path) -> native_theme_build::GenerateOutput {
     let out = create_temp_dir("fixture_out");
-    IconGenerator::new()
+    let output = IconGenerator::new()
         .source(toml_path)
         .output_dir(&out)
         .generate()
-        .unwrap_or_else(|e| panic!("expected no errors: {e}"))
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+    let _ = fs::remove_dir_all(&out);
+    output
 }
 
 // =============================================================================
@@ -733,14 +742,22 @@ fn golden_syntax_check() {
 /// `include_bytes!` paths reference `CARGO_MANIFEST_DIR`), and runs
 /// `cargo check --workspace` on it, so native-theme is built once. Returns
 /// the compiler's stderr when the check fails, and `Ok` when `cargo` is not
-/// available.
+/// available or native-theme is not beside this crate, as in the published
+/// crate, which holds this crate alone.
 fn cargo_check(suffix: &str, files: &[(&str, &str)]) -> Result<(), String> {
     const EDITIONS: [&str; 2] = ["2015", "2021"];
 
-    let dir = create_temp_dir(suffix);
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let fixture_src = manifest_dir.join("tests/fixtures");
     let native_theme_path = manifest_dir.join("../native-theme");
+    if !native_theme_path.join("Cargo.toml").is_file() {
+        eprintln!(
+            "skipping cargo check: {} is absent; it runs in the native-theme workspace",
+            native_theme_path.display()
+        );
+        return Ok(());
+    }
+    let dir = create_temp_dir(suffix);
 
     for edition in EDITIONS {
         let crate_dir = dir.join(format!("edition-{edition}"));

@@ -285,13 +285,30 @@ mod tests {
     // === Drift detection: DE_TABLE vs native_theme::LinuxDesktop ===
 
     /// `LinuxDesktop` is `#[non_exhaustive]`, so no match outside native-theme
-    /// can list its variants; its source is read instead.
-    const DETECT_RS: &str = include_str!("../../native-theme/src/detect.rs");
+    /// can list its variants; its source, `native-theme/src/detect.rs`, is read
+    /// instead. It is read at run time, and `None` (the test skips) where the
+    /// sibling crate is absent, as in the published crate, which holds this
+    /// crate alone.
+    fn detect_rs() -> Option<String> {
+        let path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../native-theme/src/detect.rs");
+        match std::fs::read_to_string(&path) {
+            Ok(source) => Some(source),
+            Err(e) => {
+                eprintln!(
+                    "skipping: {} cannot be read ({e}); the LinuxDesktop drift tests run in the \
+                     native-theme workspace",
+                    path.display()
+                );
+                None
+            }
+        }
+    }
 
-    /// The variants of `LinuxDesktop` other than `Unknown`, as
+    /// The variants of `LinuxDesktop` other than `Unknown` in `detect_rs`, as
     /// `"LinuxDesktop::Variant"`, in declaration order.
-    fn linux_desktop_variants() -> Vec<String> {
-        let body = DETECT_RS
+    fn linux_desktop_variants(detect_rs: &str) -> Vec<String> {
+        let body = detect_rs
             .split_once("pub enum LinuxDesktop {")
             .and_then(|(_, rest)| rest.split_once("\n}"))
             .map(|(body, _)| body)
@@ -305,10 +322,11 @@ mod tests {
             .collect()
     }
 
-    /// The arms of `parse_linux_desktop`: each `XDG_CURRENT_DESKTOP` token
-    /// list with the `"LinuxDesktop::Variant"` it returns.
-    fn parse_linux_desktop_arms() -> Vec<(Vec<String>, String)> {
-        let body = DETECT_RS
+    /// The arms of `parse_linux_desktop` in `detect_rs`: each
+    /// `XDG_CURRENT_DESKTOP` token list with the `"LinuxDesktop::Variant"` it
+    /// returns.
+    fn parse_linux_desktop_arms(detect_rs: &str) -> Vec<(Vec<String>, String)> {
+        let body = detect_rs
             .split_once("pub fn parse_linux_desktop(")
             .and_then(|(_, rest)| rest.split_once("\n}"))
             .map(|(body, _)| body)
@@ -329,7 +347,10 @@ mod tests {
     /// no entry names another variant.
     #[test]
     fn de_table_covers_all_linux_desktop_variants() {
-        let variants = linux_desktop_variants();
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        let variants = linux_desktop_variants(&detect_rs);
         assert!(!variants.is_empty(), "no LinuxDesktop variants read");
         for variant in &variants {
             assert!(
@@ -349,7 +370,10 @@ mod tests {
     /// that `parse_linux_desktop` maps to the entry's variant.
     #[test]
     fn de_table_keys_are_lowercase_xdg_tokens() {
-        let arms = parse_linux_desktop_arms();
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        let arms = parse_linux_desktop_arms(&detect_rs);
         assert!(!arms.is_empty(), "no parse_linux_desktop arms read");
         for (key, variant) in DE_TABLE {
             let token = arms
@@ -371,7 +395,10 @@ mod tests {
     fn de_table_keys_parse_to_their_variants() {
         use native_theme::detect::parse_linux_desktop;
 
-        for (tokens, variant) in parse_linux_desktop_arms() {
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        for (tokens, variant) in parse_linux_desktop_arms(&detect_rs) {
             for token in tokens {
                 let desktop = parse_linux_desktop(&token);
                 assert_eq!(
