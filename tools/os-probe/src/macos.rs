@@ -634,17 +634,31 @@ fn metrics_table(mtm: MainThreadMarker) -> Table {
 }
 
 /// The header of a new NSTableView, per appearance, for its default style
-/// and for `NSTableViewStyleFullWidth`.
+/// and for `NSTableViewStyleInset` and `NSTableViewStyleFullWidth`, each
+/// measured without a window and in an offscreen window.
 fn table_header_table(mtm: MainThreadMarker) -> Table {
     let mut t = Table::new();
     out::put(
         &mut t,
         "method",
         out::text(format!(
-            "a new NSTableView with one {TABLE_COLUMN_WIDTH} pt NSTableColumn, made the document view of a new {} x {} pt NSScrollView whose appearance is set per run, all inside NSAppearance performAsCurrentDrawingAppearance:; setStyle: before setDocumentView: (none for default), then tile on the scroll view and the table; heights in points",
+            "a new NSTableView with one {TABLE_COLUMN_WIDTH} pt NSTableColumn, made the document view of a new {} x {} pt NSScrollView whose appearance is set per run, all inside NSAppearance performAsCurrentDrawingAppearance:; setStyle: before setDocumentView: (none for default); windowless: the scroll view in no window; inWindow: the scroll view added to the content view of an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run, removed after the reading; then tile on the scroll view and the table; heights in points",
             TABLE_SCROLL_SIZE.width, TABLE_SCROLL_SIZE.height
         )),
     );
+    let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(800.0, 600.0));
+    let window = ffi::offscreen_window(mtm, frame);
+    let content = match &window {
+        Ok(window) => window
+            .contentView()
+            .ok_or_else(|| "the offscreen window has no content view".to_owned()),
+        Err(reason) => Err(reason.clone()),
+    };
+    let styles = [
+        ("default", None),
+        ("inset", Some(NSTableViewStyle::Inset)),
+        ("fullWidth", Some(NSTableViewStyle::FullWidth)),
+    ];
     for (key, name) in APPEARANCES {
         let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
             out::put(
@@ -654,34 +668,51 @@ fn table_header_table(mtm: MainThreadMarker) -> Table {
             );
             continue;
         };
+        if let Ok(window) = &window {
+            window.setAppearance(Some(&appearance));
+        }
         let result = RefCell::new(Table::new());
         {
             let block = RcBlock::new(|| {
                 let mut per_style = Table::new();
-                out::put_table(
-                    &mut per_style,
-                    "default",
-                    table_header(mtm, &appearance, None),
-                );
-                out::put_table(
-                    &mut per_style,
-                    "fullWidth",
-                    table_header(mtm, &appearance, Some(NSTableViewStyle::FullWidth)),
-                );
+                for (style_key, style) in styles {
+                    let mut run = Table::new();
+                    out::put_table(
+                        &mut run,
+                        "windowless",
+                        table_header(mtm, &appearance, style, None),
+                    );
+                    match &content {
+                        Ok(content) => out::put_table(
+                            &mut run,
+                            "inWindow",
+                            table_header(mtm, &appearance, style, Some(content)),
+                        ),
+                        Err(reason) => {
+                            out::put(&mut run, "inWindow", out::unavailable(reason));
+                        }
+                    }
+                    out::put_table(&mut per_style, style_key, run);
+                }
                 *result.borrow_mut() = per_style;
             });
             appearance.performAsCurrentDrawingAppearance(&block);
         }
         out::put_table(&mut t, key, result.into_inner());
     }
+    if let Ok(window) = &window {
+        window.setAppearance(None);
+    }
     t
 }
 
-/// One header measurement: `style` is set with `setStyle:` when given.
+/// One header measurement: `style` is set with `setStyle:` when given; the
+/// scroll view is added to `superview` for the reading when given.
 fn table_header(
     mtm: MainThreadMarker,
     appearance: &NSAppearance,
     style: Option<NSTableViewStyle>,
+    superview: Option<&NSView>,
 ) -> Table {
     let mut t = Table::new();
     let scroll = NSScrollView::initWithFrame(
@@ -698,6 +729,9 @@ fn table_header(
         table_view.setStyle(style);
     }
     scroll.setDocumentView(Some(&table_view));
+    if let Some(superview) = superview {
+        superview.addSubview(&scroll);
+    }
     scroll.tile();
     table_view.tile();
     out::put(
@@ -729,6 +763,9 @@ fn table_header(
             "headerView_height",
             out::unavailable("headerView is nil"),
         ),
+    }
+    if superview.is_some() {
+        scroll.removeFromSuperview();
     }
     t
 }
