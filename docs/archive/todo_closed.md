@@ -89,6 +89,88 @@ many have since drifted, as the archive's [README](README.md) warns.
       connector's plan, `docs/archive/todo_v0.6.0_egui-connector-plan.md`, does this,
       with a test that a started watcher drops within a bound.
 
+- [x] [v0.7.0] `watch::on_theme_change()` fires on fewer changes than the readers
+      read, so an application that rebuilds its theme on it — the egui
+      connector's `ThemeWatcher` (`docs/archive/todo_v0.6.0_egui-connector-spec.md`)
+      — misses these:
+
+      - **GNOME and Budgie**: the watcher subscribes to the portal's
+        `SettingChanged` for the `org.freedesktop.appearance` namespace only
+        (`native-theme/src/watch/gnome.rs:46`), while the reader takes the
+        font, monospace font, text-scaling factor, animations, overlay
+        scrolling and icon theme from `org.gnome.desktop.interface`, the title
+        bar font from `org.gnome.desktop.wm.preferences` and high contrast from
+        `org.gnome.desktop.a11y.interface` (`native-theme/src/gnome/mod.rs:337-371`).
+        Changing any of them fires nothing.
+      - **macOS**: the watcher observes `AppleInterfaceThemeChangedNotification`
+        alone (`native-theme/src/watch/macos.rs:88-89`), while the reader also
+        reads the accent colour, `NSColor::controlAccentColor`
+        (`native-theme/src/macos.rs:57`), and the reduce-motion, contrast and
+        transparency flags (`:151-155`). Whether macOS posts that notification
+        on an accent change is unverified; AppKit declares
+        `NSSystemColorsDidChangeNotification` and
+        `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification` for these
+        (objc2-app-kit 0.3.2, `NSColor.rs:1068`, `NSAccessibility.rs:190`).
+      - **Windows**: the watcher subscribes to `UISettings::ColorValuesChanged`
+        alone (`native-theme/src/watch/windows.rs:77`), while the reader's
+        text-scaling factor (`native-theme/src/windows.rs:359`) has its own
+        event, `UISettings::TextScaleFactorChanged` (windows 0.62.2). Whether a
+        change of the non-client fonts, high contrast or client-area animation
+        (`:154`, `:369`, `:387`) raises `ColorValuesChanged` is unverified.
+      - **KDE**: the watcher sees `kdeglobals` and `kcmfontsrc` in the config
+        directory, non-recursively (`native-theme/src/watch/kde.rs:29-32`,
+        `:51`), while the reader falls back to `kdedefaults/kdeglobals` for the
+        icon theme (`native-theme/src/kde/mod.rs:395`), a file in a
+        subdirectory the watcher does not see.
+
+      Decide per platform which further notification to observe, keeping one
+      user action to one event.
+      Fixed by c951c587 (M4 T21, 2026-10-13): GNOME fires on the
+      `SettingChanged` of every key the reader reads (the portal's GNOME and
+      GTK backends forward the gsettings namespaces), KDE watches
+      `kdedefaults/kdeglobals`, macOS observes the system-colour,
+      scroller-style and accessibility-display notifications (and the
+      appearance one with `DeliverImmediately`), Windows subscribes to
+      `TextScaleFactorChanged`; one change fires once (300 ms debounce) on
+      every platform. Each reader module lists its sources under
+      `# Sources`, and the table test in `native-theme/src/watch/mod.rs`
+      checks each against its watcher. Still not watched on Windows: the
+      non-client fonts, high contrast and client-area animation, which
+      `WM_SETTINGCHANGE` reports only to a top-level window
+      (`native-theme/src/windows.rs`, "Sources not watched").
+      T21 fix round 1 (2026-10-13): high contrast
+      (`AccessibilitySettings::HighContrastChanged`) and client-area
+      animation (`UISettings::AnimationsEnabledChanged`, Windows 10 2004 and
+      later) are watched too, with no window; the window-only Windows
+      sources are the next entry.
+      Closed 2026-10-13 (M4 Step 8): the watchers observe every source the
+      readers read except the Windows window-only ones, the open entry
+      *Windows watcher: the window-only sources* in `docs/todo.md`. The "Still
+      not watched on Windows" sentence above describes c951c587; since 71db4793
+      high contrast and client-area animation are watched. The KDE file named
+      above as `kcmfontsrc` is `kcmfonts`, the file Plasma opens and the
+      watcher watches since 49e0067a.
+
+- [x] [v0.7.0] **KDE: the 300 ms throttle keeps the first event of a burst and drops
+      the rest.** `last_fire` starts as `None` and the watcher fires on the
+      first relevant event, then ignores every relevant event until 300 ms
+      have passed (`native-theme/src/watch/kde.rs:59-60`, `:86`); nothing fires
+      after the burst. KDE writes its settings in several steps (the watcher's
+      own comment names `QSaveFile`'s multi-write pattern, `:14-15`), so a
+      consumer that re-reads on the first event can read the files before the
+      last write lands — or before `kcmfontsrc` changes, if `kdeglobals` changed
+      first — and nothing tells it to read again. Make it a trailing debounce
+      (fire once, 300 ms after the last relevant event), or fire again at the
+      end of the window when events were dropped in it.
+      Fixed by 7988c1ec (M4 T20, 2026-10-13): a trailing debounce, the
+      callback fires once, 300 ms after the last relevant event of a burst;
+      the loop checks shutdown on every iteration
+      (`native-theme/src/watch/kde.rs` `watch_kde_dir`).
+      Closed 2026-10-13 (M4 Step 8): fixed by 7988c1ec. The file named above as
+      `kcmfontsrc` is `kcmfonts`, watched since 49e0067a. A maximum wait for the
+      debounce is the open entry *Theme watcher: the trailing debounce has no
+      maximum wait* in `docs/todo.md`.
+
 ### Closed items from Fonts: find a system face by family, weight and style
 
 - [x] Add the feature `system-fonts` to `native-theme`: an optional `fontdb`
@@ -324,6 +406,78 @@ many have since drifted, as the archive's [README](README.md) warns.
       Closed 2026-10-12: `with_overlay` replays the whole theme since bdad0edf
       (M3-41); the overlay's `icon_theme`, `icon_set` and `[layout]` apply;
       regression test in `pipeline.rs`.
+
+### macOS: the scroll bar width for the user's scroller style
+
+- [x] [v0.7.0] For M4 (M2 final review, Minor 4, 2026-10-11): the macOS reader
+      reads the scroll bar style live, `NSScroller.preferredScrollerStyle`
+      (`native-theme/src/macos.rs:142`, stored as `scrollbar.overlay_mode` at
+      `:495-501`), but the groove width is always the preset's constant:
+      `macos-monterey` states the overlay style's 16
+      (`macos-monterey.toml:189`, `:643`), as ruled in M2a. With "always
+      show scroll bars" set, AppKit draws the legacy style, whose width is 15
+      on macOS 14.8.9 and 15.7.9 (`docs/platform-facts.md:1280`, the probe's
+      `scrollerWidth(for: .regular, scrollerStyle: .legacy)`); on macOS 26
+      both styles are 17, which `macos-tahoe` states. The reader could read
+      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads,
+      a live OS value rather than a constant.
+      Fixed in M4 T24 (e6c5c737, `fix(macos): the scroll bar's groove width is
+      the one AppKit gives the user's scroller style`): the reader writes
+      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads;
+      `scrollbar_for_style_takes_the_styles_width`
+      (`native-theme/src/macos.rs`) checks that the overlay style gets the
+      overlay width and the legacy style the legacy width.
+      Closed 2026-10-13 (M4 Step 8): fixed by e6c5c737, with b41bab4b (the
+      reader merges its scroll bar fields). The `macos.rs:142` and `:495-501`
+      above predate M4's reader changes (23f8f381). The legacy style's thumb and
+      track, for which no source exists, are recorded in `docs/todo.md`'s
+      `scrollbar.groove_width` and `scrollbar.thumb_width` rows.
+
+### KDE: the plain-read link test cannot tell the reader from the preset
+
+- [x] [v0.7.0] For M4, the KDE reader (M3 final review, 2026-10-12): the test
+      `link_text_resolves_to_foreground_link` (`native-theme/src/kde/mod.rs:935`)
+      reads the dark fixture, whose `ForegroundLink` is `#1d99f3`, the same
+      value `kde-breeze` states as its dark `defaults.link_color`
+      (`native-theme/src/presets/kde-breeze.toml:451`), so it passes whether
+      link text comes from the reader or from the preset. Give it a fixture
+      whose `ForegroundLink` differs from the preset's (the light fixture has
+      no `ForegroundLink`).
+      Fixed in M4 T10 (`fix(kde): kdeglobals read as KConfig cascades it`):
+      the test reads a fixture whose `ForegroundLink` is `246,116,0`, which
+      `kde-breeze` does not state as `link_color`; it fails when the reader
+      drops `ForegroundLink`.
+      Closed 2026-10-13 (M4 Step 8): fixed by 598959b9.
+
+### kde-breeze: link hover and active colours stated without a source
+
+- [x] [v0.7.0] For M4, the `kde-breeze` preset through the `preset-validator`
+      agent (M3 final review, 2026-10-12): `[light.link]` and `[dark.link]`
+      state `hover_text_color` and `active_text_color` (`#2980b9` light,
+      `native-theme/src/presets/kde-breeze.toml:363-364`; `#1d99f3` dark,
+      `:765-766`), Breeze's default blue with no citation, so they never
+      follow a KDE colour scheme or an overlay's `defaults.link_color`.
+      Find a source for each, or state none so they inherit `link.font.color`
+      (`docs/inheritance-rules.toml:290-291`).
+      Fixed by fd4abc64: both keys removed, they inherit `link.font.color`;
+      a Qt link keeps `palette(link)` hovered and pressed. Kirigami's
+      `LinkButton` alone darkens a pressed link, `Qt.darker(linkColor)`
+      (kirigami v6.31.0 `templates/LinkButton.qml:66`, `:87-93`), which the
+      model does not derive.
+      Closed 2026-10-13 (M4 Step 8): fixed by fd4abc64. Kirigami's pressed-link
+      darkening is the open entry *Links: Kirigami darkens a pressed link* in
+      `docs/todo.md`.
+
+### Validation: an out-of-range `size_pt` is reported with its px value
+
+- [x] [v0.7.0] In the resolve validation code, carried to M4 (M3 final review,
+      2026-10-12): `check_font` (`native-theme/src/resolve/validate_helpers.rs:475`)
+      names the key the theme stated, `size_pt`, but reports the resolved
+      size, converted to px: `size_pt = -3` prints `got -4`. Report the
+      value in the stated key's unit, or name the px key.
+      Fixed by 443f8141: `check_font` reports the stated points.
+      Closed 2026-10-13 (M4 Step 8): fixed by 443f8141; the text-scale range
+      check reports a stated size in its unit too since 79a9f2ae.
 
 ---
 
@@ -659,3 +813,13 @@ platform (`native-theme/src/watch/`).
 
 ### Icon theme detection falls back to hicolor
 - [x] `system_icon_theme()` returns `"hicolor"` when detection fails: every Linux reader ends in it (`native-theme/src/model/icons.rs`: `detect_linux_icon_theme`'s Unknown branch `:621-628`, `detect_kde_icon_theme` `:643`, `:655`, `gsettings_icon_theme` `:669`, `detect_xfce_icon_theme` `:683`, `detect_lxqt_icon_theme` `:693`, `:708`). The freedesktop lookup allows `hicolor` when it is the theme asked for, so a failed detection makes `hicolor` the chosen theme and its application icons count as the UI set; the rule that `hicolor` is never a fallback does not see it, because the fallback happens one step earlier. Question for the maintainer: when detection fails, use the desktop's own default icon theme, or return `None`? The defaults found in the installed files: GNOME's `org.gnome.desktop.interface` `icon-theme` defaults to `'Adwaita'` (`/usr/share/glib-2.0/schemas/org.gnome.desktop.interface.gschema.xml:86-87`). KDE's is `KIconTheme::defaultThemeName()` (kiconthemes 6.30.0 exports it from `/usr/lib/libKF6IconThemes.so.6`); the library holds the string `breeze` (`strings -el`), but that does not show the function returns it, and the kiconthemes source was not checked. The Cinnamon and MATE schemas are not installed here, and XFCE and LXQt were not looked into. **Decided 2026-09-24, done in v0.5.9:** neither; the library reports the failure and the application decides. `system_icon_theme()`, `detect_icon_theme()` and `DetectionContext::icon_theme()` return a `Result` whose error names each source tried and why it gave no name (both attempts on an unrecognised desktop); other platforms than Linux, macOS, iOS and Windows get `Error::PlatformUnsupported`, not `"material"`. The detection cache keeps the failure. `Resolved::icon_theme` and `SystemTheme::icon_theme` are `Option`, `None` where the theme states none and detection fails; `FreedesktopLoader::load` and `load_indicator` without a theme search no theme then, so they return `None`, except that a custom `IconProvider`'s own freedesktop SVG, which depends on no theme, still loads; both showcases show the system icon theme as unavailable, with the reason.
+
+### Closed items from Font DPI
+- [x] [v0.7.0] For M4: an unrecognised `XDG_CURRENT_DESKTOP` with a GNOME portal backend gets the GNOME reader (`native-theme/src/pipeline.rs:631-646`), whose font DPI is 96, but `desktop_font_dpi(LinuxDesktop::Unknown)` is `None` (`native-theme/src/detect.rs:409`), so `ResolutionContext::from_system()` still reads `Xft.dpi` (96 × factor × the X11 UI scale under gnome-settings-daemon) while the connectors apply the factor: the preset path scales text twice there. The preset path should follow the reader's choice of desktop. Found in the M2e Step 7 review (2026-10-11).
+  Fixed by 62c13acf (M4 T16, 2026-10-12): `desktop_font_dpi` takes the refined desktop the reader is chosen by (`detect::refine_linux_desktop`: `XDG_CURRENT_DESKTOP`, then the portal backend, then `kdeglobals`), so an unrecognised desktop with a GNOME portal backend gives 96 on the preset path. The preset path is synchronous and does not ask the portal: it uses the desktop the last system read (`from_system`, `from_system_async`, `AccessibilityPreferences::from_system`) refined, until `invalidate_caches()`; an application that resolves presets without such a read gets only the `kdeglobals` check.
+  Closed 2026-10-13 (M4 Step 8): fixed by 62c13acf and 7553e77d (a portal answer that changes the desktop clears what was read from it). That an application which only resolves presets never gets the portal's answer is the open entry *Linux: an application that only resolves presets never gets the portal's answer* in `docs/todo.md`.
+
+### Icon-theme detection commands have no timeout
+- [x] [v0.7.0] The icon-theme detection runs `gsettings get <schema> icon-theme` (`native-theme/src/model/icons.rs` `gsettings_icon_theme`) and `xfconf-query -c xsettings -p /Net/IconThemeName` (`detect_xfce_icon_theme`) with `Command::output()`, which waits as long as the command runs; a hung D-Bus session blocks the caller (pre-existing). `detect.rs`'s `run_gsettings_with_timeout` (`:180-218`) bounds its own gsettings calls by `SUBPROCESS_TIMEOUT` (2 s), but it runs only `gsettings` and returns `Option<String>`, dropping why a call gave nothing (not found, unsuccessful status, stderr, empty output, timed out) — which the icon-theme error now reports. Needed: a general run-with-timeout helper that takes the program and its arguments and returns `io::Result<Output>`, with a timeout reported as its own reason ("timed out after 2 s"), so `command_icon_theme` keeps naming every failure.
+  Fixed by 6c2327d4 (M4 T18, 2026-10-13): `detect::run_with_timeout(program, args, timeout)` returns `io::Result<Output>`, a timeout as `ErrorKind::TimedOut` ("timed out after 2s", which `command_icon_theme` reports as its own reason), and reads stdout and stderr while the command runs; the icon-theme detection's `gsettings` and `xfconf-query`, `fc-match`, macOS `defaults` and the diagnostics' `gsettings --version` run through it (`run_gsettings_with_timeout` had become `gsettings_get` over the same runner).
+  Closed 2026-10-13 (M4 Step 8): fixed by 6c2327d4. `gsettings_icon_theme` and `detect_xfce_icon_theme` live in `native-theme/src/detect/icon_theme.rs` since 2c9d969b, and `run_gsettings_with_timeout` is gone: its successor is `gsettings_get` over the same runner.

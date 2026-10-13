@@ -26,8 +26,8 @@ the file was pruned on 2026-10-11, not reordered.
       `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
       Windows ClearType, macOS font smoothing.
 
-      We already read `Xft.dpi` for scaling (`native-theme/src/kde/mod.rs:157`,
-      `:172-173`, via `detect::xft_dpi()`, `native-theme/src/detect.rs:902`),
+      We already read `Xft.dpi` for scaling (`detect::read_xft_dpi`,
+      `native-theme/src/detect.rs:459`, in the font-DPI chain the KDE reader shares),
       but nothing reads the *rendering*
       preferences. A Qt or GTK app obeys the user's hinting and antialiasing
       choice; an app built on our connectors silently ignores it. Reading OS
@@ -197,60 +197,6 @@ the file was pruned on 2026-10-11, not reordered.
 
 ### Theme watcher: OS changes it does not report
 
-- [ ] [v0.7.0] `watch::on_theme_change()` fires on fewer changes than the readers
-      read, so an application that rebuilds its theme on it — the egui
-      connector's `ThemeWatcher` (`docs/archive/todo_v0.6.0_egui-connector-spec.md`)
-      — misses these:
-
-      - **GNOME and Budgie**: the watcher subscribes to the portal's
-        `SettingChanged` for the `org.freedesktop.appearance` namespace only
-        (`native-theme/src/watch/gnome.rs:46`), while the reader takes the
-        font, monospace font, text-scaling factor, animations, overlay
-        scrolling and icon theme from `org.gnome.desktop.interface`, the title
-        bar font from `org.gnome.desktop.wm.preferences` and high contrast from
-        `org.gnome.desktop.a11y.interface` (`native-theme/src/gnome/mod.rs:337-371`).
-        Changing any of them fires nothing.
-      - **macOS**: the watcher observes `AppleInterfaceThemeChangedNotification`
-        alone (`native-theme/src/watch/macos.rs:88-89`), while the reader also
-        reads the accent colour, `NSColor::controlAccentColor`
-        (`native-theme/src/macos.rs:57`), and the reduce-motion, contrast and
-        transparency flags (`:151-155`). Whether macOS posts that notification
-        on an accent change is unverified; AppKit declares
-        `NSSystemColorsDidChangeNotification` and
-        `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification` for these
-        (objc2-app-kit 0.3.2, `NSColor.rs:1068`, `NSAccessibility.rs:190`).
-      - **Windows**: the watcher subscribes to `UISettings::ColorValuesChanged`
-        alone (`native-theme/src/watch/windows.rs:77`), while the reader's
-        text-scaling factor (`native-theme/src/windows.rs:359`) has its own
-        event, `UISettings::TextScaleFactorChanged` (windows 0.62.2). Whether a
-        change of the non-client fonts, high contrast or client-area animation
-        (`:154`, `:369`, `:387`) raises `ColorValuesChanged` is unverified.
-      - **KDE**: the watcher sees `kdeglobals` and `kcmfontsrc` in the config
-        directory, non-recursively (`native-theme/src/watch/kde.rs:29-32`,
-        `:51`), while the reader falls back to `kdedefaults/kdeglobals` for the
-        icon theme (`native-theme/src/kde/mod.rs:395`), a file in a
-        subdirectory the watcher does not see.
-
-      Decide per platform which further notification to observe, keeping one
-      user action to one event.
-      Fixed by c951c587 (M4 T21, 2026-10-13): GNOME fires on the
-      `SettingChanged` of every key the reader reads (the portal's GNOME and
-      GTK backends forward the gsettings namespaces), KDE watches
-      `kdedefaults/kdeglobals`, macOS observes the system-colour,
-      scroller-style and accessibility-display notifications (and the
-      appearance one with `DeliverImmediately`), Windows subscribes to
-      `TextScaleFactorChanged`; one change fires once (300 ms debounce) on
-      every platform. Each reader module lists its sources under
-      `# Sources`, and the table test in `native-theme/src/watch/mod.rs`
-      checks each against its watcher. Still not watched on Windows: the
-      non-client fonts, high contrast and client-area animation, which
-      `WM_SETTINGCHANGE` reports only to a top-level window
-      (`native-theme/src/windows.rs`, "Sources not watched").
-      T21 fix round 1 (2026-10-13): high contrast
-      (`AccessibilitySettings::HighContrastChanged`) and client-area
-      animation (`UISettings::AnimationsEnabledChanged`, Windows 10 2004 and
-      later) are watched too, with no window; the window-only Windows
-      sources are the next entry.
 - [ ] [v0.7.x] **Windows watcher: the window-only sources.** The reader
       reads the non-client fonts (`SPI_GETNONCLIENTMETRICS`), the
       `GetSysColor` colours and `DwmGetColorizationColor` (the latter two
@@ -268,6 +214,12 @@ the file was pruned on 2026-10-11, not reordered.
       the watcher thread, whose window procedure posts `WM_THEME_CHANGED` for
       those messages (the pump already coalesces it), destroyed before
       `CoUninitialize` (`native-theme/src/watch/windows.rs`).
+      M4 Step 8 (2026-10-13): since 8c133614 the reader reads the `GetSysColor`
+      colours under high contrast only and `DwmGetColorizationColor` not at
+      all, so outside high contrast the non-client fonts are the source left
+      here. High contrast turning on or off is reported by
+      `AccessibilitySettings::HighContrastChanged` since 71db4793; whether a
+      colour change inside a contrast theme reaches it is unverified.
 - [ ] [v0.7.x] **macOS watcher: check on a Mac which center posts the
       colour and scroller notifications.** The watcher observes
       `NSSystemColorsDidChangeNotification` and
@@ -277,21 +229,6 @@ the file was pruned on 2026-10-11, not reordered.
       the accent colour and "Show scroll bars" in System Settings with an
       application running its main run loop, and see that the callback
       fires (`native-theme/src/watch/macos.rs` `registrations`).
-- [ ] [v0.7.0] **KDE: the 300 ms throttle keeps the first event of a burst and drops
-      the rest.** `last_fire` starts as `None` and the watcher fires on the
-      first relevant event, then ignores every relevant event until 300 ms
-      have passed (`native-theme/src/watch/kde.rs:59-60`, `:86`); nothing fires
-      after the burst. KDE writes its settings in several steps (the watcher's
-      own comment names `QSaveFile`'s multi-write pattern, `:14-15`), so a
-      consumer that re-reads on the first event can read the files before the
-      last write lands — or before `kcmfontsrc` changes, if `kdeglobals` changed
-      first — and nothing tells it to read again. Make it a trailing debounce
-      (fire once, 300 ms after the last relevant event), or fire again at the
-      end of the window when events were dropped in it.
-      Fixed by 7988c1ec (M4 T20, 2026-10-13): a trailing debounce, the
-      callback fires once, 300 ms after the last relevant event of a burst;
-      the loop checks shutdown on every iteration
-      (`native-theme/src/watch/kde.rs` `watch_kde_dir`).
 - [ ] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
       lost on the next system re-read** (M2 final review, Minor 5,
       2026-10-11). The connectors' re-reads call `from_system()`, which picks
@@ -416,6 +353,18 @@ the file was pruned on 2026-10-11, not reordered.
       brush, and WinUI does not change the thumb on hover: decide whether
       windows-11's scroll bar takes the WinUI brushes (rest, hover and
       pressed, both modes) or the measured set, then state the dark thumb.
+      *M4 T24's scroll bar validator (2026-10-13):* `macos-tahoe` states no
+      light `thumb_color` and no `thumb_hover_color` in either mode
+      (`native-theme/src/presets/macos-tahoe.toml:188-200`; dark states
+      `thumb_color` only, `:576`), so they fall to the safety net here too;
+      `macos-monterey`'s `thumb_active_color` (`#50505090` / `#b0b0b090`,
+      `native-theme/src/presets/macos-monterey.toml:201`, `:655`) is a soft
+      option with no source. Two citations are one line off: the dark scroll
+      bar this entry cites as `macos-monterey.toml:640-654` is `:641-655`, and
+      the egui entry's dark `track_color` (`:646`) is `:647`. The validator also
+      named `docs/platform-facts.md:1280` and `:177` as "citing probe 15" (its
+      words; `:1280` gives the macOS 14.8.9 probe's legacy 15): re-check what
+      each should cite now that the reader reads the width live (e6c5c737).
 
 ### Fonts: find a system face by family, weight and style
 
@@ -516,6 +465,13 @@ the file was pruned on 2026-10-11, not reordered.
       comments nor the commit that added the assignment (`d87483c8`) say why a text
       field's selection takes the unfocused colour. Is it intended? Fix the
       reader or record the reason.
+      Answered (M4 Step 6, 2026-10-12): c1704d2f stopped the reader writing
+      `input.selection_background`, and
+      `read_macos_leaves_the_text_field_selection_to_inheritance`
+      (`native-theme/src/macos.rs:1017`) pins it, so the field inherits
+      `defaults.text_selection_background`, as `docs/platform-facts.md:1193`
+      gives it. The research task above (the text colour on the unemphasised
+      selection) stays open.
 
 ### Presets: colours with no reproducible source
 
@@ -590,6 +546,16 @@ the file was pruned on 2026-10-11, not reordered.
       (`native-theme/src/presets/ios-13.toml`, `[light.slider]` and
       `[dark.slider]`): darker than it in light, lighter in dark. For M3,
       with the other soft-option colours that have no source.
+      *M4 T36 (2026-10-13):* kde-breeze's disabled switch thumb, the
+      `#fcfcfc80` above, is the handle's Disabled shade since 74fc414d,
+      Disabled `[Colors:Button] BackgroundNormal` (`#f0f0f0` / `#272a2e`,
+      `docs/platform-facts.md:1473`). kde-breeze's `defaults.border.color` is
+      still open, and two facts cells disagree on it:
+      `docs/platform-facts.md:1051` gives KDE's `border.color` as "(preset) —
+      derived from background", while `:1426` gives the separator, which
+      inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
+      frameContrast). State the computed mix in the preset and the `:1051` cell
+      together.
 
 ### Disabled: presets that state both mechanisms
 
@@ -842,6 +808,15 @@ model, the platform presets and the three connectors
       from AccentDark1 / AccentLight1 outside high contrast, against
       `AccentFillColorDefault` = `SystemAccentColorDark1` /
       `SystemAccentColorLight2` (M4-38's related note).
+      M4 Step 8 (2026-10-13): the reader's accent fills are
+      `AccentFillColorDefault` since 8ccdbed0 (`SystemAccentColorDark1` /
+      `Light2` of the user's accent; under high contrast `COLOR_HIGHLIGHT`), so
+      the "AccentDark1 / AccentLight1" half above is fixed. The preset states
+      `button.checked_background` as `AccentFillColorDefault`, `#0067c0` /
+      `#4cc2ff` (9284f52b); its `primary_background` stays on the accent until
+      M5 (ee75ad7e; the entry *For M5: iced's primary hover from
+      `primary_background`*). Still open: `tab.active_background`, `#f3f3f3` /
+      `#202020` (`native-theme/src/presets/windows-11.toml:284`, `:841`).
 
 ### windows-11: the switch's off-track outline
 
@@ -1045,67 +1020,6 @@ model, the platform presets and the three connectors
       files and kstyle at `v6.8.0`, then re-pin the three rows and the
       header (found in M2e Step 7, 2026-10-11).
 
-### macOS: the scroll bar width for the user's scroller style
-
-- [ ] [v0.7.0] For M4 (M2 final review, Minor 4, 2026-10-11): the macOS reader
-      reads the scroll bar style live, `NSScroller.preferredScrollerStyle`
-      (`native-theme/src/macos.rs:142`, stored as `scrollbar.overlay_mode` at
-      `:495-501`), but the groove width is always the preset's constant:
-      `macos-monterey` states the overlay style's 16
-      (`macos-monterey.toml:189`, `:643`), as ruled in M2a. With "always
-      show scroll bars" set, AppKit draws the legacy style, whose width is 15
-      on macOS 14.8.9 and 15.7.9 (`docs/platform-facts.md:1280`, the probe's
-      `scrollerWidth(for: .regular, scrollerStyle: .legacy)`); on macOS 26
-      both styles are 17, which `macos-tahoe` states. The reader could read
-      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads,
-      a live OS value rather than a constant.
-      Fixed in M4 T24 (e6c5c737, `fix(macos): the scroll bar's groove width is
-      the one AppKit gives the user's scroller style`): the reader writes
-      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads;
-      `scrollbar_for_style_takes_the_styles_width`
-      (`native-theme/src/macos.rs`) checks that the overlay style gets the
-      overlay width and the legacy style the legacy width.
-
-### KDE: the plain-read link test cannot tell the reader from the preset
-
-- [ ] [v0.7.0] For M4, the KDE reader (M3 final review, 2026-10-12): the test
-      `link_text_resolves_to_foreground_link` (`native-theme/src/kde/mod.rs:935`)
-      reads the dark fixture, whose `ForegroundLink` is `#1d99f3`, the same
-      value `kde-breeze` states as its dark `defaults.link_color`
-      (`native-theme/src/presets/kde-breeze.toml:451`), so it passes whether
-      link text comes from the reader or from the preset. Give it a fixture
-      whose `ForegroundLink` differs from the preset's (the light fixture has
-      no `ForegroundLink`).
-      Fixed in M4 T10 (`fix(kde): kdeglobals read as KConfig cascades it`):
-      the test reads a fixture whose `ForegroundLink` is `246,116,0`, which
-      `kde-breeze` does not state as `link_color`; it fails when the reader
-      drops `ForegroundLink`.
-
-### kde-breeze: link hover and active colours stated without a source
-
-- [ ] [v0.7.0] For M4, the `kde-breeze` preset through the `preset-validator`
-      agent (M3 final review, 2026-10-12): `[light.link]` and `[dark.link]`
-      state `hover_text_color` and `active_text_color` (`#2980b9` light,
-      `native-theme/src/presets/kde-breeze.toml:363-364`; `#1d99f3` dark,
-      `:765-766`), Breeze's default blue with no citation, so they never
-      follow a KDE colour scheme or an overlay's `defaults.link_color`.
-      Find a source for each, or state none so they inherit `link.font.color`
-      (`docs/inheritance-rules.toml:290-291`).
-      Fixed by fd4abc64: both keys removed, they inherit `link.font.color`;
-      a Qt link keeps `palette(link)` hovered and pressed. Kirigami's
-      `LinkButton` alone darkens a pressed link, `Qt.darker(linkColor)`
-      (kirigami v6.31.0 `templates/LinkButton.qml:66`, `:87-93`), which the
-      model does not derive.
-
-### Validation: an out-of-range `size_pt` is reported with its px value
-
-- [ ] [v0.7.0] In the resolve validation code, carried to M4 (M3 final review,
-      2026-10-12): `check_font` (`native-theme/src/resolve/validate_helpers.rs:475`)
-      names the key the theme stated, `size_pt`, but reports the resolved
-      size, converted to px: `size_pt = -3` prints `got -4`. Report the
-      value in the stated key's unit, or name the px key.
-      Fixed by 443f8141: `check_font` reports the stated points.
-
 ### `ResolvedLayoutTheme`: a public type nothing produces
 
 - [ ] [1.0] For the API review before 1.0 (M3 T9 ruling, 2026-10-12):
@@ -1135,6 +1049,282 @@ model, the platform presets and the three connectors
       README states macOS 11 as the minimum. Gate it at runtime: in
       `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
       else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
+
+### System icons: `.scale()` after a measurement on macOS and Windows
+
+- [ ] [v0.7.x] From M1-T6-07 (deferred by M4's plan ruling, 2026-10-12): the
+      SF Symbols and Segoe Fluent loaders take a size since 34d6d1f7
+      (`.size(u32)`, `native-theme/src/icons.rs:362`, `:448`), but no display
+      scale. The SF Symbols raster comes from
+      `CGImageForProposedRect_context_hints` with a null rect
+      (`native-theme/src/sficons.rs:52`), which the code's own comment says
+      AppKit answers with the full Retina resolution; unmeasured. The Segoe
+      glyph is drawn at its em height in pixels
+      (`native-theme/src/winicons.rs:583-605`), whatever the display's scale.
+      M1's decision makes `.scale()` conditional on a measurement: on the
+      macOS leg, the raster's pixel size at 2×; on Windows, what a 150 % and a
+      200 % display give. Measure on T1's CI legs or a real machine, then
+      adopt `.scale(f32)` on both loaders (and the connectors' window scale)
+      or record that it is not needed.
+
+### Segoe Fluent icons as SVG outlines
+
+- [ ] [v0.7.0] For M6 (M1-T6-07's Segoe item, deferred by M4's plan ruling,
+      2026-10-12): Segoe Fluent glyphs reach the connectors as an RGBA raster
+      (`GetGlyphOutlineW` with `GGO_GRAY8_BITMAP`,
+      `native-theme/src/winicons.rs:425-433`), so they cannot be recoloured or
+      scaled without a new rasterisation. Their outlines (`GGO_NATIVE`, or
+      DirectWrite's `GetGlyphRunOutline`) as SVG paths would make Segoe an SVG
+      set like the bundled ones, coloured by `colorize_monochrome_svg`. M4's em-box
+      raster (d1469e46, aed8b5f1) and `.size(u32)` (34d6d1f7) fixed the visible
+      defects; the outline path is a new pipeline, to weigh in M6 with gpui's
+      icon cache. SF Symbols have no public vector export, so they stay rasters.
+
+### Validation: a bad `defaults.border` value is reported once per widget
+
+- [ ] [v0.7.x] From M3 T9's review (M3 Step 8 minors, deferred by M4's plan
+      ruling): a non-finite or negative `defaults.border` value is reported
+      under `defaults.border` (`native-theme/src/resolve/validate_helpers.rs:787-800`)
+      and again for every Full-border widget that inherits it
+      (`check_widget_border`, `:517`), each under the widget's own key. Error
+      noise, not a wrong result. A fix needs stated-versus-inherited knowledge
+      the validator does not have (which widget values came from
+      `defaults.border`): report an inherited value once, at its source.
+
+### KDE fonts: Qt 6's `styleName`, field 16
+
+- [ ] [1.0] Research (M4 T11 ruling, 2026-10-12): a Qt 6 font string can carry a
+      `styleName` in field 16, which the KDE reader's parser ignores
+      (`parse_qt_font_with_weight`, `native-theme/src/kde/fonts.rs:65`).
+      Unverified: whether a set `styleName` overrides fields 4 and 5 (weight
+      and style) in Qt's font matching; read `qfont.cpp` at a pinned Qt tag. If
+      it does, a KDE font with a `styleName` renders another weight than the
+      reader reports. No user report.
+
+### GNOME: the reader's dark mode does not read `GTK_THEME`
+
+- [ ] [v0.7.x] From M4 T15 (ruled 2026-10-12): `detect::system_is_dark` checks
+      `GTK_THEME` first (`:dark` or `-dark`, `native-theme/src/detect.rs:766-771`),
+      while the GNOME reader takes its mode from the portal's colour scheme,
+      then gsettings' `color-scheme` (`color_scheme_is_dark`,
+      `native-theme/src/gnome/mod.rs:497`). A `GTK_THEME=Adwaita:dark` session
+      reads dark in `detect` and light in the reader. `GTK_THEME` is a
+      developer override, not a GNOME setting. Decide whether the reader follows
+      it, or `detect` stops reading it, so the two agree.
+
+### windows-11: the title bar with "Show accent colour on title bars"
+
+- [ ] [v0.7.x] From M4 T22 (ruled 2026-10-13): the Windows reader wrote
+      `DwmGetColorizationColor` as `window.title_bar_background` whether or not
+      the user turned on *Show accent colour on title bars*; since 8c133614 it
+      does not, and outside high contrast the title bar is the preset's Mica
+      fallback (bcb1d2c2; `docs/platform-facts.md:1147`, `:370`). With the
+      setting on, Windows draws the title bar in an accent colour the theme then
+      misses. The probe reads the setting as `ColorPrevalence` under
+      `HKCU\Software\Microsoft\Windows\DWM` (0 on the Windows 11 25H2 runner,
+      `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:773`).
+      Needed: a source for reading the setting and for the colour Windows draws
+      with it on (and its text colour); then the reader writes them only when
+      the setting is on, and the watcher reports its change.
+
+### For M5: iced's primary hover from `primary_background`, then windows-11 states `AccentFillColorDefault`
+
+- [ ] [v0.7.0] For M5 (M4 T35 ruling, 2026-10-13): the iced connector puts
+      `defaults.accent_color` in the palette's primary slot
+      (`connectors/native-theme-iced/src/palette.rs:43`) and derives the
+      primary button's hover and pressed fills from it, so its contract test
+      `the_primary_pair_is_the_accent_pair`
+      (`connectors/native-theme-iced/src/contract.rs:2739`) requires the idle
+      `button.primary_background` to equal the accent. windows-11's static
+      `primary_background` therefore inherits the accent, `#0078d4`
+      (ee75ad7e; the comment at `native-theme/src/presets/windows-11.toml:139-141`),
+      where `docs/platform-facts.md:1175` gives WinUI 3's
+      `AccentFillColorDefault`, `#0067c0` / `#4cc2ff` for the default accent.
+      The live reader already writes the `AccentFillColorDefault` shades there
+      (8ccdbed0), so a live Windows theme already breaks the iced assumption.
+      In M5 iced derives the primary hover and pressed fills from
+      `primary_background`; then windows-11 states `AccentFillColorDefault`,
+      as its `checked_background` does (9284f52b).
+
+### Theme watcher: the trailing debounce has no maximum wait
+
+- [ ] [v0.7.x] From M4 T20's review (2026-10-13): the watchers fire once,
+      `DEBOUNCE` (300 ms) after the last relevant event of a burst
+      (`native-theme/src/watch/mod.rs:253-264`), with no maximum wait: relevant
+      writes that keep arriving less than 300 ms apart never fire. Unrealistic
+      for settings writes, so harmless today. Decide whether a burst fires at
+      the latest after some maximum wait (a value to rule, there is no
+      platform source) or record that none is needed.
+
+### Readerless Linux desktops: text scaling and high contrast are not read
+
+- [ ] [v0.7.x] From M4 T19 (2026-10-13): on a Linux desktop with no reader the
+      fallback's accessibility reads reduced motion alone
+      (`readerless_accessibility`, `native-theme/src/pipeline.rs:1250-1255`),
+      while the GNOME reader also reads the text-scaling factor and high
+      contrast. Coherent today: the fallback states the preset's text sizes.
+      Decide, per desktop and with a source for each, whether a readerless
+      desktop has a text-scaling or high-contrast setting the fallback should
+      read.
+
+### Linux: button order and `detect_platform` decide by the raw desktop
+
+- [ ] [v0.7.x] From M4 T16 (2026-10-12): since 62c13acf the reader, the watcher,
+      the icon theme and the font DPI decide by the refined desktop
+      (`DetectionContext::refined_linux_desktop_sync`,
+      `native-theme/src/detect.rs:1355`), but `platform_button_order`
+      (`native-theme/src/resolve/inheritance.rs:62-71`) and
+      `presets::detect_platform` (`native-theme/src/presets.rs:129-142`) still
+      read `XDG_CURRENT_DESKTOP` alone. On an unrecognised desktop refined to
+      KDE the button order still agrees, through kde-breeze's stated
+      `primary_left`, but `list_presets_for_platform` (`:164`) leaves kde-breeze
+      out (pre-existing). Make both read the refined desktop.
+
+### Linux: an application that only resolves presets never gets the portal's answer
+
+- [ ] [v0.7.x] From M4 T16 (2026-10-12; the M3-25 split, documented):
+      `refined_linux_desktop_sync` asks no portal and caches nothing until a
+      system read (`from_system`, `from_system_async`,
+      `AccessibilityPreferences::from_system`) has refined the desktop
+      (`native-theme/src/detect.rs:1344-1352`), so an application that resolves
+      presets without one gets only the `kdeglobals` check: on an unrecognised
+      desktop a KDE portal backend without `kdeglobals` stays `Unknown`. Also,
+      `invalidate_linux_desktop()` (`:1406`) clears the desktop but no slot
+      derived from it. Decide whether the sync path may ask the portal (through
+      `pollster`, bounded as the readers are) or whether the docs stay as they
+      are; give `invalidate_linux_desktop` the line its doc needs.
+
+### KDE reader: `switch.thumb_background` and `menu.icon_size` are not read
+
+- [ ] [v0.7.x] From M4 T36 (2026-10-13): kde-breeze states the switch thumb as
+      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1473`)
+      and the menu icon size as KIconLoader's Small, 16 (`:1242`), but the KDE
+      reader writes neither: a custom colour scheme keeps Breeze's thumb, and
+      an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
+      `SmallDefault` into `defaults.icon_sizes.small` only,
+      `native-theme/src/kde/mod.rs:188`). Write both, citing the facts rows,
+      and run the `preset-validator` over kde-breeze.
+
+### kde-breeze: the Qt Widgets menu fill
+
+- [ ] [v0.7.x] From M4 T36 and the kde-breeze validator after it (2026-10-13):
+      Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
+      mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
+      breezehelper.cpp:200-203, as the T36 implementer read them), while
+      `docs/platform-facts.md:1227` gives KDE's `menu.background_color` as
+      `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
+      uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
+      it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
+      which one kde-breeze states, and correct the preset or the cell.
+
+### kde-breeze: the header's "Verified on" date
+
+- [ ] [v0.7.x] From the kde-breeze validator after M4 T36 (2026-10-13):
+      `native-theme/src/presets/kde-breeze.toml:8` says the cited values were
+      verified on 2026-10-11 (M2e), but T34 and T36 changed and cited values on
+      2026-10-13 (fd4abc64, a7da50c7, 74fc414d). Note the 2026-10-13 values in
+      the header.
+
+### platform-facts: no shadow rows for the toolbar and the list
+
+- [ ] [v0.7.x] From the kde-breeze validator after M4 T36 (2026-10-13):
+      `docs/platform-facts.md` has no `shadow_enabled` row for the toolbar and
+      the list, so a preset's value for them cites nothing. Add the rows,
+      sourced per platform, then state the presets' values with citations.
+
+### windows-11: the validator's findings after T35 left open
+
+- [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;
+      the stopping rule sent everything T35's fix round did not take here):
+      - `defaults.shadow_color`: `docs/platform-facts.md:1053` gives Windows
+        two layers (the ambient one drawn, 14 % low, 20 % high), and the
+        model's one shadow colour serves both the popup and the window
+        shadows; unchanged. Decide what the one field states, or split it.
+      - `list.alternate_row_background` `#f9f9f9` / `#262626`
+        (`native-theme/src/presets/windows-11.toml:336`, `:893`): no WinUI 3
+        source (❓, facts :1382); the field stays, as its fallback is the
+        wrong kind.
+      - Under high contrast the reader writes `input.background_color` as
+        `COLOR_BTNFACE` (`native-theme/src/windows.rs:363`), where the facts'
+        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md:1186`); the
+        Win32 cell is not the HC mapping, and the HC writes have no facts rows.
+        Give the HC mappings their rows.
+      - The link's hover and pressed text have no high-contrast mapping
+        (`windows.rs:520-521` writes them from the accent shades outside high
+        contrast only); under HC the preset's default-accent values stay.
+      - `splitter.hover_color` now equals its rest line (inherits
+        `divider_color`): WinUI 3 has no draggable divider (facts :1419).
+      Tracked in other entries: the dark scroll thumb (*Presets: the scrollbar
+      thumb colour*), the dark selected text and the menu backdrop
+      (*windows-11: accent-derived values*), `tab.active_background`
+      (*windows-11: what WinUI 3 draws*), `primary_background` (the M5 entry
+      above).
+
+### Linux font DPI: the `xrandr` fallback has no facts row
+
+- [ ] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
+      8): the font-DPI chain ends with the physical DPI `xrandr` reports
+      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
+      step of `detect_system_font_dpi`, `:636`), and no
+      `docs/platform-facts.md` row says that any desktop uses it for fonts.
+      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
+      the step so the chain ends at 96.
+
+### CI: the macOS and Windows legs and the strict-panic steps have not run
+
+- [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
+      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
+      targets (c373fdb0, `.github/workflows/ci.yml:77-80`). CI runs on a push to
+      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
+      none of them has run, nor the macOS and Windows runtime tests the M4
+      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
+      and T26, known-unrun). Run them at the next pull request or push to
+      `main`, and fix what fails.
+
+### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
+
+- [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):
+      `detect::prefers_reduced_motion()` (`native-theme/src/detect.rs:905`) and
+      `accessibility_preferences().reduce_motion` (`:942`) cache one read
+      apart; `from_system()` refreshes the second, not the first, so after a
+      watched change without `invalidate_caches()` they disagree. T19's
+      equality test runs both cold and cannot see it. Fill the reduced-motion
+      slot from the reader's block too, or say so in
+      `prefers_reduced_motion`'s docs.
+
+### KDE: the icon sizes and the icon lookup search the base dirs in different orders
+
+- [ ] [v0.7.x] From M4's final review (P3-2, 2026-10-13): the KDE reader looks
+      for the icon theme's `index.theme` in KIconTheme's order, the data home,
+      the data dirs, then `~/.icons` (`kde_icon_base_dirs`,
+      `native-theme/src/kde/mod.rs:220`), and the icon lookup in the Icon
+      Theme Specification's, `~/.icons` first (`icon_base_dirs_in`,
+      `native-theme/src/icons.rs:899`). Both orders are cited; with a copy of
+      the theme in both `~/.icons` and `~/.local/share/icons`, the sizes and
+      the icons come from different copies. Rare. Decide whether one order
+      serves both, or document it.
+
+### detect: `refined_linux_desktop_sync` stats `kdeglobals` on every call before a system read
+
+- [ ] [v0.7.x] From M4's final review (P7-1, 2026-10-13): on an unrecognised
+      desktop with nothing cached yet, `refined_linux_desktop_sync`
+      (`native-theme/src/detect.rs:1355-1360`) checks that `kdeglobals` exists
+      (a `stat`) on every call and caches nothing, and the `icon_name` that
+      native-theme-build generates calls it per lookup (64a58f9f), an icon per
+      widget per frame in egui. Low impact: a themed application has usually
+      made a system read. Cache the portal-less answer in its own slot
+      (cleared with the desktop), or document it.
+
+### Links: Kirigami darkens a pressed link
+
+- [ ] [1.0] From M4 T34 (2026-10-13): kde-breeze's link hover and pressed text
+      inherit `link.font.color` (fd4abc64), as a Qt rich-text link keeps
+      `palette(link)` in every state, but Kirigami's `LinkButton` darkens a
+      pressed link, `Qt.darker(linkColor)` (kirigami v6.31.0
+      `templates/LinkButton.qml:66`, `:87-93`). The model has no darkening rule,
+      so a Kirigami application's pressed link is not modelled. Decide whether
+      the model states it (a derived value with that rule) or leaves it to the
+      toolkit.
 
 ---
 
@@ -2753,9 +2943,8 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### Font DPI
 - [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
 - [ ] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
-- [ ] [v0.7.0] For M4: an unrecognised `XDG_CURRENT_DESKTOP` with a GNOME portal backend gets the GNOME reader (`native-theme/src/pipeline.rs:631-646`), whose font DPI is 96, but `desktop_font_dpi(LinuxDesktop::Unknown)` is `None` (`native-theme/src/detect.rs:409`), so `ResolutionContext::from_system()` still reads `Xft.dpi` (96 × factor × the X11 UI scale under gnome-settings-daemon) while the connectors apply the factor: the preset path scales text twice there. The preset path should follow the reader's choice of desktop. Found in the M2e Step 7 review (2026-10-11).
-  Fixed by 62c13acf (M4 T16, 2026-10-12): `desktop_font_dpi` takes the refined desktop the reader is chosen by (`detect::refine_linux_desktop`: `XDG_CURRENT_DESKTOP`, then the portal backend, then `kdeglobals`), so an unrecognised desktop with a GNOME portal backend gives 96 on the preset path. The preset path is synchronous and does not ask the portal: it uses the desktop the last system read (`from_system`, `from_system_async`, `AccessibilityPreferences::from_system`) refined, until `invalidate_caches()`; an application that resolves presets without such a read gets only the `kdeglobals` check.
 
 ### docs.rs feature badges
 - [ ] [1.0] docs.rs `doc(cfg)` badges: mark each feature-gated item on docs.rs with the feature it needs. It needs nightly's `doc_cfg` (`#![cfg_attr(docsrs, feature(doc_cfg))]` and `--cfg docsrs` in `[package.metadata.docs.rs]`); until then the item's rustdoc names the feature in prose (the v0.5.9 second pre-merge review's Task 6).
@@ -2768,10 +2957,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### iced showcase: the startup fallback outside Linux
 - [ ] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
-
-### Icon-theme detection commands have no timeout
-- [ ] [v0.7.0] The icon-theme detection runs `gsettings get <schema> icon-theme` (`native-theme/src/model/icons.rs` `gsettings_icon_theme`) and `xfconf-query -c xsettings -p /Net/IconThemeName` (`detect_xfce_icon_theme`) with `Command::output()`, which waits as long as the command runs; a hung D-Bus session blocks the caller (pre-existing). `detect.rs`'s `run_gsettings_with_timeout` (`:180-218`) bounds its own gsettings calls by `SUBPROCESS_TIMEOUT` (2 s), but it runs only `gsettings` and returns `Option<String>`, dropping why a call gave nothing (not found, unsuccessful status, stderr, empty output, timed out) — which the icon-theme error now reports. Needed: a general run-with-timeout helper that takes the program and its arguments and returns `io::Result<Output>`, with a timeout reported as its own reason ("timed out after 2 s"), so `command_icon_theme` keeps naming every failure.
-  Fixed by 6c2327d4 (M4 T18, 2026-10-13): `detect::run_with_timeout(program, args, timeout)` returns `io::Result<Output>`, a timeout as `ErrorKind::TimedOut` ("timed out after 2s", which `command_icon_theme` reports as its own reason), and reads stdout and stderr while the command runs; the icon-theme detection's `gsettings` and `xfconf-query`, `fc-match`, macOS `defaults` and the diagnostics' `gsettings --version` run through it (`run_gsettings_with_timeout` had become `gsettings_get` over the same runner).
 
 ### `system_icon_set()` decides where it should report
 - [ ] [1.0] `system_icon_set()` returns `IconSet::Material` on platforms other than macOS, iOS, Windows and Linux, documented as a "safe cross-platform fallback" (`native-theme/src/model/icons.rs:501`, `:519`): the icon-set counterpart of the icon-theme fallback removed in v0.5.9. By the rule that the library reports and the application decides, it should report there (e.g. `Result<IconSet>` with `Error::PlatformUnsupported`, or `Option<IconSet>`). It decides wrongly where it matters: the BSDs run the same freedesktop desktops as Linux (KDE Plasma, GNOME, XFCE) with freedesktop icon themes, and get the bundled Material set. Ripple: `Resolved::icon_set` and `SystemTheme::icon_set` are required `IconSet` fields filled from it when the theme states none (`Theme::resolve`, `pipeline::run_pipeline`), and `IconSetChoice::effective_icon_set` returns it for `IconSetChoice::System`; each would need a way to carry "none".
