@@ -303,9 +303,10 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 
 /// Simple API: generate icon code from a single TOML file.
 ///
-/// Reads the master TOML at `toml_path` (relative to `CARGO_MANIFEST_DIR`),
-/// validates all referenced themes and SVG files, and returns a
-/// [`GenerateOutput`] on success or [`BuildErrors`] on failure.
+/// Reads the master TOML at `toml_path` (absolute, or relative to
+/// `CARGO_MANIFEST_DIR`), validates all referenced themes and SVG files, and
+/// returns a [`GenerateOutput`] on success or [`BuildErrors`] on failure. It
+/// is `IconGenerator::new().source(toml_path).generate()`.
 ///
 /// Call [`GenerateOutput::emit_cargo_directives()`] on the result to write
 /// the generated file and emit cargo directives.
@@ -319,9 +320,10 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 ///
 /// # Errors
 ///
-/// Returns [`BuildErrors`] if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment
-/// variables are not set, if the TOML file cannot be read or parsed, or if
-/// the icon pipeline detects missing roles, SVGs, or invalid mappings.
+/// Returns [`BuildErrors`] if `OUT_DIR` is not set, if `CARGO_MANIFEST_DIR`
+/// is not set and `toml_path` is relative, if the TOML file cannot be read or
+/// parsed, or if the icon pipeline detects missing roles, SVGs, or invalid
+/// mappings.
 #[must_use = "this returns the generated output; call .emit_cargo_directives() to complete the build"]
 pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
     generate_icons_with_env(toml_path.as_ref(), &|name| std::env::var(name))
@@ -337,41 +339,9 @@ fn generate_icons_with_env(
     toml_path: &Path,
     env: EnvLookup<'_>,
 ) -> Result<GenerateOutput, BuildErrors> {
-    let manifest_dir = PathBuf::from(
-        env("CARGO_MANIFEST_DIR")
-            .map_err(|e| BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string()))?,
-    );
-    let out_dir =
-        PathBuf::from(env("OUT_DIR").map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?);
-    let resolved = manifest_dir.join(toml_path);
-
-    let content = std::fs::read_to_string(&resolved)
-        .map_err(|e| BuildErrors::io_read(resolved.display().to_string(), e.to_string()))?;
-    let config: MasterConfig = toml::from_str(&content).map_err(|e| {
-        BuildErrors::io_parse(
-            resolved.display().to_string(),
-            toml_error_reason(&content, &e),
-        )
-    })?;
-
-    let base_dir = resolved
-        .parent()
-        .ok_or_else(|| {
-            BuildErrors::io_other(format!("{} has no parent directory", resolved.display()))
-        })?
-        .to_path_buf();
-    let file_path_str = resolved.to_string_lossy().to_string();
-
-    let result = run_pipeline(
-        &[(file_path_str, config)],
-        &[base_dir],
-        None,
-        Some(&manifest_dir),
-        None,
-        &[],
-    );
-
-    pipeline_result_to_output(result, &out_dir)
+    IconGenerator::new()
+        .source(toml_path)
+        .generate_with_env(env)
 }
 
 /// Builder API for composing multiple TOML icon definitions.
@@ -652,13 +622,14 @@ struct PipelineResult {
     pub warnings: Vec<String>,
     /// Paths that should trigger rebuild when changed, each once.
     pub rerun_paths: BTreeSet<PathBuf>,
-    /// Size report: (role_count, bundled_theme_count, svg_paths).
-    pub size_report: Option<SizeReport>,
+    /// Size report (all zero when errors were found).
+    pub size_report: SizeReport,
     /// The output filename (snake_case of config name + ".rs").
     pub output_filename: String,
 }
 
 /// Size report for cargo::warning output.
+#[derive(Default)]
 struct SizeReport {
     /// Number of icon roles.
     pub role_count: usize,
@@ -698,7 +669,7 @@ fn run_pipeline(
             }],
             warnings: Vec::new(),
             rerun_paths: BTreeSet::new(),
-            size_report: None,
+            size_report: SizeReport::default(),
             output_filename: String::new(),
         };
     }
@@ -846,7 +817,7 @@ fn run_pipeline(
             errors,
             warnings,
             rerun_paths,
-            size_report: None,
+            size_report: SizeReport::default(),
             output_filename: String::new(),
         };
     };
@@ -857,85 +828,46 @@ fn run_pipeline(
             continue;
         }
         let theme_dir = base_dir.join(theme_name);
-
-        // Issue 20: Early check for theme directory existence
-        if !theme_dir.exists() {
-            errors.push(BuildError::IoRead {
-                path: theme_dir.display().to_string(),
-                reason: format!(
-                    "theme directory not found (expected for bundled theme \"{theme_name}\")"
-                ),
-            });
+        let Some((mapping, mapping_path_str)) = load_and_validate_mapping(
+            &theme_dir,
+            &format!("bundled theme \"{theme_name}\""),
+            &merged.roles,
+            &mut errors,
+            &mut warnings,
+            &mut rerun_paths,
+        ) else {
             continue;
-        }
-
-        let mapping_path = theme_dir.join("mapping.toml");
-        let mapping_path_str = mapping_path.to_string_lossy().to_string();
-
-        // Add mapping TOML and theme directory to rerun paths
-        rerun_paths.insert(mapping_path.clone());
+        };
         rerun_paths.insert(theme_dir.clone());
 
-        match std::fs::read_to_string(&mapping_path) {
-            Ok(content) => match toml::from_str::<ThemeMapping>(&content) {
-                Ok(mapping) => {
-                    // Validate mapping against merged roles
-                    let map_errors =
-                        validate::validate_mapping(&merged.roles, &mapping, &mapping_path_str);
-                    errors.extend(map_errors);
+        // Validate SVGs exist (only for declared master roles)
+        let svg_errors = validate::validate_svgs(&mapping, &theme_dir, &merged.roles);
+        errors.extend(svg_errors);
 
-                    // Validate icon name values are well-formed
-                    let name_errors =
-                        validate::validate_mapping_values(&mapping, &mapping_path_str);
-                    errors.extend(name_errors);
-
-                    // Validate SVGs exist (only for declared master roles)
-                    let svg_errors = validate::validate_svgs(&mapping, &theme_dir, &merged.roles);
-                    errors.extend(svg_errors);
-
-                    // Warn about unrecognized DE keys in DeAware values
-                    let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
-                    warnings.extend(de_warnings);
-
-                    // Issue 7: Bundled themes with DE-aware mappings are a
-                    // semantic mismatch -- icon_name() returns a DE-specific name
-                    // but icon_svg() can only embed the default SVG.
-                    for (role_name, value) in &mapping {
-                        if matches!(value, schema::MappingValue::DeAware(_)) {
-                            errors.push(BuildError::BundledDeAware {
-                                theme: theme_name.clone(),
-                                role: role_name.clone(),
-                                mapping_file: mapping_path_str.clone(),
-                            });
-                        }
-                    }
-
-                    // Check orphan SVGs (warnings, not errors)
-                    let orphan_warnings = check_orphan_svgs_and_collect_paths(
-                        &mapping,
-                        &theme_dir,
-                        theme_name,
-                        &mut svg_paths,
-                        &mut rerun_paths,
-                    );
-                    warnings.extend(orphan_warnings);
-
-                    all_mappings.insert(theme_name.clone(), mapping);
-                }
-                Err(e) => {
-                    errors.push(BuildError::IoParse {
-                        path: mapping_path_str,
-                        reason: toml_error_reason(&content, &e),
-                    });
-                }
-            },
-            Err(e) => {
-                errors.push(BuildError::IoRead {
-                    path: mapping_path_str,
-                    reason: e.to_string(),
+        // Issue 7: Bundled themes with DE-aware mappings are a
+        // semantic mismatch -- icon_name() returns a DE-specific name
+        // but icon_svg() can only embed the default SVG.
+        for (role_name, value) in &mapping {
+            if matches!(value, schema::MappingValue::DeAware(_)) {
+                errors.push(BuildError::BundledDeAware {
+                    theme: theme_name.clone(),
+                    role: role_name.clone(),
+                    mapping_file: mapping_path_str.clone(),
                 });
             }
         }
+
+        // Check orphan SVGs (warnings, not errors)
+        let orphan_warnings = check_orphan_svgs_and_collect_paths(
+            &mapping,
+            &theme_dir,
+            theme_name,
+            &mut svg_paths,
+            &mut rerun_paths,
+        );
+        warnings.extend(orphan_warnings);
+
+        all_mappings.insert(theme_name.clone(), mapping);
     }
 
     // Process system themes (no SVG validation); a theme also bundled was
@@ -944,56 +876,15 @@ fn run_pipeline(
         if !schema::is_known_theme(theme_name) || merged.bundled_themes.contains(theme_name) {
             continue;
         }
-        let theme_dir = base_dir.join(theme_name);
-
-        // Issue 20: Early check for theme directory existence
-        if !theme_dir.exists() {
-            errors.push(BuildError::IoRead {
-                path: theme_dir.display().to_string(),
-                reason: format!(
-                    "theme directory not found (expected for system theme \"{theme_name}\")"
-                ),
-            });
-            continue;
-        }
-
-        let mapping_path = theme_dir.join("mapping.toml");
-        let mapping_path_str = mapping_path.to_string_lossy().to_string();
-
-        // Add mapping TOML to rerun paths
-        rerun_paths.insert(mapping_path.clone());
-
-        match std::fs::read_to_string(&mapping_path) {
-            Ok(content) => match toml::from_str::<ThemeMapping>(&content) {
-                Ok(mapping) => {
-                    let map_errors =
-                        validate::validate_mapping(&merged.roles, &mapping, &mapping_path_str);
-                    errors.extend(map_errors);
-
-                    // Validate icon name values are well-formed
-                    let name_errors =
-                        validate::validate_mapping_values(&mapping, &mapping_path_str);
-                    errors.extend(name_errors);
-
-                    // Warn about unrecognized DE keys in DeAware values
-                    let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
-                    warnings.extend(de_warnings);
-
-                    all_mappings.insert(theme_name.clone(), mapping);
-                }
-                Err(e) => {
-                    errors.push(BuildError::IoParse {
-                        path: mapping_path_str,
-                        reason: toml_error_reason(&content, &e),
-                    });
-                }
-            },
-            Err(e) => {
-                errors.push(BuildError::IoRead {
-                    path: mapping_path_str,
-                    reason: e.to_string(),
-                });
-            }
+        if let Some((mapping, _)) = load_and_validate_mapping(
+            &base_dir.join(theme_name),
+            &format!("system theme \"{theme_name}\""),
+            &merged.roles,
+            &mut errors,
+            &mut warnings,
+            &mut rerun_paths,
+        ) {
+            all_mappings.insert(theme_name.clone(), mapping);
         }
     }
 
@@ -1004,7 +895,7 @@ fn run_pipeline(
             errors,
             warnings,
             rerun_paths,
-            size_report: None,
+            size_report: SizeReport::default(),
             output_filename,
         };
     }
@@ -1030,7 +921,7 @@ fn run_pipeline(
             errors,
             warnings,
             rerun_paths,
-            size_report: None,
+            size_report: SizeReport::default(),
             output_filename,
         };
     };
@@ -1059,12 +950,12 @@ fn run_pipeline(
         .map(|m| m.len())
         .sum();
 
-    let size_report = Some(SizeReport {
+    let size_report = SizeReport {
         role_count: merged.roles.len(),
         bundled_theme_count: merged.bundled_themes.len(),
         total_svg_bytes,
         svg_count: svg_paths.len(),
-    });
+    };
 
     PipelineResult {
         code,
@@ -1074,6 +965,70 @@ fn run_pipeline(
         size_report,
         output_filename,
     }
+}
+
+/// Read, parse and check the `mapping.toml` of `theme_dir`, the directory of
+/// `theme` (`bundled theme "material"`, for the message when it is missing):
+/// its roles against `roles`, its icon names and DE keys. Returns the mapping
+/// and its path, or `None` when the directory or the file could not be read
+/// or parsed; every problem is pushed to `errors` or `warnings`, and the
+/// mapping file to `rerun_paths`.
+fn load_and_validate_mapping(
+    theme_dir: &Path,
+    theme: &str,
+    roles: &[String],
+    errors: &mut Vec<BuildError>,
+    warnings: &mut Vec<String>,
+    rerun_paths: &mut BTreeSet<PathBuf>,
+) -> Option<(ThemeMapping, String)> {
+    // Issue 20: Early check for theme directory existence
+    if !theme_dir.exists() {
+        errors.push(BuildError::IoRead {
+            path: theme_dir.display().to_string(),
+            reason: format!("theme directory not found (expected for {theme})"),
+        });
+        return None;
+    }
+
+    let mapping_path = theme_dir.join("mapping.toml");
+    let mapping_path_str = mapping_path.to_string_lossy().to_string();
+    rerun_paths.insert(mapping_path.clone());
+
+    let content = match std::fs::read_to_string(&mapping_path) {
+        Ok(content) => content,
+        Err(e) => {
+            errors.push(BuildError::IoRead {
+                path: mapping_path_str,
+                reason: e.to_string(),
+            });
+            return None;
+        }
+    };
+    let mapping = match toml::from_str::<ThemeMapping>(&content) {
+        Ok(mapping) => mapping,
+        Err(e) => {
+            errors.push(BuildError::IoParse {
+                path: mapping_path_str,
+                reason: toml_error_reason(&content, &e),
+            });
+            return None;
+        }
+    };
+
+    errors.extend(validate::validate_mapping(
+        roles,
+        &mapping,
+        &mapping_path_str,
+    ));
+    // Validate icon name values are well-formed
+    errors.extend(validate::validate_mapping_values(
+        &mapping,
+        &mapping_path_str,
+    ));
+    // Warn about unrecognized DE keys in DeAware values
+    warnings.extend(validate::validate_de_keys(&mapping, &mapping_path_str));
+
+    Some((mapping, mapping_path_str))
 }
 
 /// The reason of an `IoParse` error: `e`'s message on one line, after the
@@ -1222,25 +1177,14 @@ fn pipeline_result_to_output(
         ));
     }
 
-    let output_path = out_dir.join(&result.output_filename);
-
-    let (role_count, bundled_theme_count, svg_count, total_svg_bytes) = match &result.size_report {
-        Some(report) => (
-            report.role_count,
-            report.bundled_theme_count,
-            report.svg_count,
-            report.total_svg_bytes,
-        ),
-        None => (0, 0, 0, 0),
-    };
-
+    let report = result.size_report;
     Ok(GenerateOutput {
-        output_path,
+        output_path: out_dir.join(&result.output_filename),
         warnings: result.warnings,
-        role_count,
-        bundled_theme_count,
-        svg_count,
-        total_svg_bytes,
+        role_count: report.role_count,
+        bundled_theme_count: report.bundled_theme_count,
+        svg_count: report.svg_count,
+        total_svg_bytes: report.total_svg_bytes,
         rerun_paths: result.rerun_paths.into_iter().collect(),
         code: result.code,
     })
@@ -1669,10 +1613,7 @@ bundled-themes = ["material"]
         );
 
         assert!(result.errors.is_empty());
-        let report = result
-            .size_report
-            .as_ref()
-            .expect("should have size report");
+        let report = &result.size_report;
         assert_eq!(report.role_count, 1);
         assert_eq!(report.bundled_theme_count, 1);
         assert_eq!(report.svg_count, 1);
@@ -1742,10 +1683,7 @@ bundled-themes = ["material"]
         );
 
         assert!(result.errors.is_empty(), "{:?}", result.errors);
-        let report = result
-            .size_report
-            .as_ref()
-            .expect("should have size report");
+        let report = &result.size_report;
         assert_eq!(report.svg_count, 1);
         assert_eq!(report.total_svg_bytes, SVG_STUB.len() as u64);
         let svg_reruns = result
@@ -3554,7 +3492,7 @@ system-themes = ["freedesktop"]
         assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
         // Should collapse to a simple arm since all values equal default
         assert!(
-            !result.code.contains("parse_linux_desktop"),
+            !result.code.contains("linux_desktop()"),
             "all-same DE-aware should collapse to simple arm. code:\n{}",
             result.code
         );

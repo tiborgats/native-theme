@@ -65,10 +65,8 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 /// - `impl {crate_path}::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
-/// using `{crate_path}::detect::parse_linux_desktop()`. On non-Linux, the default value is used.
-///
-/// When any DE-aware mapping exists, a `OnceLock`-based cache is emitted at the
-/// start of `icon_name()` to avoid re-reading `XDG_CURRENT_DESKTOP` on every call.
+/// on `{crate_path}::detect::system().linux_desktop()`, native-theme's cached
+/// desktop, which `detect::invalidate_caches()` clears. On non-Linux, the default value is used.
 pub(crate) fn generate_code(
     config: &MasterConfig,
     mappings: &BTreeMap<String, ThemeMapping>,
@@ -98,10 +96,9 @@ pub(crate) fn generate_code(
     let base_derives = ["Debug", "Clone", "Copy", "PartialEq", "Eq", "Hash"];
     let mut all_derives: Vec<&str> = base_derives.to_vec();
     for extra in extra_derives {
-        let trimmed = extra.trim();
-        let last_segment = trimmed.rsplit("::").next().unwrap_or(trimmed);
-        if !base_derives.contains(&last_segment) && !all_derives.contains(&trimmed) {
-            all_derives.push(trimmed);
+        let last_segment = extra.rsplit("::").next().unwrap_or(extra);
+        if !base_derives.contains(&last_segment) && !all_derives.contains(&extra.as_str()) {
+            all_derives.push(extra);
         }
     }
     let derives = all_derives.join(", ");
@@ -162,45 +159,28 @@ pub(crate) fn generate_code(
     out
 }
 
-/// Returns `true` if any mapping value across all themes is DE-aware with
-/// at least one non-default key that maps to a known DE variant AND where
-/// the DE-specific values differ from the default.
-///
-/// Issue 53: When all DE overrides have the same value as the default, the
-/// mapping collapses to a simple arm and no DE cache is needed.
-fn has_any_de_aware_mappings(
-    config: &MasterConfig,
-    mappings: &BTreeMap<String, ThemeMapping>,
-) -> bool {
-    let all_themes = config
-        .bundled_themes
+/// The DE-specific arms of a DE-aware value with a default: each known
+/// desktop key's `LinuxDesktop` path and escaped name. `None` when the value
+/// needs no runtime dispatch: no default, no known desktop key, or (Issue 53)
+/// every desktop key names the default.
+fn de_dispatch(
+    de_map: &BTreeMap<String, String>,
+    crate_path: &str,
+) -> Option<Vec<(String, String)>> {
+    let default = de_map.get("default")?;
+    let entries: Vec<(String, &String)> = de_map
         .iter()
-        .chain(config.system_themes.iter());
-
-    for theme_name in all_themes {
-        if let Some(mapping) = mappings.get(theme_name) {
-            for value in mapping.values() {
-                if let MappingValue::DeAware(de_map) = value {
-                    let default_val = de_map.get("default");
-                    let de_entries: Vec<_> = de_map
-                        .iter()
-                        .filter(|(k, _)| k.as_str() != "default")
-                        .filter(|(k, _)| de_key_to_variant(k).is_some())
-                        .collect();
-                    if de_entries.is_empty() {
-                        continue;
-                    }
-                    // Issue 53: Skip if all DE values equal the default
-                    let all_same =
-                        default_val.is_some_and(|dv| de_entries.iter().all(|(_, v)| *v == dv));
-                    if !all_same {
-                        return true;
-                    }
-                }
-            }
-        }
+        .filter_map(|(key, name)| de_key_to_qualified_variant(key, crate_path).map(|v| (v, name)))
+        .collect();
+    if entries.iter().all(|(_, name)| *name == default) {
+        return None;
     }
-    false
+    Some(
+        entries
+            .into_iter()
+            .map(|(variant, name)| (variant, escape_rust_str(name)))
+            .collect(),
+    )
 }
 
 /// Generates the `icon_name` method body with match arms for all role-theme combinations.
@@ -211,38 +191,9 @@ fn generate_icon_name(
     crate_path: &str,
     role_variants: &[(&str, String)],
 ) {
-    let _ = writeln!(
-        out,
-        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::core::option::Option<&str> {{"
-    );
-
-    // Issue 6: OnceLock DE caching -- if ANY mapping is DE-aware, emit a
-    // cached DE detection at the top of the function.
-    let needs_de_cache = has_any_de_aware_mappings(config, mappings);
-    if needs_de_cache {
-        let _ = writeln!(out, "        #[cfg(target_os = \"linux\")]");
-        let _ = writeln!(out, "        let de = {{");
-        // Issue 21: Document OnceLock caching behavior in generated code
-        let _ = writeln!(
-            out,
-            "            // Note: XDG_CURRENT_DESKTOP is read once and cached for the"
-        );
-        let _ = writeln!(
-            out,
-            "            // lifetime of the process. Changes after first access are not seen."
-        );
-        let _ = writeln!(
-            out,
-            "            static CACHED_DE: std::sync::OnceLock<{crate_path}::detect::LinuxDesktop> = std::sync::OnceLock::new();"
-        );
-        let _ = writeln!(
-            out,
-            "            *CACHED_DE.get_or_init(|| {crate_path}::detect::parse_linux_desktop(&std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()))"
-        );
-        let _ = writeln!(out, "        }};");
-    }
-
-    let _ = writeln!(out, "        match (self, set) {{");
+    // The arms are written first: `de` is bound only when an arm dispatches on it
+    let mut arms = String::new();
+    let mut needs_de = false;
 
     // All themes (bundled + system) produce icon_name arms
     let all_themes = config
@@ -264,87 +215,71 @@ fn generate_icon_name(
         };
         if let Some(mapping) = mappings.get(theme_name) {
             for (role, variant) in role_variants {
-                if let Some(mv) = mapping.get(*role) {
-                    match mv {
-                        MappingValue::Simple(name) => {
-                            let escaped = escape_rust_str(name);
-                            let _ = writeln!(
-                                out,
-                                "            (Self::{variant}, {icon_set}) => Some(\"{escaped}\"),"
-                            );
-                        }
-                        MappingValue::DeAware(de_map) => {
-                            // default_name() returns None only when "default" key is absent,
-                            // but VAL-04 has already verified it exists.
-                            let default_name = match de_map.get("default") {
-                                Some(name) => name,
-                                None => continue,
-                            };
-                            let escaped_default = escape_rust_str(default_name);
-                            // Collect DE-specific entries (non-default keys)
-                            let de_entries: Vec<_> = de_map
-                                .iter()
-                                .filter(|(k, _)| k.as_str() != "default")
-                                .filter_map(|(k, v)| {
-                                    de_key_to_qualified_variant(k, crate_path)
-                                        .map(|variant_path| (variant_path, escape_rust_str(v)))
-                                })
-                                .collect();
-
-                            // Issue 53: Collapse to simple arm when all DE overrides
-                            // have the same value as the default.
-                            let all_same_as_default = !de_entries.is_empty()
-                                && de_entries
-                                    .iter()
-                                    .all(|(_, escaped)| *escaped == escaped_default);
-
-                            if de_entries.is_empty() || all_same_as_default {
-                                // No DE-specific overrides, or all values equal default
-                                let _ = writeln!(
-                                    out,
-                                    "            (Self::{variant}, {icon_set}) => Some(\"{escaped_default}\"),"
-                                );
-                            } else {
-                                // Emit cfg-gated DE-aware dispatch block using cached `de`
-                                let _ = writeln!(
-                                    out,
-                                    "            (Self::{variant}, {icon_set}) => {{"
-                                );
-                                let _ =
-                                    writeln!(out, "                #[cfg(target_os = \"linux\")]");
-                                let _ = writeln!(out, "                {{");
-                                let _ = writeln!(out, "                    match de {{");
-                                for (variant_path, escaped_name) in &de_entries {
-                                    let _ = writeln!(
-                                        out,
-                                        "                        {variant_path} => Some(\"{escaped_name}\"),"
-                                    );
-                                }
-                                let _ = writeln!(
-                                    out,
-                                    "                        _ => Some(\"{escaped_default}\"),"
-                                );
-                                let _ = writeln!(out, "                    }}");
-                                let _ = writeln!(out, "                }}");
-                                let _ = writeln!(
-                                    out,
-                                    "                #[cfg(not(target_os = \"linux\"))]"
-                                );
-                                let _ = writeln!(out, "                {{");
-                                let _ = writeln!(
-                                    out,
-                                    "                    Some(\"{escaped_default}\")"
-                                );
-                                let _ = writeln!(out, "                }}");
-                                let _ = writeln!(out, "            }},");
-                            }
-                        }
-                    }
+                // default_name() returns None only when a DE-aware value has no
+                // "default" key, but VAL-04 has already verified it exists.
+                let Some(mv) = mapping.get(*role) else {
+                    continue;
+                };
+                let Some(default_name) = mv.default_name() else {
+                    continue;
+                };
+                let escaped_default = escape_rust_str(default_name);
+                let de_entries = match mv {
+                    MappingValue::DeAware(de_map) => de_dispatch(de_map, crate_path),
+                    MappingValue::Simple(_) => None,
+                };
+                let Some(de_entries) = de_entries else {
+                    let _ = writeln!(
+                        arms,
+                        "            (Self::{variant}, {icon_set}) => Some(\"{escaped_default}\"),"
+                    );
+                    continue;
+                };
+                needs_de = true;
+                // Emit cfg-gated DE-aware dispatch block on `de`
+                let _ = writeln!(arms, "            (Self::{variant}, {icon_set}) => {{");
+                let _ = writeln!(arms, "                #[cfg(target_os = \"linux\")]");
+                let _ = writeln!(arms, "                {{");
+                let _ = writeln!(arms, "                    match de {{");
+                for (variant_path, escaped_name) in &de_entries {
+                    let _ = writeln!(
+                        arms,
+                        "                        {variant_path} => Some(\"{escaped_name}\"),"
+                    );
                 }
+                let _ = writeln!(
+                    arms,
+                    "                        _ => Some(\"{escaped_default}\"),"
+                );
+                let _ = writeln!(arms, "                    }}");
+                let _ = writeln!(arms, "                }}");
+                let _ = writeln!(arms, "                #[cfg(not(target_os = \"linux\"))]");
+                let _ = writeln!(arms, "                {{");
+                let _ = writeln!(arms, "                    Some(\"{escaped_default}\")");
+                let _ = writeln!(arms, "                }}");
+                let _ = writeln!(arms, "            }},");
             }
         }
     }
 
+    let _ = writeln!(
+        out,
+        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::core::option::Option<&str> {{"
+    );
+    if needs_de {
+        // Issue 21: say in the generated code where the desktop comes from
+        let _ = writeln!(
+            out,
+            "        // native-theme's cached desktop; detect::invalidate_caches() clears it"
+        );
+        let _ = writeln!(out, "        #[cfg(target_os = \"linux\")]");
+        let _ = writeln!(
+            out,
+            "        let de = {crate_path}::detect::system().linux_desktop();"
+        );
+    }
+    let _ = writeln!(out, "        match (self, set) {{");
+    out.push_str(&arms);
     let _ = writeln!(out, "            _ => None,");
     let _ = writeln!(out, "        }}");
     let _ = writeln!(out, "    }}");
@@ -838,12 +773,12 @@ play-pause = { kde = "media-playback-start", default = "play" }
     }
 
     #[test]
-    fn generated_code_de_aware_calls_parse_linux_desktop() {
+    fn generated_code_de_aware_reads_the_cached_desktop() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("native_theme::detect::parse_linux_desktop("),
-            "DE-aware codegen should call parse_linux_desktop. output:\n{output}"
+            output.contains("let de = native_theme::detect::system().linux_desktop();"),
+            "DE-aware codegen should read native-theme's cached desktop. output:\n{output}"
         );
     }
 
@@ -907,10 +842,10 @@ play-pause = { default = "play" }
             ),
             "DE-aware with only default should produce simple arm. output:\n{output}"
         );
-        // Should NOT contain cfg gating or parse_linux_desktop for this mapping
+        // Should NOT contain cfg gating or the desktop read for this mapping
         assert!(
-            !output.contains("parse_linux_desktop"),
-            "DE-aware with only default should not use parse_linux_desktop. output:\n{output}"
+            !output.contains("linux_desktop()"),
+            "DE-aware with only default should not read the desktop. output:\n{output}"
         );
     }
 
@@ -993,33 +928,15 @@ system-themes = ["sf-symbols"]
         );
     }
 
-    // === OnceLock DE caching tests (Issue 6) ===
+    // === Desktop read tests (Issue 6) ===
 
     #[test]
-    fn generated_code_de_aware_has_oncelock_cache() {
-        let (config, mappings) = de_aware_config_and_mappings();
-        let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        assert!(
-            output.contains("OnceLock"),
-            "DE-aware codegen should emit OnceLock caching. output:\n{output}"
-        );
-        assert!(
-            output.contains("CACHED_DE"),
-            "DE-aware codegen should use CACHED_DE static. output:\n{output}"
-        );
-        assert!(
-            output.contains("get_or_init"),
-            "OnceLock should use get_or_init. output:\n{output}"
-        );
-    }
-
-    #[test]
-    fn generated_code_no_de_aware_no_oncelock() {
+    fn generated_code_no_de_aware_no_desktop_read() {
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            !output.contains("OnceLock"),
-            "Non-DE-aware codegen should not emit OnceLock. output:\n{output}"
+            !output.contains("let de ="),
+            "Non-DE-aware codegen should not read the desktop. output:\n{output}"
         );
     }
 
@@ -1068,7 +985,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("my_crate::detect::parse_linux_desktop("),
+            output.contains("my_crate::detect::system().linux_desktop()"),
             "DE-aware codegen should use custom crate path. output:\n{output}"
         );
         assert!(
@@ -1187,16 +1104,16 @@ system-themes = ["sf-symbols"]
         );
     }
 
-    // === Issue 64: Default-only DeAware assert !OnceLock ===
+    // === Issue 64: Default-only DeAware assert no desktop read ===
 
     #[test]
-    fn generated_code_de_aware_default_only_no_oncelock() {
+    fn generated_code_de_aware_default_only_no_desktop_read() {
         let (config, mappings) = de_aware_default_only_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        // DeAware with only a default key should NOT emit OnceLock
+        // DeAware with only a default key should NOT read the desktop
         assert!(
-            !output.contains("OnceLock"),
-            "DE-aware with only default should not emit OnceLock. output:\n{output}"
+            !output.contains("let de ="),
+            "DE-aware with only default should not read the desktop. output:\n{output}"
         );
     }
 
@@ -1244,15 +1161,17 @@ system-themes = ["sf-symbols"]
         }
     }
 
-    // === Issue 21: OnceLock caching comment ===
+    // === Issue 21: desktop cache comment ===
 
     #[test]
-    fn generated_code_de_aware_has_oncelock_comment() {
+    fn generated_code_de_aware_has_desktop_cache_comment() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("XDG_CURRENT_DESKTOP is read once and cached"),
-            "should have OnceLock caching comment. output:\n{output}"
+            output.contains(
+                "// native-theme's cached desktop; detect::invalidate_caches() clears it"
+            ),
+            "should have the desktop cache comment. output:\n{output}"
         );
     }
 
@@ -1282,7 +1201,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         // All DE overrides equal default, should collapse to simple arm
         assert!(
-            !output.contains("parse_linux_desktop"),
+            !output.contains("linux_desktop()"),
             "all-same DE-aware should collapse. output:\n{output}"
         );
         assert!(

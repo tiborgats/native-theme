@@ -430,8 +430,8 @@ reveal = { kde = "view-visible", default = "view-reveal" }
     assert!(
         output
             .code()
-            .contains("native_theme::detect::parse_linux_desktop("),
-        "should call parse_linux_desktop. code:\n{}",
+            .contains("let de = native_theme::detect::system().linux_desktop();"),
+        "should read native-theme's cached desktop. code:\n{}",
         output.code()
     );
     assert!(

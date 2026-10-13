@@ -559,11 +559,7 @@ pub(crate) fn validate_mapping_values(
             }
         }
 
-        let names: Vec<&str> = match value {
-            MappingValue::Simple(s) => vec![s.as_str()],
-            MappingValue::DeAware(m) => m.values().map(|s| s.as_str()).collect(),
-        };
-        for name in names {
+        for name in value.all_names() {
             // Issue 97: Capture the offending character for diagnostics
             if let Some((reason, offending)) = icon_name_violation(name) {
                 errors.push(BuildError::InvalidIconName {
