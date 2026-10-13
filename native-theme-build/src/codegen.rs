@@ -768,13 +768,18 @@ play-pause = { kde = "media-playback-start", default = "play" }
     }
 
     #[test]
+    fn de_key_to_variant_maps_cosmic() {
+        assert_eq!(de_key_to_variant("cosmic"), Some("LinuxDesktop::CosmicDe"));
+    }
+
+    #[test]
     fn de_key_to_variant_default_returns_none() {
         assert_eq!(de_key_to_variant("default"), None);
     }
 
     #[test]
     fn de_key_to_variant_unknown_returns_none() {
-        assert_eq!(de_key_to_variant("cosmic"), None);
+        assert_eq!(de_key_to_variant("unity"), None);
     }
 
     #[test]

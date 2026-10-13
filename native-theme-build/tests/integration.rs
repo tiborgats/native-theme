@@ -475,6 +475,61 @@ reveal = { kde = "view-visible", default = "view-reveal" }
 }
 
 #[test]
+fn de_aware_compositor_keys_dispatch() {
+    let dir = create_temp_dir("de_compositor_keys");
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "de-test"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    write_file(
+        &dir,
+        "freedesktop/mapping.toml",
+        r#"
+reveal = { cosmic = "cosmic-reveal", hyprland = "hypr-reveal", sway = "sway-reveal", river = "river-reveal", niri = "niri-reveal", wayfire = "wayfire-reveal", default = "view-reveal" }
+"#,
+    );
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    assert!(
+        output
+            .warnings()
+            .iter()
+            .all(|w| !w.contains("unrecognized")),
+        "every key is a desktop native-theme detects: {:?}",
+        output.warnings()
+    );
+    for (variant, name) in [
+        ("CosmicDe", "cosmic-reveal"),
+        ("Hyprland", "hypr-reveal"),
+        ("Sway", "sway-reveal"),
+        ("River", "river-reveal"),
+        ("Niri", "niri-reveal"),
+        ("Wayfire", "wayfire-reveal"),
+    ] {
+        let arm = format!("native_theme::detect::LinuxDesktop::{variant} => Some(\"{name}\")");
+        assert!(
+            output.code().contains(&arm),
+            "missing `{arm}`. code:\n{}",
+            output.code()
+        );
+    }
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+#[test]
 fn de_aware_unknown_key_produces_warning() {
     let dir = create_temp_dir("de_unknown_key");
     write_file(
@@ -490,7 +545,7 @@ system-themes = ["freedesktop"]
         &dir,
         "freedesktop/mapping.toml",
         r#"
-reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
+reveal = { unity = "unity-reveal", default = "view-reveal" }
 "#,
     );
 
@@ -500,10 +555,10 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
         .generate()
         .unwrap_or_else(|e| panic!("warnings should not be errors: {e}"));
 
-    // Warnings should mention cosmic and unrecognized (checked separately for resilience)
+    // Warnings should mention unity and unrecognized (checked separately for resilience)
     assert!(
-        output.warnings().iter().any(|w| w.contains("cosmic")),
-        "should mention 'cosmic': {:?}",
+        output.warnings().iter().any(|w| w.contains("unity")),
+        "should mention 'unity': {:?}",
         output.warnings()
     );
     assert!(
@@ -514,7 +569,7 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
 
     assert!(!output.code().is_empty(), "code should still be generated");
 
-    // Since "cosmic" maps to None in de_key_to_variant, no DE-specific arms generated,
+    // Since "unity" maps to None in de_key_to_variant, no DE-specific arms generated,
     // so the DeAware value collapses to a simple arm using the default
     assert!(
         output.code().contains("Some(\"view-reveal\")"),

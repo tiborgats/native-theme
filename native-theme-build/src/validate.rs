@@ -848,15 +848,15 @@ mod tests {
     }
 
     #[test]
-    fn de_keys_unrecognized_cosmic() {
+    fn de_keys_unrecognized_unity() {
         let mut de_map = BTreeMap::new();
-        de_map.insert("cosmic".to_string(), "cosmic-play".to_string());
+        de_map.insert("unity".to_string(), "unity-play".to_string());
         de_map.insert("default".to_string(), "play".to_string());
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
         let warnings = validate_de_keys(&mapping, "mapping.toml");
         assert_eq!(warnings.len(), 1);
         assert!(
-            warnings[0].contains("cosmic"),
+            warnings[0].contains("unity"),
             "should mention the unrecognized key"
         );
         assert!(warnings[0].contains("kde"), "should list valid keys");
@@ -867,11 +867,12 @@ mod tests {
         let mut de_map = BTreeMap::new();
         de_map.insert("kde".to_string(), "media-playback-start".to_string());
         de_map.insert("cosmic".to_string(), "cosmic-play".to_string());
+        de_map.insert("unity".to_string(), "unity-play".to_string());
         de_map.insert("default".to_string(), "play".to_string());
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
         let warnings = validate_de_keys(&mapping, "mapping.toml");
-        assert_eq!(warnings.len(), 1, "only cosmic is unrecognized");
-        assert!(warnings[0].contains("cosmic"));
+        assert_eq!(warnings.len(), 1, "only unity is unrecognized");
+        assert!(warnings[0].contains("unity"));
     }
 
     #[test]
