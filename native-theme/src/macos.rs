@@ -151,6 +151,33 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     (defaults, per_widget)
 }
 
+/// Read one appearance's colours: [`read_appearance_colors`] inside
+/// `performAsCurrentDrawingAppearance`, so that dynamic colours resolve to
+/// `appearance`.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn read_variant(appearance: &NSAppearance) -> (crate::ThemeDefaults, PerWidgetColors) {
+    let data = std::cell::Cell::new(None);
+    {
+        let block = RcBlock::new(|| data.set(Some(read_appearance_colors())));
+        appearance.performAsCurrentDrawingAppearance(&block);
+    }
+    data.into_inner().unwrap_or_default()
+}
+
+/// Apply one appearance's per-widget colours to its variant.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
+    v.input.placeholder_color = pw.placeholder;
+    v.list.alternate_row_background = pw.alternate_row;
+    if let Some(color) = pw.header_foreground {
+        v.list.header_font.get_or_insert_default().color = Some(color);
+    }
+    v.list.grid_color = pw.grid_color;
+    if let Some(color) = pw.title_bar_foreground {
+        v.window.title_bar_font.get_or_insert_default().color = Some(color);
+    }
+}
+
 /// Read scrollbar overlay mode from NSScroller.preferredScrollerStyle.
 ///
 /// Returns `true` if the preferred scroller style is overlay, `false` for legacy.
@@ -208,18 +235,16 @@ fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>) {
 /// font descriptor's traits dictionary does not contain the weight key.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
-    let descriptor = font.fontDescriptor();
-    // Get the traits dictionary from the font descriptor.
-    let traits_key: &NSString = unsafe { NSFontTraitsAttribute };
-    let traits_obj = descriptor.objectForKey(traits_key)?;
-    // Safety: the traits attribute is an NSDictionary<NSFontDescriptorTraitKey, id>
-    let traits_dict: &NSDictionary<NSString, objc2::runtime::AnyObject> =
-        unsafe { &*(&*traits_obj as *const _ as *const _) };
-    let weight_key: &NSString = unsafe { NSFontWeightTrait };
-    let weight_obj = traits_dict.objectForKey(weight_key)?;
-    // Safety: the weight trait value is an NSNumber wrapping a CGFloat.
-    let weight_num: &NSNumber = unsafe { &*(&*weight_obj as *const _ as *const NSNumber) };
-    let w = weight_num.doubleValue();
+    // SAFETY: the two keys are AppKit's own NSString statics, declared in
+    // `extern` blocks; reading them is an FFI read of a constant.
+    let (traits_key, weight_key): (&NSString, &NSString) =
+        unsafe { (NSFontTraitsAttribute, NSFontWeightTrait) };
+    let traits_obj = font.fontDescriptor().objectForKey(traits_key)?;
+    let w = traits_obj
+        .downcast_ref::<NSDictionary>()?
+        .objectForKey(weight_key)?
+        .downcast_ref::<NSNumber>()?
+        .doubleValue();
 
     // Map AppKit weight range to CSS weight buckets.
     let css = if w <= -0.75 {
@@ -455,73 +480,27 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
         title_bar_font,
     };
 
-    // Type alias for the appearance-block data.
-    type AppearanceData = (crate::ThemeDefaults, PerWidgetColors);
-
-    let (light_defaults, light_pw) = if let Some(app) = &light_appearance {
-        let data = std::cell::RefCell::new(None::<AppearanceData>);
-        {
-            let block = RcBlock::new(|| {
-                *data.borrow_mut() = Some(read_appearance_colors());
-            });
-            app.performAsCurrentDrawingAppearance(&block);
+    let read = |appearance: Option<&NSAppearance>| match appearance {
+        Some(app) => {
+            let (mut defaults, pw) = read_variant(app);
+            defaults.font = font.clone();
+            defaults.mono_font = mono_font.clone();
+            (defaults, Some(pw))
         }
-        let (mut d, pw) = data.into_inner().unwrap_or_default();
-        d.font = font.clone();
-        d.mono_font = mono_font.clone();
-        (d, Some(pw))
-    } else {
-        (crate::ThemeDefaults::default(), None)
+        None => (crate::ThemeDefaults::default(), None),
     };
-
-    let (dark_defaults, dark_pw) = if let Some(app) = &dark_appearance {
-        let data = std::cell::RefCell::new(None::<AppearanceData>);
-        {
-            let block = RcBlock::new(|| {
-                *data.borrow_mut() = Some(read_appearance_colors());
-            });
-            app.performAsCurrentDrawingAppearance(&block);
-        }
-        let (mut d, pw) = data.into_inner().unwrap_or_default();
-        d.font = font;
-        d.mono_font = mono_font;
-        (d, Some(pw))
-    } else {
-        (crate::ThemeDefaults::default(), None)
-    };
+    let (light_defaults, light_pw) = read(light_appearance.as_deref());
+    let (dark_defaults, dark_pw) = read(dark_appearance.as_deref());
 
     let mut theme = build_theme(light_defaults, dark_defaults, &widget_fonts);
 
-    // Apply per-widget colors (appearance-dependent, per variant).
-    if let (Some(v), Some(pw)) = (&mut theme.light, light_pw) {
-        v.input.placeholder_color = pw.placeholder;
-        v.list.alternate_row_background = pw.alternate_row;
-        if let Some(color) = pw.header_foreground {
-            v.list.header_font.get_or_insert_default().color = Some(color);
-        }
-        v.list.grid_color = pw.grid_color;
-        if let Some(color) = pw.title_bar_foreground {
-            v.window.title_bar_font.get_or_insert_default().color = Some(color);
-        }
-    }
-    if let (Some(v), Some(pw)) = (&mut theme.dark, dark_pw) {
-        v.input.placeholder_color = pw.placeholder;
-        v.list.alternate_row_background = pw.alternate_row;
-        if let Some(color) = pw.header_foreground {
-            v.list.header_font.get_or_insert_default().color = Some(color);
-        }
-        v.list.grid_color = pw.grid_color;
-        if let Some(color) = pw.title_bar_foreground {
-            v.window.title_bar_font.get_or_insert_default().color = Some(color);
-        }
-    }
-
     // Scrollbar overlay mode (appearance-independent, requires main thread).
     let overlay_mode = objc2::MainThreadMarker::new().and_then(read_scrollbar_style);
-    if let Some(v) = &mut theme.light {
-        v.scrollbar.overlay_mode = overlay_mode;
-    }
-    if let Some(v) = &mut theme.dark {
+    for (variant, pw) in [(&mut theme.light, light_pw), (&mut theme.dark, dark_pw)] {
+        let Some(v) = variant else { continue };
+        if let Some(pw) = pw {
+            apply_per_widget(v, pw);
+        }
         v.scrollbar.overlay_mode = overlay_mode;
     }
 
