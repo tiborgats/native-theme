@@ -288,20 +288,26 @@ mod tests {
     /// can list its variants; its source, `native-theme/src/detect.rs`, is read
     /// instead. It is read at run time, and `None` (the test skips) where the
     /// sibling crate is absent, as in the published crate, which holds this
-    /// crate alone.
+    /// crate alone. Where the sibling crate is present, an unreadable
+    /// `detect.rs` (moved or renamed) fails the test rather than skipping it.
     fn detect_rs() -> Option<String> {
-        let path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../native-theme/src/detect.rs");
+        let sibling = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../native-theme");
+        if !sibling.join("Cargo.toml").is_file() {
+            eprintln!(
+                "skipping: {} is absent; the LinuxDesktop drift tests run in the native-theme \
+                 workspace",
+                sibling.join("Cargo.toml").display()
+            );
+            return None;
+        }
+        let path = sibling.join("src/detect.rs");
         match std::fs::read_to_string(&path) {
             Ok(source) => Some(source),
-            Err(e) => {
-                eprintln!(
-                    "skipping: {} cannot be read ({e}); the LinuxDesktop drift tests run in the \
-                     native-theme workspace",
-                    path.display()
-                );
-                None
-            }
+            Err(e) => panic!(
+                "{} cannot be read ({e}); the LinuxDesktop drift tests read LinuxDesktop and \
+                 parse_linux_desktop from it",
+                path.display()
+            ),
         }
     }
 

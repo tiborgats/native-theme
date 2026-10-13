@@ -196,8 +196,9 @@ jobs:
 
       # Publish order is dictated by the workspace dependency graph:
       #   native-theme-derive  (proc-macro, no workspace deps)
-      #   native-theme-build   (depends on derive)
-      #   native-theme         (depends on derive + build)
+      #   native-theme         (depends on derive)
+      #   native-theme-build   (no workspace deps; dev-depends on native-theme,
+      #                         which must be on crates.io first)
       #   native-theme-iced    (depends on native-theme)
       #   native-theme-gpui    (depends on native-theme)
       #   native-theme-egui    (depends on native-theme)
@@ -222,22 +223,6 @@ jobs:
       - name: Wait for index (derive)
         run: sleep 45
 
-      - name: Publish native-theme-build
-        run: |
-          OUTPUT=$(cargo publish -p native-theme-build 2>&1) || {
-            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
-              echo "::notice::native-theme-build already published, skipping"
-            else
-              echo "$OUTPUT"
-              exit 1
-            fi
-          }
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
-      - name: Wait for index (build)
-        run: sleep 45
-
       - name: Publish native-theme
         run: |
           OUTPUT=$(cargo publish -p native-theme 2>&1) || {
@@ -252,6 +237,22 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Wait for index (native-theme)
+        run: sleep 45
+
+      - name: Publish native-theme-build
+        run: |
+          OUTPUT=$(cargo publish -p native-theme-build 2>&1) || {
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
+              echo "::notice::native-theme-build already published, skipping"
+            else
+              echo "$OUTPUT"
+              exit 1
+            fi
+          }
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for index (build)
         run: sleep 45
 
       - name: Publish native-theme-iced
