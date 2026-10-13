@@ -404,6 +404,18 @@ the file was pruned on 2026-10-11, not reordered.
       `:717`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
       `preset-validator` agent over both presets against §2.8.
+      *M4 T35 (2026-10-13):* windows-11 light states the measured `#c2c2c2`
+      (`native-theme/src/presets/windows-11.toml:232`); dark still has no
+      source (`:774`). WinUI 3 has one: `ScrollBarThumbFill` and
+      `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
+      `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
+      Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
+      beside the measurement in `docs/platform-facts.md:1278-1279`). The
+      preset states what WinUI 3 draws elsewhere, but its measured hover and
+      pressed thumbs (`#a0a0a0`, `#787878`) are lighter or darker than that
+      brush, and WinUI does not change the thumb on hover: decide whether
+      windows-11's scroll bar takes the WinUI brushes (rest, hover and
+      pressed, both modes) or the measured set, then state the dark thumb.
 
 ### Fonts: find a system face by family, weight and style
 
@@ -846,6 +858,33 @@ model, the platform presets and the three connectors
       :140, :142) have no field either. Decide whether the model gains an
       off-track border colour; M2b fix round 2 gave the off track's hover and
       disabled fills their WinUI resources.
+
+### windows-11: accent-derived values stated for the default accent
+
+- [ ] [v0.7.0] M4 T35 (2026-10-13) gave windows-11 WinUI 3's brushes where a
+      value derives from the accent and no inheritance carries it: the text
+      box's focused bottom line `SystemAccentColorDark1` / `Light2` (`#0067c0`
+      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml:158`, `:701`) and
+      the on switch's hover `AccentFillColorSecondary`, those shades at 0.9,
+      flattened (`#1875c5` / `#48b2e9`, `:419`, `:961`), each the UISettings
+      shade of the default accent `#0078d4` on the OS probe. On a live system
+      with another accent they stay the default accent's: the reader writes
+      the shades only into the accent and checked buttons' fills
+      (`native-theme/src/windows.rs`, `build_theme`). Decide whether the
+      reader writes these two from the same shades (cited as the preset
+      cites them). The text selection now inherits the accent
+      (`TextControlSelectionHighlightColor` = `SystemAccentColor`), so it
+      follows the user's. Still without a source: the dark
+      `defaults.selection_text_color` (`#ffffff`, `:593`; `COLOR_HIGHLIGHTTEXT`
+      was read in light mode only, and WinUI 3 states no selected-text
+      foreground) and the menu's background (`:294`, `:837`): WinUI 3 draws the
+      menu on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does
+      not publish; the preset states the fallback of the acrylic brush of the
+      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1227`). Under
+      high contrast the preset's stated strokes and fills that the reader
+      does not map (`input.hover_border_color`, the check box's and switch's
+      off colours, the slider's track and disabled colours) keep
+      their light or dark values.
 
 ### ios-26: 38 required fields have no iOS 26 source
 

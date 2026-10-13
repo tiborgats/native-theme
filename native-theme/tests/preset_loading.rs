@@ -118,8 +118,14 @@ fn all_presets_have_interactive_colors() {
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
+        // A preset may leave the selection to inherit the accent
+        // (docs/inheritance-rules.toml, defaults.selection_background).
         assert!(
-            light.defaults.selection_background.is_some(),
+            light
+                .defaults
+                .selection_background
+                .or(light.defaults.accent_color)
+                .is_some(),
             "preset '{name}' light missing selection"
         );
         assert!(
@@ -127,8 +133,13 @@ fn all_presets_have_interactive_colors() {
             "preset '{name}' light missing link"
         );
 
+        // A preset may leave the selection to inherit the accent
+        // (docs/inheritance-rules.toml, defaults.selection_background).
         assert!(
-            dark.defaults.selection_background.is_some(),
+            dark.defaults
+                .selection_background
+                .or(dark.defaults.accent_color)
+                .is_some(),
             "preset '{name}' dark missing selection"
         );
         assert!(

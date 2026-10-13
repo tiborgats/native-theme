@@ -386,13 +386,17 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     variant.window.inactive_title_bar_background = Some(colors.window_bg);
     variant.window.title_bar_font.get_or_insert_default().color = Some(colors.btn_text);
     variant.window.inactive_title_bar_text_color = Some(colors.gray_text);
-    // ProgressBarBorderThemeThickness is 1 in HighContrast (ProgressBar_themeresources.xaml:13;
-    // docs/platform-facts.md:1308).
-    variant
-        .progress_bar
-        .border
-        .get_or_insert_default()
-        .line_width = Some(1.0);
+    // CardStrokeColorDefaultBrush = SystemColorWindowTextColor (Common_themeresources_any.xaml:464),
+    // the text colour itself, so the line opacity is 1 (docs/platform-facts.md:1051, :1116).
+    variant.defaults.border.color = Some(colors.window_text);
+    variant.defaults.border.opacity = Some(1.0);
+    // ProgressBarBorderThemeThickness is 1 in HighContrast, ProgressBarBorderBrush =
+    // SystemColorWindowTextColor and ProgressBarBackground = SystemColorWindowColor
+    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1308).
+    let progress_border = variant.progress_bar.border.get_or_insert_default();
+    progress_border.line_width = Some(1.0);
+    progress_border.color = Some(colors.window_text);
+    variant.progress_bar.track_color = Some(colors.window_bg);
 }
 
 /// Read accessibility settings (WIN-04).
@@ -1045,6 +1049,11 @@ mod tests {
             assert_eq!(v.defaults.surface_color, None);
             assert_eq!(v.defaults.disabled_text_color, None);
             assert_eq!(v.defaults.selection_background, None);
+            assert_eq!(v.defaults.selection_text_color, None);
+            assert_eq!(v.defaults.accent_text_color, None);
+            assert_eq!(v.defaults.border.color, None);
+            assert_eq!(v.progress_bar.border, None);
+            assert_eq!(v.progress_bar.track_color, None);
             assert_eq!(v.defaults.focus_ring_color, None);
             assert_eq!(v.defaults.focus_ring_width, None);
             assert_eq!(v.button.background_color, None);
@@ -1089,6 +1098,13 @@ mod tests {
             v.progress_bar.border.as_ref().and_then(|b| b.line_width),
             Some(1.0)
         );
+        assert_eq!(
+            v.progress_bar.border.as_ref().and_then(|b| b.color),
+            Some(c.window_text)
+        );
+        assert_eq!(v.progress_bar.track_color, Some(c.window_bg));
+        assert_eq!(v.defaults.border.color, Some(c.window_text));
+        assert_eq!(v.defaults.border.opacity, Some(1.0));
         assert_eq!(v.defaults.focus_ring_color, Some(c.window_text));
         assert_eq!(v.button.background_color, Some(c.btn_face));
         assert_eq!(font_color(&v.button.font), Some(c.btn_text));
@@ -1139,6 +1155,39 @@ mod tests {
                 resolved.defaults.text_color
             );
             assert_eq!(resolved.window.inactive_title_bar_text_color, tertiary_text);
+        }
+    }
+
+    /// Over the windows-11 preset the text selection is the user's accent, as
+    /// WinUI 3's `TextControlSelectionHighlightColor` (`SystemAccentColor`).
+    #[test]
+    fn over_the_preset_the_selection_is_the_accent() {
+        let mut base = crate::Theme::preset("windows-11").unwrap();
+        let r = reader_with_high_contrast(Some(false));
+        base.merge(&r.output.to_theme(&r.name, r.icon_set, &r.layout));
+        let mut light = base.light.clone().unwrap();
+        light.resolve_all();
+        let resolved = light.validate().unwrap();
+        let accent = crate::Rgba::rgb(0, 120, 215);
+        assert_eq!(resolved.defaults.selection_background, accent);
+        assert_eq!(resolved.input.selection_background, accent);
+    }
+
+    /// The windows-11 controls WinUI 3 draws without a shadow resolve without
+    /// one (docs/inheritance-rules.toml: the preset must say so).
+    #[test]
+    fn windows_11_controls_without_a_shadow_resolve_without_one() {
+        let theme = crate::Theme::preset("windows-11").unwrap();
+        for mode in [theme.light.clone().unwrap(), theme.dark.clone().unwrap()] {
+            let mut mode = mode;
+            mode.resolve_all();
+            let r = mode.validate().unwrap();
+            assert!(!r.input.border.shadow_enabled);
+            assert!(!r.checkbox.border.shadow_enabled);
+            assert!(!r.progress_bar.border.shadow_enabled);
+            assert!(!r.combo_box.border.shadow_enabled);
+            assert!(!r.segmented_control.border.shadow_enabled);
+            assert!(!r.expander.border.shadow_enabled);
         }
     }
 
