@@ -1445,21 +1445,6 @@ struct Pair {
     exceptions: &'static [(&'static str, &'static str)],
 }
 
-/// Upstream renders every popup menu on the `popover` token, so a menu's hover
-/// layer lands on a surface the platform did not put it on.
-///
-/// `PopupMenu::render` calls `.popover_style(cx)`, which is
-/// `bg(theme.popover)` (`gpui-component-0.7.1/src/menu/popup_menu.rs:1480`,
-/// `styled.rs:186-192`), and upstream has no menu-surface token. The connector
-/// feeds `popover` from `popover.background_color`, the token's documented
-/// meaning, but `menu.background_color` differs from it in 25 of the 34
-/// combinations. The call is hardcoded inside upstream's `render`, so there is
-/// no seam: it is on the Tier U list. It becomes measurable only where the
-/// hover layer is translucent, and both remaining pairs stay above 9:1.
-const MENU_SURFACE: &str = "upstream paints menus on the popover token \
-                            (menu/popup_menu.rs:1480) and the platform's menu \
-                            background differs from its popover background";
-
 /// Upstream paints an idle tab `transparent` in every variant
 /// (`gpui-component-0.7.1/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
@@ -1608,7 +1593,7 @@ const PAIRS: &[Pair] = &[
             )
         },
         emitted: |tc, _| (tc.accent_foreground, tc.accent, tc.popover),
-        exceptions: &[("windows-11/dark", MENU_SURFACE)],
+        exceptions: &[],
     },
     Pair {
         what: "popover text",
