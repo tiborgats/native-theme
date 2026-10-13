@@ -523,7 +523,7 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
             apply_per_widget(v, pw);
         }
         if let Some(scrollbar) = &scrollbar {
-            v.scrollbar = scrollbar.clone();
+            v.scrollbar.merge(scrollbar);
         }
     }
 
