@@ -2846,6 +2846,22 @@ fn validate_paths_name_the_text_scale_key_the_theme_states() {
     );
 }
 
+#[test]
+fn validate_reports_a_stated_text_scale_size_in_its_unit() {
+    let mut v = fully_populated_variant();
+    v.text_scale.caption = Some(TextScaleEntry {
+        size: Some(FontSize::Pt(-3.0)),
+        weight: Some(400),
+        line_height: Some(FontSize::Pt(-5.0)),
+    });
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid");
+    };
+    let value_of = |path: &str| errors.iter().find(|rv| rv.path == path).map(|rv| rv.value);
+    assert_eq!(value_of("text_scale.caption.size_pt"), Some(-3.0));
+    assert_eq!(value_of("text_scale.caption.line_height_pt"), Some(-5.0));
+}
+
 /// A ThemeMode TOML value with every leaf value removed: each table stays,
 /// empty, so validation names every field inside it as missing.
 fn strip_leaves(value: &mut toml::Value) {

@@ -87,6 +87,15 @@ fn size_key(size: Option<FontSize>, [name, pt, px]: [&'static str; 3]) -> &'stat
     }
 }
 
+/// The size as the theme stated it, in the unit of its key (`size_pt = -3`
+/// is `-3`, not its px conversion); the resolved value where none was stated.
+fn stated_size(stated: Option<FontSize>, resolved: f32) -> f32 {
+    match stated {
+        Some(FontSize::Pt(v) | FontSize::Px(v)) => v,
+        None => resolved,
+    }
+}
+
 // --- validate() helpers ---
 
 /// Extract a required field, recording the path if missing.
@@ -485,10 +494,7 @@ pub(crate) fn check_font(
                 "{prefix}.{field}.{}",
                 size_key(font.defined_size, ["size", "size_pt", "size_px"])
             ),
-            value: match font.defined_size {
-                Some(FontSize::Pt(pt)) => pt as f64,
-                _ => font.size as f64,
-            },
+            value: stated_size(font.defined_size, font.size) as f64,
             min: Some(f64::MIN_POSITIVE),
             max: None,
         });
@@ -885,17 +891,19 @@ pub(crate) fn check_defaults_ranges(
     ];
     for (prefix, entry, stated) in entries {
         let stated: Option<&TextScaleEntry> = stated.as_ref();
+        let stated_size_of = stated.and_then(|e| e.size);
         check_positive(
-            entry.size,
+            stated_size(stated_size_of, entry.size),
             prefix,
-            size_key(stated.and_then(|e| e.size), ["size", "size_pt", "size_px"]),
+            size_key(stated_size_of, ["size", "size_pt", "size_px"]),
             errors,
         );
+        let stated_line_height = stated.and_then(|e| e.line_height);
         check_positive(
-            entry.line_height,
+            stated_size(stated_line_height, entry.line_height),
             prefix,
             size_key(
-                stated.and_then(|e| e.line_height),
+                stated_line_height,
                 ["line_height", "line_height_pt", "line_height_px"],
             ),
             errors,

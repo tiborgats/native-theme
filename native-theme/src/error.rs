@@ -362,34 +362,47 @@ impl From<toml::ser::Error> for Error {
     }
 }
 
-/// The `reader` name of every [`Error::ReaderFailed`], lowercase kebab-case.
-#[allow(dead_code)] // each platform's names are used only on that platform
-pub(crate) mod reader_names {
-    pub(crate) const KDE: &str = "kde";
-    pub(crate) const WINDOWS: &str = "windows";
-    pub(crate) const MACOS: &str = "macos";
-    pub(crate) const ICON_THEME: &str = "icon-theme";
-    pub(crate) const TOML_SERIALIZER: &str = "toml-serializer";
-    pub(crate) const PRESET_CACHE: &str = "preset-cache";
-    pub(crate) const SVG_RASTERIZER: &str = "svg-rasterizer";
-    pub(crate) const KDE_WATCHER: &str = "kde-watcher";
-    pub(crate) const GNOME_WATCHER: &str = "gnome-watcher";
-    pub(crate) const WINDOWS_WATCHER: &str = "windows-watcher";
+/// Declares the reader-name consts and, for the test, the list of them all.
+macro_rules! reader_names {
+    ($($(#[$meta:meta])* $name:ident = $value:literal;)*) => {
+        $($(#[$meta])* pub(crate) const $name: &str = $value;)*
 
-    /// Every name above, for the test that keeps them one style.
-    #[cfg(test)]
-    pub(crate) const ALL: [&str; 10] = [
-        KDE,
-        WINDOWS,
-        MACOS,
-        ICON_THEME,
-        TOML_SERIALIZER,
-        PRESET_CACHE,
-        SVG_RASTERIZER,
-        KDE_WATCHER,
-        GNOME_WATCHER,
-        WINDOWS_WATCHER,
-    ];
+        /// Every name declared above, for the test that keeps them one style.
+        #[cfg(test)]
+        pub(crate) const ALL: &[&str] = &[$($value),*];
+    };
+}
+
+/// The `reader` name of every [`Error::ReaderFailed`], lowercase kebab-case.
+pub(crate) mod reader_names {
+    reader_names! {
+        #[cfg(test)]
+        KDE = "kde";
+        #[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+        WINDOWS = "windows";
+        #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+        MACOS = "macos";
+        ICON_THEME = "icon-theme";
+        TOML_SERIALIZER = "toml-serializer";
+        PRESET_CACHE = "preset-cache";
+        #[cfg_attr(not(feature = "svg-rasterize"), allow(dead_code))]
+        SVG_RASTERIZER = "svg-rasterizer";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "kde", target_os = "linux")),
+            allow(dead_code)
+        )]
+        KDE_WATCHER = "kde-watcher";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "portal", target_os = "linux")),
+            allow(dead_code)
+        )]
+        GNOME_WATCHER = "gnome-watcher";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "windows", target_os = "windows")),
+            allow(dead_code)
+        )]
+        WINDOWS_WATCHER = "windows-watcher";
+    }
 }
 
 #[cfg(test)]
@@ -410,7 +423,7 @@ mod tests {
                 "{name:?} is not lowercase kebab-case"
             );
         }
-        let mut sorted = reader_names::ALL;
+        let mut sorted = reader_names::ALL.to_vec();
         sorted.sort_unstable();
         assert!(sorted.windows(2).all(|w| w[0] != w[1]), "duplicate name");
     }
