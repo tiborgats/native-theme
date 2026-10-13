@@ -348,7 +348,8 @@ struct GlyphBox {
 }
 
 /// Draw a GGO_GRAY8_BITMAP black box onto the `size × size` em box of the
-/// font created at `size` pixels em height, whose ascent is `ascent`.
+/// font created at `size` pixels em height, whose em box's top is `ascent`
+/// above the baseline ([`em_ascent`]).
 ///
 /// The box's upper left corner lands at `(origin_x, ascent − origin_y)`,
 /// ink outside the em box is clipped, and every pixel is white with the
@@ -394,6 +395,19 @@ fn glyph_canvas(gray: &[u8], glyph: GlyphBox, ascent: i32, size: u32) -> Option<
 /// that starts at `start`; `None` before the box.
 fn box_offset(at: usize, start: i64) -> Option<usize> {
     usize::try_from(i64::try_from(at).ok()?.checked_sub(start)?).ok()
+}
+
+/// How far above the baseline the em box's top is, for a font created with
+/// a negative height: its ascent less its internal leading.
+///
+/// The em height is the cell height less the internal leading (LOGFONTW
+/// `lfHeight`,
+/// <https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logfontw>),
+/// and the internal leading lies inside the cell, `tmHeight` = ascent +
+/// descent, where accent marks may occur (TEXTMETRICW `tmInternalLeading`,
+/// <https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-textmetricw>).
+fn em_ascent(tm_ascent: i32, tm_internal_leading: i32) -> Option<i32> {
+    tm_ascent.checked_sub(tm_internal_leading)
 }
 
 /// Render a font glyph to RGBA pixels via GetGlyphOutlineW, on the
@@ -462,8 +476,8 @@ unsafe fn render_glyph(hdc: HDC, font: HFONT, codepoint: u32, size: u32) -> Opti
 }
 
 /// The GGO_GRAY8_BITMAP black box of `codepoint` in the font selected into
-/// `hdc`, where GetGlyphOutlineW puts it, and the font's ascent
-/// (TEXTMETRICW `tmAscent`). `None` when a call fails, for a glyph with no
+/// `hdc`, where GetGlyphOutlineW puts it, and the font's em box's top above
+/// the baseline ([`em_ascent`]). `None` when a call fails, for a glyph with no
 /// bitmap, and for a buffer over the decode bound.
 ///
 /// # Safety
@@ -525,7 +539,7 @@ unsafe fn glyph_outline(hdc: HDC, codepoint: u32) -> Option<(Vec<u8>, GlyphBox, 
         origin_x: gm.gmptGlyphOrigin.x,
         origin_y: gm.gmptGlyphOrigin.y,
     };
-    Some((gray, glyph, tm.tmAscent))
+    Some((gray, glyph, em_ascent(tm.tmAscent, tm.tmInternalLeading)?))
 }
 
 /// Parse a hex codepoint string like "0xE8BB" or "0xe8bb" to a u32.
@@ -554,9 +568,8 @@ fn parse_hex_codepoint(name: &str) -> Option<u32> {
 ///
 /// A glyph is drawn on its font's `size × size` em box, at `size` pixels
 /// em height, [`DEFAULT_ICON_SIZE`] where it is `None`, and in `fg_color`
-/// where it is given, white otherwise; the
-/// stock and dialog icons are full-colour at the system's large icon size
-/// and ignore both.
+/// where it is given, white otherwise; the stock and dialog icons are
+/// full-colour at the system's large icon size and ignore both.
 ///
 /// Returns `None` if the name doesn't match any known format or
 /// the icon cannot be loaded on this system, and for a glyph whose `size`
@@ -706,18 +719,41 @@ mod tests {
         assert!(canvas.chunks(4).all(|pixel| pixel[..3] == [255, 255, 255]));
     }
 
+    /// The em box's top is the ascent less the internal leading: a glyph
+    /// that fills the em of a font with internal leading fills the canvas,
+    /// its top row on row 0 and its bottom row, on the descent, on the last.
+    #[test]
+    fn glyph_canvas_em_box_leaves_out_the_internal_leading() {
+        // An 8 px em: ascent 9 with 2 of internal leading, descent 1, so the
+        // cell is 10 high and the em box spans 7 above to 1 below the
+        // baseline.
+        let ascent = em_ascent(9, 2).unwrap();
+        assert_eq!(ascent, 7);
+        let glyph = GlyphBox {
+            width: 8,
+            height: 8,
+            origin_x: 0,
+            origin_y: 7,
+        };
+        let canvas = glyph_canvas(&gray_rows(&[&[64; 8]; 8], 8), glyph, ascent, 8).unwrap();
+        assert!((0..8).all(|y| (0..8).all(|x| alpha_at(&canvas, 8, x, y) == 255)));
+        assert_eq!(em_ascent(9, 0), Some(9), "no leading, the ascent");
+        assert_eq!(em_ascent(i32::MIN, 1), None);
+    }
+
     /// Ink outside the em box is clipped, on every side.
     #[test]
     fn glyph_canvas_clips_the_black_box() {
         let glyph = GlyphBox {
             width: 6,
-            height: 6,
+            height: 7,
             origin_x: -1,
             origin_y: 5,
         };
-        let canvas = glyph_canvas(&gray_rows(&[&[64; 6]; 6], 8), glyph, 3, 4).unwrap();
+        let canvas = glyph_canvas(&gray_rows(&[&[64; 6]; 7], 8), glyph, 3, 4).unwrap();
         assert_eq!(canvas.len(), 4 * 4 * 4);
-        // Rows 2 to 5 and columns 1 to 4 of the box fill the canvas.
+        // Rows 2 to 5 and columns 1 to 4 of the box fill the canvas; rows 0,
+        // 1 and 6 and columns 0 and 5 fall outside it.
         assert!((0..4).all(|y| (0..4).all(|x| alpha_at(&canvas, 4, x, y) == 255)));
         let far = GlyphBox {
             width: 2,
@@ -913,20 +949,45 @@ mod tests {
     }
 
     /// "Remove" (U+E738, a bar) and "ChromeMaximize" (U+E922, a square)
-    /// have different ink; both come back as the 32 × 32 em box.
+    /// have different ink; both come back as the 32 × 32 em box, each glyph
+    /// where the font places it: the bar's inked rows are fewer than the
+    /// square's and lie within the square's.
     #[cfg(target_os = "windows")]
     #[test]
     fn load_by_name_glyphs_of_different_ink_share_the_em_box() {
-        for name in ["Remove", "ChromeMaximize"] {
+        let inked_rows = |name: &str| {
             let Some(IconData::Rgba(rgba)) = load_windows_icon_by_name(name, Some(32), None) else {
                 panic!("{name} should load as RGBA");
             };
             assert_eq!((rgba.width(), rgba.height()), (32, 32), "{name}");
-            assert!(
-                rgba.data().chunks(4).any(|pixel| pixel[3] != 0),
-                "{name} has ink"
-            );
-        }
+            let rows: Vec<usize> = rgba
+                .data()
+                .chunks(32 * 4)
+                .enumerate()
+                .filter(|(_, row)| row.chunks(4).any(|pixel| pixel[3] != 0))
+                .map(|(y, _)| y)
+                .collect();
+            eprintln!("{name}: inked rows {rows:?}");
+            rows
+        };
+        let bar = inked_rows("Remove");
+        let square = inked_rows("ChromeMaximize");
+        assert!(!bar.is_empty(), "Remove has ink");
+        assert!(
+            bar.len() < square.len(),
+            "the bar is shorter than the square"
+        );
+        let (Some(bar_top), Some(bar_bottom)) = (bar.first(), bar.last()) else {
+            panic!("Remove has ink");
+        };
+        let (Some(square_top), Some(square_bottom)) = (square.first(), square.last()) else {
+            panic!("ChromeMaximize has ink");
+        };
+        assert!(
+            square_top <= bar_top && bar_bottom <= square_bottom,
+            "the bar ({bar_top}..={bar_bottom}) lies within the square \
+             ({square_top}..={square_bottom})"
+        );
     }
 
     #[cfg(target_os = "windows")]
