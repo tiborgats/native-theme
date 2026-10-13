@@ -183,7 +183,8 @@ impl<'a> FreedesktopLoader<'a> {
     }
 
     /// Set the requested icon size in pixels (default 24). Sizes above
-    /// 65535 look up the largest directory, as 65535 does.
+    /// 32767 (`i16::MAX`, the largest size freedesktop-icons computes with)
+    /// look up the largest directory, as 32767 does.
     pub fn size(mut self, size: u32) -> Self {
         self.size = size;
         self
@@ -829,41 +830,68 @@ pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
     svg.to_vec()
 }
 
-/// The icon base directories freedesktop-icons 0.4.0 searches for themes,
-/// in its order (`freedesktop-icons-0.4.0/src/theme/paths.rs:13-32`): each
-/// `$XDG_DATA_DIRS` entry's `icons`, `$XDG_DATA_HOME/icons`, then
-/// `~/.icons`, keeping those that exist. freedesktop-icons also searches
-/// the `pixmaps` directory beside each `icons` one; no UI icon may come
-/// from there, so it is left out.
+/// The icon base directories, in the Icon Theme Specification's order
+/// (version 0.13, *Directory Layout*: "$HOME/.icons (for backwards
+/// compatibility), in $XDG_DATA_DIRS/icons and in /usr/share/pixmaps (in
+/// that order)"), with `$XDG_DATA_HOME`, which the XDG Base Directory
+/// Specification ranks above every `$XDG_DATA_DIRS` entry, first among the
+/// data dirs: `~/.icons`, `$XDG_DATA_HOME/icons`, then each `$XDG_DATA_DIRS`
+/// entry's `icons`, keeping those that exist. These are the directories
+/// freedesktop-icons 0.4.0 searches, without the `pixmaps` directory beside
+/// each `icons` one, which no UI icon may come from.
 ///
-/// The freedesktop icon lookup, [`is_freedesktop_theme_available`] and
-/// [`list_freedesktop_themes`] all read this one list, so a theme listed
-/// or available is one the lookup searches. Read once per process, as
-/// freedesktop-icons reads its own list once.
+/// This order decides what native-theme reads itself: the `index.theme`
+/// that says whether a theme is installed and what it inherits is a
+/// theme's first one here ([`theme_index`]), so a copy the user installed
+/// wins over the system's. freedesktop-icons searches the same directories
+/// data dirs first and `~/.icons` last
+/// (`freedesktop-icons-0.4.0/src/theme/paths.rs:14-33`), reads every copy
+/// of a theme through the first `index.theme` in that order
+/// (`src/theme/mod.rs:169-177`, `:197-215`) and takes an icon from the
+/// first copy that has it (`src/lib.rs:297-305`): for the icons of a theme
+/// installed both ways, the system copy comes first, an order this crate
+/// does not control.
+///
+/// Read once per process, as freedesktop-icons reads its own list once.
 #[cfg(target_os = "linux")]
 pub(crate) fn icon_base_dirs() -> &'static [std::path::PathBuf] {
     static DIRS: std::sync::OnceLock<Vec<std::path::PathBuf>> = std::sync::OnceLock::new();
-    DIRS.get_or_init(xdg_icon_base_dirs)
+    DIRS.get_or_init(|| {
+        icon_base_dirs_in(
+            std::env::home_dir().as_deref(),
+            std::env::var_os("XDG_DATA_HOME").as_deref(),
+            std::env::var_os("XDG_DATA_DIRS").as_deref(),
+        )
+    })
 }
 
-/// Build [`icon_base_dirs`] from the environment the way freedesktop-icons'
-/// `xdg` 2.5.2 does (`xdg-2.5.2/src/base_directories.rs:268-309`): a
-/// relative or unset `$XDG_DATA_HOME` is `~/.local/share`, relative
-/// `$XDG_DATA_DIRS` entries are dropped, and none left is
-/// `/usr/local/share:/usr/share`. Without a home directory `xdg` gives no
-/// data dirs at all, and there is no `~/.icons` either.
+/// [`icon_base_dirs`] for the home directory `home` and the
+/// `$XDG_DATA_HOME` (`data_home`) and `$XDG_DATA_DIRS` (`data_dirs`)
+/// values, read the way freedesktop-icons' `xdg` 2.5.2 reads them
+/// (`xdg-2.5.2/src/base_directories.rs:268-309`): a relative or unset
+/// `$XDG_DATA_HOME` is `~/.local/share`, relative `$XDG_DATA_DIRS` entries
+/// are dropped, and none left is `/usr/local/share:/usr/share`. Without a
+/// home directory `xdg` gives no data dirs at all, and there is no
+/// `~/.icons` either.
 #[cfg(target_os = "linux")]
-fn xdg_icon_base_dirs() -> Vec<std::path::PathBuf> {
+pub(crate) fn icon_base_dirs_in(
+    home: Option<&std::path::Path>,
+    data_home: Option<&std::ffi::OsStr>,
+    data_dirs: Option<&std::ffi::OsStr>,
+) -> Vec<std::path::PathBuf> {
     use std::path::PathBuf;
 
-    let Some(home) = std::env::home_dir() else {
+    let Some(home) = home else {
         return Vec::new();
     };
-    let data_dirs = xdg_data_dirs(std::env::var_os("XDG_DATA_DIRS").as_deref());
-    let data_home = xdg_data_home(std::env::var_os("XDG_DATA_HOME").as_deref(), Some(&home));
-    let mut dirs: Vec<PathBuf> = data_dirs.iter().map(|dir| dir.join("icons")).collect();
-    dirs.extend(data_home.map(|dir| dir.join("icons")));
-    dirs.push(home.join(".icons"));
+    let mut dirs: Vec<PathBuf> = std::iter::once(home.join(".icons"))
+        .chain(
+            xdg_data_home(data_home, Some(home))
+                .into_iter()
+                .chain(xdg_data_dirs(data_dirs))
+                .map(|dir| dir.join("icons")),
+        )
+        .collect();
     dirs.retain(|dir| dir.exists());
     dirs
 }
@@ -916,14 +944,59 @@ pub(crate) fn is_theme_name(name: &str) -> bool {
     )
 }
 
-/// Whether `theme` is installed: a theme name with an `index.theme` in
-/// one of `bases`.
+/// The `index.theme` of `theme` in `bases`: its first readable one in
+/// their order, the one the Icon Theme Specification reads ("The first
+/// index.theme found while searching the base directories in order is
+/// used", *Directory Layout*). `None` for a name that is no theme directory.
+#[cfg(target_os = "linux")]
+pub(crate) fn theme_index(theme: &str, bases: &[std::path::PathBuf]) -> Option<String> {
+    if !is_theme_name(theme) {
+        return None;
+    }
+    bases
+        .iter()
+        .find_map(|base| std::fs::read_to_string(base.join(theme).join("index.theme")).ok())
+}
+
+/// Whether `theme` is an icon theme installed in `bases`: its
+/// [`theme_index`] lists `Directories`, a key the specification requires,
+/// in its `[Icon Theme]` group. A cursor theme (`breeze_cursors`) or one
+/// that only inherits (`default`) lists none.
 #[cfg(target_os = "linux")]
 pub(crate) fn has_theme_index(theme: &str, bases: &[std::path::PathBuf]) -> bool {
-    is_theme_name(theme)
-        && bases
-            .iter()
-            .any(|base| base.join(theme).join("index.theme").exists())
+    theme_index(theme, bases)
+        .is_some_and(|index| ini_value(&index, "Icon Theme", "Directories").is_some())
+}
+
+/// The installed icon themes in `bases`: each directory name there that
+/// [`has_theme_index`] accepts.
+#[cfg(target_os = "linux")]
+fn installed_themes_in(bases: &[std::path::PathBuf]) -> std::collections::BTreeSet<String> {
+    bases
+        .iter()
+        .filter_map(|base| std::fs::read_dir(base).ok())
+        .flatten()
+        .filter_map(Result::ok)
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| has_theme_index(name, bases))
+        .collect()
+}
+
+/// The installed icon themes in [`icon_base_dirs`] ([`installed_themes_in`]),
+/// read once, at the process's first call of
+/// [`is_freedesktop_theme_available`], [`list_freedesktop_themes`] or a
+/// freedesktop icon lookup, which all read it: a theme listed or available
+/// is one the lookup searches, and a theme installed after this snapshot is
+/// none of them until the process restarts.
+/// [`invalidate_caches`](crate::detect::invalidate_caches) leaves it, as
+/// freedesktop-icons' own list of themes, taken at its first lookup (after
+/// this one, `freedesktop-icons-0.4.0/src/theme/mod.rs:15`), cannot be read
+/// again.
+#[cfg(target_os = "linux")]
+pub(crate) fn installed_themes() -> &'static std::collections::BTreeSet<String> {
+    static THEMES: std::sync::OnceLock<std::collections::BTreeSet<String>> =
+        std::sync::OnceLock::new();
+    THEMES.get_or_init(|| installed_themes_in(icon_base_dirs()))
 }
 
 /// The value of `key` in the `[section]` group of the INI `content`,
@@ -949,16 +1022,21 @@ pub(crate) fn ini_value<'a>(content: &'a str, section: &str, key: &str) -> Optio
 
 /// Check whether a freedesktop icon theme is installed on this system.
 ///
-/// Looks for the theme's `index.theme` file in the icon base directories
-/// the freedesktop icon lookup searches: `$XDG_DATA_DIRS/icons/<theme>/`,
-/// `$XDG_DATA_HOME/icons/<theme>/` and `~/.icons/<theme>/`.
+/// A theme is installed when its first `index.theme` in the icon base
+/// directories the freedesktop icon lookup searches (`~/.icons/<theme>/`,
+/// `$XDG_DATA_HOME/icons/<theme>/`, then `$XDG_DATA_DIRS/icons/<theme>/`)
+/// lists `Directories` in its `[Icon Theme]` group, so a cursor-only theme
+/// is not one. The installed themes are read once per process, at the
+/// first call of this function, [`list_freedesktop_themes`] or a
+/// freedesktop icon lookup: a theme installed later is not available until
+/// the process restarts, as the lookup does not search it.
 ///
 /// Always returns `false` on non-Linux platforms.
 #[must_use]
 pub fn is_freedesktop_theme_available(theme: &str) -> bool {
     #[cfg(target_os = "linux")]
     {
-        has_theme_index(theme, icon_base_dirs())
+        installed_themes().contains(theme)
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -988,9 +1066,10 @@ pub enum IconSetChoice {
     ///
     /// This is the ONLY variant that gets overwritten on theme change.
     /// [`default_icon_choice()`] is the constructor that checks the theme
-    /// is available (bundled sets are always available; freedesktop themes
-    /// are checked via [`is_freedesktop_theme_available`] before it returns
-    /// this variant). A value built directly carries no such check.
+    /// is available (bundled sets are always available, SF Symbols and
+    /// Segoe Fluent where their loader is compiled, freedesktop themes are
+    /// checked via [`is_freedesktop_theme_available`]) before it returns
+    /// this variant. A value built directly carries no such check.
     Default(String),
 
     /// Use the OS-configured icon theme.
@@ -1089,12 +1168,15 @@ impl IconSetChoice {
 /// Determine the default icon set choice for a theme.
 ///
 /// When the TOML specifies `icon_theme` (`Some`) and the theme is
-/// available (bundled sets are always available; freedesktop themes are
-/// checked via [`is_freedesktop_theme_available`]), returns
-/// [`IconSetChoice::Default(icon_theme)`](IconSetChoice::Default).
+/// available, returns
+/// [`IconSetChoice::Default(icon_theme)`](IconSetChoice::Default). Material
+/// and Lucide are always available; SF Symbols only on macOS and Segoe
+/// Fluent only on Windows, each with the `system-icons` feature, where its
+/// loader is compiled; a freedesktop theme when
+/// [`is_freedesktop_theme_available`] says so.
 ///
 /// When the TOML does not specify `icon_theme` (`None`), or the
-/// specified freedesktop theme is not installed, returns
+/// specified set or theme is not available, returns
 /// [`IconSetChoice::System`].
 #[must_use]
 pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconSetChoice {
@@ -1108,7 +1190,8 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
     let available = match icon_set {
         IconSet::Material | IconSet::Lucide => true,
         IconSet::Freedesktop => is_freedesktop_theme_available(theme),
-        IconSet::SfSymbols | IconSet::SegoeFluent => true,
+        IconSet::SfSymbols => cfg!(all(target_os = "macos", feature = "system-icons")),
+        IconSet::SegoeFluent => cfg!(all(target_os = "windows", feature = "system-icons")),
     };
     if available {
         IconSetChoice::Default(theme.to_string())
@@ -1119,19 +1202,20 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
 
 /// List installed freedesktop icon themes.
 ///
-/// Scans the icon base directories the freedesktop icon lookup searches
-/// (`$XDG_DATA_DIRS/icons/`, `$XDG_DATA_HOME/icons/` and `~/.icons/`) for
-/// subdirectories containing an `index.theme` file whose `[Icon Theme]`
-/// group lists `Directories` (per the freedesktop Icon Theme Specification).  This filters
-/// out cursor-only themes that lack application icons.
+/// The themes [`is_freedesktop_theme_available`] reports installed, from
+/// the same snapshot: each theme whose first `index.theme` in the icon base
+/// directories the freedesktop icon lookup searches (`~/.icons/`,
+/// `$XDG_DATA_HOME/icons/`, then `$XDG_DATA_DIRS/icons/`) lists
+/// `Directories` in its `[Icon Theme]` group (the Icon Theme
+/// Specification requires the key), which leaves out cursor-only themes and
+/// themes that only inherit, such as `default`. The snapshot is taken once
+/// per process, so a theme installed after it is not listed until the
+/// process restarts.
 ///
 /// Excludes `hicolor` (the specification's shared theme for application
-/// icons, which native-theme's icon lookup never falls back to) and `default` (typically a
-/// symlink).  Returns a sorted, deduplicated list of theme directory
-/// names.
-///
-/// Silently skips entries on IO errors (e.g. permission denied).
-/// Returns an empty `Vec` on non-Linux platforms.
+/// icons, which native-theme's icon lookup never falls back to). Returns a
+/// sorted list of theme directory names; a directory that cannot be read is
+/// skipped. Returns an empty `Vec` on non-Linux platforms.
 ///
 /// Note: themes installed via Flatpak or Snap may reside outside
 /// standard XDG paths and will not be discovered.
@@ -1139,41 +1223,11 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
 pub fn list_freedesktop_themes() -> Vec<String> {
     #[cfg(target_os = "linux")]
     {
-        use std::collections::BTreeSet;
-
-        let mut themes = BTreeSet::new();
-
-        for icon_dir in icon_base_dirs() {
-            let entries = match std::fs::read_dir(icon_dir) {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
-            for entry in entries.filter_map(|e| e.ok()) {
-                let path = entry.path();
-                if !path.is_dir() {
-                    continue;
-                }
-                let name = match entry.file_name().into_string() {
-                    Ok(n) => n,
-                    Err(_) => continue,
-                };
-
-                // Exclude hicolor (application icons, never a UI set) and
-                // default (symlink).
-                if name == "hicolor" || name == "default" {
-                    continue;
-                }
-
-                // Cursor-only themes list no Directories.
-                if std::fs::read_to_string(path.join("index.theme"))
-                    .is_ok_and(|index| ini_value(&index, "Icon Theme", "Directories").is_some())
-                {
-                    themes.insert(name);
-                }
-            }
-        }
-
-        themes.into_iter().collect()
+        installed_themes()
+            .iter()
+            .filter(|theme| *theme != "hicolor")
+            .cloned()
+            .collect()
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -2015,6 +2069,22 @@ mod icon_set_choice_tests {
         );
     }
 
+    /// SF Symbols and Segoe Fluent are available only where their loader is
+    /// compiled; anywhere else their theme is not taken as the default.
+    #[test]
+    fn system_sets_are_available_only_where_their_loader_is_compiled() {
+        let default =
+            |set| default_icon_choice(set, Some("x")) == IconSetChoice::Default("x".into());
+        assert_eq!(
+            default(IconSet::SfSymbols),
+            cfg!(all(target_os = "macos", feature = "system-icons"))
+        );
+        assert_eq!(
+            default(IconSet::SegoeFluent),
+            cfg!(all(target_os = "windows", feature = "system-icons"))
+        );
+    }
+
     #[test]
     fn test_list_freedesktop_themes_no_panic() {
         // Just verify it doesn't panic -- result varies by platform
@@ -2025,6 +2095,143 @@ mod icon_set_choice_tests {
         assert!(themes.is_empty());
         // Suppress unused variable warning
         let _ = themes;
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[allow(clippy::unwrap_used, reason = "a test fails by panicking")]
+mod installed_theme_tests {
+    use super::*;
+    use std::path::{Path, PathBuf};
+
+    /// A throwaway icon base dir under `share/icons`, removed on drop, and
+    /// the home directory `home` beside it.
+    struct Bases {
+        root: PathBuf,
+    }
+
+    impl Bases {
+        fn new(tag: &str) -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "native-theme-installed-{}-{tag}",
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&root);
+            std::fs::create_dir_all(root.join("share/icons")).unwrap();
+            Self { root }
+        }
+
+        fn icons(&self) -> PathBuf {
+            self.root.join("share/icons")
+        }
+
+        fn add(&self, base: &Path, theme: &str, index: &str) {
+            std::fs::create_dir_all(base.join(theme)).unwrap();
+            std::fs::write(base.join(theme).join("index.theme"), index).unwrap();
+        }
+    }
+
+    impl Drop for Bases {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.root);
+        }
+    }
+
+    /// An icon theme is an `index.theme` whose `[Icon Theme]` group lists
+    /// `Directories`: a cursor theme and a theme that only inherits are none,
+    /// and the key may have spaces around `=`.
+    #[test]
+    fn an_installed_theme_lists_directories_in_its_icon_theme_group() {
+        let bases = Bases::new("predicate");
+        let icons = bases.icons();
+        bases.add(
+            &icons,
+            "icons",
+            "[Icon Theme]\nName=icons\nDirectories=actions\n",
+        );
+        bases.add(
+            &icons,
+            "spaced",
+            "[Icon Theme]\nName=spaced\nDirectories = actions\n",
+        );
+        bases.add(
+            &icons,
+            "breeze_cursors",
+            "[Icon Theme]\nName=Breeze Cursors\nInherits=breeze\n",
+        );
+        bases.add(&icons, "default", "[Icon Theme]\nInherits=Adwaita\n");
+        bases.add(
+            &icons,
+            "elsewhere",
+            "[Icon Theme]\nName=elsewhere\n\n[Other]\nDirectories=actions\n",
+        );
+        let dirs = [icons];
+        assert!(has_theme_index("icons", &dirs));
+        assert!(has_theme_index("spaced", &dirs));
+        assert!(!has_theme_index("breeze_cursors", &dirs));
+        assert!(!has_theme_index("default", &dirs));
+        assert!(!has_theme_index("elsewhere", &dirs));
+        assert!(!has_theme_index("missing", &dirs));
+        assert_eq!(
+            installed_themes_in(&dirs).into_iter().collect::<Vec<_>>(),
+            ["icons", "spaced"]
+        );
+    }
+
+    /// The installed `breeze_cursors` is a cursor theme, not available.
+    #[test]
+    fn breeze_cursors_is_not_available() {
+        if !Path::new("/usr/share/icons/breeze_cursors/index.theme").exists() {
+            eprintln!("skipped: breeze_cursors is not installed");
+            return;
+        }
+        assert!(!is_freedesktop_theme_available("breeze_cursors"));
+        assert!(!list_freedesktop_themes().contains(&"breeze_cursors".to_string()));
+    }
+
+    /// Every listed theme is available, read from the one snapshot.
+    #[test]
+    fn listed_themes_are_available() {
+        for theme in list_freedesktop_themes() {
+            assert!(is_freedesktop_theme_available(&theme), "{theme}");
+        }
+    }
+
+    /// The base dirs in the Icon Theme Specification's order, `~/.icons`
+    /// first, then the data home, then each data dir.
+    #[test]
+    fn icon_base_dirs_put_the_user_s_first() {
+        let bases = Bases::new("order");
+        let home = bases.root.join("home");
+        for dir in [".icons", ".local/share/icons"] {
+            std::fs::create_dir_all(home.join(dir)).unwrap();
+        }
+        let system = bases.root.join("share");
+        assert_eq!(
+            icon_base_dirs_in(Some(&home), None, Some(system.as_os_str())),
+            [
+                home.join(".icons"),
+                home.join(".local/share/icons"),
+                system.join("icons")
+            ]
+        );
+    }
+
+    /// The first `index.theme` in base-dir order is the theme's, as the
+    /// specification reads it: a user copy without `Directories` hides a
+    /// system copy with them.
+    #[test]
+    fn the_first_index_theme_decides_whether_a_theme_is_installed() {
+        let bases = Bases::new("first-index");
+        let user = bases.root.join("home/.icons");
+        bases.add(&user, "shadowed", "[Icon Theme]\nName=shadowed\n");
+        bases.add(
+            &bases.icons(),
+            "shadowed",
+            "[Icon Theme]\nName=shadowed\nDirectories=actions\n",
+        );
+        assert!(!has_theme_index("shadowed", &[user.clone(), bases.icons()]));
+        assert!(has_theme_index("shadowed", &[bases.icons(), user]));
     }
 }
 

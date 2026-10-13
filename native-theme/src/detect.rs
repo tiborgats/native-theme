@@ -223,7 +223,10 @@ pub fn system_is_dark() -> bool {
 /// dark mode toggle, icon theme switch, accessibility preferences).
 ///
 /// The `detect_*()` family of functions are unaffected — they always query
-/// the OS directly.
+/// the OS directly. The installed freedesktop icon themes are not re-read:
+/// the icon lookup reads them once per process, and so do
+/// [`is_freedesktop_theme_available()`](crate::icons::is_freedesktop_theme_available)
+/// and [`list_freedesktop_themes()`](crate::icons::list_freedesktop_themes).
 pub fn invalidate_caches() {
     system().invalidate_all();
 }

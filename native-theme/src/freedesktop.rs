@@ -13,7 +13,10 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::IconData;
-use crate::icons::{MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs, ini_value};
+use crate::icons::{
+    MAX_ICON_DECODE_BYTES, has_theme_index, icon_base_dirs, ini_value, installed_themes,
+    theme_index,
+};
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use std::path::{Component, Path, PathBuf};
 
@@ -35,22 +38,13 @@ fn inherits(index: &str) -> Vec<&str> {
     })
 }
 
-/// The parents `theme` declares, from every `index.theme` it has in
-/// `bases` (in base-dir order), as freedesktop-icons reads each of them
-/// (`freedesktop-icons-0.4.0/src/lib.rs:309-320`).
+/// The parents `theme` declares in the `Inherits=` of its
+/// [`theme_index`] in `bases`, the one `index.theme` the specification
+/// reads.
 fn declared_parents(theme: &str, bases: &[PathBuf]) -> Vec<String> {
-    let mut parents: Vec<String> = Vec::new();
-    for base in bases {
-        let Ok(index) = std::fs::read_to_string(base.join(theme).join("index.theme")) else {
-            continue;
-        };
-        for parent in inherits(&index) {
-            if !parents.iter().any(|known| known == parent) {
-                parents.push(parent.to_string());
-            }
-        }
-    }
-    parents
+    theme_index(theme, bases).map_or_else(Vec::new, |index| {
+        inherits(&index).into_iter().map(str::to_string).collect()
+    })
 }
 
 /// The themes an icon for `theme` may come from, in the order the Icon
@@ -83,9 +77,13 @@ fn theme_chain(theme: &str, bases: &[PathBuf]) -> Option<Vec<String>> {
     Some(chain)
 }
 
-/// [`theme_chain`] over [`icon_base_dirs`], kept per theme name for the
-/// life of the process, as freedesktop-icons keeps its theme list.
+/// [`theme_chain`] over [`icon_base_dirs`] for a theme of the
+/// [`installed_themes`] snapshot, kept per theme name for the life of the
+/// process, as freedesktop-icons keeps its theme list.
 fn cached_theme_chain(theme: &str) -> Option<Vec<String>> {
+    if !installed_themes().contains(theme) {
+        return None;
+    }
     type Chains = Mutex<HashMap<String, Option<Vec<String>>>>;
     static CHAINS: OnceLock<Chains> = OnceLock::new();
     let chains = CHAINS.get_or_init(Chains::default);
@@ -342,10 +340,14 @@ pub(crate) fn load_freedesktop_icon_by_name(
 }
 
 /// The size freedesktop-icons looks `size` up at: its `with_size` takes a
-/// `u16` (freedesktop-icons-0.4.0 `src/lib.rs:192`), so a larger size looks
-/// up as `u16::MAX`, the largest directory.
+/// `u16` (freedesktop-icons-0.4.0 `src/lib.rs:192`) that it casts to `i16`
+/// to compare with each directory's size (`src/theme/directories.rs:15`,
+/// `:35`), so a size past `i16::MAX` would wrap negative and overflow its
+/// distance arithmetic (`:39`); it looks up as `i16::MAX`, past the
+/// largest directory.
 fn lookup_size(size: u32) -> u16 {
-    u16::try_from(size).unwrap_or(u16::MAX)
+    const LARGEST: u16 = i16::MAX.unsigned_abs();
+    u16::try_from(size).map_or(LARGEST, |size| size.min(LARGEST))
 }
 
 /// Read and decode an icon file, branching on its extension.
@@ -545,7 +547,9 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
 /// Strategy:
 /// 1. Try "process-working" (plain) at size 22 -- may be a sprite sheet -> Frames
 /// 2. If found but single-frame (parse_sprite_sheet returns None) -> Transform::Spin
-/// 3. Try "process-working-symbolic" at size 22 -- single frame -> Transform::Spin
+/// 3. Try "process-working-symbolic" at size 22 -- single frame -> Transform::Spin,
+///    its GTK foreground placeholders turned into `currentColor` as for any
+///    symbolic icon ([`normalize_gtk_symbolic`])
 /// 4. Return None if neither found; no other icon set stands in
 ///
 /// Each pass searches the theme and the themes of its `Inherits=` chain,
@@ -574,9 +578,17 @@ fn load_freedesktop_spinner_with(
         }
     };
     let chain = cached_theme_chain(theme)?;
+    spinner_in_chain(&chain, lookup_in_chain)
+}
 
+/// The spinner [`load_freedesktop_spinner`] finds in the themes of
+/// `chain`, with `lookup_in_chain` looking a name up in it.
+fn spinner_in_chain(
+    chain: &[String],
+    lookup_in_chain: impl Fn(&str, u16, &[String]) -> Option<PathBuf>,
+) -> Option<AnimatedIcon> {
     // First pass: plain name (finds sprite sheets in animations/ dirs)
-    if let Some(path) = lookup_in_chain("process-working", 22, &chain) {
+    if let Some(path) = lookup_in_chain("process-working", 22, chain) {
         let bytes = std::fs::read(&path).ok()?;
         let frame_dur = NonZeroU32::new(FREEDESKTOP_FRAME_DURATION_MS)?;
         let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
@@ -597,8 +609,8 @@ fn load_freedesktop_spinner_with(
     }
 
     // Second pass: symbolic name (always single frame)
-    if let Some(path) = lookup_in_chain("process-working-symbolic", 22, &chain) {
-        let bytes = std::fs::read(&path).ok()?;
+    if let Some(path) = lookup_in_chain("process-working-symbolic", 22, chain) {
+        let bytes = normalize_gtk_symbolic(std::fs::read(&path).ok()?, "currentColor");
         let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
         return Some(AnimatedIcon::transform(
             IconData::Svg(Cow::Owned(bytes)),
@@ -684,11 +696,27 @@ mod tests {
     use crate::{IconRole, IconSet, icon_name};
 
     #[test]
-    fn lookup_size_clamps_to_u16() {
+    fn lookup_size_clamps_to_i16() {
+        const LARGEST: u16 = i16::MAX as u16;
         assert_eq!(lookup_size(24), 24);
-        assert_eq!(lookup_size(u32::from(u16::MAX)), u16::MAX);
-        assert_eq!(lookup_size(70_000), u16::MAX);
-        assert_eq!(lookup_size(u32::MAX), u16::MAX);
+        assert_eq!(lookup_size(u32::from(LARGEST)), LARGEST);
+        assert_eq!(lookup_size(32_768), LARGEST);
+        assert_eq!(lookup_size(u32::from(u16::MAX)), LARGEST);
+        assert_eq!(lookup_size(u32::MAX), LARGEST);
+    }
+
+    /// A size past `i16::MAX` misses every Breeze directory, so
+    /// freedesktop-icons measures its distance to each: in a debug build
+    /// that subtraction overflowed `i16` and panicked.
+    #[test]
+    fn a_size_past_i16_loads_without_overflow() {
+        if !Path::new("/usr/share/icons/breeze/index.theme").exists() {
+            eprintln!("skipped: the breeze theme is not installed");
+            return;
+        }
+        for size in [32_768, 32_784, u32::from(u16::MAX)] {
+            let _ = load_freedesktop_icon_by_name("edit-copy", "breeze", size, None);
+        }
     }
 
     #[test]
@@ -1072,6 +1100,37 @@ mod tests {
         assert!(theme_icon_stems("no-such-theme", &fx.bases).is_empty());
     }
 
+    /// A theme installed both for the user (in `~/.local/share/icons`, as
+    /// "Get New Icons" installs it) and system-wide is read from the user's
+    /// copy, the first `index.theme` in the specification's order: its
+    /// `Inherits=` alone decides the chain.
+    #[test]
+    fn the_user_s_copy_of_a_theme_decides_its_chain() {
+        let root = std::env::temp_dir().join(format!(
+            "native-theme-icon-user-copy-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let home = root.join("home");
+        let system = root.join("usr/share");
+        let theme = |base: &Path, name: &str, inherits: &str| {
+            std::fs::create_dir_all(base.join(name)).unwrap();
+            std::fs::write(
+                base.join(name).join("index.theme"),
+                format!("[Icon Theme]\nName={name}\nInherits={inherits}\nDirectories=actions\n"),
+            )
+            .unwrap();
+        };
+        theme(&home.join(".local/share/icons"), "copied", "user-parent");
+        theme(&system.join("icons"), "copied", "system-parent");
+        theme(&system.join("icons"), "user-parent", "");
+        theme(&system.join("icons"), "system-parent", "");
+        let bases = crate::icons::icon_base_dirs_in(Some(&home), None, Some(system.as_os_str()));
+        let chain = theme_chain("copied", &bases);
+        let _ = std::fs::remove_dir_all(&root);
+        assert_eq!(chain.unwrap(), ["copied", "user-parent"]);
+    }
+
     #[test]
     fn theme_chain_terminates_on_a_cycle() {
         let fx = Fixture::new("cycle");
@@ -1131,10 +1190,11 @@ mod tests {
         }
     }
 
-    /// `default` inherits Adwaita, which inherits AdwaitaLegacy: an icon
-    /// only AdwaitaLegacy has is two parents away, and still found.
+    /// Adwaita inherits AdwaitaLegacy: an icon only AdwaitaLegacy has is
+    /// found for Adwaita. `default` inherits Adwaita but lists no
+    /// `Directories`, so it is no icon theme, and nothing is found for it.
     #[test]
-    fn find_icon_reaches_a_grandparent_theme() {
+    fn find_icon_reaches_a_parent_theme_and_not_through_default() {
         let icons = Path::new("/usr/share/icons");
         let default_index = std::fs::read_to_string(icons.join("default/index.theme"));
         let inherits_adwaita = default_index
@@ -1174,13 +1234,14 @@ mod tests {
             .collect();
         assert!(!legacy_only.is_empty(), "no AdwaitaLegacy-only icon found");
         for name in legacy_only {
-            let found = find_icon(name, "default", 24);
+            let found = find_icon(name, "Adwaita", 24);
             assert!(
                 found
                     .as_ref()
                     .is_some_and(|(path, _)| path.starts_with(&legacy)),
-                "{name} for default: {found:?}"
+                "{name} for Adwaita: {found:?}"
             );
+            assert_eq!(find_icon(name, "default", 24), None, "{name} for default");
         }
     }
 
@@ -1406,6 +1467,37 @@ mod tests {
     fn test_parse_sprite_sheet_non_finite_viewbox_returns_none() {
         assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 1 inf"/>"#).is_none());
         assert!(parse_sprite_sheet(br#"<svg viewBox="0 0 NaN 20"/>"#).is_none());
+    }
+
+    /// A GTK-convention theme's symbolic spinner fills with a placeholder
+    /// (`#2e3436`); it comes back as `currentColor`, as every other symbolic
+    /// icon does, for the connectors to colour.
+    #[test]
+    fn a_symbolic_spinner_s_placeholder_becomes_current_color() {
+        let dir = std::env::temp_dir().join(format!(
+            "native-theme-symbolic-spinner-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("process-working-symbolic.svg");
+        std::fs::write(
+            &path,
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
+        )
+        .unwrap();
+        let spinner = spinner_in_chain(&["gtk-like".to_string()], |name, _, _| {
+            (name == "process-working-symbolic").then(|| path.clone())
+        });
+        let _ = std::fs::remove_dir_all(&dir);
+        let spinner = spinner.expect("the symbolic spinner loads");
+        let IconData::Svg(bytes) = spinner.first_frame() else {
+            panic!("the symbolic spinner is not an SVG");
+        };
+        let svg = std::str::from_utf8(bytes).unwrap();
+        assert!(
+            svg.contains(r#"fill="currentColor""#) && !svg.contains("#2e3436"),
+            "{svg}"
+        );
     }
 
     #[test]
