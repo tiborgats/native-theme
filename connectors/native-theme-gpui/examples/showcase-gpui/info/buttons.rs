@@ -432,13 +432,13 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     match kind {
         ButtonKind::Primary => vec![
             claim(
-                "bg, at 80% (the whole Button fades, button.rs:825)",
+                "bg, at 80% (the whole Button fades, button.rs:836)",
                 "button_primary",
                 t.button_primary.opacity(0.8),
                 "gpui-component/button/button.rs:996",
             ),
             claim(
-                "text, at 80% (the whole Button fades, button.rs:825)",
+                "text, at 80% (the whole Button fades, button.rs:836)",
                 "button_primary_foreground",
                 t.button_primary_foreground.opacity(0.8),
                 "gpui-component/button/button.rs:1014",

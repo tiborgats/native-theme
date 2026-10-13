@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1257-1261)",
+        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1274-1278)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (button.rs:1093-1098)",
+        "not reachable: only a Custom variant takes a shadow (button.rs:1110-1115)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1181-1186)",
+        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1198-1203)",
     ),
     (
         "",
