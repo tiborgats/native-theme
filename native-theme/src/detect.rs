@@ -1335,17 +1335,28 @@ impl DetectionContext {
         }
     }
 
-    /// [`refined_linux_desktop()`](Self::refined_linux_desktop) for a
-    /// synchronous caller, which does not ask the portal: the cached desktop,
-    /// else [`refine_linux_desktop`] without a portal backend (not cached).
-    /// The two differ only on an unrecognised desktop whose portal backend
-    /// names a desktop, until a system read has asked it: a KDE backend
-    /// without `kdeglobals` is `Unknown` here, a GNOME backend with
-    /// `kdeglobals` is KDE here. The system read then clears the font DPI,
-    /// icon theme, dark mode and reduced motion detected from this desktop
-    /// ([`finish_refined_desktop`](Self::finish_refined_desktop)).
+    /// The desktop the platform readers use: the raw `XDG_CURRENT_DESKTOP`
+    /// ([`linux_desktop()`](Self::linux_desktop)) where it names a desktop;
+    /// for [`LinuxDesktop::Unknown`], the desktop the portal backend named at
+    /// the last system read (`SystemTheme::from_system`, `from_system_async`,
+    /// `AccessibilityPreferences::from_system`, with the `portal` feature),
+    /// else KDE where the user's `kdeglobals` exists (with the `kde`
+    /// feature), else `Unknown`. The reader, the theme watcher, the icon-theme
+    /// detection and the font DPI decide by it, and the icon enums
+    /// native-theme-build generates pick their per-desktop names by it.
+    ///
+    /// A system read caches the desktop it refined; until one has, this call
+    /// does not ask the portal and caches nothing, so on an unrecognised
+    /// desktop whose portal backend names one it can differ from what the
+    /// next system read caches (a KDE backend without `kdeglobals` is
+    /// `Unknown` here, a GNOME backend with `kdeglobals` is KDE here); the
+    /// system read then clears the font DPI, icon theme, dark mode and
+    /// reduced motion detected from this desktop.
+    /// [`invalidate_linux_desktop()`](Self::invalidate_linux_desktop) clears
+    /// the cached desktop.
     #[cfg(target_os = "linux")]
-    pub(crate) fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
+    #[must_use]
+    pub fn refined_linux_desktop_sync(&self) -> LinuxDesktop {
         if let Some(v) = self.refined_linux_desktop.get() {
             return v.desktop;
         }

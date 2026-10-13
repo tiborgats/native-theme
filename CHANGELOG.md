@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `SystemTheme::icon(id, mode, color)` and `SystemTheme::icon_indicator(mode)` load a role, a name or a provider's icon, and the animated loading indicator, from the theme's `icon_set`; a freedesktop icon or spinner comes from `icon_theme_for(mode)`, that variant's theme (`breeze` or `breeze-dark` under `kde-breeze`).
 - **native-theme-build**: the generated enum, its variants and its `ALL` constant carry doc comments, so a crate that `include!`s the file into a public module compiles under `#![deny(missing_docs)]`.
 - **native-theme**: `DetectionContext::invalidate_font_dpi()` clears the cached font DPI alone, as the other `invalidate_*` methods clear their field; `invalidate_all()` and `detect::invalidate_caches()` clear it too.
+- **native-theme**: `DetectionContext::refined_linux_desktop_sync()` (Linux), the desktop the platform readers use: the raw `XDG_CURRENT_DESKTOP` where it names a desktop, else the desktop the portal backend named at the last system read (with `portal`), else KDE where the user's `kdeglobals` exists (with `kde`); the reader, the theme watcher, the icon-theme detection and the font DPI decide by it, and code native-theme-build generates reads it.
 
 ### Changed
 
