@@ -612,6 +612,11 @@ mod tests {
             "SPI_GETCLIENTAREAANIMATION",
             "AnimationsEnabledChanged",
         ),
+        (
+            "windows",
+            "UISettings.AdvancedEffectsEnabled",
+            "AdvancedEffectsEnabledChanged",
+        ),
     ];
 
     /// Each reader's module source, whose docs list its sources.

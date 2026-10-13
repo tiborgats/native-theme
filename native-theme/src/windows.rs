@@ -26,6 +26,10 @@
 //!   No Microsoft page says `UISettings.AnimationsEnabled` is the same
 //!   setting; it read the same as `SPI_GETCLIENTAREAANIMATION` on the three
 //!   Windows probe images (`docs/platform-facts.md`, `reduce_motion`).
+//! - `UISettings.AdvancedEffectsEnabled`: reduced transparency, the
+//!   *Transparency effects* setting turned off
+//!   (`UISettings::AdvancedEffectsEnabledChanged`, Windows 10 1703 and later,
+//!   <https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.advancedeffectsenabled>).
 //!
 //! # Sources not watched
 //!
@@ -69,7 +73,7 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 /// - `lfMessageFont` -- default UI font (messages, dialogs)
 /// - `lfCaptionFont` -- title bar font
 /// - `lfMenuFont` -- menu item font
-/// - `lfStatusFont` -- status bar font
+/// - `lfStatusFont` -- status bar and tooltip font
 struct AllFonts {
     msg: FontSpec,
     caption: FontSpec,
@@ -97,6 +101,8 @@ struct AccessibilityData {
     text_scaling_factor: Option<f32>,
     high_contrast: Option<bool>,
     reduce_motion: Option<bool>,
+    /// `UISettings.AdvancedEffectsEnabled`: the *Transparency effects* setting.
+    advanced_effects_enabled: Option<bool>,
 }
 
 /// Convert a `windows::UI::Color` to our `Rgba` type.
@@ -144,7 +150,7 @@ pub(crate) const LOGICAL_DPI: u32 = 96;
 ///
 /// Extracts font family from `lfFaceName` (null-terminated UTF-16),
 /// size in points from `abs(lfHeight) * 72 / 96`, and weight from `lfWeight`
-/// (already CSS 100-900 scale, clamped).
+/// (already CSS 100-900 scale, clamped), with `FW_DONTCARE` (0) no weight.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW) -> FontSpec {
     logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, LOGICAL_DPI)
@@ -167,11 +173,13 @@ fn logfont_to_fontspec_raw(
     } else {
         lf_height.unsigned_abs() as f32 * 72.0 / dpi as f32
     };
-    let weight = (lf_weight.clamp(100, 900)) as u16;
+    // FW_DONTCARE is 0 (windows 0.62.2 Win32/Graphics/Gdi/mod.rs:4998): the
+    // default weight, which the preset states.
+    let weight = (lf_weight > 0).then(|| lf_weight.clamp(100, 900) as u16);
     FontSpec {
         family: Some(family.into()),
         size: Some(crate::model::font::FontSize::Pt(points)),
-        weight: Some(weight),
+        weight,
         ..Default::default()
     }
 }
@@ -388,6 +396,7 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
         text_scaling_factor,
         high_contrast,
         reduce_motion: read_reduce_motion(),
+        advanced_effects_enabled: settings.AdvancedEffectsEnabled().ok(),
     }
 }
 
@@ -463,6 +472,8 @@ fn build_theme(
     // --- Per-widget fonts (WIN-01) ---
     variant.window.title_bar_font = Some(fonts.caption);
     variant.menu.font = Some(fonts.menu);
+    // lfStatusFont is "the font used in status bars and tooltips" (NONCLIENTMETRICSW).
+    variant.tooltip.font = Some(fonts.status.clone());
     variant.status_bar.font = Some(fonts.status);
 
     // --- Widget sizing ---
@@ -493,7 +504,9 @@ fn build_theme(
         if let Some(hc) = a.high_contrast {
             ap.high_contrast = hc;
         }
-        // reduce_transparency keeps default -- Windows does not expose this setting
+        if let Some(enabled) = a.advanced_effects_enabled {
+            ap.reduce_transparency = !enabled;
+        }
         ap
     } else {
         crate::AccessibilityPreferences::default()
@@ -720,11 +733,21 @@ mod tests {
     fn logfont_to_fontspec_weight_clamped_to_range() {
         let face: [u16; 32] = [0; 32];
         // Weight below 100 gets clamped
-        let fs = logfont_to_fontspec_raw(&face, -16, 0, 96);
+        let fs = logfont_to_fontspec_raw(&face, -16, 50, 96);
         assert_eq!(fs.weight, Some(100));
         // Weight above 900 gets clamped
         let fs = logfont_to_fontspec_raw(&face, -16, 1000, 96);
         assert_eq!(fs.weight, Some(900));
+    }
+
+    /// `FW_DONTCARE` (0) states no weight, so the preset's stands.
+    #[test]
+    fn logfont_to_fontspec_weight_dontcare_is_no_weight() {
+        let face: [u16; 32] = [0; 32];
+        let fs = logfont_to_fontspec_raw(&face, -16, 0, 96);
+        assert_eq!(fs.weight, None);
+        let fs = logfont_to_fontspec_raw(&face, -16, -400, 96);
+        assert_eq!(fs.weight, None);
     }
 
     // === colorref_to_rgba tests ===
@@ -857,6 +880,25 @@ mod tests {
         assert_eq!(status_font.size, Some(FontSize::Pt(8.0)));
     }
 
+    /// The tooltip text is `lfStatusFont`'s, "the font used in status bars and
+    /// tooltips" (NONCLIENTMETRICSW).
+    #[test]
+    fn build_theme_sets_tooltip_font_from_status_font() {
+        let fonts = named_fonts();
+        let status = fonts.status.clone();
+        let theme = build_theme(
+            crate::Rgba::rgb(0, 120, 215),
+            crate::Rgba::rgb(0, 0, 0),
+            [None; 6],
+            fonts,
+            None,
+            None,
+            None,
+        );
+        let variant = reader_mode(&theme);
+        assert_eq!(variant.tooltip.font, Some(status));
+    }
+
     #[test]
     fn build_theme_sets_defaults_font_from_msg_font() {
         let fonts = named_fonts();
@@ -894,6 +936,7 @@ mod tests {
             text_scaling_factor: None,
             high_contrast,
             reduce_motion: None,
+            advanced_effects_enabled: None,
         };
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
@@ -1121,6 +1164,7 @@ mod tests {
             text_scaling_factor: Some(1.5),
             high_contrast: Some(true),
             reduce_motion: Some(false),
+            advanced_effects_enabled: None,
         };
         let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
@@ -1137,6 +1181,33 @@ mod tests {
             theme.output,
             crate::ReaderOutput::Single { is_dark: false, .. }
         ));
+    }
+
+    /// `reduce_transparency` is the *Transparency effects* setting turned off:
+    /// `UISettings.AdvancedEffectsEnabled` false.
+    #[test]
+    fn build_theme_reduce_transparency_is_advanced_effects_off() {
+        for (enabled, reduce) in [(Some(true), false), (Some(false), true), (None, false)] {
+            let accessibility = AccessibilityData {
+                text_scaling_factor: None,
+                high_contrast: None,
+                reduce_motion: None,
+                advanced_effects_enabled: enabled,
+            };
+            let result = build_theme(
+                crate::Rgba::rgb(0, 120, 215),
+                crate::Rgba::rgb(0, 0, 0),
+                [None; 6],
+                default_fonts(),
+                None,
+                None,
+                Some(&accessibility),
+            );
+            assert_eq!(
+                result.accessibility.reduce_transparency, reduce,
+                "AdvancedEffectsEnabled {enabled:?}"
+            );
+        }
     }
 
     // === Widget sizing test ===

@@ -2,10 +2,11 @@
 //!
 //! Creates a background thread with COM STA initialization and a
 //! `GetMessageW`/`DispatchMessageW` message pump. The WinRT events
-//! `UISettings::ColorValuesChanged`, `TextScaleFactorChanged` and
-//! `AnimationsEnabledChanged` and `AccessibilitySettings::HighContrastChanged`
-//! fire whenever the user changes the system colours, the text scale, the
-//! animations or high contrast; their handlers post a thread message to the
+//! `UISettings::ColorValuesChanged`, `TextScaleFactorChanged`,
+//! `AnimationsEnabledChanged` and `AdvancedEffectsEnabledChanged` and
+//! `AccessibilitySettings::HighContrastChanged` fire whenever the user changes
+//! the system colours, the text scale, the animations, the transparency
+//! effects or high contrast; their handlers post a thread message to the
 //! pump, which fires the callback on the watcher thread. Shutdown is handled
 //! by posting
 //! `WM_QUIT` to the watcher thread via `PostThreadMessageW` from the
@@ -36,11 +37,12 @@ use super::ThemeChangeEvent;
 /// The WinRT events the watcher subscribes to: the Windows reader's sources
 /// (`windows.rs`, "Sources").
 #[cfg(test)]
-pub(super) const SUBSCRIBED_EVENTS: [&str; 4] = [
+pub(super) const SUBSCRIBED_EVENTS: [&str; 5] = [
     COLOR_VALUES_CHANGED,
     TEXT_SCALE_FACTOR_CHANGED,
     HIGH_CONTRAST_CHANGED,
     ANIMATIONS_ENABLED_CHANGED,
+    ADVANCED_EFFECTS_ENABLED_CHANGED,
 ];
 
 /// `UISettings::ColorValuesChanged`, for `UISettings.GetColorValue`.
@@ -55,6 +57,11 @@ const HIGH_CONTRAST_CHANGED: &str = "HighContrastChanged";
 /// `UISettings::AnimationsEnabledChanged`, for `SPI_GETCLIENTAREAANIMATION`.
 #[cfg(test)]
 const ANIMATIONS_ENABLED_CHANGED: &str = "AnimationsEnabledChanged";
+
+/// `UISettings::AdvancedEffectsEnabledChanged`, for
+/// `UISettings.AdvancedEffectsEnabled`.
+#[cfg(test)]
+const ADVANCED_EFFECTS_ENABLED_CHANGED: &str = "AdvancedEffectsEnabledChanged";
 
 /// The thread message an event handler posts to the watcher thread.
 const WM_THEME_CHANGED: u32 = WM_APP;
@@ -88,13 +95,15 @@ impl Drop for ComGuard {
 /// Spawn a background thread that watches for Windows theme changes.
 ///
 /// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`,
-/// `TextScaleFactorChanged` and `AnimationsEnabledChanged` and to
+/// `TextScaleFactorChanged`, `AnimationsEnabledChanged` and
+/// `AdvancedEffectsEnabledChanged` and to
 /// `AccessibilitySettings::HighContrastChanged`, and runs a
 /// `GetMessageW`/`DispatchMessageW` message pump. The callback fires on the
 /// background thread, once per burst of events, 300ms after the last of them
 /// (a thread timer the pump receives), whenever the system colours change
 /// (e.g. the user switches between light and dark mode or picks an accent
-/// colour), or the text scale, the animations setting or high contrast does.
+/// colour), or the text scale, the animations setting, the transparency
+/// effects setting or high contrast does.
 ///
 /// Returns once the thread has its message queue and the subscriptions are
 /// in place, or with `Error::ReaderFailed` when a setup step failed.
@@ -164,6 +173,7 @@ pub(crate) fn watch_windows(
         };
         let color_handler = TypedEventHandler::new(settings_changed);
         let text_scale_handler = TypedEventHandler::new(settings_changed);
+        let advanced_effects_handler = TypedEventHandler::new(settings_changed);
         let high_contrast_handler = TypedEventHandler::new(
             move |_: Ref<'_, AccessibilitySettings>, _: Ref<'_, IInspectable>| {
                 post_theme_changed(thread_id);
@@ -210,6 +220,11 @@ pub(crate) fn watch_windows(
         // the event (`IUISettings6`); the watcher then does without it, as the
         // other sources are still watched.
         let animations_token = settings.AnimationsEnabledChanged(&animations_handler).ok();
+        // Windows before 10 1703 lacks the event (`IUISettings4`), and the
+        // property with it.
+        let advanced_effects_token = settings
+            .AdvancedEffectsEnabledChanged(&advanced_effects_handler)
+            .ok();
 
         if ready_tx.send(Ok(thread_id)).is_ok() {
             // The thread timer of the pending burst, 0 for none.
@@ -266,6 +281,9 @@ pub(crate) fn watch_windows(
         let _ = accessibility.RemoveHighContrastChanged(high_contrast_token);
         if let Some(token) = animations_token {
             let _ = settings.RemoveAnimationsEnabledChanged(token);
+        }
+        if let Some(token) = advanced_effects_token {
+            let _ = settings.RemoveAdvancedEffectsEnabledChanged(token);
         }
     });
 
