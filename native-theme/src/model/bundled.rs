@@ -25,12 +25,12 @@ use super::icons::{IconRole, IconSet};
 /// equivalent public-API call:
 ///
 /// ```
-/// use native_theme::icons::SfSymbolsLoader;
+/// use native_theme::icons::MaterialLoader;
 /// use native_theme::icons::IconRole;
 ///
-/// // SfSymbols is not a bundled set on non-macOS targets; the loader returns None.
-/// let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
-/// assert!(result.is_none());
+/// // Material is bundled with the `material-icons` feature; the loader returns None without it.
+/// let result = MaterialLoader::new(IconRole::ActionCopy).load();
+/// assert_eq!(result.is_some(), cfg!(feature = "material-icons"));
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]
@@ -195,11 +195,11 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// per-set loader from [`crate::icons`] constructed with a string name:
 ///
 /// ```
-/// use native_theme::icons::SfSymbolsLoader;
+/// use native_theme::icons::LucideLoader;
 ///
-/// // SfSymbols is not a bundled set; no in-crate name lookup succeeds.
-/// let result = SfSymbolsLoader::new("check").load();
-/// assert!(result.is_none());
+/// // Lucide is bundled with the `lucide-icons` feature; the loader returns None without it.
+/// let result = LucideLoader::new("check").load();
+/// assert_eq!(result.is_some(), cfg!(feature = "lucide-icons"));
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]

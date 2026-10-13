@@ -23,7 +23,10 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 /// png-0.18.1 `src/decoder/mod.rs:81-87`): a 4096 × 4096 RGBA image, beyond
 /// any icon directory's size.
 #[cfg_attr(
-    not(all(target_os = "linux", feature = "system-icons")),
+    not(any(
+        all(target_os = "linux", feature = "system-icons"),
+        feature = "svg-rasterize"
+    )),
     allow(dead_code)
 )]
 pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
@@ -45,9 +48,12 @@ pub(crate) fn raster_size_in_bound(size: u32) -> bool {
 /// they are inside [`MAX_ICON_DECODE_BYTES`]; `None` for a side of 0 or a
 /// raster over the bound.
 #[cfg_attr(
-    not(all(
-        any(target_os = "macos", target_os = "windows"),
-        feature = "system-icons"
+    not(any(
+        all(
+            any(target_os = "macos", target_os = "windows"),
+            feature = "system-icons"
+        ),
+        feature = "svg-rasterize"
     )),
     allow(dead_code)
 )]
@@ -1935,13 +1941,12 @@ mod icon_loader_tests {
     }
 }
 
-#[cfg(all(test, feature = "svg-rasterize"))]
+#[cfg(all(test, feature = "svg-rasterize", feature = "lucide-icons"))]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod spinner_rasterize_tests {
     use super::*;
 
     #[test]
-    #[cfg(feature = "lucide-icons")]
     fn lucide_spinner_icon_rasterizes() {
         let anim = crate::spinners::lucide_spinner();
         if let AnimatedIcon::Frames(data) = &anim {
