@@ -367,7 +367,7 @@ reflect the actual system appearance.
 
 | Function                  | What it provides                   |   |
 |---------------------------|------------------------------------|---|
-| `DwmGetColorizationColor` | Glass composition colour; the reader uses it for the title bar | ❓ no source ties it to the title bar; #006fc4, alpha 0xe3, on `windows-11-arm`, where `ColorPrevalence` (accent on title bars) is 0 ([probe.toml:763](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L763), [probe.toml:773](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L773)). The reader does not read it (§2.2 `title_bar_background`) |
+| `DwmGetColorizationColor` | Glass composition colour; the reader does not read it (§2.2 `title_bar_background`) | ❓ no source ties it to the title bar; #006fc4, alpha 0xe3, on `windows-11-arm`, where `ColorPrevalence` (accent on title bars) is 0 ([probe.toml:763](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L763), [probe.toml:773](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L773)) |
 
 #### 1.2.3 Geometry
 

@@ -93,18 +93,26 @@ panel_px = 20.0
 
 [light.text_scale.caption]
 size_pt =9.0
+# platform-facts.md:301 (§1.2.1): the Fluent type ramp's Caption 12px, line height 16px
+line_height_px = 16.0
 
 [light.text_scale.section_heading]
 size_pt =15.0
 weight = 600
+# platform-facts.md:306 (§1.2.1): the Fluent type ramp's Subtitle 20px, line height 28px
+line_height_px = 28.0
 
 [light.text_scale.dialog_title]
 size_pt =21.0
 weight = 600
+# platform-facts.md:307 (§1.2.1): the Fluent type ramp's Title 28px, line height 36px
+line_height_px = 36.0
 
 [light.text_scale.display]
 size_pt =51.0
 weight = 600
+# platform-facts.md:309 (§1.2.1): the Fluent type ramp's Display 68px, line height 92px
+line_height_px = 92.0
 
 [light.button]
 # platform-facts.md:1164 (§2.3): ButtonBackground = ControlFillColorDefault #B3FFFFFF
@@ -128,8 +136,11 @@ disabled_text_color = "#0000005c"
 active_background = "#f5f5f5"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#f9f9f900"
-# platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF
-checked_background = "#0078d4"
+# platform-facts.md:1175, :1181 (§2.3): AccentButtonBackground and ToggleButtonBackgroundChecked =
+# AccentFillColorDefault = SystemAccentColorDark1, UISettings AccentDark1 #0067c0 for the accent above
+# (OS probe, Windows 11 25H2); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF (:1182)
+primary_background = "#0067c0"
+checked_background = "#0067c0"
 checked_text_color = "#ffffff"
 
 
@@ -233,8 +244,6 @@ thumb_color = "#c2c2c2"
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
 thumb_hover_color = "#a0a0a0"
-# soft_option: Fluent scrollbar pressed
-thumb_active_color = "#787878"
 
 [light.slider]
 # platform-facts.md:1290-1291 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #72000000;
@@ -244,16 +253,11 @@ thumb_color = "#ffffff"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
-# soft_option interactive state colors (Windows Fluent section 2.9)
-# Fluent slider thumb hover
-thumb_hover_color = "#e0e0e0"
 # SliderTrackValueFillDisabled = AccentFillColorDisabled #37000000 (Slider_themeresources.xaml:131;
 # Common_themeresources_any.xaml:242 at microsoft-ui-xaml 8463f45)
 disabled_fill_color = "#00000037"
 # SliderTrackFillDisabled = ControlStrongFillColorDisabled #51000000 (Slider_themeresources.xaml:127; Common_themeresources_any.xaml:227 at microsoft-ui-xaml 8463f45)
 disabled_track_color = "#00000051"
-# Fluent slider thumb disabled
-disabled_thumb_color = "#ffffff80"
 
 [light.progress_bar]
 # platform-facts.md:1302 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #72000000
@@ -288,6 +292,13 @@ hover_background = "#0000000a"
 
 
 [light.tab.border]
+# platform-facts.md:1320 (§2.11): the selected tab's CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250
+# at microsoft-ui-xaml 8463f45), top and sides
+color = "#0000000f"
+# platform-facts.md:1321-1323 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
+line_width_px = 1.0
+corner_radius_px = 8.0
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
@@ -320,6 +331,7 @@ padding_bottom_px = 5.0
 # platform-facts.md:1233 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.list]
+# platform-facts.md:1382 (§2.15): the preset's value, no WinUI3 source ❓
 alternate_row_background = "#f9f9f9"
 # platform-facts.md:1387 (§2.15): ≈ defaults.background_color
 header_background = "#f3f3f3"
@@ -395,8 +407,7 @@ padding_bottom_px = 17.0
 [light.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color no source ❓: WinUI 3 has no draggable divider (platform-facts.md:1419), and #e5e5e5 is the border's old composite (M3)
-hover_color = "#e5e5e5"
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1419)
 
 [light.switch]
 # platform-facts.md:1472 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000; its
@@ -424,8 +435,6 @@ hover_unchecked_background = "#e5e5e5"
 disabled_checked_background = "#00000037"
 # ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:138; Common_themeresources_any.xaml:237)
 disabled_unchecked_background = "#ffffff00"
-# Fluent ToggleSwitch disabled knob
-disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
 # platform-facts.md:1483 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #F3F3F3
@@ -516,6 +525,13 @@ shadow_enabled = false
 
 
 [light.card.border]
+# platform-facts.md:1588 (§2.26): CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250 at
+# microsoft-ui-xaml 8463f45)
+color = "#0000000f"
+# platform-facts.md:1589-1591 (§2.26): 1px, OverlayCornerRadius 8, border only
+line_width_px = 1.0
+corner_radius_px = 8.0
+shadow_enabled = false
 # platform-facts.md:1592-1593 (§2.26): 12 (convention)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
@@ -529,9 +545,6 @@ arrow_side = "trailing"
 arrow_gap_px = 30.0
 content_indent_px = 16.0
 frame_enabled = true
-# soft_option interactive state colors (Windows Fluent Expander)
-# Fluent Expander hover
-hover_background = "#0000000a"
 # ExpanderChevronForeground = TextFillColorPrimary #E4000000
 # (Expander_themeresources.xaml:42 at microsoft-ui-xaml 8463f45)
 arrow_color = "#000000e4"
@@ -636,18 +649,26 @@ panel_px = 20.0
 
 [dark.text_scale.caption]
 size_pt =9.0
+# platform-facts.md:301 (§1.2.1): the Fluent type ramp's Caption 12px, line height 16px
+line_height_px = 16.0
 
 [dark.text_scale.section_heading]
 size_pt =15.0
 weight = 600
+# platform-facts.md:306 (§1.2.1): the Fluent type ramp's Subtitle 20px, line height 28px
+line_height_px = 28.0
 
 [dark.text_scale.dialog_title]
 size_pt =21.0
 weight = 600
+# platform-facts.md:307 (§1.2.1): the Fluent type ramp's Title 28px, line height 36px
+line_height_px = 36.0
 
 [dark.text_scale.display]
 size_pt =51.0
 weight = 600
+# platform-facts.md:309 (§1.2.1): the Fluent type ramp's Display 68px, line height 92px
+line_height_px = 92.0
 
 [dark.button]
 # platform-facts.md:1164 (§2.3): ButtonBackground = ControlFillColorDefault #0FFFFFFF
@@ -671,8 +692,11 @@ disabled_text_color = "#ffffff5d"
 active_background = "#272727"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"
-# platform-facts.md:1181-1182 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault, the accent button's fill (defaults.accent_color); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000
-checked_background = "#0078d4"
+# platform-facts.md:1175, :1181 (§2.3): AccentButtonBackground and ToggleButtonBackgroundChecked =
+# AccentFillColorDefault = SystemAccentColorLight2, UISettings AccentLight2 #4cc2ff for the accent above
+# (OS probe, Windows 11 25H2); ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000 (:1182)
+primary_background = "#4cc2ff"
+checked_background = "#4cc2ff"
 checked_text_color = "#000000"
 
 
@@ -776,8 +800,6 @@ overlay_mode = false
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
 thumb_hover_color = "#a0a0a0"
-# soft_option: Fluent scrollbar pressed
-thumb_active_color = "#787878"
 
 [dark.slider]
 # platform-facts.md:1290-1291 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #8BFFFFFF;
@@ -787,16 +809,11 @@ thumb_color = "#454545"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
-# soft_option interactive state colors (Windows Fluent section 2.9)
-# Fluent slider thumb hover
-thumb_hover_color = "#404040"
 # SliderTrackValueFillDisabled = AccentFillColorDisabled #28FFFFFF (Slider_themeresources.xaml:27;
 # Common_themeresources_any.xaml:38 at microsoft-ui-xaml 8463f45)
 disabled_fill_color = "#ffffff28"
 # SliderTrackFillDisabled = ControlStrongFillColorDisabled #3FFFFFFF (Slider_themeresources.xaml:23; Common_themeresources_any.xaml:23 at microsoft-ui-xaml 8463f45)
 disabled_track_color = "#ffffff3f"
-# Fluent slider thumb disabled
-disabled_thumb_color = "#2d2d2d80"
 
 [dark.progress_bar]
 # platform-facts.md:1302 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #8BFFFFFF
@@ -831,6 +848,13 @@ hover_background = "#ffffff0f"
 
 
 [dark.tab.border]
+# platform-facts.md:1320 (§2.11): the selected tab's CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46
+# at microsoft-ui-xaml 8463f45), top and sides
+color = "#00000019"
+# platform-facts.md:1321-1323 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
+line_width_px = 1.0
+corner_radius_px = 8.0
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
@@ -863,6 +887,7 @@ padding_bottom_px = 5.0
 # platform-facts.md:1233 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.list]
+# platform-facts.md:1382 (§2.15): the preset's value, no WinUI3 source ❓
 alternate_row_background = "#262626"
 # platform-facts.md:1387 (§2.15): ≈ defaults.background_color
 header_background = "#202020"
@@ -937,8 +962,7 @@ padding_bottom_px = 17.0
 [dark.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color no source ❓: WinUI 3 has no draggable divider (platform-facts.md:1419), and #454545 is the border's old value (M3)
-hover_color = "#454545"
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1419)
 
 [dark.switch]
 # platform-facts.md:1472 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000; its
@@ -966,8 +990,6 @@ hover_unchecked_background = "#2a2a2a"
 disabled_checked_background = "#ffffff28"
 # ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:18; Common_themeresources_any.xaml:33)
 disabled_unchecked_background = "#ffffff00"
-# Fluent ToggleSwitch disabled knob
-disabled_thumb_color = "#ffffff80"
 
 [dark.dialog]
 # platform-facts.md:1483 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #202020
@@ -1058,6 +1080,13 @@ shadow_enabled = false
 
 
 [dark.card.border]
+# platform-facts.md:1588 (§2.26): CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46 at
+# microsoft-ui-xaml 8463f45)
+color = "#00000019"
+# platform-facts.md:1589-1591 (§2.26): 1px, OverlayCornerRadius 8, border only
+line_width_px = 1.0
+corner_radius_px = 8.0
+shadow_enabled = false
 # platform-facts.md:1592-1593 (§2.26): 12 (convention)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
@@ -1071,9 +1100,6 @@ arrow_side = "trailing"
 arrow_gap_px = 30.0
 content_indent_px = 16.0
 frame_enabled = true
-# soft_option interactive state colors (Windows Fluent Expander)
-# Fluent Expander hover
-hover_background = "#ffffff0f"
 # ExpanderChevronForeground = TextFillColorPrimary #FFFFFF
 # (Expander_themeresources.xaml:18 at microsoft-ui-xaml 8463f45)
 arrow_color = "#ffffff"

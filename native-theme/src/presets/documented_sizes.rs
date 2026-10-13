@@ -1164,15 +1164,16 @@ fn every_field_citation_names_its_platform_facts_row() {
     }
 }
 
-/// Platform-facts gives no desktop platform's text-scale line height, so no
-/// desktop preset states one and the resolver computes it from
+/// Platform-facts gives no other desktop platform's text-scale line height, so
+/// no other desktop preset states one and the resolver computes it from
 /// `defaults.line_height` (E5). Material's typescale states each style's line
-/// height (platform-facts §2.19), so the material-3 preset states them.
+/// height (platform-facts §2.19), and so does WinUI 3's type ramp
+/// (platform-facts §1.2.1), so the material-3 and windows-11 presets state them.
 #[test]
 fn native_presets_state_no_text_scale_line_height() {
     let mut failures = Vec::new();
     for preset in NativePreset::ALL {
-        if preset == Material3 {
+        if preset == Material3 || preset == NativePreset::Windows11 {
             continue;
         }
         let name = preset.key();
