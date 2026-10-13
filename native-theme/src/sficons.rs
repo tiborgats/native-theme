@@ -30,6 +30,8 @@ const DEFAULT_ICON_SIZE: u32 = 24;
 fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
     let ns_name = NSString::from_str(name);
     let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
+    // SAFETY: reading `NSFontWeightRegular` is an FFI read of an AppKit `extern`
+    // constant (a CGFloat, valid for the process's lifetime).
     let weight = unsafe { NSFontWeightRegular };
     let config = NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(
         point_size,
@@ -44,6 +46,9 @@ fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
 /// Uses a null rect to let AppKit choose the best representation,
 /// which on Retina displays will be at the full pixel resolution.
 fn extract_cgimage(image: &NSImage) -> Option<Retained<CGImage>> {
+    // SAFETY: a null `proposed_dest_rect` is allowed by the binding's contract
+    // ("a valid pointer or null"), no graphics context and no hints are passed (the
+    // `hints` type is moot for None), and a NULL result is mapped to None.
     unsafe { image.CGImageForProposedRect_context_hints(ptr::null_mut(), None, None) }
 }
 

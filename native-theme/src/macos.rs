@@ -311,6 +311,8 @@ fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
 fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
     let system_size = NSFont::systemFontSize();
     let system_font = NSFont::systemFontOfSize(system_size);
+    // SAFETY: `NSFontWeightRegular` is an AppKit `extern` constant (a CGFloat,
+    // valid for the process's lifetime); the class method takes no pointer.
     let mono_font =
         unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
 
@@ -372,6 +374,9 @@ pub(crate) fn system_ui_font(italic: bool) -> Option<SystemUiFont> {
         .downcast::<CFString>()
         .ok()?
         .to_string();
+    // SAFETY: as above: `url_key` is Core Text's own static, `font.attribute`
+    // returns a retained reference or NULL (mapped to None), and the downcast
+    // checks the type id.
     let path = unsafe { font.attribute(url_key) }?
         .downcast::<CFURL>()
         .ok()?

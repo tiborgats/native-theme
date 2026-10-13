@@ -130,6 +130,8 @@ fn gray8_to_rgba(gray: u8) -> [u8; 4] {
 /// bitmap is over the decode bound
 /// ([`raster_bytes_in_bound`](crate::icons::raster_bytes_in_bound)).
 #[cfg(target_os = "windows")]
+// SAFETY: the caller passes a live icon handle and keeps it alive for the call;
+// it is not destroyed here.
 unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
     let mut icon_info = ICONINFO::default();
     // SAFETY: `hicon` is an icon handle (the caller's contract) and
@@ -165,6 +167,8 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
 /// `hbm` is a bitmap handle selected into no device context, as GetDIBits
 /// requires.
 #[cfg(target_os = "windows")]
+// SAFETY: the caller passes a bitmap handle selected into no device context
+// (`# Safety` above), as GetDIBits requires.
 unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     let mut bmp = BITMAP::default();
     // SAFETY: `bmp` is a live BITMAP of the size passed, for GetObjectW to
@@ -232,6 +236,9 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
 
+    // SAFETY: `sii` is a live SHSTOCKICONINFO with `cbSize` set to its size, for
+    // SHGetStockIconInfo to fill; on success `hIcon` is an icon this function owns,
+    // live for `hicon_to_rgba` and destroyed once afterwards, after its last use.
     unsafe {
         let mut sii = SHSTOCKICONINFO {
             cbSize: mem::size_of::<SHSTOCKICONINFO>() as u32,
@@ -257,6 +264,9 @@ fn load_stock_icon(name: &str) -> Option<IconData> {
 /// NOT be destroyed with DestroyIcon.
 #[cfg(target_os = "windows")]
 fn load_idi_icon() -> Option<IconData> {
+    // SAFETY: LoadIconW with no module loads a predefined system icon, a shared
+    // handle that stays live and is never destroyed here; `hicon_to_rgba` only
+    // reads it.
     unsafe {
         let hicon = LoadIconW(None, IDI_QUESTION).ok()?;
         hicon_to_rgba(hicon)
@@ -275,6 +285,8 @@ fn load_idi_icon() -> Option<IconData> {
 /// available. We detect this by comparing GetTextFaceW output against the
 /// requested name.
 #[cfg(target_os = "windows")]
+// SAFETY: the caller passes a live device context; the font created is
+// returned only if not substituted, and deleted on every other path.
 unsafe fn try_create_font(hdc: HDC, face_name: &str, em_height: u32) -> Option<HFONT> {
     let height = i32::try_from(em_height).ok()?.checked_neg()?;
     // SAFETY: `hdc` is a live DC (the caller's contract); `wide_name` is
@@ -484,6 +496,7 @@ unsafe fn render_glyph(hdc: HDC, font: HFONT, codepoint: u32, size: u32) -> Opti
 ///
 /// `hdc` is a live device context.
 #[cfg(target_os = "windows")]
+// SAFETY: the caller passes a live device context (`# Safety` above).
 unsafe fn glyph_outline(hdc: HDC, codepoint: u32) -> Option<(Vec<u8>, GlyphBox, i32)> {
     let mut tm = TEXTMETRICW::default();
     // SAFETY: `hdc` is live (the caller's contract) and `tm` is a live

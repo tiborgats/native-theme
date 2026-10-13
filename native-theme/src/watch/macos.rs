@@ -214,6 +214,8 @@ define_class!(
         }
     }
 
+    // SAFETY: `Observer` subclasses NSObject (the `super` above), which conforms
+    // to NSObjectProtocol; the protocol adds no requirement of its own.
     unsafe impl NSObjectProtocol for Observer {}
 );
 

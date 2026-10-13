@@ -190,6 +190,10 @@ fn read_all_system_fonts() -> AllFonts {
         ..Default::default()
     };
 
+    // SAFETY: `ncm` is a live NONCLIENTMETRICSW whose `cbSize` is its size, as
+    // SPI_GETNONCLIENTMETRICS requires of `uiParam`, and `pvParam` points to it; the
+    // DPI is passed explicitly, so no process awareness is read
+    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfofordpi).
     let success = unsafe {
         SystemParametersInfoForDpi(
             SPI_GETNONCLIENTMETRICS.0,
@@ -229,6 +233,9 @@ fn read_all_system_fonts() -> AllFonts {
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn logical_system_metric(index: SYSTEM_METRICS_INDEX) -> f32 {
+    // SAFETY: GetSystemMetricsForDpi takes the index and the DPI by value, with
+    // no pointer; 96 is a valid DPI and an unknown index returns 0
+    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetricsfordpi).
     unsafe { GetSystemMetricsForDpi(index, USER_DEFAULT_SCREEN_DPI) as f32 }
 }
 
@@ -394,6 +401,10 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
             cbSize: std::mem::size_of::<HIGHCONTRASTW>() as u32,
             ..Default::default()
         };
+        // SAFETY: `hc` is a live HIGHCONTRASTW whose `cbSize` is its size, as
+        // SPI_GETHIGHCONTRAST requires of `uiParam`, and `pvParam` points to it; only
+        // `dwFlags` is read afterwards
+        // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow).
         let success = unsafe {
             SystemParametersInfoW(
                 SPI_GETHIGHCONTRAST,
