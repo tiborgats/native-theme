@@ -194,6 +194,13 @@ native-theme = { version = "0.6", features = ["native"] }
 OS-specific dependencies are target-gated — `native` on macOS only pulls in
 macOS-related deps.
 
+The `macos` reader and the SF Symbols icons need macOS 11 or later: the
+reader reads each appearance's colours through
+[`performAsCurrentDrawingAppearance(_:)`](https://developer.apple.com/documentation/appkit/nsappearance/performascurrentdrawingappearance(_:))
+and the icons load through
+[`NSImage(systemSymbolName:accessibilityDescription:)`](https://developer.apple.com/documentation/appkit/nsimage/init(systemsymbolname:accessibilitydescription:)),
+both introduced in macOS 11.0.
+
 ## Links
 
 - [API reference on docs.rs](https://docs.rs/native-theme)

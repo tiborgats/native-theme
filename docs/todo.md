@@ -1020,6 +1020,12 @@ model, the platform presets and the three connectors
       both styles are 17, which `macos-tahoe` states. The reader could read
       `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads,
       a live OS value rather than a constant.
+      Fixed in M4 T24 (e6c5c737, `fix(macos): the scroll bar's groove width is
+      the one AppKit gives the user's scroller style`): the reader writes
+      `scrollerWidth(for: .regular, scrollerStyle:)` for the style it reads;
+      `scrollbar_for_style_takes_the_styles_width`
+      (`native-theme/src/macos.rs`) checks that the overlay style gets the
+      overlay width and the legacy style the legacy width.
 
 ### KDE: the plain-read link test cannot tell the reader from the preset
 
@@ -1068,6 +1074,22 @@ model, the platform presets and the three connectors
       break), or carry a resolved layout in `Resolved`/`SystemTheme` and let the
       generated check replace `check_layout`. Kept unchanged in M3 because no
       break was approved for it.
+
+### macOS: the reader and the SF Symbols loader on macOS 10.15 and earlier
+
+- [ ] [1.0] For the platform readers (M4-44, deferred by M4's triage,
+      2026-10-13): the macOS reader calls
+      `NSAppearance.performAsCurrentDrawingAppearance(_:)` and the SF Symbols
+      loader `NSImage(systemSymbolName:accessibilityDescription:)`, both
+      introduced in macOS 11.0 (Apple's documentation JSON, `introducedAt`,
+      read 2026-10-13; objc2-app-kit 0.3.2 does not encode availability).
+      On macOS 10.15 and earlier the unrecognised selector raises an
+      Objective-C exception, which objc2's `msg_send` unwinds (objc2 0.6.4
+      `src/macros/mod.rs:983-985`), instead of an `Err`; no GitHub runner is
+      older than macOS 14, so this is unreproduced. Since M4 T24 the crate
+      README states macOS 11 as the minimum. Gate it at runtime: in
+      `read_macos`, `os_version().major >= 11` (or objc2's `available!`)
+      else `Error::ReaderFailed`; in `load_sf_icon_by_name`, `None`.
 
 ---
 
