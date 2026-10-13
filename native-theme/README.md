@@ -117,13 +117,16 @@ Cached, does not run the full theme-reader pipeline.
 
 With the `watch` feature:
 
-```rust,ignore
+```rust,no_run
+# #[cfg(feature = "watch")] {
 use native_theme::watch::on_theme_change;
 
 let _subscription = on_theme_change(|_event| {
     // Runs on a background thread. The event carries no theme: tell the UI
     // thread to call `SystemTheme::from_system()` again.
 })?;
+# }
+# Ok::<(), native_theme::Error>(())
 ```
 
 Keep the subscription alive: dropping it stops watching.
@@ -138,7 +141,7 @@ Keep the subscription alive: dropping it stops watching.
 
 Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:
 
-```rust,ignore
+```rust,no_run
 use native_theme::icons::{FreedesktopLoader, IconRole, MaterialLoader};
 
 // Bundled set (no system dependencies).
@@ -152,7 +155,7 @@ let sys = FreedesktopLoader::new(IconRole::ActionCopy)
 
 Animated spinners respect the OS `prefers-reduced-motion` preference:
 
-```rust,ignore
+```rust,no_run
 use native_theme::icons::MaterialLoader;
 use native_theme::detect::prefers_reduced_motion;
 

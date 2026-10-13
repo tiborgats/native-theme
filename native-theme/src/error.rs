@@ -356,16 +356,64 @@ impl From<toml::ser::Error> for Error {
         // toml::de::Error. This preserves the existing From<toml::ser::Error>
         // conversion used by presets::to_toml().
         Error::ReaderFailed {
-            reader: "toml-serializer",
+            reader: reader_names::TOML_SERIALIZER,
             source: Box::new(err),
         }
     }
+}
+
+/// The `reader` name of every [`Error::ReaderFailed`], lowercase kebab-case.
+#[allow(dead_code)] // each platform's names are used only on that platform
+pub(crate) mod reader_names {
+    pub(crate) const KDE: &str = "kde";
+    pub(crate) const WINDOWS: &str = "windows";
+    pub(crate) const MACOS: &str = "macos";
+    pub(crate) const ICON_THEME: &str = "icon-theme";
+    pub(crate) const TOML_SERIALIZER: &str = "toml-serializer";
+    pub(crate) const PRESET_CACHE: &str = "preset-cache";
+    pub(crate) const SVG_RASTERIZER: &str = "svg-rasterizer";
+    pub(crate) const KDE_WATCHER: &str = "kde-watcher";
+    pub(crate) const GNOME_WATCHER: &str = "gnome-watcher";
+    pub(crate) const WINDOWS_WATCHER: &str = "windows-watcher";
+
+    /// Every name above, for the test that keeps them one style.
+    #[cfg(test)]
+    pub(crate) const ALL: [&str; 10] = [
+        KDE,
+        WINDOWS,
+        MACOS,
+        ICON_THEME,
+        TOML_SERIALIZER,
+        PRESET_CACHE,
+        SVG_RASTERIZER,
+        KDE_WATCHER,
+        GNOME_WATCHER,
+        WINDOWS_WATCHER,
+    ];
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reader_names_are_lowercase_kebab_case_and_unique() {
+        for name in reader_names::ALL {
+            assert!(
+                !name.is_empty()
+                    && !name.starts_with('-')
+                    && !name.ends_with('-')
+                    && name
+                        .chars()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
+                "{name:?} is not lowercase kebab-case"
+            );
+        }
+        let mut sorted = reader_names::ALL;
+        sorted.sort_unstable();
+        assert!(sorted.windows(2).all(|w| w[0] != w[1]), "duplicate name");
+    }
 
     // === ErrorKind dispatch tests ===
 
@@ -395,7 +443,7 @@ mod tests {
     #[test]
     fn kind_platform_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: "kde",
+            reader: reader_names::KDE,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         assert_eq!(err.kind(), ErrorKind::Platform);
@@ -644,7 +692,7 @@ mod tests {
     #[test]
     fn source_some_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: "kde",
+            reader: reader_names::KDE,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         let source = std::error::Error::source(&err);

@@ -199,7 +199,7 @@ impl IconThemeFailure {
     pub(crate) fn to_error(&self) -> crate::Error {
         match self {
             Self::Undetected(undetected) => crate::Error::ReaderFailed {
-                reader: "icon-theme",
+                reader: crate::error::reader_names::ICON_THEME,
                 source: Box::new(undetected.clone()),
             },
             Self::Unsupported(platform) => crate::Error::PlatformUnsupported { platform },
@@ -761,7 +761,7 @@ mod tests {
             matches!(
                 error,
                 crate::Error::ReaderFailed {
-                    reader: "icon-theme",
+                    reader: crate::error::reader_names::ICON_THEME,
                     ..
                 }
             ),

@@ -2815,6 +2815,21 @@ fn validate_paths_name_the_font_size_key_the_theme_states() {
 }
 
 #[test]
+fn validate_reports_a_stated_size_pt_in_points() {
+    let mut v = fully_populated_variant();
+    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-3.0));
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid");
+    };
+    let violation = errors
+        .iter()
+        .find(|rv| rv.path == "button.font.size_pt")
+        .expect("button.font.size_pt is reported");
+    assert_eq!(violation.value, -3.0);
+    assert!(violation.to_string().contains("got -3"), "{violation}");
+}
+
+#[test]
 fn validate_paths_name_the_text_scale_key_the_theme_states() {
     let mut v = fully_populated_variant();
     v.text_scale.caption = Some(TextScaleEntry {

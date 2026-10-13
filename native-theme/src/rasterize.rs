@@ -45,7 +45,7 @@ use resvg::usvg;
 /// ```
 pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let failed = |source: Box<dyn std::error::Error + Send + Sync>| crate::Error::ReaderFailed {
-        reader: "svg-rasterizer",
+        reader: crate::error::reader_names::SVG_RASTERIZER,
         source,
     };
     let data_len = crate::icons::raster_bytes_in_bound(size, size).ok_or_else(|| {

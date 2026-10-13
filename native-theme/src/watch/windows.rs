@@ -118,7 +118,7 @@ pub(crate) fn watch_windows(
 
     let thread = std::thread::spawn(move || {
         let setup_failed = |step: &str, err: ::windows::core::Error| crate::Error::ReaderFailed {
-            reader: "windows-watcher",
+            reader: crate::error::reader_names::WINDOWS_WATCHER,
             source: format!("{step} failed: {err}").into(),
         };
 
@@ -297,7 +297,7 @@ pub(crate) fn watch_windows(
         Err(_) => {
             let _ = thread.join();
             return Err(crate::Error::ReaderFailed {
-                reader: "windows-watcher",
+                reader: crate::error::reader_names::WINDOWS_WATCHER,
                 source: "failed to start Windows theme watcher thread".into(),
             });
         }

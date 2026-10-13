@@ -471,7 +471,8 @@ pub(crate) fn check_min_max(
 /// Check that a font's size is finite and strictly positive and its weight
 /// within 100..=900. Paths name the TOML key: `"{prefix}.{field}.weight"`,
 /// and for the size the key in its value's unit, `"{prefix}.{field}.size_pt"`
-/// or `size_px`. Paths are only formatted in the error branches.
+/// or `size_px`; the value is in that key's unit. Paths are only formatted
+/// in the error branches.
 pub(crate) fn check_font(
     font: &ResolvedFontSpec,
     prefix: &str,
@@ -484,7 +485,10 @@ pub(crate) fn check_font(
                 "{prefix}.{field}.{}",
                 size_key(font.defined_size, ["size", "size_pt", "size_px"])
             ),
-            value: font.size as f64,
+            value: match font.defined_size {
+                Some(FontSize::Pt(pt)) => pt as f64,
+                _ => font.size as f64,
+            },
             min: Some(f64::MIN_POSITIVE),
             max: None,
         });

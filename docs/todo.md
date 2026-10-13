@@ -1060,6 +1060,7 @@ model, the platform presets and the three connectors
       names the key the theme stated, `size_pt`, but reports the resolved
       size, converted to px: `size_pt = -3` prints `got -4`. Report the
       value in the stated key's unit, or name the px key.
+      Fixed by 0b796311: `check_font` reports the stated points.
 
 ### `ResolvedLayoutTheme`: a public type nothing produces
 

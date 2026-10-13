@@ -25,7 +25,7 @@ pub(crate) fn watch_kde(
 ) -> crate::Result<super::ThemeSubscription> {
     let config_dir =
         crate::detect::xdg_config_home().ok_or_else(|| crate::Error::ReaderFailed {
-            reader: "kde-watcher",
+            reader: crate::error::reader_names::KDE_WATCHER,
             source: crate::detect::CONFIG_HOME_UNRESOLVED.into(),
         })?;
     watch_kde_dir(config_dir, callback)
@@ -45,7 +45,7 @@ fn watch_kde_dir(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
     let setup_failed = |step: &str, err: notify::Error| crate::Error::ReaderFailed {
-        reader: "kde-watcher",
+        reader: crate::error::reader_names::KDE_WATCHER,
         source: format!("{step} failed for {}: {err}", config_dir.display()).into(),
     };
 
@@ -163,7 +163,7 @@ mod tests {
             matches!(
                 &result,
                 Err(crate::Error::ReaderFailed {
-                    reader: "kde-watcher",
+                    reader: crate::error::reader_names::KDE_WATCHER,
                     ..
                 })
             ),

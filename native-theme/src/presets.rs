@@ -113,7 +113,7 @@ pub(crate) fn preset(name: &str) -> Result<Theme> {
     match parsed {
         Ok(theme) => Ok(theme.clone()),
         Err(msg) => Err(Error::ReaderFailed {
-            reader: "preset_cache",
+            reader: crate::error::reader_names::PRESET_CACHE,
             source: format!("bundled preset '{name}': {msg}").into(),
         }),
     }

@@ -580,7 +580,7 @@ impl crate::reader::ThemeReader for WindowsReader {
 #[cfg(all(target_os = "windows", feature = "windows"))]
 fn read_windows() -> crate::Result<crate::ReaderResult> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
-        reader: "windows",
+        reader: crate::error::reader_names::WINDOWS,
         source: format!("UISettings unavailable: {e}").into(),
     })?;
 
@@ -588,14 +588,14 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
         .GetColorValue(UIColorType::Accent)
         .map(win_color_to_rgba)
         .map_err(|e| crate::Error::ReaderFailed {
-            reader: "windows",
+            reader: crate::error::reader_names::WINDOWS,
             source: format!("GetColorValue(Accent) failed: {e}").into(),
         })?;
     let fg = settings
         .GetColorValue(UIColorType::Foreground)
         .map(win_color_to_rgba)
         .map_err(|e| crate::Error::ReaderFailed {
-            reader: "windows",
+            reader: crate::error::reader_names::WINDOWS,
             source: format!("GetColorValue(Foreground) failed: {e}").into(),
         })?;
 

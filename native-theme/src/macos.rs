@@ -487,7 +487,7 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
 
     if light_appearance.is_none() && dark_appearance.is_none() {
         return Err(crate::Error::ReaderFailed {
-            reader: "macos",
+            reader: crate::error::reader_names::MACOS,
             source: "neither light nor dark NSAppearance could be created".into(),
         });
     }

@@ -72,7 +72,7 @@ pub(crate) fn watch_gnome(
 
     let thread = std::thread::spawn(move || {
         let setup_failed = |step: &str, err: ashpd::zbus::Error| crate::Error::ReaderFailed {
-            reader: "gnome-watcher",
+            reader: crate::error::reader_names::GNOME_WATCHER,
             source: format!("{step} failed: {err}").into(),
         };
 
@@ -140,7 +140,7 @@ pub(crate) fn watch_gnome(
         Err(_) => {
             let _ = thread.join();
             return Err(crate::Error::ReaderFailed {
-                reader: "gnome-watcher",
+                reader: crate::error::reader_names::GNOME_WATCHER,
                 source: "failed to start GNOME theme watcher thread".into(),
             });
         }
