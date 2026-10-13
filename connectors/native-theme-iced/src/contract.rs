@@ -3410,9 +3410,12 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     // The twelve soft options the widget functions read: four `checkbox.*`
     // (three of which `styles::radio` reads again through its own
     // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and one
-    // `scrollbar.*`. No bundled preset leaves any of them `None` after
+    // `scrollbar.*`. A bundled preset rarely leaves them `None` after
     // resolution, so the rows cannot tell a right base-state field from a
     // wrong one; the fallbacks are reached by clearing them here (section 3.2).
+    // windows-11 states nine of them; the switch's disabled thumb, the
+    // slider's thumb hover and the scroll bar's pressed thumb have no source
+    // and are already `None`.
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
@@ -3425,12 +3428,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             && resolved.switch.hover_unchecked_background.is_some()
             && resolved.switch.disabled_checked_background.is_some()
             && resolved.switch.disabled_unchecked_background.is_some()
-            && resolved.switch.disabled_thumb_color.is_some()
-            && resolved.combo_box.hover_background.is_some()
-            && resolved.slider.thumb_hover_color.is_some()
-            && resolved.scrollbar.thumb_active_color.is_some(),
-        "this preset no longer states all twelve soft options, so clearing \
-         them proves nothing"
+            && resolved.combo_box.hover_background.is_some(),
+        "this preset no longer states the nine soft options it sources, so \
+         clearing them proves nothing"
     );
     // The thirteenth belongs to `styles::aw::tab_bar` and is read only when
     // that feature is on.
