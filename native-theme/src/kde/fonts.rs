@@ -188,15 +188,10 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
     }
 
     // KDE-03: Per-widget fonts
-    // Merge into existing FontSpec to preserve .color set by populate_colors.
     if let Some(menu_str) = ini.get("General", "menuFont")
         && let Some(spec) = parse_qt_font_with_weight(&menu_str)
     {
-        let font = variant.menu.font.get_or_insert_default();
-        font.family = spec.family;
-        font.size = spec.size;
-        font.weight = spec.weight;
-        font.style = spec.style;
+        merge_font(&mut variant.menu.font, spec);
     }
 
     if let Some(toolbar_str) = ini.get("General", "toolBarFont")
@@ -206,16 +201,21 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
     }
 
     // KDE-01: Title bar font from WM section
-    // Merge into existing FontSpec to preserve .color set by populate_colors.
     if let Some(active_font_str) = ini.get("WM", "activeFont")
         && let Some(spec) = parse_qt_font_with_weight(&active_font_str)
     {
-        let font = variant.window.title_bar_font.get_or_insert_default();
-        font.family = spec.family;
-        font.size = spec.size;
-        font.weight = spec.weight;
-        font.style = spec.style;
+        merge_font(&mut variant.window.title_bar_font, spec);
     }
+}
+
+/// `spec`'s family, size, weight and style into `font`, keeping the colour
+/// `populate_colors` set on it.
+fn merge_font(font: &mut Option<crate::FontSpec>, spec: crate::FontSpec) {
+    let font = font.get_or_insert_default();
+    font.family = spec.family;
+    font.size = spec.size;
+    font.weight = spec.weight;
+    font.style = spec.style;
 }
 
 #[cfg(test)]
