@@ -186,39 +186,39 @@ size_pt = 11.0
 color = "#ffffff"
 
 [light.scrollbar]
-# platform-facts.md:1280 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
+# platform-facts.md:1281 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
 groove_width_px = 17.0
-# no macOS 26 source (platform-facts.md:1282): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1283): macos-monterey's value
 thumb_width_px = 7.0
-# platform-facts.md:1283 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
+# platform-facts.md:1284 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
 overlay_mode = true
-# no macOS 26 source (platform-facts.md:1281): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1282): macos-monterey's value
 min_thumb_length_px = 40.0
-# no macOS 26 source (platform-facts.md:1277): macos-monterey's value, the overlay mode's
+# no macOS 26 source (platform-facts.md:1278): macos-monterey's value, the overlay mode's
 # transparent track; the inherited window background would be the wrong kind
 track_color = "#00000000"
 
 [light.slider]
-# platform-facts.md:1292 (§2.9): barRectFlipped 6 high (probe :1435)
+# platform-facts.md:1293 (§2.9): barRectFlipped 6 high (probe :1435)
 track_height_px = 6.0
-# platform-facts.md:1293 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
+# platform-facts.md:1294 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
-# platform-facts.md:1294 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
+# platform-facts.md:1295 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
 tick_mark_length_px = 2.0
 
 [light.progress_bar]
-# platform-facts.md:1303 (§2.10): 8 (measured, renders/aqua/progress_bar-regular@2x.png)
+# platform-facts.md:1304 (§2.10): 8 (measured, renders/aqua/progress_bar-regular@2x.png)
 track_height_px = 8.0
-# no macOS 26 source (platform-facts.md:1304, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1305, (none)): macos-monterey's value
 min_width_px = 100.0
 
 [light.progress_bar.border]
-# platform-facts.md:1306 (§2.10): no shadow (measured)
+# platform-facts.md:1307 (§2.10): no shadow (measured)
 shadow_enabled = false
 
 [light.tab]
-# no macOS 26 source (platform-facts.md:1316-1317): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1317-1318): macos-monterey's values
 min_width_px = 64.0
 min_height_px = 24.0
 
@@ -232,50 +232,50 @@ icon_size_px = 16.0
 hover_text_color = "#ffffff"
 
 [light.list]
-# platform-facts.md:1379 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0]
+# platform-facts.md:1380 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0]
 background_color = "#ffffff"
-# platform-facts.md:1382 (§2.15): alternatingContentBackgroundColors[1], probe :377
+# platform-facts.md:1383 (§2.15): alternatingContentBackgroundColors[1], probe :377
 alternate_row_background = "#f4f5f5"
-# platform-facts.md:1388: gridColor, probe :320
+# platform-facts.md:1389: gridColor, probe :320
 grid_color = "#e6e6e6"
-# platform-facts.md:1389 (§2.15): NSTableView rowHeight 24 (probe :498)
+# platform-facts.md:1390 (§2.15): NSTableView rowHeight 24 (probe :498)
 row_height_px = 24.0
 
 [light.list.header_font]
-# platform-facts.md:1386 (§2.15): headerTextColor, probe :318
+# platform-facts.md:1387 (§2.15): headerTextColor, probe :318
 color = "#000000d8"
 
 [light.sidebar]
-# no macOS 26 source (platform-facts.md:1333: a material with no colour): macos-monterey's value;
+# no macOS 26 source (platform-facts.md:1334: a material with no colour): macos-monterey's value;
 # the inherited window background would be the wrong kind, and the colour the material renders
 # under Reduce Transparency was not probed
 background_color = "#e8e8ed"
 
 [light.splitter]
-# platform-facts.md:1419-1420 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# platform-facts.md:1421-1422 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
 # (probe :488-495), dividerColor clear
 divider_width_px = 9.0
 divider_color = "#00000000"
 
 [light.switch]
-# platform-facts.md:1472 (§2.21): black at alpha 25/255 (measured), systemFillColor's value
+# platform-facts.md:1474 (§2.21): black at alpha 25/255 (measured), systemFillColor's value
 # (probe :357); over background_color #e6e6e6
 unchecked_background = "#00000019"
-# platform-facts.md:1473 (§2.21): white (measured)
+# platform-facts.md:1475 (§2.21): white (measured)
 thumb_background = "#ffffff"
-# platform-facts.md:1467-1468 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
+# platform-facts.md:1469-1470 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
 track_width_px = 54.0
 track_height_px = 24.0
-# platform-facts.md:1469 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
+# platform-facts.md:1471 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 20.0
-# platform-facts.md:1470 (§2.21): half the track's height, a pill (the render's ends are round)
+# platform-facts.md:1472 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0
 
 [light.dialog]
-# platform-facts.md:1494 (§2.22): the default button rightmost
+# platform-facts.md:1496 (§2.22): the default button rightmost
 button_order = "primary_right"
-# no macOS 26 source (platform-facts.md:1487-1490, :1493, :1503): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1489-1492, :1495, :1505): macos-monterey's values
 min_width_px = 320.0
 max_width_px = 560.0
 min_height_px = 140.0
@@ -284,58 +284,58 @@ button_gap_px = 12.0
 icon_size_px = 64.0
 
 [light.dialog.title_font]
-# no macOS 26 source (platform-facts.md:1496-1497): macos-monterey's values, the emphasized system
+# no macOS 26 source (platform-facts.md:1498-1499): macos-monterey's values, the emphasized system
 # font, 13pt Bold; the inherited defaults.font would be the regular weight
 size_pt = 13.0
 weight = 700
 
 [light.link]
-# no macOS 26 source (platform-facts.md:1624-1626): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1627-1629): macos-monterey's values
 underline_enabled = true
 background_color = "#00000000"
 hover_background = "#00000000"
 
 [light.spinner]
-# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
+# platform-facts.md:1536-1537 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
 diameter_px = 32.0
 min_diameter_px = 10.0
-# no macOS 26 source (platform-facts.md:1535, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1538, (none)): macos-monterey's value
 stroke_width_px = 2.0
-# platform-facts.md:1536 (§2.23): black fins at a graded alpha, the leading one 82/255 (the render
+# platform-facts.md:1539 (§2.23): black fins at a graded alpha, the leading one 82/255 (the render
 # equals macOS 14.8.9's byte for byte); over the window background #adadad
 fill_color = "#00000052"
 
 [light.combo_box]
-# platform-facts.md:1545 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :358);
+# platform-facts.md:1548 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :358);
 # over background_color #ebebeb
 background_color = "#00000014"
-# platform-facts.md:1550 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
+# platform-facts.md:1553 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
 min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1551, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1554, (none)): macos-monterey's value
 min_width_px = 120.0
-# no macOS 26 source (platform-facts.md:1553: the chevron is 7 x 10.5, which a square icon size
+# no macOS 26 source (platform-facts.md:1556: the chevron is 7 x 10.5, which a square icon size
 # cannot carry): macos-monterey's value
 arrow_icon_size_px = 17.0
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
+# platform-facts.md:1555, :1560 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
 # (probe :1251), from its outer edge; the right side holds the arrow
 padding_left_px = 12.0
 padding_top_px = 4.0
 padding_bottom_px = 4.0
-# platform-facts.md:1556 (§2.24): no shadow (measured)
+# platform-facts.md:1559 (§2.24): no shadow (measured)
 shadow_enabled = false
 
 [light.combo_box.font]
-# platform-facts.md:1547 (§2.24): labelColor = controlTextColor, probe :308, :335; over the fill #242424
+# platform-facts.md:1550 (§2.24): labelColor = controlTextColor, probe :308, :335; over the fill #242424
 color = "#000000d8"
 
 [light.segmented_control]
-# platform-facts.md:1569 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
+# platform-facts.md:1572 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
 segment_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1570): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1573): macos-monterey's value
 separator_width_px = 1.0
-# no macOS 26 source (platform-facts.md:1567): macos-monterey's value, selectedContentBackgroundColor,
+# no macOS 26 source (platform-facts.md:1570): macos-monterey's value, selectedContentBackgroundColor,
 # whose value macOS 26 reports unchanged (probe :324); the probe's render draws the selected
 # segment black at alpha 50/255 (measured, renders/aqua/segmented_control-regular@2x.png, in a
 # window that is not key), not this colour, so the segment's fill on 26 is unconfirmed; the
@@ -343,18 +343,18 @@ separator_width_px = 1.0
 active_background = "#0064e1"
 
 [light.segmented_control.border]
-# platform-facts.md:1575 (§2.25): no shadow (measured)
+# platform-facts.md:1578 (§2.25): no shadow (measured)
 shadow_enabled = false
 
 [light.expander]
-# no macOS 26 source (platform-facts.md:1605-1606): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1608-1609): macos-monterey's values
 header_height_px = 40.0
 arrow_icon_size_px = 13.0
-# platform-facts.md:1613 (§2.27): the HIG's disclosure triangle points in from the leading edge
+# platform-facts.md:1616 (§2.27): the HIG's disclosure triangle points in from the leading edge
 arrow_side = "leading"
 
 [light.expander.border]
-# no macOS 26 source (platform-facts.md:1612): macos-monterey's value; the inherited
+# no macOS 26 source (platform-facts.md:1615): macos-monterey's value; the inherited
 # defaults.border.shadow_enabled would be the wrong kind
 shadow_enabled = false
 
@@ -367,7 +367,7 @@ shadow_enabled = false
 weight = 700
 
 [light.text_scale.caption]
-# platform-facts.md:1435-1438 (§2.19): the HIG's macOS text styles (probe :186-286)
+# platform-facts.md:1437-1440 (§2.19): the HIG's macOS text styles (probe :186-286)
 size_pt = 10.0
 weight = 400
 
@@ -551,42 +551,42 @@ size_pt = 11.0
 color = "#ffffff"
 
 [dark.scrollbar]
-# platform-facts.md:1280 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
+# platform-facts.md:1281 (§2.8): scrollerWidth 17 in both modes (probe :481-482)
 groove_width_px = 17.0
-# no macOS 26 source (platform-facts.md:1282): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1283): macos-monterey's value
 thumb_width_px = 7.0
-# platform-facts.md:1283 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
+# platform-facts.md:1284 (§2.8): NSScroller.preferredScrollerStyle, overlay on the probe's runner (probe :470)
 overlay_mode = true
-# no macOS 26 source (platform-facts.md:1281): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1282): macos-monterey's value
 min_thumb_length_px = 40.0
-# no macOS 26 source (platform-facts.md:1277): macos-monterey's value, the overlay mode's
+# no macOS 26 source (platform-facts.md:1278): macos-monterey's value, the overlay mode's
 # transparent track; the inherited window background would be the wrong kind
 track_color = "#00000000"
 
 [dark.slider]
-# platform-facts.md:1292 (§2.9): barRectFlipped 6 high (probe :1435)
+# platform-facts.md:1293 (§2.9): barRectFlipped 6 high (probe :1435)
 track_height_px = 6.0
-# platform-facts.md:1293 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
+# platform-facts.md:1294 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
-# platform-facts.md:1294 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
+# platform-facts.md:1295 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
 tick_mark_length_px = 2.0
-# platform-facts.md:1291 (§2.9): white at alpha 217/255 (measured, renders/darkAqua/slider-regular@2x.png);
+# platform-facts.md:1292 (§2.9): white at alpha 217/255 (measured, renders/darkAqua/slider-regular@2x.png);
 # over background_color #dddddd
 thumb_color = "#ffffffd9"
 
 [dark.progress_bar]
-# platform-facts.md:1303 (§2.10): 8 (measured, renders/darkAqua/progress_bar-regular@2x.png)
+# platform-facts.md:1304 (§2.10): 8 (measured, renders/darkAqua/progress_bar-regular@2x.png)
 track_height_px = 8.0
-# no macOS 26 source (platform-facts.md:1304, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1305, (none)): macos-monterey's value
 min_width_px = 100.0
 
 [dark.progress_bar.border]
-# platform-facts.md:1306 (§2.10): no shadow (measured)
+# platform-facts.md:1307 (§2.10): no shadow (measured)
 shadow_enabled = false
 
 [dark.tab]
-# no macOS 26 source (platform-facts.md:1316-1317): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1317-1318): macos-monterey's values
 min_width_px = 64.0
 min_height_px = 24.0
 
@@ -600,51 +600,51 @@ icon_size_px = 16.0
 hover_text_color = "#ffffff"
 
 [dark.list]
-# platform-facts.md:1379 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0]
+# platform-facts.md:1380 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0]
 background_color = "#1e1e1e"
-# platform-facts.md:1382 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
+# platform-facts.md:1383 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
 # list's background_color #292929
 alternate_row_background = "#ffffff0c"
-# platform-facts.md:1388: gridColor, probe :394
+# platform-facts.md:1389: gridColor, probe :394
 grid_color = "#1a1a1a"
-# platform-facts.md:1389 (§2.15): NSTableView rowHeight 24 (probe :498)
+# platform-facts.md:1390 (§2.15): NSTableView rowHeight 24 (probe :498)
 row_height_px = 24.0
 
 [dark.list.header_font]
-# platform-facts.md:1386 (§2.15): headerTextColor, probe :392
+# platform-facts.md:1387 (§2.15): headerTextColor, probe :392
 color = "#ffffff"
 
 [dark.sidebar]
-# no macOS 26 source (platform-facts.md:1333: a material with no colour): macos-monterey's value;
+# no macOS 26 source (platform-facts.md:1334: a material with no colour): macos-monterey's value;
 # the inherited window background would be the wrong kind, and the colour the material renders
 # under Reduce Transparency was not probed
 background_color = "#262626"
 
 [dark.splitter]
-# platform-facts.md:1419-1420 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# platform-facts.md:1421-1422 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
 # (probe :488-495), dividerColor clear
 divider_width_px = 9.0
 divider_color = "#00000000"
 
 [dark.switch]
-# platform-facts.md:1472 (§2.21): white at alpha 25/255 (measured), systemFillColor's value
+# platform-facts.md:1474 (§2.21): white at alpha 25/255 (measured), systemFillColor's value
 # (probe :431); over background_color #343434
 unchecked_background = "#ffffff19"
-# platform-facts.md:1473 (§2.21): white at alpha 221/255 (measured, renders/darkAqua/switch-regular-off@2x.png)
+# platform-facts.md:1475 (§2.21): white at alpha 221/255 (measured, renders/darkAqua/switch-regular-off@2x.png)
 thumb_background = "#ffffffdd"
-# platform-facts.md:1467-1468 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
+# platform-facts.md:1469-1470 (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe :1194)
 track_width_px = 54.0
 track_height_px = 24.0
-# platform-facts.md:1469 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
+# platform-facts.md:1471 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 20.0
-# platform-facts.md:1470 (§2.21): half the track's height, a pill (the render's ends are round)
+# platform-facts.md:1472 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0
 
 [dark.dialog]
-# platform-facts.md:1494 (§2.22): the default button rightmost
+# platform-facts.md:1496 (§2.22): the default button rightmost
 button_order = "primary_right"
-# no macOS 26 source (platform-facts.md:1487-1490, :1493, :1503): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1489-1492, :1495, :1505): macos-monterey's values
 min_width_px = 320.0
 max_width_px = 560.0
 min_height_px = 140.0
@@ -653,58 +653,58 @@ button_gap_px = 12.0
 icon_size_px = 64.0
 
 [dark.dialog.title_font]
-# no macOS 26 source (platform-facts.md:1496-1497): macos-monterey's values, the emphasized system
+# no macOS 26 source (platform-facts.md:1498-1499): macos-monterey's values, the emphasized system
 # font, 13pt Bold; the inherited defaults.font would be the regular weight
 size_pt = 13.0
 weight = 700
 
 [dark.link]
-# no macOS 26 source (platform-facts.md:1624-1626): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1627-1629): macos-monterey's values
 underline_enabled = true
 background_color = "#00000000"
 hover_background = "#00000000"
 
 [dark.spinner]
-# platform-facts.md:1533-1534 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
+# platform-facts.md:1536-1537 (§2.23): sizeToFit 32 regular, 10 mini (probe :1530, :770)
 diameter_px = 32.0
 min_diameter_px = 10.0
-# no macOS 26 source (platform-facts.md:1535, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1538, (none)): macos-monterey's value
 stroke_width_px = 2.0
-# platform-facts.md:1536 (§2.23): white fins at a graded alpha, the leading one 82/255 (the render
+# platform-facts.md:1539 (§2.23): white fins at a graded alpha, the leading one 82/255 (the render
 # equals macOS 14.8.9's byte for byte); over the window background #666666
 fill_color = "#ffffff52"
 
 [dark.combo_box]
-# platform-facts.md:1545 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :432);
+# platform-facts.md:1548 (§2.24): drawn in secondarySystemFillColor's value (measured; probe :432);
 # over background_color #303030
 background_color = "#ffffff14"
-# platform-facts.md:1550 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
+# platform-facts.md:1553 (§2.24): NSPopUpButton intrinsicContentSize 24 (probe :1237)
 min_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1551, (none)): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1554, (none)): macos-monterey's value
 min_width_px = 120.0
-# no macOS 26 source (platform-facts.md:1553: the chevron is 7 x 10.5, which a square icon size
+# no macOS 26 source (platform-facts.md:1556: the chevron is 7 x 10.5, which a square icon size
 # cannot carry): macos-monterey's value
 arrow_icon_size_px = 17.0
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
+# platform-facts.md:1555, :1560 (§2.24): the title rect [12, 4, 41, 16] in the 89 x 24 frame
 # (probe :1251), from its outer edge; the right side holds the arrow
 padding_left_px = 12.0
 padding_top_px = 4.0
 padding_bottom_px = 4.0
-# platform-facts.md:1556 (§2.24): no shadow (measured)
+# platform-facts.md:1559 (§2.24): no shadow (measured)
 shadow_enabled = false
 
 [dark.combo_box.font]
-# platform-facts.md:1547 (§2.24): labelColor = controlTextColor, probe :382, :409; over the fill #dfdfdf
+# platform-facts.md:1550 (§2.24): labelColor = controlTextColor, probe :382, :409; over the fill #dfdfdf
 color = "#ffffffd8"
 
 [dark.segmented_control]
-# platform-facts.md:1569 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
+# platform-facts.md:1572 (§2.25): intrinsicContentSize 24 high, the alignment rect (probe :1380)
 segment_height_px = 24.0
-# no macOS 26 source (platform-facts.md:1570): macos-monterey's value
+# no macOS 26 source (platform-facts.md:1573): macos-monterey's value
 separator_width_px = 1.0
-# no macOS 26 source (platform-facts.md:1567): macos-monterey's value, selectedContentBackgroundColor,
+# no macOS 26 source (platform-facts.md:1570): macos-monterey's value, selectedContentBackgroundColor,
 # whose value macOS 26 reports unchanged (probe :398); the probe's render draws the selected
 # segment white at alpha 50/255 (measured, renders/darkAqua/segmented_control-regular@2x.png, in a
 # window that is not key), not this colour, so the segment's fill on 26 is unconfirmed; the
@@ -712,18 +712,18 @@ separator_width_px = 1.0
 active_background = "#0059d1"
 
 [dark.segmented_control.border]
-# platform-facts.md:1575 (§2.25): no shadow (measured)
+# platform-facts.md:1578 (§2.25): no shadow (measured)
 shadow_enabled = false
 
 [dark.expander]
-# no macOS 26 source (platform-facts.md:1605-1606): macos-monterey's values
+# no macOS 26 source (platform-facts.md:1608-1609): macos-monterey's values
 header_height_px = 40.0
 arrow_icon_size_px = 13.0
-# platform-facts.md:1613 (§2.27): the HIG's disclosure triangle points in from the leading edge
+# platform-facts.md:1616 (§2.27): the HIG's disclosure triangle points in from the leading edge
 arrow_side = "leading"
 
 [dark.expander.border]
-# no macOS 26 source (platform-facts.md:1612): macos-monterey's value; the inherited
+# no macOS 26 source (platform-facts.md:1615): macos-monterey's value; the inherited
 # defaults.border.shadow_enabled would be the wrong kind
 shadow_enabled = false
 
@@ -736,7 +736,7 @@ shadow_enabled = false
 weight = 700
 
 [dark.text_scale.caption]
-# platform-facts.md:1435-1438 (§2.19): the HIG's macOS text styles (probe :186-286)
+# platform-facts.md:1437-1440 (§2.19): the HIG's macOS text styles (probe :186-286)
 size_pt = 10.0
 weight = 400
 
@@ -754,7 +754,7 @@ weight = 400
 
 
 [layout]
-# platform-facts.md:1453 (§2.20): NSStackView's default spacing 8
+# platform-facts.md:1455 (§2.20): NSStackView's default spacing 8
 widget_gap_px = 8.0
-# platform-facts.md:1455 (§2.20): 20, §1.1.5's content margin (the Auto Layout Guide)
+# platform-facts.md:1457 (§2.20): 20, §1.1.5's content margin (the Auto Layout Guide)
 window_margin_px = 20.0

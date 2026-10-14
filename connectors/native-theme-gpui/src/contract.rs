@@ -905,7 +905,7 @@ struct NoReceiver {
 
 /// Why kde-breeze, adwaita, macos-monterey, macos-tahoe and windows-11 leave
 /// `link.hover_background` transparent.
-const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
+const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1629 (§2.28) states no \
                                link hover background for macOS, KDE and GNOME, \
                                nor for WinUI's inline Hyperlink, which has no \
                                background";
@@ -1449,7 +1449,7 @@ struct Pair {
 /// (`gpui-component-0.7.3/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
-/// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
+/// `Window.darker(120)` (`docs/platform-facts.md:1313`, §2.11), which under
 /// Breeze Dark (`#1b1d20` on the `#202326` window) lifts the label's contrast
 /// above the bar's; the emitted pair stays above 15:1. Without the `widgets`
 /// feature only: `widgets::TabBar` paints the idle fill.

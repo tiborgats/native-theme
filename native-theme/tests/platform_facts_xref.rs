@@ -243,9 +243,9 @@ fn macos_tahoe_probe_sizes_match_platform_facts() {
     let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
     assert!(line(1170).contains("macOS 26: 24 **(API)**"));
     assert!(line(1195).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1550).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1419).contains("macOS 26: same"));
-    assert!(line(1420).contains("macOS 26: same"));
+    assert!(line(1553).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1421).contains("macOS 26: same"));
+    assert!(line(1422).contains("macOS 26: same"));
     let theme = Theme::preset("macos-tahoe").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.button.min_height, Some(24.0));
@@ -324,9 +324,9 @@ fn all_platform_presets_load_and_have_both_variants() {
 #[test]
 fn macos_probe_sizes_match_platform_facts() {
     let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
-    // §2.17 (:1419-1420): NSSplitView's thick divider, 9 wide and clear
-    assert!(line(1419).contains("NSSplitView divider: 9 **(API)**"));
-    assert!(line(1420).contains("clear for the `.thick` style"));
+    // §2.17 (:1421-1422): NSSplitView's thick divider, 9 wide and clear
+    assert!(line(1421).contains("NSSplitView divider: 9 **(API)**"));
+    assert!(line(1422).contains("clear for the `.thick` style"));
     // §2.3 (:1170) and §2.4 (:1195): the push button and the text field on 14-15
     assert!(line(1170).contains("macOS 14–15: NSButton intrinsic: 20 **(API)**"));
     assert!(line(1195).contains("macOS 14–15: NSTextField intrinsic: 21 **(API)**"));

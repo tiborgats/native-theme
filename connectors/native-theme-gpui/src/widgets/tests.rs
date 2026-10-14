@@ -525,7 +525,7 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     );
 }
 
-/// docs/platform-facts.md:1327-1329: the selected tab's line, as thick as
+/// docs/platform-facts.md:1328-1330: the selected tab's line, as thick as
 /// stated, across the tab's outer edge on the stated side -- Breeze's on top,
 /// Material's at the bottom.
 #[gpui::test]

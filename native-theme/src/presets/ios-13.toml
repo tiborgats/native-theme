@@ -109,21 +109,21 @@ line_height_pt = 16.0
 
 [light.text_scale.section_heading]
 # Headline: Semibold 17 pt, leading 22 (HIG typography 2025-05-23); the macOS column's role,
-# .headline (docs/platform-facts.md:1436)
+# .headline (docs/platform-facts.md:1438)
 size_pt =17.0
 weight = 600
 line_height_pt = 22.0
 
 [light.text_scale.dialog_title]
 # Title 1: Regular 28 pt, leading 34 (HIG typography 2025-05-23); the macOS column's role,
-# .title1 (docs/platform-facts.md:1437)
+# .title1 (docs/platform-facts.md:1439)
 size_pt =28.0
 weight = 400
 line_height_pt = 34.0
 
 [light.text_scale.display]
 # Large Title: Regular 34 pt, leading 41 (HIG typography 2025-05-23); the macOS column's role,
-# .largeTitle (docs/platform-facts.md:1438)
+# .largeTitle (docs/platform-facts.md:1440)
 size_pt =34.0
 weight = 400
 line_height_pt = 41.0
@@ -452,21 +452,21 @@ line_height_pt = 16.0
 
 [dark.text_scale.section_heading]
 # Headline: Semibold 17 pt, leading 22 (HIG typography 2025-05-23); the macOS column's role,
-# .headline (docs/platform-facts.md:1436)
+# .headline (docs/platform-facts.md:1438)
 size_pt =17.0
 weight = 600
 line_height_pt = 22.0
 
 [dark.text_scale.dialog_title]
 # Title 1: Regular 28 pt, leading 34 (HIG typography 2025-05-23); the macOS column's role,
-# .title1 (docs/platform-facts.md:1437)
+# .title1 (docs/platform-facts.md:1439)
 size_pt =28.0
 weight = 400
 line_height_pt = 34.0
 
 [dark.text_scale.display]
 # Large Title: Regular 34 pt, leading 41 (HIG typography 2025-05-23); the macOS column's role,
-# .largeTitle (docs/platform-facts.md:1438)
+# .largeTitle (docs/platform-facts.md:1440)
 size_pt =34.0
 weight = 400
 line_height_pt = 41.0

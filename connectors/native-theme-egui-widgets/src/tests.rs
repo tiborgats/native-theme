@@ -427,7 +427,7 @@ fn every_widget_reports_its_role() {
 
 /// An off switch's thumb is `switch.unchecked_thumb_diameter` across in
 /// `unchecked_thumb_background` where the theme states them (Material's 16 in `outline`,
-/// docs/platform-facts.md:1475-1476), centred on the track's axis.
+/// docs/platform-facts.md:1477-1478), centred on the track's axis.
 #[test]
 fn the_off_thumb_is_the_stated_off_thumb() {
     let mut t = kde();
