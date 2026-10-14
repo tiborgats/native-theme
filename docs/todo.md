@@ -1156,7 +1156,7 @@ model, the platform presets and the three connectors
 
 ### For M5: iced's primary hover from `primary_background`, then windows-11 states `AccentFillColorDefault`
 
-- [ ] [v0.7.0] For M5 (M4 T35 ruling, 2026-10-13): the iced connector puts
+- [x] [v0.7.0] For M5 (M4 T35 ruling, 2026-10-13): the iced connector puts
       `defaults.accent_color` in the palette's primary slot
       (`connectors/native-theme-iced/src/palette.rs:43`) and derives the
       primary button's hover and pressed fills from it, so its contract test
@@ -1172,6 +1172,9 @@ model, the platform presets and the three connectors
       In M5 iced derives the primary hover and pressed fills from
       `primary_background`; then windows-11 states `AccentFillColorDefault`,
       as its `checked_background` does (9284f52b).
+      Done in M5 T9: iced's primary hover and pressed fills from
+      `primary_background` (07362c9b); windows-11 states
+      `AccentFillColorDefault` (cc9e933e).
 
 ### Theme watcher: the trailing debounce has no maximum wait
 
