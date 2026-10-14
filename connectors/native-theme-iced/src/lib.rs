@@ -309,10 +309,25 @@ use std::borrow::Cow;
 /// Note: iced has no `info` color family in its Extended palette, so
 /// `info_color` / `info_text_color` are not mapped automatically. Use
 /// [`info_color()`] and [`info_text_color()`] helpers to access them.
+///
+/// A [`ResolvedTheme`] carries no colour mode, so the theme's light/dark
+/// flag (`Extended::is_dark`, which iced uses for the window title bar) is
+/// iced's lightness test of the background here; [`from_preset()`],
+/// [`from_system()`] and [`SystemThemeExt::to_iced_theme`] set it from the
+/// theme's mode.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &native_theme::theme::ResolvedTheme,
     name: &str,
+) -> iced_core::theme::Theme {
+    to_theme_in(resolved, name, None)
+}
+
+/// [`to_theme()`], with `Extended::is_dark` set from `mode` where one is given.
+fn to_theme_in(
+    resolved: &native_theme::theme::ResolvedTheme,
+    name: &str,
+    mode: Option<ColorMode>,
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
@@ -331,6 +346,9 @@ pub fn to_theme(
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
         let mut ext = iced_core::theme::palette::Extended::generate(p);
         extended::apply_overrides(&mut ext, &colors);
+        if let Some(mode) = mode {
+            ext.is_dark = mode.is_dark();
+        }
         ext
     })
 }
@@ -338,7 +356,9 @@ pub fn to_theme(
 /// Load a bundled preset and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
 /// Handles the full pipeline: load preset, pick variant, resolve, validate, convert.
-/// The `Theme` display name is used as the theme display name.
+/// The `Theme` display name is used as the theme display name. The iced
+/// theme is dark when the variant resolved is the dark one, so a light-only
+/// preset asked for dark gives a light theme.
 ///
 /// # Errors
 ///
@@ -348,16 +368,21 @@ pub fn from_preset(
     name: &str,
     is_dark: bool,
 ) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
-    let spec = native_theme::theme::Theme::preset(name)?;
-    let display_name = spec.name.clone();
-    let variant = spec.into_variant(if is_dark {
+    from_spec(&native_theme::theme::Theme::preset(name)?, is_dark)
+}
+
+/// [`from_preset()`] of a theme already loaded.
+fn from_spec(
+    spec: &native_theme::theme::Theme,
+    is_dark: bool,
+) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
+    let resolved = spec.resolve(if is_dark {
         ColorMode::Dark
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.resolve_system()?;
-    let theme = to_theme(&resolved, &display_name);
-    Ok((theme, resolved))
+    let theme = to_theme_in(&resolved.variant, &spec.name, Some(resolved.mode));
+    Ok((theme, resolved.variant))
 }
 
 /// The OS theme as [`from_system()`] and [`SystemThemeExt::to_iced_theme`]
@@ -369,7 +394,8 @@ pub fn from_preset(
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct Loaded {
-    /// The iced theme, built by [`to_theme()`] from [`resolved`](Self::resolved).
+    /// The iced theme, built as [`to_theme()`] builds it from
+    /// [`resolved`](Self::resolved), dark when [`mode`](Self::mode) is.
     pub theme: iced_core::theme::Theme,
     /// The resolved variant of the OS colour mode, for the metric helpers.
     pub resolved: ResolvedTheme,
@@ -405,7 +431,7 @@ pub fn from_system() -> Result<Loaded> {
     let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
     let name = sys.name;
     let resolved = if mode.is_dark() { sys.dark } else { sys.light };
-    let theme = to_theme(&resolved, &name);
+    let theme = to_theme_in(&resolved, &name, Some(mode));
     Ok(Loaded {
         theme,
         resolved,
@@ -432,7 +458,7 @@ pub trait SystemThemeExt {
 impl SystemThemeExt for native_theme::SystemTheme {
     fn to_iced_theme(&self) -> Loaded {
         let resolved = self.pick(self.mode).clone();
-        let theme = to_theme(&resolved, &self.name);
+        let theme = to_theme_in(&resolved, &self.name, Some(self.mode));
         Loaded {
             theme,
             resolved,
@@ -2066,6 +2092,50 @@ mod tests {
             "dark variant should have dark background, got r={}",
             palette.background.r
         );
+    }
+
+    /// A dark variant whose background iced's lightness test calls light.
+    fn dark_variant_with_light_background() -> Theme {
+        let mut spec = Theme::preset("catppuccin-mocha").unwrap();
+        let light_bg = spec.light.as_ref().unwrap().defaults.background_color;
+        spec.dark.as_mut().unwrap().defaults.background_color = light_bg;
+        spec
+    }
+
+    #[test]
+    fn from_preset_takes_is_dark_from_the_resolved_mode() {
+        let (theme, resolved) = from_spec(&dark_variant_with_light_background(), true).unwrap();
+        assert!(!iced_core::theme::palette::is_dark(
+            palette::to_palette(&resolved).background
+        ));
+        assert!(theme.extended_palette().is_dark);
+
+        let (theme, _) = from_spec(&dark_variant_with_light_background(), false).unwrap();
+        assert!(!theme.extended_palette().is_dark);
+    }
+
+    #[test]
+    fn from_preset_light_only_asked_for_dark_is_light() {
+        let mut spec = dark_variant_with_light_background();
+        spec.dark = None;
+        let (theme, _) = from_spec(&spec, true).unwrap();
+        assert!(!theme.extended_palette().is_dark);
+    }
+
+    #[test]
+    fn to_iced_theme_takes_is_dark_from_the_system_mode() {
+        // May fail on CI -- skip gracefully
+        let Ok(mut sys) = native_theme::SystemTheme::from_system() else {
+            return;
+        };
+        sys.dark.defaults.background_color = sys.light.defaults.background_color;
+        sys.mode = ColorMode::Dark;
+        assert!(!iced_core::theme::palette::is_dark(
+            palette::to_palette(&sys.dark).background
+        ));
+        assert!(sys.to_iced_theme().theme.extended_palette().is_dark);
+        sys.mode = ColorMode::Light;
+        assert!(!sys.to_iced_theme().theme.extended_palette().is_dark);
     }
 
     #[test]
