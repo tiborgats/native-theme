@@ -7,7 +7,7 @@
 use native_theme::icons::{FreedesktopLoader, IconRole, TransformAnimation};
 use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
-use native_theme_egui::{ThemeAtlas, border_color, border_radius};
+use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -96,7 +96,7 @@ pub(crate) fn show(
         ),
     );
     let skeleton = native_theme_egui::convert::to_color32(t.button.background_color);
-    let radius = border_radius(t);
+    let radius = border_corner_radius(t);
     ui.horizontal_wrapped(|ui| {
         for (role, image) in images {
             let name = format!("{role:?}");
@@ -285,7 +285,7 @@ fn icons_indicator(
             t.defaults.border.line_width,
             border_color(t),
         ))
-        .corner_radius(border_radius(t))
+        .corner_radius(border_corner_radius(t))
         .inner_margin(margin);
     demo::contained(reg, ui, "animated icon card", |ui, reg| {
         card.show(ui, |ui| {

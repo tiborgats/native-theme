@@ -159,7 +159,7 @@ pub fn text_role_line_height(
 /// (`native-theme/src/model/resolved.rs:76-77`). Not the same unit as
 /// [`text_role_line_height`].
 #[must_use]
-pub fn line_height_multiplier(t: &ResolvedTheme) -> f32 {
+pub fn line_height(t: &ResolvedTheme) -> f32 {
     t.defaults.line_height
 }
 /// `defaults.font.weight`, a CSS weight.
@@ -492,17 +492,17 @@ pub fn dialog_button_order(t: &ResolvedTheme) -> DialogButtonOrder {
 }
 /// `scrollbar.groove_width`, in logical pixels.
 #[must_use]
-pub fn scrollbar_width(t: &ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(t: &ResolvedTheme) -> f32 {
     t.scrollbar.groove_width
 }
 /// `defaults.border.corner_radius`, in logical pixels.
 #[must_use]
-pub fn border_radius(t: &ResolvedTheme) -> f32 {
+pub fn border_corner_radius(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius
 }
 /// `defaults.border.corner_radius_lg`, in logical pixels.
 #[must_use]
-pub fn border_radius_lg(t: &ResolvedTheme) -> f32 {
+pub fn border_corner_radius_lg(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius_lg
 }
 /// `defaults.border.color` as an `egui::Color32`: the final line colour, into which the model

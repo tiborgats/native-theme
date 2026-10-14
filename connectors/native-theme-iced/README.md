@@ -18,7 +18,7 @@ Two layers, and you can stop after the first:
    a switch's track — is a value iced invents. `styles::*` hands each widget
    the resolved theme's own field instead. See [Styles](#styles).
 
-Plus widget-metric helpers (`button_padding`, `border_radius`, `font_size`, …)
+Plus widget-metric helpers (`button_padding`, `border_corner_radius`, `font_size`, …)
 for the sizing iced applies per widget rather than through the Catalog.
 
 ## How it fits
@@ -252,11 +252,11 @@ is the way to narrow.
 ### Use widget-metric helpers
 
 ```rust,ignore
-use native_theme_iced::{button_padding, border_radius, font_family};
+use native_theme_iced::{button_padding, border_corner_radius, font_family};
 
 // in your view:
 let padding = button_padding(&resolved);
-let radius  = border_radius(&resolved);
+let radius  = border_corner_radius(&resolved);
 // Apply with .padding(padding), .border(...) on your widget builders.
 ```
 
@@ -265,15 +265,15 @@ Full helper list: `button_padding`, `input_padding`, `text_area_padding`
 (whose right side also centres the arrow in `combo_box.arrow_area_width`),
 `padding_or`, `padding_inside_border`, `stated_padding`,
 `control_line_height`, `button_content_min_size`, `at_least`,
-`border_radius`, `border_radius_lg`, `scrollbar_width`,
+`border_corner_radius`, `border_corner_radius_lg`, `scrollbar_groove_width`,
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
 `mono_font_size`, `mono_font_weight`, `system_font_family` (feature
 `system-fonts`), `scaled_text_size`,
-`line_height_multiplier`,
+`line_height`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `expander_arrow_color`,
-`selection_color`, `info_color`, `info_foreground_color`,
-`warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
+`selection_background`, `info_color`, `info_text_color`,
+`warning_text_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
 `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `switch` /
 `switch_over` and `radio` (all feature `widgets`).

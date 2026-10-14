@@ -490,7 +490,7 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
 
 /// Frame/border width from the resolved theme defaults.
 #[must_use]
-pub fn frame_width(resolved: &ResolvedTheme) -> f32 {
+pub fn border_line_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.line_width
 }
 
@@ -512,7 +512,7 @@ pub fn border_opacity(resolved: &ResolvedTheme) -> f32 {
 
 /// Whether drop shadows are enabled.
 #[must_use]
-pub fn shadow_enabled(resolved: &ResolvedTheme) -> bool {
+pub fn border_shadow_enabled(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.border.shadow_enabled
 }
 
@@ -624,7 +624,7 @@ fn substituted_family(_family: &str) -> Option<String> {
 
 /// Line height multiplier from the resolved theme defaults.
 #[must_use]
-pub fn line_height_multiplier(resolved: &ResolvedTheme) -> f32 {
+pub fn line_height(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -664,31 +664,31 @@ pub fn dialog_button_order(resolved: &ResolvedTheme) -> DialogButtonOrder {
 
 /// Dialog button gap in logical pixels.
 #[must_use]
-pub fn dialog_button_spacing(resolved: &ResolvedTheme) -> f32 {
+pub fn dialog_button_gap(resolved: &ResolvedTheme) -> f32 {
     resolved.dialog.button_gap
 }
 
 /// Scrollbar groove width in logical pixels.
 #[must_use]
-pub fn scrollbar_width(resolved: &ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(resolved: &ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
 /// Selection text color (foreground for selected content).
 #[must_use]
-pub fn selection_foreground(resolved: &ResolvedTheme) -> Rgba {
+pub fn selection_text_color(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_text_color
 }
 
 /// Selection background when window is unfocused.
 #[must_use]
-pub fn selection_inactive(resolved: &ResolvedTheme) -> Rgba {
+pub fn selection_inactive_background(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_inactive_background
 }
 
 /// Foreground color for disabled elements.
 #[must_use]
-pub fn disabled_foreground(resolved: &ResolvedTheme) -> Rgba {
+pub fn disabled_text_color(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.disabled_text_color
 }
 
@@ -1610,7 +1610,7 @@ mod tests {
     #[test]
     fn defaults_field_helpers() {
         let resolved = test_resolved();
-        assert!(frame_width(&resolved) >= 0.0);
+        assert!(border_line_width(&resolved) >= 0.0);
         assert!(disabled_opacity(&resolved) >= 0.0);
         assert!(disabled_opacity(&resolved) <= 1.0);
         assert!(border_opacity(&resolved) >= 0.0);
@@ -1658,7 +1658,7 @@ mod tests {
     fn line_height_helper() {
         let resolved = test_resolved();
         assert!(
-            line_height_multiplier(&resolved) > 0.0,
+            line_height(&resolved) > 0.0,
             "line height should be positive"
         );
     }
@@ -1666,16 +1666,16 @@ mod tests {
     #[test]
     fn geometry_helpers() {
         let resolved = test_resolved();
-        assert!(dialog_button_spacing(&resolved) >= 0.0);
-        assert!(scrollbar_width(&resolved) > 0.0);
+        assert!(dialog_button_gap(&resolved) >= 0.0);
+        assert!(scrollbar_groove_width(&resolved) > 0.0);
     }
 
     #[test]
     fn selection_and_disabled_helpers() {
         let resolved = test_resolved();
-        let _ = selection_foreground(&resolved);
-        let _ = selection_inactive(&resolved);
-        let _ = disabled_foreground(&resolved);
+        let _ = selection_text_color(&resolved);
+        let _ = selection_inactive_background(&resolved);
+        let _ = disabled_text_color(&resolved);
     }
 
     #[test]

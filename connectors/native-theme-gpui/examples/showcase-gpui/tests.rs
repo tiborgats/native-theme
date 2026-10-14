@@ -273,7 +273,7 @@ fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pix
     read(cx, showcase, |_this, cx| {
         match cx.native_theme().and_then(|nt| nt.native(cx)) {
             Some(n) => (
-                px(native_theme_gpui::scrollbar_width(n.resolved)),
+                px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
                 n.resolved.scrollbar.overlay_mode,
             ),
             None => (px(0.), false),

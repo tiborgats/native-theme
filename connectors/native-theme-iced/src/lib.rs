@@ -193,7 +193,7 @@
 //! | `styles` (25 functions) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container, segmented control and its segments, expander header; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
-//! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
+//! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
 //! Per-widget geometry that is not a `Style` field (e.g. an indicator's size,
@@ -267,8 +267,8 @@ use std::borrow::Cow;
 /// For the common case, use [`from_preset()`] to derive the name automatically.
 ///
 /// Note: iced has no `info` color family in its Extended palette, so
-/// `info` / `info_foreground` are not mapped automatically. Use
-/// [`info_color()`] and [`info_foreground_color()`] helpers to access them.
+/// `info_color` / `info_text_color` are not mapped automatically. Use
+/// [`info_color()`] and [`info_text_color()`] helpers to access them.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &native_theme::theme::ResolvedTheme,
@@ -984,19 +984,19 @@ where
 
 /// Returns the standard border radius from the resolved theme.
 #[must_use]
-pub fn border_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn border_corner_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius
 }
 
 /// Returns the large border radius from the resolved theme.
 #[must_use]
-pub fn border_radius_lg(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn border_corner_radius_lg(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius_lg
 }
 
 /// Returns the scrollbar groove width from the resolved theme.
 #[must_use]
-pub fn scrollbar_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
@@ -1161,7 +1161,7 @@ pub fn expander_arrow_color(resolved: &native_theme::theme::ResolvedTheme) -> ic
 
 /// Returns the selection highlight background color from the resolved theme.
 #[must_use]
-pub fn selection_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn selection_background(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.selection_background)
 }
 
@@ -1176,7 +1176,7 @@ pub fn info_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::C
 
 /// Returns the text color for info-colored backgrounds from the resolved theme.
 #[must_use]
-pub fn info_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn info_text_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.info_text_color)
 }
 
@@ -1185,7 +1185,7 @@ pub fn info_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> i
 /// The warning base color is already mapped to `palette.warning`. This returns
 /// the text color intended for use on warning-colored backgrounds.
 #[must_use]
-pub fn warning_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn warning_text_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.warning_text_color)
 }
 
@@ -1200,14 +1200,14 @@ pub fn icon_sizes(
 /// Returns the line height multiplier from the resolved theme.
 ///
 /// The raw multiplier (e.g., 1.4). Use with iced's
-/// `LineHeight::Relative(native_theme_iced::line_height_multiplier(&r))`
+/// `LineHeight::Relative(native_theme_iced::line_height(&r))`
 /// for Text widgets. Font-size agnostic -- works correctly for both
 /// the primary UI font and monospace text.
 ///
 /// For absolute pixels (layout math), multiply by the appropriate
-/// font size: `line_height_multiplier(&r) * font_size(&r, &prefs)`.
+/// font size: `line_height(&r) * font_size(&r, &prefs)`.
 #[must_use]
-pub fn line_height_multiplier(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn line_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -1432,27 +1432,27 @@ mod tests {
     // === Widget metric helper tests ===
 
     #[test]
-    fn border_radius_returns_resolved_value() {
+    fn border_corner_radius_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let r = border_radius(&resolved);
+        let r = border_corner_radius(&resolved);
         assert!(r > 0.0, "resolved radius should be > 0");
     }
 
     #[test]
-    fn border_radius_lg_returns_resolved_value() {
+    fn border_corner_radius_lg_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let r = border_radius_lg(&resolved);
+        let r = border_corner_radius_lg(&resolved);
         assert!(r > 0.0, "resolved radius_lg should be > 0");
         assert!(
-            r >= border_radius(&resolved),
+            r >= border_corner_radius(&resolved),
             "radius_lg should be >= radius"
         );
     }
 
     #[test]
-    fn scrollbar_width_returns_resolved_value() {
+    fn scrollbar_groove_width_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let w = scrollbar_width(&resolved);
+        let w = scrollbar_groove_width(&resolved);
         assert!(w > 0.0, "scrollbar width should be > 0");
     }
 
@@ -1814,9 +1814,9 @@ mod tests {
     }
 
     #[test]
-    fn selection_color_returns_concrete_value() {
+    fn selection_background_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = selection_color(&resolved);
+        let c = selection_background(&resolved);
         assert!(c.a > 0.0, "selection color should have non-zero alpha");
     }
 
@@ -1831,16 +1831,16 @@ mod tests {
     }
 
     #[test]
-    fn info_foreground_color_returns_concrete_value() {
+    fn info_text_color_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = info_foreground_color(&resolved);
+        let c = info_text_color(&resolved);
         assert!(c.a > 0.0, "info foreground should have non-zero alpha");
     }
 
     #[test]
-    fn warning_foreground_color_returns_concrete_value() {
+    fn warning_text_color_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = warning_foreground_color(&resolved);
+        let c = warning_text_color(&resolved);
         assert!(c.a > 0.0, "warning foreground should have non-zero alpha");
     }
 
@@ -1964,9 +1964,9 @@ mod tests {
     }
 
     #[test]
-    fn line_height_multiplier_returns_concrete_value() {
+    fn line_height_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let lh = line_height_multiplier(&resolved);
+        let lh = line_height(&resolved);
         assert!(lh > 0.0, "line height multiplier should be > 0");
         assert!(
             lh < 5.0,

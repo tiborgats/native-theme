@@ -810,7 +810,7 @@ fn paint_swatch(
 ) {
     ui.painter().rect(
         rect,
-        native_theme_egui::border_radius(t),
+        native_theme_egui::border_corner_radius(t),
         colour,
         egui::Stroke::new(
             t.defaults.border.line_width,

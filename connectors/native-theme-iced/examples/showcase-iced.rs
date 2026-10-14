@@ -6025,7 +6025,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
         // ---- defaults, text scale, icons ----
         ("defaults", "line_height") => {
-            "the text's LineHeight::Relative (line_height_multiplier)".into()
+            "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.color") => "the text's colour: the palette's text".into(),
@@ -6164,14 +6164,17 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     };
     let layout = &state.layout;
     let config = [
-        ("radius", px(native_theme_iced::border_radius(resolved))),
+        (
+            "radius",
+            px(native_theme_iced::border_corner_radius(resolved)),
+        ),
         (
             "radius_lg",
-            px(native_theme_iced::border_radius_lg(resolved)),
+            px(native_theme_iced::border_corner_radius_lg(resolved)),
         ),
         (
             "scrollbar",
-            px(native_theme_iced::scrollbar_width(resolved)),
+            px(native_theme_iced::scrollbar_groove_width(resolved)),
         ),
         (
             "scrollbar overlay",
@@ -7086,7 +7089,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
                 .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
+                .text_line_height(native_theme_iced::line_height(resolved))
                 .font(theme_font(&c.font))
                 // Drawn on the page, the window's background, which a
                 // disabled box is faded over as one widget.
@@ -7263,7 +7266,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     Message::BasicRadioSelected,
                 )
                 .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
+                .text_line_height(native_theme_iced::line_height(resolved))
                 .font(theme_font(&c.font)),
                 state.basic_radio == value,
             ),
@@ -8183,7 +8186,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 button(
                     rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
                         .size(scaled_text_size(link.font.size, a11y))
-                        .line_height(native_theme_iced::line_height_multiplier(resolved))
+                        .line_height(native_theme_iced::line_height(resolved))
                         .font(theme_font(&link.font))
                 )
                 .on_press(Message::ButtonPressed)
@@ -10101,7 +10104,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     let swatch_border = native_theme_iced::border_color(resolved);
     let swatch_bw = resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_radius(resolved);
+    let swatch_r = native_theme_iced::border_corner_radius(resolved);
     let swatch_frame = iced::Border {
         color: swatch_border,
         width: swatch_bw,
@@ -11844,7 +11847,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let extended = state.current_theme.extended_palette();
     let swatch_border = native_theme_iced::border_color(&state.current_resolved);
     let swatch_bw = state.current_resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
+    let swatch_r = native_theme_iced::border_corner_radius(&state.current_resolved);
     let swatch_frame = iced::Border {
         color: swatch_border,
         width: swatch_bw,
@@ -12278,7 +12281,7 @@ impl Typeset for iced::widget::Text<'_> {
         // The theme's line height, where iced's own is 1.3 times the size
         // (`LineHeight::default`).
         self.typeset(font, a11y)
-            .line_height(native_theme_iced::line_height_multiplier(resolved))
+            .line_height(native_theme_iced::line_height(resolved))
     }
 }
 
