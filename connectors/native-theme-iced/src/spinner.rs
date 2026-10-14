@@ -360,7 +360,11 @@ mod tests {
     /// black usvg gives an unset `currentColor`. The icon dirs are read once
     /// per process, so the test runs itself again in a child process whose
     /// `HOME`, `XDG_DATA_HOME` and `XDG_DATA_DIRS` all lie in a temp dir that
-    /// holds the theme: no system dir is searched.
+    /// holds the theme, so no system dir is an icon base dir. freedesktop-icons
+    /// still tries its fixed `/usr/share/pixmaps` after a miss in the theme
+    /// (freedesktop-icons 0.4.0 `src/lib.rs:345-347`): a read-only look whose
+    /// hit core discards, as it keeps only a file inside the theme's own
+    /// directory, so it cannot change the result.
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
     fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour() -> native_theme::Result<()> {
@@ -391,11 +395,19 @@ mod tests {
             );
             return Ok(());
         }
-        let root = std::env::temp_dir().join(format!(
+        /// Removes the fixture's directory however the test ends.
+        struct RemoveOnDrop(std::path::PathBuf);
+        impl Drop for RemoveOnDrop {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        let guard = RemoveOnDrop(std::env::temp_dir().join(format!(
             "native-theme-iced-symbolic-spinner-{}",
             std::process::id()
-        ));
-        let _ = std::fs::remove_dir_all(&root);
+        )));
+        let root = &guard.0;
+        let _ = std::fs::remove_dir_all(root);
         let theme = root.join("share/icons/symbolic-only");
         std::fs::create_dir_all(theme.join("actions")).unwrap();
         std::fs::create_dir_all(root.join("home")).unwrap();
@@ -412,13 +424,13 @@ mod tests {
         .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", NAME, "--nocapture", "--test-threads=1"])
-            .env(SYMBOLIC_FIXTURE_ROOT, &root)
+            .env(SYMBOLIC_FIXTURE_ROOT, root)
             .env("HOME", root.join("home"))
             .env("XDG_DATA_HOME", root.join("home/.local/share"))
             .env("XDG_DATA_DIRS", root.join("share"))
             .output()
             .unwrap();
-        let _ = std::fs::remove_dir_all(&root);
+        drop(guard);
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
