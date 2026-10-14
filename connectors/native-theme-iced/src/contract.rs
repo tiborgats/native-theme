@@ -31,8 +31,8 @@ use iced_core::{Background, Border, border::Radius};
 use iced_widget::overlay::menu;
 #[cfg(feature = "widgets")]
 use iced_widget::{
-    button, checkbox, container, pick_list, progress_bar, radio, rule, scrollable, slider,
-    text_editor, text_input, toggler,
+    button, checkbox, container, pane_grid, pick_list, progress_bar, radio, rule, scrollable,
+    slider, text_editor, text_input, toggler,
 };
 
 // `styles::aw` and its rows are gated on `iced_aw`, which implies `widgets`.
@@ -1427,6 +1427,34 @@ fn rule_style_fields(style: &rule::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `pane_grid::Style` the connector emits: two lines, a
+/// colour and a width each, and the drop-target highlight, a background and an
+/// iced `Border`.
+#[cfg(feature = "widgets")]
+fn pane_grid_style_fields(style: &pane_grid::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::pane_grid", pane_grid::Style {
+        @nested hovered_region, picked_split, hovered_split
+    });
+    leaves_under!(
+        out,
+        hovered_region,
+        "styles::pane_grid.hovered_region",
+        pane_grid::Highlight { background, @nested border }
+    );
+    out.extend(border_fields(
+        border,
+        "styles::pane_grid.hovered_region.border",
+    ));
+    for (line, prefix) in [
+        (picked_split, "styles::pane_grid.picked_split"),
+        (hovered_split, "styles::pane_grid.hovered_split"),
+    ] {
+        leaves_under!(out, line, prefix, pane_grid::Line { color, width });
+    }
+    out
+}
+
 /// Every field of the `card::Style` the connector emits. A card's border is
 /// three bare fields rather than an iced `Border`, so there is nothing to walk.
 #[cfg(feature = "iced_aw")]
@@ -1630,6 +1658,7 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
         )));
         out.extend(rule_style_fields(&styles::rule(resolved)(theme)));
+        out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
         // Two functions emit a `container::Style`, so the one walker runs
         // twice under two prefixes.
         out.extend(container_fields(
@@ -2337,6 +2366,7 @@ fn every_status_list_names_each_status_once() {
     for (what, statuses) in [
         ("PROGRESS_BAR_STATUSES", PROGRESS_BAR_STATUSES),
         ("RULE_STATUSES", RULE_STATUSES),
+        ("PANE_GRID_STATUSES", PANE_GRID_STATUSES),
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
         ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
@@ -3130,6 +3160,13 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut ran,
     );
     check_style_rows(RULE_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(PANE_GRID_ROWS, &combinations, &mut failures, &mut ran);
+    check_scalar_rows(
+        PANE_GRID_SCALAR_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     check_style_rows(TOOLTIP_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3608,6 +3645,30 @@ fn an_expander_that_states_its_frame_draws_no_header_border() -> native_theme::R
              ({status:?})"
         );
     }
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_hovered_split_is_the_splitters_hover_colour() -> native_theme::Result<()> {
+    // adwaita states `splitter.hover_color`, a colour iced's own pane grid
+    // does not paint: its hovered split is the palette's primary.
+    let resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let theme = crate::to_theme(&resolved, "adwaita");
+    let hover = to_color(resolved.splitter.hover_color);
+    assert_ne!(
+        iced_widget::pane_grid::default(&theme).hovered_split.color,
+        hover,
+        "adwaita's splitter hover is iced's own hovered split, so this test \
+         proves nothing"
+    );
+    assert_eq!(
+        styles::pane_grid(&resolved)(&theme).hovered_split.color,
+        hover,
+        "a hovered split is splitter.hover_color"
+    );
     Ok(())
 }
 
@@ -4298,6 +4359,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::scrollable(r));
     assert_clone(&styles::progress_bar(r));
     assert_clone(&styles::rule(r));
+    assert_clone(&styles::pane_grid(r));
     assert_clone(&styles::tooltip(r));
     assert_clone(&styles::container_card(r));
     assert_clone(&styles::segmented_control(r));
@@ -4485,6 +4547,7 @@ impl Reading {
         x.style(SCROLLABLE_ROWS, t, r);
         x.style(PROGRESS_BAR_ROWS, t, r);
         x.style(RULE_ROWS, t, r);
+        x.style(PANE_GRID_ROWS, t, r);
         x.style(TOOLTIP_ROWS, t, r);
         x.style(CONTAINER_CARD_ROWS, t, r);
         x.style(SEGMENTED_CONTROL_ROWS, t, r);
@@ -4511,6 +4574,7 @@ impl Reading {
         x.scalar(RADIO_SCALAR_ROWS, t, r);
         x.scalar(TOGGLER_SCALAR_ROWS, t, r);
         x.scalar(SLIDER_SCALAR_ROWS, t, r);
+        x.scalar(PANE_GRID_SCALAR_ROWS, t, r);
         x.scalar(SEGMENT_SCALAR_ROWS, t, r);
         #[cfg(feature = "iced_aw")]
         {
@@ -4601,6 +4665,7 @@ impl Reading {
             styles::progress_bar(r)(t)
         });
         x.whole("styles::rule", unit, |()| styles::rule(r)(t));
+        x.whole("styles::pane_grid", unit, |()| styles::pane_grid(r)(t));
         x.whole("styles::tooltip", unit, |()| styles::tooltip(r)(t));
         x.whole("styles::container_card", unit, |()| {
             styles::container_card(r)(t)

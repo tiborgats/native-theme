@@ -683,6 +683,43 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "widgets")]
     (
+        "styles::pane_grid.hovered_region.background",
+        "iced default: pane_grid::default(theme).hovered_region.background -- \
+         the highlight under a pane dragged over another; SplitterTheme states \
+         the split lines and no drop target",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.color",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.width",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.top_left",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.top_right",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.bottom_right",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.bottom_left",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
         "styles::button_toggle.shadow",
         "iced default: button::Style::default().shadow, through styles::button \
          -- the model has a shadow color but no offset or blur",

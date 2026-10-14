@@ -10110,30 +10110,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     // ---- PaneGrid: splits the platform's splitter theme paints ----
 
-    let pane_style = {
-        let hovered = to_color(sp_th.hover_color);
-        let divider_width = sp_th.divider_width;
-        move |theme: &Theme| {
-            let iced = pane_grid::default(theme);
-            pane_grid::Style {
-                // The model states no drop-target highlight, so the region
-                // iced paints under a dragged pane stays iced's own.
-                hovered_region: iced.hovered_region,
-                // A picked split is a split being dragged; SplitterTheme
-                // states an idle and a hovered color and no dragged one, so
-                // that one line is iced's (spec §3.2).
-                picked_split: pane_grid::Line {
-                    color: iced.picked_split.color,
-                    width: divider_width,
-                },
-                hovered_split: pane_grid::Line {
-                    color: hovered,
-                    width: divider_width,
-                },
-            }
-        }
-    };
-
     let panes = pane_grid(&state.panes, |pane, label, _is_maximized| {
         let focused = state.focused_pane == Some(pane);
         let title = format!("Pane {label}");
@@ -10180,16 +10156,23 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     .on_click(Message::PaneClicked)
     .on_drag(Message::PaneDragged)
     .on_resize(sp_th.divider_width, Message::PaneResized)
-    .style(pane_style);
+    .style(styles::pane_grid(resolved));
 
     let pane_demo = hoverable(
         widget_tooltip(
             "PaneGrid",
-            &[(
-                "hovered split",
-                "splitter.hover_color",
-                to_color(sp_th.hover_color),
-            )],
+            &[
+                (
+                    "hovered split",
+                    "splitter.hover_color",
+                    to_color(sp_th.hover_color),
+                ),
+                (
+                    "picked split",
+                    "splitter.hover_color",
+                    to_color(sp_th.hover_color),
+                ),
+            ],
             &[
                 ("split width", &divider_width_s),
                 ("pane surface", "styles::container_card"),
@@ -10207,11 +10190,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 (
                     "drop region",
                     "the model states no drop-target highlight — iced's own",
-                ),
-                (
-                    "picked split",
-                    "SplitterTheme states no dragged color — iced's own, at the \
-                     platform's width",
                 ),
                 (
                     "splitter.divider_color",

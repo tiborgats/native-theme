@@ -1615,6 +1615,47 @@ pub(super) const RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
     get: |t, r, ()| Ok(styles::rule(r)(t).color),
 }];
 
+/// A pane grid has no `Status` (shape B): it picks the hovered or the picked
+/// line itself (`pane_grid.rs:949-956`).
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_STATUSES: &[()] = &[()];
+
+/// The two line colours of `styles::pane_grid`. A picked split is the hovered
+/// one: `SplitterTheme` states no dragged colour, and the dragged line is
+/// under the pointer.
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::pane_grid.hovered_split.color",
+        statuses: PANE_GRID_STATUSES,
+        native: |r, ()| to_color(r.splitter.hover_color),
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).hovered_split.color),
+    },
+    StyleRow {
+        field: "styles::pane_grid.picked_split.color",
+        statuses: PANE_GRID_STATUSES,
+        native: |r, ()| to_color(r.splitter.hover_color),
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).picked_split.color),
+    },
+];
+
+/// Both lines are `splitter.divider_width` wide.
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_SCALAR_ROWS: &[ScalarRow<()>] = &[
+    ScalarRow {
+        field: "styles::pane_grid.hovered_split.width",
+        statuses: PANE_GRID_STATUSES,
+        native: |_, r, ()| r.splitter.divider_width,
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).hovered_split.width),
+    },
+    ScalarRow {
+        field: "styles::pane_grid.picked_split.width",
+        statuses: PANE_GRID_STATUSES,
+        native: |_, r, ()| r.splitter.divider_width,
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).picked_split.width),
+    },
+];
+
 /// A tooltip has no `Status` (shape B).
 #[cfg(feature = "widgets")]
 pub(super) const TOOLTIP_STATUSES: &[()] = &[()];
@@ -2421,6 +2462,12 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(SCROLLABLE_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(PROGRESS_BAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(RULE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(PANE_GRID_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(
+        PANE_GRID_SCALAR_ROWS
+            .iter()
+            .map(|row| row.field.to_string()),
+    );
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(

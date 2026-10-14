@@ -24,9 +24,10 @@
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 //! That read happens while the widget is being drawn, from the `&Theme` in
-//! effect, so twelve of these functions -- `button_primary`, `button_danger`,
-//! `button_success`, `button_warning`, `button_link`, `text_input`,
-//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable` and `rule` --
+//! effect, so thirteen of these functions -- `button_primary`,
+//! `button_danger`, `button_success`, `button_warning`, `button_link`,
+//! `text_input`, `toggler`, `pick_list`, `menu`, `slider`, `scrollable`,
+//! `rule` and `pane_grid` --
 //! assume that theme is the one `to_theme(resolved)` built from the same
 //! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
 //! a different palette: the hover of `button_danger`, for one, is then
@@ -1446,6 +1447,43 @@ pub fn rule(
             fill_mode: iced.fill_mode,
             snap: iced.snap,
         }
+    }
+}
+
+/// The platform's own split lines, for `pane_grid(..).style(..)`.
+///
+/// Replaces `iced_widget::pane_grid::default` (`pane_grid.rs:1319`), the class
+/// a `PaneGrid` gets with no `.style(..)`, which draws a hovered split in the
+/// palette's primary and a picked one in its strong primary, both 2 px wide.
+///
+/// A hovered split is `splitter.hover_color` at `splitter.divider_width`. A
+/// picked split -- one being dragged -- is the same line: the model states no
+/// dragged colour (`docs/platform-facts.md` §2.17 states the divider's width
+/// and colour, and `SplitterTheme` adds the hover), and the dragged line is
+/// the one under the pointer, so it keeps its hover. `splitter.divider_color`
+/// has no receiver: iced draws a split only while it is hovered or picked
+/// (`pane_grid.rs:949-956`), never at rest.
+///
+/// `hovered_region`, the highlight under a pane dragged over another, has no
+/// native source -- the model states no drop target -- and comes from
+/// `pane_grid::default(theme)`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn pane_grid(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
+    use iced_widget::pane_grid::{Line, Style};
+
+    let s = &resolved.splitter;
+
+    let split = Line {
+        color: to_color(s.hover_color),
+        width: s.divider_width,
+    };
+
+    move |theme| Style {
+        hovered_region: iced_widget::pane_grid::default(theme).hovered_region,
+        picked_split: split,
+        hovered_split: split,
     }
 }
 
