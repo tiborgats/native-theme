@@ -770,6 +770,8 @@ model, the platform presets and the three connectors
       not source-over once a preset states a translucent
       `button.background_color` (windows-11 does since Step 7b, WinUI's
       `ControlFillColorDefault`).
+      iced (M5 T6, 98b522f7): a layer (C17 stays); an unset soft hover is
+      the idle fill.
 
 ### windows-11: what WinUI 3 draws, or what Win32 reports
 
