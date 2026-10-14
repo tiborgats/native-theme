@@ -1,5 +1,6 @@
-//! The two declared-data tables that say what the rows do *not* claim: every
-//! emitted field iced fills for us, and the native values iced cannot take.
+//! The declared-data tables that say what the rows do *not* claim: every
+//! emitted field iced fills for us, the native values iced cannot take, and
+//! the colour leaves of the model no row reads.
 //!
 //! Test-only, like the rest of `contract`. Nothing here is logic beyond the
 //! one-line readers `UNREACHABLE` names its values with: the tests that read
@@ -1120,5 +1121,292 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
             ("windows-11/dark", "the same"),
             ("ios-13/dark", "the same"),
         ],
+    },
+];
+
+/// Why a colour leaf of `ResolvedTheme` reaches no row: the classes of
+/// `UNREAD_COLOURS`, each with its evidence.
+#[cfg(feature = "iced_aw")]
+pub(super) enum Unread {
+    /// iced 0.14 and `iced_aw` 0.14.1 have nowhere to draw the value as the
+    /// model states it. The evidence cites the upstream source, `file.rs:line`.
+    NoReceiver(&'static str),
+    /// The value reaches iced through the widget leaves that inherit it, which
+    /// rows read. The evidence cites `docs/inheritance-rules.toml:line`.
+    Inherited(&'static str),
+    /// A widget neither iced nor `iced_aw` has; the entry names the widget, a
+    /// prefix of every leaf it covers.
+    NoWidget(&'static str),
+    /// iced has a receiver, and a ruling of the M5 review fills it from
+    /// another leaf, or leaves it to iced. The evidence cites the source,
+    /// `file.rs:line`.
+    Ruled(&'static str),
+}
+
+/// One colour leaf no row reads, or one widget none of whose colour leaves a
+/// row reads, and why.
+#[cfg(feature = "iced_aw")]
+pub(super) struct UnreadColour {
+    /// The leaf's dotted path in the serialised `ResolvedTheme`, or a widget's
+    /// name for every colour leaf under it.
+    pub(super) leaf: &'static str,
+    pub(super) why: Unread,
+}
+
+/// The title bar and the window's outline are the OS's decorations.
+#[cfg(feature = "iced_aw")]
+const WINDOW_FRAME: &str = "iced's window takes `decorations: bool` -- whether the \
+     OS draws a border and a title bar at all -- and nothing to colour them \
+     with (`iced_core-0.14.0/src/window/settings.rs:65-66`)";
+
+/// iced's text fields draw the selected text in the value colour: the
+/// selection is a fill behind it.
+#[cfg(feature = "iced_aw")]
+const SELECTED_TEXT: &str = "`text_input::Style.selection` and \
+     `text_editor::Style.selection` are the fill of a quad drawn behind the \
+     text (`iced_widget-0.14.2/src/text_input.rs:561-571`, \
+     `text_editor.rs:1049-1059`), and the text over it is drawn whole in \
+     `value` (`text_input.rs:615-627`, `text_editor.rs:1010-1015`): no \
+     colour for the selected run";
+
+/// The colour leaves of `ResolvedTheme` that reach no contract row in any of
+/// the 34 bundled combinations and that `UNREACHABLE` does not name, each
+/// with its reason.
+///
+/// `every_colour_leaf_reaches_a_row_or_is_named` holds the list to the model:
+/// a colour leaf that reaches no row and is named nowhere fails it, and so
+/// does an entry that names a leaf a row now reads, or no colour leaf at all.
+/// It is a table of its own rather than more of `UNREACHABLE`, whose entries
+/// claim that iced cannot carry a value and prove it per preset through
+/// `lost`: several entries here are values iced can carry and the connector,
+/// by a ruling, does not fill from this leaf, or values that reach iced
+/// through the leaves that inherit them, and a widget entry names a prefix.
+#[cfg(feature = "iced_aw")]
+pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
+    UnreadColour {
+        leaf: "defaults.disabled_text_color",
+        why: Unread::Inherited(
+            "iced has no application-wide disabled colour; each widget's own \
+             disabled text colour inherits this one and is what its row reads \
+             (`docs/inheritance-rules.toml:161`, `:170`, `:183`, `:191`, \
+             `:283`, `:292`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.font.color",
+        why: Unread::NoReceiver(
+            "an iced `Font` is a family, a weight, a stretch and a style \
+             (`iced_core-0.14.0/src/font.rs:6-15`), with no colour: a text is \
+             drawn in its widget's style colour or the window's \
+             `palette.text`, which is `defaults.text_color`, and each widget's \
+             own `font.color` reaches its row",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.mono_font.color",
+        why: Unread::NoReceiver(
+            "the same: an iced `Font` has no colour \
+             (`iced_core-0.14.0/src/font.rs:6-15`), and iced has no \
+             monospace text class to colour apart",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.muted_color",
+        why: Unread::Ruled(
+            "iced's secondary text, `text::secondary`, paints \
+             `extended.secondary.base.color` \
+             (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector \
+             fills that slot from `input.placeholder_color` \
+             (`src/extended.rs:99-100`) on purpose: the slot is also \
+             `button::secondary`'s fill, and the contract counts the labels \
+             `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). \
+             The muted colour reaches iced through the leaves that inherit it, \
+             `input.placeholder_color` among them \
+             (`docs/inheritance-rules.toml:166`, `:197`, `:198`, `:202`, \
+             `:208`). Ruling T12a C3",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_inactive_background",
+        why: Unread::NoReceiver(
+            "iced draws a text field's selection only while the field is \
+             focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, \
+             `text_editor.rs:1021`), so an unfocused selection has no look to \
+             give",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_text_color",
+        why: Unread::Inherited(
+            "the selected-item labels that rows read inherit it: \
+             `menu.hover_text_color`, `sidebar.selection_text_color` and \
+             `list.selection_text_color` (`docs/inheritance-rules.toml:190`, \
+             `:219`, `:235`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.shadow_color",
+        why: Unread::NoReceiver(
+            "an iced `Shadow` is a colour, an offset and a blur radius \
+             (`iced_core-0.14.0/src/shadow.rs:5-14`), and the model states the \
+             colour alone, so every `shadow` field stays iced's default (the \
+             `.shadow` entries of `DERIVED`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_background",
+        why: Unread::Inherited(
+            "`input.selection_background` inherits it \
+             (`docs/inheritance-rules.toml:167`), and `styles::text_input` and \
+             `styles::text_editor` emit that as their `selection`",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "input.selection_text_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "input.caret_color",
+        why: Unread::NoReceiver(
+            "iced draws the caret in the value colour: a 1 px quad filled with \
+             `style.value` (`iced_widget-0.14.2/src/text_input.rs:520-533`, \
+             `text_editor.rs:1040-1046`), and neither `Style` has a caret field",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.disabled_background",
+        why: Unread::NoReceiver(
+            "`pick_list::Status` is Active, Hovered and Opened, with no \
+             disabled state (`iced_widget-0.14.2/src/pick_list.rs:838-848`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.disabled_text_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled pick list \
+             (`iced_widget-0.14.2/src/pick_list.rs:838-848`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_fill_color",
+        why: Unread::NoReceiver(
+            "`slider::Status` is Active, Hovered and Dragged, with no disabled \
+             state (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_thumb_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled slider \
+             (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_track_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled slider \
+             (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.disabled_text_color",
+        why: Unread::NoReceiver(
+            "iced's menu `Style` has a text colour and a selected one and no \
+             disabled one (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`), \
+             and an `iced_aw` menu's items are the consumer's own widgets \
+             (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`), its \
+             `menu_bar::Style` backgrounds, borders and shadows only \
+             (`style/menu_bar.rs:7-26`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.separator_color",
+        why: Unread::NoReceiver(
+            "neither menu style has a separator: iced's menu `Style` \
+             (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`) nor `iced_aw`'s \
+             `menu_bar::Style` (`iced_aw-0.14.1/src/style/menu_bar.rs:7-26`); a \
+             separator in an `iced_aw` menu is an item the consumer builds",
+        ),
+    },
+    UnreadColour {
+        leaf: "link.visited_text_color",
+        why: Unread::NoReceiver(
+            "`button::Status` is Active, Hovered, Pressed and Disabled, with \
+             no visited state (`iced_widget-0.14.2/src/button.rs:471-480`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "splitter.divider_color",
+        why: Unread::NoReceiver(
+            "iced draws a split line only while it is hovered or picked \
+             (`iced_widget-0.14.2/src/pane_grid.rs:949-956`), never at rest, \
+             so a resting divider has no colour to take; `styles::pane_grid` \
+             draws the hovered and the picked line in `splitter.hover_color`",
+        ),
+    },
+    UnreadColour {
+        leaf: "window.background_color",
+        why: Unread::Ruled(
+            "iced paints the application's background from \
+             `theme::Style.background_color` \
+             (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` \
+             takes from the palette's background (`theme.rs:291-293`, \
+             `:326-334`), `defaults.background_color`; this leaf inherits that \
+             one (`docs/inheritance-rules.toml:149`) and equals it in all 34 \
+             bundled combinations. A style for `application(..).style(..)` that \
+             reads it is a docs/todo.md item. Ruling T12a C4",
+        ),
+    },
+    UnreadColour {
+        leaf: "window.border.color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.title_bar_background",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.title_bar_font.color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.inactive_title_bar_background",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.inactive_title_bar_text_color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "dialog",
+        why: Unread::NoWidget(
+            "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether \
+             an `iced_aw` `Card` is its receiver is a docs/todo.md item \
+             (\"iced: dialog is unmapped\")",
+        ),
+    },
+    UnreadColour {
+        leaf: "popover",
+        why: Unread::NoWidget(
+            "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its \
+             `context_menu::Style.background` is the backdrop of a modal \
+             (`style/context_menu.rs:8-14`), not a surface",
+        ),
+    },
+    UnreadColour {
+        leaf: "toolbar",
+        why: Unread::NoWidget(
+            "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of \
+             the model's toolbar is a docs/todo.md item (\"The iced connector \
+             reads nothing of the model's toolbar\")",
+        ),
+    },
+    UnreadColour {
+        leaf: "status_bar",
+        why: Unread::NoWidget("iced 0.14 and `iced_aw` 0.14.1 have no status bar"),
     },
 ];

@@ -1018,17 +1018,7 @@ where
     use native_theme::theme::TabIndicatorSide;
 
     let t = &resolved.tab;
-    let (Some(color), Some(width), Some(side)) = (
-        t.active_indicator_color,
-        t.active_indicator_width,
-        t.active_indicator_side,
-    ) else {
-        return None;
-    };
-    if !(width.is_finite() && width > 0.0) {
-        return None;
-    }
-    let color = palette::to_color(color);
+    let (color, width, side) = tab_indicator_strip(t)?;
     let (align, radius) = match side {
         TabIndicatorSide::Top => {
             let r = t.border.corner_radius;
@@ -1062,6 +1052,23 @@ where
             .align_y(align)
             .into(),
     )
+}
+
+/// The strip [`tab_indicator_line()`] draws: its colour, its thickness and
+/// the side it runs along, or `None` where the theme leaves any of the three
+/// unstated, or states a width that is not a positive, finite length.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_indicator_strip(
+    t: &native_theme::theme::ResolvedTabTheme,
+) -> Option<(iced_core::Color, f32, native_theme::theme::TabIndicatorSide)> {
+    let (Some(color), Some(width), Some(side)) = (
+        t.active_indicator_color,
+        t.active_indicator_width,
+        t.active_indicator_side,
+    ) else {
+        return None;
+    };
+    (width.is_finite() && width > 0.0).then(|| (palette::to_color(color), width, side))
 }
 
 /// Returns the standard border radius from the resolved theme.

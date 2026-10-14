@@ -11,7 +11,10 @@
 //! The coverage tripwire (section 5.2) closes the table: every field it walks
 //! -- by exhaustive destructuring, so an upstream addition fails to compile
 //! here first -- must appear in exactly one of the rows, `DERIVED` and
-//! `UNREACHABLE`.
+//! `UNREACHABLE`. Its converse walks the model rather than the output:
+//! `every_colour_leaf_reaches_a_row_or_is_named` splices every colour leaf of
+//! `ResolvedTheme` and requires each to move a row's native side, or to be
+//! named by `UNREAD_COLOURS` or `UNREACHABLE`.
 
 use crate::extended::contrast_ratio;
 use crate::palette::to_color;
@@ -20,7 +23,7 @@ use iced_core::Color;
 use iced_core::theme::Theme;
 use iced_core::theme::palette::{Danger, Extended, Pair, Primary, Secondary, Success, Warning};
 use native_theme::color::Rgba;
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "widgets")]
@@ -51,6 +54,8 @@ mod rows;
 use derived::{
     DERIVED, SECONDARY_LABEL_AS_STATED, SECONDARY_LABEL_SUBSTITUTED, UNREACHABLE, Unreachable,
 };
+#[cfg(feature = "iced_aw")]
+use derived::{UNREAD_COLOURS, Unread, UnreadColour};
 use pairs::*;
 use rows::*;
 
@@ -69,6 +74,18 @@ struct Row {
     get: fn(&Theme, &ResolvedTheme) -> Color,
     /// Preset keys where this row does not hold, each with its reason.
     exceptions: &'static [(&'static str, &'static str)],
+}
+
+/// One row of the accessor contract: a colour a crate-root function hands the
+/// consumer, and the native leaf it must be.
+///
+/// Both sides are an `Option` for the one accessor that returns a widget,
+/// `tab_indicator_line`, which draws nothing where the theme states no line:
+/// its row compares the strip's colour, `None` where no strip is drawn.
+struct AccessorRow {
+    accessor: &'static str,
+    native: fn(&ResolvedTheme) -> Option<Color>,
+    get: fn(&ResolvedTheme) -> Option<Color>,
 }
 
 /// One row of the style contract: a field of one `styles::*` output, the
@@ -910,6 +927,31 @@ fn every_palette_slot_equals_its_native_field() -> native_theme::Result<()> {
         "{} of {} contract checks failed:\n{}",
         failures.len(),
         combinations.len() * ROWS.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[test]
+fn every_accessor_returns_its_native_leaf() -> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    for c in &combinations {
+        for row in ACCESSOR_ROWS {
+            let (native, got) = ((row.native)(&c.resolved), (row.get)(&c.resolved));
+            if native != got {
+                failures.push(format!(
+                    "{} on {}: {got:?}, the native leaf is {native:?}",
+                    row.accessor,
+                    c.label()
+                ));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} accessor check(s) failed:\n{}",
+        failures.len(),
         failures.join("\n")
     );
     Ok(())
@@ -4430,7 +4472,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
 /// value: the walk descends into objects and keeps everything else, a `null`
 /// (an unstated soft option) included. egui's `leaf_paths`
 /// (`native-theme-egui/src/mapping_tests.rs`) is the same walk.
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
     fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
         match value {
@@ -4454,7 +4496,7 @@ fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
 
 /// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
 /// theme; `None` where the leaf already holds it or does not take a colour.
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
     let pointer = format!("/{}", leaf.replace('.', "/"));
     let value = serde_json::Value::String(hex.to_owned());
@@ -4469,7 +4511,7 @@ fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<Res
 /// The colour leaves of one serialised theme: a leaf whose value is a colour,
 /// or a `null` a colour splices into -- an `Option<Rgba>` the theme leaves
 /// unstated.
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
     leaf_values(json)
         .into_iter()
@@ -4482,287 +4524,154 @@ fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
-/// What one theme gives, as text keyed by name: every row's native side and
-/// emitted side over all of the row's statuses, and every whole output the
-/// connector builds -- each `styles::*` function's `Style` over its widget's
-/// statuses, the palette and extended palette, and the colour accessors.
-#[cfg(feature = "widgets")]
+/// The native side of every row of the contract on one theme, as text keyed
+/// by the row's name: each palette row, each style row over all of its
+/// statuses, and each accessor row. A colour spliced into the theme reaches a
+/// row when that row's text changes.
+#[cfg(feature = "iced_aw")]
 #[derive(Default)]
-struct Reading {
-    native: BTreeMap<String, String>,
-    emitted: BTreeMap<String, String>,
-    output: BTreeMap<String, String>,
-}
+struct Reading(BTreeMap<String, String>);
 
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 impl Reading {
-    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], r: &ResolvedTheme) {
         for row in rows {
-            let (mut n, mut e) = (String::new(), String::new());
-            for &s in row.statuses {
-                n += &format!("{:?};", (row.native)(r, s));
-                e += &format!("{:?};", (row.get)(t, r, s));
-            }
-            self.native.insert(row.field.to_owned(), n);
-            self.emitted.insert(row.field.to_owned(), e);
+            let text = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(r, s)))
+                .collect();
+            self.0.insert(row.field.to_owned(), text);
         }
     }
 
-    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], r: &ResolvedTheme) {
         for row in rows {
-            let (mut n, mut e) = (String::new(), String::new());
-            for &s in row.statuses {
-                let b = (row.native)(r, s);
-                n += &format!("{:?} {:?} {:?};", b.color, b.width, b.radius);
-                e += &format!("{:?};", (row.get)(t, r, s));
-            }
-            let field = format!("{}.border", row.field);
-            self.native.insert(field.clone(), n);
-            self.emitted.insert(field, e);
+            let text = row
+                .statuses
+                .iter()
+                .map(|&s| {
+                    let b = (row.native)(r, s);
+                    format!("{:?} {:?} {:?};", b.color, b.width, b.radius)
+                })
+                .collect();
+            self.0.insert(format!("{}.border", row.field), text);
         }
     }
 
-    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], r: &ResolvedTheme) {
         for row in rows {
-            let (mut n, mut e) = (String::new(), String::new());
-            for &s in row.statuses {
-                n += &format!("{:?};", (row.native)(r, s));
-                e += &format!("{:?};", (row.get)(t, r, s));
-            }
-            self.native.insert(row.field.to_owned(), n);
-            self.emitted.insert(row.field.to_owned(), e);
+            let text = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(r, s)))
+                .collect();
+            self.0.insert(row.field.to_owned(), text);
         }
     }
 
     fn scalar<S: Copy>(&mut self, rows: &[ScalarRow<S>], t: &Theme, r: &ResolvedTheme) {
         for row in rows {
-            let (mut n, mut e) = (String::new(), String::new());
-            for &s in row.statuses {
-                n += &format!("{:?};", (row.native)(t, r, s));
-                e += &format!("{:?};", (row.get)(t, r, s));
-            }
-            self.native.insert(row.field.to_owned(), n);
-            self.emitted.insert(row.field.to_owned(), e);
+            let text = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(t, r, s)))
+                .collect();
+            self.0.insert(row.field.to_owned(), text);
         }
     }
 
-    fn whole<S: Copy, O: std::fmt::Debug>(
-        &mut self,
-        name: &str,
-        statuses: &[S],
-        style: impl Fn(S) -> O,
-    ) {
-        let text: String = statuses
-            .iter()
-            .map(|&s| format!("{:?};", style(s)))
-            .collect();
-        self.output.insert(name.to_owned(), text);
-    }
-
-    /// Every row and output of the contract on one theme.
+    /// Every row's native side on `r`. `t` is read by the one guarded scalar
+    /// row alone (`ScalarRow`'s doc), for iced's own value where the guard
+    /// fails, so the base combination's theme serves every splice of it: a
+    /// colour moves no length.
     fn of(t: &Theme, r: &ResolvedTheme) -> Self {
         let mut x = Self::default();
         for row in ROWS {
-            x.native.insert(
+            x.0.insert(
                 row.slot.to_owned(),
                 format!("{:?}", to_color((row.native)(r))),
             );
-            x.emitted
-                .insert(row.slot.to_owned(), format!("{:?}", (row.get)(t, r)));
         }
-        x.style(BUTTON_ROWS, t, r);
-        x.style(BUTTON_PRIMARY_ROWS, t, r);
-        x.style(BUTTON_DANGER_ROWS, t, r);
-        x.style(BUTTON_SUCCESS_ROWS, t, r);
-        x.style(BUTTON_WARNING_ROWS, t, r);
-        x.style(BUTTON_LINK_ROWS, t, r);
-        x.style(BUTTON_TOGGLE_ROWS, t, r);
-        x.style(TEXT_INPUT_ROWS, t, r);
-        x.style(TEXT_EDITOR_ROWS, t, r);
-        x.style(CHECKBOX_ROWS, t, r);
-        x.style(RADIO_ROWS, t, r);
-        x.style(TOGGLER_ROWS, t, r);
-        x.style(PICK_LIST_ROWS, t, r);
-        x.style(MENU_ROWS, t, r);
-        x.style(SLIDER_ROWS, t, r);
-        x.style(SCROLLABLE_ROWS, t, r);
-        x.style(PROGRESS_BAR_ROWS, t, r);
-        x.style(RULE_ROWS, t, r);
-        x.style(PANE_GRID_ROWS, t, r);
-        x.style(TOOLTIP_ROWS, t, r);
-        x.style(CONTAINER_CARD_ROWS, t, r);
-        x.style(SEGMENTED_CONTROL_ROWS, t, r);
-        x.style(SEGMENT_ROWS, t, r);
-        x.style(EXPANDER_ROWS, t, r);
-        x.border(BUTTON_BORDER_ROWS, t, r);
-        x.border(BUTTON_PRIMARY_BORDER_ROWS, t, r);
-        x.border(BUTTON_DANGER_BORDER_ROWS, t, r);
-        x.border(BUTTON_SUCCESS_BORDER_ROWS, t, r);
-        x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
-        x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
-        x.border(TEXT_INPUT_BORDER_ROWS, t, r);
-        x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
-        x.border(CHECKBOX_BORDER_ROWS, t, r);
-        x.border(PICK_LIST_BORDER_ROWS, t, r);
-        x.border(MENU_BORDER_ROWS, t, r);
-        x.border(PROGRESS_BAR_BORDER_ROWS, t, r);
-        x.border(TOOLTIP_BORDER_ROWS, t, r);
-        x.border(CONTAINER_CARD_BORDER_ROWS, t, r);
-        x.border(SEGMENTED_CONTROL_BORDER_ROWS, t, r);
-        x.border(EXPANDER_BORDER_ROWS, t, r);
-        x.border(EXPANDER_FRAME_BORDER_ROWS, t, r);
-        x.radius(TOGGLER_RADIUS_ROWS, t, r);
+        for row in ACCESSOR_ROWS {
+            x.0.insert(row.accessor.to_owned(), format!("{:?}", (row.native)(r)));
+        }
+        x.style(BUTTON_ROWS, r);
+        x.style(BUTTON_PRIMARY_ROWS, r);
+        x.style(BUTTON_DANGER_ROWS, r);
+        x.style(BUTTON_SUCCESS_ROWS, r);
+        x.style(BUTTON_WARNING_ROWS, r);
+        x.style(BUTTON_LINK_ROWS, r);
+        x.style(BUTTON_TOGGLE_ROWS, r);
+        x.style(TEXT_INPUT_ROWS, r);
+        x.style(TEXT_EDITOR_ROWS, r);
+        x.style(CHECKBOX_ROWS, r);
+        x.style(RADIO_ROWS, r);
+        x.style(TOGGLER_ROWS, r);
+        x.style(PICK_LIST_ROWS, r);
+        x.style(MENU_ROWS, r);
+        x.style(SLIDER_ROWS, r);
+        x.style(SCROLLABLE_ROWS, r);
+        x.style(PROGRESS_BAR_ROWS, r);
+        x.style(RULE_ROWS, r);
+        x.style(PANE_GRID_ROWS, r);
+        x.style(TOOLTIP_ROWS, r);
+        x.style(CONTAINER_CARD_ROWS, r);
+        x.style(SEGMENTED_CONTROL_ROWS, r);
+        x.style(SEGMENT_ROWS, r);
+        x.style(EXPANDER_ROWS, r);
+        x.border(BUTTON_BORDER_ROWS, r);
+        x.border(BUTTON_PRIMARY_BORDER_ROWS, r);
+        x.border(BUTTON_DANGER_BORDER_ROWS, r);
+        x.border(BUTTON_SUCCESS_BORDER_ROWS, r);
+        x.border(BUTTON_WARNING_BORDER_ROWS, r);
+        x.border(BUTTON_TOGGLE_BORDER_ROWS, r);
+        x.border(TEXT_INPUT_BORDER_ROWS, r);
+        x.border(TEXT_EDITOR_BORDER_ROWS, r);
+        x.border(CHECKBOX_BORDER_ROWS, r);
+        x.border(PICK_LIST_BORDER_ROWS, r);
+        x.border(MENU_BORDER_ROWS, r);
+        x.border(PROGRESS_BAR_BORDER_ROWS, r);
+        x.border(TOOLTIP_BORDER_ROWS, r);
+        x.border(CONTAINER_CARD_BORDER_ROWS, r);
+        x.border(SEGMENTED_CONTROL_BORDER_ROWS, r);
+        x.border(EXPANDER_BORDER_ROWS, r);
+        x.border(EXPANDER_FRAME_BORDER_ROWS, r);
+        x.radius(TOGGLER_RADIUS_ROWS, r);
         x.scalar(RADIO_SCALAR_ROWS, t, r);
         x.scalar(TOGGLER_SCALAR_ROWS, t, r);
         x.scalar(SLIDER_SCALAR_ROWS, t, r);
         x.scalar(PANE_GRID_SCALAR_ROWS, t, r);
         x.scalar(SEGMENT_SCALAR_ROWS, t, r);
-        #[cfg(feature = "iced_aw")]
-        {
-            x.style(AW_CARD_ROWS, t, r);
-            x.style(AW_MENU_ROWS, t, r);
-            x.style(AW_TAB_BAR_ROWS, t, r);
-            x.style(AW_SIDEBAR_ROWS, t, r);
-            x.style(AW_SELECTION_LIST_ROWS, t, r);
-            x.style(AW_SPINNER_ROWS, t, r);
-            x.border(AW_MENU_BORDER_ROWS, t, r);
-            x.radius(AW_TAB_BAR_RADIUS_ROWS, t, r);
-            x.scalar(AW_CARD_SCALAR_ROWS, t, r);
-            x.scalar(AW_TAB_BAR_SCALAR_ROWS, t, r);
-            x.scalar(AW_SIDEBAR_SCALAR_ROWS, t, r);
-            x.scalar(AW_SELECTION_LIST_SCALAR_ROWS, t, r);
-        }
-
-        x.output
-            .insert("palette".to_owned(), format!("{:?}", t.palette()));
-        for (slot, color) in extended_slots(t.extended_palette()) {
-            x.output.insert(slot, format!("{color:?}"));
-        }
-        for (name, color) in [
-            ("crate::border_color", crate::border_color(r)),
-            ("crate::focus_ring_color", crate::focus_ring_color(r)),
-            ("crate::link_color", crate::link_color(r)),
-            (
-                "crate::expander_arrow_color",
-                crate::expander_arrow_color(r),
-            ),
-            (
-                "crate::selection_background",
-                crate::selection_background(r),
-            ),
-            ("crate::info_color", crate::info_color(r)),
-            ("crate::info_text_color", crate::info_text_color(r)),
-            ("crate::warning_text_color", crate::warning_text_color(r)),
-        ] {
-            x.output.insert(name.to_owned(), format!("{color:?}"));
-        }
-        let unit: &[()] = &[()];
-        x.whole("styles::button", BUTTON_STATUSES, |s| {
-            styles::button(r)(t, s)
-        });
-        x.whole("styles::button_primary", BUTTON_STATUSES, |s| {
-            styles::button_primary(r)(t, s)
-        });
-        x.whole("styles::button_danger", BUTTON_STATUSES, |s| {
-            styles::button_danger(r)(t, s)
-        });
-        x.whole("styles::button_success", BUTTON_STATUSES, |s| {
-            styles::button_success(r)(t, s)
-        });
-        x.whole("styles::button_warning", BUTTON_STATUSES, |s| {
-            styles::button_warning(r)(t, s)
-        });
-        x.whole("styles::button_link", BUTTON_STATUSES, |s| {
-            styles::button_link(r)(t, s)
-        });
-        x.whole("styles::button_toggle", BUTTON_TOGGLE_STATUSES, |(c, s)| {
-            styles::button_toggle(r, c)(t, s)
-        });
-        x.whole("styles::text_input", TEXT_INPUT_STATUSES, |s| {
-            styles::text_input(r)(t, s)
-        });
-        x.whole("styles::text_editor", TEXT_EDITOR_STATUSES, |s| {
-            styles::text_editor(r)(t, s)
-        });
-        x.whole("styles::checkbox", CHECKBOX_STATUSES, |s| {
-            styles::checkbox(r)(t, s)
-        });
-        x.whole("styles::radio", RADIO_STATUSES, |s| styles::radio(r)(t, s));
-        x.whole("styles::toggler", TOGGLER_STATUSES, |s| {
-            styles::toggler(r)(t, s)
-        });
-        x.whole("styles::pick_list", PICK_LIST_STATUSES, |s| {
-            styles::pick_list(r)(t, s)
-        });
-        x.whole("styles::menu", unit, |()| styles::menu(r)(t));
-        x.whole("styles::slider", SLIDER_STATUSES, |s| {
-            styles::slider(r)(t, s)
-        });
-        x.whole("styles::scrollable", SCROLLABLE_STATUSES, |s| {
-            styles::scrollable(r)(t, s)
-        });
-        x.whole("styles::scrollbar", unit, |()| styles::scrollbar(r));
-        x.whole("styles::progress_bar", unit, |()| {
-            styles::progress_bar(r)(t)
-        });
-        x.whole("styles::rule", unit, |()| styles::rule(r)(t));
-        x.whole("styles::pane_grid", unit, |()| styles::pane_grid(r)(t));
-        x.whole("styles::tooltip", unit, |()| styles::tooltip(r)(t));
-        x.whole("styles::container_card", unit, |()| {
-            styles::container_card(r)(t)
-        });
-        x.whole("styles::segmented_control", unit, |()| {
-            styles::segmented_control(r)(t)
-        });
-        for &position in SEGMENT_POSITIONS {
-            x.whole(
-                &format!("styles::segment({position:?})"),
-                SEGMENT_STATUSES,
-                |(selected, s)| styles::segment(r, selected, position)(t, s),
-            );
-        }
-        x.whole("styles::expander", BUTTON_STATUSES, |s| {
-            styles::expander(r)(t, s)
-        });
-        x.whole("styles::expander_frame", unit, |()| {
-            styles::expander_frame(r)(t)
-        });
-        #[cfg(feature = "iced_aw")]
-        {
-            x.whole("styles::aw::card", AW_STATUSES, |s| {
-                styles::aw::card(r)(t, s)
-            });
-            x.whole("styles::aw::menu", AW_STATUSES, |s| {
-                styles::aw::menu(r)(t, s)
-            });
-            x.whole("styles::aw::tab_bar", AW_STATUSES, |s| {
-                styles::aw::tab_bar(r)(t, s)
-            });
-            x.whole("styles::aw::sidebar", AW_STATUSES, |s| {
-                styles::aw::sidebar(r)(t, s)
-            });
-            x.whole("styles::aw::selection_list", AW_STATUSES, |s| {
-                styles::aw::selection_list(r)(t, s)
-            });
-            x.whole("styles::aw::spinner", unit, |()| styles::aw::spinner(r)(t));
-        }
+        x.style(AW_CARD_ROWS, r);
+        x.style(AW_MENU_ROWS, r);
+        x.style(AW_TAB_BAR_ROWS, r);
+        x.style(AW_SIDEBAR_ROWS, r);
+        x.style(AW_SELECTION_LIST_ROWS, r);
+        x.style(AW_SPINNER_ROWS, r);
+        x.border(AW_MENU_BORDER_ROWS, r);
+        x.radius(AW_TAB_BAR_RADIUS_ROWS, r);
+        x.scalar(AW_CARD_SCALAR_ROWS, t, r);
+        x.scalar(AW_TAB_BAR_SCALAR_ROWS, t, r);
+        x.scalar(AW_SIDEBAR_SCALAR_ROWS, t, r);
+        x.scalar(AW_SELECTION_LIST_SCALAR_ROWS, t, r);
         x
     }
-}
 
-/// The names under which two readings differ.
-#[cfg(feature = "widgets")]
-fn moved(a: &BTreeMap<String, String>, b: &BTreeMap<String, String>) -> Vec<String> {
-    a.iter()
-        .filter(|(name, value)| b.get(*name) != Some(*value))
-        .map(|(name, _)| name.clone())
-        .collect()
+    /// The rows whose native side differs between two readings.
+    fn moved(&self, after: &Self) -> Vec<String> {
+        self.0
+            .iter()
+            .filter(|(name, value)| after.0.get(*name) != Some(*value))
+            .map(|(name, _)| name.clone())
+            .collect()
+    }
 }
 
 /// An opaque colour whose red, green and blue appear in no colour of `json`,
 /// so that no row can emit it by passing another leaf through: counting up
 /// from `#13579b` in the red channel.
-#[cfg(feature = "widgets")]
+#[cfg(feature = "iced_aw")]
 fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
     let taken: BTreeSet<(u8, u8, u8)> = leaf_values(json)
         .into_iter()
@@ -4775,23 +4684,40 @@ fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
         .unwrap_or((0x13, 0x57, 0x9b))
 }
 
-/// M1-T7-03's dry run (M5 T12a): which contract rows each colour leaf of
-/// `ResolvedTheme` reaches.
+/// Whether `entry` -- a leaf, or a widget's name -- names `leaf`: the leaf
+/// itself, or a leaf under it (`list.header_font` names
+/// `list.header_font.color`).
+#[cfg(feature = "iced_aw")]
+fn names(entry: &str, leaf: &str) -> bool {
+    leaf == entry
+        || leaf
+            .strip_prefix(entry)
+            .is_some_and(|rest| rest.starts_with('.'))
+}
+
+/// M1-T7-03, iced's half: every colour leaf of `ResolvedTheme` reaches a
+/// contract row, or a table says why it does not.
 ///
-/// Each of the 34 preset/mode combinations is a base. Every colour leaf is
-/// spliced in turn with three values -- the leaf's value in the next preset
-/// of `list_presets()` in the same mode (egui's T2 method), and an opaque and
-/// a half-transparent sentinel no colour of the base shares its channels
-/// with -- and the contract is read again: a leaf *reaches* a row when the
-/// row's native side moves. The emitted sides and the whole outputs are read
-/// too, so a leaf no row claims still shows where the connector carries it.
+/// The tripwire (`every_named_field_has_exactly_one_declared_source`) walks
+/// what the connector emits, so it cannot see a model value nothing reads.
+/// This walks the model instead. Each of the 34 preset/mode combinations is a
+/// base, and every colour leaf of the serialised theme -- a colour, or an
+/// unstated `Option<Rgba>` a colour splices into -- is spliced in turn with
+/// the leaf's value in another preset of the same mode (egui's T2 method) and
+/// with an opaque and a half-transparent sentinel no colour of the base
+/// shares its channels with, so neither a passthrough of another leaf nor a
+/// composite under an opaque layer hides the change. A leaf *reaches* a row
+/// when the row's native side moves, in at least one base: a soft option's
+/// fallback moves its row only where the option is unstated
+/// (`checkbox.background_color`, in 2 of the 34), which is why every base is
+/// read. A leaf that reaches a row is not spliced in the bases after.
 ///
-/// Prints, asserts nothing. `cargo test -p native-theme-iced --all-features
-/// colour_leaf_dry_run -- --ignored --nocapture`.
-#[cfg(feature = "widgets")]
+/// Every leaf that reaches no row must be named once, by `UNREAD_COLOURS` or
+/// `UNREACHABLE`. An entry of either that names a leaf a row reads is stale,
+/// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
+#[cfg(feature = "iced_aw")]
 #[test]
-#[ignore = "M1-T7-03 dry run: prints the colour-leaf map, asserts nothing"]
-fn colour_leaf_dry_run() -> native_theme::Result<()> {
+fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
     let started = std::time::Instant::now();
     let combinations = combinations()?;
     let jsons: Vec<serde_json::Value> = combinations
@@ -4809,117 +4735,131 @@ fn colour_leaf_dry_run() -> native_theme::Result<()> {
         leaves.extend(colour_leaves(json));
     }
 
-    #[derive(Default)]
-    struct Reach {
-        native: BTreeSet<String>,
-        emitted: BTreeSet<String>,
-        output: BTreeSet<String>,
-        bases: BTreeSet<String>,
-        splices: usize,
-    }
-    let mut reach: BTreeMap<String, Reach> = leaves
-        .iter()
-        .map(|l| (l.clone(), Reach::default()))
-        .collect();
-
+    // The rows each leaf first moved, in the first base it moved one in.
+    let mut reached: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let n = combinations.len();
     for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
         let base = Reading::of(&c.theme, &c.resolved);
         let donor = (1..n)
             .map(|k| (i + 2 * k) % n)
-            .find(|&j| combinations[j].is_dark == c.is_dark)
-            .map(|j| &jsons[j]);
+            .find(|&j| combinations.get(j).is_some_and(|d| d.is_dark == c.is_dark))
+            .and_then(|j| jsons.get(j));
         let (red, green, blue) = sentinel_rgb(json);
         let sentinels = [
             format!("#{red:02x}{green:02x}{blue:02x}"),
             format!("#{red:02x}{green:02x}{blue:02x}80"),
         ];
         for leaf in &leaves {
+            if reached.contains_key(leaf) {
+                continue;
+            }
             let pointer = format!("/{}", leaf.replace('.', "/"));
             let from_donor = donor
                 .and_then(|d| d.pointer(&pointer))
                 .and_then(|v| v.as_str())
                 .map(str::to_owned);
-            let entry = reach.entry(leaf.clone()).or_default();
             for hex in from_donor.iter().chain(&sentinels) {
                 let Some(r) = spliced_colour(json, leaf, hex) else {
                     continue;
                 };
-                entry.splices += 1;
-                let t = crate::to_theme(&r, c.key);
-                let after = Reading::of(&t, &r);
-                let native = moved(&base.native, &after.native);
-                if !native.is_empty() {
-                    entry.bases.insert(c.label());
+                let rows = base.moved(&Reading::of(&c.theme, &r));
+                if !rows.is_empty() {
+                    reached.insert(leaf.clone(), rows);
+                    break;
                 }
-                entry.native.extend(native);
-                entry.emitted.extend(moved(&base.emitted, &after.emitted));
-                entry.output.extend(moved(&base.output, &after.output));
             }
         }
     }
 
-    let elapsed = started.elapsed();
-    let reached = reach.values().filter(|x| !x.native.is_empty()).count();
-    println!(
-        "colour leaves: {}, reaching a row: {reached}, unmapped: {}, run time {elapsed:.2?}",
-        reach.len(),
-        reach.len() - reached
-    );
-    println!("\n## Reached");
-    for (leaf, x) in reach.iter().filter(|(_, x)| !x.native.is_empty()) {
-        let only_emitted: Vec<&String> = x.emitted.difference(&x.native).collect();
-        let extra = if only_emitted.is_empty() {
-            String::new()
-        } else {
-            format!("  [emitted only: {}]", only_emitted.len())
-        };
-        println!(
-            "{leaf} -> {} rows, {} bases{extra}: {}",
-            x.native.len(),
-            x.bases.len(),
-            x.native.iter().cloned().collect::<Vec<_>>().join(", ")
-        );
-        for e in &only_emitted {
-            println!("    emitted only: {e}");
+    let mut failures = Vec::new();
+    let (mut by_rows, mut by_accessors, mut by_exact, mut by_prefix, mut by_unreachable) =
+        (0, 0, 0, 0, 0);
+    for leaf in &leaves {
+        let unread: Vec<&UnreadColour> = UNREAD_COLOURS
+            .iter()
+            .filter(|e| names(e.leaf, leaf))
+            .collect();
+        let unreachable: Vec<&str> = UNREACHABLE
+            .iter()
+            .map(|u| u.field)
+            .filter(|field| names(field, leaf))
+            .collect();
+        let named = unread.len() + unreachable.len();
+        match reached.get(leaf) {
+            Some(rows) => {
+                if rows
+                    .iter()
+                    .all(|row| ACCESSOR_ROWS.iter().any(|a| *row == a.accessor))
+                {
+                    by_accessors += 1;
+                } else {
+                    by_rows += 1;
+                }
+                if named > 0 {
+                    failures.push(format!(
+                        "{leaf}: reaches {} yet is named unread ({})",
+                        rows.join(", "),
+                        unread
+                            .iter()
+                            .map(|e| e.leaf)
+                            .chain(unreachable.iter().copied())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ));
+                }
+            }
+            None => match (unread.as_slice(), unreachable.as_slice()) {
+                ([entry], []) if entry.leaf == leaf.as_str() => by_exact += 1,
+                ([_], []) => by_prefix += 1,
+                ([], [_]) => by_unreachable += 1,
+                ([], []) => failures.push(format!(
+                    "{leaf}: reaches no row, and neither UNREAD_COLOURS nor \
+                     UNREACHABLE names it"
+                )),
+                _ => failures.push(format!("{leaf}: named {named} times")),
+            },
         }
     }
-    println!("\n## Unmapped");
-    let value_in = |json: &serde_json::Value, leaf: &str| {
-        json.pointer(&format!("/{}", leaf.replace('.', "/")))
-            .cloned()
-    };
-    for (leaf, x) in reach.iter().filter(|(_, x)| x.native.is_empty()) {
-        let unreachable = UNREACHABLE.iter().any(|u| {
-            leaf == u.field
-                || leaf
-                    .strip_prefix(u.field)
-                    .is_some_and(|rest| rest.starts_with('.'))
-        });
-        // The reached leaves this one equals in every base: what it carries
-        // where a row would read it today.
-        let twins: Vec<&String> = reach
-            .iter()
-            .filter(|(other, y)| {
-                !y.native.is_empty()
-                    && jsons
-                        .iter()
-                        .all(|json| value_in(json, leaf) == value_in(json, other))
-            })
-            .map(|(other, _)| other)
-            .collect();
-        println!(
-            "{leaf} ({} splices){}: emitted [{}] output [{}] equal everywhere to [{}]",
-            x.splices,
-            if unreachable { " UNREACHABLE" } else { "" },
-            x.emitted.iter().cloned().collect::<Vec<_>>().join(", "),
-            x.output.iter().cloned().collect::<Vec<_>>().join(", "),
-            twins
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+
+    for entry in UNREAD_COLOURS {
+        if !leaves.iter().any(|leaf| names(entry.leaf, leaf)) {
+            failures.push(format!(
+                "UNREAD_COLOURS names {}, which is no colour leaf and no \
+                 prefix of one",
+                entry.leaf
+            ));
+        }
+        let (cited, needs) = match entry.why {
+            Unread::NoReceiver(evidence) | Unread::Ruled(evidence) => {
+                (evidence.contains(".rs:"), "an upstream file.rs:line")
+            }
+            Unread::Inherited(evidence) => (
+                evidence.contains("inheritance-rules.toml:"),
+                "a docs/inheritance-rules.toml line",
+            ),
+            Unread::NoWidget(reason) => (
+                !reason.is_empty() && !entry.leaf.contains('.') && !leaves.contains(entry.leaf),
+                "a reason, and a widget's name rather than a leaf",
+            ),
+        };
+        if !cited {
+            failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
+        }
     }
+
+    println!(
+        "{} colour leaves: {by_rows} reach a style or palette row, {by_accessors} \
+         an accessor row only, {by_exact} named by an UNREAD_COLOURS leaf, \
+         {by_prefix} by an UNREAD_COLOURS widget, {by_unreachable} by \
+         UNREACHABLE; {:.2?}",
+        leaves.len(),
+        started.elapsed()
+    );
+    assert!(
+        failures.is_empty(),
+        "{} colour-leaf classification(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     Ok(())
 }

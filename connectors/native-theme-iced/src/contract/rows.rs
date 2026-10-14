@@ -113,6 +113,77 @@ pub(super) const ROWS: &[Row] = &[
     },
 ];
 
+/// Every colour accessor of the crate root and the native leaf it returns: the
+/// colours iced has no `Style` field for, which a consumer reads to draw with.
+pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
+    AccessorRow {
+        accessor: "crate::border_color",
+        native: |r| Some(to_color(r.defaults.border.color)),
+        get: |r| Some(crate::border_color(r)),
+    },
+    AccessorRow {
+        // iced 0.14 draws no focus ring: the consumer draws one.
+        accessor: "crate::focus_ring_color",
+        native: |r| Some(to_color(r.defaults.focus_ring_color)),
+        get: |r| Some(crate::focus_ring_color(r)),
+    },
+    AccessorRow {
+        // iced's one link colour of its own, `markdown::Style.link_color`,
+        // needs iced's `markdown` feature, which the connector does not
+        // enable; a link button takes `link.font.color`, which inherits this
+        // leaf (`docs/inheritance-rules.toml:286`). Ruling T12a C5.
+        accessor: "crate::link_color",
+        native: |r| Some(to_color(r.defaults.link_color)),
+        get: |r| Some(crate::link_color(r)),
+    },
+    AccessorRow {
+        // The disclosure arrow is the consumer's drawing: iced has no
+        // expander.
+        accessor: "crate::expander_arrow_color",
+        native: |r| {
+            Some(to_color(
+                r.expander.arrow_color.unwrap_or(r.expander.font.color),
+            ))
+        },
+        get: |r| Some(crate::expander_arrow_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::selection_background",
+        native: |r| Some(to_color(r.defaults.selection_background)),
+        get: |r| Some(crate::selection_background(r)),
+    },
+    AccessorRow {
+        // iced's palette has no info family.
+        accessor: "crate::info_color",
+        native: |r| Some(to_color(r.defaults.info_color)),
+        get: |r| Some(crate::info_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::info_text_color",
+        native: |r| Some(to_color(r.defaults.info_text_color)),
+        get: |r| Some(crate::info_text_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::warning_text_color",
+        native: |r| Some(to_color(r.defaults.warning_text_color)),
+        get: |r| Some(crate::warning_text_color(r)),
+    },
+    #[cfg(feature = "widgets")]
+    AccessorRow {
+        // The line is drawn only where the theme states its colour, a
+        // positive width and a side.
+        accessor: "crate::tab_indicator_line",
+        native: |r| {
+            let t = &r.tab;
+            let drawn = t.active_indicator_side.is_some()
+                && t.active_indicator_width
+                    .is_some_and(|w| w.is_finite() && w > 0.0);
+            t.active_indicator_color.filter(|_| drawn).map(to_color)
+        },
+        get: |r| crate::tab_indicator_strip(&r.tab).map(|(color, _, _)| color),
+    },
+];
+
 /// Every `button::Status`, as values rather than names.
 ///
 /// Each function declares its own such list, of its own widget's `Status`. A
