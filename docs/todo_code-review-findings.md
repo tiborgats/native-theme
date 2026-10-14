@@ -13,8 +13,8 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M3 | done (2026-10-12) |
 | M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 done 2026-10-13 (stop point B) |
 | M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `70776a40`) |
-| G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
-| G2 | not started (after M5's fix phase) |
+| G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
+| G2 | closed 2026-10-14 (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md; *G2* below) |
 | M6–M9 | not started |
 
 ## Baseline (M0, 2026-10-11)
@@ -9253,7 +9253,7 @@ Step 8 then: full `check_release.sh`, cross-target clippy, `cargo semver-checks`
 
 ## M9 — Showcases
 
-## G1 — GPUI Kit 0.7.3 (docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md)
+## G1 — GPUI Kit 0.7.3 (docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md)
 
 - **The showcase on GPUI Fast (2026-10-14, Task 7, spec §4.3 "A real run"; at `6874a939`).** Run
   on the maintainer's KDE Plasma Wayland session, scale 1.0, from two release builds of
@@ -9291,3 +9291,39 @@ reviewed clean). PR #3's CI run 38511081326 at `d8bc2c83`: all 36 jobs green, am
 GPUI Fast runs — "Test the gpui connector on GPUI Fast" and the clippy and strict-panic steps for
 `gpui-fast` on Linux, and "Build gpui showcase on GPUI Fast" on macos-latest and windows-latest.
 Next (D10): M5's fix phase (session native-theme-b5), then G2 (Tasks 9–15).
+
+## G2 — GPUI Kit 0.7.3's elements as theme data (docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md)
+
+**Status:** G2 closed 2026-10-14: `tooltip.show_delay_ms`, `dialog.entrance` and
+`list.header_height_px` are model values with receivers in gpui, egui and iced. Tasks 9–15,
+the commits after M5's ledger close `fce48f82` up to this close, each task reviewed by a
+fresh reviewer and its fix rounds re-checked; the rulings are in the session's progress file.
+Nothing pushed.
+- Task 9, the facts: `4742db14` (the OS probe's second run, 38478334574, as evidence),
+  `aed51531` (the three rows and the line citations that follow them), `3126db14` (review fixes).
+- Task 10, the model and presets: `3ddfe91a` (tooltip show delay), `703d44a6` (dialog entrance),
+  `973bc095` (list header height), `a440e812` (review fixes); `54f8e316`, the docs/todo.md entry
+  "Presets: material-3's platform-facts citations have drifted", for M2d. `preset-validator`:
+  24 of 24 new values sourced.
+- Task 11, gpui: `0ae7be3c`, `b95ebe2b` (review fixes: the re-apply observer installs the new
+  variant's delay after an upstream mode switch).
+- Task 12, egui: `73e8c5ca`, `4c453715`. Task 13, iced: `138c2674`. Task 14, the showcases'
+  element list and Widget Info: `b21125eb`, `974238c4`.
+- Task 15, the documents, stamps and gates: `44e1a07a` (changelog, READMEs, roadmap, todo
+  lists, the new-OS guide, the gpui coverage table's `list | 7 of 14`), `8b78bc05` (the
+  compatibility stamps), and this close (the three design documents to docs/archive/, with an
+  *As built* note at the top of the spec).
+- Gates: `./scripts/check_release.sh --commit` green before every commit (87 checks).
+  `scripts/update_compatibility.sh run` for gpui, iced and egui at `44e1a07a`, every leg
+  passed; the newest upstream it verified gpui against includes gpui-fast 0.1.8, where the
+  committed lockfile holds 0.1.7. Full `./scripts/check_release.sh` at `8b78bc05`: 115 checks
+  · 108 ✅ · 6 ⚠️ (tag v0.6.1; soft semver ×5, approved breaks only: native-theme's listed
+  breaks plus G2's three struct-field additions, native-theme-build's M4 private result fields,
+  the iced, gpui and egui accessor renames of M5 T2) · 1 ❌ expected (visual assets, the
+  maintainer's next `generate_assets_release.sh`), 32m 50s; `cargo audit` no advisories;
+  compatibility claims ✅. `cargo semver-checks` for native-theme reports, beyond the breaks
+  CHANGELOG `[Unreleased]` lists, exactly `constructible_struct_adds_field` on
+  `TooltipTheme.show_delay`, `DialogTheme.entrance` and `ListTheme.header_height`.
+- For the maintainer: screenshots change for the gpui Typography page (`Diff`) and the table
+  headers of adwaita, material-3 and the macOS presets in all three showcases' Basic pages and
+  gpui's Data page; the next `generate_assets_release.sh` refreshes them.

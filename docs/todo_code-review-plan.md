@@ -270,7 +270,7 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   OS-drawn values match `windows-2025`'s, `windows-11` covers 10 and says so.
 - **D10 — GPUI Kit 0.7.3 as milestones G1 and G2 (maintainer, 2026-10-13/14).** GPUI Kit 0.7.3
   (2026-10-12) is handled by two milestones designed in
-  `docs/todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, executed by
+  `docs/archive/todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, executed by
   subagent-driven development: G1 (compatibility, citations, `Diff`, a `gpui-fast` feature, the
   OS probe's new measurements) and G2 (three new theme values with receivers in all three
   connectors). Order: **G1 → M5's fix phase → G2 → M6, M7.** M5's review phase ran while the

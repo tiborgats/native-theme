@@ -4,6 +4,61 @@
 implemented. Reasons: [`todo_v0.7.0_gpui-kit-0.7.3-rationale.md`](todo_v0.7.0_gpui-kit-0.7.3-rationale.md)
 (L1–L10). Tasks and gates: [`todo_v0.7.0_gpui-kit-0.7.3-plan.md`](todo_v0.7.0_gpui-kit-0.7.3-plan.md).
 
+**As built (2026-10-14).** Implemented: G1 in Tasks 0–8 and an unplanned Task 5b
+(`a053afb4..d8bc2c83`, closed at `d8bc2c83`), G2 in Tasks 9–15 (from `fce48f82`, closed
+with this document's archiving). The ledger (`docs/todo_code-review-findings.md`, *G1*
+and *G2*) has the commits and gates. Where the implementation departs from the text below,
+this note holds:
+
+- G1, §4: form A (`extern crate gpui_kit as gpui;`, `CN/src/lib.rs:152`) was enough; form B
+  was not needed. The gpui-pre dev-dependency is gone entirely (`d203b023`): gpui-kit's
+  `test-support` turns on gpui-pre's.
+- G1, the lockfile: `unicode-properties` is not on core's `svg-rasterize` path. Its users are
+  gpui-pre-web and `rustybuzz`, through the usvg of gpui-pre and of gpui-component's resvg;
+  native-theme's own resvg has no text support (measured in Task 6, `cargo tree -i
+  unicode-properties --target all`).
+- G1: `TooltipDefaults` is at `GB/tooltip.rs:58-108` (the struct and its impl), not 58-107.
+- G1, §4.3: the live theme switch on GPUI Fast was not driven by hand (a Wayland session with
+  no input injector); 10 theme-switch tests of the showcase under `--features gpui-fast` are
+  the evidence. The layout dumps are byte-identical to gpui-pre's.
+- G1, Task 5b (`9ad3613e`, `2cec709c`): the first CI run (38478340750) failed two Windows tests
+  of M4's code. The watcher's `HighContrastChanged` subscription is optional (the event needs a
+  `CoreWindow`; high contrast is documented as not watched on Windows), and stock-icon loads
+  are serialised by a mutex (the cause inferred from concurrent loads, not proven). The next
+  three CI runs were green.
+- G1: `Diff`'s add-annotation button and its conflict sides, and the `DataTable`'s
+  right-clicked cell outline, are `.instance` notes (not painted in this instance), not claims.
+- G2, §6: the probe run 38478334574 (`docs/evidence/os-probe/2026-10-14-run-38478334574/`)
+  landed before Task 10: `NSTableHeaderView` 28.0 on macOS 14, 15 and 26 in every style and
+  appearance, and `SPI_GETMOUSEHOVERTIME` 400 on Windows, so `windows-11`'s show delay is 800.
+  Task 15's late-values item was moot.
+- G2, §8.2 Material: material-components-android 1.14.0 states an M3 dialog entrance (alpha
+  0 → 1 with scale 0.8 → 1, 400 ms), so `material-3`'s entrance is `scale_fade`; Compose's
+  `AlertDialog.kt` states none. `DialogEntranceStyle` is `ScaleFade` and `FadeRise` only: §8.1's
+  condition for `SlideDown` is unmet, and gpui's `dialog_entrance` has no `SlideDown` arm.
+- G2, §8.2 KDE: Kirigami's `Dialog.qml` is at `src/dialogs/`, not `src/controls/`; its lines
+  303 and 306-311 are as cited.
+- G2, the facts: the macOS header-height cells are tagged **(API)**, not **(measured)**, the
+  facts file's tag for a probe's API reading. The Windows show-delay cell gives the reshow
+  factor as the code computes it, 1× (`static_cast<INT64>(isReshow ? 1.5 : 2)` truncates the
+  comment's 1.5×).
+- G2, egui: the mapping rows are keyed by the resolved field names (`tooltip.show_delay`,
+  `dialog.entrance`, `list.header_height`), not `tooltip.show_delay_ms`. The dialog-entrance
+  row says egui has no scaling or rising entrance (its windows do fade, `area.rs:347-354`),
+  not that it has no dialog animation.
+- G2, gpui: besides `apply`, the re-apply observer installs the new variant's tooltip delay
+  after upstream's `Theme::change`, so a theme whose variants state different delays follows a
+  mode switch. The connector tells its own `TooltipDefaults` write from the application's by
+  value.
+- G2, the showcases: the header height also reaches egui's Theme Map table and iced's Layout
+  table; Widget Info prints an `_ms` value with " ms".
+- G2, connector parity: gpui's `list_header_height` and `dialog_entrance` are in
+  `geometry.rs`, which the parity script does not scan; gpui's `list_header_height` carries an
+  `absent` exception.
+- G2, found and recorded, not fixed: `material-3`'s platform-facts citations have drifted
+  (about 60 lines per variant), the `docs/todo.md` entry "Presets: material-3's
+  platform-facts citations have drifted", for M2d.
+
 Abbreviations: `GC` / `GB` = gpui-component / gpui-base 0.7.3 `src/`; `NT` = `native-theme/`;
 `CN` = `connectors/native-theme-gpui/`; `SC` = `CN/examples/showcase-gpui/`; `EG` =
 `connectors/native-theme-egui/`; `IC` = `connectors/native-theme-iced/`. Our line numbers are
