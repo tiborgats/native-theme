@@ -49,9 +49,9 @@ jobs:
       - name: Clippy (gpui connector, gpui-fast)
         if: matrix.package == 'native-theme-gpui'
         run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
-      - name: Clippy (iced connector, iced_aw)
+      - name: Clippy (iced connector, iced_aw, watch, native)
         if: matrix.package == 'native-theme-iced'
-        run: cargo clippy -p native-theme-iced --all-targets --features iced_aw
+        run: cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
       - name: Clippy (egui connector, all features)
         if: matrix.package == 'native-theme-egui'
         run: cargo clippy -p native-theme-egui --all-targets --all-features
@@ -86,7 +86,7 @@ jobs:
         run: bash scripts/check_strict_panic.sh -p native-theme-build --lib
       - name: Strict panic lints (iced connector)
         if: matrix.package == 'native-theme-iced'
-        run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib
+        run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
       # Soft, as in scripts/check_release.sh: the step's failure shows on the
       # run without failing the job.
       # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
@@ -213,7 +213,7 @@ jobs:
         if: matrix.package == 'native-theme-iced'
         run: |
           cargo test -p native-theme-iced --no-default-features
-          cargo test -p native-theme-iced --features iced_aw
+          cargo test -p native-theme-iced --features iced_aw,watch,native
       # The connector's other two supported configurations (spec §11), gated by
       # scripts/check_release.sh as well so a release cannot pass on one CI never ran.
       - name: Test the egui connector's other configurations

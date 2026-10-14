@@ -52,7 +52,7 @@ jobs:
           cargo clippy -p native-theme-build --all-targets
           cargo clippy -p native-theme --all-targets
           cargo clippy -p native-theme-iced --all-targets
-          cargo clippy -p native-theme-iced --all-targets --features iced_aw
+          cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
           cargo clippy -p native-theme-egui --all-targets
           cargo clippy -p native-theme-egui --all-targets --all-features
           cargo clippy -p native-theme-egui-widgets --all-targets
@@ -78,7 +78,7 @@ jobs:
         run: |
           cargo test -p native-theme-iced
           cargo test -p native-theme-iced --no-default-features
-          cargo test -p native-theme-iced --features iced_aw
+          cargo test -p native-theme-iced --features iced_aw,watch,native
 
       - name: Test native-theme-gpui
         run: |

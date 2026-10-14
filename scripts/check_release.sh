@@ -606,8 +606,10 @@ run_check "strict-panic (native-theme-derive)" \
     bash scripts/check_strict_panic.sh -p native-theme-derive --lib
 run_check "strict-panic (native-theme-build)" \
     bash scripts/check_strict_panic.sh -p native-theme-build --lib
-run_check "strict-panic (native-theme-iced)" \
-    bash scripts/check_strict_panic.sh -p native-theme-iced --lib
+# With the optional features on top of the defaults, so `styles::aw` and
+# `watch.rs` are linted too; nothing in the library is compiled only without one.
+run_check "strict-panic (native-theme-iced, iced_aw, watch, native)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
 run_check_soft "strict-panic (native-theme-gpui)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
 run_check_soft "strict-panic (native-theme-gpui, gpui-fast)" \
@@ -662,18 +664,23 @@ run_tests "test (native-theme, system-fonts: the fonts module)" \
 #
 # The per-crate loops above run the connector with its default features only.
 # Its other two supported configurations are gated here: `--no-default-features`
-# (no icon or system-font support) and `--features iced_aw`, the optional widget set the
-# showcase's `iced_aw` tab renders. Same hard class as the connector's default
-# test and clippy checks. .github/workflows/ci.yml runs the same two commands,
-# so no configuration reaches a release that CI never saw.
+# (no icon or system-font support) and `--features iced_aw,watch,native`: the
+# optional widget set the showcase's `iced_aw` tab renders, `theme_changes()`
+# with its tests and the showcase's `watch` code, and the OS readers. Each is
+# additive, so the one leg covers `iced_aw` alone too. The `watch` tests start
+# no OS watcher, and on Linux the tests read the OS theme with or without
+# `native` (the dev-dependencies turn on native-theme's `linux`), skipping
+# where the read fails. Same hard class as the connector's default test and
+# clippy checks. .github/workflows/ci.yml runs the same two commands, so no
+# configuration reaches a release that CI never saw.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \
     cargo test -p native-theme-iced --no-default-features
-run_tests "test (native-theme-iced, iced_aw)" \
-    cargo test -p native-theme-iced --features iced_aw
-run_check "clippy (native-theme-iced, iced_aw)" \
-    cargo clippy -p native-theme-iced --all-targets --features iced_aw -- -D warnings
+run_tests "test (native-theme-iced, iced_aw, watch, native)" \
+    cargo test -p native-theme-iced --features iced_aw,watch,native
+run_check "clippy (native-theme-iced, iced_aw, watch, native)" \
+    cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: egui connector configurations
