@@ -236,8 +236,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        507,
-        "503 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        508,
+        "504 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -470,7 +470,7 @@ fn verdict_totals_match_the_specification() {
         ("foundation", [18, 1, 36, 11]),
         ("surfaces", [8, 55, 31, 16]),
         ("buttons", [11, 46, 31, 18]),
-        ("inputs", [4, 35, 35, 12]),
+        ("inputs", [4, 35, 35, 13]),
         ("indicators", [6, 17, 8, 9]),
         ("chrome", [0, 54, 26, 19]),
     ];
@@ -492,8 +492,8 @@ fn verdict_totals_match_the_specification() {
     );
     assert_eq!(
         tags.get("receiver-pending").copied().unwrap_or_default(),
-        1,
-        "one row waits for its receiver: tooltip.show_delay"
+        2,
+        "two rows wait for their receivers: tooltip.show_delay, list.header_height"
     );
 }
 

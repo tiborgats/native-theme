@@ -240,6 +240,8 @@ alternate_row_background = "#f4f5f5"
 grid_color = "#e6e6e6"
 # platform-facts.md:1390 (§2.15): NSTableView rowHeight 24 (probe :498)
 row_height_px = 24.0
+# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 26 (probe 26 :537)
+header_height_px = 28.0
 
 [light.list.header_font]
 # platform-facts.md:1387 (§2.15): headerTextColor, probe :318
@@ -609,6 +611,8 @@ alternate_row_background = "#ffffff0c"
 grid_color = "#1a1a1a"
 # platform-facts.md:1390 (§2.15): NSTableView rowHeight 24 (probe :498)
 row_height_px = 24.0
+# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 26 (probe 26 :537)
+header_height_px = 28.0
 
 [dark.list.header_font]
 # platform-facts.md:1387 (§2.15): headerTextColor, probe :392

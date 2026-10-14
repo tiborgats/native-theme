@@ -519,6 +519,25 @@ fn a_negative_bar_height_is_a_validation_error() {
 }
 
 #[test]
+fn a_header_height_of_zero_or_less_is_a_validation_error() {
+    for height in [0.0, -1.0] {
+        let mut v = Theme::preset("adwaita")
+            .unwrap()
+            .into_variant(ColorMode::Light)
+            .unwrap();
+        v.list.header_height = Some(height);
+        assert!(
+            matches!(
+                resolve_mode(v),
+                Err(Error::ResolutionInvalid { ref errors })
+                    if errors.iter().any(|e| e.path == "list.header_height_px")
+            ),
+            "a header height of {height} must be a range violation"
+        );
+    }
+}
+
+#[test]
 fn a_show_delay_past_u16_fails_to_load() {
     let max = Theme::from_toml("[light.tooltip]\nshow_delay_ms = 65535\n").unwrap();
     assert_eq!(max.light.and_then(|v| v.tooltip.show_delay), Some(u16::MAX));

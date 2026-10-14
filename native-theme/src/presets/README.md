@@ -22,8 +22,8 @@ verified on (macOS 27 under `macos-tahoe` is `PresetOlder`), and
 running platform instead, under the OS's live colours, fonts and
 accessibility.
 
-Gated sizes (padding sides, menu and list row heights, toolbar `bar_height`
-and `item_gap`, combobox `arrow_area_width`): a native preset states one only
+Gated sizes (padding sides, menu and list row heights, `list.header_height`,
+toolbar `bar_height` and `item_gap`, combobox `arrow_area_width`): a native preset states one only
 where `docs/platform-facts.md` gives it for its platform: KDE, GNOME, macOS,
 Windows or Material, whose column counts a material-web or Compose
 implementation constant cited at a pinned line as documented, as the KDE and

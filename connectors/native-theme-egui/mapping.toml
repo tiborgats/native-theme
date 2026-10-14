@@ -1910,6 +1910,11 @@ sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "l
 verdict = "scoped"
 sinks   = [{ path = "spacing.interact_size.y", scope = "list" }]
 
+["list.header_height"]
+verdict  = "unmappable"
+sub_tag  = "receiver-pending"
+upstream = "native-theme-egui: no receiver yet for the height egui_extras' TableBuilder::header takes (egui_extras table.rs:452)"
+
 ["list.hover_background"]
 verdict = "scoped"
 sinks   = [

@@ -248,6 +248,8 @@ padding_vertical_px = 0.0
 [light.list]
 alternate_row_background = "#f5f5f5"
 # row_height not stated: platform-facts.md:1390 (§2.15), plain list context, no min-height
+# platform-facts.md:1391 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+header_height_px = 30.0
 hover_background = "#ebebed"
 hover_text_color = "#2e3436"
 # no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity
@@ -628,6 +630,8 @@ padding_vertical_px = 0.0
 [dark.list]
 alternate_row_background = "#2a2a2e"
 # row_height not stated: platform-facts.md:1390 (§2.15), plain list context, no min-height
+# platform-facts.md:1391 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+header_height_px = 30.0
 hover_background = "#303034"
 hover_text_color = "#ffffff"
 # no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity

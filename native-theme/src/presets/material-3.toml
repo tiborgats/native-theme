@@ -320,6 +320,8 @@ hover_text_color = "#1d1b20"
 disabled_text_color = "#1d1b2061"
 # platform-facts.md:1387 (§2.15): row-item-outline-color = outline-variant, neutral-variant80 (_md-comp-data-table.scss:84; _md-sys-color.scss:109; _md-ref-palette.scss:40)
 grid_color = "#cac4d0"
+# platform-facts.md:1391 (§2.15): md.comp.data-table.header.container.height 56 (_md-comp-data-table.scss:50)
+header_height_px = 56.0
 
 [light.list.header_font]
 # platform-facts.md:1384-1385 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)
@@ -823,6 +825,8 @@ hover_text_color = "#e6e0e9"
 disabled_text_color = "#e6e0e961"
 # platform-facts.md:1387 (§2.15): row-item-outline-color = outline-variant, neutral-variant30 (_md-comp-data-table.scss:84; _md-sys-color.scss:50; _md-ref-palette.scss:35)
 grid_color = "#49454f"
+# platform-facts.md:1391 (§2.15): md.comp.data-table.header.container.height 56 (_md-comp-data-table.scss:50)
+header_height_px = 56.0
 
 [dark.list.header_font]
 # platform-facts.md:1384-1385 (§2.15): header-headline = title-small, weight 500; header-headline-color = on-surface-variant (_md-comp-data-table.scss:51, :61)

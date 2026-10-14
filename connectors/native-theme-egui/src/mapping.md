@@ -11,12 +11,12 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 31 | 16 |
 | Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
-| Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
+| Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 35 | 13 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **507** | **47** | **208** | **167** | **85** |
+| **TOTAL** | **508** | **47** | **208** | **167** | **86** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 1, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
+UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 2, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
 ## Rows
 
@@ -388,6 +388,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 1, `source-side
 | `list.header_font.size` | DERIVED | → T18(e) |  |
 | `list.header_font.style` | DERIVED | → T18(a) | probe `"italic"` |
 | `list.header_font.weight` | DERIVED | → T18(a) | probe `700` |
+| `list.header_height` | UNMAPPABLE |  | `receiver-pending`: native-theme-egui: no receiver yet for the height egui_extras' TableBuilder::header takes (egui_extras table.rs:452) |
 | `list.hover_background` | SCOPED | «list» `visuals.widgets.hovered.bg_fill`; «list» `visuals.widgets.active.bg_fill` |  |
 | `list.hover_text_color` | DERIVED | → T18(a) |  |
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |

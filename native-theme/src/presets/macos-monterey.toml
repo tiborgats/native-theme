@@ -262,6 +262,8 @@ alternate_row_background = "#f4f5f5"
 # platform-facts.md:1389: gridColor, probe :320
 grid_color = "#e6e6e6"
 row_height_px = 24.0
+# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
+header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
 # no source: platform-facts.md:1394 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the accent at alpha 0x18
@@ -718,6 +720,8 @@ alternate_row_background = "#ffffff0c"
 # platform-facts.md:1389: gridColor, probe :394
 grid_color = "#1a1a1a"
 row_height_px = 24.0
+# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
+header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
 # no source: platform-facts.md:1394 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the former dark accent #0a84ff at alpha 0x18

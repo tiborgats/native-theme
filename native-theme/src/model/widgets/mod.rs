@@ -612,6 +612,12 @@ pub struct ListTheme {
     #[serde(rename = "row_height_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub row_height: Option<f32>,
+    /// Column header row height in logical pixels. `None` where the platform
+    /// states none: KDE's header sizes to its content, and WinUI has no
+    /// column header (docs/platform-facts.md §2.15).
+    #[serde(rename = "header_height_px")]
+    #[theme(category = "soft_option", check = "positive")]
+    pub header_height: Option<f32>,
     /// Hovered row background color.
     #[theme(inherit_from = "defaults.background_color")]
     pub hover_background: Option<Rgba>,

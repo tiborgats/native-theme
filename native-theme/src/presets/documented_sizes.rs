@@ -3,10 +3,10 @@
 //!
 //! One row per (preset, widget) gives every padding side, and for the
 //! toolbar its `bar_height` and `item_gap`, for the tab bar its `item_gap`,
-//! for the menu and the list their `row_height`, for the expander its
-//! `arrow_gap` and `content_indent`, and for the combobox its
-//! `arrow_area_width` where the
-//! platform gives one number, as `Some(v)` where `docs/platform-facts.md`
+//! for the menu and the list their `row_height`, for the list its
+//! `header_height`, for the expander its `arrow_gap` and `content_indent`,
+//! and for the combobox its `arrow_area_width` where the platform gives one
+//! number, as `Some(v)` where `docs/platform-facts.md`
 //! documents a value for that platform and `None` where it does not, or where
 //! a ruling leaves it unstated. Each row cites the platform-facts lines it
 //! reads. Rows are keyed by preset, not by platform: a cell that tags its
@@ -198,7 +198,7 @@ const ROWS: &[Row] = &[
     },
     row(KdeBreeze, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1373, 1374], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
     row(KdeBreeze, "list", axes(1.0, 2.0), &[1392, 1393], "2; 1")
-        .with(&[("row_height", None, 1390)]),
+        .with(&[("row_height", None, 1390), ("header_height", None, 1391)]),
     row(KdeBreeze, "popover", NONE, &[1414, 1415], "(none)"),
     row(KdeBreeze, "dialog", all(10.0), &[1493, 1494], "Layout_TopLevelMarginWidth = 10"),
     row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1555, 1560], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
@@ -230,7 +230,7 @@ const ROWS: &[Row] = &[
     },
     row(Adwaita, "status_bar", axes(6.0, 10.0), &[1373, 1374], "statusbar { padding: 6px 10px }"),
     row(Adwaita, "list", all(2.0), &[1392, 1393], "plain list context: 2")
-        .with(&[("row_height", None, 1390)]),
+        .with(&[("row_height", None, 1390), ("header_height", Some(30.0), 1391)]),
     row(Adwaita, "popover", all(8.0), &[1414, 1415], "popover > contents { padding: 8px }"),
     row(Adwaita, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1493, 1494], "24; 32 top / 24 bottom"),
     row(Adwaita, "combo_box", axes(5.0, 10.0), &[1555, 1560], "base button rule, the dropdown's button has a box child: 10; 5")
@@ -262,7 +262,7 @@ const ROWS: &[Row] = &[
     },
     row(MacosMonterey, "status_bar", NONE, &[1373, 1374], "(none): no window status bar"),
     row(MacosMonterey, "list", all(4.0), &[1392, 1393], "4; 4 (measured)")
-        .with(&[("row_height", Some(24.0), 1390)]),
+        .with(&[("row_height", Some(24.0), 1390), ("header_height", Some(28.0), 1391)]),
     row(MacosMonterey, "popover", NONE, &[1414, 1415], "(none)"),
     row(MacosMonterey, "dialog", all(20.0), &[1493, 1494], "~20 (measured)"),
     row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1555, 1560], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
@@ -294,7 +294,7 @@ const ROWS: &[Row] = &[
     },
     row(MacosTahoe, "status_bar", NONE, &[1373, 1374], "(none): no window status bar"),
     row(MacosTahoe, "list", NONE, &[1392, 1393], "macOS 26 ❓")
-        .with(&[("row_height", Some(24.0), 1390)]),
+        .with(&[("row_height", Some(24.0), 1390), ("header_height", Some(28.0), 1391)]),
     row(MacosTahoe, "popover", NONE, &[1414, 1415], "(none)"),
     row(MacosTahoe, "dialog", NONE, &[1493, 1494], "macOS 26 ❓"),
     row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1555, 1560], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
@@ -326,7 +326,7 @@ const ROWS: &[Row] = &[
     },
     row(Windows11, "status_bar", NONE, &[1373, 1374], "(none): not specified"),
     row(Windows11, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1392, 1393], "Padding=16,0,12,0")
-        .with(&[("row_height", Some(40.0), 1390)]),
+        .with(&[("row_height", Some(40.0), 1390), ("header_height", None, 1391)]),
     row(Windows11, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1414, 1415], "FlyoutContentPadding=16,15,16,17"),
     row(Windows11, "dialog", all(24.0), &[1493, 1494], "ContentDialogPadding=24"),
     row(Windows11, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1555, 1560], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
@@ -358,7 +358,7 @@ const ROWS: &[Row] = &[
     },
     row(Material3, "status_bar", NONE, &[1373, 1374], "(none): M3 has no status bar"),
     row(Material3, "list", [None, Some(16.0), None, Some(16.0)], &[1392, 1393], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
-        .with(&[("row_height", None, 1390)]),
+        .with(&[("row_height", None, 1390), ("header_height", Some(56.0), 1391)]),
     row(Material3, "popover", axes(8.0, 0.0), &[1414, 1415], "the menu container pads 8 top and bottom, 0 at the sides"),
     row(Material3, "dialog", all(24.0), &[1493, 1494], "material-web dialog 24; 24 top / 24 bottom"),
     row(Material3, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1555, 1560], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
@@ -447,7 +447,7 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
 /// four padding sides, and the widget's further fields (`bar_height` and
 /// `item_gap` for the toolbar, `item_gap` for the tab bar, `row_height` for
-/// the menu and the list, `arrow_gap` and `content_indent` for the expander,
+/// the menu and the list, `header_height` for the list, `arrow_gap` and `content_indent` for the expander,
 /// `arrow_area_width` for the combobox).
 fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
@@ -491,7 +491,10 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
             sizes.push(("content_indent", v.expander.content_indent));
         }
         "menu" => sizes.push(("row_height", v.menu.row_height)),
-        "list" => sizes.push(("row_height", v.list.row_height)),
+        "list" => {
+            sizes.push(("row_height", v.list.row_height));
+            sizes.push(("header_height", v.list.header_height));
+        }
         "combo_box" => sizes.push(("arrow_area_width", v.combo_box.arrow_area_width)),
         _ => {}
     }
@@ -508,6 +511,7 @@ fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Optio
         ("expander", "content_indent") => Some(theme.expander.content_indent),
         ("menu", "row_height") => Some(theme.menu.row_height),
         ("list", "row_height") => Some(theme.list.row_height),
+        ("list", "header_height") => Some(theme.list.header_height),
         ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
         _ => None,
     }
@@ -717,8 +721,8 @@ fn every_bundled_preset_is_native_or_unsourced() {
 }
 
 /// A preset platform-facts does not cover cites no source for a size, so it
-/// states no padding side, `row_height`, `bar_height`, `item_gap` or
-/// `arrow_area_width`, and the toolkit's own sizes stand.
+/// states no padding side, `row_height`, `header_height`, `bar_height`,
+/// `item_gap` or `arrow_area_width`, and the toolkit's own sizes stand.
 #[test]
 fn unsourced_presets_state_no_gated_size() {
     let mut failures = Vec::new();
