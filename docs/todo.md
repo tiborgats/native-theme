@@ -2738,6 +2738,7 @@ the gap — closing it is a change, and each wants its own decision.
       iced reader of the same fields, and a toolbar row in the iced showcase
       to show it. Found in the final review of the v0.5.9 showcase-app work
       (2026-09-23).
+      Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
 
 - [ ] [1.0] **Follow-up plan: the other sizing fields a platform leaves
       unstated.** The v0.5.9 unstated-sizes plan
@@ -3110,6 +3111,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### iced: dialog is unmapped
 - [ ] [v0.7.0] The iced connector maps no `DialogTheme` field, and its contract lists none as unreachable: iced 0.14 has no dialog widget. `iced_aw`'s `Card` could carry the maxima, `Card::max_height` and `Card::max_width` taking an `f32` (`iced_aw-0.14.1/src/widget/card.rs:144`, `:151`); the minima, the button gap and order, the fonts and the border would still have no receiver of their own. Decide whether a `Card` is the dialog's receiver.
+  Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
 
 ### GNOME reader: title and heading sizes ignore the user's font
 - [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:742-751`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
