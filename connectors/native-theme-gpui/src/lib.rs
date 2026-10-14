@@ -88,6 +88,14 @@
 //! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
+//! **Accessors.** The free functions of the crate root read what an application
+//! needs beside the theme; one that returns one `ResolvedTheme` leaf is named
+//! after the leaf's path, without the leading `defaults.` and a unit suffix:
+//! `defaults.border.corner_radius` is `border_corner_radius`,
+//! `scrollbar.groove_width` is `scrollbar_groove_width`, the same name in the
+//! iced, gpui and egui connectors (`scripts/check_connector_parity.py` checks
+//! it).
+//!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
 //! reach the widgets through the [`geometry`] module: pure builders returning a
 //! `StyleRefinement` that the application applies with

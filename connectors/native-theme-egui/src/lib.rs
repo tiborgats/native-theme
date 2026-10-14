@@ -42,6 +42,14 @@
 //! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries are the free
 //! accessors of this crate root; fonts are [`fonts`]' and icons [`icons`]'.
 //!
+//! An accessor that returns one `ResolvedTheme` leaf, converted to egui's type
+//! or scaled by the text-scaling factor, is named after the leaf's path,
+//! without the leading `defaults.` and a unit suffix:
+//! `defaults.border.corner_radius` is `border_corner_radius`,
+//! `scrollbar.groove_width` is `scrollbar_groove_width`, the same name in the
+//! iced, gpui and egui connectors (`scripts/check_connector_parity.py` checks
+//! it).
+//!
 //! # What each flag does
 //!
 //! The four [`AccessibilityPreferences`] flags reach the atlas through

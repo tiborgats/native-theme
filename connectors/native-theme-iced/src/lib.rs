@@ -196,6 +196,13 @@
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
+//! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
+//! scaled by the text-scaling factor, is named after the leaf's path, without
+//! the leading `defaults.` and a unit suffix: `defaults.border.corner_radius`
+//! is `border_corner_radius`, `scrollbar.groove_width` is
+//! `scrollbar_groove_width`, the same name in the iced, gpui and egui
+//! connectors (`scripts/check_connector_parity.py` checks it).
+//!
 //! Per-widget geometry that is not a `Style` field (e.g. an indicator's size,
 //! a track's height, a label gap) is not mapped, because iced takes it through
 //! inline widget configuration rather than through the theme. Read it from the

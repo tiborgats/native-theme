@@ -355,6 +355,31 @@ is populated.
 python3 scripts/check_widget_coverage.py
 ```
 
+## check_connector_parity.py
+
+Checks that the iced, gpui and egui connectors name their accessors after the
+model's fields. Lists each connector's crate-root `pub fn`s and the
+`ResolvedTheme` leaves each reads (the leaf and group types come from the core
+crate's model sources), and requires every one-field accessor to be named
+after its leaf's path, without the leading `defaults.` and a unit suffix
+(`defaults.border.corner_radius` is `border_corner_radius`), and to be present
+in every connector, unless `scripts/connector_parity_exceptions.toml` lists it
+with its reason. A function it cannot classify needs an exception too, and it
+prints how many functions it put in each class. Exits 0 when clean, 1 on a
+violation or a stale exception, 2 on an input it cannot read (a field the
+model lacks, a malformed exception file). `--self-test` runs its built-in
+scenarios, a planted violation of each rule among them; `--root DIR` reads a
+scratch copy of the tree instead, to try a change; `-v` lists every function
+with its class. `scripts/check_release.sh` (in the `--commit` subset too) runs
+the check and the self-test.
+
+Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
+
+```sh
+python3 scripts/check_connector_parity.py
+python3 scripts/check_connector_parity.py --self-test
+```
+
 ## check_showcase_parity.py
 
 Compares the gpui, iced and egui showcases element by element, for the

@@ -736,6 +736,13 @@ done
 # floor at Python 3.11: a missing or older interpreter fails the check rather
 # than skipping it, since a gate nobody runs is not a gate. CI and the nightly
 # dependency canary run the same script.
+#
+# scripts/check_connector_parity.py, under the same floor, reads the three
+# connectors' crate-root functions and fails on an accessor named unlike the
+# `ResolvedTheme` leaf it reads, or present in one connector and absent from
+# a sibling, unless scripts/connector_parity_exceptions.toml lists it with its
+# reason, or on a stale exception. Its self-test plants each violation in a
+# synthetic tree.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
@@ -749,6 +756,10 @@ if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)';
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
     python3 scripts/check_widget_coverage.py
+run_check "connector parity: accessor names (iced · gpui · egui)" \
+    python3 scripts/check_connector_parity.py
+run_check "connector parity: self-test" \
+    python3 scripts/check_connector_parity.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: showcase parity (static modes)
