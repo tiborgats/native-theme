@@ -397,11 +397,10 @@ fn check_radius_rows<S: Copy + std::fmt::Debug>(
 /// border row, its contrast pair and its field enumerator.
 ///
 /// `styles::button_primary`, `button_danger`, `button_success` and
-/// `button_warning` are the same function four times over -- they differ only
-/// in the idle pair they paint and in which of iced's own classes fills their
-/// hovered and pressed states -- so their contract is written once here and
-/// instantiated four times. `$fill` and `$label` are accessors of the idle
-/// pair, `fn(&ResolvedTheme) -> Rgba`.
+/// `button_warning` are the same function four times over at rest and
+/// disabled -- they differ only in the idle pair they paint -- so their
+/// contract is written once here and instantiated four times. `$fill` and
+/// `$label` are accessors of the idle pair, `fn(&ResolvedTheme) -> Rgba`.
 macro_rules! class_button_contract {
     (
         $rows:ident, $borders:ident, $pairs:ident, $fields:ident,
@@ -431,10 +430,10 @@ macro_rules! class_button_contract {
             get: |t, r, s| $style(r)(t, s).border,
         }];
 
-        /// Only `CLASS_BUTTON_NATIVE_STATUSES`: in the other two the function
-        /// decides neither the fill nor the label -- both are iced's own class
-        /// -- so there is no native pair to compare against and section 7's
-        /// rule has nothing to say.
+        /// Only `CLASS_BUTTON_NATIVE_STATUSES`: in the other two the native
+        /// fields state neither the fill nor the label -- both are iced's
+        /// derivation -- so there is no native pair to compare against and
+        /// section 7's rule has nothing to say.
         #[cfg(feature = "widgets")]
         const $pairs: &[StylePair<button::Status>] = &[StylePair {
             what: $what,
@@ -2477,11 +2476,13 @@ fn every_status_list_names_each_status_once() {
 #[cfg(feature = "widgets")]
 #[test]
 fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_theme::Result<()> {
-    // The model states an accent or a status color and its label and no
-    // variant of either for a hovered or a pressed button, so those two states
-    // are iced's own class, read at run time (spec section 3.3). That is a
-    // claim about the emitted value, so it is asserted rather than left to the
-    // rows, which cover only `CLASS_BUTTON_NATIVE_STATUSES`.
+    // The model states a status color and its label and no variant of
+    // either for a hovered or a pressed button, so those two states are
+    // iced's own class, read at run time (spec section 3.3). That is a claim
+    // about the emitted value, so it is asserted rather than left to the
+    // rows, which cover only `CLASS_BUTTON_NATIVE_STATUSES`. The primary
+    // button is iced's derivation from its own fill instead, asserted by
+    // `a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill`.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
@@ -2489,15 +2490,10 @@ fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_the
     for c in &combinations {
         for (what, ours, theirs) in [
             (
-                "styles::button_primary",
-                &styles::button_primary(&c.resolved)
-                    as &dyn Fn(&Theme, button::Status) -> button::Style,
-                button::primary as fn(&Theme, button::Status) -> button::Style,
-            ),
-            (
                 "styles::button_danger",
-                &styles::button_danger(&c.resolved),
-                button::danger,
+                &styles::button_danger(&c.resolved)
+                    as &dyn Fn(&Theme, button::Status) -> button::Style,
+                button::danger as fn(&Theme, button::Status) -> button::Style,
             ),
             (
                 "styles::button_success",
@@ -2762,50 +2758,111 @@ fn a_dragged_slider_handle_takes_its_fill_from_iced() -> native_theme::Result<()
 
 #[cfg(feature = "widgets")]
 #[test]
-fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
-    // `styles::button_primary` paints `button.primary_background` at rest and
-    // hands its hovered and pressed states to `button::primary`, which
-    // strengthens `palette.primary` -- that is, `defaults.accent_color`. The
-    // two are the same color in every bundled preset, which is what makes the
-    // handover sound: iced's derivation starts from the fill the function
-    // itself painted. This pins that premise, because nothing else would
-    // notice if a preset broke it.
+fn a_primary_button_that_is_not_the_accent_hovers_from_its_own_fill() -> native_theme::Result<()> {
+    // A live Windows theme states `AccentFillColorDefault` as the primary
+    // fill and the system accent as `defaults.accent_color`, so the two differ
+    // there. The hovered and pressed fills are iced's derivation from the
+    // primary's own fill, not from the palette slot the accent fills.
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    resolved.button.primary_background = resolved.defaults.danger_color;
+    assert_ne!(
+        resolved.button.primary_background, resolved.defaults.accent_color,
+        "the primary fill must differ from the accent, or this proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "windows-11");
+    let style = styles::button_primary(&resolved);
+    let pal = theme.palette();
+    let primary = Primary::generate(
+        to_color(resolved.button.primary_background),
+        pal.background,
+        pal.text,
+    );
+
+    for (status, fill) in [
+        (button::Status::Hovered, primary.strong.color),
+        (button::Status::Pressed, primary.base.color),
+    ] {
+        let emitted = style(&theme, status);
+        assert_eq!(
+            emitted.background,
+            Some(Background::Color(fill)),
+            "{status:?}: the fill must be iced's derivation from \
+             button.primary_background"
+        );
+        assert_eq!(
+            emitted.text_color,
+            to_color(resolved.button.primary_text_color),
+            "{status:?}: the label must be button.primary_text_color"
+        );
+    }
+    assert_ne!(
+        style(&theme, button::Status::Hovered).background,
+        button::primary(&theme, button::Status::Hovered).background,
+        "the hovered fill must not be iced's strengthened accent"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill()
+-> native_theme::Result<()> {
+    // The model states no hovered and no pressed primary fill, so those two
+    // states are iced's derivation (spec section 3.3) -- applied to
+    // `button.primary_background`, not to `palette.primary`, which carries
+    // `defaults.accent_color`: `Primary::generate` of the primary fill, painted
+    // as `button::primary` paints its pair (`strong` hovered, `base` pressed,
+    // the pair's label in both). The rows cover only
+    // `CLASS_BUTTON_NATIVE_STATUSES`, so the claim is asserted here.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
 
     for c in &combinations {
         let r = &c.resolved;
-        for (what, ours, accent) in [
-            (
-                "button.primary_background vs defaults.accent_color",
-                r.button.primary_background,
-                r.defaults.accent_color,
-            ),
-            (
-                "button.primary_text_color vs defaults.accent_text_color",
-                r.button.primary_text_color,
-                r.defaults.accent_text_color,
-            ),
+        let pal = c.theme.palette();
+        let primary = Primary::generate(
+            to_color(r.button.primary_background),
+            pal.background,
+            pal.text,
+        );
+        let label = to_color(r.button.primary_text_color);
+        let style = styles::button_primary(r);
+        for (status, fill) in [
+            (button::Status::Hovered, primary.strong.color),
+            (button::Status::Pressed, primary.base.color),
         ] {
+            let emitted = style(&c.theme, status);
             checks += 1;
-            if ours != accent {
+            if emitted.background != Some(Background::Color(fill)) {
                 failures.push(format!(
-                    "{}: {what} -- {} and {}, so a hovered primary button would \
-                     belong to a different color than its idle fill: iced \
-                     strengthens the palette slot, which carries the accent",
+                    "{}: styles::button_primary.background ({status:?}) is {:?}, \
+                     iced's derivation from button.primary_background gives {}",
                     c.label(),
-                    show(to_color(ours)),
-                    show(to_color(accent))
+                    emitted.background,
+                    show(fill)
+                ));
+            }
+            checks += 1;
+            if emitted.text_color != label {
+                failures.push(format!(
+                    "{}: styles::button_primary.text_color ({status:?}) is {}, \
+                     button.primary_text_color is {}",
+                    c.label(),
+                    show(emitted.text_color),
+                    show(label)
                 ));
             }
         }
     }
 
-    println!("primary pair vs accent pair: {checks} field checks");
+    println!("primary button vs iced's derivation from its own fill: {checks} field checks");
     assert!(
         failures.is_empty(),
-        "{} of {checks} primary/accent pairs differ:\n{}",
+        "{} of {checks} primary-button states differ from iced's derivation \
+         from button.primary_background:\n{}",
         failures.len(),
         failures.join("\n")
     );

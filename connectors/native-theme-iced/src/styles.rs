@@ -29,8 +29,8 @@
 //! `toggler`, `pick_list`, `menu`, `slider`, `scrollable` and `rule` --
 //! assume that theme is the one `to_theme(resolved)` built from the same
 //! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
-//! a different palette: the hover of `button_primary`, for one, is then
-//! strengthened from a primary that is not its own idle fill.
+//! a different palette: the hover of `button_danger`, for one, is then
+//! strengthened from a danger color that is not its own idle fill.
 //!
 //! Two of iced's own classes are left alone on purpose: `container::bordered_box`
 //! (`container.rs:595-607`) and `button::subtle` (`button.rs:713-715`) paint
@@ -352,22 +352,56 @@ fn class_button(
 /// class (`button.rs:588-590`): it paints the palette's `primary` family and
 /// derives its hovered fill by strengthening that slot.
 ///
-/// The idle pair is the platform's accent pair, `button.primary_background`
-/// and `.primary_text_color`; see `class_button` for what the other states
-/// are and why. That derivation starts from the idle fill itself: the palette
-/// slot iced strengthens is `defaults.accent_color`, which every bundled
-/// preset also states as `button.primary_background` -- pinned by the contract
-/// (`the_primary_pair_is_the_accent_pair`).
+/// The idle pair is the platform's primary pair, `button.primary_background`
+/// and `.primary_text_color`; see `class_button` for the disabled state and
+/// the border. The model states no hovered and no pressed primary fill, so
+/// those two are iced's own derivation -- but from the primary fill, not from
+/// the palette slot `button::primary` reads. That slot is
+/// `defaults.accent_color`, and a platform may state a primary fill that is
+/// not its accent: WinUI 3 paints `AccentFillColorDefault`
+/// (`docs/platform-facts.md` §2.3). So the pair is generated here as iced
+/// generates the palette's (`Primary::generate`, `palette.rs:504-516`, called
+/// by `Extended::generate` at `:394-421`), and painted as `button::primary`
+/// paints it (`button.rs:598-610`): the pair's `strong` fill while hovered,
+/// its `base` fill while pressed, and its label in both -- the stated
+/// `.primary_text_color`, as the connector states `primary.base.text`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_primary(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
-    class_button(
+    use iced_widget::button::{Status, Style};
+
+    let b = &resolved.button;
+    let class = class_button(
         resolved,
-        resolved.button.primary_background,
-        resolved.button.primary_text_color,
+        b.primary_background,
+        b.primary_text_color,
         iced_widget::button::primary,
-    )
+    );
+
+    let palette = crate::palette::to_palette(resolved);
+    let primary = iced_core::theme::palette::Primary::generate(
+        to_color(b.primary_background),
+        palette.background,
+        palette.text,
+    );
+    let hovered = primary.strong.color;
+    let pressed = primary.base.color;
+    let label = to_color(b.primary_text_color);
+
+    move |theme, status| {
+        let style = class(theme, status);
+        let background = match status {
+            Status::Hovered => hovered,
+            Status::Pressed => pressed,
+            Status::Active | Status::Disabled => return style,
+        };
+        Style {
+            background: Some(Background::Color(background)),
+            text_color: label,
+            ..style
+        }
+    }
 }
 
 /// The platform's own destructive button, for `button(..).style(..)`.

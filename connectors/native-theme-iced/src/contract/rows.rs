@@ -337,10 +337,13 @@ pub(super) const BUTTON_TOGGLE_BORDER_ROWS: &[BorderRow<(bool, button::Status)>]
 pub(super) const CLASS_BUTTON_NATIVE_STATUSES: &[button::Status] =
     &[button::Status::Active, button::Status::Disabled];
 
-/// The statuses a class button takes whole from iced's own class, because the
-/// model states no hovered and no pressed variant of an accent or a status
-/// color (spec section 3.3). Asserted by
-/// `a_class_button_takes_its_hovered_and_pressed_states_from_iced`.
+/// The statuses a class button takes from iced's derivation, because the
+/// model states no hovered and no pressed variant of a primary or a status
+/// color (spec section 3.3): a status button's are iced's own class, asserted
+/// by `a_class_button_takes_its_hovered_and_pressed_states_from_iced`; the
+/// primary button's are iced's derivation from `button.primary_background`,
+/// asserted by
+/// `a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill`.
 #[cfg(feature = "widgets")]
 pub(super) const CLASS_BUTTON_ICED_STATUSES: &[button::Status] =
     &[button::Status::Hovered, button::Status::Pressed];
@@ -349,9 +352,10 @@ pub(super) const CLASS_BUTTON_ICED_STATUSES: &[button::Status] =
 ///
 /// The match has no catch-all, but only the two statuses of
 /// `CLASS_BUTTON_NATIVE_STATUSES` ever reach a row: the other two are iced's
-/// on both sides. Their arm still has to name a color, and the idle one is the
-/// least surprising -- if a status is ever moved between the two lists, the row
-/// compares it against that and fails rather than passing quietly.
+/// derivation, asserted outside the rows. Their arm still has to name a color,
+/// and the idle one is the least surprising -- if a status is ever moved
+/// between the two lists, the row compares it against that and fails rather
+/// than passing quietly.
 #[cfg(feature = "widgets")]
 pub(super) fn native_class_button_fill(
     r: &ResolvedTheme,
