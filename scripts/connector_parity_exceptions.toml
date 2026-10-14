@@ -8,6 +8,8 @@
 #   kind = "undecided"  a function the script cannot classify: it passes the
 #                       theme on whole
 #   kind = "absent"     the connector has no accessor that a sibling has
+#   kind = "unlike"     the connector has a function of the accessor's name
+#                       that is not it: another signature or meaning
 #
 # Paths without a crate are the connector's own (`src/...`); upstream code is
 # cited at the version the workspace builds against.
@@ -85,7 +87,7 @@ reason = "`to_theme` writes it to gpui-component's `ThemeColor::ring` (src/color
 [[exception]]
 connector = "gpui"
 name = "font_family"
-kind = "absent"
+kind = "unlike"
 reason = "`to_theme` writes it to gpui-component's `Theme::font_family`, through the crate's `font_family(&Arc<str>)`, which turns any family into the name gpui is asked to draw and so takes a family, not the theme"
 
 [[exception]]

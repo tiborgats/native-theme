@@ -35,17 +35,23 @@ The sibling rule
 ----------------
 A one-field accessor present in one connector and absent from a sibling fails
 unless the exception list names the sibling and the accessor with the reason
-the sibling has none (`kind = "absent"`).
+the sibling has none: `kind = "absent"` where the sibling has no function of
+that name, `kind = "unlike"` where it has one that is not that accessor (a
+different signature or meaning, gpui's `font_family(&Arc<str>)` beside iced's
+and egui's `font_family(resolved)`).
 
 What is scanned
 ---------------
 The functions at the crate root, where the accessors live: every `pub fn` at
-column 0 of `connectors/native-theme-iced/src/lib.rs`,
-`connectors/native-theme-gpui/src/lib.rs`, and
-`connectors/native-theme-egui/src/accessors.rs` with `ext.rs` (egui's
-`lib.rs` re-exports both). Methods, private functions and the modules
-(`styles`, `geometry`, `palette`, ...) are style builders and conversions, not
-accessors. Comments and string literals are blanked before any match, so a doc
+column 0 of each connector's `src/lib.rs`, and every one a column-0
+`pub use <module>::{..};` (or `pub use <module>::<name>;`, `as` renames and
+`*` too) of `lib.rs` re-exports from a module the same `lib.rs` declares
+(`src/<module>.rs` or `src/<module>/mod.rs`), so egui's `accessors.rs` and
+`ext.rs` and a module a later re-export names are read without a list here.
+A `pub use` of a local module the script cannot follow (a nested path or
+group) is an input error. Methods, private functions and the modules that are
+not re-exported (`styles`, `geometry`, `palette`, ...) are style builders and
+conversions, not accessors. Comments and string literals are blanked before any match, so a doc
 comment naming a leaf reads nothing.
 
 Deciding "one leaf"
@@ -85,7 +91,9 @@ scripts/connector_parity_exceptions.toml, one `[[exception]]` per
 and fails the check, when its function no longer exists, or when it no longer
 needs one: a `name` exception whose function is no longer a misnamed one-field
 accessor, an `undecided` one whose function is now decided, an `absent` one
-whose accessor the connector now has or no sibling has any more.
+whose accessor the connector now has or no sibling has any more, or whose
+function of that name the connector now has (or no longer has) where the
+other kind fits, `unlike` for `absent` and the reverse.
 """
 
 import argparse
@@ -107,17 +115,14 @@ MODEL_FILES = (
 )
 
 CONNECTORS = {
-    "iced": ("connectors/native-theme-iced/src/lib.rs",),
-    "gpui": ("connectors/native-theme-gpui/src/lib.rs",),
-    "egui": (
-        "connectors/native-theme-egui/src/accessors.rs",
-        "connectors/native-theme-egui/src/ext.rs",
-    ),
+    "iced": "connectors/native-theme-iced/src/lib.rs",
+    "gpui": "connectors/native-theme-gpui/src/lib.rs",
+    "egui": "connectors/native-theme-egui/src/lib.rs",
 }
 
 ROOT_TYPE = "ResolvedTheme"
 UNIT_SUFFIXES = ("_px", "_ms", "_pt")
-KINDS = ("name", "absent", "undecided")
+KINDS = ("name", "absent", "unlike", "undecided")
 CLASSES = ("one-field", "group", "multi", "inputs", "outside", "undecided")
 
 
@@ -461,6 +466,49 @@ def merge(fns):
     return out
 
 
+MOD_RE = re.compile(r"^(?:pub(?:\([^)]*\))?\s+)?mod (\w+)\s*;", re.M)
+USE_RE = re.compile(r"^pub use (\w+)::(.*?);", re.M | re.S)
+ITEM_RE = re.compile(r"\s*(\w+|\*)(?:\s+as\s+(\w+))?\s*")
+
+
+def crate_root_fns(model, lib_rel, read_rel):
+    """The `pub fn`s at the root of the crate whose `lib.rs` is `lib_rel`:
+    its own and those it re-exports from its modules (`read_rel` reads a
+    path relative to the repository root)."""
+    source = read_rel(lib_rel)
+    fns = scan(model, source, lib_rel)
+    text = blank(source)
+    mods = set(MOD_RE.findall(text))
+    src = os.path.dirname(lib_rel)
+    for m in USE_RE.finditer(text):
+        module, items = m.group(1), m.group(2).strip()
+        if module not in mods:
+            continue  # another crate's item (`native_theme::...`)
+        where = f"{lib_rel}:{text.count(chr(10), 0, m.start()) + 1}"
+        if items.startswith("{") and items.endswith("}"):
+            items = items[1:-1]
+        wanted = {}
+        for item in filter(str.strip, items.split(",")):
+            parsed = ITEM_RE.fullmatch(item)
+            if parsed is None:
+                raise Failure(f"{where}: cannot follow `pub use {module}::{item.strip()}`")
+            wanted[parsed.group(1)] = parsed.group(2) or parsed.group(1)
+        rels = [os.path.join(src, module + ".rs"), os.path.join(src, module, "mod.rs")]
+        for rel in rels:
+            try:
+                module_source = read_rel(rel)
+            except Failure:
+                continue
+            for f in scan(model, module_source, rel):
+                if "*" in wanted or f.name in wanted:
+                    f.name = wanted.get(f.name, f.name)
+                    fns.append(f)
+            break
+        else:
+            raise Failure(f"{where}: no source for module `{module}` ({' or '.join(rels)})")
+    return fns
+
+
 # ---------------------------------------------------------------------------
 # The check
 # ---------------------------------------------------------------------------
@@ -538,28 +586,34 @@ def check(connectors, exceptions):
         for name, f in named.items():
             every.setdefault(name, {})[connector] = f
     for name in sorted(every):
-        for connector in connectors:
+        for connector, fns in connectors.items():
             if connector in every[name]:
                 continue
-            if not excepted(connector, name, "absent"):
+            other = fns.get(name)
+            if not excepted(connector, name, "absent" if other is None else "unlike"):
                 others = ", ".join(sorted(every[name]))
                 leaf = next(iter(every[name].values())).leaf
-                violations.append(
-                    f"{connector}: no `{name}` (`{leaf}`), which {others} "
-                    "offer(s); add it or except it with its reason"
-                )
+                if other is None:
+                    what = f"no `{name}` (`{leaf}`), which {others} offer(s)"
+                else:
+                    what = (f"`{name}` (line {other.line}) is {other.cls}, not the "
+                            f"accessor of `{leaf}` that {others} offer(s)")
+                violations.append(f"{connector}: {what}; add it or except it with its reason")
 
     for (connector, name), e in sorted(exceptions.items()):
         if (connector, name) in used:
             continue
         fns = connectors.get(connector, {})
-        if e["kind"] == "absent":
+        if e["kind"] in ("absent", "unlike"):
             if name not in every:
-                stale.append(f"{connector}: `{name}` excepted as absent, "
-                             "but no connector offers it")
+                why = "no connector offers it"
+            elif connector in every[name]:
+                why = "the connector offers it"
+            elif e["kind"] == "absent":
+                why = "the connector has a function of that name: kind `unlike`"
             else:
-                stale.append(f"{connector}: `{name}` excepted as absent, "
-                             "but the connector offers it")
+                why = "the connector has no function of that name: kind `absent`"
+            stale.append(f"{connector}: `{name}` excepted as {e['kind']}, but {why}")
         elif name not in fns:
             stale.append(f"{connector}: `{name}` excepted ({e['kind']}), "
                          "but no such function exists")
@@ -583,12 +637,10 @@ def read(path):
 
 def run(root, exceptions_path, verbose):
     model = parse_model(read(os.path.join(root, p)) for p in MODEL_FILES)
-    connectors = {}
-    for connector, files in CONNECTORS.items():
-        fns = []
-        for rel in files:
-            fns += scan(model, read(os.path.join(root, rel)), rel)
-        connectors[connector] = merge(fns)
+    connectors = {
+        connector: merge(crate_root_fns(model, lib, lambda rel: read(os.path.join(root, rel))))
+        for connector, lib in CONNECTORS.items()
+    }
     exceptions = load_exceptions(read(exceptions_path), os.path.relpath(exceptions_path, root))
     report, violations, stale = check(connectors, exceptions)
     if verbose:
@@ -756,6 +808,60 @@ def self_test():
     expect("an excepted absent sibling passes", (violations, stale), ([], []))
     _, _, stale = check(clean, absent)
     expect("an absent exception the sibling now meets is stale", len(stale), 1)
+
+    # a sibling with a function of that name that is not the accessor
+    unlike = dict(clean)
+    unlike["gpui"] = dict(clean["gpui"])
+    unlike["gpui"]["line_height"] = Fn("line_height", 1, "outside", set(), set())
+    _, violations, _ = check(unlike, {})
+    expect("a same-name function of another kind fails",
+           [v for v in violations if v.startswith("gpui: `line_height` (line 1) is outside")] != [],
+           True)
+    _, violations, stale = check(unlike, {("gpui", "line_height"): {"kind": "unlike", "reason": "x"}})
+    expect("an excepted same-name function passes", (violations, stale), ([], []))
+    _, violations, stale = check(unlike, absent | {("gpui", "line_height"): {"kind": "absent", "reason": "x"}})
+    expect("an absent exception where the sibling has the name is stale",
+           any("gpui: `line_height` excepted as absent" in line for line in stale), True)
+    _, _, stale = check(lacking, {("egui", "line_height"): {"kind": "unlike", "reason": "x"}})
+    expect("an unlike exception where the sibling lacks the name is stale",
+           any("kind `absent`" in line for line in stale), True)
+
+    # the crate root: lib.rs's own functions and those it re-exports
+    tree = {
+        "src/lib.rs": """
+mod acc;
+#[cfg(feature = "x")]
+pub(crate) mod hidden;
+pub use acc::{
+    line_height, info_text_color as info_foreground_color,
+};
+pub use native_theme::Rgba;
+pub use hidden::*;
+pub fn to_weight(css: u16) -> Weight { Weight::from(css) }
+""",
+        "src/acc.rs": SELF_ICED,
+        "src/hidden/mod.rs": "pub fn swatch_of(r: &ResolvedTheme) -> Rgba { r.defaults.border.color }",
+    }
+
+    def read_tree(rel):
+        if rel not in tree:
+            raise Failure(f"cannot read {rel}")
+        return tree[rel]
+
+    root = sorted(f.name for f in crate_root_fns(model, "src/lib.rs", read_tree))
+    expect("the crate root follows its re-exports", root,
+           ["info_foreground_color", "line_height", "swatch_of", "to_weight"])
+    for planted, label in (
+        ("pub use acc::{line_height, sub::{font}};", "a nested re-export"),
+        ("mod gone;\npub use gone::font;", "a re-exported module without a source"),
+    ):
+        tree["src/lib.rs"] += planted
+        try:
+            crate_root_fns(model, "src/lib.rs", read_tree)
+            failures.append(f"{label}: no error")
+        except Failure:
+            pass
+        tree["src/lib.rs"] = tree["src/lib.rs"].removesuffix(planted)
 
     # undecided: the theme passed on whole
     escaping = connectors(SELF_ICED + '''
