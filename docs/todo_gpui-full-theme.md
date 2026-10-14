@@ -688,11 +688,12 @@ at 0.7.3.
   global with a show delay of 500 ms and a grace period of 300 ms
   (gpui-base `tooltip.rs:58-108`), with a per-trigger `tooltip_show_delay`
   on `Button` (`button/button.rs:422`), and `Dialog::entrance`
-  (`dialog/dialog.rs:526`). v0.7.0 makes the list header height, the tooltip
-  show delay and the dialog entrance theme values for them.
+  (`dialog/dialog.rs:526`). v0.7.0's G2 is to add theme values for the list
+  header height, the tooltip show delay and the dialog entrance.
 - **TextView.** gpui-component builds TextView's defaults from the theme
   (`text/mod.rs:35-62`): its foreground, muted foreground, link, selection,
-  code background, border and table-head colours, which the connector maps,
+  code background, border and table-head colours, and inline code's
+  `accent` background (`text/mod.rs:57-60`), which the connector maps,
   and its body text scales from the rem, which the connector sets from
   `defaults.font.size`; the connector installs nothing for it. Its headings
   keep TextView's ratios to the body size. Not honoured:

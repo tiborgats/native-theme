@@ -1491,8 +1491,14 @@ model, the platform presets and the three connectors
       > ```rust
       > #[cfg(any(test, feature = "test-support"))]
       > if window.next_frame.retained.reused_any() {
+      >     // Reused subtrees do not paint, and the bounds they would have
+      >     // recorded for tests to find them by are last frame's.
       >     for (selector, bounds) in &window.rendered_frame.debug_bounds {
-      >         window.next_frame.debug_bounds.entry(selector.clone()).or_insert(*bounds);
+      >         window
+      >             .next_frame
+      >             .debug_bounds
+      >             .entry(selector.clone())
+      >             .or_insert(*bounds);
       >     }
       > }
       > ```
