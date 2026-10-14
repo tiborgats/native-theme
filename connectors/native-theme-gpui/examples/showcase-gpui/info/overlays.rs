@@ -336,7 +336,10 @@ pub fn context_menu(t: &Theme) -> WidgetInfo {
             "surface",
             "a ContextMenu is a PopupMenu wrapper and reads no theme field itself (menu/context_menu.rs)",
         )
-        .instance("trigger", "right-click (MouseButton::Right)")
+        .instance(
+            "trigger",
+            "right-click (MouseButton::Right), or a long press on a touch screen (menu/context_menu.rs, open_menu)",
+        )
         .instance(
             "trait",
             "ContextMenuExt, on any InteractiveElement + ParentElement + Styled (menu/context_menu.rs, ContextMenuExt)",

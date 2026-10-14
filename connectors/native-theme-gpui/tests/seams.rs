@@ -111,7 +111,7 @@ struct Harness {
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // What gpui-component's `WindowState` root plugin does for an
-        // application's window (`root.rs:436`, `:444`): the installed font size is the rem, which
+        // application's window (`root.rs:440`, `:448`): the installed font size is the rem, which
         // the connector scales by the text-scaling factor, and the installed
         // family is the text's.
         window.set_rem_size(cx.theme().font_size);
@@ -451,10 +451,10 @@ seam!(
 /// The tooltip's seam is a width, and the text has to keep to it.
 ///
 /// A tooltip's text sits in a bare `div()` inside upstream's `h_flex()`
-/// (`src/tooltip.rs:126-132`), so it is a flex item with an automatic minimum
+/// (`src/tooltip.rs:127-133`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.8/src/elements/text.rs:656-663`). The item's minimum is
+/// width (`gpui-pre-0.3.9/src/elements/text.rs:656-663`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]

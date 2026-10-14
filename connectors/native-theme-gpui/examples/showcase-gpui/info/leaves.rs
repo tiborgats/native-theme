@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! is drawn instead. Upstream citations are to gpui-component 0.7.3,
+//! gpui-base 0.7.3 and gpui-pre 0.3.9.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1295)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1312)",
     ),
     (
         "chrome.toolbar.",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:436, 444)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:440, 448)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:444)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:448)",
     ),
     (
         "basic.icons.large",
@@ -767,7 +767,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (switch.rs:292)",
+        "gpui: not applied — the label's line box is the track's height (switch.rs:300)",
     ),
     (
         "basic.text_inputs",

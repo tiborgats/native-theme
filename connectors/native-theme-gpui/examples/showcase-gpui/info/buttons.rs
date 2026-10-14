@@ -144,7 +144,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "fill, primary at 10%",
                 "primary",
                 t.primary.opacity(0.1),
-                "gpui-component/button/button.rs:914",
+                "gpui-component/button/button.rs:931",
             ),
             claim(
                 "text",
@@ -282,7 +282,7 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "pressed text",
                 "link_active",
                 t.link_active,
-                "gpui-component/button/button.rs:1258",
+                "gpui-component/button/button.rs:1275",
             ),
         ],
         ButtonKind::Text => vec![
@@ -296,7 +296,7 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "pressed text, foreground at 70%",
                 "foreground",
                 t.foreground.opacity(0.7),
-                "gpui-component/button/button.rs:1259",
+                "gpui-component/button/button.rs:1276",
             ),
         ],
         ButtonKind::DefaultOutline => vec![
@@ -318,13 +318,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg, primary_hover at 20%",
                 "primary_hover",
                 t.primary_hover.opacity(0.2),
-                "gpui-component/button/button.rs:917",
+                "gpui-component/button/button.rs:934",
             ),
             claim(
                 "active bg, primary_active at 40%",
                 "primary_active",
                 t.primary_active.opacity(0.4),
-                "gpui-component/button/button.rs:920",
+                "gpui-component/button/button.rs:937",
             ),
         ],
     }

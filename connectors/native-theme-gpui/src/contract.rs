@@ -135,8 +135,8 @@ const ROWS: &[Row] = &[
     // `link_hover` and `link_active` are upstream's hovered and pressed link
     // *text* colours ("Hover link text color", `theme_color.rs:180-181`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1199, 1258, 1300`) over the transparent fill that
-    // variant paints in every state (`:1176, 1253, 1293`). Neither native
+    // (`button/button.rs:1199, 1275, 1317`) over the transparent fill that
+    // variant paints in every state (`:1193, 1270, 1310`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
@@ -369,8 +369,8 @@ const ROWS: &[Row] = &[
     // (`list.header_background`, inheriting `defaults.surface_color`), and it
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:278`,
-    // `table/state.rs:1579, :1819`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.7.1 beyond a schema fallback (`theme/schema.rs:972, 1010`),
+    // `table/state.rs:1608, :1852`, `table/table.rs:199`); `list_head` has no
+    // reader in 0.7.3 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -915,8 +915,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "link.hover_background",
         native: |r| r.link.hover_background,
         evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
-                   background in every state (`button/button.rs:1176` hovered, \
-                   `:1253` pressed, `:1293` selected) and the `Link` widget \
+                   background in every state (`button/button.rs:1193` hovered, \
+                   `:1270` pressed, `:1310` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
@@ -978,7 +978,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         native: |r| r.switch.checked_background,
         evidence: "`ThemeColor` has no checked-state field for a switch -- \
                    only `switch` and `switch_thumb` -- and upstream paints a \
-                   checked one with `tokens.primary` (`switch.rs:172-175`). \
+                   checked one with `tokens.primary` (`switch.rs:180-183`). \
                    `Switch::color` is a per-instance receiver (`switch.rs:102`), \
                    which an application can feed and the connector does not. \
                    Recorded at `colors.rs`'s Issue 51 note as well.",
@@ -1446,7 +1446,7 @@ struct Pair {
 }
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.7.1/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
+/// (`gpui-component-0.7.3/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
@@ -1505,7 +1505,7 @@ fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 86 sites outside `theme/` in 0.7.1) and the surfaces
+/// alone has 95 sites outside `theme/` in 0.7.3) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -1704,7 +1704,7 @@ const PAIRS: &[Pair] = &[
     // (`tab/tab_bar.rs:371`, `tab/tab.rs:309`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
-    // `tokens.tab`, which nothing in 0.7.1 reads, keeps its row but takes no
+    // `tokens.tab`, which nothing in 0.7.3 reads, keeps its row but takes no
     // part here.
     Pair {
         what: "tab label",
@@ -1779,7 +1779,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
-    // (`button/button.rs:1176, 1253, 1293`) and takes `link_hover` and
+    // (`button/button.rs:1193, 1270, 1310`) and takes `link_hover` and
     // `link_active` as its text, so both pairs are that colour on the window.
     Pair {
         what: "hovered link text",
@@ -1937,7 +1937,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.7.1 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.7.3 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -1960,7 +1960,7 @@ const INERT_SURFACES: &[(&str, &str)] = &[
     (
         "sidebar primary button label",
         "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.7.1",
+         outside theme/ in 0.7.3",
     ),
 ];
 
@@ -2123,7 +2123,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.1 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.3 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

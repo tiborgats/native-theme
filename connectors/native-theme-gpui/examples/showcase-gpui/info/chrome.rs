@@ -14,7 +14,7 @@ use crate::support::ChromeIcon;
 /// Its geometry line is recorded by `native_info` where `demo::title_bar`
 /// applies the builder.
 pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
-    // macOS draws no window controls of upstream's (title_bar.rs:254-256).
+    // macOS draws no window controls of upstream's (title_bar.rs:256-258).
     let info = title_bar_colours(t, cfg!(not(target_os = "macos")));
     let info = if cfg!(target_os = "macos") {
         info
@@ -59,7 +59,7 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
 /// builder.
 pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     // Upstream draws its controls on Windows in any window, on Linux only in
-    // a client-decorated one, and on macOS never (title_bar.rs:254-270).
+    // a client-decorated one, and on macOS never (title_bar.rs:256-272).
     let info = title_bar_colours(t, cfg!(target_os = "windows"));
     let info = if cfg!(target_os = "windows") {
         info.not_themeable(
@@ -397,7 +397,7 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component 0.7.1's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component 0.7.3's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .not_themeable(
             "edge",
@@ -1178,20 +1178,20 @@ pub(super) fn dialog_surface(
     .not_themeable(
         "animation",
         if reduce_motion {
-            "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)"
+            "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens -- the default entrance, which the showcase keeps (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)"
         } else {
-            "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)"
+            "a 0.25s slide and fade on a literal curve, not the theme's motion tokens: the default entrance, which the showcase keeps; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION)"
         },
     )
     .instance(
         "unreported",
         if close_button {
             format!(
-                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
             )
         } else {
             format!(
-                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
             )
         },
     )

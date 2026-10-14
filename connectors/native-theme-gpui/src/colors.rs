@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations in this module are verified against gpui-component 0.7.3,
+//! gpui-base 0.7.3 and gpui-pre 0.3.9.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -270,7 +270,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1199, 1258, 1300` against `:1176, 1253, 1293`), so
+    // (`button/button.rs:1199, 1275, 1317` against `:1193, 1270, 1310`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -393,7 +393,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     // The column header's own fill, which upstream paints as the header row
-    // (`table/column.rs:278`, `table/state.rs:1579, :1819`,
+    // (`table/column.rs:278`, `table/state.rs:1608, :1852`,
     // `table/table.rs:199`) and the model states as `list.header_background`.
     // The window background it used to take is the surface the header sits
     // on, not the header.
@@ -1201,7 +1201,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.7.1 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.7.3 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();

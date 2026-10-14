@@ -4,8 +4,8 @@
 //! gpui-component builds its checkbox, radio, switch, slider, progress bar and
 //! spinner from sizes and alpha blends of its own, which no `ThemeColor` field
 //! or `StyleRefinement` reaches: the indicator in rems per `Size`
-//! (`checkbox.rs:219-224`), the switch's track and thumb in pixels
-//! (`switch.rs:186-195`), the slider's rail as its fill at 0.2
+//! (`checkbox.rs:227-232`), the switch's track and thumb in pixels
+//! (`switch.rs:194-203`), the slider's rail as its fill at 0.2
 //! (`slider.rs:290`), the progress bar's track likewise
 //! (`progress/progress.rs:135`), and the spinner as a turning icon
 //! (`spinner.rs:25`). The controls here are built the way gpui-component
@@ -41,8 +41,8 @@
 //! * a size the theme does not state keeps gpui-component's own value, named
 //!   as a constant with its upstream line.
 //!
-//! Upstream citations are verified against gpui-component 0.7.1, gpui-base
-//! 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations are verified against gpui-component 0.7.3, gpui-base
+//! 0.7.3 and gpui-pre 0.3.9.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
 /// writes it (gpui-pre-macros `derive_into_element.rs`). Written out because

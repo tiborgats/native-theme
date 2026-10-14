@@ -26,7 +26,7 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   The splitter colours reach the handles gpui-base draws itself — groups built
   with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
   colours at gpui-base's 1 px width, the hover colour only while dragged — not
-  gpui-component 0.7.1's own `h_resizable` / `v_resizable`, `Settings`' divider
+  gpui-component 0.7.3's own `h_resizable` / `v_resizable`, `Settings`' divider
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
@@ -53,10 +53,11 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
   from is unchanged between the two releases. It was audited again against
   0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
-  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`. Since 0.6.1
-  the tables end in a wildcard: an `IconName` newer than this crate maps to
-  no icon, and the test module's exhaustive list is what reports it. The
-  audit is repeated on every gpui-component bump.
+  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`; 0.7.3's list is
+  0.7.1's, 106 variants. Since 0.6.1 the tables end in a wildcard: an
+  `IconName` newer than this crate maps to no icon, and the test module's
+  exhaustive list is what reports it. The audit is repeated on every
+  gpui-component bump.
 
 ## How it fits
 
@@ -130,7 +131,7 @@ the dialogs, sheets and notifications. A window opened before
 which hosts them and sets the window's rem — so its first `open_dialog`,
 `open_sheet` or `notifications` call panics with upstream's "component window
 state is missing" (gpui-component `src/root.rs:112, 130`), and text scaling
-fails silently, the rem staying gpui's default (`src/root.rs:21, 434-436`;
+fails silently, the rem staying gpui's default (`src/root.rs:21, 438-440`;
 gpui-base `src/root.rs:44-45`).
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
@@ -290,7 +291,7 @@ test over every preset and mode says so.
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
-| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements, or gpui-component 0.7.1's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. No edge: the platforms state none |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements, or gpui-component 0.7.3's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. No edge: the platforms state none |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |

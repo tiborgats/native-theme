@@ -79,7 +79,7 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// through `build_with_platform` and exposes no setter
-/// (`gpui-pre-0.3.8/src/app/test_context.rs:127-139`, `:171-175`) — so
+/// (`gpui-pre-0.3.9/src/app/test_context.rs:127-139`, `:171-175`) — so
 /// gpui-component's own `IconName` SVGs resolve to nothing. The pages still
 /// lay out, which is what these tests measure; the showcase's native icons
 /// do not come from the asset source at all, they are decoded into
@@ -371,9 +371,10 @@ fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
 }
 
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
-/// (setting/page.rs:227-253, scroll/scrollable.rs:19-29) and reserves only its
-/// own `px_4`; kde-breeze's groove is 21px, wider than that, so without a
-/// gutter on the group the bar covers the rows.
+/// (setting/page.rs:227-255, scroll/scrollable.rs:19-29) and reserves only the
+/// `px_4` each group's row is wrapped in, inside the list (:239-243);
+/// kde-breeze's groove is 21px, wider than that, so without a gutter on the
+/// group the bar covers the rows.
 #[gpui::test]
 fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -3011,7 +3012,7 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1295, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1312, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -3144,7 +3145,7 @@ const SIDEBAR_ICON_PRESETS: [&str; 7] = [
 /// - expanded, where every row is `h_7` whatever its icon
 ///   (sidebar/menu.rs:323), the icon is no taller than that: 1.75 rem at the
 ///   rem the `WindowState` root plugin installs, the theme's font size
-///   (root.rs:436). The items'
+///   (root.rs:440). The items'
 ///   measured heights are checked to be that row. The icon's is a model
 ///   check, not a measurement: an icon taller than its row overflows it
 ///   without moving any bound a test can read.
@@ -3801,7 +3802,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
 }
 
 /// The boxes painted in the tooltip's fill in the last frame: upstream fills
-/// a tooltip with `popover` (tooltip.rs:113-114), and the connector's
+/// a tooltip with `popover` (tooltip.rs:114-115), and the connector's
 /// `geometry::tooltip` refinement repaints it in `tooltip.background_color`.
 fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
@@ -3846,13 +3847,13 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
 /// action is bound to Ctrl+B (Cmd+B on macOS), and the tooltip is wider while the action has
 /// that binding than once the bindings are gone -- upstream's Tooltip adds
 /// the binding's Kbd beside the text only where the action has one
-/// (tooltip.rs:94-106, :133-141). The tooltip's text is not readable from
+/// (tooltip.rs:95-107, :134-142). The tooltip's text is not readable from
 /// the test's frame, so its width is what shows the Kbd.
 #[gpui::test]
 fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    // A tooltip fades in (tooltip.rs:178-181); without motion it is drawn
+    // A tooltip fades in (tooltip.rs:179-182); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
     let cases: [(&'static str, Box<dyn gpui::Action>, String); 1] = [(
@@ -4906,8 +4907,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:196-200), 4px
-/// itself included (`radius >= px(4.)`, switch.rs:196).
+/// under 4px, the track's own height from 4px up (switch.rs:204-208), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:204).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -6228,7 +6229,7 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
-/// (gpui-component 0.7.1): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.7.3): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a

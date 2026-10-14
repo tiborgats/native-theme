@@ -187,7 +187,7 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
             "addon text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/input/group.rs:403",
+            "gpui-component/input/group.rs:405",
         ))
         .color(claim(
             "addon button hover",
@@ -344,7 +344,7 @@ pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) 
             "gpui-component/radio.rs:196",
         ))
         // The unselected Radios' fill: Radio::render takes
-        // input_background() for an unchecked one (radio.rs:235).
+        // input_background() for an unchecked one (radio.rs:243).
         .color(input_background(t))
         .color(claim(
             "upstream label",
@@ -385,10 +385,10 @@ pub fn switch(
         (true, true) => "on, disabled",
         (false, true) => "off, disabled",
     });
-    // A disabled Switch fades its track alone, to half alpha (switch.rs:181);
+    // A disabled Switch fades its track alone, to half alpha (switch.rs:189);
     // the disabled style is resolved after the checked one (gpui-base
     // switch.rs:117-127). The checked track is the colour `Switch::color`
-    // was handed, primary where it was handed none (switch.rs:172-175).
+    // was handed, primary where it was handed none (switch.rs:180-183).
     let info = match (checked, disabled, native) {
         (true, false, Some(r)) => info.color(claim(
             "on track",
@@ -460,7 +460,7 @@ pub fn switch(
         info
     };
     // The track takes the theme's radius only under 4px; from 4px up it is
-    // rounded by its own height (switch.rs:196-200).
+    // rounded by its own height (switch.rs:204-208).
     let info = if t.radius.as_f32() < 4.0 {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     } else {

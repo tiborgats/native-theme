@@ -541,7 +541,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 106 gpui-component 0.7.1 IconName variants shown in the gallery.
+/// The 106 gpui-component 0.7.3 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -975,7 +975,7 @@ impl SampleTableDelegate {
             }
             TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
             // A right-clicked cell clears the right-clicked row (table/
-            // state.rs:800). Only a `cell_selectable` table emits it.
+            // state.rs:820). Only a `cell_selectable` table emits it.
             TableEvent::RightClickedCell(..) => self.right_clicked_row = None,
             _ => {}
         }

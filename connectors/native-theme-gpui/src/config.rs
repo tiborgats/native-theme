@@ -5,8 +5,8 @@
 //! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
 //! fields (see [`theme_color_to_config_colors`]).
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations in this module are verified against gpui-component 0.7.3,
+//! gpui-base 0.7.3 and gpui-pre 0.3.9.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -90,7 +90,7 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// `ThemeColor` has 139 fields (gpui-component 0.7.1
+/// `ThemeColor` has 139 fields (gpui-component 0.7.3
 /// `src/theme/theme_color.rs:59-343`) and `ThemeConfigColors` 140: the same
 /// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
 /// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,

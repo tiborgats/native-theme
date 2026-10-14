@@ -71,7 +71,9 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
             "geometry",
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
-                         a theme reaches it only through its Size and the text its \
+                         a theme reaches it only through its Size, its header row \
+                         height (table/data_table.rs, DataTable::header_row_height, \
+                         which no model field states yet) and the text its \
                          container gives the cells",
         );
     let info = if styled {
@@ -93,7 +95,7 @@ pub fn data_table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/state.rs:1819",
+            "gpui-component/table/state.rs:1852",
         ))
         .color(claim(
             "text",
@@ -119,7 +121,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "stripe",
                     "table_even",
                     t.table_even,
-                    "gpui-component/table/state.rs:2290",
+                    "gpui-component/table/state.rs:2324",
                 ))
             } else {
                 info.color(claim(
@@ -174,7 +176,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "stripe",
             "table_even",
             t.table_even,
-            "gpui-component/table/state.rs:2032",
+            "gpui-component/table/state.rs:2065",
         ))
     } else {
         info.color(claim(

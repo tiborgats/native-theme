@@ -270,7 +270,7 @@ pub(crate) fn window_rows(
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
     // gpui-component's `WindowState` root plugin wraps everything the window
-    // holds in `window_border()` (root.rs:450-458, `WindowState::decorate`).
+    // holds in `window_border()` (root.rs:454-462, `WindowState::decorate`).
     // Its client-side arm alone sets the client inset (window_border.rs:155),
     // lays hit zones and draws a frame; under server-side decorations it
     // hands back the content itself (window_border.rs:134-139).

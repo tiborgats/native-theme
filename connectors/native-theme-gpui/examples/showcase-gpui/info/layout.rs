@@ -457,7 +457,7 @@ pub fn tab_row(
     let shown = labels.get(selected).copied().unwrap_or("none");
     info.instance("tabs", labels.join(", "))
         .instance("selected", shown)
-        .instance("click", "selects the tab; the showcase keeps the state")
+        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled into view, the next one peeking past it (tab/tab_bar.rs, TabReveal)")
 }
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them

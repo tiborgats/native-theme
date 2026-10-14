@@ -222,7 +222,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.7.1 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.7.3 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -1176,7 +1176,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.7.1's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.7.3's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap and padding sides the theme states, and no fallback or edge,
 /// since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
@@ -1668,7 +1668,7 @@ pub(crate) enum TabBarKind {
 /// the bar takes `container_margin`, the installed layout's
 /// `geometry::container_margin`, on its left and right, as the side panel's
 /// settings and the inspector's content do. Its bottom rule is drawn by an
-/// absolute child at the bar's full size (tab_bar.rs:497-507), so it still
+/// absolute child at the bar's full size (tab_bar.rs:538-548), so it still
 /// runs from edge to edge. Where the layout states no margin, upstream's
 /// none stands.
 #[allow(clippy::too_many_arguments)]
@@ -2973,7 +2973,7 @@ pub(crate) fn button_group(
 
 /// A `DropdownButton` whose Button, of `kind`, reads `label`, opening
 /// `menu`. Neither half takes `geometry::button`: the DropdownButton joins
-/// their corners itself (button/dropdown_button.rs:174-207).
+/// their corners itself (button/dropdown_button.rs:187-224).
 pub(crate) fn dropdown_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3190,9 +3190,9 @@ const INPUT_GROUP: &str = "input-surface";
 /// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
 /// `Input` is `Styled` only (input/input.rs:529) and its root's one state is
-/// `focused` (:747-754), so it has no hover edge of its own: the field is
+/// `focused` (:757-764), so it has no hover edge of its own: the field is
 /// left without a fill or an edge colour (its caller's style lands after its
-/// own, :793) and an absolute box under it, the field's size, paints them.
+/// own, :803) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
     r: &native_theme_gpui::ResolvedTheme,
@@ -3616,7 +3616,7 @@ const RADIO_GROUP_GAP: Rems = rems(0.75);
 /// `RadioGroup::child` takes `impl Into<Radio>`, so a `&str` child would
 /// build a `Radio` with no refinement; built here instead, each row carries
 /// the platform's label gap and font. The group overwrites the id
-/// (`radio.rs:403`), not the style.
+/// (`radio.rs:411`), not the style.
 pub(crate) fn radio_group(
     ui: &Entity<InfoRegistry>,
     cx: &App,

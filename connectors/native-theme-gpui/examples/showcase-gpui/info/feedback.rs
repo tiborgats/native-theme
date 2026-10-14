@@ -596,8 +596,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4687-4694 for fills and edges, :4697 and
-    // :4746 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre window.rs:4687-4694 for fills and edges, :4831 and
+    // :4880 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| {
@@ -747,11 +747,11 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
     let info = if built {
-        info.not_themeable("delay", "gpui's own tooltip, set on an element rather than through Button::tooltip, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay, though the platforms do -- our model's gap")
+        info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase does not. native-theme states no hover delay, though the platforms do -- our model's gap")
             .not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
     } else {
-        info.not_themeable("delay", "500ms, and fixed for a Button's tooltip: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), whose SHOW_DELAY is a module const (gpui-base/tooltip.rs, SHOW_DELAY). native-theme states no hover delay, though the platforms do -- our model's gap")
+        info.not_themeable("delay", "500ms to show and 300ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 422). The showcase installs no defaults and sets no trigger's delay. native-theme states no hover delay, though the platforms do -- our model's gap")
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
     };
     info.instance(
@@ -772,7 +772,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/tooltip.rs:114",
+            "gpui-component/tooltip.rs:115",
         ),
         claim(
             "tooltip border",

@@ -20,7 +20,7 @@
 //! (a dialog's close button, calendar navigation, the tab bar) stay upstream
 //! work; see "Upstream PR candidates" in `docs/todo.md`.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1.
+//! Upstream citations in this module are verified against gpui-component 0.7.3.
 
 use gpui::App;
 use gpui_component::ActiveTheme as _;

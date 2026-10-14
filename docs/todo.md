@@ -1609,6 +1609,11 @@ model, the platform presets and the three connectors
       (`geometry::scrollbar_gutter`), which works only because a group applies
       the caller's refinement last (`setting/group.rs:112`); the page body
       takes no refinement.
+      *GPUI Kit 0.7.3 (2026-10-14):* the Settings page body no longer pads the
+      list: each group's row is wrapped in a div carrying that `px_4`, inside
+      the list's clip, so focus rings can reach past the group's edges
+      (`setting/page.rs:239-243`; the scrollbar at `:255`). The 21px groove
+      still covers the row's right edge, so the gutter is still needed.
 - [ ] [upstream] element hooks on the surfaces upstream builds itself, so an
       application can attach an id, a hover handler or a debug selector to
       them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
@@ -1621,6 +1626,11 @@ model, the platform presets and the three connectors
       therefore report a SettingGroup only through its enclosing `Settings`,
       and a Dialog or Sheet only on the title and content it passes in; the
       rest of each surface shows no info, which their notes say.
+      *GPUI Kit 0.7.3 (2026-10-14):* a `SettingGroup` now renders inside a
+      padded div the page's `list` builds for it (`setting/page.rs:237-251`),
+      and a `Dialog`'s surface is built at `dialog/dialog.rs:716-802` and then
+      wrapped for its entrance animation (`:803-841`); neither offers a hook.
+      `sheet.rs` is unchanged.
 - [ ] [v0.7.0] the gpui connector reads `AccessibilityPreferences::high_contrast`
       nowhere but its accessor (`native-theme-gpui` `lib.rs:356-357`,
       `is_high_contrast`): `to_theme` and `apply` build the same theme with it
@@ -2248,6 +2258,15 @@ the gap — closing it is a change, and each wants its own decision.
       something the application can partly set already. Check `platform-facts.md` for what the four
       platforms state — a hover delay at least is a documented system setting
       on Windows (`SPI_GETMOUSEHOVERTIME`).
+      *GPUI Kit 0.7.3 (2026-10-14):* the Button half is no longer true. A
+      Button's tooltip delay has a receiver, `Button::tooltip_show_delay`
+      (`button/button.rs:422`), and the overlay's 500ms show delay and 300ms
+      grace are no longer module consts but the application-wide
+      `TooltipDefaults` (`gpui-base/tooltip.rs:58-108`), which a trigger's own
+      delay overrides (`:227-229`). gpui's own `.tooltip()` still defaults to
+      500ms (`gpui-pre/elements/div.rs:53`) and takes `tooltip_show_delay`
+      (`:1708`). The 0.7.3 work's G2 closes the tooltip half with a model
+      value; the sidebar width stays open.
 - [ ] [1.0] **Platform icons inside widgets: how far can it go?** `Icon` takes a path
       or raw SVG bytes (`icon.rs:117-131`), and this connector already
       rasterises the platform's icon theme, so the type is not the obstacle —
@@ -2901,6 +2920,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (2026-09-23).
       Added since: `SpeechButton`'s Mic / Square (`src/speech/button.rs:96-100`,
       0.7.1).
+      *GPUI Kit 0.7.3 (2026-10-14):* `Diff` adds its own: ArrowDown, ArrowUp
+      and ChevronsUpDown or ChevronDown on a folded hunk's expand buttons
+      (`src/diff/mod.rs:993`, `:1000`, `:1006-1010`), ChevronRight or
+      ChevronDown on a file's collapse button (`:1194-1198`), and Plus on the
+      add-annotation button (`:1546`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps

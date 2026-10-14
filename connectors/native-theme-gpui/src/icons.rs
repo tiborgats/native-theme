@@ -154,7 +154,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Lucide has no equivalent (today only
 /// `StarFill`, spec §10.2); every `Some` is Lucide's own file name
 /// (`LucideLoader::new(name)` resolves it).
@@ -285,7 +285,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Material Symbols has no equivalent
 /// (today only `StarOff`); every `Some` is a bundled Material Symbols Outlined
 /// 24px file.
@@ -441,7 +441,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where the freedesktop icon naming
 /// specification has no name for the concept (today every variant has one,
 /// some only as a labelled `close` or `approximate` substitute: `StarOff` and
@@ -939,7 +939,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
 /// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
-/// `src/window.rs:5037-5048`); nothing releases it on its own. An application
+/// `src/window.rs:5175-5186`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
 /// before it lets go of it. Without `svg-rasterize`, an SVG icon's source is
@@ -1282,7 +1282,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// The pixels are converted the way gpui's own decoder converts them: it turns
 /// the decoded image into RGBA8 and then swaps each pixel's first and third
 /// byte, leaving a BGRA buffer, and premultiplies nothing (gpui-pre
-/// `src/platform.rs:3187-3201`, the `RenderImage` it builds at `:3306`).
+/// `src/platform.rs:3240-3254`, the `RenderImage` it builds at `:3359`).
 ///
 /// Returns `None` for zero dimensions, for a buffer whose length is not
 /// `width × height × 4`, and for dimensions whose product overflows.
@@ -1291,7 +1291,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// atlas from the first frame that draws it, and nothing releases that tile on
 /// its own: gpui frees one only through `App::drop_image` /
 /// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
-/// `src/window.rs:5037-5048`), which its own image cache calls when it evicts
+/// `src/window.rs:5175-5186`), which its own image cache calls when it evicts
 /// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should hand each replaced source to `App::drop_image`

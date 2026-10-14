@@ -237,7 +237,7 @@ impl Parts {
 }
 
 /// gpui-component's check mark, the Lucide `check` icon it draws as
-/// `IconName::Check` (gpui-kit-assets 0.7.1 `assets/icons/check.svg`,
+/// `IconName::Check` (gpui-kit-assets 0.7.3 `assets/icons/check.svg`,
 /// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
 /// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
 const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];
@@ -335,7 +335,7 @@ fn indicator_and_label(
     cx: &mut App,
 ) -> (AnyElement, Option<AnyElement>) {
     // gpui-component fades the mark in and out on a spring rather than
-    // swapping it (checkbox.rs:186-192); gpui holds it still under reduced
+    // swapping it (checkbox.rs:194-200); gpui holds it still under reduced
     // motion.
     let opacity = spring(
         (parts.id.clone(), "mark"),
@@ -582,7 +582,7 @@ impl RenderOnce for Checkbox {
             .items_center()
             .gap(look.label_gap)
             // The row the focus ring follows, as gpui-component rounds it
-            // (checkbox.rs:279).
+            // (checkbox.rs:287).
             .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
@@ -598,7 +598,7 @@ impl RenderOnce for Checkbox {
 /// one requests `true`; a checked one does nothing. The mark is a dot
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
 /// circle (:1220); where the theme states no dot size (macOS publishes none),
-/// it is gpui-component's own check glyph (radio.rs:239).
+/// it is gpui-component's own check glyph (radio.rs:247).
 pub struct Radio {
     parts: Parts,
     position: Option<(usize, usize)>,
