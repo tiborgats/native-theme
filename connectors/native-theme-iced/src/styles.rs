@@ -24,14 +24,17 @@
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 //! That read happens while the widget is being drawn, from the `&Theme` in
-//! effect, so thirteen of these functions -- `button_primary`,
-//! `button_danger`, `button_success`, `button_warning`, `button_link`,
-//! `text_input`, `toggler`, `pick_list`, `menu`, `slider`, `scrollable`,
-//! `rule` and `pane_grid` --
+//! effect, so twelve of these functions -- `button_danger`,
+//! `button_success`, `button_warning`, `button_link`, `text_input`,
+//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable`, `rule` and
+//! `pane_grid` --
 //! assume that theme is the one `to_theme(resolved)` built from the same
 //! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
 //! a different palette: the hover of `button_danger`, for one, is then
 //! strengthened from a danger color that is not its own idle fill.
+//! `button_primary` is not among them: it derives its hover from its own fill,
+//! and takes only the shadow and snap from iced's class, which that class
+//! leaves at `Style::default()` (`button.rs:735-741`).
 //!
 //! Two of iced's own classes are left alone on purpose: `container::bordered_box`
 //! (`container.rs:595-607`) and `button::subtle` (`button.rs:713-715`) paint

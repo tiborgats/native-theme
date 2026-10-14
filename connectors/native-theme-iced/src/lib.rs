@@ -219,7 +219,7 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
-//! | `styles` (27 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container, segmented control and its segments, expander header and frame; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | `styles` (28 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
@@ -281,6 +281,8 @@ pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, Tr
 pub use native_theme::theme::{
     ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
 };
+#[cfg(feature = "watch")]
+pub use native_theme::watch::ThemeChangeEvent;
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]

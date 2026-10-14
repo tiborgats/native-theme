@@ -510,25 +510,31 @@ Windows.
 
 ### Apply user overrides to the OS theme
 
+`to_iced_theme()` builds the iced theme in the customised theme's own mode;
+`to_theme` would leave its light or dark flag to iced's guess from the
+background's lightness, which an overlay that changes the background can
+mislead:
+
 ```rust,ignore
-use native_theme::{SystemTheme, theme::Theme};
-use native_theme_iced::to_theme;
+use native_theme_iced::{SystemTheme, SystemThemeExt, Theme};
 
 let sys = SystemTheme::from_system()?;
 let overlay = Theme::from_toml(r##"[light.defaults]
 accent_color = "#ff6600"
 "##)?;
 let customised = sys.with_overlay(&overlay)?;
-let theme = to_theme(customised.pick(customised.mode), "My App");
+let loaded = customised.to_iced_theme();
 ```
 
 ### Custom icons
 
-For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build):
+For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build).
+The code it generates names `native_theme::` paths, so the application
+depends on native-theme itself, as in [Runtime theme change](#runtime-theme-change):
 
 ```rust,ignore
+use native_theme_iced::IconSet;
 use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
-use native_theme::theme::IconSet;
 
 let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material, None);
 let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, None);
@@ -566,24 +572,31 @@ if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
 
 `Spinner` (feature `spinner`, default) is the platform's loading indicator
 at `spinner.diameter`: the icon set's own animated indicator — for a
-freedesktop set the given icon theme's `process-working`, for Material and
-Lucide their bundled one recoloured `spinner.fill_color` — and, for a set
-with none (SF Symbols, Segoe), an arc in `spinner.fill_color` at
-`spinner.stroke_width`. Build it once per theme and icon set, and redraw on a
-timer while it shows:
+freedesktop set the given icon theme's `process-working` in its own colours,
+a symbolic one (`process-working-symbolic`, GNOME's) drawn in
+`defaults.text_color`; for Material and Lucide their bundled one recoloured
+`spinner.fill_color` — and, for a set with none (SF Symbols, Segoe), an arc
+in `spinner.fill_color` at `spinner.stroke_width`. Build it once per theme
+and icon set, and redraw on a timer while it shows:
 
 ```rust,ignore
-let spinner = native_theme_iced::Spinner::new(&resolved, icon_set, icon_theme);
+let spinner = native_theme_iced::Spinner::new(
+    &loaded.resolved,
+    loaded.icon_set,
+    loaded.icon_theme.as_deref(),
+);
 // In view(), `start` an `Instant` the application keeps:
 spinner.view(start.elapsed(), prefs.reduce_motion)
 ```
 
-To play an indicator by hand:
+To play an indicator by hand (`MaterialLoader` and `native_theme::detect`
+need native-theme itself, as in [Runtime theme change](#runtime-theme-change)):
 
 ```rust,ignore
-use native_theme::icons::{AnimatedIcon, MaterialLoader, TransformAnimation};
 use native_theme::detect::prefers_reduced_motion;
+use native_theme::icons::MaterialLoader;
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
+use native_theme_iced::{AnimatedIcon, TransformAnimation};
 
 if let Some(anim) = MaterialLoader::load_indicator() {
     if prefers_reduced_motion() {

@@ -1,9 +1,10 @@
 //! The OS theme change as an iced subscription (feature `watch`).
 
+use crate::ThemeChangeEvent;
 use iced_futures::Subscription;
 use iced_futures::futures::channel::mpsc;
 use iced_futures::futures::{SinkExt, Stream};
-use native_theme::watch::{ThemeChangeEvent, on_theme_change};
+use native_theme::watch::on_theme_change;
 use std::sync::{Mutex, PoisonError};
 
 /// The OS theme changes, as an iced [`Subscription`]: return it from the
