@@ -4524,60 +4524,107 @@ fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
-/// The native side of every row of the contract on one theme, as text keyed
-/// by the row's name: each palette row, each style row over all of its
-/// statuses, and each accessor row. A colour spliced into the theme reaches a
-/// row when that row's text changes.
+/// Every row of the contract on one theme, as text keyed by the row's name:
+/// each palette row, each style row over all of its statuses, and each
+/// accessor row. A colour spliced into the theme reaches a row when that
+/// row's native text changes.
+///
+/// The emitted side, what the connector builds, is read only where the theme
+/// is the one `to_theme` built from `r` -- once per leaf, on the splice that
+/// first moves a row -- and in the same text, so a row whose emitted text is
+/// not its native text is one the connector fills from another leaf.
 #[cfg(feature = "iced_aw")]
 #[derive(Default)]
-struct Reading(BTreeMap<String, String>);
+struct Reading {
+    native: BTreeMap<String, String>,
+    emitted: Option<BTreeMap<String, String>>,
+}
 
 #[cfg(feature = "iced_aw")]
 impl Reading {
-    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], r: &ResolvedTheme) {
+    fn put(&mut self, name: String, native: String, emitted: impl FnOnce() -> String) {
+        if let Some(map) = &mut self.emitted {
+            map.insert(name.clone(), emitted());
+        }
+        self.native.insert(name, native);
+    }
+
+    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], t: &Theme, r: &ResolvedTheme) {
         for row in rows {
-            let text = row
+            let native = row
                 .statuses
                 .iter()
                 .map(|&s| format!("{:?};", (row.native)(r, s)))
                 .collect();
-            self.0.insert(row.field.to_owned(), text);
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(color) => format!("{color:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
         }
     }
 
-    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], r: &ResolvedTheme) {
+    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], t: &Theme, r: &ResolvedTheme) {
         for row in rows {
-            let text = row
+            let native = row
                 .statuses
                 .iter()
                 .map(|&s| {
                     let b = (row.native)(r, s);
-                    format!("{:?} {:?} {:?};", b.color, b.width, b.radius)
+                    format!("{:?} {:?} {:?};", b.color, b.width, Radius::new(b.radius))
                 })
                 .collect();
-            self.0.insert(format!("{}.border", row.field), text);
+            self.put(format!("{}.border", row.field), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| {
+                        let b = (row.get)(t, r, s);
+                        format!("{:?} {:?} {:?};", b.color, b.width, b.radius)
+                    })
+                    .collect()
+            });
         }
     }
 
-    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], r: &ResolvedTheme) {
+    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], t: &Theme, r: &ResolvedTheme) {
         for row in rows {
-            let text = row
+            let native = row
                 .statuses
                 .iter()
                 .map(|&s| format!("{:?};", (row.native)(r, s)))
                 .collect();
-            self.0.insert(row.field.to_owned(), text);
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(radius) => format!("{radius:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
         }
     }
 
     fn scalar<S: Copy>(&mut self, rows: &[ScalarRow<S>], t: &Theme, r: &ResolvedTheme) {
         for row in rows {
-            let text = row
+            let native = row
                 .statuses
                 .iter()
                 .map(|&s| format!("{:?};", (row.native)(t, r, s)))
                 .collect();
-            self.0.insert(row.field.to_owned(), text);
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(length) => format!("{length:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
         }
     }
 
@@ -4586,71 +4633,93 @@ impl Reading {
     /// fails, so the base combination's theme serves every splice of it: a
     /// colour moves no length.
     fn of(t: &Theme, r: &ResolvedTheme) -> Self {
-        let mut x = Self::default();
+        Self::read(t, r, None)
+    }
+
+    /// Both sides of every row on `r`, under `t = to_theme(r, key)`. A
+    /// palette row's declared exception for `key` is a slot that may differ
+    /// from its native field there, so its emitted side is taken as given.
+    fn both(t: &Theme, key: &str, r: &ResolvedTheme) -> Self {
+        Self::read(t, r, Some(key))
+    }
+
+    fn read(t: &Theme, r: &ResolvedTheme, key: Option<&str>) -> Self {
+        let mut x = Self {
+            native: BTreeMap::new(),
+            emitted: key.map(|_| BTreeMap::new()),
+        };
         for row in ROWS {
-            x.0.insert(
-                row.slot.to_owned(),
-                format!("{:?}", to_color((row.native)(r))),
-            );
+            let native = format!("{:?}", to_color((row.native)(r)));
+            let excepted = key.is_some_and(|k| row.exceptions.iter().any(|(e, _)| *e == k));
+            let emitted = if excepted {
+                native.clone()
+            } else {
+                format!("{:?}", (row.get)(t, r))
+            };
+            x.put(row.slot.to_owned(), native, || emitted);
         }
         for row in ACCESSOR_ROWS {
-            x.0.insert(row.accessor.to_owned(), format!("{:?}", (row.native)(r)));
+            x.put(
+                row.accessor.to_owned(),
+                format!("{:?}", (row.native)(r)),
+                || format!("{:?}", (row.get)(r)),
+            );
         }
-        x.style(BUTTON_ROWS, r);
-        x.style(BUTTON_PRIMARY_ROWS, r);
-        x.style(BUTTON_DANGER_ROWS, r);
-        x.style(BUTTON_SUCCESS_ROWS, r);
-        x.style(BUTTON_WARNING_ROWS, r);
-        x.style(BUTTON_LINK_ROWS, r);
-        x.style(BUTTON_TOGGLE_ROWS, r);
-        x.style(TEXT_INPUT_ROWS, r);
-        x.style(TEXT_EDITOR_ROWS, r);
-        x.style(CHECKBOX_ROWS, r);
-        x.style(RADIO_ROWS, r);
-        x.style(TOGGLER_ROWS, r);
-        x.style(PICK_LIST_ROWS, r);
-        x.style(MENU_ROWS, r);
-        x.style(SLIDER_ROWS, r);
-        x.style(SCROLLABLE_ROWS, r);
-        x.style(PROGRESS_BAR_ROWS, r);
-        x.style(RULE_ROWS, r);
-        x.style(PANE_GRID_ROWS, r);
-        x.style(TOOLTIP_ROWS, r);
-        x.style(CONTAINER_CARD_ROWS, r);
-        x.style(SEGMENTED_CONTROL_ROWS, r);
-        x.style(SEGMENT_ROWS, r);
-        x.style(EXPANDER_ROWS, r);
-        x.border(BUTTON_BORDER_ROWS, r);
-        x.border(BUTTON_PRIMARY_BORDER_ROWS, r);
-        x.border(BUTTON_DANGER_BORDER_ROWS, r);
-        x.border(BUTTON_SUCCESS_BORDER_ROWS, r);
-        x.border(BUTTON_WARNING_BORDER_ROWS, r);
-        x.border(BUTTON_TOGGLE_BORDER_ROWS, r);
-        x.border(TEXT_INPUT_BORDER_ROWS, r);
-        x.border(TEXT_EDITOR_BORDER_ROWS, r);
-        x.border(CHECKBOX_BORDER_ROWS, r);
-        x.border(PICK_LIST_BORDER_ROWS, r);
-        x.border(MENU_BORDER_ROWS, r);
-        x.border(PROGRESS_BAR_BORDER_ROWS, r);
-        x.border(TOOLTIP_BORDER_ROWS, r);
-        x.border(CONTAINER_CARD_BORDER_ROWS, r);
-        x.border(SEGMENTED_CONTROL_BORDER_ROWS, r);
-        x.border(EXPANDER_BORDER_ROWS, r);
-        x.border(EXPANDER_FRAME_BORDER_ROWS, r);
-        x.radius(TOGGLER_RADIUS_ROWS, r);
+        x.style(BUTTON_ROWS, t, r);
+        x.style(BUTTON_PRIMARY_ROWS, t, r);
+        x.style(BUTTON_DANGER_ROWS, t, r);
+        x.style(BUTTON_SUCCESS_ROWS, t, r);
+        x.style(BUTTON_WARNING_ROWS, t, r);
+        x.style(BUTTON_LINK_ROWS, t, r);
+        x.style(BUTTON_TOGGLE_ROWS, t, r);
+        x.style(TEXT_INPUT_ROWS, t, r);
+        x.style(TEXT_EDITOR_ROWS, t, r);
+        x.style(CHECKBOX_ROWS, t, r);
+        x.style(RADIO_ROWS, t, r);
+        x.style(TOGGLER_ROWS, t, r);
+        x.style(PICK_LIST_ROWS, t, r);
+        x.style(MENU_ROWS, t, r);
+        x.style(SLIDER_ROWS, t, r);
+        x.style(SCROLLABLE_ROWS, t, r);
+        x.style(PROGRESS_BAR_ROWS, t, r);
+        x.style(RULE_ROWS, t, r);
+        x.style(PANE_GRID_ROWS, t, r);
+        x.style(TOOLTIP_ROWS, t, r);
+        x.style(CONTAINER_CARD_ROWS, t, r);
+        x.style(SEGMENTED_CONTROL_ROWS, t, r);
+        x.style(SEGMENT_ROWS, t, r);
+        x.style(EXPANDER_ROWS, t, r);
+        x.border(BUTTON_BORDER_ROWS, t, r);
+        x.border(BUTTON_PRIMARY_BORDER_ROWS, t, r);
+        x.border(BUTTON_DANGER_BORDER_ROWS, t, r);
+        x.border(BUTTON_SUCCESS_BORDER_ROWS, t, r);
+        x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
+        x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
+        x.border(TEXT_INPUT_BORDER_ROWS, t, r);
+        x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
+        x.border(CHECKBOX_BORDER_ROWS, t, r);
+        x.border(PICK_LIST_BORDER_ROWS, t, r);
+        x.border(MENU_BORDER_ROWS, t, r);
+        x.border(PROGRESS_BAR_BORDER_ROWS, t, r);
+        x.border(TOOLTIP_BORDER_ROWS, t, r);
+        x.border(CONTAINER_CARD_BORDER_ROWS, t, r);
+        x.border(SEGMENTED_CONTROL_BORDER_ROWS, t, r);
+        x.border(EXPANDER_BORDER_ROWS, t, r);
+        x.border(EXPANDER_FRAME_BORDER_ROWS, t, r);
+        x.radius(TOGGLER_RADIUS_ROWS, t, r);
         x.scalar(RADIO_SCALAR_ROWS, t, r);
         x.scalar(TOGGLER_SCALAR_ROWS, t, r);
         x.scalar(SLIDER_SCALAR_ROWS, t, r);
         x.scalar(PANE_GRID_SCALAR_ROWS, t, r);
         x.scalar(SEGMENT_SCALAR_ROWS, t, r);
-        x.style(AW_CARD_ROWS, r);
-        x.style(AW_MENU_ROWS, r);
-        x.style(AW_TAB_BAR_ROWS, r);
-        x.style(AW_SIDEBAR_ROWS, r);
-        x.style(AW_SELECTION_LIST_ROWS, r);
-        x.style(AW_SPINNER_ROWS, r);
-        x.border(AW_MENU_BORDER_ROWS, r);
-        x.radius(AW_TAB_BAR_RADIUS_ROWS, r);
+        x.style(AW_CARD_ROWS, t, r);
+        x.style(AW_MENU_ROWS, t, r);
+        x.style(AW_TAB_BAR_ROWS, t, r);
+        x.style(AW_SIDEBAR_ROWS, t, r);
+        x.style(AW_SELECTION_LIST_ROWS, t, r);
+        x.style(AW_SPINNER_ROWS, t, r);
+        x.border(AW_MENU_BORDER_ROWS, t, r);
+        x.radius(AW_TAB_BAR_RADIUS_ROWS, t, r);
         x.scalar(AW_CARD_SCALAR_ROWS, t, r);
         x.scalar(AW_TAB_BAR_SCALAR_ROWS, t, r);
         x.scalar(AW_SIDEBAR_SCALAR_ROWS, t, r);
@@ -4660,10 +4729,29 @@ impl Reading {
 
     /// The rows whose native side differs between two readings.
     fn moved(&self, after: &Self) -> Vec<String> {
-        self.0
+        self.native
             .iter()
-            .filter(|(name, value)| after.0.get(*name) != Some(*value))
+            .filter(|(name, value)| after.native.get(*name) != Some(*value))
             .map(|(name, _)| name.clone())
+            .collect()
+    }
+
+    /// The rows of `names` whose emitted side is not their native side, each
+    /// with both texts.
+    fn drifted(&self, names: &[String]) -> Vec<String> {
+        names
+            .iter()
+            .filter_map(|name| {
+                let native = self.native.get(name);
+                let emitted = self.emitted.as_ref().and_then(|m| m.get(name));
+                (native != emitted).then(|| {
+                    format!(
+                        "{name} emits {} where its native side gives {}",
+                        emitted.map_or("nothing", String::as_str),
+                        native.map_or("nothing", String::as_str)
+                    )
+                })
+            })
             .collect()
     }
 }
@@ -4712,6 +4800,14 @@ fn names(entry: &str, leaf: &str) -> bool {
 /// (`checkbox.background_color`, in 2 of the 34), which is why every base is
 /// read. A leaf that reaches a row is not spliced in the bases after.
 ///
+/// A row's native closure could read a leaf the connector does not, where the
+/// two are equal in every bundled combination (`text_area.border` and
+/// `input.border` are), and then `every_style_field_equals_its_native_value`
+/// cannot tell. So on the splice that first moves a row, the iced theme is
+/// built from the spliced values and every row it moved must emit exactly
+/// its new native value: a row whose native side moves and whose emitted
+/// side does not fails, naming the leaf, the row and the base.
+///
 /// Every leaf that reaches no row must be named once, by `UNREAD_COLOURS` or
 /// `UNREACHABLE`. An entry of either that names a leaf a row reads is stale,
 /// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
@@ -4735,6 +4831,7 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         leaves.extend(colour_leaves(json));
     }
 
+    let mut failures = Vec::new();
     // The rows each leaf first moved, in the first base it moved one in.
     let mut reached: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let n = combinations.len();
@@ -4764,6 +4861,14 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
                 };
                 let rows = base.moved(&Reading::of(&c.theme, &r));
                 if !rows.is_empty() {
+                    let built = crate::to_theme(&r, c.key);
+                    for drift in Reading::both(&built, c.key, &r).drifted(&rows) {
+                        failures.push(format!(
+                            "{leaf} on {} moves a row the connector does not fill \
+                             from it: {drift}",
+                            c.label()
+                        ));
+                    }
                     reached.insert(leaf.clone(), rows);
                     break;
                 }
@@ -4771,7 +4876,6 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         }
     }
 
-    let mut failures = Vec::new();
     let (mut by_rows, mut by_accessors, mut by_exact, mut by_prefix, mut by_unreachable) =
         (0, 0, 0, 0, 0);
     for leaf in &leaves {

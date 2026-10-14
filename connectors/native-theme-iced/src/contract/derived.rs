@@ -1186,10 +1186,12 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "defaults.disabled_text_color",
         why: Unread::Inherited(
-            "iced has no application-wide disabled colour; each widget's own \
-             disabled text colour inherits this one and is what its row reads \
-             (`docs/inheritance-rules.toml:161`, `:170`, `:183`, `:191`, \
-             `:283`, `:292`)",
+            "iced has no application-wide disabled colour. The disabled text \
+             colours of the button, the input, the check box, the list and \
+             the link inherit this one, and rows read each of them \
+             (`docs/inheritance-rules.toml:161`, `:170`, `:183`, `:274`, \
+             `:292`); the menu's and the combo box's inherit it too (`:191`, \
+             `:283`) and have no receiver, as their entries here say",
         ),
     },
     UnreadColour {
@@ -1355,7 +1357,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              `theme::Style.background_color` \
              (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` \
              takes from the palette's background (`theme.rs:291-293`, \
-             `:326-334`), `defaults.background_color`; this leaf inherits that \
+             `:328-336`), `defaults.background_color`; this leaf inherits that \
              one (`docs/inheritance-rules.toml:149`) and equals it in all 34 \
              bundled combinations. A style for `application(..).style(..)` that \
              reads it is a docs/todo.md item. Ruling T12a C4",
