@@ -20,6 +20,8 @@ use iced_core::Color;
 use iced_core::theme::Theme;
 use iced_core::theme::palette::{Danger, Extended, Pair, Primary, Secondary, Success, Warning};
 use native_theme::color::Rgba;
+#[cfg(feature = "widgets")]
+use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "widgets")]
 use crate::styles;
@@ -4318,5 +4320,500 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
         assert_clone(&styles::aw::spinner(r));
     }
 
+    Ok(())
+}
+
+/// Every leaf of a serialised `ResolvedTheme`, under its dotted path, with its
+/// value: the walk descends into objects and keeps everything else, a `null`
+/// (an unstated soft option) included. egui's `leaf_paths`
+/// (`native-theme-egui/src/mapping_tests.rs`) is the same walk.
+#[cfg(feature = "widgets")]
+fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
+    fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, child) in map {
+                    let path = if prefix.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{prefix}.{key}")
+                    };
+                    walk(&path, child, out);
+                }
+            }
+            _ => out.push((prefix.to_owned(), value.clone())),
+        }
+    }
+    let mut out = Vec::new();
+    walk("", value, &mut out);
+    out
+}
+
+/// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
+/// theme; `None` where the leaf already holds it or does not take a colour.
+#[cfg(feature = "widgets")]
+fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
+    let pointer = format!("/{}", leaf.replace('.', "/"));
+    let value = serde_json::Value::String(hex.to_owned());
+    if json.pointer(&pointer)? == &value {
+        return None;
+    }
+    let mut b = json.clone();
+    *b.pointer_mut(&pointer)? = value;
+    serde_json::from_value(b).ok()
+}
+
+/// The colour leaves of one serialised theme: a leaf whose value is a colour,
+/// or a `null` a colour splices into -- an `Option<Rgba>` the theme leaves
+/// unstated.
+#[cfg(feature = "widgets")]
+fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
+    leaf_values(json)
+        .into_iter()
+        .filter(|(leaf, value)| match value {
+            serde_json::Value::String(s) => s.starts_with('#') && s.parse::<Rgba>().is_ok(),
+            serde_json::Value::Null => spliced_colour(json, leaf, "#123456").is_some(),
+            _ => false,
+        })
+        .map(|(leaf, _)| leaf)
+        .collect()
+}
+
+/// What one theme gives, as text keyed by name: every row's native side and
+/// emitted side over all of the row's statuses, and every whole output the
+/// connector builds -- each `styles::*` function's `Style` over its widget's
+/// statuses, the palette and extended palette, and the colour accessors.
+#[cfg(feature = "widgets")]
+#[derive(Default)]
+struct Reading {
+    native: BTreeMap<String, String>,
+    emitted: BTreeMap<String, String>,
+    output: BTreeMap<String, String>,
+}
+
+#[cfg(feature = "widgets")]
+impl Reading {
+    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let (mut n, mut e) = (String::new(), String::new());
+            for &s in row.statuses {
+                n += &format!("{:?};", (row.native)(r, s));
+                e += &format!("{:?};", (row.get)(t, r, s));
+            }
+            self.native.insert(row.field.to_owned(), n);
+            self.emitted.insert(row.field.to_owned(), e);
+        }
+    }
+
+    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let (mut n, mut e) = (String::new(), String::new());
+            for &s in row.statuses {
+                let b = (row.native)(r, s);
+                n += &format!("{:?} {:?} {:?};", b.color, b.width, b.radius);
+                e += &format!("{:?};", (row.get)(t, r, s));
+            }
+            let field = format!("{}.border", row.field);
+            self.native.insert(field.clone(), n);
+            self.emitted.insert(field, e);
+        }
+    }
+
+    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let (mut n, mut e) = (String::new(), String::new());
+            for &s in row.statuses {
+                n += &format!("{:?};", (row.native)(r, s));
+                e += &format!("{:?};", (row.get)(t, r, s));
+            }
+            self.native.insert(row.field.to_owned(), n);
+            self.emitted.insert(row.field.to_owned(), e);
+        }
+    }
+
+    fn scalar<S: Copy>(&mut self, rows: &[ScalarRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let (mut n, mut e) = (String::new(), String::new());
+            for &s in row.statuses {
+                n += &format!("{:?};", (row.native)(t, r, s));
+                e += &format!("{:?};", (row.get)(t, r, s));
+            }
+            self.native.insert(row.field.to_owned(), n);
+            self.emitted.insert(row.field.to_owned(), e);
+        }
+    }
+
+    fn whole<S: Copy, O: std::fmt::Debug>(
+        &mut self,
+        name: &str,
+        statuses: &[S],
+        style: impl Fn(S) -> O,
+    ) {
+        let text: String = statuses
+            .iter()
+            .map(|&s| format!("{:?};", style(s)))
+            .collect();
+        self.output.insert(name.to_owned(), text);
+    }
+
+    /// Every row and output of the contract on one theme.
+    fn of(t: &Theme, r: &ResolvedTheme) -> Self {
+        let mut x = Self::default();
+        for row in ROWS {
+            x.native.insert(
+                row.slot.to_owned(),
+                format!("{:?}", to_color((row.native)(r))),
+            );
+            x.emitted
+                .insert(row.slot.to_owned(), format!("{:?}", (row.get)(t, r)));
+        }
+        x.style(BUTTON_ROWS, t, r);
+        x.style(BUTTON_PRIMARY_ROWS, t, r);
+        x.style(BUTTON_DANGER_ROWS, t, r);
+        x.style(BUTTON_SUCCESS_ROWS, t, r);
+        x.style(BUTTON_WARNING_ROWS, t, r);
+        x.style(BUTTON_LINK_ROWS, t, r);
+        x.style(BUTTON_TOGGLE_ROWS, t, r);
+        x.style(TEXT_INPUT_ROWS, t, r);
+        x.style(TEXT_EDITOR_ROWS, t, r);
+        x.style(CHECKBOX_ROWS, t, r);
+        x.style(RADIO_ROWS, t, r);
+        x.style(TOGGLER_ROWS, t, r);
+        x.style(PICK_LIST_ROWS, t, r);
+        x.style(MENU_ROWS, t, r);
+        x.style(SLIDER_ROWS, t, r);
+        x.style(SCROLLABLE_ROWS, t, r);
+        x.style(PROGRESS_BAR_ROWS, t, r);
+        x.style(RULE_ROWS, t, r);
+        x.style(TOOLTIP_ROWS, t, r);
+        x.style(CONTAINER_CARD_ROWS, t, r);
+        x.style(SEGMENTED_CONTROL_ROWS, t, r);
+        x.style(SEGMENT_ROWS, t, r);
+        x.style(EXPANDER_ROWS, t, r);
+        x.border(BUTTON_BORDER_ROWS, t, r);
+        x.border(BUTTON_PRIMARY_BORDER_ROWS, t, r);
+        x.border(BUTTON_DANGER_BORDER_ROWS, t, r);
+        x.border(BUTTON_SUCCESS_BORDER_ROWS, t, r);
+        x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
+        x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
+        x.border(TEXT_INPUT_BORDER_ROWS, t, r);
+        x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
+        x.border(CHECKBOX_BORDER_ROWS, t, r);
+        x.border(PICK_LIST_BORDER_ROWS, t, r);
+        x.border(MENU_BORDER_ROWS, t, r);
+        x.border(PROGRESS_BAR_BORDER_ROWS, t, r);
+        x.border(TOOLTIP_BORDER_ROWS, t, r);
+        x.border(CONTAINER_CARD_BORDER_ROWS, t, r);
+        x.border(SEGMENTED_CONTROL_BORDER_ROWS, t, r);
+        x.border(EXPANDER_BORDER_ROWS, t, r);
+        x.border(EXPANDER_FRAME_BORDER_ROWS, t, r);
+        x.radius(TOGGLER_RADIUS_ROWS, t, r);
+        x.scalar(RADIO_SCALAR_ROWS, t, r);
+        x.scalar(TOGGLER_SCALAR_ROWS, t, r);
+        x.scalar(SLIDER_SCALAR_ROWS, t, r);
+        x.scalar(SEGMENT_SCALAR_ROWS, t, r);
+        #[cfg(feature = "iced_aw")]
+        {
+            x.style(AW_CARD_ROWS, t, r);
+            x.style(AW_MENU_ROWS, t, r);
+            x.style(AW_TAB_BAR_ROWS, t, r);
+            x.style(AW_SIDEBAR_ROWS, t, r);
+            x.style(AW_SELECTION_LIST_ROWS, t, r);
+            x.style(AW_SPINNER_ROWS, t, r);
+            x.border(AW_MENU_BORDER_ROWS, t, r);
+            x.radius(AW_TAB_BAR_RADIUS_ROWS, t, r);
+            x.scalar(AW_CARD_SCALAR_ROWS, t, r);
+            x.scalar(AW_TAB_BAR_SCALAR_ROWS, t, r);
+            x.scalar(AW_SIDEBAR_SCALAR_ROWS, t, r);
+            x.scalar(AW_SELECTION_LIST_SCALAR_ROWS, t, r);
+        }
+
+        x.output
+            .insert("palette".to_owned(), format!("{:?}", t.palette()));
+        for (slot, color) in extended_slots(t.extended_palette()) {
+            x.output.insert(slot, format!("{color:?}"));
+        }
+        for (name, color) in [
+            ("crate::border_color", crate::border_color(r)),
+            ("crate::focus_ring_color", crate::focus_ring_color(r)),
+            ("crate::link_color", crate::link_color(r)),
+            (
+                "crate::expander_arrow_color",
+                crate::expander_arrow_color(r),
+            ),
+            (
+                "crate::selection_background",
+                crate::selection_background(r),
+            ),
+            ("crate::info_color", crate::info_color(r)),
+            ("crate::info_text_color", crate::info_text_color(r)),
+            ("crate::warning_text_color", crate::warning_text_color(r)),
+        ] {
+            x.output.insert(name.to_owned(), format!("{color:?}"));
+        }
+        let unit: &[()] = &[()];
+        x.whole("styles::button", BUTTON_STATUSES, |s| {
+            styles::button(r)(t, s)
+        });
+        x.whole("styles::button_primary", BUTTON_STATUSES, |s| {
+            styles::button_primary(r)(t, s)
+        });
+        x.whole("styles::button_danger", BUTTON_STATUSES, |s| {
+            styles::button_danger(r)(t, s)
+        });
+        x.whole("styles::button_success", BUTTON_STATUSES, |s| {
+            styles::button_success(r)(t, s)
+        });
+        x.whole("styles::button_warning", BUTTON_STATUSES, |s| {
+            styles::button_warning(r)(t, s)
+        });
+        x.whole("styles::button_link", BUTTON_STATUSES, |s| {
+            styles::button_link(r)(t, s)
+        });
+        x.whole("styles::button_toggle", BUTTON_TOGGLE_STATUSES, |(c, s)| {
+            styles::button_toggle(r, c)(t, s)
+        });
+        x.whole("styles::text_input", TEXT_INPUT_STATUSES, |s| {
+            styles::text_input(r)(t, s)
+        });
+        x.whole("styles::text_editor", TEXT_EDITOR_STATUSES, |s| {
+            styles::text_editor(r)(t, s)
+        });
+        x.whole("styles::checkbox", CHECKBOX_STATUSES, |s| {
+            styles::checkbox(r)(t, s)
+        });
+        x.whole("styles::radio", RADIO_STATUSES, |s| styles::radio(r)(t, s));
+        x.whole("styles::toggler", TOGGLER_STATUSES, |s| {
+            styles::toggler(r)(t, s)
+        });
+        x.whole("styles::pick_list", PICK_LIST_STATUSES, |s| {
+            styles::pick_list(r)(t, s)
+        });
+        x.whole("styles::menu", unit, |()| styles::menu(r)(t));
+        x.whole("styles::slider", SLIDER_STATUSES, |s| {
+            styles::slider(r)(t, s)
+        });
+        x.whole("styles::scrollable", SCROLLABLE_STATUSES, |s| {
+            styles::scrollable(r)(t, s)
+        });
+        x.whole("styles::scrollbar", unit, |()| styles::scrollbar(r));
+        x.whole("styles::progress_bar", unit, |()| {
+            styles::progress_bar(r)(t)
+        });
+        x.whole("styles::rule", unit, |()| styles::rule(r)(t));
+        x.whole("styles::tooltip", unit, |()| styles::tooltip(r)(t));
+        x.whole("styles::container_card", unit, |()| {
+            styles::container_card(r)(t)
+        });
+        x.whole("styles::segmented_control", unit, |()| {
+            styles::segmented_control(r)(t)
+        });
+        for &position in SEGMENT_POSITIONS {
+            x.whole(
+                &format!("styles::segment({position:?})"),
+                SEGMENT_STATUSES,
+                |(selected, s)| styles::segment(r, selected, position)(t, s),
+            );
+        }
+        x.whole("styles::expander", BUTTON_STATUSES, |s| {
+            styles::expander(r)(t, s)
+        });
+        x.whole("styles::expander_frame", unit, |()| {
+            styles::expander_frame(r)(t)
+        });
+        #[cfg(feature = "iced_aw")]
+        {
+            x.whole("styles::aw::card", AW_STATUSES, |s| {
+                styles::aw::card(r)(t, s)
+            });
+            x.whole("styles::aw::menu", AW_STATUSES, |s| {
+                styles::aw::menu(r)(t, s)
+            });
+            x.whole("styles::aw::tab_bar", AW_STATUSES, |s| {
+                styles::aw::tab_bar(r)(t, s)
+            });
+            x.whole("styles::aw::sidebar", AW_STATUSES, |s| {
+                styles::aw::sidebar(r)(t, s)
+            });
+            x.whole("styles::aw::selection_list", AW_STATUSES, |s| {
+                styles::aw::selection_list(r)(t, s)
+            });
+            x.whole("styles::aw::spinner", unit, |()| styles::aw::spinner(r)(t));
+        }
+        x
+    }
+}
+
+/// The names under which two readings differ.
+#[cfg(feature = "widgets")]
+fn moved(a: &BTreeMap<String, String>, b: &BTreeMap<String, String>) -> Vec<String> {
+    a.iter()
+        .filter(|(name, value)| b.get(*name) != Some(*value))
+        .map(|(name, _)| name.clone())
+        .collect()
+}
+
+/// An opaque colour whose red, green and blue appear in no colour of `json`,
+/// so that no row can emit it by passing another leaf through: counting up
+/// from `#13579b` in the red channel.
+#[cfg(feature = "widgets")]
+fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
+    let taken: BTreeSet<(u8, u8, u8)> = leaf_values(json)
+        .into_iter()
+        .filter_map(|(_, value)| value.as_str().and_then(|s| s.parse::<Rgba>().ok()))
+        .map(|c| (c.r, c.g, c.b))
+        .collect();
+    (0x13..=u8::MAX)
+        .map(|red| (red, 0x57, 0x9b))
+        .find(|rgb| !taken.contains(rgb))
+        .unwrap_or((0x13, 0x57, 0x9b))
+}
+
+/// M1-T7-03's dry run (M5 T12a): which contract rows each colour leaf of
+/// `ResolvedTheme` reaches.
+///
+/// Each of the 34 preset/mode combinations is a base. Every colour leaf is
+/// spliced in turn with three values -- the leaf's value in the next preset
+/// of `list_presets()` in the same mode (egui's T2 method), and an opaque and
+/// a half-transparent sentinel no colour of the base shares its channels
+/// with -- and the contract is read again: a leaf *reaches* a row when the
+/// row's native side moves. The emitted sides and the whole outputs are read
+/// too, so a leaf no row claims still shows where the connector carries it.
+///
+/// Prints, asserts nothing. `cargo test -p native-theme-iced --all-features
+/// colour_leaf_dry_run -- --ignored --nocapture`.
+#[cfg(feature = "widgets")]
+#[test]
+#[ignore = "M1-T7-03 dry run: prints the colour-leaf map, asserts nothing"]
+fn colour_leaf_dry_run() -> native_theme::Result<()> {
+    let started = std::time::Instant::now();
+    let combinations = combinations()?;
+    let jsons: Vec<serde_json::Value> = combinations
+        .iter()
+        .filter_map(|c| serde_json::to_value(&c.resolved).ok())
+        .collect();
+    assert_eq!(
+        jsons.len(),
+        combinations.len(),
+        "every ResolvedTheme serialises"
+    );
+
+    let mut leaves: BTreeSet<String> = BTreeSet::new();
+    for json in &jsons {
+        leaves.extend(colour_leaves(json));
+    }
+
+    #[derive(Default)]
+    struct Reach {
+        native: BTreeSet<String>,
+        emitted: BTreeSet<String>,
+        output: BTreeSet<String>,
+        bases: BTreeSet<String>,
+        splices: usize,
+    }
+    let mut reach: BTreeMap<String, Reach> = leaves
+        .iter()
+        .map(|l| (l.clone(), Reach::default()))
+        .collect();
+
+    let n = combinations.len();
+    for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
+        let base = Reading::of(&c.theme, &c.resolved);
+        let donor = (1..n)
+            .map(|k| (i + 2 * k) % n)
+            .find(|&j| combinations[j].is_dark == c.is_dark)
+            .map(|j| &jsons[j]);
+        let (red, green, blue) = sentinel_rgb(json);
+        let sentinels = [
+            format!("#{red:02x}{green:02x}{blue:02x}"),
+            format!("#{red:02x}{green:02x}{blue:02x}80"),
+        ];
+        for leaf in &leaves {
+            let pointer = format!("/{}", leaf.replace('.', "/"));
+            let from_donor = donor
+                .and_then(|d| d.pointer(&pointer))
+                .and_then(|v| v.as_str())
+                .map(str::to_owned);
+            let entry = reach.entry(leaf.clone()).or_default();
+            for hex in from_donor.iter().chain(&sentinels) {
+                let Some(r) = spliced_colour(json, leaf, hex) else {
+                    continue;
+                };
+                entry.splices += 1;
+                let t = crate::to_theme(&r, c.key);
+                let after = Reading::of(&t, &r);
+                let native = moved(&base.native, &after.native);
+                if !native.is_empty() {
+                    entry.bases.insert(c.label());
+                }
+                entry.native.extend(native);
+                entry.emitted.extend(moved(&base.emitted, &after.emitted));
+                entry.output.extend(moved(&base.output, &after.output));
+            }
+        }
+    }
+
+    let elapsed = started.elapsed();
+    let reached = reach.values().filter(|x| !x.native.is_empty()).count();
+    println!(
+        "colour leaves: {}, reaching a row: {reached}, unmapped: {}, run time {elapsed:.2?}",
+        reach.len(),
+        reach.len() - reached
+    );
+    println!("\n## Reached");
+    for (leaf, x) in reach.iter().filter(|(_, x)| !x.native.is_empty()) {
+        let only_emitted: Vec<&String> = x.emitted.difference(&x.native).collect();
+        let extra = if only_emitted.is_empty() {
+            String::new()
+        } else {
+            format!("  [emitted only: {}]", only_emitted.len())
+        };
+        println!(
+            "{leaf} -> {} rows, {} bases{extra}: {}",
+            x.native.len(),
+            x.bases.len(),
+            x.native.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+        for e in &only_emitted {
+            println!("    emitted only: {e}");
+        }
+    }
+    println!("\n## Unmapped");
+    let value_in = |json: &serde_json::Value, leaf: &str| {
+        json.pointer(&format!("/{}", leaf.replace('.', "/")))
+            .cloned()
+    };
+    for (leaf, x) in reach.iter().filter(|(_, x)| x.native.is_empty()) {
+        let unreachable = UNREACHABLE.iter().any(|u| {
+            leaf == u.field
+                || leaf
+                    .strip_prefix(u.field)
+                    .is_some_and(|rest| rest.starts_with('.'))
+        });
+        // The reached leaves this one equals in every base: what it carries
+        // where a row would read it today.
+        let twins: Vec<&String> = reach
+            .iter()
+            .filter(|(other, y)| {
+                !y.native.is_empty()
+                    && jsons
+                        .iter()
+                        .all(|json| value_in(json, leaf) == value_in(json, other))
+            })
+            .map(|(other, _)| other)
+            .collect();
+        println!(
+            "{leaf} ({} splices){}: emitted [{}] output [{}] equal everywhere to [{}]",
+            x.splices,
+            if unreachable { " UNREACHABLE" } else { "" },
+            x.emitted.iter().cloned().collect::<Vec<_>>().join(", "),
+            x.output.iter().cloned().collect::<Vec<_>>().join(", "),
+            twins
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
     Ok(())
 }
