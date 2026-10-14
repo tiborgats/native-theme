@@ -51,7 +51,9 @@ use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Background, Border, Color};
 use native_theme::color::Rgba;
-use native_theme::theme::ResolvedTheme;
+use native_theme::theme::{
+    ResolvedCheckboxTheme, ResolvedInputTheme, ResolvedTheme, ResolvedWidgetBorder,
+};
 
 // Every widget module of `iced_widget` shares its name with the helper
 // function that builds that widget, and these functions share it too, so each
@@ -148,6 +150,16 @@ fn faded_border(border: Border, opacity: f32) -> Border {
     }
 }
 
+/// `border` as iced outlines a widget: the colour, the line width and the
+/// corner radius the theme states.
+pub(crate) fn border_of(border: &ResolvedWidgetBorder) -> Border {
+    Border {
+        color: to_color(border.color),
+        width: border.line_width,
+        radius: Radius::new(border.corner_radius),
+    }
+}
+
 /// The platform's own plain button, for `button(..).style(..)`.
 ///
 /// This is the neutral class, so it replaces `iced_widget::button::secondary`,
@@ -189,11 +201,7 @@ pub fn button(
     let disabled_label = to_color(b.disabled_text_color);
     let opacity = b.disabled_opacity;
 
-    let border = Border {
-        color: to_color(b.border.color),
-        width: b.border.line_width,
-        radius: Radius::new(b.border.corner_radius),
-    };
+    let border = border_of(&b.border);
 
     move |_theme, status| {
         let iced = Style::default();
@@ -317,11 +325,7 @@ fn class_button(
     };
     let opacity = b.disabled_opacity;
 
-    let border = Border {
-        color: to_color(b.border.color),
-        width: b.border.line_width,
-        radius: Radius::new(b.border.corner_radius),
-    };
+    let border = border_of(&b.border);
 
     move |theme, status| {
         let iced = class(theme, status);
@@ -508,6 +512,52 @@ pub fn button_link(
     }
 }
 
+/// The `input.*` values [`text_input`] and [`text_editor`] both emit, as the
+/// model states one `InputTheme` for both: the fill, the border and the value
+/// of a field at rest, hovered, focused and disabled, and the two colours
+/// every state shares.
+#[derive(Clone, Copy)]
+struct InputColors {
+    active: (Color, Border, Color),
+    hovered: (Color, Border, Color),
+    focused: (Color, Border, Color),
+    disabled: (Color, Border, Color),
+    placeholder: Color,
+    selection: Color,
+}
+
+impl InputColors {
+    fn new(i: &ResolvedInputTheme) -> Self {
+        let idle = to_color(i.background_color);
+        // A translucent disabled fill replaces the idle one and lets the
+        // window through, so it is emitted as given.
+        let disabled = to_color(i.disabled_background.unwrap_or(i.background_color));
+        let text = to_color(i.font.color);
+        let opacity = i.disabled_opacity;
+
+        // Both border soft options fall back to the border's own color: the
+        // platform saying the field does not change outline in that state.
+        let border = border_of(&i.border);
+        let outlined = |color: Option<Rgba>| Border {
+            color: color.map_or(border.color, to_color),
+            ..border
+        };
+
+        Self {
+            active: (idle, border, text),
+            hovered: (idle, outlined(i.hover_border_color), text),
+            focused: (idle, outlined(i.focus_border_color), text),
+            disabled: (
+                faded(disabled, opacity),
+                faded_border(border, opacity),
+                faded(to_color(i.disabled_text_color), opacity),
+            ),
+            placeholder: to_color(i.placeholder_color),
+            selection: to_color(i.selection_background),
+        }
+    }
+}
+
 /// The platform's own text field, for `text_input(..).style(..)` and for
 /// `ComboBox::input_style(..)`.
 ///
@@ -530,53 +580,26 @@ pub fn text_input(
 {
     use iced_widget::text_input::{Status, Style};
 
-    let i = &resolved.input;
-
-    let idle = to_color(i.background_color);
-    // A translucent disabled fill replaces the idle one and lets the window
-    // through, so it is emitted as given.
-    let disabled = to_color(i.disabled_background.unwrap_or(i.background_color));
-
-    // Both border soft options fall back to the border's own color: the
-    // platform saying the field does not change outline in that state.
-    let idle_border = to_color(i.border.color);
-    let hover_border = to_color(i.hover_border_color.unwrap_or(i.border.color));
-    let focus_border = to_color(i.focus_border_color.unwrap_or(i.border.color));
-    let border_width = i.border.line_width;
-    let border_radius = Radius::new(i.border.corner_radius);
-
-    let placeholder = to_color(i.placeholder_color);
-    let text = to_color(i.font.color);
-    let disabled_text = to_color(i.disabled_text_color);
-    let selection = to_color(i.selection_background);
-    let opacity = i.disabled_opacity;
+    let input = InputColors::new(&resolved.input);
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
-        let (background, border_color, value) = match status {
-            Status::Active => (idle, idle_border, text),
-            Status::Hovered => (idle, hover_border, text),
+        let (background, border, value) = match status {
+            Status::Active => input.active,
+            Status::Hovered => input.hovered,
             // A field that is focused *and* hovered takes the focus border,
             // as iced's own default does: its `Focused` arm ignores
             // `is_hovered` (`text_input.rs:1783-1789`).
-            Status::Focused { is_hovered: _ } => (idle, focus_border, text),
-            Status::Disabled => (
-                faded(disabled, opacity),
-                faded(idle_border, opacity),
-                faded(disabled_text, opacity),
-            ),
+            Status::Focused { is_hovered: _ } => input.focused,
+            Status::Disabled => input.disabled,
         };
         Style {
             background: Background::Color(background),
-            border: Border {
-                color: border_color,
-                width: border_width,
-                radius: border_radius,
-            },
+            border,
             icon: iced.icon,
-            placeholder,
+            placeholder: input.placeholder,
             value,
-            selection,
+            selection: input.selection,
         }
     }
 }
@@ -597,46 +620,23 @@ pub fn text_editor(
 {
     use iced_widget::text_editor::{Status, Style};
 
-    let i = &resolved.input;
-
-    let idle = to_color(i.background_color);
-    let disabled = to_color(i.disabled_background.unwrap_or(i.background_color));
-
-    let idle_border = to_color(i.border.color);
-    let hover_border = to_color(i.hover_border_color.unwrap_or(i.border.color));
-    let focus_border = to_color(i.focus_border_color.unwrap_or(i.border.color));
-    let border_width = i.border.line_width;
-    let border_radius = Radius::new(i.border.corner_radius);
-
-    let placeholder = to_color(i.placeholder_color);
-    let text = to_color(i.font.color);
-    let disabled_text = to_color(i.disabled_text_color);
-    let selection = to_color(i.selection_background);
-    let opacity = i.disabled_opacity;
+    let input = InputColors::new(&resolved.input);
 
     move |_theme, status| {
-        let (background, border_color, value) = match status {
-            Status::Active => (idle, idle_border, text),
-            Status::Hovered => (idle, hover_border, text),
+        let (background, border, value) = match status {
+            Status::Active => input.active,
+            Status::Hovered => input.hovered,
             // Focused and hovered takes the focus border here too, as iced's
             // own default does (`text_editor.rs:1490`).
-            Status::Focused { is_hovered: _ } => (idle, focus_border, text),
-            Status::Disabled => (
-                faded(disabled, opacity),
-                faded(idle_border, opacity),
-                faded(disabled_text, opacity),
-            ),
+            Status::Focused { is_hovered: _ } => input.focused,
+            Status::Disabled => input.disabled,
         };
         Style {
             background: Background::Color(background),
-            border: Border {
-                color: border_color,
-                width: border_width,
-                radius: border_radius,
-            },
-            placeholder,
+            border,
+            placeholder: input.placeholder,
             value,
-            selection,
+            selection: input.selection,
         }
     }
 }
@@ -694,6 +694,46 @@ pub fn checkbox(
     checkbox_over(resolved, to_color(resolved.defaults.background_color))
 }
 
+/// The fills and the border colours `checkbox.*` states for a box, or a
+/// radio, that is not disabled: the model states one `CheckboxTheme` for both
+/// controls.
+#[derive(Clone, Copy)]
+struct CheckFills {
+    checked: Color,
+    unchecked: Color,
+    hovered_unchecked: Color,
+    checked_border: Color,
+    unchecked_border: Color,
+}
+
+impl CheckFills {
+    fn new(c: &ResolvedCheckboxTheme) -> Self {
+        // The three soft options are the platform saying the box looks no
+        // different: unchecked, it has the checkbox's own fill and border;
+        // under the pointer, the fill it has at rest.
+        let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
+        Self {
+            checked: to_color(c.checked_background),
+            unchecked,
+            hovered_unchecked: c.hover_background.map_or(unchecked, |hover| {
+                composite_over(to_color(hover), unchecked)
+            }),
+            checked_border: to_color(c.border.color),
+            unchecked_border: to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
+        }
+    }
+
+    /// The fill and the border colour of a box that is checked or not, under
+    /// the pointer or not. The model states no hover for a checked box.
+    fn at(&self, is_checked: bool, is_hovered: bool) -> (Color, Color) {
+        match (is_checked, is_hovered) {
+            (true, _) => (self.checked, self.checked_border),
+            (false, false) => (self.unchecked, self.unchecked_border),
+            (false, true) => (self.hovered_unchecked, self.unchecked_border),
+        }
+    }
+}
+
 /// [`checkbox`] for a box drawn on `backdrop` rather than on the window: a
 /// disabled box is faded as one widget over `backdrop`.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -707,14 +747,7 @@ pub fn checkbox_over(
     let c = &resolved.checkbox;
     let ground = backdrop;
 
-    let checked = to_color(c.checked_background);
-    // Both soft options are the platform saying the box looks no different:
-    // unchecked, it has the checkbox's own fill; under the pointer, the fill
-    // it has at rest.
-    let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
-    let hovered_unchecked = c.hover_background.map_or(unchecked, |hover| {
-        composite_over(to_color(hover), unchecked)
-    });
+    let fills = CheckFills::new(c);
     // A translucent disabled fill replaces the idle one, so it is as given. With
     // none stated the platform dims by opacity alone
     // (`docs/platform-facts.md` §2.1.6): the box keeps its enabled look.
@@ -725,26 +758,18 @@ pub fn checkbox_over(
     let label = to_color(c.font.color);
     let disabled_label = to_color(c.disabled_text_color);
 
-    let checked_border = to_color(c.border.color);
-    let unchecked_border = to_color(c.unchecked_border_color.unwrap_or(c.border.color));
     let border_width = c.border.line_width;
     let border_radius = Radius::new(c.border.corner_radius);
 
     move |_theme, status| {
         let (background, border_color, text_color, icon_color) = match status {
             Status::Active { is_checked } => {
-                if is_checked {
-                    (checked, checked_border, label, mark)
-                } else {
-                    (unchecked, unchecked_border, label, mark)
-                }
+                let (fill, border) = fills.at(is_checked, false);
+                (fill, border, label, mark)
             }
             Status::Hovered { is_checked } => {
-                if is_checked {
-                    (checked, checked_border, label, mark)
-                } else {
-                    (hovered_unchecked, unchecked_border, label, mark)
-                }
+                let (fill, border) = fills.at(is_checked, true);
+                (fill, border, label, mark)
             }
             // The platform states one disabled fill for both, and the box
             // keeps the outline that says whether it is checked. The mark
@@ -756,11 +781,10 @@ pub fn checkbox_over(
             // box is then faded by `checkbox.disabled_opacity` as one widget
             // over the ground: the border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (background, border, mark) = match (disabled, is_checked) {
-                    (Some(fill), true) => (fill, checked_border, disabled_label),
-                    (Some(fill), false) => (fill, unchecked_border, disabled_label),
-                    (None, true) => (checked, checked_border, mark),
-                    (None, false) => (unchecked, unchecked_border, mark),
+                let (at_rest, border) = fills.at(is_checked, false);
+                let (background, mark) = match disabled {
+                    Some(fill) => (fill, disabled_label),
+                    None => (at_rest, mark),
                 };
                 let fill = composite_over(background, ground);
                 (
@@ -821,35 +845,15 @@ pub fn radio(
 
     let c = &resolved.checkbox;
 
-    let selected = to_color(c.checked_background);
-    let unselected = to_color(c.unchecked_background.unwrap_or(c.background_color));
-    let hovered_unselected = c.hover_background.map_or(unselected, |hover| {
-        composite_over(to_color(hover), unselected)
-    });
-
+    let fills = CheckFills::new(c);
     let dot = to_color(c.indicator_color);
     let label = to_color(c.font.color);
-
-    let selected_border = to_color(c.border.color);
-    let unselected_border = to_color(c.unchecked_border_color.unwrap_or(c.border.color));
     let border_width = c.border.line_width;
 
     move |_theme, status| {
         let (background, border_color) = match status {
-            Status::Active { is_selected } => {
-                if is_selected {
-                    (selected, selected_border)
-                } else {
-                    (unselected, unselected_border)
-                }
-            }
-            Status::Hovered { is_selected } => {
-                if is_selected {
-                    (selected, selected_border)
-                } else {
-                    (hovered_unselected, unselected_border)
-                }
-            }
+            Status::Active { is_selected } => fills.at(is_selected, false),
+            Status::Hovered { is_selected } => fills.at(is_selected, true),
         };
         Style {
             background: Background::Color(background),
@@ -1067,11 +1071,7 @@ pub fn pick_list(
     let label = to_color(c.font.color);
     let placeholder = to_color(resolved.input.placeholder_color);
 
-    let border = Border {
-        color: to_color(c.border.color),
-        width: c.border.line_width,
-        radius: Radius::new(c.border.corner_radius),
-    };
+    let border = border_of(&c.border);
 
     move |theme, status| {
         let iced = iced_widget::pick_list::default(theme, status);
@@ -1124,11 +1124,7 @@ pub fn menu(
     let selected_label = to_color(m.hover_text_color);
     let selected_background = to_color(m.hover_background);
 
-    let border = Border {
-        color: to_color(m.border.color),
-        width: m.border.line_width,
-        radius: Radius::new(m.border.corner_radius),
-    };
+    let border = border_of(&m.border);
 
     move |theme| {
         let iced = iced_widget::overlay::menu::default(theme);
@@ -1411,11 +1407,7 @@ pub fn progress_bar(
     let track = to_color(p.track_color);
     let filled = to_color(p.fill_color);
 
-    let border = Border {
-        color: to_color(p.border.color),
-        width: p.border.line_width,
-        radius: Radius::new(p.border.corner_radius),
-    };
+    let border = border_of(&p.border);
 
     move |_theme| Style {
         background: Background::Color(track),
@@ -1483,11 +1475,7 @@ pub fn tooltip(
     let panel = to_color(t.background_color);
     let label = to_color(t.font.color);
 
-    let border = Border {
-        color: to_color(t.border.color),
-        width: t.border.line_width,
-        radius: Radius::new(t.border.corner_radius),
-    };
+    let border = border_of(&t.border);
 
     move |_theme| {
         let iced = Style::default();
@@ -1525,11 +1513,7 @@ pub fn container_card(
 
     let panel = to_color(c.background_color);
 
-    let border = Border {
-        color: to_color(c.border.color),
-        width: c.border.line_width,
-        radius: Radius::new(c.border.corner_radius),
-    };
+    let border = border_of(&c.border);
 
     move |_theme| {
         let iced = Style::default();
@@ -1615,11 +1599,7 @@ pub fn segmented_control(
     let lines = to_color(s.border.color);
     let label = to_color(s.font.color);
 
-    let border = Border {
-        color: lines,
-        width: s.border.line_width,
-        radius: Radius::new(s.border.corner_radius),
-    };
+    let border = border_of(&s.border);
 
     move |_theme| {
         let iced = Style::default();
@@ -1684,19 +1664,15 @@ pub fn segment(
             to_color(s.font.color),
         )
     };
-    let fade = |color: Color| Color {
-        a: color.a * s.disabled_opacity,
-        ..color
-    };
-    let disabled = composite_over(fade(idle), base);
-    let disabled_label = fade(label);
+    let disabled = composite_over(faded(idle, s.disabled_opacity), base);
+    let disabled_label = faded(label, s.disabled_opacity);
 
-    let outer = (s.border.corner_radius - s.border.line_width).max(0.0);
+    let inner_radius = (s.border.corner_radius - s.border.line_width).max(0.0);
     let radius = match position {
-        SegmentPosition::First => Radius::new(0.0).left(outer),
+        SegmentPosition::First => Radius::new(0.0).left(inner_radius),
         SegmentPosition::Middle => Radius::new(0.0),
-        SegmentPosition::Last => Radius::new(0.0).right(outer),
-        SegmentPosition::Only => Radius::new(outer),
+        SegmentPosition::Last => Radius::new(0.0).right(inner_radius),
+        SegmentPosition::Only => Radius::new(inner_radius),
     };
 
     move |_theme, status| {

@@ -3669,11 +3669,12 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
 #[test]
 fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
     // The twelve soft options the widget functions read: four `checkbox.*`
-    // (three of which `styles::radio` reads again through its own
-    // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and one
-    // `scrollbar.*`. A bundled preset rarely leaves them `None` after
-    // resolution, so the rows cannot tell a right base-state field from a
-    // wrong one; the fallbacks are reached by clearing them here (section 3.2).
+    // (three of which `styles::radio` reads again, through the fills it
+    // shares with `styles::checkbox_over`), five `switch.*`, one
+    // `combo_box.*`, one `slider.*` and one `scrollbar.*`. A bundled preset
+    // rarely leaves them `None` after resolution, so the rows cannot tell a
+    // right base-state field from a wrong one; the fallbacks are reached by
+    // clearing them here (section 3.2).
     // windows-11 states nine of them; the switch's disabled thumb, the
     // slider's thumb hover and the scroll bar's pressed thumb have no source
     // and are already `None`.
