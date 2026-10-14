@@ -2114,11 +2114,18 @@ mod tests {
         assert!(!theme.extended_palette().is_dark);
     }
 
+    /// A light-only theme whose background iced's lightness test calls dark:
+    /// catppuccin-mocha's light variant on its dark variant's background.
     #[test]
     fn from_preset_light_only_asked_for_dark_is_light() {
-        let mut spec = dark_variant_with_light_background();
+        let mut spec = Theme::preset("catppuccin-mocha").unwrap();
+        let dark_bg = spec.dark.as_ref().unwrap().defaults.background_color;
+        spec.light.as_mut().unwrap().defaults.background_color = dark_bg;
         spec.dark = None;
-        let (theme, _) = from_spec(&spec, true).unwrap();
+        let (theme, resolved) = from_spec(&spec, true).unwrap();
+        assert!(iced_core::theme::palette::is_dark(
+            palette::to_palette(&resolved).background
+        ));
         assert!(!theme.extended_palette().is_dark);
     }
 
