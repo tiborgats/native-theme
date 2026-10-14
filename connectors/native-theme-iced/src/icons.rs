@@ -219,7 +219,13 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
     if duration_ms == 0 {
         return iced_core::Radians(0.0);
     }
-    let progress = (elapsed.as_millis() as f32).rem_euclid(duration_ms as f32) / duration_ms as f32;
+    // The remainder in integers: an f32 of the milliseconds steps by 128 ms
+    // twelve days in.
+    let position = elapsed
+        .as_millis()
+        .checked_rem(u128::from(duration_ms))
+        .unwrap_or(0);
+    let progress = position as f32 / duration_ms as f32;
     iced_core::Radians(progress * std::f32::consts::TAU)
 }
 
@@ -837,6 +843,19 @@ mod tests {
         assert!(
             result.0.abs() < 0.01,
             "very large elapsed should wrap to near-zero, got {}",
+            result.0
+        );
+    }
+
+    /// Fourteen days and 50 ms in, a 1000 ms turn is a twentieth of the way
+    /// round: the remainder is taken before the cast to f32, whose step at
+    /// 1.2e9 ms is 128 ms.
+    #[test]
+    fn spin_rotation_is_exact_two_weeks_in() {
+        let result = spin_rotation_radians(std::time::Duration::from_millis(1_209_600_050), 1000);
+        assert!(
+            (result.0 - 0.1 * std::f32::consts::PI).abs() < 1e-4,
+            "expected 0.1π, got {}",
             result.0
         );
     }

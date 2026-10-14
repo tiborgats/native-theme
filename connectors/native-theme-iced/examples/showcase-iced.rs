@@ -1428,11 +1428,7 @@ fn build_animation_caches(
 
     let set_name = icon_set.name().to_string();
     {
-        let indicator = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::load_indicator(freedesktop_theme),
-            other => load_icon_indicator(other, None),
-        };
-        if let Some(anim) = indicator {
+        if let Some(anim) = load_icon_indicator(icon_set, freedesktop_theme) {
             // Cache static first-frame for reduced motion
             if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
                 animated_static.push((set_name.clone(), handle));
