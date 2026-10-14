@@ -901,6 +901,20 @@ where
 /// downward chevron, at the size and line height `Handle::Arrow` takes, so no
 /// glyph of another icon set is drawn.
 ///
+/// Name the renderer: the handle's font type is the renderer's, which the
+/// call cannot infer.
+///
+/// ```
+/// use iced::widget::pick_list;
+/// use native_theme_iced::{from_preset, pick_list_handle};
+///
+/// let (_theme, resolved) = from_preset("adwaita", false)?;
+/// let _choice: iced::Element<'_, ()> = pick_list(["One", "Two"], Some("One"), |_| ())
+///     .handle(pick_list_handle::<iced::Renderer>(&resolved))
+///     .into();
+/// # Ok::<(), native_theme_iced::Error>(())
+/// ```
+///
 /// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]
 #[must_use]

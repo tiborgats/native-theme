@@ -433,7 +433,7 @@ pub fn selection_list(
 }
 
 /// The platform's own spinner, for the container a `Spinner` is wrapped in:
-/// `container(Spinner::new()).style(styles::aw::spinner(&resolved))`.
+/// `container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))`.
 ///
 /// It styles a container because `iced_aw` 0.14.1 gives `Spinner` no `Style`,
 /// no `Catalog` and no style setter at all (`spinner.rs:16-66`): it paints its

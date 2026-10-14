@@ -212,11 +212,12 @@ selection list; iced itself has none of them. With the `iced_aw` feature,
 `styles::aw` covers the [`iced_aw`](https://crates.io/crates/iced_aw) widgets
 that do: `card`, `menu` (for `MenuBar`), `tab_bar` (also `Tabs`'
 `tab_bar_style`), `sidebar`, `selection_list` and `spinner`. `iced_aw`'s
-`Spinner` has no style of its own and paints with the inherited text colour,
+`Spinner` — not this crate's `Spinner`, which draws the platform's indicator
+itself — has no style of its own and paints with the inherited text colour,
 so `spinner` styles a wrapping container:
 
 ```rust,ignore
-container(Spinner::new()).style(styles::aw::spinner(&resolved))
+container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))
 ```
 
 `Card::on_close` is the one receiver `iced_aw` 0.14.1 does not honour: it
@@ -308,11 +309,14 @@ button through a floor under its label:
 ```rust,ignore
 use iced::widget::{button, pick_list, text, text_input};
 use native_theme_iced::{
-    at_least, button_content_min_size, button_padding, combo_box_padding,
-    control_line_height, input_padding, styles,
+    AccessibilityPreferences, at_least, button_content_min_size, button_padding,
+    combo_box_padding, control_line_height, input_padding, pick_list_handle,
+    scaled_text_size, styles,
 };
 
-let size = resolved.input.font.size;
+// `loaded.accessibility` from `from_system()`; under a preset, the default:
+let accessibility = AccessibilityPreferences::default();
+let size = scaled_text_size(resolved.input.font.size, &accessibility);
 let field = text_input("Name", &value)
     .size(size)
     .padding(input_padding(&resolved))
@@ -322,17 +326,22 @@ let field = text_input("Name", &value)
 let save = button(at_least(text("Save"), button_content_min_size(&resolved)))
     .padding(button_padding(&resolved))
     .style(styles::button(&resolved));
-let combo_size = resolved.combo_box.font.size;
+let combo_size = scaled_text_size(resolved.combo_box.font.size, &accessibility);
 let choice = pick_list(options, selected, on_select)
     .text_size(combo_size)
     .padding(combo_box_padding(&resolved))
     .text_line_height(control_line_height(
         &resolved, combo_size, resolved.combo_box.min_height, combo_box_padding(&resolved),
-    ));
+    ))
+    .handle(pick_list_handle::<iced::Renderer>(&resolved));
 ```
 
 `combo_box.min_height` reaches the `PickList` the same way, through
-`text_line_height` with `combo_box_padding`.
+`text_line_height` with `combo_box_padding`. The sizes are the scaled ones the
+controls are drawn at (see [Text scaling](#text-scaling)), so at a large
+factor the line box grows past the minimum. `pick_list_handle` names the
+renderer: the handle's font type is the renderer's, which the call cannot
+infer.
 
 For any other widget the theme states a padding for, `padding_or(&stated,
 default)` does the same over a default you name — a menu item drawn as a
@@ -363,10 +372,13 @@ let label = scaled_text_size(loaded.resolved.button.font.size, &loaded.accessibi
 With a preset there is no OS reading; pass
 `&native_theme_iced::AccessibilityPreferences::default()`, which scales by 1,
 or `native_theme::detect::accessibility_preferences()` to honour the OS
-preferences under the preset (the cached reading: the first call after a system
-read may still run the reduced-motion detection, about 3 ms measured on one KDE
-machine, and every later call returns the cached block in nanoseconds;
-`AccessibilityPreferences::from_system()` runs the platform reader each time).
+preferences under the preset (cached: a system read fills it, the first call
+runs the platform reader where none has run since the last
+`native_theme::detect::invalidate_caches()`, and the block holds until the
+next one, through the changes the theme watcher does not report — text
+scaling or high contrast on GNOME, the macOS accessibility flags, the text
+scale on Windows; `AccessibilityPreferences::from_system()` runs the platform
+reader each time).
 The other two preferences, reduced transparency and reduced motion, have no
 receiver in iced's theme; read them from `AccessibilityPreferences` where your
 application draws translucent surfaces or animates.
@@ -522,6 +534,34 @@ let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material, 
 let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, None);
 ```
 
+### Role icons
+
+An icon by its role, in the theme's icon set and text colour:
+`SystemTheme::icon` loads it from the set the theme names — a freedesktop
+icon from that colour mode's icon theme — and colours it, a freedesktop icon
+only where it is symbolic, so a full-colour one keeps its own palette. An icon
+the set does not have is `None`; nothing is substituted.
+
+```rust,ignore
+use iced::widget::{image, svg};
+use native_theme_iced::icons::{to_image_handle, to_svg_handle};
+use native_theme_iced::{IconRole, SystemTheme, SystemThemeExt, icon_sizes};
+
+let sys = SystemTheme::from_system()?;
+let loaded = sys.to_iced_theme();
+let fg = loaded.resolved.defaults.text_color;
+if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+    let size = icon_sizes(&loaded.resolved).toolbar;
+    // `None`: `sys.icon` has coloured the icon already.
+    let icon: Option<Element<'_, Message>> =
+        match (to_svg_handle(&data, None), to_image_handle(&data)) {
+            (Some(h), _) => Some(svg(h).width(size).height(size).into()),
+            (_, Some(h)) => Some(image(h).width(size).height(size).into()),
+            _ => None,
+        };
+}
+```
+
 ### Animated spinners
 
 `Spinner` (feature `spinner`, default) is the platform's loading indicator
@@ -541,7 +581,7 @@ spinner.view(start.elapsed(), prefs.reduce_motion)
 To play an indicator by hand:
 
 ```rust,ignore
-use native_theme::icons::{AnimatedIcon, MaterialLoader};
+use native_theme::icons::{AnimatedIcon, MaterialLoader, TransformAnimation};
 use native_theme::detect::prefers_reduced_motion;
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
 
@@ -559,8 +599,10 @@ if let Some(anim) = MaterialLoader::load_indicator() {
                 }
             }
             AnimatedIcon::Transform(_) => {
-                let _angle = spin_rotation_radians(elapsed, 1000);
-                // Svg::new(handle).rotation(Rotation::Floating(angle))
+                if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() {
+                    let _angle = spin_rotation_radians(elapsed, duration_ms.get());
+                    // Svg::new(handle).rotation(Rotation::Floating(angle))
+                }
             }
             _ => {}
         }
@@ -578,7 +620,7 @@ the widget's layout box stays constant during rotation.
 | `palette` | Maps native-theme colors to iced's 6-field Palette |
 | `styles` | Per-widget style functions (feature `widgets`, default); `styles::aw` for `iced_aw` (feature `iced_aw`) |
 | `extended` | (internal) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. `apply_overrides`' own doc comment says where each one comes from |
-| `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
+| `icons` | `IconData` to iced `image`/`svg` handles (borrowing and consuming), a provider's custom icons, animated-frame handles and the spin angle; role icons come from `SystemTheme::icon` |
 | `spinner` | `Spinner`, the icon set's animated loading indicator or an arc (feature `spinner`, default) |
 
 ## Showcase

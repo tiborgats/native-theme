@@ -4,6 +4,30 @@
 //! Since iced separates raster images (`iced::widget::Image`) from SVG
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
+//!
+//! An icon by its role comes from [`SystemTheme::icon`](native_theme::SystemTheme::icon),
+//! in the theme's icon set and the colour given; pass `None` to
+//! [`to_svg_handle`] for it, since `icon` has coloured it already:
+//!
+//! ```no_run
+//! use iced::widget::{image, svg};
+//! use native_theme_iced::icons::{to_image_handle, to_svg_handle};
+//! use native_theme_iced::{IconRole, SystemTheme, SystemThemeExt, icon_sizes};
+//!
+//! let sys = SystemTheme::from_system()?;
+//! let loaded = sys.to_iced_theme();
+//! let fg = loaded.resolved.defaults.text_color;
+//! if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+//!     let size = icon_sizes(&loaded.resolved).toolbar;
+//!     let _icon: Option<iced::Element<'_, ()>> =
+//!         match (to_svg_handle(&data, None), to_image_handle(&data)) {
+//!             (Some(h), _) => Some(svg(h).width(size).height(size).into()),
+//!             (_, Some(h)) => Some(image(h).width(size).height(size).into()),
+//!             _ => None,
+//!         };
+//! }
+//! # Ok::<(), native_theme_iced::Error>(())
+//! ```
 
 use std::borrow::Cow;
 
@@ -169,11 +193,16 @@ pub fn animated_frames_to_svg_handles(
 /// # Examples
 ///
 /// ```no_run
+/// use native_theme_iced::TransformAnimation;
 /// use native_theme_iced::icons::spin_rotation_radians;
 ///
+/// # fn spin(anim: &native_theme_iced::AnimatedIcon) {
 /// let elapsed = std::time::Duration::from_millis(500);
-/// let angle = spin_rotation_radians(elapsed, 1000);
-/// // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
+/// if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() {
+///     let angle = spin_rotation_radians(elapsed, duration_ms.get());
+///     // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
+/// }
+/// # }
 /// ```
 #[must_use]
 pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> iced_core::Radians {
