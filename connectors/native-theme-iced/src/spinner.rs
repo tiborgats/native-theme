@@ -350,27 +350,16 @@ mod tests {
         Ok(())
     }
 
-    /// Names the fixture's root in the child process that
-    /// [`a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour`] runs.
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    const SYMBOLIC_FIXTURE_ROOT: &str = "NATIVE_THEME_ICED_SYMBOLIC_SPINNER_FIXTURE";
-
     /// A theme whose spinner is only `process-working-symbolic`, as GNOME's
     /// (platform-facts.md §2.23), draws it in `defaults.text_color`, not the
-    /// black usvg gives an unset `currentColor`. The icon dirs are read once
-    /// per process, so the test runs itself again in a child process whose
-    /// `HOME`, `XDG_DATA_HOME` and `XDG_DATA_DIRS` all lie in a temp dir that
-    /// holds the theme, so no system dir is an icon base dir. freedesktop-icons
-    /// still tries its fixed `/usr/share/pixmaps` after a miss in the theme
-    /// (freedesktop-icons 0.4.0 `src/lib.rs:345-347`): a read-only look whose
-    /// hit core discards, as it keeps only a file inside the theme's own
-    /// directory, so it cannot change the result.
+    /// black usvg gives an unset `currentColor`. The theme is a fixture in a
+    /// child process ([`crate::icon_fixture`]).
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
     fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour() -> native_theme::Result<()> {
         const NAME: &str =
             "spinner::tests::a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour";
-        if std::env::var_os(SYMBOLIC_FIXTURE_ROOT).is_some() {
+        if crate::icon_fixture::in_child() {
             let (_, resolved) = crate::from_preset("adwaita", true)?;
             let spinner = Spinner::new(&resolved, IconSet::Freedesktop, Some("symbolic-only"));
             let Drawn::Spin {
@@ -395,48 +384,21 @@ mod tests {
             );
             return Ok(());
         }
-        /// Removes the fixture's directory however the test ends.
-        struct RemoveOnDrop(std::path::PathBuf);
-        impl Drop for RemoveOnDrop {
-            fn drop(&mut self) {
-                let _ = std::fs::remove_dir_all(&self.0);
-            }
-        }
-        let guard = RemoveOnDrop(std::env::temp_dir().join(format!(
-            "native-theme-iced-symbolic-spinner-{}",
-            std::process::id()
-        )));
-        let root = &guard.0;
-        let _ = std::fs::remove_dir_all(root);
-        let theme = root.join("share/icons/symbolic-only");
-        std::fs::create_dir_all(theme.join("actions")).unwrap();
-        std::fs::create_dir_all(root.join("home")).unwrap();
-        std::fs::write(
-            theme.join("index.theme"),
-            "[Icon Theme]\nName=symbolic-only\nDirectories=actions\n\n\
-             [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
-        )
-        .unwrap();
-        std::fs::write(
-            theme.join("actions/process-working-symbolic.svg"),
-            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
-        )
-        .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", NAME, "--nocapture", "--test-threads=1"])
-            .env(SYMBOLIC_FIXTURE_ROOT, root)
-            .env("HOME", root.join("home"))
-            .env("XDG_DATA_HOME", root.join("home/.local/share"))
-            .env("XDG_DATA_DIRS", root.join("share"))
-            .output()
+        crate::icon_fixture::run(NAME, "symbolic-only", |icons| {
+            let theme = icons.join("symbolic-only");
+            std::fs::create_dir_all(theme.join("actions")).unwrap();
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=symbolic-only\nDirectories=actions\n\n\
+                 [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )
             .unwrap();
-        drop(guard);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(
-            output.status.success() && stdout.contains("1 passed"),
-            "{stdout}{stderr}"
-        );
+            std::fs::write(
+                theme.join("actions/process-working-symbolic.svg"),
+                r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
+            )
+            .unwrap();
+        });
         Ok(())
     }
 

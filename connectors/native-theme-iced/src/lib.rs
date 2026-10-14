@@ -258,6 +258,8 @@ mod compat;
 #[cfg(test)]
 mod contract;
 pub(crate) mod extended;
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+mod icon_fixture;
 pub mod icons;
 pub mod palette;
 #[cfg(feature = "spinner")]

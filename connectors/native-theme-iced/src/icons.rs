@@ -5,10 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, SegoeFluentLoader, SfSymbolsLoader,
-    load_icon,
-};
+use native_theme::icons::{AnimatedIcon, IconData, IconProvider, load_custom_icon};
 
 /// Converted animation frames with timing metadata.
 ///
@@ -66,65 +63,35 @@ pub fn to_svg_handle(
 /// Load a custom RGBA icon from an [`IconProvider`] and convert to an iced image handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). When `color`
-/// is `Some`, a system set's icon (`Freedesktop`, `SfSymbols`, `SegoeFluent`) named
-/// by the provider is loaded in `color`: an SF Symbol or a Segoe glyph arrives as
-/// RGBA in that colour instead of its fixed black or white.
+/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). The icon is
+/// loaded through [`load_custom_icon`] in `color`: an SF Symbol or a Segoe glyph
+/// arrives as RGBA in that colour instead of its fixed black or white.
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
-    to_image_handle(&data)
+    into_image_handle(load_custom_icon(provider, icon_set, color.map(to_rgba))?)
 }
 
 /// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is RGBA. When `color` is `Some`, colorizes monochrome SVGs, and a
-/// system set's icon (`Freedesktop`, `SfSymbols`, `SegoeFluent`) named by the
-/// provider is loaded in `color`.
+/// icon is RGBA. The icon is loaded through [`load_custom_icon`], which colours
+/// each set its own way: a Material or Lucide icon, or the provider's own SVG,
+/// through the monochrome colouriser, a freedesktop icon only where it is
+/// symbolic, so a full-colour one keeps its own palette.
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
-    to_svg_handle(&data, color)
-}
-
-/// Internal helper: load an icon from a provider using the per-set loaders.
-///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
-/// set's icon is loaded in `color` (its monochrome glyphs arrive in the colour
-/// they are loaded in); a bundled set goes through [`load_icon`]. This
-/// preserves the `?Sized` bound on the public API.
-fn load_custom_via_builder(
-    provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
-    color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    use native_theme::theme::IconSet;
-    let color = color.map(|[r, g, b]| native_theme::Rgba::rgb(r, g, b));
-    // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
-            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeFluent => SegoeFluentLoader::new(name).color_opt(color).load(),
-            set => load_icon(name, set),
-        }
-    {
-        return Some(data);
-    }
-    // Step 2: Try bundled SVG from provider
-    if let Some(svg) = provider.icon_svg(icon_set) {
-        return Some(IconData::Svg(svg));
-    }
-    None
+    into_svg_handle(
+        load_custom_icon(provider, icon_set, color.map(to_rgba))?,
+        None,
+    )
 }
 
 /// Convert all frames of an [`AnimatedIcon::Frames`] to iced SVG handles.
@@ -262,6 +229,13 @@ pub fn into_svg_handle(
         }
         _ => None,
     }
+}
+
+/// An iced colour as an opaque [`native_theme::Rgba`], each channel clamped to
+/// `0.0..=1.0`.
+fn to_rgba(color: iced_core::Color) -> native_theme::Rgba {
+    let [r, g, b] = color_to_rgb(color);
+    native_theme::Rgba::rgb(r, g, b)
 }
 
 /// An iced colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
@@ -529,6 +503,69 @@ mod tests {
         let result =
             custom_icon_to_svg_handle(&*boxed, native_theme::theme::IconSet::Material, None);
         assert!(result.is_some());
+    }
+
+    /// Names `folder` for the freedesktop set and has no SVG of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[derive(Debug)]
+    struct FolderProvider;
+
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    impl native_theme::icons::IconProvider for FolderProvider {
+        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
+            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        }
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            None
+        }
+    }
+
+    /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
+    /// its body `fill:currentColor`, the accent its stylesheet states, under
+    /// a fill of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    const FULL_COLOUR_FOLDER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.ColorScheme-Accent { color: #3daee9 }</style><path style="fill:currentColor" class="ColorScheme-Accent" d="M2 3h12l2 2h14v24H1V10h1z"/><path style="fill:#ffffff;fill-opacity:0.2" d="M14 3l1 3h15V5H16z"/></svg>"##;
+
+    /// A full-colour freedesktop icon loaded for a colour comes back as the
+    /// theme has it: the colour is for a symbolic icon, and a second pass
+    /// through the monochrome colouriser repainted the folder's body in it.
+    /// The theme is a fixture in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is() {
+        const NAME: &str = "icons::tests::custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is";
+        if crate::icon_fixture::in_child() {
+            let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+            let handle = custom_icon_to_svg_handle(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+            )
+            .expect("the fixture theme has the folder");
+            let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
+                panic!("the icon is not in memory");
+            };
+            assert_eq!(
+                std::str::from_utf8(bytes).unwrap(),
+                FULL_COLOUR_FOLDER,
+                "the full-colour icon was recoloured"
+            );
+            return;
+        }
+        crate::icon_fixture::run(NAME, "full-colour", |icons| {
+            let theme = icons.join("full-colour");
+            std::fs::create_dir_all(theme.join("places")).unwrap();
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
+                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )
+            .unwrap();
+            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER).unwrap();
+        });
     }
 
     #[test]
