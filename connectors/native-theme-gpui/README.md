@@ -90,7 +90,7 @@ this connector's tests, clippy, docs and the widget-coverage script against. The
 script writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against gpui-base 0.7.1, gpui-component 0.7.1, gpui-kit 0.7.1, gpui-kit-assets 0.7.1 and gpui-pre 0.3.8 on 2026-10-08.
+Verified against gpui-base 0.7.3, gpui-component 0.7.3, gpui-fast 0.1.7, gpui-fast-apple 0.1.7, gpui-fast-linux 0.1.7, gpui-fast-macos 0.1.7, gpui-fast-macros 0.1.7, gpui-fast-platform 0.1.7, gpui-fast-web 0.1.7, gpui-fast-wgpu 0.1.7, gpui-fast-windows 0.1.7, gpui-kit 0.7.3, gpui-kit-assets 0.7.3 and gpui-pre 0.3.9 on 2026-10-14.
 <!-- compat:end -->
 
 **After that** — newer releases are tested nightly by the dependency canary
@@ -535,8 +535,10 @@ GPUI Kit 0.7.3 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects. The two cores'
 types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
-across the build graph: once any crate turns on `gpui-fast` for gpui-kit or
-gpui-component, every crate in the graph sees GPUI Fast's types.
+across the build graph: once a crate's `gpui-fast` feature is on, it is on for
+every user of that crate. gpui-kit, gpui-component and gpui-base each have
+one, and they must switch together, or one crate's GPUI types are not the
+other's.
 
 This crate names GPUI through gpui-kit (`extern crate gpui_kit as gpui;`, the
 alias gpui-kit documents), so it is built on the core gpui-kit is built on:

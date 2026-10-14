@@ -1459,6 +1459,80 @@ model, the platform presets and the three connectors
       release drops the exact pin, `cargo update -p unicode-properties` and
       check the lockfile is back on 0.1.4.
 
+- [ ] [upstream] **File the gpui-fast issue: in test mode a partly reused
+      frame keeps every bound the last frame drew.** For the maintainer to
+      file on longbridge/gpui-fast (an agent files nothing). Under
+      `test-support`, gpui-fast 0.1.7's `finish_retained_frame`
+      (`src/fast/retained.rs:1360-1371`) copies all of the rendered frame's
+      `debug_bounds` into the next frame whenever any subtree was reused, so
+      `VisualTestContext::debug_bounds` still finds an element the new frame
+      no longer draws. Our repro: five showcase tests that assert an element
+      is gone failed on GPUI Fast and pass on gpui-pre (the sixth failure of
+      the first GPUI Fast run, `a_checkbox_toggles_on_click_enter_and_space`,
+      was our harness: its view's `on_change` changed state without
+      `cx.notify()`). Our draw helpers work around it with `window.refresh()`
+      before `window.draw(cx)` (`connectors/native-theme-gpui/examples/showcase-gpui/tests.rs`,
+      `draw`; `connectors/native-theme-gpui/src/widgets/tests.rs`, `redraw`);
+      once a release fixes it, the workaround can go (the helpers' comments
+      say why it is there). Found 2026-10-12; reproduced 2026-10-14 at
+      `5a719b99` (the `refresh()` taken out of `draw`: exactly these five
+      fail, 178 pass). The issue, ready to paste:
+
+      > **Title:** test-support: a partly reused frame keeps the
+      > `debug_bounds` of elements it no longer draws
+      >
+      > gpui-fast 0.1.7 with `test-support` (through gpui-kit 0.7.3's
+      > `gpui-fast` and `test-support` features), Linux.
+      >
+      > `finish_retained_frame` (`src/fast/retained.rs:1360-1371`) ends every
+      > frame that reused a subtree by copying **all** of the rendered frame's
+      > debug bounds into the new one:
+      >
+      > ```rust
+      > #[cfg(any(test, feature = "test-support"))]
+      > if window.next_frame.retained.reused_any() {
+      >     for (selector, bounds) in &window.rendered_frame.debug_bounds {
+      >         window.next_frame.debug_bounds.entry(selector.clone()).or_insert(*bounds);
+      >     }
+      > }
+      > ```
+      >
+      > So once any part of a frame is reused, `VisualTestContext::debug_bounds`
+      > returns last frame's bounds for an element the new frame did not draw,
+      > and a test that asserts an element is gone (a hidden side panel, a
+      > tab's content after a switch, a menu row that moved into the title
+      > bar) fails. A reused layer range's own bounds are already carried, moved
+      > by its offset, in `src/fast/layers/reuse.rs:214-220`; the copy above
+      > also carries every selector outside the reused subtrees. Expected:
+      > only the reused subtrees' bounds carry forward, so an element that is
+      > no longer drawn has none.
+      >
+      > Repro: native-theme's gpui showcase
+      > (https://github.com/tiborgats/native-theme, `connectors/native-theme-gpui`).
+      > Its test helper `draw` (`examples/showcase-gpui/tests.rs`) calls
+      > `window.refresh()` before `window.draw(cx)` as a workaround (`refreshing`
+      > turns reuse off, `retained.rs:1090`, `splice.rs:302`). Without that
+      > line, `cargo test -p native-theme-gpui --features gpui-fast --example showcase-gpui`
+      > fails these five, which pass on gpui-pre 0.3.9 and on gpui-fast with the
+      > line:
+      >
+      > - `the_dragged_width_survives_the_toggle`: "View > Toggle Side Panel did
+      >   not hide the side panel", left `Some(Bounds { origin: Point { x: 0px,
+      >   y: 72px }, size: Size { 330px × 614px } })`, right `None`
+      > - `toggling_the_side_panel_mid_drag_is_safe`: "Ctrl+B did not hide the
+      >   side panel", left `Some(Bounds { origin: Point { x: 0px, y: 72px },
+      >   size: Size { 321px × 614px } })`, right `None`
+      > - `the_inspectors_theme_tab_lays_out`: "the Theme tab still shows the
+      >   Widget tab's title", left `Some(Bounds { origin: Point { x: 6px,
+      >   y: 307px }, size: Size { 128px × 18px } })`, right `None`
+      > - `the_status_bar_names_the_hovered_widget`: "the status bar drew None,
+      >   and its hover label was laid out at Some(Bounds { origin: Point {
+      >   x: 1194px, y: 8975px }, size: Size { 72px × 18px } })" (the frame drew
+      >   no label, yet its bounds are found)
+      > - `under_client_decorations_the_title_bar_holds_the_menus`: "a menu-bar
+      >   row is drawn beside a title bar", left `Some(Bounds { origin: Point {
+      >   x: 0px, y: 0px }, size: Size { 1280px × 26px } })`, right `None`
+
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
 - [ ] [upstream] a `ghost_hover` / `ghost_hover_foreground` token pair separate from
@@ -2360,7 +2434,7 @@ the gap — closing it is a change, and each wants its own decision.
       background) or set it, and the same goes for `editor_active_line`, the
       gutter and the line-number colours. The syntax colours themselves are a
       separate question: native-theme models none. Found 2026-09-22.
-- [ ] [1.0] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
+- [x] [1.0] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
       heading at `rems(2.)`..`rems(1.)` resolved against `heading_base_font_size`
       (`gpui-base text/node.rs:2891-2901`), which defaults to `px(14.)`
       (`gpui-base text/style.rs:88`), and gpui-component's
@@ -2371,6 +2445,17 @@ the gap — closing it is a change, and each wants its own decision.
       install its own `TextViewDefaults` without upstream overwriting them on
       the next theme change, and then whether the platform's `text_scale`
       roles should drive the heading sizes. Found 2026-09-22.
+      *Closed by gpui-component 0.7.3 (2026-10-14):* fixed upstream. gpui-base
+      0.7.3 has no `heading_base_font_size`: a heading is the body size
+      times its level's ratio, 1.8, 4⁄3, 17⁄15, 1, 14⁄15 and 13⁄15, every level
+      semibold (`gpui-base text/node.rs:2867-2876, 2883-2888`), and the body
+      size follows the rem the connector sets from `defaults.font.size`.
+      Headings keep TextView's ratios rather than the platform's
+      `text_scale` roles: editors size their headings their own way, not as
+      the OS sizes its titles (the maintainer's decision for v0.7.0), and
+      gpui-component builds TextView's defaults from the theme itself
+      (`text/mod.rs:35-62`), so the connector installs nothing. It moves to
+      the archive at the next prune.
 - [ ] [1.0] **A tab's `min_height` has a receiver nobody uses.** A `Tab` takes the
       caller's style first and then sets its own per-Size `.h()`, text size and
       colours over it (`tab/tab.rs:780-810`), but it never sets `min_h`, and
