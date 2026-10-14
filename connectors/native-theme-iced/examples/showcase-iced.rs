@@ -60,15 +60,13 @@ use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
     MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
-    list_freedesktop_themes, load_icon_indicator,
+    fill_current_color, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
     ArrowSide, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
-use native_theme_iced::icons::{
-    AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
-};
+use native_theme_iced::icons::{AnimatedSvgHandles, spin_rotation_radians, to_svg_handle};
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{
@@ -1403,16 +1401,45 @@ fn load_all_icons(
 // Animated icon cache builder
 // ---------------------------------------------------------------------------
 
+/// Whether the Icons page tints `icon_set`'s animated indicator in the text
+/// colour: the bundled monochrome sets (Material, Lucide), which `Spinner`
+/// recolours too. A freedesktop indicator keeps its own colours, as in
+/// `Spinner` (see [`indicator_svg_handle`]).
+fn indicator_tinted(icon_set: IconSet) -> bool {
+    matches!(icon_set, IconSet::Material | IconSet::Lucide)
+}
+
+/// One frame of `icon_set`'s animated indicator as an SVG handle, coloured as
+/// `Spinner` colours it but for the tint, which the Icons page applies when
+/// it draws ([`indicator_tinted`]): a freedesktop frame's `currentColor`
+/// filled in with `text_color` where the document sets no `color` of its own
+/// (core's `fill_current_color`), any other frame as it is. `None` where the
+/// frame is not SVG.
+fn indicator_svg_handle(
+    data: &IconData,
+    icon_set: IconSet,
+    text_color: native_theme::Rgba,
+) -> Option<iced_core::svg::Handle> {
+    match (icon_set, data) {
+        (IconSet::Freedesktop, IconData::Svg(bytes)) => Some(iced_core::svg::Handle::from_memory(
+            fill_current_color(bytes, text_color).into_owned(),
+        )),
+        _ => to_svg_handle(data, None),
+    }
+}
+
 /// Build the animation caches for the spinner of `icon_set`: for a
 /// freedesktop set, the spinner of `freedesktop_theme` (the system's where
 /// `None`), so the page never shows another theme's spinner; none where the
-/// theme has none.
+/// theme has none. Each frame is [`indicator_svg_handle`]'s, `text_color`
+/// being the theme's `defaults.text_color`.
 ///
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
 fn build_animation_caches(
     icon_set: native_theme::theme::IconSet,
     freedesktop_theme: Option<&str>,
+    text_color: native_theme::Rgba,
 ) -> (
     Vec<(String, AnimatedSvgHandles)>,          // animated_frames
     Vec<usize>,                                 // animated_frame_indices
@@ -1427,22 +1454,30 @@ fn build_animation_caches(
     let mut animated_static = Vec::new();
 
     let set_name = icon_set.name().to_string();
+    let handle_of = |data: &IconData| indicator_svg_handle(data, icon_set, text_color);
     {
         if let Some(anim) = load_icon_indicator(icon_set, freedesktop_theme) {
             // Cache static first-frame for reduced motion
-            if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
+            if let Some(handle) = handle_of(anim.first_frame()) {
                 animated_static.push((set_name.clone(), handle));
             }
 
             match &anim {
-                AnimatedIcon::Frames(_) => {
-                    if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
+                AnimatedIcon::Frames(data) => {
+                    // Only SVG frames, as `animated_frames_to_svg_handles`
+                    // keeps them: the page draws each through `svg`.
+                    let handles: Vec<_> = data.frames().iter().filter_map(handle_of).collect();
+                    if !handles.is_empty() {
+                        let anim_handles = AnimatedSvgHandles {
+                            handles,
+                            frame_duration_ms: data.frame_duration_ms().get(),
+                        };
                         animated_frames.push((set_name.clone(), anim_handles));
                     }
                 }
                 AnimatedIcon::Transform(data) => {
                     if let TransformAnimation::Spin { duration_ms } = data.animation()
-                        && let Some(handle) = to_svg_handle(data.icon(), None)
+                        && let Some(handle) = handle_of(data.icon())
                     {
                         animated_spins.push((set_name.clone(), handle, duration_ms.get()));
                     }
@@ -1770,7 +1805,11 @@ impl State {
             animation_start,
             reduced_motion,
             animated_static,
-        ) = build_animation_caches(anim_set, icon_set_choice.freedesktop_theme());
+        ) = build_animation_caches(
+            anim_set,
+            icon_set_choice.freedesktop_theme(),
+            resolved.defaults.text_color,
+        );
         let basic_spinner = native_theme_iced::Spinner::new(
             &resolved,
             anim_set,
@@ -2101,8 +2140,11 @@ impl State {
         let anim_set = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let (af, afi, afe, asp, astart, rm, ast) =
-            build_animation_caches(anim_set, self.icon_set_choice.freedesktop_theme());
+        let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(
+            anim_set,
+            self.icon_set_choice.freedesktop_theme(),
+            self.current_resolved.defaults.text_color,
+        );
         self.animated_frames = af;
         self.animated_frame_indices = afi;
         self.animated_frame_elapsed = afe;
@@ -8840,6 +8882,8 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     let i = &resolved.input;
     let radius = i.border.corner_radius;
     let radius_s = format!("{radius:.0}px");
+    let area = &resolved.text_area;
+    let area_radius_s = format!("{:.0}px", area.border.corner_radius);
 
     let header = section_header(
         "Text Inputs",
@@ -8918,6 +8962,11 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
             state,
             "TextEditor (multi-line)",
             &[
+                (
+                    "border",
+                    "text_area.border.color",
+                    to_color(area.border.color),
+                ),
                 ("bg", "input.background_color", to_color(i.background_color)),
                 ("text", "input.font.color", to_color(i.font.color)),
                 (
@@ -8927,7 +8976,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 ),
             ],
             &[
-                ("border-radius", &radius_s),
+                ("border-radius", &area_radius_s),
                 (
                     "text",
                     font_row("input.font", &resolved.input.font).as_str(),
@@ -11550,6 +11599,14 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     let icon_px = resolved.defaults.icon_sizes.large;
     let title = text("Animated Icons").role(section_title(ts), resolved, a11y);
     let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
+    // The bundled monochrome indicators in the text colour; a freedesktop one
+    // in its own colours, its `currentColor` filled in when it was cached.
+    let tint = indicator_tinted(
+        state
+            .icon_set_choice
+            .effective_icon_set(state.current_icon_set),
+    )
+    .then_some(fg_color);
 
     // Collect spinner columns into a row
     let mut spinners: Vec<Element<'a, Message>> = Vec::new();
@@ -11560,9 +11617,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             let icon = svg(handle.clone())
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!("{} - Static (reduced motion)", set_name)).role(
                 &ts.caption,
                 resolved,
@@ -11582,9 +11637,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             let icon = svg(anim_handles.handles[frame_idx].clone())
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!(
                 "{} - Frames: {} ({}ms)",
                 set_name,
@@ -11607,9 +11660,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
                 .rotation(iced::Rotation::Floating(angle))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).role(
                 &ts.caption,
                 resolved,
@@ -13956,8 +14007,10 @@ mod tests {
                 &mut state,
                 Message::IconSetSelected(IconSetChoice::Freedesktop(name.clone())),
             );
-            let expected = FreedesktopLoader::load_indicator(Some(&name))
-                .and_then(|anim| to_svg_handle(anim.first_frame(), None));
+            let text_color = state.current_resolved.defaults.text_color;
+            let expected = FreedesktopLoader::load_indicator(Some(&name)).and_then(|anim| {
+                indicator_svg_handle(anim.first_frame(), IconSet::Freedesktop, text_color)
+            });
             let spinners = state.animated_frames.len() + state.animated_spins.len();
             assert_eq!(
                 state.animated_static.first().map(|(_, handle)| handle),
@@ -13982,14 +14035,48 @@ mod tests {
     #[test]
     fn a_freedesktop_theme_without_a_spinner_gets_none() {
         let theme = "no-such-icon-theme";
-        let (frames, _, _, spins, _, _, statics) =
-            build_animation_caches(IconSet::Freedesktop, Some(theme));
+        let (frames, _, _, spins, _, _, statics) = build_animation_caches(
+            IconSet::Freedesktop,
+            Some(theme),
+            State::default().current_resolved.defaults.text_color,
+        );
         assert!(
             frames.is_empty() && spins.is_empty() && statics.is_empty(),
             "{theme} has a spinner: {} frame animations, {} spins, {} static frames",
             frames.len(),
             spins.len(),
             statics.len()
+        );
+    }
+
+    /// The Icons page draws a freedesktop indicator as `Spinner` does, in its
+    /// own colours with its `currentColor` in the text colour, and tints only
+    /// the bundled monochrome sets'.
+    #[test]
+    fn the_icons_page_colours_an_indicator_as_the_spinner_does() {
+        let text_color = State::default().current_resolved.defaults.text_color;
+        let symbolic = br#"<svg><path fill="currentColor"/></svg>"#;
+        let data = IconData::Svg(Cow::Borrowed(&symbolic[..]));
+        let filled = format!(
+            r##"<svg><path fill="#{:02x}{:02x}{:02x}"/></svg>"##,
+            text_color.r, text_color.g, text_color.b
+        );
+        assert_eq!(
+            indicator_svg_handle(&data, IconSet::Freedesktop, text_color),
+            Some(iced_core::svg::Handle::from_memory(filled.into_bytes())),
+            "a freedesktop frame's currentColor is not the text colour"
+        );
+        for set in [IconSet::Material, IconSet::Lucide] {
+            assert_eq!(
+                indicator_svg_handle(&data, set, text_color),
+                to_svg_handle(&data, None),
+                "{set:?}: a bundled frame is changed before the page tints it"
+            );
+            assert!(indicator_tinted(set), "{set:?} is not tinted");
+        }
+        assert!(
+            !indicator_tinted(IconSet::Freedesktop),
+            "a freedesktop indicator is tinted, losing its own colours"
         );
     }
 
