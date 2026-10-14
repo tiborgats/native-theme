@@ -852,6 +852,79 @@ pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
     svg.to_vec()
 }
 
+/// Fill a symbolic icon's `currentColor` in with `color`, in its bytes.
+///
+/// A symbolic freedesktop icon, the `process-working-symbolic` spinner among
+/// them, comes back from [`FreedesktopLoader`] without a colour of its own
+/// with its foreground as `currentColor`, and a rasteriser resolves
+/// `currentColor` from the nearest `color` property, black where the
+/// document sets none (usvg 0.45.1 `src/parser/style.rs:170-173`). This
+/// replaces every `currentColor` with the colour's `#rrggbb` where the
+/// document sets no `color` property or attribute of its own; one that does,
+/// as Breeze's stylesheet does per colour scheme, keeps the colour it states.
+/// `color` is what `currentColor` stands for: a theme's
+/// `defaults.text_color`.
+///
+/// The bytes come back borrowed and unchanged where they hold no
+/// `currentColor`, set a `color` of their own, or are not UTF-8. The
+/// colour's alpha is discarded, as in [`colorize_monochrome_svg`]. Unlike
+/// that function it touches nothing else, so it suits a full-colour icon
+/// too.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::Rgba;
+/// use native_theme::icons::fill_current_color;
+///
+/// let text = Rgba::rgb(0x22, 0x22, 0x26);
+/// let symbolic = br#"<svg><path fill="currentColor"/></svg>"#;
+/// assert_eq!(
+///     &*fill_current_color(symbolic, text),
+///     br##"<svg><path fill="#222226"/></svg>"##
+/// );
+///
+/// let styled = br#"<svg><style>.a { color: #fcfcfc }</style><path class="a" fill="currentColor"/></svg>"#;
+/// assert_eq!(&*fill_current_color(styled, text), &styled[..]);
+/// ```
+#[must_use]
+pub fn fill_current_color(svg: &[u8], color: Rgba) -> Cow<'_, [u8]> {
+    match std::str::from_utf8(svg) {
+        Ok(text) if text.contains("currentColor") && !sets_color(text) => Cow::Owned(
+            text.replace(
+                "currentColor",
+                &format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b),
+            )
+            .into_bytes(),
+        ),
+        _ => Cow::Borrowed(svg),
+    }
+}
+
+/// Whether an SVG sets a `color` property of its own: the name `color` not
+/// preceded by a letter, digit, `-` or `_`, then optional whitespace and `:`
+/// (a stylesheet or `style` declaration) or `=` (an attribute), anywhere in
+/// it. usvg takes `color` from the nearest ancestor that sets it, so the
+/// test is over the whole document. `stop-color`, `flood-color` and the like
+/// are other properties, and an `id` or `class` named `color` is no
+/// property.
+fn sets_color(svg: &str) -> bool {
+    let bytes = svg.as_bytes();
+    svg.match_indices("color").any(|(at, _)| {
+        let preceded = at
+            .checked_sub(1)
+            .and_then(|i| bytes.get(i))
+            .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'-' || *b == b'_');
+        if preceded {
+            return false;
+        }
+        at.checked_add("color".len())
+            .and_then(|i| bytes.get(i..))
+            .and_then(|rest| rest.iter().find(|b| !b.is_ascii_whitespace()))
+            .is_some_and(|b| *b == b':' || *b == b'=')
+    })
+}
+
 /// The icon base directories, in the Icon Theme Specification's order
 /// (version 0.13, *Directory Layout*: "$HOME/.icons (for backwards
 /// compatibility), in $XDG_DATA_DIRS/icons and in /usr/share/pixmaps (in
@@ -2278,8 +2351,9 @@ mod installed_theme_tests {
     reason = "a test fails by panicking"
 )]
 mod colorize_tests {
-    use super::colorize_monochrome_svg;
+    use super::{colorize_monochrome_svg, fill_current_color, sets_color};
     use crate::color::Rgba;
+    use std::borrow::Cow;
 
     const BLUE: Rgba = Rgba::new(51, 102, 204, 255);
     const RED: Rgba = Rgba::new(255, 0, 0, 255);
@@ -2432,5 +2506,53 @@ mod colorize_tests {
             colorize_monochrome_svg(svg, translucent),
             colorize_monochrome_svg(svg, RED)
         );
+    }
+
+    #[test]
+    fn fill_current_color_fills_an_unset_current_color() {
+        let svg = br#"<svg><path fill="currentColor" stroke="currentColor"/></svg>"#;
+        let filled = fill_current_color(svg, Rgba::new(51, 102, 204, 7));
+        assert_eq!(
+            &*filled,
+            br##"<svg><path fill="#3366cc" stroke="#3366cc"/></svg>"##
+        );
+    }
+
+    #[test]
+    fn fill_current_color_borrows_what_it_leaves_alone() {
+        let plain = br##"<svg><path fill="#2e3436"/></svg>"##;
+        let styled = br#"<svg><style>.ColorScheme-Text { color:#232629; }</style><path class="ColorScheme-Text" fill="currentColor"/></svg>"#;
+        let attribute = br##"<svg color="#fff"><path fill="currentColor"/></svg>"##;
+        let not_utf8 = b"<svg>\xff currentColor</svg>";
+        for svg in [&plain[..], &styled[..], &attribute[..], &not_utf8[..]] {
+            assert!(
+                matches!(fill_current_color(svg, BLUE), Cow::Borrowed(b) if b == svg),
+                "{}",
+                String::from_utf8_lossy(svg)
+            );
+        }
+    }
+
+    #[test]
+    fn sets_color_reads_only_the_color_property() {
+        assert!(!sets_color(r#"<svg><path fill="currentColor"/></svg>"#));
+        assert!(sets_color(
+            r##"<svg color="#fff"><path fill="currentColor"/></svg>"##
+        ));
+        assert!(sets_color("<svg><style>.a { color : #fff }</style></svg>"));
+        assert!(sets_color(r#"<svg><path style="color:#fff"/></svg>"#));
+        assert!(!sets_color(
+            r##"<svg><stop stop-color="#fff"/><path fill="currentColor"/></svg>"##
+        ));
+        assert!(!sets_color(
+            r##"<svg flood-color="#fff" lighting-color="#fff" solid-color="#fff"/>"##
+        ));
+        assert!(!sets_color(
+            r##"<svg text-decoration-color="#fff" pagecolor="#fff" bordercolor="#fff"/>"##
+        ));
+        assert!(!sets_color(
+            r#"<svg id="color" class="color"><path fill="currentColor"/></svg>"#
+        ));
+        assert!(!sets_color(r#"<svg color-interpolation="sRGB"/>"#));
     }
 }
