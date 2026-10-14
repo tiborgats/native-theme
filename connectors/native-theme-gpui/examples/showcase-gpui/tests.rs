@@ -5,6 +5,11 @@
 //! workflow change. They build the real `Showcase` on GPUI's headless test
 //! platform — the same view, the same `Root`, the same window width `main`
 //! opens — and drive it with real input.
+//!
+//! A helper that draws calls `window.refresh()` before `window.draw(cx)`, as
+//! `draw` does: on GPUI Fast (the `gpui-fast` feature) a frame otherwise
+//! reuses the subtrees no view notified and keeps the last frame's
+//! `debug_bounds`, so an absence test would find an element no longer drawn.
 
 use gpui::{
     AbsoluteLength, AnyWindowHandle, App, Bounds, DefiniteLength, Entity, Focusable as _, Length,
@@ -123,7 +128,15 @@ fn open_with(
 /// Lay the window out and paint it, which is what fills `debug_bounds`,
 /// and check that no frame drawn so far drew two info targets under one id.
 fn draw(cx: &mut VisualTestContext) {
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    // A full frame: GPUI Fast reuses the subtrees no view notified, and in
+    // test mode a partly reused frame keeps every bound the last frame drew
+    // (gpui-fast 0.1.7 src/fast/retained.rs:1360-1371), so an element no
+    // longer drawn would still be found. On gpui-pre it only marks the window
+    // dirty.
+    cx.update(|window, cx| {
+        window.refresh();
+        window.draw(cx).clear(cx)
+    });
     let twice = ids_drawn_twice(cx);
     assert!(
         twice.is_empty(),

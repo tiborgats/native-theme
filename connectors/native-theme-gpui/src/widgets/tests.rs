@@ -1,6 +1,11 @@
 //! Widget tests (docs/archive/todo_gpui-widgets-spec.md §4): every leaf a widget
 //! paints is the one the spec names, the drawn boxes measure the stated
 //! sizes, and the controls behave as gpui-component's.
+//!
+//! A helper that draws again calls `window.refresh()` before
+//! `window.draw(cx)`, as `redraw` does: on GPUI Fast (the `gpui-fast`
+//! feature) a frame otherwise reuses the subtrees no view notified and keeps
+//! the last frame's `debug_bounds`.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
@@ -693,7 +698,14 @@ fn centre(b: Bounds<Pixels>) -> gpui::Point<Pixels> {
 }
 
 fn redraw(cx: &mut VisualTestContext) {
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    // A full frame: GPUI Fast renders again only the views that were
+    // notified, and in test mode a partly reused frame keeps every bound the
+    // last frame drew (gpui-fast 0.1.7 src/fast/retained.rs:1360-1371). On
+    // gpui-pre it only marks the window dirty.
+    cx.update(|window, cx| {
+        window.refresh();
+        window.draw(cx).clear(cx)
+    });
 }
 
 /// A key pressed and released, as gpui-component's own tests activate a
