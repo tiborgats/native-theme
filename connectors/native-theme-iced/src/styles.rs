@@ -616,9 +616,10 @@ pub fn text_editor(
 /// The box has two fills, `checkbox.checked_background` and
 /// `.unchecked_background`, and the `Status` says which one it is showing.
 /// `.hover_background` is the hover of the *unchecked* box, and is composited
-/// as a layer over its fill; the model states no hover for a checked one, and
-/// a state the platform does not state has no distinct appearance, so a
-/// hovered checked box is exactly the checked box. `.disabled_background`
+/// as a layer over its fill where the theme states one; unset, a hovered
+/// unchecked box is the box at rest. The model states no hover for a checked
+/// one, and a state the platform does not state has no distinct appearance,
+/// so a hovered checked box is exactly the checked box. `.disabled_background`
 /// replaces the fill, as given; where it is not stated the platform dims by
 /// opacity alone and a disabled box is its enabled self. Either way a disabled
 /// box is faded by `.disabled_opacity` as one widget over the window,
@@ -759,8 +760,10 @@ pub fn checkbox_over(
 /// reads, with `is_selected` where the checkbox has `is_checked` and the check
 /// mark serving as the dot -- `checkbox.hover_background` included, which is
 /// the hover of the *unselected* circle only, so a hovered selected radio is
-/// exactly the selected radio. `radio::Status` has no disabled variant
-/// (`radio.rs:474-487`), so the model's disabled fields have no receiver here.
+/// exactly the selected radio, and where the theme leaves it unset a hovered
+/// unselected radio is the circle at rest. `radio::Status` has no disabled
+/// variant (`radio.rs:474-487`), so the model's disabled fields have no
+/// receiver here.
 ///
 /// `radio::Style` carries its border as a width and a color rather than as an
 /// iced `Border`, so there is no corner radius to give it.
@@ -837,11 +840,10 @@ pub fn radio(
 /// -- `.unchecked_thumb_background`, where the theme states one, while not
 /// toggled -- and `.disabled_thumb_color` whenever the switch is disabled,
 /// toggled or not. A disabled switch is faded by `switch.disabled_opacity` as
-/// one widget over the window,
-/// `defaults.background_color` ([`toggler_over`] takes another backdrop):
-/// the thumb over the track, the track over the window, each then faded over
-/// the window (`docs/platform-facts.md` §2.1.6, libadwaita's
-/// `filter: Opacity(..)`).
+/// one widget over the window, `defaults.background_color` ([`toggler_over`]
+/// takes another backdrop): the thumb over the track, the track over the
+/// window, each then faded over the window (`docs/platform-facts.md` §2.1.6,
+/// libadwaita's `filter: Opacity(..)`).
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius

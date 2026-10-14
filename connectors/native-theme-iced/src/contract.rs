@@ -3666,7 +3666,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             box_fill,
         ),
         (
-            "checkbox.hover_background -> checkbox.background_color",
+            "checkbox.hover_background -> the unchecked fill at rest",
             fill(boxes(&theme, checkbox::Status::Hovered { is_checked: false }).background),
             box_fill,
         ),
@@ -3693,7 +3693,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             box_fill,
         ),
         (
-            "radio: checkbox.hover_background -> checkbox.background_color",
+            "radio: checkbox.hover_background -> the unselected fill at rest",
             fill(buttons(&theme, radio::Status::Hovered { is_selected: false }).background),
             box_fill,
         ),
