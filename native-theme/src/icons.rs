@@ -2509,6 +2509,85 @@ mod colorize_tests {
     }
 
     #[test]
+    fn colorize_svg_replaces_fill_hex_black_with_the_hex() {
+        let svg = b"<svg><path fill=\"#000000\" d=\"M0 0\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
+        assert!(
+            result_str.contains("fill=\"#14b852\""),
+            "fill=\"#000000\" should be replaced, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn colorize_svg_replaces_fill_short_hex_black_with_the_hex() {
+        let svg = b"<svg><path fill=\"#000\" d=\"M0 0\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, BLUE)).unwrap();
+        assert!(
+            result_str.contains("fill=\"#3366cc\""),
+            "fill=\"#000\" should be replaced, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn colorize_svg_replaces_stroke_hex_black_with_the_hex() {
+        let svg = b"<svg><path stroke=\"#000000\" d=\"M0 0\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
+        assert!(
+            result_str.contains("stroke=\"#14b852\""),
+            "stroke=\"#000000\" should be replaced, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn colorize_svg_replaces_stroke_short_hex_black() {
+        let svg = b"<svg><path stroke=\"#000\" d=\"M0 0\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, BLUE)).unwrap();
+        assert!(
+            result_str.contains("stroke=\"#3366cc\""),
+            "stroke=\"#000\" should be replaced, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn colorize_svg_keeps_a_root_fill_and_injects_none() {
+        let svg = b"<svg fill=\"red\"><path d=\"M0 0\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
+        // No second fill is injected, since the root has one
+        assert!(result_str.contains("fill=\"red\""), "got: {result_str}");
+        assert!(!result_str.contains("#14b852"), "got: {result_str}");
+    }
+
+    #[test]
+    fn colorize_svg_mixed_fill_attributes() {
+        // fill="black" is replaced, fill="red" is kept
+        let svg = b"<svg><rect fill=\"black\" width=\"10\" height=\"10\"/><rect fill=\"red\" width=\"10\" height=\"10\"/></svg>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
+        assert!(
+            !result_str.contains("fill=\"black\""),
+            "fill=\"black\" should be replaced, got: {result_str}"
+        );
+        assert!(
+            result_str.contains("fill=\"red\""),
+            "fill=\"red\" should be preserved, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn colorize_self_closing_svg_without_a_space_produces_valid_xml() {
+        // `<svg .../>` with no space before '/': the fill still goes before it
+        let svg = b"<svg xmlns='http://www.w3.org/2000/svg'/>";
+        let result_str = String::from_utf8(colorize_monochrome_svg(svg, RED)).unwrap();
+        assert!(
+            result_str.contains("fill=\"#ff0000\"") && result_str.ends_with("/>"),
+            "self-closing SVG should remain valid XML, got: {result_str}"
+        );
+        assert!(
+            !result_str.contains("/ fill="),
+            "fill should not be between / and >, got: {result_str}"
+        );
+    }
+
+    #[test]
     fn fill_current_color_fills_an_unset_current_color() {
         let svg = br#"<svg><path fill="currentColor" stroke="currentColor"/></svg>"#;
         let filled = fill_current_color(svg, Rgba::new(51, 102, 204, 7));

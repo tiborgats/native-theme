@@ -5,7 +5,9 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::{AnimatedIcon, IconData, IconProvider, load_custom_icon};
+use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, colorize_monochrome_svg, load_custom_icon,
+};
 
 /// Converted animation frames with timing metadata.
 ///
@@ -40,8 +42,9 @@ pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
 ///
 /// Returns `Some(Handle)` for [`IconData::Svg`] data, or `None` for
 /// [`IconData::Rgba`]. When `color` is `Some`, colorizes the SVG for
-/// monochrome icon sets (Material, Lucide). Pass `None` for multi-color
-/// system icons to preserve their native palette.
+/// monochrome icon sets (Material, Lucide) through
+/// [`colorize_monochrome_svg`]. Pass `None` for multi-color system icons to
+/// preserve their native palette.
 #[must_use]
 pub fn to_svg_handle(
     data: &IconData,
@@ -50,7 +53,7 @@ pub fn to_svg_handle(
     match data {
         IconData::Svg(cow) => {
             let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(cow, c)
+                colorize_monochrome_svg(cow, to_rgba(c))
             } else {
                 cow.to_vec()
             };
@@ -221,7 +224,7 @@ pub fn into_svg_handle(
     match data {
         IconData::Svg(cow) => {
             let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(&cow, c)
+                colorize_monochrome_svg(&cow, to_rgba(c))
             } else {
                 cow.into_owned()
             };
@@ -234,117 +237,8 @@ pub fn into_svg_handle(
 /// An iced colour as an opaque [`native_theme::Rgba`], each channel clamped to
 /// `0.0..=1.0`.
 fn to_rgba(color: iced_core::Color) -> native_theme::Rgba {
-    let [r, g, b] = color_to_rgb(color);
-    native_theme::Rgba::rgb(r, g, b)
-}
-
-/// An iced colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
-fn color_to_rgb(color: iced_core::Color) -> [u8; 3] {
-    [
-        (color.r.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (color.g.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (color.b.clamp(0.0, 1.0) * 255.0).round() as u8,
-    ]
-}
-
-/// Colorize a **monochrome** SVG icon with the given color.
-///
-/// Works correctly for bundled icon sets (Material, Lucide) which use
-/// `currentColor` or implicit black fills. For multi-color SVGs from
-/// freedesktop system themes, use [`to_svg_handle()`] instead to
-/// preserve the original icon colors.
-///
-/// Note: Only RGB channels are used; the alpha channel is discarded during
-/// hex conversion. For transparency, use `Svg::opacity()` on the rendered element.
-///
-/// ## Replacement strategy
-///
-/// 1. If `currentColor` appears anywhere in the SVG, it is replaced globally
-///    (not scoped to individual attributes). This correctly handles `fill`,
-///    `stroke`, `stop-color`, etc. For monochrome icons this is the desired
-///    behavior. Multi-color SVGs should not use this function.
-///
-/// 2. Explicit black fills and strokes (`"black"`, `"#000000"`, `"#000"`)
-///    are replaced in both `fill=` and `stroke=` attributes.
-///
-/// 3. If no replacements are found and the root `<svg>` tag lacks a `fill=`
-///    attribute, a `fill` is injected. Note: if the root tag has `fill="none"`
-///    (common in stroke-based SVGs), no injection occurs -- the explicit black
-///    stroke replacements from step 2 handle colorization instead.
-///
-/// ## Limitations
-///
-/// - Colors in CSS `style` attributes (e.g., `style="fill:black"`) are not
-///   replaced (except `currentColor` which is caught by step 1).
-/// - Only the first `<svg` in the document is considered for fill injection.
-///   SVGs with `<svg` inside comments could cause incorrect injection, though
-///   this is extremely unlikely with real icon files.
-fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
-    let [r, g, b] = color_to_rgb(color);
-    let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
-
-    // Validate UTF-8 before attempting string operations. Non-UTF-8 SVGs
-    // (e.g., legacy Latin-1 encoded system icons) pass through unmodified
-    // rather than being corrupted by lossy replacement.
-    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
-        return svg_bytes.to_vec();
-    };
-
-    // Replace currentColor (handles Lucide-style SVGs).
-    // This is a global replacement that covers fill, stroke, stop-color, etc.
-    if svg_str.contains("currentColor") {
-        return svg_str.replace("currentColor", &hex).into_bytes();
-    }
-
-    // Replace explicit black fills and strokes (handles third-party SVGs).
-    // Stroke replacements handle outline-style icons that use stroke="black".
-    let fill_hex = format!("fill=\"{}\"", hex);
-    let stroke_hex = format!("stroke=\"{}\"", hex);
-    let replaced = svg_str
-        .replace("fill=\"black\"", &fill_hex)
-        .replace("fill=\"#000000\"", &fill_hex)
-        .replace("fill=\"#000\"", &fill_hex)
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
-    if replaced != svg_str {
-        return replaced.into_bytes();
-    }
-
-    // No currentColor or explicit black found -- inject fill into the root
-    // <svg> tag (handles Material-style SVGs with implicit black fill).
-    if let Some(pos) = svg_str.find("<svg")
-        && let Some(tail) = svg_str.get(pos..)
-        && let Some(close) = tail.find('>')
-    {
-        let tag_end = pos.saturating_add(close);
-        if let Some(tag) = svg_str.get(pos..tag_end)
-            && !tag.contains("fill=")
-        {
-            // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let is_self_closing = tag_end > 0
-                && svg_str
-                    .as_bytes()
-                    .get(tag_end.saturating_sub(1))
-                    .is_some_and(|&b| b == b'/');
-            let inject_pos = if is_self_closing {
-                tag_end.saturating_sub(1)
-            } else {
-                tag_end
-            };
-            if let Some(before) = svg_str.get(..inject_pos)
-                && let Some(after) = svg_str.get(inject_pos..)
-            {
-                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
-                result.push_str(before);
-                result.push_str(&format!(" fill=\"{}\"", hex));
-                result.push_str(after);
-                return result.into_bytes();
-            }
-        }
-    }
-
-    svg_bytes.to_vec()
+    let channel = |c: f32| (c.clamp(0.0, 1.0) * 255.0).round() as u8;
+    native_theme::Rgba::rgb(channel(color.r), channel(color.g), channel(color.b))
 }
 
 #[cfg(test)]
@@ -377,6 +271,14 @@ mod tests {
         assert!(to_svg_handle(&data, None).is_none());
     }
 
+    /// The text of an SVG handle made from bytes.
+    fn svg_text(handle: &iced_core::svg::Handle) -> String {
+        let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
+            panic!("the SVG is not in memory");
+        };
+        String::from_utf8(bytes.to_vec()).unwrap()
+    }
+
     #[test]
     fn to_svg_handle_colored_replaces_current_color() {
         let data = IconData::Svg(std::borrow::Cow::Borrowed(
@@ -387,23 +289,20 @@ mod tests {
         let handle = to_svg_handle(&data, Some(color));
         assert!(handle.is_some());
 
-        // Verify the colorization happened by checking the internal SVG
-        let colored = colorize_monochrome_svg(
-            b"<svg><path stroke=\"currentColor\" fill=\"currentColor\"/></svg>",
-            color,
-        );
-        let result = String::from_utf8(colored).unwrap();
+        // Verify the colorization happened by checking the handle's SVG
+        let result = svg_text(&handle.unwrap());
         assert!(result.contains("#ff0000"));
         assert!(!result.contains("currentColor"));
     }
 
     #[test]
     fn to_svg_handle_colored_injects_fill_for_material_style() {
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>".to_vec();
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(
+            b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>",
+        ));
         let color = iced_core::Color::from_rgb(0.0, 0.5, 1.0);
 
-        let colored = colorize_monochrome_svg(&svg, color);
-        let result = String::from_utf8(colored).unwrap();
+        let result = svg_text(&to_svg_handle(&data, Some(color)).unwrap());
         assert!(result.contains("fill=\"#0080ff\""));
     }
 
@@ -568,18 +467,6 @@ mod tests {
         });
     }
 
-    #[test]
-    fn colorize_svg_preserves_existing_fill() {
-        let svg = b"<svg fill=\"red\"><path d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-
-        let colored = colorize_monochrome_svg(svg, color);
-        let result = String::from_utf8(colored).unwrap();
-        // Should not inject a second fill since one already exists
-        assert!(result.contains("fill=\"red\""));
-        assert!(!result.contains("#00ff00"));
-    }
-
     // --- animated icon tests ---
 
     use std::time::Duration;
@@ -670,19 +557,6 @@ mod tests {
     }
 
     #[test]
-    fn colorize_replaces_explicit_black_fill() {
-        let svg = b"<svg><path fill=\"black\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
     fn into_image_handle_with_rgba() {
         let data = IconData::rgba(24, 24, vec![0u8; 24 * 24 * 4]).unwrap();
         assert!(into_image_handle(data).is_some());
@@ -725,100 +599,6 @@ mod tests {
     }
 
     #[test]
-    fn colorize_self_closing_svg_produces_valid_xml() {
-        let svg = b"<svg xmlns='http://www.w3.org/2000/svg'/>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // Should inject fill before '/', not between '/' and '>'
-        assert!(
-            result_str.contains("fill=\"#") && result_str.ends_with("/>"),
-            "self-closing SVG should remain valid XML, got: {}",
-            result_str
-        );
-        assert!(
-            !result_str.contains("/ fill="),
-            "fill should not be between / and >, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_000000() {
-        let svg = b"<svg><path fill=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#00ff00\""),
-            "fill=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_short() {
-        let svg = b"<svg><path fill=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#0000ff\""),
-            "fill=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#ff0000\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_000000() {
-        let svg = b"<svg><path stroke=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#00ff00\""),
-            "stroke=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_short() {
-        let svg = b"<svg><path stroke=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#0000ff\""),
-            "stroke=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_non_utf8_returns_original_bytes() {
-        // SVG bytes with an invalid UTF-8 sequence (0xFF is never valid UTF-8)
-        let svg: Vec<u8> = b"<svg>\xff<path d=\"M0 0\"/></svg>".to_vec();
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(&svg, color);
-        // Should return the original bytes unchanged, not corrupt them
-        assert_eq!(result, svg, "non-UTF-8 SVG should pass through unmodified");
-    }
-
-    #[test]
     fn animated_frames_with_color_colorizes_frames() {
         let anim = AnimatedIcon::frames(
             vec![IconData::Svg(std::borrow::Cow::Borrowed(
@@ -830,42 +610,6 @@ mod tests {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let result = animated_frames_to_svg_handles(&anim, Some(color));
         assert!(result.is_some(), "should produce handles with color");
-    }
-
-    // Issue 14.3: colorize with mixed fill attributes (both black and non-black)
-    #[test]
-    fn colorize_mixed_fill_attributes() {
-        // SVG with both fill="black" (should be replaced) and fill="red" (should be preserved)
-        let svg = b"<svg><rect fill=\"black\" width=\"10\" height=\"10\"/><rect fill=\"red\" width=\"10\" height=\"10\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("fill=\"red\""),
-            "fill=\"red\" should be preserved, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 14.3: colorize with non-black explicit fills (fill="white", fill="#FFF")
-    #[test]
-    fn colorize_non_black_fills_preserved() {
-        let svg = b"<svg fill=\"white\"><path d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // fill="white" is not black, should not be replaced by phases 1-2.
-        // Phase 3 (root fill injection) should be skipped since fill= already exists.
-        assert!(
-            result_str.contains("fill=\"white\""),
-            "fill=\"white\" should be preserved, got: {}",
-            result_str
-        );
     }
 
     // Issue 14.3: spin_rotation_radians with very large elapsed (wraps correctly)
