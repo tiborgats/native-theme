@@ -253,13 +253,19 @@ the file was pruned on 2026-10-11, not reordered.
       the running version's generation: egui's watcher rebuilds through
       `ThemeWatcher::system_rebuild`
       (`connectors/native-theme-egui/src/watch.rs:100`, then
-      `SystemTheme::from_system()` at `ext.rs:239`), and gpui's
+      `SystemTheme::from_system()` at `ext.rs:242`), and gpui's
       `from_system` (`connectors/native-theme-gpui/src/lib.rs:337`) calls it
       too. An application that pinned `macos-monterey` on macOS 26 gets
       `macos-tahoe` after the first theme change. A feature gap, not a bug:
       decide whether a connector's re-read keeps the pinned preset (the
       watcher or the connector remembering the name, or a re-read entry
       point that takes it).
+      For iced, settled (M5-03, 2026-10-14): the connector has no re-read of
+      its own; `theme_changes()` (feature `watch`) only signals, and the
+      README's and crate docs' *Runtime theme change* recipe re-reads with the
+      entry point the application used: `from_system()`, or
+      `SystemTheme::from_system_with_preset(name)` then `to_iced_theme()` for
+      a pinned preset. gpui and egui stay open (M6, M7).
 
 ### windows-11: the disabled fills are fully transparent
 

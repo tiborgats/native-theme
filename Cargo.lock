@@ -5877,6 +5877,7 @@ dependencies = [
  "iced",
  "iced_aw",
  "iced_core",
+ "iced_futures",
  "iced_test",
  "iced_widget",
  "image",

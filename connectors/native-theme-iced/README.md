@@ -41,6 +41,7 @@ via inline widget configuration, so the theme and the style functions carry
 | `iced_core` | 0.14 |
 | `iced_widget` (feature `widgets`, on by default) | 0.14 |
 | `iced_aw` (feature `iced_aw`, off by default) | 0.14 |
+| `iced_futures` (feature `watch`, off by default) | 0.14 |
 | `iced` (dev-dependency: the showcase) | 0.14 |
 | `rust-version` | 1.88.0 |
 
@@ -64,12 +65,11 @@ the CHANGELOG.
 
 ## Quick start
 
-Add both crates to your `Cargo.toml`:
+Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 
 ```toml
 [dependencies]
-native-theme = "0.6"
-native-theme-iced = "0.6"
+native-theme-iced = { version = "0.6", features = ["native"] }
 ```
 
 Load a bundled preset:
@@ -228,6 +228,8 @@ that needs dismissing a themed button of its own instead.
 |---|---|
 | everything iced itself offers (the default) | nothing |
 | the `iced_aw` widgets too | `features = ["iced_aw"]` |
+| the OS theme from `from_system()` | `features = ["native"]` |
+| the OS theme's changes, as a subscription | `features = ["native", "watch"]` |
 | the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
 | the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
 
@@ -246,6 +248,13 @@ system UI font's `.SF NS` for the stated "SF Pro". `advanced-shaping` (default)
 kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
 `default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
 is the way to narrow.
+
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` (opt-in) enables `theme_changes`, the OS theme's
+changes as an iced `Subscription`, through `iced_futures`; it watches with
+a reader feature only (see [Runtime theme change](#runtime-theme-change)).
 
 ## Common recipes
 
@@ -412,6 +421,76 @@ showcase does both (`drawable_font` and `register_weight`); the crate docs'
 variable face at any weight its axis covers, which makes filing faces
 unnecessary once iced draws with it.
 
+### Runtime theme change
+
+With the `watch` feature, `theme_changes()` is an iced `Subscription` of the
+OS theme's changes: return it from `subscription()`, and on each change clear
+native-theme's detection caches, read the theme again and rebuild what was
+built from it, such as the `Spinner`. The caches hold the font DPI, dark mode,
+the icon theme and the accessibility preferences, so a re-read without
+`invalidate_caches()` gets the old ones. Naming `native_theme::detect` needs
+native-theme itself:
+
+```toml
+[dependencies]
+native-theme = "0.6"
+native-theme-iced = { version = "0.6", features = ["native", "watch"] }
+```
+
+```rust,ignore
+use iced::Subscription;
+use native_theme_iced::{Loaded, Spinner, from_system, theme_changes};
+
+struct State {
+    loaded: Loaded,
+    spinner: Spinner,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    ThemeChanged,
+}
+
+fn subscription(_state: &State) -> Subscription<Message> {
+    // A watcher that cannot start (a desktop with none) yields its error
+    // once; this drops it.
+    theme_changes().filter_map(|changed| changed.ok().map(|_| Message::ThemeChanged))
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::ThemeChanged => {
+            native_theme::detect::invalidate_caches();
+            if let Ok(loaded) = from_system() {
+                state.spinner = Spinner::new(
+                    &loaded.resolved,
+                    loaded.icon_set,
+                    loaded.icon_theme.as_deref(),
+                );
+                state.loaded = loaded;
+            }
+        }
+    }
+}
+```
+
+Read again with the entry point the application used: one that pinned a
+preset with `SystemTheme::from_system_with_preset` reads with it again, or
+`from_system()` picks the running OS version's preset:
+
+```rust,ignore
+use native_theme_iced::SystemThemeExt;
+
+let loaded = native_theme::SystemTheme::from_system_with_preset("macos-monterey")?
+    .to_iced_theme();
+```
+
+The watcher runs while `subscription()` returns `theme_changes()`, and stops
+when it no longer does. KDE Plasma, GNOME and Budgie, macOS and Windows are
+watched; on another Linux desktop, or without a reader feature, the
+subscription yields `Error::WatchUnavailable` once and ends, as it yields
+`Error::ReaderFailed` where the watcher cannot start.
+
 ### Apply user overrides to the OS theme
 
 ```rust,ignore
@@ -513,8 +592,9 @@ compare control by control. The elements the three share are listed once, in
 each with its value and how iced applies it, and `--dump-layout FILE` writes
 their rectangles for `scripts/check_showcase_parity.py` (with
 `--open-menu theme`, the Theme menu open and its rows among them). Add
-`--features iced_aw` for the tab with the `iced_aw` widgets and the Basic
-tab's number input:
+`--features watch` to have it follow the OS theme's changes while its colour
+mode is System, and `--features iced_aw` for the tab with the `iced_aw`
+widgets and the Basic tab's number input:
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced --features iced_aw

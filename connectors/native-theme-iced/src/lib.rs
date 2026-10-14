@@ -92,6 +92,8 @@
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
 //! | `advanced-shaping` | yes | kerned text in the whole application: `iced_core`'s `advanced-shaping`, which makes `Shaping::Advanced` every text's default (see [Kerning](#kerning)) |
+//! | `native` | no | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
+//! | `watch` | no | `theme_changes`, the OS theme's changes as an iced `Subscription`, through `native-theme/watch` and `iced_futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
 //! and the metric helpers that need `iced_core` only; `button_padding`,
@@ -121,6 +123,33 @@
 //! | `reduce_motion` | `Spinner::view` (feature `spinner`) holds the spinner still when passed `true` | the flag to `Spinner::view` and to its own animations |
 //! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/archive/todo_closed.md`, the item "`to_theme` takes no `AccessibilityPreferences`") | the flag where it draws translucent surfaces |
 //! | `high_contrast` | nothing | its own colours, if they should change |
+//!
+//! # Runtime theme change
+//!
+//! With the `watch` feature and a reader feature (`native`), `theme_changes()`
+//! is an iced `Subscription` of the OS theme's changes. Return it from the
+//! application's `subscription()`; on each change call
+//! `native_theme::detect::invalidate_caches()`, read the theme again with the
+//! entry point the application used ([`from_system()`], or
+//! `SystemTheme::from_system_with_preset(name)` and
+//! [`SystemThemeExt::to_iced_theme`] for a pinned preset), and rebuild what
+//! was built from the old theme, such as the `Spinner`:
+//!
+//! ```rust,ignore
+//! fn subscription(_state: &State) -> iced::Subscription<Message> {
+//!     native_theme_iced::theme_changes()
+//!         .filter_map(|changed| changed.ok().map(|_| Message::ThemeChanged))
+//! }
+//!
+//! // In update():
+//! Message::ThemeChanged => {
+//!     native_theme::detect::invalidate_caches();
+//!     if let Ok(loaded) = native_theme_iced::from_system() {
+//!         state.spinner = Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
+//!         state.loaded = loaded;
+//!     }
+//! }
+//! ```
 //!
 //! # Font Configuration
 //!
@@ -235,9 +264,13 @@ pub mod palette;
 pub mod spinner;
 #[cfg(feature = "widgets")]
 pub mod styles;
+#[cfg(feature = "watch")]
+mod watch;
 
 #[cfg(feature = "spinner")]
 pub use spinner::Spinner;
+#[cfg(feature = "watch")]
+pub use watch::theme_changes;
 
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;

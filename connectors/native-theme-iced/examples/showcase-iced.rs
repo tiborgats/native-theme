@@ -69,8 +69,7 @@ use native_theme_iced::{
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, PoisonError};
+use std::sync::{Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
@@ -1658,11 +1657,10 @@ struct State {
     /// fails.
     detect_icon_theme: fn() -> native_theme::Result<String>,
 
-    // Theme watcher (runtime dark/light toggle detection)
-    /// Flag set by the ThemeSubscription background thread when the OS theme changes.
-    theme_change_flag: Arc<AtomicBool>,
-    /// RAII guard keeping the theme watcher background thread alive.
-    _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
+    /// Whether `subscription` watches the OS theme
+    /// (`native_theme_iced::theme_changes`) while the colour mode is System.
+    #[cfg(feature = "watch")]
+    watch_os_theme: bool,
 }
 
 impl Default for State {
@@ -1790,23 +1788,15 @@ impl State {
             1
         };
 
-        // Start theme watcher for runtime dark/light toggle detection.
-        // Skip in screenshot mode — the watcher's background thread cleanup
+        // Watch the OS theme for runtime dark/light toggle detection.
+        // Not in screenshot mode — the watcher's background thread cleanup
         // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
-        // Skip under `cargo test` too: a file watch on the desktop's own
+        // Not under `cargo test` either: a file watch on the desktop's own
         // configuration is host I/O, and nothing the self-tests assert
         // depends on it.
-        let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let is_screenshot = CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
-        let _theme_watcher = if is_screenshot || cfg!(test) {
-            None
-        } else {
-            let flag_clone = theme_change_flag.clone();
-            native_theme::watch::on_theme_change(move |_event| {
-                flag_clone.store(true, Ordering::Release);
-            })
-            .ok()
-        };
+        #[cfg(feature = "watch")]
+        let watch_os_theme =
+            !cfg!(test) && !CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
 
         let mut state = Self {
             current_choice: fallback_choice
@@ -1914,8 +1904,8 @@ impl State {
             error_message: initial_error,
             read_system_theme,
             detect_icon_theme: native_theme::detect::system_icon_theme,
-            theme_change_flag,
-            _theme_watcher,
+            #[cfg(feature = "watch")]
+            watch_os_theme,
         };
 
         if let Some(cli) = CLI_ARGS.get() {
@@ -2278,9 +2268,6 @@ enum Message {
     /// OS capture of the window with its frame.
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     CaptureFrame(iced::Size, f32),
-
-    // Theme watcher
-    ThemeWatcherTick,
 }
 
 // ---------------------------------------------------------------------------
@@ -2724,10 +2711,6 @@ fn update_inner(state: &mut State, message: Message) {
         #[cfg(feature = "iced_aw")]
         Message::AwActionChosen(what) => state.aw_last_action = what,
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
-        Message::ThemeWatcherTick if state.theme_change_flag.swap(false, Ordering::AcqRel) => {
-            native_theme::detect::invalidate_caches();
-            state.rebuild_theme();
-        }
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
             for (i, (_, anim_handles)) in state.animated_frames.iter().enumerate() {
@@ -12723,10 +12706,14 @@ fn subscription(state: &State) -> Subscription<Message> {
     subs.push(iced::keyboard::listen().filter_map(shortcut));
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
 
-    // Theme watcher: poll the atomic flag set by on_theme_change() callback.
-    // Only active when color mode is System and the watcher started successfully.
-    if matches!(state.color_mode, AppColorMode::System) && state._theme_watcher.is_some() {
-        subs.push(iced::time::every(Duration::from_millis(500)).map(|_| Message::ThemeWatcherTick));
+    // The OS theme's changes, while the colour mode is System; a watcher that
+    // cannot start yields its error, which leaves the theme as it is.
+    #[cfg(feature = "watch")]
+    if matches!(state.color_mode, AppColorMode::System) && state.watch_os_theme {
+        subs.push(
+            native_theme_iced::theme_changes()
+                .filter_map(|changed| changed.ok().map(|_| Message::ReloadSystemTheme)),
+        );
     }
 
     // Screenshot countdown timer
@@ -15778,7 +15765,7 @@ mod tests {
         for &(family, weight, monospaced) in faces {
             db.push_face_info(fontdb::FaceInfo {
                 id: fontdb::ID::dummy(),
-                source: fontdb::Source::Binary(Arc::new(Vec::<u8>::new())),
+                source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
                 index: 0,
                 families: vec![(family.to_string(), fontdb::Language::English_UnitedStates)],
                 post_script_name: format!("{family}-{weight}"),
