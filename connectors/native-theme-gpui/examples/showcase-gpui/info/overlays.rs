@@ -61,12 +61,19 @@ fn dialog_corners(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 /// `reduce_motion` is as given. `styled` is whether a native theme's geometry
 /// reached it, which decides the description's colour and the corners. Its
 /// geometry lines are recorded where `demo::confirm_dialog` applies the
-/// builders.
-pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
+/// builders; `entrance` as `chrome::dialog_surface`'s.
+pub fn dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+    icon: &SampleIcon,
+) -> WidgetInfo {
     let info = dialog_surface(
         WidgetInfo::new("Dialog").variant("Confirm Action"),
         t,
         reduce_motion,
+        entrance,
         true,
         "the title, the content and the footer",
     );
@@ -126,14 +133,21 @@ pub fn dialog_close(t: &Theme, styled: bool) -> WidgetInfo {
 
 /// The AlertDialog the page's Discard changes… Button opens, drawn while
 /// gpui's `reduce_motion` is as given, showing `icon` of the chosen icon
-/// theme; `styled` as `dialog`'s. Its geometry lines are recorded where
-/// `demo::alert_dialog` applies the builders.
-pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
+/// theme; `styled` and `entrance` as `dialog`'s. Its geometry lines are
+/// recorded where `demo::alert_dialog` applies the builders.
+pub fn alert_dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+    icon: &SampleIcon,
+) -> WidgetInfo {
     dialog_corners(
         dialog_surface(
             WidgetInfo::new("AlertDialog"),
             t,
             reduce_motion,
+            entrance,
             false,
             if icon.shown() {
                 "the icon, the title and the description"

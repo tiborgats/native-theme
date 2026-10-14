@@ -283,9 +283,11 @@ test over every preset and mode says so.
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font` | `StatusBar` |
 | `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font` | declarative `Table` |
 | `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated | `DataTable::with_size`; with `table` on the container for the cell text |
+| `list_header_height` | `list.header_height` | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
@@ -413,6 +415,18 @@ private and the variant's config cannot carry them. It absorbs the notification 
 and repairs the handle colours if another effect rebuilt the base theme in the
 meantime; the scrollbar styles are opaque upstream, so a rebuild that happens
 to leave the handle colours unchanged is repaired at the next one.
+
+`apply` also installs the theme's `tooltip.show_delay_ms` as gpui-base's
+application-wide `TooltipDefaults` show delay, which every tooltip shown
+through gpui-component's tooltip overlay waits (a `Button::tooltip`'s, among
+others), and keeps the grace period installed. Where the theme states no
+delay, the application's comes back: the one installed before the connector's
+first write, or set by the application since (gpui-base's 500 ms where it set
+none). A delay is told apart by value: an application delay equal to the one
+the connector last wrote is taken for the connector's. GPUI's own `.tooltip()`
+on an element does not read `TooltipDefaults`: it waits GPUI's 500 ms unless
+the element is given `tooltip_show_delay(&resolved)` through
+`StatefulInteractiveElement::tooltip_show_delay`.
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12

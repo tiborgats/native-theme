@@ -50,8 +50,15 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
 /// The striped, bordered `DataTable`: its frame and fill. Its rows report
 /// themselves (`data_table_row`). `styled` where a native theme is installed,
 /// so the table takes `geometry::data_table_size` and its container
-/// `geometry::table`.
-pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> WidgetInfo {
+/// `geometry::table`; `header` where the theme states `list.header_height`,
+/// which the header row takes through `geometry::list_header_height`.
+pub fn data_table(
+    t: &Theme,
+    rows: usize,
+    columns: usize,
+    styled: bool,
+    header: bool,
+) -> WidgetInfo {
     let info = WidgetInfo::new("DataTable")
         .variant("striped, bordered")
         .color(claim(
@@ -96,12 +103,15 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
                          a theme reaches it only through its Size, its header row \
-                         height (table/data_table.rs, DataTable::header_row_height, \
-                         which no model field states yet) and the text its \
-                         container gives the cells",
+                         height (table/data_table.rs, DataTable::header_row_height) \
+                         and the text its container gives the cells",
         );
-    let info = if styled {
-        info.geometry("data_table_size").geometry("table")
+    let info = if styled && header {
+        info.geometry("data_table_size")
+            .geometry("table")
+            .geometry("list_header_height")
+    } else if styled {
+        info.geometry("data_table_size").geometry("table").not_themeable("header height", "the body rows' height: the theme states no list.header_height, and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
     } else {
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")

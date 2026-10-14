@@ -1,5 +1,7 @@
 //! What the Feedback page's widgets report about themselves (spec §3.4).
 
+use std::time::Duration;
+
 use gpui::transparent_white;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
@@ -724,8 +726,16 @@ pub fn marker(
 /// page, where nothing of the showcase can wrap it. `built` is whether the
 /// application built the tooltip itself; `styled` is whether it is refined
 /// by `geometry::tooltip`, whose lines are recorded where
-/// `demo::built_tooltip_button` applies it.
-pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) -> WidgetInfo {
+/// `demo::built_tooltip_button` applies it; `delay` is the delay the showcase
+/// gives a built tooltip's element, the theme's `tooltip.show_delay_ms`.
+pub fn tooltip(
+    t: &Theme,
+    built: bool,
+    styled: bool,
+    delay: Option<Duration>,
+    label: &str,
+    text: &str,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Tooltip")
         .variant(if built {
             "built by the application"
@@ -746,9 +756,13 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
+    let info = match (built, delay) {
+        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1708)", delay.as_millis())),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (false, _) => info,
+    };
     let info = if built {
-        info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase does not. native-theme states no hover delay, though the platforms do -- our model's gap")
-            .not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
+        info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
     } else {
         info.not_themeable("delay", "500ms to show and 300ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 422). The showcase installs no defaults and sets no trigger's delay. native-theme states no hover delay, though the platforms do -- our model's gap")

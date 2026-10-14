@@ -1,5 +1,7 @@
 //! What the window's chrome reports about itself (spec §2).
 
+use std::time::Duration;
+
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::theme::ResolvedPadding;
@@ -424,7 +426,9 @@ pub fn toolbar(
 /// The status bar's panel toggle (spec §3.2, S4), running `action` and
 /// showing `icon` of the icon theme named `set`, selected while its panel is
 /// `open`, which `state` describes. Its icon-size line is recorded where
-/// `demo::panel_toggle` applies the builder.
+/// `demo::panel_toggle` applies the builder; `tooltip_delay` is the delay its
+/// tooltip is given, the theme's `tooltip.show_delay_ms`.
+#[allow(clippy::too_many_arguments)]
 pub fn panel_toggle(
     t: &Theme,
     action: &'static str,
@@ -433,6 +437,7 @@ pub fn panel_toggle(
     open: bool,
     state: &'static str,
     tooltip_styled: bool,
+    tooltip_delay: Option<Duration>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(match (drawn, open) {
@@ -452,7 +457,7 @@ pub fn panel_toggle(
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         )
     };
-    let info = action_tooltip(info, t, tooltip_styled);
+    let info = action_tooltip(info, t, tooltip_styled, tooltip_delay);
     let info = if drawn {
         info.not_themeable(
             "icon",
@@ -917,13 +922,15 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`. Its icon-size line is
-/// recorded where `demo::toolbar_button` applies the builder.
+/// recorded where `demo::toolbar_button` applies the builder; `tooltip_delay`
+/// is the delay its tooltip is given, the theme's `tooltip.show_delay_ms`.
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
     icon: &ChromeIcon,
     set: &str,
     tooltip_styled: bool,
+    tooltip_delay: Option<Duration>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -931,7 +938,12 @@ pub fn toolbar_button(
     } else {
         "Ghost, labelled"
     });
-    let info = action_tooltip(super::buttons::native_ghost(info, t), t, tooltip_styled)
+    let info = action_tooltip(
+        super::buttons::native_ghost(info, t),
+        t,
+        tooltip_styled,
+        tooltip_delay,
+    )
         .not_themeable(
             "fill",
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
@@ -965,21 +977,36 @@ pub fn toolbar_button(
 /// What a chrome Button's tooltip paints: built by the application on the
 /// element around the Button (`demo::action_tooltip`) and refined by
 /// `geometry::tooltip` where `styled`, whose line the helper records;
-/// upstream's colours where no native theme refined it.
-fn action_tooltip(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
+/// upstream's colours where no native theme refined it. `delay` is the
+/// theme's `tooltip.show_delay_ms`, which the element is given.
+fn action_tooltip(
+    info: WidgetInfo,
+    t: &Theme,
+    styled: bool,
+    delay: Option<Duration>,
+) -> WidgetInfo {
     let info = if styled {
         info
     } else {
         info.colors(super::feedback::tooltip_colours(t, true))
     };
-    info.instance(
+    let info = info.instance(
         "tooltip",
         "Tooltip::element with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. The text is the element, refined by geometry::tooltip_content where a native theme is installed, so it wraps within tooltip.max_width; a key binding beside it is not counted in that width",
-    )
-    .not_themeable(
-        "tooltip delay",
-        "gpui's own tooltip, set on an element rather than through the Button, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay",
-    )
+);
+    match delay {
+        Some(delay) => info.config(
+            "tooltip delay",
+            format!(
+                "tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
+                delay.as_millis()
+            ),
+        ),
+        None => info.not_themeable(
+            "tooltip delay",
+            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed",
+        ),
+    }
 }
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
@@ -1132,12 +1159,15 @@ pub fn resize_handle(
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
 /// the surface, its edge, and the backdrop behind it; and what upstream
 /// builds around the parts it is given. `close_button` is whether the Dialog
-/// draws its close button, `reported` the parts that report it, and
-/// `reduce_motion` gpui's reduced motion while it is drawn.
+/// draws its close button, `reported` the parts that report it,
+/// `reduce_motion` gpui's reduced motion while it is drawn, and `entrance`
+/// whether it enters as `geometry::dialog_entrance` gives the theme's
+/// `dialog.entrance`.
 pub(super) fn dialog_surface(
     info: WidgetInfo,
     t: &Theme,
     reduce_motion: bool,
+    entrance: bool,
     close_button: bool,
     reported: &str,
 ) -> WidgetInfo {
@@ -1177,10 +1207,11 @@ pub(super) fn dialog_surface(
     )
     .not_themeable(
         "animation",
-        if reduce_motion {
-            "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens -- the default entrance, which the showcase keeps (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)"
-        } else {
-            "a 0.25s slide and fade on a literal curve, not the theme's motion tokens: the default entrance, which the showcase keeps; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION)"
+        match (entrance, reduce_motion) {
+            (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)",
+            (false, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION)",
+            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would fade in place over the motion tokens' duration_normal on their easing_enter -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; gpui-pre/elements/animation.rs, AnimationExt)",
+            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, not a literal: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance)",
         },
     )
     .instance(
@@ -1200,12 +1231,14 @@ pub(super) fn dialog_surface(
 /// The command palette's Dialog (spec §2.8), drawn while gpui's
 /// `reduce_motion` is as given. Its geometry lines are recorded where
 /// `demo::command_palette` applies the builders; its info target is the
-/// title, because the Command fills the rest of its content.
-pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
+/// title, because the Command fills the rest of its content. `entrance` as
+/// `dialog_surface`'s.
+pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("Command Palette"),
         t,
         reduce_motion,
+        entrance,
         true,
         "the title and the content",
     )
@@ -1552,12 +1585,14 @@ pub fn preference_switch(
 /// The About dialog (spec §2.8). Its geometry lines are recorded where
 /// `demo::about` applies the builders; its title and its content report it.
 /// `gapped` is whether the installed theme states the gap between its lines,
-/// `reduce_motion` gpui's reduced motion while it is drawn.
-pub fn about_dialog(t: &Theme, gapped: bool, reduce_motion: bool) -> WidgetInfo {
+/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance` as
+/// `dialog_surface`'s.
+pub fn about_dialog(t: &Theme, gapped: bool, reduce_motion: bool, entrance: bool) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("About"),
         t,
         reduce_motion,
+        entrance,
         true,
         "the title and the content",
     )

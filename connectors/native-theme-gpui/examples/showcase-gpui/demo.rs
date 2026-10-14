@@ -40,8 +40,8 @@ use gpui_component::{
     date_picker::{DatePicker, DatePickerState},
     description_list::DescriptionList,
     dialog::{
-        AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter,
-        DialogTitle,
+        AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogEntrance,
+        DialogFooter, DialogTitle,
     },
     diff::{Diff, DiffHoverHighlight, DiffState},
     empty::{
@@ -1135,7 +1135,8 @@ pub(crate) fn toolbar_button(
         about,
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
-    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled);
+    let delay = tooltip_delay(cx);
+    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled, delay);
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -1162,6 +1163,7 @@ pub(crate) fn toolbar_button(
         button_info,
     )
     .tooltip(tip)
+    .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// One ghost icon Button of the Buttons page's component `Toolbar`.
@@ -1256,6 +1258,14 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }
 
+/// The installed theme's `tooltip.show_delay_ms`, for GPUI's own
+/// `.tooltip()` on an element, which waits GPUI's 500 ms unless the element
+/// is given another (gpui-pre `elements/div.rs:53, 1708`); `None` where the
+/// theme states none or no native theme is installed.
+pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
+    native_value(cx, |n| native_theme_gpui::tooltip_show_delay(n.resolved)).flatten()
+}
+
 /// A tooltip reading `text` and the key binding of `action`, built by the
 /// application and refined by `geometry::tooltip`, for the element that
 /// wraps a chrome Button; and whether a native theme refined it.
@@ -1335,7 +1345,9 @@ pub(crate) fn panel_toggle(
         state,
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
-    let mut button_info = info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled);
+    let delay = tooltip_delay(cx);
+    let mut button_info =
+        info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled, delay);
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -1364,6 +1376,7 @@ pub(crate) fn panel_toggle(
         button_info,
     )
     .tooltip(tip)
+    .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// The gap between the theme settings' rows, and between each row's label
@@ -2236,10 +2249,25 @@ pub(crate) fn resize_handles(
 // Overlays (spec §2.8) and the theme-error Alert (spec §2.5)
 // ---------------------------------------------------------------------------
 
-/// `dialog` refined by `geometry::dialog` and capped at
-/// `geometry::dialog_max_width`, each recorded in `info` where it applies.
+/// The entrance `geometry::dialog_entrance` gives the installed theme's
+/// `dialog.entrance`, for every Dialog and AlertDialog the showcase opens;
+/// `None` where the theme states none, and the dialog keeps upstream's.
+fn themed_entrance(cx: &App) -> Option<DialogEntrance> {
+    native_value(cx, geometry::dialog_entrance).flatten()
+}
+
+/// `dialog` refined by `geometry::dialog`, capped at
+/// `geometry::dialog_max_width` and entering as `geometry::dialog_entrance`
+/// gives, each recorded in `info` where it applies.
 fn dialog_frame(dialog: Dialog, cx: &App, info: &mut WidgetInfo) -> Dialog {
     let dialog = native_info(dialog, cx, geometry::dialog, "dialog", info);
+    let dialog = match themed_entrance(cx) {
+        Some(entrance) => {
+            *info = std::mem::take(info).geometry("dialog_entrance");
+            dialog.entrance(entrance)
+        }
+        None => dialog,
+    };
     match native_value(cx, geometry::dialog_max_width) {
         Some(width) => {
             *info = std::mem::take(info).geometry("dialog_max_width");
@@ -2323,7 +2351,11 @@ pub(crate) fn command_palette(
     set: SharedString,
 ) -> Dialog {
     let groups = palette_groups(groups);
-    let mut dialog_info = info::palette_dialog(cx.theme(), cx.reduce_motion());
+    let mut dialog_info = info::palette_dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
@@ -2358,7 +2390,12 @@ pub(crate) fn about(
     compatibility: &'static str,
     gap: Option<Pixels>,
 ) -> Dialog {
-    let mut dialog_info = info::about_dialog(cx.theme(), gap.is_some(), cx.reduce_motion());
+    let mut dialog_info = info::about_dialog(
+        cx.theme(),
+        gap.is_some(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -4036,9 +4073,10 @@ pub(crate) fn description_list(
         )
 }
 
-/// The striped, bordered `DataTable` over `state`, `height` tall. Its rows
-/// report themselves through the delegate, which builds them with
-/// `data_table_header` and `data_table_row`.
+/// The striped, bordered `DataTable` over `state`, `height` tall, its header
+/// row `geometry::list_header_height` tall where the theme states one and
+/// its body rows' height otherwise. Its rows report themselves through the
+/// delegate, which builds them with `data_table_header` and `data_table_row`.
 pub(crate) fn data_table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -4052,14 +4090,16 @@ pub(crate) fn data_table(
     };
     // What `native_value` and `.native` apply the builders under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let header = native_value(cx, geometry::list_header_height).flatten();
     DataTable::new(state)
         .with_size(native_value(cx, geometry::data_table_size).unwrap_or_default())
+        .when_some(header, DataTable::header_row_height)
         .stripe(true)
         .bordered(true)
         .info(
             ui,
             id,
-            info::data::data_table(cx.theme(), rows, columns, styled),
+            info::data::data_table(cx.theme(), rows, columns, styled, header.is_some()),
         )
         .native(cx, geometry::table)
         .h(height)
@@ -5311,7 +5351,7 @@ pub(crate) fn tooltip_button(
     label: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, label, text);
+    let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, None, label, text);
     let button = labelled(
         ui,
         cx,
@@ -5348,7 +5388,9 @@ pub(crate) fn built_tooltip_button(
 ) -> Stateful<Div> {
     let style = native_geometry(cx, geometry::tooltip);
     let content = native_geometry(cx, geometry::tooltip_content);
-    let mut tooltip_info = info::feedback::tooltip(cx.theme(), true, style.is_some(), label, text);
+    let delay = tooltip_delay(cx);
+    let mut tooltip_info =
+        info::feedback::tooltip(cx.theme(), true, style.is_some(), delay, label, text);
     let button = native_info(
         Button::new(id),
         cx,
@@ -5373,6 +5415,7 @@ pub(crate) fn built_tooltip_button(
             )
             .build(window, cx)
         })
+        .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// A Default Button reading `label`, refined by `geometry::button`, whose
@@ -6954,7 +6997,13 @@ pub(crate) fn confirm_dialog(
     icon: &SampleIcon,
 ) -> Dialog {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut dialog_info = info::overlays::dialog(cx.theme(), cx.reduce_motion(), styled, icon);
+    let mut dialog_info = info::overlays::dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+        styled,
+        icon,
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -7035,8 +7084,9 @@ pub(crate) fn confirm_dialog(
         })
 }
 
-/// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`
-/// and capped at `geometry::dialog_max_width`, with `icon`, of the chosen
+/// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`,
+/// capped at `geometry::dialog_max_width` and entering as
+/// `geometry::dialog_entrance` gives, with `icon`, of the chosen
 /// icon theme -- none where that theme has none -- a title, a description,
 /// and Keep and Discard buttons. It reports itself on the icon, the title
 /// and the description, the parts the showcase builds.
@@ -7047,8 +7097,22 @@ pub(crate) fn alert_dialog(
     icon: &SampleIcon,
 ) -> AlertDialog {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled, icon);
+    let entrance = themed_entrance(cx);
+    let mut alert_info = info::overlays::alert_dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        entrance.is_some(),
+        styled,
+        icon,
+    );
     let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
+    let alert = match entrance {
+        Some(entrance) => {
+            alert_info = alert_info.geometry("dialog_entrance");
+            alert.entrance(entrance)
+        }
+        None => alert,
+    };
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
     // surface through the refinement (dialog/dialog.rs:728).
     let alert = match native_value(cx, geometry::dialog_max_width) {
@@ -8268,6 +8332,8 @@ struct TableLine {
     font: (Pixels, FontWeight, Pixels, Hsla),
     fill: Option<Hsla>,
     closed: bool,
+    /// The row's height where it is not a body row's.
+    height: Option<Pixels>,
 }
 
 /// The Basic page's table, `width` wide across its outer border, laid out
@@ -8279,7 +8345,9 @@ struct TableLine {
 /// padded by the four `list.border.padding` sides (none on a side the theme
 /// leaves unstated) and every row `list.row_height` tall where the theme
 /// states it, else its line -- its font's size by `defaults.line_height` --
-/// and that padding; the header in `list.header_background` and
+/// and that padding, the header `list.header_height` tall where the theme
+/// states it (`geometry::list_header_height`), else as a row is; the header
+/// in `list.header_background` and
 /// `list.header_font`, the rows in `list.item_font`, the row at `selected`
 /// in `list.selection_background` and `selection_text_color`; a
 /// `list.grid_color` line `separator.line_width`
@@ -8354,7 +8422,7 @@ pub(crate) fn files_table(
             h_flex()
                 .relative()
                 .w_full()
-                .h(height(line_height))
+                .h(spec.height.unwrap_or_else(|| height(line_height)))
                 .text_size(size)
                 .font_weight(weight)
                 .line_height(line_height)
@@ -8374,18 +8442,23 @@ pub(crate) fn files_table(
                 })
         };
     let [first, second] = head;
+    let header_height = geometry::list_header_height(n);
+    let header_info = info::data::table_header(t, &format!("{}, {}", first.0, second.0));
+    let header_info = if header_height.is_some() {
+        header_info.geometry("list_header_height")
+    } else {
+        header_info
+    };
     let header = row(TableLine {
         cells: [first.0, second.0],
         listed: [Some(first.1), Some(second.1)],
         font: font(&l.header_font, colour(l.header_font.color)),
         fill: Some(colour(l.header_background)),
         closed: true,
+        height: header_height,
     })
-    .info(
-        ui,
-        SharedString::from(format!("{id}-header")),
-        info::data::table_header(t, &format!("{}, {}", first.0, second.0)),
-    )
+    .info(ui, SharedString::from(format!("{id}-header")), header_info)
+    .debug_selector(move || format!("{id}-header"))
     .w_full();
     let body = rows.iter().enumerate().map(|(ix, cells)| {
         let (fill, text) = if ix == selected {
@@ -8405,6 +8478,7 @@ pub(crate) fn files_table(
             font: font(&l.item_font, text),
             fill,
             closed: false,
+            height: None,
         })
         .id(("table-row", ix))
         .when(ix != selected, |row| {

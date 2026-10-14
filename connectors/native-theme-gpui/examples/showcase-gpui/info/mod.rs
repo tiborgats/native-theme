@@ -215,6 +215,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_height, max_height and border.corner_radius; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
     ),
     (
+        "dialog_entrance",
+        "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
+    ),
+    (
         "input_group_button",
         "button.border.corner_radius alone. gpui-component scales a control's radius with its size, so an in-group button would take radius/2 (input/group.rs, InputGroupButton::render_in_group), where the model records one radius per widget",
     ),
@@ -269,6 +273,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "data_table_size",
         "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size)",
+    ),
+    (
+        "list_header_height",
+        "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height)",
     ),
     (
         "icon_size_toolbar",

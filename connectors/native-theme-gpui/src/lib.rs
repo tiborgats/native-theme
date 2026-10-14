@@ -81,10 +81,12 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item` |
+//! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
+//! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
+//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min height, radius via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
 //! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
@@ -184,6 +186,7 @@ use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::borrow::Cow;
 use std::rc::Rc;
+use std::time::Duration;
 
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
@@ -712,6 +715,25 @@ pub fn focus_ring_offset(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.focus_ring_offset
 }
 
+/// The delay between the pointer coming to rest on an element and its
+/// tooltip showing, `tooltip.show_delay_ms`; `None` where the theme states
+/// none.
+///
+/// [`apply`] installs it as gpui-base's application-wide `TooltipDefaults`
+/// show delay, which every tooltip shown through gpui-component's tooltip
+/// overlay waits (a `Button::tooltip`'s, among others). GPUI's own
+/// `.tooltip()` on an element does not read those defaults: it waits GPUI's
+/// 500 ms (gpui-pre `src/elements/div.rs:53`) unless the element is given
+/// this value through `StatefulInteractiveElement::tooltip_show_delay`
+/// (`:1708`).
+#[must_use]
+pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
+    resolved
+        .tooltip
+        .show_delay
+        .map(|ms| Duration::from_millis(u64::from(ms)))
+}
+
 // ---------------------------------------------------------------------------
 // Installation: NativeTheme global, apply family, base-layer observer (§8.1, §3.3)
 // ---------------------------------------------------------------------------
@@ -830,13 +852,18 @@ impl<'a> Native<'a> {
 ///    only that switch, never clears a flag the connector did not set, and
 ///    asks gpui-base (which reads the OS preference itself since 0.6.2) to
 ///    re-read the system;
-/// 7. installs, once per `App`, the observer that restores step 5 and the 12
+/// 7. installs the variant's [`tooltip_show_delay`] as gpui-base's
+///    application-wide `TooltipDefaults` show delay, keeping the grace period
+///    installed; where the theme states no delay, the application's comes back:
+///    the one installed before the connector's first write, or set by the
+///    application since (gpui-base's 500 ms where it set none);
+/// 8. installs, once per `App`, the observer that restores step 5 and the 12
 ///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
 ///    private in `ThemeConfigColors`; D43) whenever upstream rebuilds the
 ///    theme, together with one deferred repeat for the update that installs it
 ///    (the subscription activates only at the end of that update's effect
 ///    flush, D38);
-/// 8. refreshes every window so the change paints at once (D37).
+/// 9. refreshes every window so the change paints at once (D37).
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards resets the theme to upstream's default. A single-variant
@@ -938,6 +965,40 @@ fn forward_reduce_motion(reduce: bool, cx: &mut App) {
     gpui_base::apply_system_reduce_motion(cx);
 }
 
+/// The show delay the connector last installed on gpui-base's
+/// `TooltipDefaults`, and the application's own, which a theme without a
+/// delay brings back (spec §7.4).
+#[derive(Default)]
+struct TooltipDelayWrite {
+    /// What the connector last installed; `None` before its first write.
+    last_written: Option<Duration>,
+    /// The delay installed before the connector's first write, or set by the
+    /// application since.
+    app_delay: Duration,
+}
+
+impl Global for TooltipDelayWrite {}
+
+/// Install `theme`'s delay as the `TooltipDefaults` show delay, or the
+/// application's where the theme states none. A show delay that is not the
+/// one the connector last wrote was set by the application (or is gpui-base's
+/// default, before the first write), so it becomes the application's delay.
+/// The grace period is never touched. Decided by value, as gpui-base decides
+/// reduced motion: an application delay equal to the one the connector last
+/// wrote is taken for the connector's.
+fn install_tooltip_delay(theme: Option<Duration>, cx: &mut App) {
+    let current = gpui_base::TooltipDefaults::global(cx);
+    let state = cx.default_global::<TooltipDelayWrite>();
+    if state.last_written != Some(current.show_delay()) {
+        state.app_delay = current.show_delay();
+    }
+    let delay = theme.unwrap_or(state.app_delay);
+    state.last_written = Some(delay);
+    if delay != current.show_delay() {
+        current.with_show_delay(delay).install(cx);
+    }
+}
+
 fn apply_inner(
     theme: GpuiTheme,
     light: Option<&ResolvedTheme>,
@@ -993,6 +1054,11 @@ fn apply_inner(
     // is active (§3.3), so it must not be marked as the observer's own.
     write_base_overrides(cx, false);
     forward_reduce_motion(prefs.reduce_motion, cx);
+    let delay = cx
+        .try_global::<NativeTheme>()
+        .and_then(|nt| nt.variant(is_dark))
+        .and_then(tooltip_show_delay);
+    install_tooltip_delay(delay, cx);
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event. The theme is written through
@@ -1693,6 +1759,26 @@ mod tests {
         assert!(focus_ring_offset(&resolved) >= 0.0);
     }
 
+    #[test]
+    fn tooltip_show_delay_is_the_stated_delay_or_none() {
+        let prefs = AccessibilityPreferences::default();
+        let (_, breeze) = from_preset("kde-breeze", false, &prefs).unwrap();
+        assert_eq!(breeze.tooltip.show_delay, Some(700), "precondition");
+        assert_eq!(
+            tooltip_show_delay(&breeze),
+            Some(std::time::Duration::from_millis(700))
+        );
+        let (_, material) = from_preset("material-3", false, &prefs).unwrap();
+        assert_eq!(material.tooltip.show_delay, Some(0), "precondition");
+        assert_eq!(
+            tooltip_show_delay(&material),
+            Some(std::time::Duration::ZERO)
+        );
+        let (_, mocha) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
+        assert_eq!(mocha.tooltip.show_delay, None, "precondition");
+        assert_eq!(tooltip_show_delay(&mocha), None);
+    }
+
     // -- Issue 26: integration tests for all 17 presets in both modes --
 
     #[test]
@@ -2062,6 +2148,129 @@ mod apply_tests {
                 nt.resolved(cx).is_some(),
                 "the stored variant survives the rebuild"
             );
+        });
+    }
+
+    /// A preset that states `tooltip.show_delay_ms`, a second that states
+    /// another, and one that states none.
+    fn tooltip_delay_presets() -> [(GpuiTheme, ResolvedTheme); 3] {
+        let prefs = AccessibilityPreferences::default();
+        let load = |name| from_preset(name, false, &prefs).expect("preset should load");
+        let (breeze, adwaita, latte) = (
+            load("kde-breeze"),
+            load("adwaita"),
+            load("catppuccin-latte"),
+        );
+        assert_eq!(breeze.1.tooltip.show_delay, Some(700), "precondition");
+        assert_eq!(adwaita.1.tooltip.show_delay, Some(500), "precondition");
+        assert_eq!(latte.1.tooltip.show_delay, None, "precondition");
+        [breeze, adwaita, latte]
+    }
+
+    fn ms(ms: u64) -> std::time::Duration {
+        std::time::Duration::from_millis(ms)
+    }
+
+    fn apply_preset(preset: &(GpuiTheme, ResolvedTheme), cx: &mut App) {
+        apply(
+            preset.0.clone(),
+            &preset.1,
+            &AccessibilityPreferences::default(),
+            cx,
+        );
+    }
+
+    /// Spec §7.4: the theme's delay becomes the application-wide
+    /// `TooltipDefaults` show delay; the grace period stays gpui-base's.
+    #[gpui::test]
+    fn a_stated_tooltip_delay_is_installed(cx: &mut TestAppContext) {
+        let [breeze, _, _] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            let defaults = gpui_base::TooltipDefaults::global(cx);
+            assert_eq!(defaults.show_delay(), ms(700));
+            assert_eq!(
+                defaults.grace_period(),
+                gpui_base::TooltipDefaults::new().grace_period()
+            );
+        });
+    }
+
+    /// Review Focus 2: a theme without the field keeps the toolkit's delay.
+    #[gpui::test]
+    fn a_theme_without_a_delay_keeps_the_toolkits(cx: &mut TestAppContext) {
+        let [_, _, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&latte, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                gpui_base::TooltipDefaults::new()
+            );
+        });
+    }
+
+    /// Review Focus 3: from a theme that states a delay to one that does not,
+    /// the delay goes back to gpui-base's 500 ms where the application set
+    /// none.
+    #[gpui::test]
+    fn a_switch_to_a_theme_without_a_delay_restores_the_default(cx: &mut TestAppContext) {
+        let [breeze, adwaita, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(700));
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(500));
+            apply_preset(&breeze, cx);
+            apply_preset(&adwaita, cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(500));
+        });
+    }
+
+    /// Review Focus 3 and 6: the delay and grace period the application
+    /// installed before the first apply. A theme's delay replaces the
+    /// application's delay and keeps its grace period; a theme without one
+    /// brings the application's delay back.
+    #[gpui::test]
+    fn the_applications_defaults_installed_first_are_kept(cx: &mut TestAppContext) {
+        let [breeze, _, latte] = tooltip_delay_presets();
+        let own = gpui_base::TooltipDefaults::new()
+            .with_show_delay(ms(250))
+            .with_grace_period(ms(80));
+        cx.update(|cx| {
+            own.install(cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            apply_preset(&breeze, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own.with_show_delay(ms(700))
+            );
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+    }
+
+    /// Review Focus 3 and 6: a delay the application sets between two
+    /// applies is its own from then on, and outlives a later theme's delay.
+    #[gpui::test]
+    fn a_delay_the_application_sets_between_applies_is_kept(cx: &mut TestAppContext) {
+        let [breeze, adwaita, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            let own = gpui_base::TooltipDefaults::global(cx)
+                .with_show_delay(ms(900))
+                .with_grace_period(ms(40));
+            own.install(cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            apply_preset(&adwaita, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own.with_show_delay(ms(500))
+            );
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
         });
     }
 

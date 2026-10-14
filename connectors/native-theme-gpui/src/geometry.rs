@@ -91,7 +91,8 @@
 
 use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
-use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedPadding};
+use gpui_component::dialog::DialogEntrance;
+use native_theme::theme::{DialogEntranceStyle, LayoutTheme, ResolvedFontSpec, ResolvedPadding};
 
 use crate::Native;
 use crate::colors::rgba_to_hsla;
@@ -540,6 +541,30 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         .rounded(px(d.border.corner_radius.max(0.0)))
 }
 
+/// For `Dialog::entrance` and `AlertDialog::entrance`
+/// (`src/dialog/dialog.rs:526`, `src/dialog/alert_dialog.rs:277`): the
+/// entrance closest to `dialog.entrance` that gpui-component draws, or `None`
+/// where the theme states none, so the dialog keeps upstream's default,
+/// `DialogEntrance::SlideDown`.
+///
+/// Both styles are approximations, and both become `DialogEntrance::Fade`, a
+/// fade in place over the motion tokens' `duration_normal`
+/// (`src/dialog/dialog.rs:653-666, 864-867`):
+///
+/// - `ScaleFade` (Windows, GNOME, Material) loses its scale: gpui-component
+///   has no scaling entrance (`src/dialog/entrance.rs:12-25`).
+/// - `FadeRise` (KDE) loses its rise: gpui-component has no rising entrance,
+///   and its `FadeSlide` settles from just above the final position, the
+///   opposite direction.
+///
+/// Reduced motion skips every entrance upstream (`:621-623`).
+#[must_use]
+pub fn dialog_entrance(n: Native<'_>) -> Option<DialogEntrance> {
+    n.resolved.dialog.entrance.map(|style| match style {
+        DialogEntranceStyle::ScaleFade | DialogEntranceStyle::FadeRise => DialogEntrance::Fade,
+    })
+}
+
 /// `InputGroupButton` (`src/input/group.rs:597-600` → `:603`): the platform's
 /// button radius, and nothing else.
 ///
@@ -826,6 +851,15 @@ pub fn data_table_size(n: Native<'_>) -> Size {
             .row_height
             .map_or_else(|| Size::Medium.table_row_height(), px),
     )
+}
+
+/// For `DataTable::header_row_height` (`src/table/data_table.rs:129`):
+/// `list.header_height`, or `None` where the theme states none, so the header
+/// keeps the body rows' height, which upstream gives an unset header
+/// (`src/table/state.rs:775-779`) and [`data_table_size`] sets.
+#[must_use]
+pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
+    n.resolved.list.header_height.map(px)
 }
 
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
@@ -1308,6 +1342,74 @@ mod tests {
         assert!(
             stated > 0 && unstated > 0,
             "both branches must be exercised"
+        );
+    }
+
+    #[test]
+    fn list_header_height_is_the_stated_height_or_none() {
+        let adwaita = resolved("adwaita", ColorMode::Light);
+        assert_eq!(adwaita.list.header_height, Some(30.0), "precondition");
+        assert_eq!(
+            list_header_height(Native::unscaled(&adwaita)),
+            Some(px(30.0))
+        );
+        // KDE states none: the DataTable keeps its header at the row height.
+        let breeze = resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(breeze.list.header_height, None, "precondition");
+        assert_eq!(list_header_height(Native::unscaled(&breeze)), None);
+        // A height, not a text size: the text-scaling factor leaves it alone.
+        for factor in [1.0, 1.5] {
+            let prefs = scaled(factor);
+            for (preset, expected) in [
+                ("adwaita", Some(30.0)),
+                ("material-3", Some(56.0)),
+                ("windows-11", None),
+                ("catppuccin-mocha", None),
+            ] {
+                for mode in [ColorMode::Light, ColorMode::Dark] {
+                    let r = resolved(preset, mode);
+                    let n = Native {
+                        resolved: &r,
+                        accessibility: &prefs,
+                    };
+                    assert_eq!(list_header_height(n), expected.map(px), "{preset} {mode:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn dialog_entrance_maps_each_style_to_a_fade() {
+        use gpui_component::dialog::DialogEntrance;
+        use native_theme::theme::DialogEntranceStyle;
+        let mut r = resolved("adwaita", ColorMode::Light);
+        for (style, expected) in [
+            (
+                Some(DialogEntranceStyle::ScaleFade),
+                Some(DialogEntrance::Fade),
+            ),
+            (
+                Some(DialogEntranceStyle::FadeRise),
+                Some(DialogEntrance::Fade),
+            ),
+            (None, None),
+        ] {
+            r.dialog.entrance = style;
+            assert_eq!(dialog_entrance(Native::unscaled(&r)), expected, "{style:?}");
+        }
+        // A preset without the field keeps upstream's entrance.
+        let mocha = resolved("catppuccin-mocha", ColorMode::Dark);
+        assert_eq!(mocha.dialog.entrance, None, "precondition");
+        assert_eq!(dialog_entrance(Native::unscaled(&mocha)), None);
+        let breeze = resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(
+            breeze.dialog.entrance,
+            Some(DialogEntranceStyle::FadeRise),
+            "precondition"
+        );
+        assert_eq!(
+            dialog_entrance(Native::unscaled(&breeze)),
+            Some(DialogEntrance::Fade)
         );
     }
 

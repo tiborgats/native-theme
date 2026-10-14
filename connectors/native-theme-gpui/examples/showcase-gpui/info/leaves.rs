@@ -1265,6 +1265,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
+        "basic.table.header",
+        "list.header_height_px",
+        "gpui: geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
+    ),
+    (
+        "basic.table.header",
+        "list.row_height_px",
+        "gpui: the header row's height where list.header_height is unstated and this is stated, else padding and line (demo::files_table)",
+    ),
+    (
         "basic.table",
         "list.background_color",
         "gpui: the table's fill (demo::files_table)",
@@ -2269,6 +2279,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "tooltip.max_width_px",
         "gpui: geometry::tooltip_content, less the bubble's padding and border",
+    ),
+    (
+        "",
+        "tooltip.show_delay_ms",
+        "gpui: tooltip_show_delay on the element of gpui's own tooltip where stated, else gpui's 500ms (demo::built_tooltip_button)",
     ),
     // --- window ---------------------------------------------------------------------------
     (

@@ -2506,6 +2506,56 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     }
 }
 
+/// Both tables draw their header row `list.header_height` tall where the
+/// theme states it (adwaita, 30), and as tall as a body row is drawn where it
+/// does not (kde-breeze, which states no header height): the Data page's
+/// `DataTable` at `geometry::data_table_size`'s row height, the Basic page's
+/// table at `list.row_height`, or else its padding and the header font's line,
+/// on the pixel grid.
+#[gpui::test]
+fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["adwaita", "kde-breeze"] {
+        use_preset(&mut cx, &showcase, preset);
+        let (stated, data_row, basic_row) = read(&mut cx, &showcase, |_, cx| {
+            native_value(cx, |n| {
+                let l = &n.resolved.list;
+                let pad = &l.border.padding;
+                let line = native_theme_gpui::scaled_text_size(l.header_font.size, n.accessibility)
+                    * n.resolved.defaults.line_height;
+                (
+                    geometry::list_header_height(n),
+                    geometry::data_table_size(n).table_row_height(),
+                    px(l.row_height
+                        .unwrap_or(pad.top.unwrap_or(0.) + line + pad.bottom.unwrap_or(0.))),
+                )
+            })
+        })
+        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
+        assert_eq!(
+            stated.is_some(),
+            preset == "adwaita",
+            "precondition: {preset}'s header height"
+        );
+        show(&mut cx, &showcase, Page::Data);
+        assert_eq!(
+            bounds_of(&mut cx, DATA_TABLE_HEADER).size.height,
+            stated.unwrap_or(data_row),
+            "{preset}: the DataTable's header row"
+        );
+        show(&mut cx, &showcase, Page::Basic);
+        // Laid out on the pixel grid: a padding-and-line height rounds.
+        let (drawn, want) = (
+            bounds_of(&mut cx, "basic-table-header").size.height,
+            stated.unwrap_or(basic_row),
+        );
+        assert!(
+            (drawn.as_f32() - want.as_f32()).abs() < 0.5,
+            "{preset}: the Basic table's header row is {drawn:?}, not {want:?}"
+        );
+    }
+}
+
 /// The Basic expander draws what `expander.*` states (ISSUES D8): each title
 /// row `header_height` tall, its arrow `arrow_icon_size` across; and the
 /// Basic card is padded by `layout.container_margin` where `card.border`
@@ -5518,6 +5568,92 @@ fn a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog(cx: &m
     );
 }
 
+/// The showcase applies the theme's dialog entrance and tooltip delay, and
+/// says so: under kde-breeze, which states both, the Overlays page's Dialog
+/// records `geometry::dialog_entrance` and a toolbar Button's tooltip delay is
+/// the theme's 700ms; under catppuccin-mocha, which states neither, the Dialog
+/// keeps upstream's slide and the tooltip gpui's 500ms (Review Focus 2).
+/// Motion is reduced, so the entrance is named and not drawn.
+#[gpui::test]
+fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    // A sliding Dialog is not where its bounds were laid out until it lands.
+    without_motion(&mut cx);
+    for (preset, stated) in [("kde-breeze", true), ("catppuccin-mocha", false)] {
+        use_preset(&mut cx, &showcase, preset);
+        let (entrance, delay) = read(&mut cx, &showcase, |_, cx| {
+            native_value(cx, |n| {
+                (
+                    geometry::dialog_entrance(n),
+                    native_theme_gpui::tooltip_show_delay(n.resolved),
+                )
+            })
+        })
+        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
+        assert_eq!(
+            (entrance.is_some(), delay.is_some()),
+            (stated, stated),
+            "precondition: what {preset} states"
+        );
+
+        let button = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
+        let note = |notes: &[crate::info::Note]| {
+            notes
+                .iter()
+                .find(|n| n.what == "tooltip delay")
+                .map(|n| n.text.clone())
+        };
+        let (config, fixed) = button
+            .as_ref()
+            .map(|info| (note(&info.config), note(&info.not_themeable)))
+            .unwrap_or_default();
+        if stated {
+            assert!(
+                config.as_deref().is_some_and(|t| t.contains("700ms")) && fixed.is_none(),
+                "{preset}: the toolbar Button's tooltip delay is not the theme's: {config:?} / {fixed:?}"
+            );
+        } else {
+            assert!(
+                fixed.as_deref().is_some_and(|t| t.starts_with("500ms")) && config.is_none(),
+                "{preset}: the toolbar Button's tooltip delay is not gpui's: {config:?} / {fixed:?}"
+            );
+        }
+
+        show(&mut cx, &showcase, Page::Overlays);
+        click(&mut cx, OVERLAYS_DIALOG_TRIGGER);
+        draw(&mut cx);
+        assert!(
+            a_dialog_is_open(&mut cx),
+            "{preset}: the Dialog did not open"
+        );
+        let dialog = settle_on(&mut cx, &showcase, "overlays-dialog-title");
+        let recorded = dialog.as_ref().is_some_and(|info| {
+            info.config
+                .iter()
+                .any(|n| n.text.starts_with("geometry::dialog_entrance:"))
+        });
+        let animation = dialog.as_ref().and_then(|info| {
+            info.not_themeable
+                .iter()
+                .find(|n| n.what == "animation")
+                .map(|n| n.text.clone())
+        });
+        assert_eq!(
+            recorded, stated,
+            "{preset}: the Dialog's geometry::dialog_entrance line: {dialog:?}"
+        );
+        assert!(
+            animation
+                .as_deref()
+                .is_some_and(|t| t.contains("DialogEntrance::Fade") == stated),
+            "{preset}: the Dialog's animation note: {animation:?}"
+        );
+        cx.update(|window, cx| window.close_dialog(cx));
+        cx.run_until_parked();
+        draw(&mut cx);
+    }
+}
+
 /// The Overlays page's two Sheets show different infos (spec §4.3.2): the
 /// one at the right edge and the one at the bottom edge are edged on
 /// different sides, and only the right one clears the title bar.
@@ -6314,7 +6450,10 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("icon-theme Select", chrome::icon_set_select(&t, None)),
         ("command palette", chrome::command_palette(&t, "set")),
         ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
-        ("About Dialog", chrome::about_dialog(&t, false, false)),
+        (
+            "About Dialog",
+            chrome::about_dialog(&t, false, false, false),
+        ),
         ("Settings", layout::settings(&t)),
         ("Pagination", data::pagination(&t, false, 1, 12, false)),
         ("MessageScroller", data::message_scroller(&t, 3)),
@@ -6337,11 +6476,11 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Breadcrumb",
             layout::breadcrumb(&t, &[Page::Buttons], Page::Layout),
         ),
-        ("Dialog", overlays::dialog(&t, false, false, &icon)),
+        ("Dialog", overlays::dialog(&t, false, false, false, &icon)),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
         ("Diff", typography::diff(&t)),
-        ("DataTable", data::data_table(&t, 5, 3, false)),
+        ("DataTable", data::data_table(&t, 5, 3, false, false)),
         (
             "failed Attachment",
             data::attachment(&t, AttachmentStatus::Failed, "file", false, &icon),
