@@ -379,6 +379,56 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
         )
 }
 
+// ── TooltipTheme strategy ───────────────────────────────────────────────────
+
+fn arb_tooltip_theme() -> impl Strategy<Value = TooltipTheme> {
+    (
+        proptest::option::of(arb_rgba()),
+        proptest::option::of(0.0f32..1000.0),
+        proptest::option::of(any::<u16>()),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_widget_border_spec()),
+    )
+        .prop_map(|(bg, max_w, show_delay, font, border)| TooltipTheme {
+            background_color: bg,
+            max_width: max_w,
+            show_delay,
+            font,
+            border,
+        })
+}
+
+// ── ListTheme strategy ──────────────────────────────────────────────────────
+
+fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
+    (
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 9..=9),
+        proptest::option::of(0.0f32..200.0),
+        proptest::option::of(1.0f32..200.0),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_widget_border_spec()),
+    )
+        .prop_map(
+            |(colors, row_h, header_h, item_font, header_font, border)| ListTheme {
+                background_color: colors[0],
+                alternate_row_background: colors[1],
+                selection_background: colors[2],
+                selection_text_color: colors[3],
+                header_background: colors[4],
+                grid_color: colors[5],
+                row_height: row_h,
+                header_height: header_h,
+                hover_background: colors[6],
+                hover_text_color: colors[7],
+                disabled_text_color: colors[8],
+                item_font,
+                header_font,
+                border,
+            },
+        )
+}
+
 // ── IconSet strategy ────────────────────────────────────────────────────────
 
 fn arb_icon_set() -> impl Strategy<Value = IconSet> {
@@ -415,9 +465,11 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
         arb_input_theme(),
         arb_checkbox_theme(),
         arb_dialog_theme(),
+        arb_tooltip_theme(),
+        arb_list_theme(),
     )
         .prop_map(
-            |(defaults, text_scale, window, button, input, checkbox, dialog)| {
+            |(defaults, text_scale, window, button, input, checkbox, dialog, tooltip, list)| {
                 ThemeMode {
                     defaults,
                     text_scale,
@@ -426,10 +478,11 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     input,
                     checkbox,
                     dialog,
+                    tooltip,
+                    list,
                     // Remaining widgets use defaults -- exercises their empty round-trip paths
                     text_area: TextAreaTheme::default(),
                     menu: MenuTheme::default(),
-                    tooltip: TooltipTheme::default(),
                     scrollbar: ScrollbarTheme::default(),
                     slider: SliderTheme::default(),
                     progress_bar: ProgressBarTheme::default(),
@@ -437,7 +490,6 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     sidebar: SidebarTheme::default(),
                     toolbar: ToolbarTheme::default(),
                     status_bar: StatusBarTheme::default(),
-                    list: ListTheme::default(),
                     popover: PopoverTheme::default(),
                     splitter: SplitterTheme::default(),
                     separator: SeparatorTheme::default(),
