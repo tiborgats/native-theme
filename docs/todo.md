@@ -247,6 +247,22 @@ the file was pruned on 2026-10-11, not reordered.
       the accent colour and "Show scroll bars" in System Settings with an
       application running its main run loop, and see that the callback
       fires (`native-theme/src/watch/macos.rs` `registrations`).
+- [ ] [v0.7.x] **iced on macOS: the watcher started from iced's executor
+      thread.** The iced connector's `theme_changes()` (feature `watch`)
+      calls `native_theme::watch::on_theme_change` inside its subscription's
+      stream (`connectors/native-theme-iced/src/watch.rs:63-64`), so the
+      macOS observer is registered on the executor thread that first runs
+      the stream, not on the main thread (M5 T3, 80b9ad13). The watcher's
+      notifications are delivered through the process's run loop, usually
+      the main thread's, which the application must run
+      (`native-theme/src/watch/macos.rs:23-28`; M4 T3), as iced's event loop
+      does; the observer has no main-thread requirement of its own (it
+      queues the callback on a private `NSOperationQueue`, `:29-33`). So
+      delivery is expected but unverified: no test sees a real AppKit post.
+      With the check above, run the iced showcase with `--features watch`
+      on a Mac in the System colour mode, change the appearance and the
+      accent in System Settings, and see the showcase follow (the CI macOS
+      leg or the maintainer).
 - [ ] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
       lost on the next system re-read** (M2 final review, Minor 5,
       2026-10-11). The connectors' re-reads call `from_system()`, which picks
@@ -266,6 +282,13 @@ the file was pruned on 2026-10-11, not reordered.
       entry point the application used: `from_system()`, or
       `SystemTheme::from_system_with_preset(name)` then `to_iced_theme()` for
       a pinned preset. gpui and egui stay open (M6, M7).
+      M5 close (2026-10-14): gpui and egui weigh iced's answer first. Both
+      re-read through `from_system()`: gpui's `from_system`
+      (`connectors/native-theme-gpui/src/lib.rs:389`) and egui's
+      `ThemeWatcher::system_rebuild`
+      (`connectors/native-theme-egui/src/watch.rs:98-101`), so a pinned
+      preset needs the application's own re-read with
+      `from_system_with_preset`, or a name the watcher keeps.
 
 ### windows-11: the disabled fills are fully transparent
 
@@ -411,6 +434,27 @@ the file was pruned on 2026-10-11, not reordered.
       connectors, and delete the two copies, moving into native-theme any
       test case of theirs the core's tests lack.
       iced: switched in M5 T8 (d809a666); gpui in M6.
+
+### Icons: one `currentColor` fill for a freedesktop indicator, in native-theme
+
+- [ ] [v0.7.0] For M6/M7 (ruling M5-04, 2026-10-14): core's
+      `native_theme::icons::fill_current_color`
+      (`native-theme/src/icons.rs:891`; M5 T7, 89ec7f61) replaces a symbolic
+      freedesktop icon's `currentColor` with a colour's `#rrggbb` where the
+      document sets no `color` of its own, and iced's `Spinner` calls it with
+      `defaults.text_color` (`connectors/native-theme-iced/src/spinner.rs:131`).
+      gpui and egui keep their own copies of the same substitution: gpui's
+      `sets_color` and `paint_svg`
+      (`connectors/native-theme-gpui/src/widgets/spinner.rs:132`, `:153`),
+      whose colour `indicator_colour` picks (`:173`), and egui's `sets_color`
+      and the freedesktop arm of `final_svg_bytes`
+      (`connectors/native-theme-egui/src/icons.rs:168`, `:238-247`). Switch
+      both to the core function and delete the copies, moving into
+      native-theme any test case of theirs its tests lack. The doc of egui's
+      `final_svg_bytes` still cites iced's step at
+      `connectors/native-theme-iced/src/icons.rs:313-314`
+      (`connectors/native-theme-egui/src/icons.rs:234`), a copy M5 T8
+      removed.
 
 ### Icons: recolour a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader does
 
@@ -3089,6 +3133,83 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [upstream] PR: DataTable: `Styled`, or a text-size setter, so the cell size need
       not go through `Size::Size`.
 
+### Connectors: `native` and `watch` passthrough features in gpui and egui
+
+- [ ] [v0.7.0] For M6/M7 (ruling M5-02, 2026-10-14): the iced connector
+      forwards native-theme's readers and watcher as two features, both off
+      by default as in core, `native = ["native-theme/native"]` and
+      `watch = ["native-theme/watch", "dep:iced_futures"]`
+      (`connectors/native-theme-iced/Cargo.toml:42-46`; M5 T3, 80b9ad13),
+      and its README's Quick start and Features sentence name them. The gpui
+      connector has neither: every build turns on native-theme's `linux`,
+      `macos` or `windows` through a per-target dependency
+      (`connectors/native-theme-gpui/Cargo.toml:81-88`), and `watch` is on
+      for its dev-dependencies only (`:96`). The egui connector forwards
+      `watch` (`connectors/native-theme-egui/Cargo.toml:33`) but has no
+      `native`, and turns the readers on per target the same way (`:46-51`).
+      Give both iced's two passthroughs and name them in their READMEs. In
+      both, an off-by-default `native` in place of the per-target readers
+      means a default build no longer reads the OS, a change their
+      CHANGELOGs state.
+
+### READMEs: the dependency-version check beyond iced
+
+- [ ] [v0.7.0] For M6/M7/M8 (ruling M5-20, 2026-10-14): the iced README's
+      `toml` blocks are checked against the workspace's minor by
+      `the_readme_depends_on_this_release`
+      (`connectors/native-theme-iced/src/compat.rs:311`; M5 T11, b0efe9e3),
+      so a release cannot publish a README that names the previous minor.
+      The same literals stand unchecked in the gpui README
+      (`native-theme = "0.6"`, `native-theme-gpui = "0.6"`,
+      `connectors/native-theme-gpui/README.md:104-105`), the egui README
+      (`native-theme-egui = "0.6"`,
+      `connectors/native-theme-egui/README.md:124`), the core README
+      (`native-theme = { version = "0.6", features = ["native"] }`,
+      `native-theme/README.md:180`) and the build README
+      (`native-theme-build = "0.6"`, `native-theme-build/README.md:30`).
+      Give each crate the same check: gpui in M6, egui in M7, core and build
+      in M8.
+
+### Connectors: a public theme builder that takes the mode
+
+- [ ] [v0.7.0] All three connectors (M5 T4 ruling, 2026-10-14): iced's
+      public `to_theme(&resolved, name)` leaves `Extended::is_dark`, which
+      iced uses for the window title bar, to iced's lightness test of the
+      background, because a `ResolvedTheme` carries no mode
+      (`connectors/native-theme-iced/src/lib.rs:317-328`); `from_preset`,
+      `from_system` and `SystemThemeExt::to_iced_theme` pass the mode to the
+      private `to_theme_in` (`:330-335`). An application that resolves a
+      theme itself, as the iced showcase's `load_adwaita_fallback` does
+      (`connectors/native-theme-iced/examples/showcase-iced.rs:1152-1168`,
+      `to_theme` at `:1162`), gets the guess. Nothing differs today: no
+      bundled preset is misjudged by the test (the M3-15 ruling), and
+      adwaita's backgrounds agree with their modes. Decide on a public
+      builder that takes the mode, which the showcase's fallback would then
+      use. In the siblings: gpui's `to_theme` takes `is_dark: bool` already
+      (`connectors/native-theme-gpui/src/lib.rs:213-219`), where M1-T7-06's
+      `Loaded` carries `mode: ColorMode`; egui's `to_theme` compiles one
+      variant into both of egui's styles
+      (`connectors/native-theme-egui/src/ext.rs:134-137`), and
+      `ThemeAtlas::builder` takes the two variants and `Builder::os_mode`
+      (`connectors/native-theme-egui/src/atlas.rs:599`).
+
+### Contracts: the connectors' widgets
+
+- [ ] [v0.7.0] A design question for all connectors (M5 T7 ruling,
+      2026-10-14): the iced contract covers every palette slot the
+      connector writes and every field of a `styles::*` output
+      (`connectors/native-theme-iced/src/contract.rs:1-3`), so a widget of
+      the connector's own is outside it. iced's `Spinner` draws a
+      freedesktop indicator's `currentColor` in `defaults.text_color` and a
+      Material or Lucide one in `spinner.fill_color`
+      (`connectors/native-theme-iced/src/spinner.rs:126-132`), and only its
+      unit test `a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour`
+      (`:359`) checks the first. Decide whether a contract also rows a
+      widget's reads, in iced (`Spinner`), gpui (the theme-drawn widgets of
+      its `widgets` feature, `connectors/native-theme-gpui/Cargo.toml:32-35`)
+      and native-theme-egui-widgets, or a widget's unit tests stay its only
+      check.
+
 ---
 
 ## Post-1.0
@@ -3113,11 +3234,17 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [v0.7.0] The iced connector maps no `DialogTheme` field, and its contract lists none as unreachable: iced 0.14 has no dialog widget. `iced_aw`'s `Card` could carry the maxima, `Card::max_height` and `Card::max_width` taking an `f32` (`iced_aw-0.14.1/src/widget/card.rs:144`, `:151`); the minima, the button gap and order, the fonts and the border would still have no receiver of their own. Decide whether a `Card` is the dialog's receiver.
   Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
 
+### iced: an application style that reads `window.background_color`
+- [ ] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:149`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
+
 ### GNOME reader: title and heading sizes ignore the user's font
 - [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:742-751`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
 
 ### iced showcase: the startup fallback outside Linux
 - [ ] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
+
+### iced showcase: the toggle's general button Widget Info lines
+- [ ] [1.0] Latent (M5 T5 review, Minor): the iced showcase's Widget Info lines for `button.background_color`, `button.font.color`, `button.hover_background` and `button.hover_text_color` (`connectors/native-theme-iced/examples/showcase-iced.rs:5561-5577`) describe `{class}`'s fill and text colour at rest and Hovered, which under `class = "styles::button_toggle"` (`:5543-5552`) misdescribe the "On" toggle: a checked toggle is its checked pair at rest and under the pointer, with no hover of its own (`connectors/native-theme-iced/src/styles.rs:245-248`). None shows today, since `basic.buttons.toggle_on` lists none of the four leaves (`docs/showcase-elements.toml:845`). A change that adds one gives it a toggle arm, as `checked_background` has (`showcase-iced.rs:5578-5580`).
 
 ### `system_icon_set()` decides where it should report
 - [ ] [1.0] `system_icon_set()` returns `IconSet::Material` on platforms other than macOS, iOS, Windows and Linux, documented as a "safe cross-platform fallback" (`native-theme/src/model/icons.rs:501`, `:519`): the icon-set counterpart of the icon-theme fallback removed in v0.5.9. By the rule that the library reports and the application decides, it should report there (e.g. `Result<IconSet>` with `Error::PlatformUnsupported`, or `Option<IconSet>`). It decides wrongly where it matters: the BSDs run the same freedesktop desktops as Linux (KDE Plasma, GNOME, XFCE) with freedesktop icon themes, and get the bundled Material set. Ripple: `Resolved::icon_set` and `SystemTheme::icon_set` are required `IconSet` fields filled from it when the theme states none (`Theme::resolve`, `pipeline::run_pipeline`), and `IconSetChoice::effective_icon_set` returns it for `IconSetChoice::System`; each would need a way to carry "none".
@@ -3151,6 +3278,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### gpui: the native Switch lacks 0.7.0's focus options
 - [ ] [1.0] gpui-component 0.7.0's `Switch` gained `tab_stop`, `tab_index` and `focus_ring(bool)`; the connector's `widgets::Switch` offers none of them.
+
+### gpui: the `Loaded` equality test compares the theme by `is_dark()` only
+- [ ] [v0.7.0] For M6 (M5 T1 review, Minor): gpui's `from_system_matches_system_theme_ext` (`connectors/native-theme-gpui/src/lib.rs:1549-1561`) compares every other `Loaded` field of `from_system()` with `SystemTheme::to_gpui_theme()`'s, but the gpui `Theme` only through `is_dark()` (`:1555`), where iced's sibling test compares the palette (`connectors/native-theme-iced/src/lib.rs:2208-2221`, `:2220`). Compare a `ThemeColor` field too, such as `background`, so the two tests are equally strong.
 
 ### Showcases: a toolbar role and arrow-key roving for the chrome toolbar
 - [ ] [1.0] The chrome toolbar of all three showcases is a plain row: no toolbar role for assistive technology and no arrow-key roving between its buttons. gpui-base's `Toolbar` offers both; egui and iced need their own.
