@@ -2,11 +2,11 @@
 //! as the resolved theme holds it, in the text the three showcases agreed
 //! (docs/showcase-elements.toml, "The Widget Info format"): a colour as
 //! native-theme's `Rgba` prints it; a `_px` length as its number and
-//! ` px`; a font as its family, its size in the unit its source stated, and
-//! its weight, with its style where that is not normal; a text-scale entry
-//! as its size in pixels and its weight; any other number as itself; a
-//! boolean, a name or an enum as it prints; `not stated` for what the theme
-//! leaves unstated.
+//! ` px`; a `_ms` duration as its number and ` ms`; a font as its family,
+//! its size in the unit its source stated, and its weight, with its style
+//! where that is not normal; a text-scale entry as its size in pixels and
+//! its weight; any other number as itself; a boolean, a name or an enum as
+//! it prints; `not stated` for what the theme leaves unstated.
 
 use std::str::FromStr as _;
 
@@ -82,10 +82,9 @@ fn shown(leaf: &str, value: &serde_json::Value) -> LeafValue {
         serde_json::Value::Bool(b) => text(b.to_string()),
         serde_json::Value::Number(_) => {
             let v = number(Some(value));
-            if leaf.ends_with("_px") {
-                text(format!("{v} px"))
-            } else {
-                text(v)
+            match unit(leaf) {
+                Some(unit) => text(format!("{v} {unit}")),
+                None => text(v),
             }
         }
         serde_json::Value::String(s) => match Rgba::from_str(s) {
@@ -102,6 +101,18 @@ fn shown(leaf: &str, value: &serde_json::Value) -> LeafValue {
             text(format!("{size} px {weight}"))
         }
         other => text(other.to_string()),
+    }
+}
+
+/// The unit a leaf's number is shown in: `px` for a `_px` leaf, `ms` for a
+/// `_ms` one.
+fn unit(leaf: &str) -> Option<&'static str> {
+    if leaf.ends_with("_px") {
+        Some("px")
+    } else if leaf.ends_with("_ms") {
+        Some("ms")
+    } else {
+        None
     }
 }
 

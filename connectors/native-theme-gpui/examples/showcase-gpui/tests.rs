@@ -9141,7 +9141,7 @@ fn a_leaf_value_reads_as_the_showcases_agreed() {
 }
 
 /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is the
-/// resolved theme's `tooltip.show_delay`, a number as itself.
+/// resolved theme's `tooltip.show_delay`, with ` ms`.
 #[test]
 fn a_ms_leaf_reads_its_value() {
     use crate::info::values::leaf_value;
@@ -9159,7 +9159,7 @@ fn a_ms_leaf_reads_its_value() {
     let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
     assert_eq!(
         leaf_value("tooltip.show_delay_ms", &json, &layout, None).text,
-        delay.to_string()
+        format!("{delay} ms")
     );
 }
 

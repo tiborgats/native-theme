@@ -5266,12 +5266,19 @@ fn element_title(element: &ShowcaseElement) -> String {
 
 /// A leaf's value as the theme holds it, and its colour where it is one. The
 /// leaf is the registry's path (`button.border.padding_top_px`,
-/// `tooltip.show_delay_ms`); the resolved theme spells the same field without
-/// the unit and with the padding's sides nested (`button.border.padding.top`). The layout distances, the
-/// icon set and the icon theme are not in `ResolvedTheme`: they are read
-/// where the showcase keeps them.
+/// `tooltip.show_delay_ms`); the resolved theme spells the same field
+/// without the unit and with the padding's sides nested
+/// (`button.border.padding.top`). The layout distances, the icon set and the
+/// icon theme are not in `ResolvedTheme`: they are read where the showcase
+/// keeps them.
 fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Option<Color>) {
-    let px = leaf.ends_with("_px");
+    let unit = if leaf.ends_with("_px") {
+        Some("px")
+    } else if leaf.ends_with("_ms") {
+        Some("ms")
+    } else {
+        None
+    };
     if let Some(field) = leaf.strip_prefix("layout.") {
         let l = &state.layout;
         let stated = match field {
@@ -5311,25 +5318,23 @@ fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Optio
     });
     match found {
         None => (NOT_STATED.to_string(), None),
-        Some(value) => value_text(value, px),
+        Some(value) => value_text(value, unit),
     }
 }
 
 /// A value of the resolved theme as Widget Info writes it: a colour as its
-/// `#rrggbb[aa]`, a size in px, a font as its family, the size its source
-/// stated and its weight, a text-scale entry as its size and weight.
-fn value_text(value: &toml::Value, px: bool) -> (String, Option<Color>) {
-    let number = |v: f32| {
-        if px {
-            format!("{v} px")
-        } else {
-            format!("{v}")
-        }
+/// `#rrggbb[aa]`, a number in `unit` (px for a size, ms for a duration)
+/// where its leaf has one, a font as its family, the size its source stated
+/// and its weight, a text-scale entry as its size and weight.
+fn value_text(value: &toml::Value, unit: Option<&str>) -> (String, Option<Color>) {
+    let number = |v: String| match unit {
+        Some(unit) => format!("{v} {unit}"),
+        None => v,
     };
     match value {
         toml::Value::String(s) => (s.clone(), hex_color(s)),
-        toml::Value::Float(f) => (number(*f as f32), None),
-        toml::Value::Integer(i) => (if px { format!("{i} px") } else { i.to_string() }, None),
+        toml::Value::Float(f) => (number(format!("{}", *f as f32)), None),
+        toml::Value::Integer(i) => (number(i.to_string()), None),
         toml::Value::Boolean(b) => (b.to_string(), None),
         toml::Value::Table(t) => (compound_text(t), None),
         other => (other.to_string(), None),
@@ -15790,7 +15795,7 @@ mod tests {
     }
 
     /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is
-    /// the resolved theme's `tooltip.show_delay`, a number as itself.
+    /// the resolved theme's `tooltip.show_delay`, with ` ms`.
     #[test]
     fn a_ms_leaf_reads_its_value() {
         let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
@@ -15810,7 +15815,7 @@ mod tests {
         };
         assert_eq!(
             Some(leaf_value(&state, &values, "tooltip.show_delay_ms").0),
-            delay.map(|ms| ms.to_string())
+            delay.map(|ms| format!("{ms} ms"))
         );
     }
 

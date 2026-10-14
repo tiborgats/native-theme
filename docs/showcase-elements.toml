@@ -72,7 +72,8 @@
 #   rows, `layout.section_gap` before a section. The same in all three showcases.
 # The per-toolkit "how" lines may differ; everything else must be identical for the same element and theme.
 #
-# The `<leaf path>` a row shows is the entry of `leaves` as written here.
+# The `<leaf path>` a row shows is the entry of `leaves` as written here. A `_px` leaf's value is
+# its number and ` px` (`12 px`), a `_ms` leaf's its number and ` ms` (`700 ms`).
 #
 # ---------------------------------------------------------------------------------------------
 # How a showcase reads the list

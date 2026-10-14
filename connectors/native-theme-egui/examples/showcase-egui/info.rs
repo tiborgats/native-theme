@@ -381,14 +381,15 @@ fn font_text(font: &serde_json::Map<String, serde_json::Value>) -> String {
 }
 
 /// How a listed leaf's value prints (the three showcases print it alike): a colour as its
-/// `#rrggbb[aa]`, a `*_px` number with " px", another number as itself, a whole font as
-/// [`font_text`], a text-scale entry as `<size> px <weight>`, a flag as `true` or `false`, a
-/// name as itself, and a value the theme leaves unstated as "not stated".
+/// `#rrggbb[aa]`, a `*_px` number with " px", a `*_ms` one with " ms", another number as
+/// itself, a whole font as [`font_text`], a text-scale entry as `<size> px <weight>`, a flag as
+/// `true` or `false`, a name as itself, and a value the theme leaves unstated as "not stated".
 pub(crate) fn leaf_text(leaf: &str, value: &serde_json::Value) -> String {
     match value {
         serde_json::Value::Null => "not stated".to_string(),
         serde_json::Value::Bool(b) => b.to_string(),
         serde_json::Value::Number(n) if leaf.ends_with("_px") => format!("{} px", number_text(n)),
+        serde_json::Value::Number(n) if leaf.ends_with("_ms") => format!("{} ms", number_text(n)),
         serde_json::Value::Number(n) => number_text(n),
         serde_json::Value::String(s) => s.clone(),
         serde_json::Value::Object(font) if font.contains_key("family") => font_text(font),

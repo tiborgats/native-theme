@@ -3949,7 +3949,7 @@ fn style_literals(source: &str) -> Vec<String> {
 }
 
 /// A `_ms` leaf of the list reads as a `_px` one does: `tooltip.show_delay_ms` shows the
-/// resolved theme's `tooltip.show_delay` and finds its `mapping.toml` row,
+/// resolved theme's `tooltip.show_delay` with " ms" and finds its `mapping.toml` row,
 /// `tooltip.show_delay`.
 #[test]
 fn a_ms_leaf_reads_its_value() {
@@ -3960,7 +3960,7 @@ fn a_ms_leaf_reads_its_value() {
     let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
     let shown = crate::info::listed_value(&json, "tooltip.show_delay_ms")
         .map(|v| crate::info::leaf_text("tooltip.show_delay_ms", &v));
-    assert_eq!(shown, delay.map(|ms| ms.to_string()));
+    assert_eq!(shown, delay.map(|ms| format!("{ms} ms")));
     assert_eq!(
         crate::info::mapping_key("tooltip.show_delay_ms"),
         "tooltip.show_delay"
