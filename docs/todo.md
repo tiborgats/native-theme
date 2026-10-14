@@ -3325,3 +3325,36 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### check_showcase_parity.py: the element list's union rule is unchecked
 - [ ] [1.0] `docs/showcase-elements.toml` states "A control's leaves are the union of its parts'" (`:36`), but `scripts/check_showcase_parity.py --check-list` (`load_elements`) does not check it, so a leaf added to a part and not to its control passes. A subset check (every `part = true` element's leaves within its control's) would make the rule mechanical.
+
+### GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7
+Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at
+the plan's close.
+- [ ] [v0.7.0] For M6: `connectors/native-theme-gpui/src/contract.rs:641` cites our own
+      `colors.rs:649-656`, which has moved since; own-file citations were outside G1's scope.
+- [ ] [v0.7.0] For M6: no test clicks the DataTable's sort button, so the showcase's
+      `perform_sort` (`examples/showcase-gpui/support.rs`) is untested; upstream gives the
+      button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
+      on the table-level info (`info/data.rs`), not on the header row's own
+      (`data_table_header`).
+- [ ] [v0.7.0] For M6: the showcase's `SampleTableDelegate` does not override `move_column`
+      while its columns are movable, so dragging a header moves the header and not the data,
+      and the sortable Role column then sorts the wrong data (pre-existing).
+- [ ] [v0.7.0] For M6: the gpui showcase evaluates `themed_entrance(cx)` more than once per
+      dialog (`examples/showcase-gpui/demo.rs`); `info/chrome.rs`'s `panel_toggle` carries a
+      `too_many_arguments` allow.
+- [ ] [v0.7.0] For M6: no test shows an application's own `TooltipDefaults` delay surviving
+      an upstream mode switch to a variant that states no delay (the install path is tested,
+      this case is not).
+- [ ] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
+      auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
+      `catppuccin-mocha`'s header label (19 px) is taller than its stated header height
+      (18 px), pre-existing.
+- [ ] [v0.7.0] For M8 (iced): the iced Layout table's header rule sits outside
+      `list.header_height` (iced puts `separator_y` between rows) where the Basic table's is
+      inside; say so beside the Layout table's header height in `examples/showcase-iced.rs`.
+      The tooltip delay test covers the Basic tooltip only (all six share `ShowDelay`), and
+      the header test re-derives the fallback without `scaled_text_size` (true at the default
+      accessibility settings).
+- [ ] [v0.7.0] For M8: `winicons.rs`'s `bitmap_bgra` returns on
+      `checked_neg()?` (`native-theme/src/winicons.rs:223`) without a `note_failure`;
+      unreachable after the bound check above it.

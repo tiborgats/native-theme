@@ -9297,7 +9297,7 @@ Next (D10): M5's fix phase (session native-theme-b5), then G2 (Tasks 9–15).
 **Status:** G2 closed 2026-10-14: `tooltip.show_delay_ms`, `dialog.entrance` and
 `list.header_height_px` are model values with receivers in gpui, egui and iced. Tasks 9–15,
 the commits after M5's ledger close `fce48f82` up to this close, each task reviewed by a
-fresh reviewer and its fix rounds re-checked; the rulings are in the session's progress file.
+fresh reviewer and its fix rounds re-checked; the rulings are listed at the end of this section.
 Nothing pushed.
 - Task 9, the facts: `4742db14` (the OS probe's second run, 38478334574, as evidence),
   `aed51531` (the three rows and the line citations that follow them), `3126db14` (review fixes).
@@ -9327,3 +9327,62 @@ Nothing pushed.
 - For the maintainer: screenshots change for the gpui Typography page (`Diff`) and the table
   headers of adwaita, material-3 and the macOS presets in all three showcases' Basic pages and
   gpui's Data page; the next `generate_assets_release.sh` refreshes them.
+
+### Rulings made while executing G1 and G2
+
+Copied from the plan's execution ledger, which was deleted at the close. Each reads
+"what was decided — why — what it costs if wrong". R-G2-1 to R-G2-5 came from G2's pre-flight
+scan of the plan.
+
+G1:
+- Task 0 (registering G1/G2 in the review plan and ledger, committing the three documents) is done by the controller — it is bookkeeping, no code — cost if wrong: none (a docs commit).
+- the pushes and the probe dispatch (T1, T8) are done by the controller, as the plan says — approved by the maintainer — cost if wrong: none beyond CI minutes.
+- fix both Minors before the probe dispatch — the run is the evidence the macOS header-height presets cite, and a stale window-less reading would be undetectable without another CI run — cost if wrong: one short fix round.
+- the two Windows failures are fixed as Task 5b (native-theme code, debug + fix, own review, validated by a CI push), after Task 5 makes the branch green — not now, because Task 2's implementer is working in the shared tree and Tasks 2–5 leave gates red — cost if wrong: Windows stays red a few tasks longer; G1 cannot close until it is green.
+- a range is renumbered when the whole old block occurs exactly once in the new file, even where its first line alone repeats (14 ranges) — a unique whole block is stronger evidence than a unique first line — cost if wrong: 14 citations move to Task 4's hand-read list.
+- TooltipDefaults cited as GB/tooltip.rs:58-108 (the impl block closes at 108), not the spec's 58-107 — the spec's range was one line short — cost if wrong: none.
+- the stale SC/support.rs:236-237 `App::drop_image, gpui-pre src/app.rs:3044-3054` (wrong since 0.3.8; drop_image is at 3103-3113) is fixed inside Task 5, which edits support.rs — cost if wrong: one extra line in Task 5's diff.
+- Diff — turn on its hover highlight (a themed state worth showing; claim list_hover at its line); the add-annotation button and the conflict side get `.instance` notes (the panel API's existing form for "not in this instance", info/layout.rs:699) naming the fields they would read, with lines; line fills cite :1576/:1578. DataTable — make one column sortable so 0.7.3's labelled sort button is painted and claimed; the right-clicked cell outline gets an `.instance` note (turning on cell_selectable would change the row-selection panels). — the spec asks for claims of what the panel's widget paints; claiming unpainted colours would be false, and the new 0.7.3 sort button should be shown — cost if wrong: two notes that could have been shown elements.
+- the spec's claim that unicode-properties is also used on core's svg-rasterize path is wrong (the implementer measured: only gpui-pre and gpui-component use it); the docs/todo.md entry states the measured users — measurement over the design-time reading — cost if wrong: none.
+- Task 6's Minors 1–4 (README sentence contradicting its bullets; stale scripts/README.md gpui family/gates/check_features lines and CONTRIBUTING.md --commit list; ci.yml strict-panic block hiding the gpui-fast run — split into two soft steps; stale gpui-pre dev-dependency comment) are fixed in Task 8, the documents task — cost if wrong: they stay stale two more tasks.
+- the 10 theme-switch tests under gpui-fast count as the live-switch evidence (they switch themes within a window on GPUI Fast's test platform); a hand check by the maintainer is optional — cost if wrong: a runtime-only switch bug on GPUI Fast surfaces later.
+- the G1 ledger section stays where Task 7 appended it (end of file), to keep the edit append-only — cost if wrong: section order only.
+
+G2:
+- R-G2-1: the parity sibling rule is kept green in every commit — a task that adds an accessor before its siblings have it adds `kind = "absent"` exceptions for those siblings whose reason names the G2 task that adds them, and that task removes them (stale exceptions fail the script). Permanent gaps (dialog_entrance in egui/iced; anything the script cannot see in gpui's geometry.rs) get exceptions in the file's existing style, with the real reason — cost if wrong: a few exception lines that a later task deletes.
+- R-G2-2: if a gate keyed on the model's leaf set goes red at a commit only because the leaf's consumer lands in a later task, the implementer brings the consumer's minimal true part forward into that commit (the later task then finds it done) — never a placeholder or a false text — and reports it — cost if wrong: a later task's diff is smaller than its brief.
+- R-G2-3: the spec's line numbers predate M4/M5's changes (df86348c); implementers locate each cited site by its quoted text or symbol; a cited site that no longer exists is reported, not guessed — cost if wrong: none.
+- R-G2-4: M5 landed colour-leaf coverage for iced only (b5's message); G2's three fields are not colours, so per spec §0.2 iced's new receivers are held by their own tests and the coverage table, not contract rows — cost if wrong: a later M6 leaf-coverage task adds the rows.
+- R-G2-5: models — implementers on the `implement` agent (Opus 5.5), reviewers Opus (D2: Opus high for the rest); Task 9's §8.2 Material/KDE source checks are research inside its implementer — cost if wrong: one review round.
+- Material's §8.2 cell is `scale_fade` from material-components-android 1.14.0 (MDC pin: fade 0→1 with scale 0.8→1, 400 ms); Compose's AlertDialog.kt states none. So per spec §8.1 DialogEntranceStyle is {ScaleFade, FadeRise} (no SlideDown) and per §8.3 material-3 = scale_fade — the spec's own conditional, resolved by the source — cost if wrong: one enum variant added later.
+- the macOS header-height cells are tagged (API), not the spec's (measured) — the facts file defines (measured) as pixel-measured and tags the probe's rowHeight reading (API); the file's convention wins over the spec's word — cost if wrong: a tag.
+- Kirigami Dialog.qml cited at src/dialogs/ (the true path at the KIRI pin), not the spec's src/controls/ — cost if wrong: none.
+- evidence directory dated 2026-10-14 (local date of a run started 2026-10-13 22:31 UTC; README states both) — cost if wrong: a directory name.
+- the Task 9 fixes are applied by the controller (five one-line edits, no judgment beyond the reviewer's) — cost if wrong: a re-review catches it.
+- the spec text is not edited for the §8.2 results (append-only design documents; Task 15 writes the *As built* note at archiving): this ledger and Task 10's dispatch carry them — cost if wrong: the spec reads stale until Task 15.
+- the interim egui rows use a new `receiver-pending` unmappable sub_tag (added to the schema test's allowed list with a count check) — none of the four existing sub_tags is true for "receiver lands in Task 12"; Task 12 replaces both rows and removes the sub_tag from the schema — cost if wrong: one schema line Task 12 deletes.
+- egui mapping rows are keyed by the resolved field names (tooltip.show_delay, dialog.entrance, list.header_height), not spec §7.4's `tooltip.show_delay_ms` — the mapping file's key convention; Task 12 uses them — cost if wrong: none.
+- egui's dialog-entrance row says egui has no scaling or rising entrance (egui's windows/modals do fade, area.rs:347-354), not the spec's "no dialog animation" — the true statement — cost if wrong: none.
+- the ios-13 comment "UIToolTipInteraction, iOS 15+, states no delay" verified by the controller against Apple's documentation JSON (introducedAt 15.0; no delay/interval/duration on the page) — cost if wrong: a comment.
+- the four pre-existing material-3 citation errors are fixed in Task 10's fix round (they sit beside the new fields, and a wrong citation is a defect wherever found) — cost if wrong: four comment lines.
+- material-3's broader citation drift (~60 lines per variant, 1–4 lines off; found by a controller scan of all presets — the other native presets' mismatches are deliberate cross-row citations) is not fixed in G2: M2d re-cites material-3 against its pinned Compose release; recorded as a docs/todo.md entry (54f8e316) with the method and a gate suggestion — cost if wrong: wrong line numbers (not values) stay until M2d.
+- SC/info/feedback.rs:768's "500ms … the showcase installs no defaults" is made false by 0ae7be3c (apply installs the theme's delay) — the plan's rule "in the same commit, the panel texts this makes false" puts it in Task 11, not Task 14: fixed in Task 11's fix round (Task 14 keeps registry.rs and whatever stays true-but-incomplete) — cost if wrong: a text moves between two tasks.
+- the connector tells its own TooltipDefaults write from the application's by value (an app delay equal to the connector's last write reads as the connector's); documented in rustdoc and README — the spec §7.4 algorithm as designed — cost if wrong: such an app's delay is replaced by the next theme's.
+- the header height also applies to the egui Theme Map page's table (not named in the brief) — "each showcase applies each new receiver where it draws the element" — cost if wrong: one call.
+- gpui's list_header_height parity exception is `absent` (the script never sees geometry.rs; `unlike` would be stale) — cost if wrong: an exception kind.
+- the header height also applies to the iced Layout page's table (header cell = header height − the table's vertical padding; with none stated it keeps its text height, as that table's rows take no row height) — "each showcase applies each new receiver where it draws the element" — cost if wrong: one call.
+- `_ms` leaf values print with " ms" in all three showcases' Widget Info, by the `_px` mechanism — the agreed format gives unit-suffixed leaves their unit, and bare "700" reads unlike the panels' "700ms" — cost if wrong: the maintainer reverts one branch per formatter.
+- semver soft warnings from M5's accessor renames satisfy §11 — §11 predates M5 and its criterion is 'no break beyond those CHANGELOG lists'; they are listed — cost if wrong: none at runtime, a wording mismatch in the archived spec.
+- all ten 'Declined to judge' lines of the final review stand as set aside — each is a recorded ruling, a pre-existing class, a deferred minor already in the ledger, or M2d's — cost if wrong: one more todo entry each.
+
+### Final review
+
+The plan's final whole-branch review (G1 `a053afb4..a106aba8` and G2 `fce48f82..a2b97e5c`,
+M5's commits excluded, on the most capable model): **Ready**, nothing Critical or Important.
+Its three Minors were fixed in `23d188fb` (the round-trip property test generates
+`tooltip.show_delay` and `list.header_height`) and `d356d898` (the gpui-fast issue draft and
+helper comments name 0.1.7 and 0.1.8, byte-identical at the cited lines; the GPUI Fast test
+command's `--all-targets` explained in CONTRIBUTING.md and the gpui README); the fix diff was
+re-checked. Task 15's own review moved the live Windows hover-time item to docs/todo.md's
+Post-1.0 section (`a2b97e5c`). The task reviews' deferred minors that still hold are in
+docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothing pushed.
