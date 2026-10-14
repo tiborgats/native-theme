@@ -339,7 +339,10 @@ fn the_release_parsers_do_their_jobs() {
         workspace_minor("[workspace.package]\nversion = \"0.7.0\"\n").as_deref(),
         Some("0.7")
     );
-    assert_eq!(workspace_minor("[workspace.package]\nversion = \"1\"\n"), None);
+    assert_eq!(
+        workspace_minor("[workspace.package]\nversion = \"1\"\n"),
+        None
+    );
 
     let readme = "## Quick start\n\
                   \n\
