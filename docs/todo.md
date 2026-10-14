@@ -2444,16 +2444,6 @@ the gap — closing it is a change, and each wants its own decision.
       writes `interaction.tooltip_delay` (73e8c5ca), iced's
       `tooltip_show_delay` is for `Tooltip::delay` (138c2674). The sidebar
       width stays open.
-- [ ] [post-1.0] **A live Windows hover time for the tooltip delay.**
-      `windows-11` states 800 ms, 2 × the `SPI_GETMOUSEHOVERTIME` the OS probe
-      read on its Windows images (400), so a user who changes the hover time
-      changes WinUI's tooltip delay and not the theme's. The Windows reader
-      could read `SPI_GETMOUSEHOVERTIME` and state twice it.
-      That is new `unsafe` FFI, with the `SAFETY:` comment
-      `native-theme/tests/unsafe_safety_comments.rs` enforces, so it needs the
-      maintainer's approval; and a watched source, since the watcher does not
-      receive the `WM_SETTINGCHANGE` with `SPI_SETMOUSEHOVERTIME` that reports
-      a change (`native-theme/src/windows.rs`, *Sources not watched*).
 - [ ] [1.0] **Platform icons inside widgets: how far can it go?** `Icon` takes a path
       or raw SVG bytes (`icon.rs:117-131`), and this connector already
       rasterises the platform's icon theme, so the type is not the obstacle —
@@ -3236,6 +3226,20 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ### Mobile readers
 - [ ] [post-1.0] iOS: `from_ios()` via `objc2-ui-kit`
 - [ ] [post-1.0] Android: `from_android()` via `jni` + `ndk`, Material You (API 31+)
+
+### Windows reader
+- [ ] [post-1.0] **A live Windows hover time for the tooltip delay.**
+      (From the Toolkit Connectors entry *A sidebar width and a tooltip delay are
+      missing from the model*, whose tooltip half G2 closed.)
+      `windows-11` states 800 ms, 2 × the `SPI_GETMOUSEHOVERTIME` the OS probe
+      read on its Windows images (400), so a user who changes the hover time
+      changes WinUI's tooltip delay and not the theme's. The Windows reader
+      could read `SPI_GETMOUSEHOVERTIME` and state twice it.
+      That is new `unsafe` FFI, with the `SAFETY:` comment
+      `native-theme/tests/unsafe_safety_comments.rs` enforces, so it needs the
+      maintainer's approval; and a watched source, since the watcher does not
+      receive the `WM_SETTINGCHANGE` with `SPI_SETMOUSEHOVERTIME` that reports
+      a change (`native-theme/src/windows.rs`, *Sources not watched*).
 
 ---
 
