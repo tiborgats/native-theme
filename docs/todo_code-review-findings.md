@@ -12,7 +12,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
 | M3 | done (2026-10-12) |
 | M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 done 2026-10-13 (stop point B) |
-| M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `<FINAL>`) |
+| M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `70776a40`) |
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | not started (after M5's fix phase) |
 | M6–M9 | not started |
@@ -8904,7 +8904,7 @@ The final whole-branch review triaged every deferred minor of the task reviews (
 
 ## M5 — iced connector
 
-**Status:** Steps 1–5 done 2026-10-13 (stop point A; review, verify, triage — no maintainer item). Step 6 done 2026-10-14 after G1 closed (fix plan T1–T12, below); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `<FINAL>`). Read-only review on Opus 5.5 (session), beside native-theme-f1's G1 work.
+**Status:** Steps 1–5 done 2026-10-13 (stop point A; review, verify, triage — no maintainer item). Step 6 done 2026-10-14 after G1 closed (fix plan T1–T12, below); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `70776a40`). Read-only review on Opus 5.5 (session), beside native-theme-f1's G1 work.
 
 ### Step 1 — inventory
 
@@ -9228,11 +9228,11 @@ Step 8 then: full `check_release.sh`, cross-target clippy, `cargo semver-checks`
 
 ### Steps 7–8 — fix phase closed (2026-10-14)
 
-- Range `96a3a62f..<FINAL>`: 13 tasks (T1–T11, T12a, T12b; T12 split after its dry run) in 36 commits (dbc1f8b4..19187374), the final fix wave in 5 (ad18ecde, 2bdb1fdb, b835a6e9, 867d7f93, eebd1274) and Step 8's `scripts/update_compatibility.sh` iced leg in 1 (fbd9e079): 42 commits by `git log --oneline 96a3a62f..fbd9e079`, before this close's docs commits. Every task reviewed by a fresh reviewer, its fix rounds re-reviewed; the rulings are in the session's progress file. Every entry M5-01..M5-20 is fixed (statuses above); the scheduled items M1-T7-06, M1-T6-06, M1-T7-01, M1-T7-03, M3-15, M3-22, M4-07 and M4-15 carry their M5 outcome on their status lines; docs/todo.md:250 is settled for iced (M5-03), the hover-layer question (docs/todo.md:757) for iced in T6, the M4 T35 primary-hover entry done in T9 (07362c9b, cc9e933e), the T19 README claim in T11 (2abfb908).
+- Range `96a3a62f..70776a40`: 13 tasks (T1–T11, T12a, T12b; T12 split after its dry run) in 36 commits (dbc1f8b4..19187374), the final fix wave in 5 (ad18ecde, 2bdb1fdb, b835a6e9, 867d7f93, eebd1274) and Step 8's `scripts/update_compatibility.sh` iced leg in 1 (fbd9e079): 42 commits by `git log --oneline 96a3a62f..fbd9e079`, before this close's docs commits (5ebf5c14, 9884336f) and the `rustls` 0.23.46 lockfile bump (70776a40, RUSTSEC-2026-0346..0349, published 2026-10-14, reached through gpui-kit-assets). Every task reviewed by a fresh reviewer, its fix rounds re-reviewed; the rulings are in the session's progress file. Every entry M5-01..M5-20 is fixed (statuses above); the scheduled items M1-T7-06, M1-T6-06, M1-T7-01, M1-T7-03, M3-15, M3-22, M4-07 and M4-15 carry their M5 outcome on their status lines; docs/todo.md:250 is settled for iced (M5-03), the hover-layer question (docs/todo.md:757) for iced in T6, the M4 T35 primary-hover entry done in T9 (07362c9b, cc9e933e), the T19 README claim in T11 (2abfb908).
 - Final whole-branch review (Opus, `96a3a62f..19187374`): With fixes, 0 Critical, 1 Important (the new `watch` feature in no gate: no test, clippy or strict-panic leg built it), 8 Minor; all fixed in the final fix wave with the parked items (the showcase Icons page's own colours, twelve pre-T9 stale windows-11.toml citations, publish.yml's iced_aw leg, T2's parity-scan minors), re-review clean. Its six declined-to-judge lines stand as set aside (ruled).
 - Timings (M3-22's gate; release, three runs, load about 2.7 with another project's cargo check): warm `from_preset` medians 45.6 / 45.3 / 44.6 µs, range 35.5–49.5 µs over 16 presets × 2 modes; Step 1 baseline 35.5–49.2 µs. Microseconds, not milliseconds: the gate is met.
 - Compatibility stamps: gpui, iced and egui all stale since T1/T2 touched every connector's sources; refreshed by the release asset run (`scripts/update_compatibility.sh run`), as in M3 and M4, so check_release's compatibility ❌ is expected until then.
-- Full check_release: `<FINAL-RESULT>`.
+- Full check_release: on the tree of 70776a40 (its `Cargo.lock` uncommitted during the run): 115 checks · 106 ✅ · 7 ⚠️ (tag v0.6.1; soft semver ×5, approved breaks only — iced and gpui the T2 accessor renames, native-theme-build M4's private result fields; the uncommitted lockfile) · 2 ❌ expected (visual assets, compatibility stamps — the release asset run), 15m 01s; `cargo audit` no advisories. At 9884336f, before the bump: the same plus 4 `rustls` 0.23.45 advisories.
 - Carried to M6/M7/M8 (docs/todo.md):
   - gpui and egui: `native` and `watch` passthrough features as iced's (M5 T3, 80b9ad13; ruling M5-02) — M6/M7: "Connectors: `native` and `watch` passthrough features in gpui and egui".
   - gpui and egui adopt core's `icons::fill_current_color` and delete their own copies (M5 T7, 89ec7f61) — M6/M7: "Icons: one `currentColor` fill for a freedesktop indicator, in native-theme".
