@@ -578,9 +578,11 @@ mod tests {
             assert_eq!(sp.default_area_size, own.spacing.default_area_size);
             assert_eq!(sp.indent, own.spacing.indent);
             assert_eq!(
-                Some(s.interaction.tooltip_delay),
-                t.tooltip.show_delay.map(|ms| f32::from(ms) / 1000.0),
-                "{preset} states a delay: tooltip.show_delay in seconds"
+                s.interaction.tooltip_delay,
+                t.tooltip
+                    .show_delay
+                    .map_or(own.interaction.tooltip_delay, |ms| f32::from(ms) / 1000.0),
+                "{preset}: tooltip.show_delay in seconds, else egui's own"
             );
             assert_eq!(
                 egui::style::Interaction {

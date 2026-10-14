@@ -433,7 +433,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 }
 
 /// §5.7: the transcription carries the specification's verdicts, group by group, and its
-/// sub-tags (15 + 5 + 54). Read through the typed reader.
+/// sub-tags (16 source-side gap, 15 widgets-crate, 52 egui-limited, 1 source-void). Read
+/// through the typed reader.
 #[test]
 fn verdict_totals_match_the_specification() {
     let group_of = |leaf: &str| -> &'static str {

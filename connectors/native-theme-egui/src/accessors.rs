@@ -1,4 +1,5 @@
-//! §4.7's free accessors: the values no `Style` field carries.
+//! §4.7's free accessors: the values no `Style` field carries, and some the `Style` also
+//! holds, for the application's own use.
 
 use std::time::Duration;
 

@@ -2082,10 +2082,12 @@ fn the_basic_page_applies_the_per_call_leaves() {
 /// The tables' header rows are `list_header_height` tall where the theme states one
 /// (material-3), else as tall as before (catppuccin-mocha): on the Basic page's painted table
 /// (its `basic.table.header` place) a row of the header font, `list.border.padding` above and
-/// below its line (`pages/basic.rs`, `row_metrics`); on the Data page's `TableBuilder` a body
-/// row, egui's own `interact_size.y` where the theme states no `list.row_height`. There
-/// the header pushes the first body row down by its height where a body row pushes the next
-/// by its own (egui_extras `layout.rs:181`), the same spacing after each.
+/// below its line (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages'
+/// `TableBuilder`s a body row, egui's own `interact_size.y` where the theme states no
+/// `list.row_height`. There the header pushes the first body row down by its height, or its
+/// tallest cell where that is taller (egui_extras `layout.rs:165`), and the spacing after a row
+/// (`:181`).
+/// A body row is no measure: it grows to a cell that wraps, as the Theme Map's leaf names do.
 #[test]
 fn the_tables_headers_take_the_themes_header_height() {
     for preset in ["material-3", TEST_PRESET] {
@@ -2115,39 +2117,42 @@ fn the_tables_headers_take_the_themes_header_height() {
             placed.height()
         );
 
-        let mut data = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "data")]),
-        );
-        data.run_steps(4);
         // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
         // scheme (src/style/roles.rs, `row_height`)
         let own = egui::Theme::Light.default_style().spacing.interact_size.y;
         let row = l.row_height.unwrap_or(own);
         let header = stated.unwrap_or(row);
-        let tops = |kind: &str| {
-            let mut tops: Vec<f32> = data
-                .state()
-                .registry
-                .records()
-                .iter()
-                .filter(|r| r.info.kind == kind)
-                .map(|r| r.rect.top())
-                .collect();
-            tops.sort_by(f32::total_cmp);
-            tops.dedup_by(|a, b| (*a - *b).abs() < 0.01);
-            tops
-        };
-        let header_top = tops("table header")[0];
-        let rows = tops("table cell");
-        let pushed_by_header = rows[0] - header_top;
-        let pushed_by_row = rows[1] - rows[0];
-        assert!(
-            (pushed_by_header - pushed_by_row - (header - row)).abs() <= 0.5,
-            "{preset}: the Data table's header pushes the rows {pushed_by_header}, a row \
-             {pushed_by_row}; want a difference of {}",
-            header - row
-        );
+        for (tab, header_kind, cell_kind) in [
+            ("data", "table header", "table cell"),
+            ("theme-map", "theme map header", "theme map cell"),
+        ] {
+            let mut page = open(
+                egui::Theme::Light,
+                cli(&[("--theme", preset), ("--tab", tab)]),
+            );
+            page.run_steps(4);
+            let records = page.state().registry.records();
+            let of_kind = |kind: &'static str| records.iter().filter(move |r| r.info.kind == kind);
+            let top = |kind| {
+                of_kind(kind)
+                    .map(|r| r.rect.top())
+                    .fold(f32::INFINITY, f32::min)
+            };
+            // a row is as tall as its tallest cell where that is more than it is given
+            let content = of_kind(header_kind)
+                .map(|r| r.rect.height())
+                .fold(0.0, f32::max);
+            let header = header.max(content);
+            // the List scope keeps the base style's `item_spacing` (mapping.toml writes it in no
+            // List cell)
+            let gap = page.ctx.global_style().spacing.item_spacing.y;
+            let pushed = top(cell_kind) - top(header_kind);
+            assert!(
+                (pushed - (header + gap)).abs() <= 0.5,
+                "{preset} {tab}: the header pushes the first row {pushed}, want {header} and \
+                 the {gap} gap"
+            );
+        }
     }
 }
 

@@ -39,8 +39,9 @@
 //! style reaches a widget through [`NativeThemeUiExt::native_scope`],
 //! [`NativeThemeUiExt::native_set_style`] or [`ThemeAtlas::role_modifier`], and a
 //! container's frame through [`NativeThemeUiExt::native_frame`] or
-//! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries are the free
-//! accessors of this crate root; fonts are [`fonts`]' and icons [`icons`]'.
+//! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries, and some the
+//! `Style` also holds, are the free accessors of this crate root, for the application's own
+//! use; fonts are [`fonts`]' and icons [`icons`]'.
 //!
 //! An accessor that returns one `ResolvedTheme` leaf, converted to egui's type
 //! or scaled by the text-scaling factor, is named after the leaf's path,
