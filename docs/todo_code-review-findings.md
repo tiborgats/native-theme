@@ -9233,3 +9233,9 @@ Checked and clean: no panic path in the public API (`frame_index` uses checked a
     the look of each theme comes from the separate-process runs above. No test switches
     kde-breeze → adwaita → kde-breeze in one window; a by-hand switch on the GPUI Fast build is
     left to the maintainer.
+
+**Status:** G1 closed 2026-10-14 at `d8bc2c83` (Tasks 0–8 plus 5b, commits `a053afb4..d8bc2c83`, each task
+reviewed clean). PR #3's CI run 38511081326 at `d8bc2c83`: all 36 jobs green, among them the first
+GPUI Fast runs — "Test the gpui connector on GPUI Fast" and the clippy and strict-panic steps for
+`gpui-fast` on Linux, and "Build gpui showcase on GPUI Fast" on macos-latest and windows-latest.
+Next (D10): M5's fix phase (session native-theme-b5), then G2 (Tasks 9–15).
