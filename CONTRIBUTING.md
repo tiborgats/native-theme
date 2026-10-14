@@ -33,17 +33,20 @@ This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME and
 panic-pattern scan of non-test code, per-crate `cargo check --all-targets`,
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
-features, failing on a warning), the cross-target checks on
-`x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
+features — for `native-theme-gpui` all but `gpui-fast` — failing on a
+warning), the cross-target checks on `x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
 installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
 (`native-theme` with `system-icons` alone, and with all features
 under `RUSTFLAGS="-D warnings"`, and for x86_64-apple-darwin `native-theme-egui`
 with all targets and features), `cargo fmt --all` (formats in place; CI uses
-`--check`), per-crate `cargo clippy --all-targets -- -D warnings`, the strict
+`--check`), per-crate `cargo clippy --all-targets -- -D warnings` (and
+`native-theme-gpui` with `gpui-fast`), the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
-and the rest of the type-aware set), per-crate `cargo test` (and `native-theme`
-with `portal,watch` and with `system-fonts`), the iced, egui and egui-widgets
-crates' other configurations (tests with no default features and, for iced, with
+and the rest of the type-aware set; `native-theme-gpui` also with `gpui-fast`),
+per-crate `cargo test` (and `native-theme`
+with `portal,watch` and with `system-fonts`), the gpui connector's tests with no
+default features and on GPUI Fast (`--features gpui-fast --all-targets`), the
+iced, egui and egui-widgets crates' other configurations (tests with no default features and, for iced, with
 `iced_aw`, for egui and egui-widgets with all features; clippy with `iced_aw`,
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
@@ -55,7 +58,8 @@ comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `native-theme-egui` and `native-theme-egui-widgets` with all features), the
 archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
 emulation, `cargo package` on every
-publishable crate, `cargo semver-checks` against each crate's crates.io release,
+publishable crate, `cargo semver-checks` against each crate's crates.io release
+(`native-theme-gpui` with `--default-features`),
 `cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
@@ -65,7 +69,8 @@ a WIP branch but to be resolved before opening a release PR (a semver warning
 by the version number or by undoing the change); a hard failure (`❌`) exits
 non-zero and must be fixed.
 
-`--commit` runs every one of those checks except the release-only sections:
+`--commit` runs every one of those checks except the release-tag check, the gpui
+connector's tests on GPUI Fast and the release-only sections:
 the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
 `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the PROVENANCE and
 compatibility stamp checks. Each of

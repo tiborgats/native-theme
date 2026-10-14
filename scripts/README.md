@@ -214,12 +214,15 @@ The upstream versions each connector has been verified against, recorded in
   connector's `Cargo.toml`, `src`, `examples` or `tests` — for egui
   `mapping.toml` in place of `tests` — have uncommitted
   changes, then runs `cargo update` on the connector's upstream family
-  (gpui-base, gpui-component, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
+  (gpui-base, gpui-component, gpui-fast, gpui-fast-apple, gpui-fast-linux,
+  gpui-fast-macos, gpui-fast-macros, gpui-fast-platform, gpui-fast-web,
+  gpui-fast-wgpu, gpui-fast-windows, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
   iced_aw, iced_core, iced_test, iced_widget; or the egui release train —
   ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest,
   emath, epaint, epaint_default_fonts, kittest) and that connector's gates on
-  the result with `--locked`: tests (for iced also `--no-default-features`
-  and `--features iced_aw`; for egui also `--no-default-features` and
+  the result with `--locked`: tests (for gpui also `--features gpui-fast
+  --all-targets`; for iced also `--no-default-features` and
+  `--features iced_aw`; for egui also `--no-default-features` and
   `--all-features`), clippy with `-D warnings` (for iced and egui with
   `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for
   iced and egui also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
@@ -255,8 +258,9 @@ packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks. Prints one line per check and a summary;
 exits 1 on a hard failure. `CONTRIBUTING.md` lists every check.
 
-With `--commit` it runs the per-commit subset: the release-only sections are
-skipped, each printing `skipped (--commit mode)`, and the summary names them.
+With `--commit` it runs the per-commit subset: the release-tag check, the gpui
+connector's tests on GPUI Fast and the release-only sections are skipped, each
+printing `skipped (--commit mode)`, and the summary names them.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
@@ -274,7 +278,10 @@ with a library target, `cargo check -p <crate> --lib` with
 `--no-default-features`, with `--no-default-features --features <F>` for each
 feature in its `[features]` table except `default`, and with
 `--all-features` — the coverage of `cargo hack check --each-feature`, without
-the extra tool. A combination fails when it does not build or when cargo
+the extra tool. A feature that moves a crate to other dependencies instead of
+adding to them is checked alone but left out of the all-features run, which
+then names every other feature: native-theme-gpui's `gpui-fast`, which
+switches the connector to another GPUI core. A combination fails when it does not build or when cargo
 prints a `warning:` line; cargo caps lints for dependencies, so those come
 from the workspace's own crates, and no `RUSTFLAGS` is set, so the
 dependencies are not rebuilt. Colour is turned off inside the script, and so
