@@ -89,12 +89,15 @@ jobs:
         run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib
       # Soft, as in scripts/check_release.sh: the step's failure shows on the
       # run without failing the job.
+      # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
       - name: Strict panic lints (gpui connector)
         if: matrix.package == 'native-theme-gpui'
         continue-on-error: true
-        run: |
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
+      - name: Strict panic lints (gpui connector, gpui-fast)
+        if: matrix.package == 'native-theme-gpui'
+        continue-on-error: true
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
