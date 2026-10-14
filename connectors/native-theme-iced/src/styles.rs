@@ -516,7 +516,9 @@ pub fn button_link(
 /// The `input.*` values [`text_input`] and [`text_editor`] both emit, as the
 /// model states one `InputTheme` for both: the fill, the border and the value
 /// of a field at rest, hovered, focused and disabled, and the two colours
-/// every state shares.
+/// every state shares. The border at rest is the one `border` names: the
+/// single-line field's `input.border`, or the multi-line field's own
+/// `text_area.border`; its hovered and focused colours are `input.*`'s.
 #[derive(Clone, Copy)]
 struct InputColors {
     active: (Color, Border, Color),
@@ -528,7 +530,7 @@ struct InputColors {
 }
 
 impl InputColors {
-    fn new(i: &ResolvedInputTheme) -> Self {
+    fn new(i: &ResolvedInputTheme, border: &ResolvedWidgetBorder) -> Self {
         let idle = to_color(i.background_color);
         // A translucent disabled fill replaces the idle one and lets the
         // window through, so it is emitted as given.
@@ -538,7 +540,7 @@ impl InputColors {
 
         // Both border soft options fall back to the border's own color: the
         // platform saying the field does not change outline in that state.
-        let border = border_of(&i.border);
+        let border = border_of(border);
         let outlined = |color: Option<Rgba>| Border {
             color: color.map_or(border.color, to_color),
             ..border
@@ -581,7 +583,7 @@ pub fn text_input(
 {
     use iced_widget::text_input::{Status, Style};
 
-    let input = InputColors::new(&resolved.input);
+    let input = InputColors::new(&resolved.input, &resolved.input.border);
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
@@ -610,8 +612,13 @@ pub fn text_input(
 /// Replaces `iced_widget::text_editor::default` (`text_editor.rs:1466`), which
 /// derives the same values from the palette that `text_input::default` does.
 ///
-/// The model states one `InputTheme` for both, so this reads exactly the
-/// sources [`text_input`] reads. `text_editor::Style` has no `icon` field
+/// The model states one `InputTheme` for both, so this reads the sources
+/// [`text_input`] reads, but for the border: its colour, width and radius
+/// are `text_area.border`'s, which the model gives the multi-line field
+/// apart from the single-line one (inheriting `input.border` where the theme
+/// states none), as [`crate::text_area_padding`] reads that border's padding.
+/// The hovered and focused border colours are `input.*`'s, which the text
+/// area states none of its own for. `text_editor::Style` has no `icon` field
 /// (`text_editor.rs:1425-1436`), so every field it does have is a native one
 /// and nothing here comes from iced.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -621,7 +628,7 @@ pub fn text_editor(
 {
     use iced_widget::text_editor::{Status, Style};
 
-    let input = InputColors::new(&resolved.input);
+    let input = InputColors::new(&resolved.input, &resolved.text_area.border);
 
     move |_theme, status| {
         let (background, border, value) = match status {

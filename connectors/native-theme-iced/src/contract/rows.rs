@@ -475,19 +475,21 @@ fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
     }
 }
 
-/// The border color the native fields give a text input, by state.
+/// The border color the native fields give a text field framed by `rest`,
+/// by state: `input.border.color` for a text input, `text_area.border.color`
+/// for a text editor.
 ///
 /// Both soft options copy the border's own color, the base-state value of
 /// spec section 3.2's table.
 #[cfg(feature = "widgets")]
-fn native_input_border(r: &ResolvedTheme, hovered: bool, focused: bool) -> Color {
+fn native_input_border(r: &ResolvedTheme, rest: Rgba, hovered: bool, focused: bool) -> Color {
     let i = &r.input;
     to_color(if focused {
-        i.focus_border_color.unwrap_or(i.border.color)
+        i.focus_border_color.unwrap_or(rest)
     } else if hovered {
-        i.hover_border_color.unwrap_or(i.border.color)
+        i.hover_border_color.unwrap_or(rest)
     } else {
-        i.border.color
+        rest
     })
 }
 
@@ -518,14 +520,15 @@ pub(super) fn native_text_input_fill(r: &ResolvedTheme, status: text_input::Stat
 
 #[cfg(feature = "widgets")]
 fn native_text_input_border(r: &ResolvedTheme, status: text_input::Status) -> Color {
+    let rest = r.input.border.color;
     match status {
-        text_input::Status::Active => native_input_border(r, false, false),
+        text_input::Status::Active => native_input_border(r, rest, false, false),
         text_input::Status::Disabled => dim(
-            native_input_border(r, false, false),
+            native_input_border(r, rest, false, false),
             r.input.disabled_opacity,
         ),
-        text_input::Status::Hovered => native_input_border(r, true, false),
-        text_input::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+        text_input::Status::Hovered => native_input_border(r, rest, true, false),
+        text_input::Status::Focused { is_hovered: _ } => native_input_border(r, rest, false, true),
     }
 }
 
@@ -608,14 +611,15 @@ pub(super) fn native_text_editor_fill(r: &ResolvedTheme, status: text_editor::St
 
 #[cfg(feature = "widgets")]
 fn native_text_editor_border(r: &ResolvedTheme, status: text_editor::Status) -> Color {
+    let rest = r.text_area.border.color;
     match status {
-        text_editor::Status::Active => native_input_border(r, false, false),
+        text_editor::Status::Active => native_input_border(r, rest, false, false),
         text_editor::Status::Disabled => dim(
-            native_input_border(r, false, false),
+            native_input_border(r, rest, false, false),
             r.input.disabled_opacity,
         ),
-        text_editor::Status::Hovered => native_input_border(r, true, false),
-        text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+        text_editor::Status::Hovered => native_input_border(r, rest, true, false),
+        text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, rest, false, true),
     }
 }
 
@@ -659,15 +663,16 @@ pub(super) const TEXT_EDITOR_ROWS: &[StyleRow<text_editor::Status>] = &[
     },
 ];
 
-/// The same border, through the editor's own `Status`.
+/// The editor's border is the text area's own, `text_area.border`, through the
+/// editor's own `Status`; its hovered and focused colours are the input's.
 #[cfg(feature = "widgets")]
 pub(super) const TEXT_EDITOR_BORDER_ROWS: &[BorderRow<text_editor::Status>] = &[BorderRow {
     field: "styles::text_editor",
     statuses: TEXT_EDITOR_STATUSES,
     native: |r, s| NativeBorder {
         color: native_text_editor_border(r, s),
-        width: r.input.border.line_width,
-        radius: r.input.border.corner_radius,
+        width: r.text_area.border.line_width,
+        radius: r.text_area.border.corner_radius,
     },
     get: |t, r, s| styles::text_editor(r)(t, s).border,
 }];

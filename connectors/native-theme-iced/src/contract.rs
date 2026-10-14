@@ -3674,6 +3674,46 @@ fn a_hovered_split_is_the_splitters_hover_colour() -> native_theme::Result<()> {
 
 #[cfg(feature = "widgets")]
 #[test]
+fn a_text_editor_is_framed_by_the_text_areas_border() -> native_theme::Result<()> {
+    // Every bundled preset frames its text area as its input
+    // (`text_area.border` inherits `input.border`), and every one states a
+    // 1 px input border, so the text area here takes another real border of
+    // another preset: material-3's check box outline, 2 px wide.
+    let mut resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let donor = native_theme::theme::Theme::preset("material-3")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let (own, other) = (&resolved.input.border, &donor.checkbox.border);
+    assert!(
+        own.color != other.color
+            && own.line_width != other.line_width
+            && own.corner_radius != other.corner_radius,
+        "material-3's check box border no longer differs from adwaita's input \
+         border in colour, width and radius, so this test proves less than it \
+         says"
+    );
+    resolved.text_area.border.color = other.color;
+    resolved.text_area.border.line_width = other.line_width;
+    resolved.text_area.border.corner_radius = other.corner_radius;
+    let theme = crate::to_theme(&resolved, "adwaita");
+
+    let border = styles::text_editor(&resolved)(&theme, text_editor::Status::Active).border;
+    assert_eq!(
+        (border.color, border.width, border.radius),
+        (
+            to_color(other.color),
+            other.line_width,
+            Radius::new(other.corner_radius)
+        ),
+        "a text editor is framed by text_area.border, not input.border"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
 fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
     // The three `input.*` soft options, which `styles::text_input` and
     // `styles::text_editor` share. No bundled preset leaves them `None` after
@@ -3715,8 +3755,9 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
     for status in TEXT_EDITOR_STATUSES {
         assert_eq!(
             editor(&theme, *status).border.color,
-            border,
-            "the editor reads the same soft options ({status:?})"
+            to_color(resolved.text_area.border.color),
+            "the editor reads the same soft options, over its own border \
+             ({status:?})"
         );
     }
     assert_eq!(
