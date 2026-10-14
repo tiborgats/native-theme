@@ -283,6 +283,7 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
             Val::OptF32(style.override_font_id.as_ref().map(|f| f.size))
         }
         ["animation_time"] => Val::F32(style.animation_time),
+        ["interaction", "tooltip_delay"] => Val::F32(style.interaction.tooltip_delay),
         _ => return None,
     })
 }
@@ -864,6 +865,11 @@ fn expected(
                 _ => 0.0,
             })
         }
+        // ---- the tooltip delay: the theme's milliseconds as egui's seconds ----
+        (None, _, None, "interaction.tooltip_delay") => match t.tooltip.show_delay {
+            Some(ms) => Val::F32(f32::from(ms) / 1000.0),
+            None => return Ok(None),
+        },
         // ---- §6.16: the layout gap, a Builder input; T10's atlases carry none ----
         (None, _, None, "spacing.item_spacing.x" | "spacing.item_spacing.y") => {
             match c.atlas.layout().widget_gap {

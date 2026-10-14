@@ -11,7 +11,8 @@ use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, text_area_frame,
+    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_height,
+    text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -1600,7 +1601,8 @@ fn paint_cell_text(
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
 /// stripes), so it is painted here as the list's rows are: the header in
-/// `list.header_background` and `list.header_font`, the rows `row_metrics` tall in
+/// `list.header_background` and `list.header_font`, `list_header_height` tall where the theme
+/// states it and `row_metrics` tall else, the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
 /// `list.selection_text_color`; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
@@ -1621,7 +1623,11 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                 demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
             );
             let (row_height, inset, line) = row_metrics(t, &item_font, egui::Vec2::ZERO);
-            let (header_height, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
+            let (header_row, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
+            // `list.header_height` where the theme states it, on the layout grid as the rows
+            // are; else the header is a row
+            let header_height =
+                list_header_height(t).map_or(header_row, egui::emath::GuiRounding::round_ui);
             let grid = to_color32(l.grid_color);
             let grid_width = t.separator.line_width;
             let frame = list_frame(l);

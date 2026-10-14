@@ -1,5 +1,6 @@
 //! The base `Style` of one colour scheme (§3.4): §5.1's DIRECT rows, §5.9's base owners, the
-//! five `text_styles` sizes (§8.5), `layout.widget_gap` (§6.16) and the line spacing (§6.15).
+//! five `text_styles` sizes (§8.5), `layout.widget_gap` (§6.16), the line spacing (§6.15) and
+//! the tooltip delay.
 //! The five `WidgetVisuals` entries are `states::write_states`'s.
 
 use egui::TextStyle;
@@ -295,6 +296,12 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         }
     }
 
+    // the theme's milliseconds as egui's seconds (`egui/src/style.rs:928`); a theme that
+    // states no delay keeps egui's own
+    if let Some(ms) = t.tooltip.show_delay {
+        s.interaction.tooltip_delay = f32::from(ms) / 1000.0;
+    }
+
     use super::states::{
         BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource,
         TextSource, write_states,
@@ -570,7 +577,19 @@ mod tests {
             assert_eq!(sp.slider_width, own.spacing.slider_width);
             assert_eq!(sp.default_area_size, own.spacing.default_area_size);
             assert_eq!(sp.indent, own.spacing.indent);
-            assert_eq!(s.interaction, own.interaction);
+            assert_eq!(
+                Some(s.interaction.tooltip_delay),
+                t.tooltip.show_delay.map(|ms| f32::from(ms) / 1000.0),
+                "{preset} states a delay: tooltip.show_delay in seconds"
+            );
+            assert_eq!(
+                egui::style::Interaction {
+                    tooltip_delay: own.interaction.tooltip_delay,
+                    ..s.interaction.clone()
+                },
+                own.interaction,
+                "every other Interaction field is egui's own"
+            );
             assert_eq!(s.animation_time, own.animation_time);
             assert_eq!(s.override_font_id, None);
             assert_eq!(v.override_text_color, None);
@@ -602,6 +621,31 @@ mod tests {
                 path: "layout.widget_gap"
             }]
         );
+    }
+
+    /// `tooltip.show_delay` is milliseconds, egui's `tooltip_delay` seconds
+    /// (`egui/src/style.rs:928`); a theme that states none keeps egui's own.
+    #[test]
+    fn tooltip_delay_is_the_themes_in_seconds_or_egui_own() {
+        let own = egui::Theme::Light.default_style();
+        for (preset, ms) in [("kde-breeze", 700_u16), ("material-3", 0)] {
+            let t = resolved(preset, ColorMode::Light);
+            assert_eq!(t.tooltip.show_delay, Some(ms), "{preset}");
+            let (s, notes) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+            assert_eq!(
+                s.interaction.tooltip_delay,
+                f32::from(ms) / 1000.0,
+                "{preset}"
+            );
+            assert!(notes.is_empty(), "{preset}: {notes:?}");
+        }
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.tooltip.show_delay = Some(u16::MAX);
+        let (s, _) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(s.interaction.tooltip_delay, 65.535);
+        t.tooltip.show_delay = None;
+        let (s, _) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(s.interaction.tooltip_delay, own.interaction.tooltip_delay);
     }
 
     /// §6.15: the delta between the theme's line box and the row, floored at egui's 0.0.

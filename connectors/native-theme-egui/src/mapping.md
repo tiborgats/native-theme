@@ -9,14 +9,14 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
-| Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 31 | 16 |
+| Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
-| Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 35 | 13 |
+| Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 36 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **508** | **47** | **208** | **167** | **86** |
+| **TOTAL** | **508** | **47** | **208** | **169** | **84** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 2, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
+UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
 ## Rows
 
@@ -186,7 +186,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 2, `source-side
 | `tooltip.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `tooltip.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `tooltip.max_width` | DIRECT | `spacing.tooltip_width` |  |
-| `tooltip.show_delay` | UNMAPPABLE |  | `receiver-pending`: native-theme-egui: no receiver yet for Style::interaction.tooltip_delay, the delay in seconds (egui style.rs:928) |
+| `tooltip.show_delay` | DERIVED | `interaction.tooltip_delay` |  |
 | `window.background_color` | SCOPED | \[window\] `fill` |  |
 | `window.border.color` | SCOPED | \[window\] `stroke.color` |  |
 | `window.border.corner_radius` | DIRECT | `visuals.window_corner_radius` |  |
@@ -388,7 +388,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 2, `source-side
 | `list.header_font.size` | DERIVED | → T18(e) |  |
 | `list.header_font.style` | DERIVED | → T18(a) | probe `"italic"` |
 | `list.header_font.weight` | DERIVED | → T18(a) | probe `700` |
-| `list.header_height` | UNMAPPABLE |  | `receiver-pending`: native-theme-egui: no receiver yet for the height egui_extras' TableBuilder::header takes (egui_extras table.rs:452) |
+| `list.header_height` | DERIVED | → T18(e) |  |
 | `list.hover_background` | SCOPED | «list» `visuals.widgets.hovered.bg_fill`; «list» `visuals.widgets.active.bg_fill` |  |
 | `list.hover_text_color` | DERIVED | → T18(a) |  |
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |
@@ -564,6 +564,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 
 | egui field | base owner | formula inputs and forced constants | displaced to a scope or a surface |
 |---|---|---|---|
+| `interaction.tooltip_delay` | `tooltip.show_delay` |  |  |
 | `override_font_id.size` | — (egui's own value stands) |  | `button.font.size` «button», `checkbox.font.size` «checkbox», `link.font.size` «link», `segmented_control.font.size` «segmented_control» |
 | `spacing.button_padding.x` | `button.border.padding.left`, `button.border.padding.right` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.left` «button», `button.border.padding.right` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.left` «combo_box», `combo_box.border.padding.right` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.right` «expander», `menu.border.line_width` «menu», `menu.border.padding.left` «menu», `menu.border.padding.right` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.left` «segmented_control», `segmented_control.border.padding.right` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.left` «tab», `tab.border.padding.right` «tab» |
 | `spacing.button_padding.y` | `button.border.padding.bottom`, `button.border.padding.top` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.bottom` «button», `button.border.padding.top` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.bottom` «combo_box», `combo_box.border.padding.top` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.bottom` «expander», `expander.border.padding.top` «expander», `menu.border.line_width` «menu», `menu.border.padding.bottom` «menu», `menu.border.padding.top` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.bottom` «segmented_control», `segmented_control.border.padding.top` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.bottom` «tab», `tab.border.padding.top` «tab» |
@@ -732,13 +733,12 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `dialog.outer_margin.top` | as window.outer_margin.left |
 | `drag_value_text_style` | left at egui's TextStyle::Button (egui/src/style.rs:1434), whose size button.font writes (§5.9) |
 | `explanation_tooltips` | whether widgets explain themselves in tooltips is application behaviour (§5.10) |
-| `interaction.interact_radius` | input-behaviour policy; ResolvedTheme exposes none of Style::interaction (§5.10) |
+| `interaction.interact_radius` | input-behaviour policy with no ResolvedTheme field (§5.10) |
 | `interaction.multi_widget_text_select` | as interaction.interact_radius |
 | `interaction.resize_grab_radius_corner` | as interaction.interact_radius |
 | `interaction.resize_grab_radius_side` | as interaction.interact_radius |
 | `interaction.selectable_labels` | as interaction.interact_radius |
 | `interaction.show_tooltips_only_when_still` | as interaction.interact_radius |
-| `interaction.tooltip_delay` | tooltip.show_delay's row is receiver-pending: the connector writes no delay yet, so egui's own stands |
 | `interaction.tooltip_grace_time` | as interaction.interact_radius |
 | `override_font_id.family` | always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1) |
 | `override_text_style` | left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10) |

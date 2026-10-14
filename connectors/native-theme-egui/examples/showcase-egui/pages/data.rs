@@ -3,7 +3,7 @@
 
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
+use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font, list_header_height};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -26,6 +26,7 @@ pub(crate) fn show(
     let header_font = list_header_font(t, atlas.accessibility());
     let header_color = to_color32(t.list.header_font.color);
     let row_height = t.list.row_height;
+    let header_height = list_header_height(t);
     let normal = RoleVariant::Normal;
 
     caption(
@@ -34,8 +35,10 @@ pub(crate) fn show(
         "TableBuilder: striped, resizable columns, a selected row (Role::List)",
     );
     demo::scoped_container(reg, ui, Role::List, normal, "Table", |ui, list, reg| {
-        // A table's row height is a call argument no `Style` field reaches (§5.4 `list.row_height`).
+        // A table's row and header heights are call arguments no `Style` field reaches (§5.4
+        // `list.row_height`); a header the theme gives no height is a row.
         let height = row_height.unwrap_or(ui.spacing().interact_size.y);
+        let header = header_height.unwrap_or(height);
         ui.scope(|ui| {
             TableBuilder::new(ui)
                 .id_salt("data/table")
@@ -45,7 +48,7 @@ pub(crate) fn show(
                 .sense(egui::Sense::click())
                 .column(Column::auto().resizable(true))
                 .column(Column::remainder())
-                .header(height, |mut header| {
+                .header(header, |mut header| {
                     for title in ["Theme", "Platform"] {
                         header.col(|ui| {
                             list.add(reg, ui, "table header", |ui| {
@@ -78,6 +81,8 @@ pub(crate) fn show(
     });
     reg.amend_last(|i| {
         i.read.push(("list.row_height", format!("{row_height:?}")));
+        i.read
+            .push(("list_header_height", format!("{header_height:?}")));
         i.read
             .push(("list_header_font", format!("{header_font:?}")));
         i.read

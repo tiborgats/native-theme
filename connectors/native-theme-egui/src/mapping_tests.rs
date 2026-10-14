@@ -273,7 +273,6 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
         "widgets-crate",
         "source-void",
         "source-side gap",
-        "receiver-pending",
     ];
     let verdicts = ["direct", "scoped", "derived", "unmappable"];
     let sink_keys = ["path", "scope", "variant", "surface", "when"];
@@ -468,9 +467,9 @@ fn verdict_totals_match_the_specification() {
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
         ("foundation", [18, 1, 36, 11]),
-        ("surfaces", [8, 55, 31, 16]),
+        ("surfaces", [8, 55, 32, 15]),
         ("buttons", [11, 46, 31, 18]),
-        ("inputs", [4, 35, 35, 13]),
+        ("inputs", [4, 35, 36, 12]),
         ("indicators", [6, 17, 8, 9]),
         ("chrome", [0, 54, 26, 19]),
     ];
@@ -489,11 +488,6 @@ fn verdict_totals_match_the_specification() {
         tags.get("source-void").copied().unwrap_or_default(),
         1,
         "one row is source-void: defaults.border.opacity, already folded into every border colour"
-    );
-    assert_eq!(
-        tags.get("receiver-pending").copied().unwrap_or_default(),
-        2,
-        "two rows wait for their receivers: tooltip.show_delay, list.header_height"
     );
 }
 

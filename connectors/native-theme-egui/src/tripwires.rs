@@ -116,7 +116,8 @@ fn every_style_type_is_destructured_exhaustively() {
         size: _,
     } = fade;
 
-    // `Interaction`, 8 fields (egui/src/style.rs:916-944).
+    // `Interaction`, 8 fields (egui/src/style.rs:916-944): `tooltip.show_delay` writes
+    // `tooltip_delay`.
     let Interaction {
         interact_radius: _,
         resize_grab_radius_side: _,

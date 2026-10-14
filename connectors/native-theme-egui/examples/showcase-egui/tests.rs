@@ -2079,6 +2079,78 @@ fn the_basic_page_applies_the_per_call_leaves() {
     }
 }
 
+/// The tables' header rows are `list_header_height` tall where the theme states one
+/// (material-3), else as tall as before (catppuccin-mocha): on the Basic page's painted table
+/// (its `basic.table.header` place) a row of the header font, `list.border.padding` above and
+/// below its line (`pages/basic.rs`, `row_metrics`); on the Data page's `TableBuilder` a body
+/// row, egui's own `interact_size.y` where the theme states no `list.row_height`. There
+/// the header pushes the first body row down by its height where a body row pushes the next
+/// by its own (egui_extras `layout.rs:181`), the same spacing after each.
+#[test]
+fn the_tables_headers_take_the_themes_header_height() {
+    for preset in ["material-3", TEST_PRESET] {
+        let mut basic = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        basic.run_steps(4);
+        let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+        let stated = native_theme_egui::list_header_height(&t);
+        assert_eq!(
+            stated.is_some(),
+            preset == "material-3",
+            "{preset}: the preset's header height"
+        );
+        let l = &t.list;
+        let header_row = l.row_height.unwrap_or(
+            l.header_font.size * t.defaults.line_height
+                + l.border.padding.top.unwrap_or(0.0)
+                + l.border.padding.bottom.unwrap_or(0.0),
+        );
+        let want = stated.unwrap_or(header_row);
+        let placed = basic.state().registry.places()["basic.table.header"];
+        assert!(
+            (placed.height() - want).abs() <= 0.5,
+            "{preset}: the Basic table's header is {} tall, want {want}",
+            placed.height()
+        );
+
+        let mut data = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "data")]),
+        );
+        data.run_steps(4);
+        // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
+        // scheme (src/style/roles.rs, `row_height`)
+        let own = egui::Theme::Light.default_style().spacing.interact_size.y;
+        let row = l.row_height.unwrap_or(own);
+        let header = stated.unwrap_or(row);
+        let tops = |kind: &str| {
+            let mut tops: Vec<f32> = data
+                .state()
+                .registry
+                .records()
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .map(|r| r.rect.top())
+                .collect();
+            tops.sort_by(f32::total_cmp);
+            tops.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+            tops
+        };
+        let header_top = tops("table header")[0];
+        let rows = tops("table cell");
+        let pushed_by_header = rows[0] - header_top;
+        let pushed_by_row = rows[1] - rows[0];
+        assert!(
+            (pushed_by_header - pushed_by_row - (header - row)).abs() <= 0.5,
+            "{preset}: the Data table's header pushes the rows {pushed_by_header}, a row \
+             {pushed_by_row}; want a difference of {}",
+            header - row
+        );
+    }
+}
+
 /// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest
 /// and framed when hovered), which are one border width narrower at rest on each side than
 /// hovered under a theme whose buttons have a resting border: egui lays the frameless resting

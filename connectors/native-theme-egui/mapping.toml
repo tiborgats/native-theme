@@ -685,9 +685,8 @@ verdict = "direct"
 sinks   = [{ path = "spacing.tooltip_width" }]
 
 ["tooltip.show_delay"]
-verdict  = "unmappable"
-sub_tag  = "receiver-pending"
-upstream = "native-theme-egui: no receiver yet for Style::interaction.tooltip_delay, the delay in seconds (egui style.rs:928)"
+verdict = "derived"
+sinks   = [{ path = "interaction.tooltip_delay" }]
 
 ["tooltip.font.family"]
 verdict  = "unmappable"
@@ -1911,9 +1910,8 @@ verdict = "scoped"
 sinks   = [{ path = "spacing.interact_size.y", scope = "list" }]
 
 ["list.header_height"]
-verdict  = "unmappable"
-sub_tag  = "receiver-pending"
-upstream = "native-theme-egui: no receiver yet for the height egui_extras' TableBuilder::header takes (egui_extras table.rs:452)"
+verdict   = "derived"
+tested_by = "T18(e)"
 
 ["list.hover_background"]
 verdict = "scoped"
@@ -2870,11 +2868,10 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "spacing.scroll.content_margin.bottom" = "as spacing.scroll.content_margin.left"
 "spacing.scroll.fade.strength" = "no platform fact records a scroll-edge fade (§5.10)"
 "spacing.scroll.fade.size"     = "as spacing.scroll.fade.strength"
-"interaction.interact_radius"               = "input-behaviour policy; ResolvedTheme exposes none of Style::interaction (§5.10)"
+"interaction.interact_radius"               = "input-behaviour policy with no ResolvedTheme field (§5.10)"
 "interaction.resize_grab_radius_side"       = "as interaction.interact_radius"
 "interaction.resize_grab_radius_corner"     = "as interaction.interact_radius"
 "interaction.show_tooltips_only_when_still" = "as interaction.interact_radius"
-"interaction.tooltip_delay"                 = "tooltip.show_delay's row is receiver-pending: the connector writes no delay yet, so egui's own stands"
 "interaction.tooltip_grace_time"            = "as interaction.interact_radius"
 "interaction.selectable_labels"             = "as interaction.interact_radius"
 "interaction.multi_widget_text_select"      = "as interaction.interact_radius"

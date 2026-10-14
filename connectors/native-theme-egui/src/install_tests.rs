@@ -1728,6 +1728,28 @@ mod t18_accessors {
         }
     }
 
+    /// T18 (e): `tooltip_show_delay` is `tooltip.show_delay` as a `Duration` and
+    /// `list_header_height` is `list.header_height`, each `None` where the theme states none.
+    #[test]
+    fn t18_e_the_delay_and_header_height_accessors_return_their_leaves() {
+        for (preset, delay, header) in [
+            ("kde-breeze", Some(700_u64), None),
+            ("adwaita", Some(500), Some(30.0_f32)),
+            ("material-3", Some(0), Some(56.0)),
+            ("macos-monterey", None, Some(28.0)),
+        ] {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let t = resolved(preset, mode);
+                assert_eq!(
+                    crate::tooltip_show_delay(&t),
+                    delay.map(std::time::Duration::from_millis),
+                    "{preset} {mode:?}"
+                );
+                assert_eq!(crate::list_header_height(&t), header, "{preset} {mode:?}");
+            }
+        }
+    }
+
     /// One arrow painted by `icon` in each state a `CollapsingHeader`'s click-sensed header
     /// response (`egui/src/containers/collapsing_header.rs:535`) can be in — at rest, hovered
     /// and pressed — which `paint_default_icon` reads through `Style::interact` (`:337`):

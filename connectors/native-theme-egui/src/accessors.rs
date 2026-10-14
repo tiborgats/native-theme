@@ -1,5 +1,7 @@
 //! §4.7's free accessors: the values no `Style` field carries.
 
+use std::time::Duration;
+
 use egui::FontId;
 use native_theme::SystemTheme;
 use native_theme::theme::{
@@ -489,6 +491,24 @@ pub fn list_header_font(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> 
 #[must_use]
 pub fn dialog_button_order(t: &ResolvedTheme) -> DialogButtonOrder {
     t.dialog.button_order
+}
+/// `list.header_height`, the height of a table's header row in logical pixels, for
+/// `TableBuilder::header(height, ..)` (`egui_extras/src/table.rs:452`), which no `Style` field
+/// reaches; `None` where the theme states none, and the showcase's tables then make the header
+/// as tall as a row.
+#[must_use]
+pub fn list_header_height(t: &ResolvedTheme) -> Option<f32> {
+    t.list.header_height
+}
+/// `tooltip.show_delay` as a `Duration`, or `None` where the theme states none. The atlas
+/// already writes it, in seconds, into `Style::interaction.tooltip_delay`
+/// (`egui/src/style.rs:928`), which egui's own tooltips wait for
+/// (`egui/src/containers/tooltip.rs:238`); this is for a delay the application times itself.
+#[must_use]
+pub fn tooltip_show_delay(t: &ResolvedTheme) -> Option<Duration> {
+    t.tooltip
+        .show_delay
+        .map(|ms| Duration::from_millis(u64::from(ms)))
 }
 /// `scrollbar.groove_width`, in logical pixels.
 #[must_use]

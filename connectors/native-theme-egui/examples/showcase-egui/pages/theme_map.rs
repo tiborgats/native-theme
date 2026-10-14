@@ -3,7 +3,7 @@
 //! manifest that maps egui's.
 
 use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
+use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font, list_header_height};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -68,6 +68,7 @@ pub(crate) fn show(
         "theme map",
         |ui, list, reg| {
             let height = row_height.unwrap_or(ui.spacing().interact_size.y);
+            let header = list_header_height(t).unwrap_or(height);
             let out = ui.scope(|ui| {
                 egui_extras::TableBuilder::new(ui)
                     .striped(true)
@@ -75,7 +76,7 @@ pub(crate) fn show(
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::remainder())
-                    .header(height, |mut header| {
+                    .header(header, |mut header| {
                         for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
                             header.col(|ui| {
                                 list.add(reg, ui, "theme map header", |ui| {

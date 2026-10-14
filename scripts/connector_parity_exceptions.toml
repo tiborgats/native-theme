@@ -138,6 +138,12 @@ name = "selection_background"
 kind = "absent"
 reason = "it reaches gpui-component's row selections, `ThemeColor::list_active` and `sidebar_accent`, through `list.selection_background` and `sidebar.selection_background`, which inherit it (docs/inheritance-rules.toml); `ThemeColor::selection` is the input's text selection, `input.selection_background` (src/colors.rs, `ResolvedColors::selection`)"
 
+[[exception]]
+connector = "gpui"
+name = "list_header_height"
+kind = "absent"
+reason = "the crate root has none: the receiver is `geometry::list_header_height(Native<'_>) -> Option<Pixels>` (src/geometry.rs), a style builder for `DataTable::header_row_height`, beside `data_table_size`, which the script does not scan"
+
 # ── absent: iced ────────────────────────────────────────────────────────────
 
 [[exception]]
@@ -206,6 +212,12 @@ name = "tooltip_show_delay"
 kind = "absent"
 reason = "not yet: the iced receiver of `tooltip.show_delay_ms`, for `Tooltip::delay`, lands after the gpui one; G2 Task 13 adds it"
 
+[[exception]]
+connector = "iced"
+name = "list_header_height"
+kind = "absent"
+reason = "not yet: the iced receiver of `list.header_height_px`, for the showcase's table header cells, lands after the egui one; G2 Task 13 adds it"
+
 # ── absent: egui ────────────────────────────────────────────────────────────
 # The egui accessors are the values no `Style` field carries (src/lib.rs,
 # "Where the theme reaches"); these leaves the atlas writes into the `Style`,
@@ -252,9 +264,3 @@ connector = "egui"
 name = "selection_text_color"
 kind = "absent"
 reason = "the atlas writes it to `visuals.selection.stroke.color` (src/style/base.rs; src/mapping.md, `defaults.selection_text_color`: DIRECT)"
-
-[[exception]]
-connector = "egui"
-name = "tooltip_show_delay"
-kind = "absent"
-reason = "not yet: the egui receiver of `tooltip.show_delay_ms`, for `interaction.tooltip_delay`, lands after the gpui one; G2 Task 12 adds it"
