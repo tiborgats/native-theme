@@ -5,8 +5,10 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
+use std::borrow::Cow;
+
 use native_theme::icons::{
-    AnimatedIcon, IconData, IconProvider, colorize_monochrome_svg, load_custom_icon,
+    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, load_custom_icon,
 };
 
 /// Converted animation frames with timing metadata.
@@ -29,11 +31,7 @@ pub struct AnimatedSvgHandles {
 #[must_use]
 pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba(rgba) => Some(iced_core::image::Handle::from_rgba(
-            rgba.width(),
-            rgba.height(),
-            rgba.data().to_vec(),
-        )),
+        IconData::Rgba(rgba) => Some(image_handle(rgba.clone())),
         _ => None,
     }
 }
@@ -51,14 +49,7 @@ pub fn to_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(cow) => {
-            let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(cow, to_rgba(c))
-            } else {
-                cow.to_vec()
-            };
-            Some(iced_core::svg::Handle::from_memory(final_bytes))
-        }
+        IconData::Svg(svg) => Some(svg_handle(Cow::Borrowed(svg), color)),
         _ => None,
     }
 }
@@ -203,14 +194,7 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
 #[must_use]
 pub fn into_image_handle(data: IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba(rgba) => {
-            let (width, height) = (rgba.width(), rgba.height());
-            Some(iced_core::image::Handle::from_rgba(
-                width,
-                height,
-                rgba.into_data(),
-            ))
-        }
+        IconData::Rgba(rgba) => Some(image_handle(rgba)),
         _ => None,
     }
 }
@@ -222,16 +206,25 @@ pub fn into_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(cow) => {
-            let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(&cow, to_rgba(c))
-            } else {
-                cow.into_owned()
-            };
-            Some(iced_core::svg::Handle::from_memory(final_bytes))
-        }
+        IconData::Svg(svg) => Some(svg_handle(svg, color)),
         _ => None,
     }
+}
+
+/// The image handle of `rgba`'s pixels, for [`to_image_handle`] and
+/// [`into_image_handle`].
+fn image_handle(rgba: RgbaData) -> iced_core::image::Handle {
+    let (width, height) = (rgba.width(), rgba.height());
+    iced_core::image::Handle::from_rgba(width, height, rgba.into_data())
+}
+
+/// The SVG handle of `svg`, coloured in `color` where given, for
+/// [`to_svg_handle`] and [`into_svg_handle`].
+fn svg_handle(svg: Cow<'_, [u8]>, color: Option<iced_core::Color>) -> iced_core::svg::Handle {
+    iced_core::svg::Handle::from_memory(match color {
+        Some(c) => colorize_monochrome_svg(&svg, to_rgba(c)),
+        None => svg.into_owned(),
+    })
 }
 
 /// An iced colour as an opaque [`native_theme::Rgba`], each channel clamped to
