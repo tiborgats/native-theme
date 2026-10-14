@@ -2435,6 +2435,25 @@ the gap — closing it is a change, and each wants its own decision.
       500ms (`gpui-pre/elements/div.rs:53`) and takes `tooltip_show_delay`
       (`:1708`). The 0.7.3 work's G2 closes the tooltip half with a model
       value; the sidebar width stays open.
+      *G2 (2026-10-14):* the tooltip half is done. `tooltip.show_delay_ms`
+      is model data (3ddfe91a), stated by `kde-breeze` 700, `adwaita` 500,
+      `windows-11` 800 and `material-3` 0 from `platform-facts.md` §2.7, and
+      unset on macOS and iOS, which state none. Its receivers: gpui's `apply`
+      installs it as the `TooltipDefaults` show delay and `tooltip_show_delay`
+      carries it to GPUI's own `.tooltip()` (0ae7be3c, b95ebe2b), egui's atlas
+      writes `interaction.tooltip_delay` (73e8c5ca), iced's
+      `tooltip_show_delay` is for `Tooltip::delay` (138c2674). The sidebar
+      width stays open.
+- [ ] [post-1.0] **A live Windows hover time for the tooltip delay.**
+      `windows-11` states 800 ms, 2 × the `SPI_GETMOUSEHOVERTIME` the OS probe
+      read on its Windows images (400), so a user who changes the hover time
+      changes WinUI's tooltip delay and not the theme's. The Windows reader
+      could read `SPI_GETMOUSEHOVERTIME` and state twice it.
+      That is new `unsafe` FFI, with the `SAFETY:` comment
+      `native-theme/tests/unsafe_safety_comments.rs` enforces, so it needs the
+      maintainer's approval; and a watched source, since the watcher does not
+      receive the `WM_SETTINGCHANGE` with `SPI_SETMOUSEHOVERTIME` that reports
+      a change (`native-theme/src/windows.rs`, *Sources not watched*).
 - [ ] [1.0] **Platform icons inside widgets: how far can it go?** `Icon` takes a path
       or raw SVG bytes (`icon.rs:117-131`), and this connector already
       rasterises the platform's icon theme, so the type is not the obstacle —

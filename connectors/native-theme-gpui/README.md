@@ -424,11 +424,11 @@ delay, the application's comes back: the one installed before the connector's
 first write, or set by the application since (gpui-base's 500 ms where it set
 none). The observer installs it again after every upstream rebuild, so a mode
 switch through `Theme::change` or `sync_system_appearance` brings the new
-mode's variant's delay. A delay is told apart by value: an application delay equal to the one
-the connector last wrote is taken for the connector's. GPUI's own `.tooltip()`
-on an element does not read `TooltipDefaults`: it waits GPUI's 500 ms unless
-the element is given `tooltip_show_delay(&resolved)` through
-`StatefulInteractiveElement::tooltip_show_delay`.
+mode's variant's delay. A delay is told apart by value: an application delay
+equal to the one the connector last wrote is taken for the connector's. GPUI's
+own `.tooltip()` on an element does not read `TooltipDefaults`: it waits
+GPUI's 500 ms unless the element is given `tooltip_show_delay(&resolved)`
+through `StatefulInteractiveElement::tooltip_show_delay`.
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12
@@ -603,6 +603,11 @@ dependency wanting a later snapshot.
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
   colours from the splitter, which gpui-base's own resizables draw (not
   gpui-component's, `Settings` or dock edges).
+- **Tooltip delay** — `tooltip.show_delay_ms`, installed as gpui-base's
+  application-wide `TooltipDefaults` show delay (*How re-application works*).
+  The dialog entrance and the `DataTable` header height are builders the
+  application applies, `geometry::dialog_entrance` and
+  `geometry::list_header_height` (*Per-widget geometry*).
 - **Icons** — every gpui-component `IconName` (106 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names

@@ -119,7 +119,10 @@ each, framed as theming flexibility:
 - a styled `Theme` scrollbar-style override honoured by `base_theme()`, so
   the connector's observer becomes unnecessary;
 - `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808` at gpui-component 0.7.1);
-- `Theme.shadow` honoured beyond `Button`, and `tokens.shadow` consumed;
+- `Theme.shadow` honoured beyond `Button`, and `tokens.shadow` consumed; the
+  dialog among them, whose shadow is a literal, two black layers at 10% alpha
+  drawn whatever `Theme.shadow` says (`dialog_shadow`,
+  `dialog/dialog.rs:330-347` at gpui-component 0.7.3);
 - `Size::Size` honoured by `Checkbox` and `Switch`;
 - inner geometry exposed: checkbox/radio indicator, switch track and thumb,
   slider track and thumb, separator thickness, resize-handle width, button
@@ -140,7 +143,18 @@ each, framed as theming flexibility:
   dependencies' can fail with a readable backend-mismatch error instead of
   mismatched-type errors;
 - a TextView rule colour separate from `border`: the horizontal rule paints
-  the border colour the tables use (`text/node.rs:4033` at gpui-base 0.7.3).
+  the border colour the tables use (`text/node.rs:4033` at gpui-base 0.7.3);
+- a scaling `DialogEntrance`: gpui-component 0.7.3 has `SlideDown`, `Fade`,
+  `FadeSlide` and `None` (`dialog/entrance.rs:12-25`), so the connector draws
+  `dialog.entrance = "scale_fade"` (Windows, GNOME, Material) as a plain
+  `Fade`;
+- GPUI's own `.tooltip()` honouring gpui-base's `TooltipDefaults`: it waits
+  its own 500 ms (`DEFAULT_TOOLTIP_SHOW_DELAY`, `src/elements/div.rs:53` at
+  gpui-pre 0.3.9) unless each element is given a delay;
+- gpui-base's tooltip hide delay separate from a reshow window: its grace
+  period both keeps a tooltip visible after the pointer leaves and shows
+  the next trigger's tooltip at once (`tooltip.rs:226-275` at gpui-base
+  0.7.3), where a platform's reshow window does only the second.
 
 Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
 limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.

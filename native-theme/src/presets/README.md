@@ -35,6 +35,11 @@ presets' other sizes (`min_height_px`, `max_width_px`, …) are stated, often
 without a source, and are still being audited (`docs/todo.md`, Table B); the
 color-scheme presets state many of them too.
 
+`tooltip.show_delay_ms` and `dialog.entrance` are gated the same way: a native
+preset states each only as its platform's `docs/platform-facts.md` cell gives
+it (§2.7, §2.22), and no other preset states one (`documented_sizes.rs`); the
+macOS presets leave both unset, since AppKit states neither.
+
 `material-3` and `ios-13` have no reader: `SystemTheme::from_system()` never
 selects them, and an application chooses them as a look.
 `material-3` is a look for any platform, and `list_presets_for_platform()`

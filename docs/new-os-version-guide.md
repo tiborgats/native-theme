@@ -56,6 +56,12 @@ generation.
   scrollbar width, slider groove thickness, menu item height, etc.
 - New constants added to `breezemetrics.h` that map to existing per-widget sizing fields.
 - Changes to color group names or key names in `kdeglobals` format.
+- The tooltip show delay (Qt's `SH_ToolTip_WakeUpDelay` and Kirigami's
+  `Units.toolTipDelay`, 700: `tooltip.show_delay_ms`), the in-window dialog's
+  entrance (`Kirigami.Dialog` fades in while it rises: `dialog.entrance =
+  "fade_rise"`), and whether a table header still sizes to its content
+  (Breeze's `Header_MarginWidth`; `list.header_height_px` stays unset while
+  it does): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
@@ -91,6 +97,12 @@ WinUI3 Fluent Design specifications
 - New `UIColorType` variants for additional system colors.
 - Changes to default font (Segoe UI Variable) or font size.
 - Changes to default corner radius values.
+- The tooltip show delay (`ToolTipService` waits 2 × `SPI_GETMOUSEHOVERTIME`,
+  800 at the hover time of 400 the OS probe reads: `tooltip.show_delay_ms`),
+  `ContentDialog`'s entrance (scale and fade: `dialog.entrance =
+  "scale_fade"`), and whether WinUI has gained a column header
+  (`list.header_height_px` stays unset while it has none):
+  `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
@@ -140,6 +152,10 @@ probe's API reads and renders (`tools/os-probe`)
 - Changes to default system font family or size.
 - Changes to default corner radius (currently ~5px for controls).
 - New accessibility or Dynamic Type behaviors.
+- A documented tooltip delay or dialog motion: AppKit states neither, so
+  `tooltip.show_delay_ms` and `dialog.entrance` stay unset; and the
+  `NSTableHeaderView` height the OS probe reads (28 on macOS 14, 15 and 26:
+  `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
@@ -181,6 +197,11 @@ GTK4 source, freedesktop portal specification
   earlier versions used "Cantarell" / "Source Code Pro").
 - New CSS custom properties (`--window-bg-color`, `--accent-bg-color`, etc.).
 - New freedesktop portal settings (accent-color, color-scheme, contrast).
+- GTK's tooltip `HOVER_TIMEOUT` (500: `tooltip.show_delay_ms`), the floating
+  `AdwDialog`'s entrance (scale and fade: `dialog.entrance = "scale_fade"`),
+  and the column view's title button, `min-height` 24 plus its padding
+  (30: `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and
+  §2.15.
 
 **Process:**
 

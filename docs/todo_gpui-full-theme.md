@@ -707,3 +707,16 @@ at 0.7.3.
 | Widget | native-theme fields | Connector uses | Gap | v0.7.0 |
 |--------|---------------------|----------------|-----|--------|
 | diff (gpui-component `Diff`; no native-theme widget) | defaults.mono_font (family, **size**) and the colours behind the `ThemeColor` fields it paints | `mono_font_family`, `mono_font_size`, `radius` and the mapped `background`, `foreground`, `border`, `muted`, `muted_foreground`, `list_hover`, `selection`, `danger`, `success`, `info`, `primary`, `primary_foreground` | the code size | colours and family delivered; the code size upstream: it is `rem × mono_font_size / 16` (`diff/mod.rs:456`), so it is the theme's monospace size only when the UI font size, the rem (`font_size`, from `defaults.font.size`), is 16 px |
+
+## Note: v0.7.0's G2
+
+Appended 2026-10-14; the text above is left as written. G2 added the three
+values the 0.7.3 note names to the model, and the connector applies each
+through one of the new receivers. The tooltip, dialog and list rows above gain
+them, in the table's columns:
+
+| Widget | native-theme fields | Connector uses | Gap | v0.7.0 |
+|--------|---------------------|----------------|-----|--------|
+| tooltip | **show_delay** (`tooltip.show_delay_ms`) | `apply` installs it as gpui-base's `TooltipDefaults` show delay, keeping the grace period, and the observer installs it again after an upstream rebuild; `tooltip_show_delay` for GPUI's own `.tooltip()` | GPUI's `.tooltip()` waits its own 500 ms unless the element is given the delay (gpui-pre `src/elements/div.rs:53`, `:1708`) | delivered for every tooltip gpui-component's overlay shows (`Button::tooltip` among them) |
+| dialog | **entrance** (`dialog.entrance`) | `geometry::dialog_entrance` for `Dialog::entrance` and `AlertDialog::entrance` | gpui-component has no scaling and no rising entrance (`dialog/entrance.rs:12-25`): `scale_fade` and `fade_rise` are both drawn as `DialogEntrance::Fade` | delivered as an approximation; a scaling entrance is on the v0.7.2 list |
+| list | **header_height** (`list.header_height_px`) | `geometry::list_header_height` for `DataTable::header_row_height` | none | delivered; `None` where the theme states none, and the header keeps the body rows' height |
