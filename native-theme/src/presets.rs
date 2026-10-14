@@ -420,10 +420,14 @@ accent_color = "#00ff00"
                 ("dark", theme.dark.as_ref()),
             ] {
                 let variant = variant_opt.unwrap();
-                // button.primary_background is derived from accent - should not be in presets
-                assert!(
-                    variant.button.primary_background.is_none(),
-                    "preset '{name}' {label}.button.primary_background should be None (derived)"
+                // button.primary_background is derived from accent, except on
+                // Windows, where WinUI 3 paints AccentFillColorDefault instead
+                // (docs/platform-facts.md:1175, §2.3)
+                assert_eq!(
+                    variant.button.primary_background.is_some(),
+                    *name == "windows-11",
+                    "preset '{name}' {label}.button.primary_background: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
                 // checkbox.checked_background is derived from accent, except on
                 // KDE, where Breeze tints the button colour instead
