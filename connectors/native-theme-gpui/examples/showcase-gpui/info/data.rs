@@ -66,7 +66,31 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
             t.table,
             "gpui-component/table/data_table.rs:181",
         ))
+        .color(claim(
+            "sort button icon",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "gpui-component/table/state.rs:1661",
+        ))
+        .color(claim(
+            "sort button hover",
+            "secondary",
+            t.secondary,
+            "gpui-component/table/state.rs:1653",
+        ))
+        .color(claim(
+            "sort button pressed",
+            "secondary_active",
+            t.secondary_active,
+            "gpui-component/table/state.rs:1654",
+        ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .config(
+            "sort button radius",
+            format!("radius / 2: {}px", t.radius.as_f32() / 2.0),
+        )
+        .not_themeable("sort button", "dimmed to 50% opacity while its column is unsorted, and given opacity literals of 7 hovered and 1 pressed (table/state.rs, render_sort_icon)")
+        .not_themeable("own icons", super::own_icons("the sort button's ChevronsUpDown, SortAscending and SortDescending (table/state.rs, render_sort_icon)"))
         .not_themeable(
             "geometry",
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
@@ -85,6 +109,8 @@ pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> Widge
     info.config("keyboard focus", "a Tab-focused DataTable takes `ring` and the focus ring (table/data_table.rs:190-193)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
+        .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
+        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: lines 2119 and 2235), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 310) because selecting cells instead of rows would change the row panels")
 }
 
 /// The `DataTable`'s header row.

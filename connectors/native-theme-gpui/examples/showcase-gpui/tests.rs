@@ -5321,6 +5321,39 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
     );
 }
 
+/// The Typography page's `Diff` sample is one file's patch that removes and
+/// adds lines: `parse` reads it whole, so the `unwrap_or_default` the
+/// showcase builds its state with never stands in for it.
+#[gpui::test]
+fn the_diff_sample_parses_to_one_file(_cx: &mut TestAppContext) {
+    let files = gpui_component::diff::DiffFile::parse(crate::support::DIFF_SAMPLE);
+    let counts = files.as_ref().ok().map(|files| {
+        files
+            .iter()
+            .map(|file| (file.additions(), file.deletions()))
+            .collect::<Vec<_>>()
+    });
+    assert!(
+        counts.as_ref().is_some_and(|counts| counts.len() == 1
+            && counts
+                .iter()
+                .all(|&(added, removed)| added > 0 && removed > 0)),
+        "the Diff sample is not one file with added and removed lines: {counts:?} ({:?})",
+        files.err()
+    );
+}
+
+/// The Typography page shows a `Diff`.
+#[gpui::test]
+fn the_typography_page_shows_a_diff(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    assert!(
+        cx.debug_bounds("typography-diff").is_some(),
+        "the Typography page renders no `typography-diff`"
+    );
+}
+
 /// Two GroupBoxes of different variants show different infos (spec
 /// §4.3.2): the Normal one and the Outline one each report their own
 /// variant, not one info for the whole gallery.
@@ -6237,8 +6270,9 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// arrows, the MessageScroller's jump button, an Alert's and a
 /// Notification's severity icon, a Spinner's Loader, the Marker's spinner,
 /// an Accordion's chevrons, the Carousel's controls, the Breadcrumb's
-/// separators, the Editor's fold buttons, and an Attachment's status glyph
-/// (Ban when failed, a Spinner while uploading or processing).
+/// separators, the Editor's fold buttons, the Diff's collapse button, the
+/// DataTable's sort button, and an Attachment's status glyph (Ban when
+/// failed, a Spinner while uploading or processing).
 #[gpui::test]
 fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
     use crate::demo::{ButtonKind, MarkerKind, Severity, SheetSide, SpinnerKind};
@@ -6293,6 +6327,8 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Dialog", overlays::dialog(&t, false, false, &icon)),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
+        ("Diff", typography::diff(&t)),
+        ("DataTable", data::data_table(&t, 5, 3, false)),
         (
             "failed Attachment",
             data::attachment(&t, AttachmentStatus::Failed, "file", false, &icon),

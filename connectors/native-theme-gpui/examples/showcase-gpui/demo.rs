@@ -43,6 +43,7 @@ use gpui_component::{
         AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter,
         DialogTitle,
     },
+    diff::{Diff, DiffHoverHighlight, DiffState},
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
@@ -5797,6 +5798,23 @@ pub(crate) fn markdown(
     TextView::markdown(id, source)
         .selectable(true)
         .info(ui, id, info::typography::markdown(cx.theme()))
+        .debug_selector(move || id.into())
+}
+
+/// A `Diff` over `state`, `height` tall, its hovered line and line number
+/// highlighted. `Diff` is `Styled` and refines its frame last, so the height
+/// stands.
+pub(crate) fn diff(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<DiffState>,
+    height: Pixels,
+) -> Stateful<Div> {
+    Diff::new(state)
+        .hover_highlight(DiffHoverHighlight::Both)
+        .h(height)
+        .info(ui, id, info::typography::diff(cx.theme()))
         .debug_selector(move || id.into())
 }
 

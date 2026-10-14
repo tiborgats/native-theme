@@ -12,6 +12,7 @@ use gpui_component::{
     color_picker::ColorPickerState,
     combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
+    diff::{DiffFile, DiffState},
     h_flex, h_resizable,
     input::{
         EditorState, InlineToken, InputState, NumberInputEvent, OtpState, StepAction, TextareaState,
@@ -53,10 +54,10 @@ use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DialogIcons, EDITOR_SAMPLE, IconEntry, IconSource,
-    PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate, SharedDialogIcons,
-    default_label, initial_chat_messages, load_all_icons, load_gpui_icons, parse_icon_set_choice,
-    release_sources,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, IconEntry,
+    IconSource, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
+    SharedDialogIcons, default_label, initial_chat_messages, load_all_icons, load_gpui_icons,
+    parse_icon_set_choice, release_sources,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -401,6 +402,8 @@ pub(crate) struct Showcase {
 
     // Typography page
     pub(crate) editor_state: Entity<EditorState>,
+    /// The Typography page's `Diff`, over `DIFF_SAMPLE`.
+    pub(crate) diff_state: Entity<DiffState>,
 
     // Data page
     pub(crate) table_state: Entity<TableState<SampleTableDelegate>>,
@@ -1397,20 +1400,23 @@ impl Showcase {
 
         // Table state with sample data
         let table_state = cx.new(|cx| {
+            let rows: Vec<[SharedString; 3]> = vec![
+                ["Alice".into(), "Engineer".into(), "Active".into()],
+                ["Bob".into(), "Designer".into(), "Away".into()],
+                ["Carol".into(), "Manager".into(), "Active".into()],
+                ["Dave".into(), "Intern".into(), "Offline".into()],
+                ["Eve".into(), "DevOps".into(), "Active".into()],
+            ];
             let delegate = SampleTableDelegate {
                 ui: info_ui.clone(),
                 columns: vec![
                     Column::new("name", "Name"),
-                    Column::new("role", "Role"),
+                    // One sortable column shows the table's sort button.
+                    Column::new("role", "Role").sortable(),
                     Column::new("status", "Status"),
                 ],
-                rows: vec![
-                    ["Alice".into(), "Engineer".into(), "Active".into()],
-                    ["Bob".into(), "Designer".into(), "Away".into()],
-                    ["Carol".into(), "Manager".into(), "Active".into()],
-                    ["Dave".into(), "Intern".into(), "Offline".into()],
-                    ["Eve".into(), "DevOps".into(), "Active".into()],
-                ],
+                unsorted: rows.clone(),
+                rows,
                 selected_row: None,
                 selection_shown: true,
                 right_clicked_row: None,
@@ -1488,6 +1494,8 @@ impl Showcase {
                 .language("rust")
                 .default_value(EDITOR_SAMPLE)
         });
+        let diff_state =
+            cx.new(|cx| DiffState::new(DiffFile::parse(DIFF_SAMPLE).unwrap_or_default(), cx));
 
         // Set up application menus: `cx.set_menus` hands them to the
         // platform's own menu bar; the showcase draws them itself where the
@@ -1601,6 +1609,7 @@ impl Showcase {
             carousel_state,
             step: 1,
             editor_state,
+            diff_state,
             table_state,
             list_state,
             tree_state,

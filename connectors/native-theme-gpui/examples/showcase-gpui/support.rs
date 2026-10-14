@@ -13,7 +13,7 @@ use gpui_component::{
     attachment::AttachmentStatus,
     list::{ListDelegate, ListState},
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
-    table::{Column, TableDelegate, TableEvent, TableState},
+    table::{Column, ColumnSort, TableDelegate, TableEvent, TableState},
 };
 
 #[cfg(target_os = "linux")]
@@ -125,6 +125,30 @@ fn install(cx: &mut App) -> native_theme::Result<()> {
 }
 "#;
 
+/// The patch the Typography page's `Diff` shows: one Rust file, with
+/// removed, added and context lines.
+pub(crate) const DIFF_SAMPLE: &str = r#"diff --git a/src/install.rs b/src/install.rs
+--- a/src/install.rs
++++ b/src/install.rs
+@@ -5,12 +5,12 @@
+ /// Install the desktop's colors, fonts and geometry into gpui-component.
+ fn install(cx: &mut App) -> native_theme::Result<()> {
+     let system = SystemTheme::from_system()?;
+-    let mode = match system.mode.is_dark() {
+-        true => ColorMode::Dark,
+-        false => ColorMode::Light,
++    let mode = if system.mode.is_dark() {
++        ColorMode::Dark
++    } else {
++        ColorMode::Light
+     };
+     let resolved = system.pick(mode);
+-    println!("{} {}px", resolved.defaults.font.family, resolved.defaults.font.size);
+     apply_system_theme(&system, cx);
+     Ok(())
+ }
+"#;
+
 /// The Markdown source rendered by the `TextView` of the Typography page.
 pub(crate) const MARKDOWN_SAMPLE: &str = r#"## What native-theme maps
 
@@ -234,7 +258,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:3044-3054`). The showcase rebuilds these caches on every
+/// `src/app.rs:3103-3113`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -945,7 +969,11 @@ impl SharedDialogIcons {
 pub(crate) struct SampleTableDelegate {
     pub(crate) ui: Entity<InfoRegistry>,
     pub(crate) columns: Vec<Column>,
+    /// The rows in the order the table shows them.
     pub(crate) rows: Vec<[SharedString; 3]>,
+    /// The rows in the order they were given, which an unsorted column
+    /// restores.
+    pub(crate) unsorted: Vec<[SharedString; 3]>,
     /// The table's selected row (`TableState::selected_row`).
     pub(crate) selected_row: Option<usize>,
     /// Whether the table selects rows rather than a column, so paints its
@@ -1005,6 +1033,23 @@ impl TableDelegate for SampleTableDelegate {
     ) -> Stateful<Div> {
         let names: Vec<&str> = self.columns.iter().map(|c| c.name.as_ref()).collect();
         demo::data_table_header(&self.ui, cx, &names.join(", "))
+    }
+
+    /// Sort the rows as the sort button of column `col_ix` asks; upstream
+    /// only cycles the button's state (table/state.rs,
+    /// `TableState::perform_sort`).
+    fn perform_sort(
+        &mut self,
+        col_ix: usize,
+        sort: ColumnSort,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) {
+        match sort {
+            ColumnSort::Ascending => self.rows.sort_by(|a, b| a.get(col_ix).cmp(&b.get(col_ix))),
+            ColumnSort::Descending => self.rows.sort_by(|a, b| b.get(col_ix).cmp(&a.get(col_ix))),
+            ColumnSort::Default => self.rows.clone_from(&self.unsorted),
+        }
     }
 
     fn render_tr(
