@@ -23,17 +23,17 @@ running platform instead, under the OS's live colours, fonts and
 accessibility.
 
 Gated sizes (padding sides, menu and list row heights, `list.header_height`,
-toolbar `bar_height` and `item_gap`, combobox `arrow_area_width`): a native preset states one only
-where `docs/platform-facts.md` gives it for its platform: KDE, GNOME, macOS,
-Windows or Material, whose column counts a material-web or Compose
-implementation constant cited at a pinned line as documented, as the KDE and
-GNOME columns count a Breeze or libadwaita source constant. The color-scheme
-presets, and the `ios-13` platform preset, which has no platform-facts column,
-state none (`documented_sizes.rs` checks both). An
-unstated gated size resolves to `None` and the toolkit's own applies. The
-presets' other sizes (`min_height_px`, `max_width_px`, …) are stated,
-often without a source, and are still being audited (`docs/todo.md`,
-Table B); the color-scheme presets state many of them too.
+toolbar `bar_height` and `item_gap`, combobox `arrow_area_width`): a native
+preset states one only where `docs/platform-facts.md` gives it for its
+platform: KDE, GNOME, macOS, Windows or Material, whose column counts a
+material-web or Compose implementation constant cited at a pinned line as
+documented, as the KDE and GNOME columns count a Breeze or libadwaita source
+constant. The color-scheme presets, and the `ios-13` platform preset, which
+has no platform-facts column, state none (`documented_sizes.rs` checks both).
+An unstated gated size resolves to `None` and the toolkit's own applies. The
+presets' other sizes (`min_height_px`, `max_width_px`, …) are stated, often
+without a source, and are still being audited (`docs/todo.md`, Table B); the
+color-scheme presets state many of them too.
 
 `material-3` and `ios-13` have no reader: `SystemTheme::from_system()` never
 selects them, and an application chooses them as a look.

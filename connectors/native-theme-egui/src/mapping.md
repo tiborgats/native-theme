@@ -738,7 +738,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `interaction.resize_grab_radius_side` | as interaction.interact_radius |
 | `interaction.selectable_labels` | as interaction.interact_radius |
 | `interaction.show_tooltips_only_when_still` | as interaction.interact_radius |
-| `interaction.tooltip_delay` | as interaction.interact_radius |
+| `interaction.tooltip_delay` | tooltip.show_delay's row is receiver-pending: the connector writes no delay yet, so egui's own stands |
 | `interaction.tooltip_grace_time` | as interaction.interact_radius |
 | `override_font_id.family` | always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1) |
 | `override_text_style` | left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10) |

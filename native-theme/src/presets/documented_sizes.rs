@@ -1,18 +1,17 @@
 //! Gate: the native themes state what their platform documents
 //! (spec `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
 //!
-//! One row per (preset, widget) gives every padding side, and for the
-//! toolbar its `bar_height` and `item_gap`, for the tab bar its `item_gap`,
-//! for the menu and the list their `row_height`, for the list its
-//! `header_height`, for the expander its `arrow_gap` and `content_indent`,
-//! and for the combobox its `arrow_area_width` where the platform gives one
-//! number, as `Some(v)` where `docs/platform-facts.md`
-//! documents a value for that platform and `None` where it does not, or where
-//! a ruling leaves it unstated. Each row cites the platform-facts lines it
-//! reads. Rows are keyed by preset, not by platform: a cell that tags its
-//! values by OS version gives each value to that version's preset
-//! (platform-facts' Conventions), so a platform's next generation gets rows
-//! of its own.
+//! One row per (preset, widget) gives every padding side, and for the toolbar
+//! its `bar_height` and `item_gap`, for the tab bar its `item_gap`, for the
+//! menu and the list their `row_height`, for the list its `header_height`,
+//! for the expander its `arrow_gap` and `content_indent`, and for the
+//! combobox its `arrow_area_width` where the platform gives one number, as
+//! `Some(v)` where `docs/platform-facts.md` documents a value for that
+//! platform and `None` where it does not, or where a ruling leaves it
+//! unstated. Each row cites the platform-facts lines it reads. Rows are keyed
+//! by preset, not by platform: a cell that tags its values by OS version
+//! gives each value to that version's preset (platform-facts' Conventions),
+//! so a platform's next generation gets rows of its own.
 //!
 //! Presets that platform-facts does not cover (the colour schemes, and the
 //! `ios-13` platform preset, which no platform-facts column documents) state
@@ -447,8 +446,8 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
 /// four padding sides, and the widget's further fields (`bar_height` and
 /// `item_gap` for the toolbar, `item_gap` for the tab bar, `row_height` for
-/// the menu and the list, `header_height` for the list, `arrow_gap` and `content_indent` for the expander,
-/// `arrow_area_width` for the combobox).
+/// the menu and the list, `header_height` for the list, `arrow_gap` and
+/// `content_indent` for the expander, `arrow_area_width` for the combobox).
 fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
         "window" => &v.window.border,

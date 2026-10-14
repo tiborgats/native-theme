@@ -2874,7 +2874,7 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "interaction.resize_grab_radius_side"       = "as interaction.interact_radius"
 "interaction.resize_grab_radius_corner"     = "as interaction.interact_radius"
 "interaction.show_tooltips_only_when_still" = "as interaction.interact_radius"
-"interaction.tooltip_delay"                 = "as interaction.interact_radius"
+"interaction.tooltip_delay"                 = "tooltip.show_delay's row is receiver-pending: the connector writes no delay yet, so egui's own stands"
 "interaction.tooltip_grace_time"            = "as interaction.interact_radius"
 "interaction.selectable_labels"             = "as interaction.interact_radius"
 "interaction.multi_widget_text_select"      = "as interaction.interact_radius"
