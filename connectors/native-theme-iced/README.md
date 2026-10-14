@@ -489,7 +489,9 @@ The watcher runs while `subscription()` returns `theme_changes()`, and stops
 when it no longer does. KDE Plasma, GNOME and Budgie, macOS and Windows are
 watched; on another Linux desktop, or without a reader feature, the
 subscription yields `Error::WatchUnavailable` once and ends, as it yields
-`Error::ReaderFailed` where the watcher cannot start.
+`Error::ReaderFailed` where the watcher cannot start and
+`Error::PlatformUnsupported` on a platform other than Linux, macOS and
+Windows.
 
 ### Apply user overrides to the OS theme
 
@@ -580,6 +582,8 @@ the widget's layout box stays constant during rotation.
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced
+# following the OS theme's changes, through `theme_changes()`:
+cargo run -p native-theme-iced --example showcase-iced --features watch
 ```
 
 Displays every widget iced has, each styled through `styles::*`, with live
@@ -598,6 +602,8 @@ widgets and the Basic tab's number input:
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced --features iced_aw
+# both:
+cargo run -p native-theme-iced --example showcase-iced --features iced_aw,watch
 ```
 
 A script keeps "every widget" true: `scripts/check_widget_coverage.py` fails

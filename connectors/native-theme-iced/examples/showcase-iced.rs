@@ -15,6 +15,13 @@
 //! cargo run -p native-theme-iced --example showcase-iced
 //! ```
 //!
+//! To have it follow the OS theme's changes while its colour mode is System,
+//! add the `watch` feature, which `native_theme_iced::theme_changes` needs:
+//!
+//! ```sh
+//! cargo run -p native-theme-iced --example showcase-iced --features watch
+//! ```
+//!
 //! # What to look for
 //!
 //! - Sidebar switches theme presets, color modes, and icon sets at runtime —

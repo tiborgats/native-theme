@@ -58,7 +58,7 @@ family_of() {
         # The gpui-fast crates: GPUI Kit's GPUI Fast core and its platform
         # layer, which the connector's `gpui-fast` feature builds on.
         gpui) echo "gpui-base gpui-component gpui-fast gpui-fast-apple gpui-fast-linux gpui-fast-macos gpui-fast-macros gpui-fast-platform gpui-fast-web gpui-fast-wgpu gpui-fast-windows gpui-kit gpui-kit-assets gpui-pre" ;;
-        iced) echo "iced iced_aw iced_core iced_test iced_widget" ;;
+        iced) echo "iced iced_aw iced_core iced_futures iced_test iced_widget" ;;
         egui) echo "ecolor eframe egui egui-wgpu egui-winit egui_extras egui_kittest emath epaint epaint_default_fonts kittest" ;;
         *) return 1 ;;
     esac

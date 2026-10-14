@@ -26,9 +26,16 @@ use std::sync::{Mutex, PoisonError};
 /// [`Error::WatchUnavailable`](crate::Error::WatchUnavailable) on a desktop
 /// with no watcher or without a reader feature,
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) where the backend
-/// fails), the subscription yields that `Err` once and ends. Watching needs
-/// this crate's `watch` feature and a reader: the `native` feature, or
-/// native-theme's `kde`, `portal`, `macos` or `windows`.
+/// fails, [`Error::PlatformUnsupported`](crate::Error::PlatformUnsupported)
+/// on a platform other than Linux, macOS and Windows), the subscription
+/// yields that `Err` once and ends. Watching needs this crate's `watch`
+/// feature and a reader: the `native` feature, or native-theme's `kde`,
+/// `portal`, `macos` or `windows`.
+///
+/// Dropping the subscription drops the watcher's
+/// [`ThemeSubscription`](native_theme::watch::ThemeSubscription) on the
+/// executor thread that ran the stream, and that drop joins the watcher's
+/// thread (on macOS it removes the observer; see its "Dropping" section).
 ///
 /// The watcher calls back on its own thread, which never waits for the
 /// application: the subscription holds two events unread, and drops an event
@@ -64,6 +71,10 @@ fn change_stream<G: Send + 'static>(
     iced_futures::stream::channel(
         1,
         async move |mut sender: mpsc::Sender<native_theme::Result<ThemeChangeEvent>>| {
+            // Two senders: the callback's clone is the only one that sends
+            // events, so it alone sets the bound (the channel's one slot
+            // plus its own: two unread); the original sends nothing but the
+            // `Err` below.
             let events = Mutex::new(sender.clone());
             let callback = move |event| {
                 let _ = events

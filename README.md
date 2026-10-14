@@ -48,7 +48,7 @@ and egui connectors need Rust 1.95.
   - Run: `cargo run -p native-theme-gpui --example showcase-gpui`
   - Screenshots: [`native-theme-gpui/README.md`](connectors/native-theme-gpui/README.md#gallery)
 - **iced** — full widget gallery with live theme switching
-  - Run: `cargo run -p native-theme-iced --example showcase-iced`
+  - Run: `cargo run -p native-theme-iced --example showcase-iced`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-iced/README.md`](connectors/native-theme-iced/README.md#gallery)
 - **egui** — the gpui showcase's application in egui, with live theme switching
   - Run: `cargo run -p native-theme-egui --example showcase-egui`
