@@ -721,7 +721,9 @@ impl SystemTheme {
     /// propagate correctly through `resolve()`. For example, changing
     /// `defaults.accent_color` in the overlay will cause `button.primary_background`,
     /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
-    /// the new accent color.
+    /// the new accent color where the theme does not state them: windows-11
+    /// states its accent fills, `button.primary_background` among them, and
+    /// those keep their values.
     ///
     /// Overlays stack: each call applies its overlay over the ones applied
     /// before it, so `sys.with_overlay(&a)?.with_overlay(&b)?` keeps what `a`

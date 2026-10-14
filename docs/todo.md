@@ -843,7 +843,9 @@ model, the platform presets and the three connectors
       `#4cc2ff` (9284f52b); its `primary_background` stays on the accent until
       M5 (ee75ad7e; the entry *For M5: iced's primary hover from
       `primary_background`*). Still open: `tab.active_background`, `#f3f3f3` /
-      `#202020` (`native-theme/src/presets/windows-11.toml:284`, `:841`).
+      `#202020` (`native-theme/src/presets/windows-11.toml:287`, `:847`).
+      M5 T9: the preset's `primary_background` is `AccentFillColorDefault`
+      since cc9e933e.
 
 ### windows-11: the switch's off-track outline
 
@@ -1271,7 +1273,7 @@ model, the platform presets and the three connectors
         model's one shadow colour serves both the popup and the window
         shadows; unchanged. Decide what the one field states, or split it.
       - `list.alternate_row_background` `#f9f9f9` / `#262626`
-        (`native-theme/src/presets/windows-11.toml:336`, `:893`): no WinUI 3
+        (`native-theme/src/presets/windows-11.toml:339`, `:899`): no WinUI 3
         source (❓, facts :1382); the field stays, as its fallback is the
         wrong kind.
       - Under high contrast the reader writes `input.background_color` as

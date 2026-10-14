@@ -697,7 +697,7 @@ active_background = "#272727"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"
 # platform-facts.md:1175 (§2.3): AccentButtonBackground = AccentFillColorDefault = SystemAccentColorLight2
-# (Button_themeresources.xaml:103, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
+# (Button_themeresources.xaml:5, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
 # UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758);
 # primary_text_color stays ← accent_text_color
 primary_background = "#4cc2ff"
