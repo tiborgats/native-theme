@@ -574,7 +574,10 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 
 The gpui-pre crates stay in the build on GPUI Fast as well: gpui-component and
 gpui-base depend on them either way. The documentation on docs.rs is built on
-gpui-pre.
+gpui-pre. This crate's tests run on GPUI Fast with
+`cargo test -p native-theme-gpui --features gpui-fast --all-targets`: the
+`--all-targets` leaves the doctests out, since each is a crate of its own that
+names gpui-pre as `gpui`, not GPUI through gpui-kit.
 
 **gpui-pre** is GPUI as the gpui-kit maintainer publishes it: snapshots of
 Zed's `main` branch, republished as `0.3.N` patch bumps every other Sunday.

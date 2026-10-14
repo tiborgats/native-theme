@@ -700,7 +700,7 @@ fn centre(b: Bounds<Pixels>) -> gpui::Point<Pixels> {
 fn redraw(cx: &mut VisualTestContext) {
     // A full frame: GPUI Fast renders again only the views that were
     // notified, and in test mode a partly reused frame keeps every bound the
-    // last frame drew (gpui-fast 0.1.7 src/fast/retained.rs:1360-1371). On
+    // last frame drew (gpui-fast 0.1.7/0.1.8 src/fast/retained.rs:1360-1371). On
     // gpui-pre it only marks the window dirty.
     cx.update(|window, cx| {
         window.refresh();

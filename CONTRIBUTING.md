@@ -45,7 +45,9 @@ panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
 and the rest of the type-aware set; `native-theme-gpui` also with `gpui-fast`),
 per-crate `cargo test` (and `native-theme`
 with `portal,watch` and with `system-fonts`), the gpui connector's tests with no
-default features and on GPUI Fast (`--features gpui-fast --all-targets`), the
+default features and on GPUI Fast (`--features gpui-fast --all-targets`; the
+`--all-targets` leaves the doctests out, since each is a crate of its own that
+names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
 iced, egui and egui-widgets crates' other configurations (tests with no default features and, for iced, with
 `iced_aw`, for egui and egui-widgets with all features; clippy with `iced_aw`,
 for egui and egui-widgets with all features; for egui also that its graph holds

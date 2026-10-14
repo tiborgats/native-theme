@@ -71,7 +71,7 @@ gpui-kit = { version = "0.7.3", default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
 # background. Pinned to the version both GPUI backends resolve (gpui-pre
-# 0.3.9 and gpui-fast 0.1.7 each ask for `image` 0.25.1 and up, which resolves
+# 0.3.9 and gpui-fast 0.1.7/0.1.8 each ask for `image` 0.25.1 and up, which resolves
 # to 0.25.10), because the connector's `image` and GPUI's have to be the same
 # for the `Frame` type to match; no default features, since the connector
 # encodes and decodes nothing itself.

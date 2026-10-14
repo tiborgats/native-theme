@@ -130,7 +130,7 @@ fn open_with(
 fn draw(cx: &mut VisualTestContext) {
     // A full frame: GPUI Fast reuses the subtrees no view notified, and in
     // test mode a partly reused frame keeps every bound the last frame drew
-    // (gpui-fast 0.1.7 src/fast/retained.rs:1360-1371), so an element no
+    // (gpui-fast 0.1.7/0.1.8 src/fast/retained.rs:1360-1371), so an element no
     // longer drawn would still be found. On gpui-pre it only marks the window
     // dirty.
     cx.update(|window, cx| {

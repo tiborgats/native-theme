@@ -1520,9 +1520,10 @@ model, the platform presets and the three connectors
 - [ ] [upstream] **File the gpui-fast issue: in test mode a partly reused
       frame keeps every bound the last frame drew.** For the maintainer to
       file on longbridge/gpui-fast (an agent files nothing). Under
-      `test-support`, gpui-fast 0.1.7's `finish_retained_frame`
-      (`src/fast/retained.rs:1360-1371`) copies all of the rendered frame's
-      `debug_bounds` into the next frame whenever any subtree was reused, so
+      `test-support`, gpui-fast 0.1.7's and 0.1.8's `finish_retained_frame`
+      (`src/fast/retained.rs:1360-1371`, identical in both) copies all of
+      the rendered frame's `debug_bounds` into the next frame whenever any
+      subtree was reused, so
       `VisualTestContext::debug_bounds` still finds an element the new frame
       no longer draws. Our repro: five showcase tests that assert an element
       is gone failed on GPUI Fast and pass on gpui-pre (the sixth failure of
@@ -1539,8 +1540,9 @@ model, the platform presets and the three connectors
       > **Title:** test-support: a partly reused frame keeps the
       > `debug_bounds` of elements it no longer draws
       >
-      > gpui-fast 0.1.7 with `test-support` (through gpui-kit 0.7.3's
-      > `gpui-fast` and `test-support` features), Linux.
+      > gpui-fast 0.1.7 and 0.1.8 (identical at the lines below) with
+      > `test-support` (through gpui-kit 0.7.3's `gpui-fast` and
+      > `test-support` features), Linux.
       >
       > `finish_retained_frame` (`src/fast/retained.rs:1360-1371`) ends every
       > frame that reused a subtree by copying **all** of the rendered frame's
