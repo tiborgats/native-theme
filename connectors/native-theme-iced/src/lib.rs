@@ -258,7 +258,7 @@ mod compat;
 #[cfg(test)]
 mod contract;
 pub(crate) mod extended;
-#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+#[cfg(test)]
 mod icon_fixture;
 pub mod icons;
 pub mod palette;

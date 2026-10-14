@@ -11,6 +11,8 @@
 //! too, and its `kdeglobals` names the fixture's theme, so the system's icon
 //! theme is the fixture's.
 
+#![cfg(all(target_os = "linux", feature = "system-icons"))]
+
 use std::path::{Path, PathBuf};
 
 /// Names the fixture's root in the child process [`run`] starts.
