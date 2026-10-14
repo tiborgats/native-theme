@@ -142,8 +142,8 @@ the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
-| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; the `_over` forms fade a disabled control over a backdrop you name |
-| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `segmented_control` | `.style(..)` — `segmented_control` styles the container holding the segments |
+| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; the `_over` forms fade a disabled control over a backdrop you name |
+| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `segmented_control`, `expander_frame` | `.style(..)` — `segmented_control` styles the container holding the segments, `expander_frame` the one round an expander's header and body |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
 
@@ -183,7 +183,10 @@ container(row(segments).spacing(sc.separator_width))
 
 An expander's header is a button in `styles::expander`, whose label is the
 disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
-`expander.arrow_icon_size`, and the title.
+`expander.arrow_icon_size`, and the title. Where the theme states
+`expander.frame_enabled` the header draws no outline: under `Some(true)` one
+frame holds the header and the body, a container in `styles::expander_frame`
+padded by `expander.border.line_width`; under `Some(false)` there is none.
 
 `toggler` lays its track out twice its height, so a platform whose track is
 not — material-3's 52 × 32, adwaita's 46 × 26 — gets a wider one than it

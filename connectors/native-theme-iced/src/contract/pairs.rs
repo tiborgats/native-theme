@@ -165,6 +165,30 @@ pub(super) const BUTTON_PAIRS: &[StylePair<button::Status>] = &[StylePair {
     },
 }];
 
+/// The `styles::button_toggle` pairs the assertion covers: the label on the
+/// fill, off and on.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_PAIRS: &[StylePair<(bool, button::Status)>] = &[StylePair {
+    what: "toggle button label",
+    indicator: false,
+    statuses: BUTTON_TOGGLE_STATUSES,
+    emitted: |t, r, (checked, status)| {
+        let style = styles::button_toggle(r, checked)(t, status);
+        // Painted on the window, as a plain button is.
+        flat(style.background).map(|fill| {
+            (
+                style.text_color,
+                fill,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        let (fill, label) = native_button_toggle(r, s);
+        (label, fill, to_color(r.defaults.background_color))
+    },
+}];
+
 // The four class buttons' pairs -- `BUTTON_PRIMARY_PAIRS`,
 // `BUTTON_DANGER_PAIRS`, `BUTTON_SUCCESS_PAIRS`, `BUTTON_WARNING_PAIRS` --
 // are declared by `class_button_contract!` in the parent module, beside their
@@ -678,7 +702,7 @@ pub(super) const EXPANDER_PAIRS: &[StylePair<button::Status>] = &[StylePair {
     },
     native: |r, s| {
         (
-            to_color(r.expander.font.color),
+            native_expander_label(r, s),
             native_expander_fill(r, s),
             to_color(r.defaults.background_color),
         )
@@ -885,6 +909,7 @@ pub(super) fn style_pair_names() -> Vec<String> {
     out.extend(TOOLTIP_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(SEGMENT_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(EXPANDER_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_TOGGLE_PAIRS.iter().map(|p| p.what.to_string()));
     #[cfg(feature = "iced_aw")]
     {
         out.extend(AW_CARD_PAIRS.iter().map(|p| p.what.to_string()));

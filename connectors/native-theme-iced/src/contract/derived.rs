@@ -656,6 +656,43 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "iced default: button::Style::default().snap -- a renderer setting, \
          cfg!(feature = \"crisp\")",
     ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.text_color",
+        "iced default: container::Style::default().text_color -- ExpanderTheme \
+         states no label for the frame, and iced's None inherits the label \
+         color of whatever the expander sits in",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.background",
+        "iced default: container::Style::default().background, none -- \
+         ExpanderTheme states no fill for the frame",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_toggle.shadow",
+        "iced default: button::Style::default().shadow, through styles::button \
+         -- the model has a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_toggle.snap",
+        "iced default: button::Style::default().snap, through styles::button \
+         -- a renderer setting, cfg!(feature = \"crisp\")",
+    ),
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.bar_shadow",

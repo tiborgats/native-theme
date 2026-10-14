@@ -5506,7 +5506,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
     let class = if ghost {
         "ghost_button"
     } else if toggle_on {
-        "toggle_on (styles::button's Pressed look)"
+        "styles::button_toggle"
     } else if under("basic.buttons.primary") {
         "styles::button_primary"
     } else {
@@ -5538,13 +5538,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("button", "hover_text_color") => format!("{class}: the Hovered text_color").into(),
         ("button", "checked_background") => {
-            "toggle_on: the fill at rest, the Pressed fill where unstated".into()
+            "styles::button_toggle: the checked fill, the Pressed fill where unstated".into()
         }
         ("button", "checked_text_color") => {
-            "toggle_on: text_color at rest, the Pressed one where unstated".into()
+            "styles::button_toggle: the checked text_color, the Pressed one where unstated".into()
         }
         ("button", "active_background") if toggle_on => {
-            "toggle_on: the fill at rest where checked_background is unstated, composited over button.background_color".into()
+            "styles::button_toggle: the checked fill where checked_background is unstated, composited over button.background_color".into()
         }
         ("button", "active_background") if ghost => {
             "ghost_button: the Pressed fill, and the fill while selected".into()
@@ -5553,7 +5553,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             format!("{class}: the Pressed fill, composited over the rest fill").into()
         }
         ("button", "active_text_color") if toggle_on => {
-            "toggle_on: text_color at rest where checked_text_color is unstated".into()
+            "styles::button_toggle: the checked text_color where checked_text_color is unstated".into()
         }
         ("button", "active_text_color") => format!("{class}: the Pressed text_color").into(),
         ("button", "primary_background") => {
@@ -5971,9 +5971,15 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("expander", "frame_enabled") => {
             "one frame round header and body, or none; each header framed where unstated".into()
         }
-        ("expander", "border.color") => "styles::expander / the frame: border.color".into(),
-        ("expander", "border.corner_radius_px") => "styles::expander / the frame: border.radius".into(),
-        ("expander", "border.line_width_px") => "styles::expander / the frame: border.width".into(),
+        ("expander", "border.color") => {
+            "styles::expander / styles::expander_frame: border.color".into()
+        }
+        ("expander", "border.corner_radius_px") => {
+            "styles::expander / styles::expander_frame: border.radius".into()
+        }
+        ("expander", "border.line_width_px") => {
+            "styles::expander / styles::expander_frame: border.width".into()
+        }
         ("expander", f) if side(f).is_some() => {
             "padding_inside_border: the header's padding, the side plus the line width".into()
         }
@@ -6820,31 +6826,6 @@ enum Push {
     On,
 }
 
-/// A toggle button that is on, at rest and under the pointer:
-/// `button.checked_background` and `.checked_text_color`
-/// (docs/platform-facts.md §2.3), and where the theme states none the
-/// button's pressed look, `style`'s `Pressed` (`button.active_background` and
-/// `.active_text_color`). Disabled stays `style`'s.
-fn toggle_on(
-    resolved: &ResolvedTheme,
-    style: impl Fn(&Theme, button::Status) -> button::Style,
-) -> impl Fn(&Theme, button::Status) -> button::Style {
-    let b = &resolved.button;
-    let fill = b.checked_background.map(to_color);
-    let label = b.checked_text_color.map(to_color);
-    move |theme, status| match status {
-        button::Status::Disabled => style(theme, status),
-        _ => {
-            let pressed = style(theme, button::Status::Pressed);
-            button::Style {
-                background: fill.map(iced::Background::Color).or(pressed.background),
-                text_color: label.unwrap_or(pressed.text_color),
-                ..pressed
-            }
-        }
-    }
-}
-
 /// The list's ids of a checkbox or a radio button and of its parts: the
 /// indicator, the label, and the mark (a check mark, a radio dot) where the
 /// list names one.
@@ -6968,7 +6949,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
-            .style(toggle_on(resolved, styles::button(resolved)))
+            .style(styles::button_toggle(resolved, true))
             .padding(btn_pad),
         };
         // At its own width even where its row runs past the column, as the
@@ -7945,9 +7926,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let x = &resolved.expander;
     // The header's padding: inside its own border where it draws one; where
     // the theme states whether the expander is framed the header draws none
-    // ([`unframed_when_stated`]) -- a framed one sits inside the item's
-    // frame, `expander.border.line_width` in -- so the stated sides are its
-    // padding as they are.
+    // (`styles::expander`) -- a framed one sits inside the item's frame,
+    // `styles::expander_frame`, `expander.border.line_width` in -- so the
+    // stated sides are its padding as they are.
     let x_pad = match x.frame_enabled {
         Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
         None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
@@ -7995,10 +7976,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ))
         .padding(x_pad)
         .width(Fill)
-        .style(unframed_when_stated(
-            styles::expander(resolved),
-            x.frame_enabled,
-        ))
+        .style(styles::expander(resolved))
         .on_press(toggle);
         match listed_part(id, "header") {
             Some(header_id) => Element::from(tagged(header_id, head)),
@@ -8010,11 +7988,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let body_inset = x
         .content_indent
         .unwrap_or(x_pad.left + x.arrow_icon_size + arrow_gap);
-    let frame = iced::Border {
-        color: to_color(x.border.color),
-        width: x.border.line_width,
-        radius: x.border.corner_radius.into(),
-    };
     let item = move |id: &'static str,
                      head: Element<'a, Message>,
                      body: Option<&'a str>|
@@ -8032,10 +8005,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             Some(true) => container(item)
                 .padding(x.border.line_width)
                 .width(Length::Fixed(BASIC_WIDE))
-                .style(move |_: &Theme| container::Style {
-                    border: frame,
-                    ..container::Style::default()
-                })
+                .style(styles::expander_frame(resolved))
                 .into(),
             _ => container(item).width(Length::Fixed(BASIC_WIDE)).into(),
         };
@@ -8412,30 +8382,6 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             }),
     )
     .into()
-}
-
-/// `style` with no border where the theme states whether the expander is
-/// framed (`frame`): a framed expander's frame holds its header and its body
-/// together, and an unframed one has none (docs/platform-facts.md §2.27), so
-/// the header draws no border of its own. Where the theme states nothing the
-/// header keeps `styles::expander`'s border.
-fn unframed_when_stated(
-    style: impl Fn(&Theme, button::Status) -> button::Style + Clone,
-    frame: Option<bool>,
-) -> impl Fn(&Theme, button::Status) -> button::Style + Clone {
-    move |theme, status| {
-        let s = style(theme, status);
-        match frame {
-            Some(_) => button::Style {
-                border: iced::Border {
-                    width: 0.0,
-                    ..s.border
-                },
-                ..s
-            },
-            None => s,
-        }
-    }
 }
 
 /// `style` with a transparent glyph where the theme states the check mark's
@@ -14301,6 +14247,7 @@ mod tests {
                 "styles::button_success",
                 "styles::button_warning",
                 "styles::button_link",
+                "styles::button_toggle",
                 "styles::segment",
                 "styles::expander",
                 "ghost_button",

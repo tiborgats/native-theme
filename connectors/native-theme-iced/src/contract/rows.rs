@@ -250,6 +250,87 @@ pub(super) const BUTTON_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow 
     get: |t, r, s| styles::button(r)(t, s).border,
 }];
 
+/// Every state of a toggle button: every button status, off and on.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_STATUSES: &[(bool, button::Status)] = &[
+    (false, button::Status::Active),
+    (false, button::Status::Hovered),
+    (false, button::Status::Pressed),
+    (false, button::Status::Disabled),
+    (true, button::Status::Active),
+    (true, button::Status::Hovered),
+    (true, button::Status::Pressed),
+    (true, button::Status::Disabled),
+];
+
+/// The fill and the label the native fields give a toggle button, computed
+/// from the resolved theme alone.
+///
+/// Off, the plain button's. On, `checked_background` and `checked_text_color`
+/// in every enabled status -- the model states no hovered or pressed checked
+/// toggle -- each falling back to the pressed pair where unstated
+/// (`docs/inheritance-rules.toml`, "the pressed pair shows a checked toggle").
+/// Disabled, the plain disabled pair where the platform states a disabled
+/// fill, the checked pair where it states none, faded either way.
+#[cfg(feature = "widgets")]
+pub(super) fn native_button_toggle(
+    r: &ResolvedTheme,
+    (checked, status): (bool, button::Status),
+) -> (Color, Color) {
+    if !checked {
+        return (
+            native_button_fill(r, status),
+            native_button_label(r, status),
+        );
+    }
+    let b = &r.button;
+    let fill = b
+        .checked_background
+        .map_or_else(|| native_button_fill(r, button::Status::Pressed), to_color);
+    let label = to_color(b.checked_text_color.unwrap_or(b.active_text_color));
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => (fill, label),
+        button::Status::Disabled => {
+            let (fill, label) = match b.disabled_background {
+                Some(background) => (to_color(background), to_color(b.disabled_text_color)),
+                None => (fill, label),
+            };
+            (
+                dim(fill, b.disabled_opacity),
+                dim(label, b.disabled_opacity),
+            )
+        }
+    }
+}
+
+/// Every color field of `styles::button_toggle`.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_ROWS: &[StyleRow<(bool, button::Status)>] = &[
+    StyleRow {
+        field: "styles::button_toggle.background",
+        statuses: BUTTON_TOGGLE_STATUSES,
+        native: |r, s| native_button_toggle(r, s).0,
+        get: |t, r, (checked, status)| {
+            flat(styles::button_toggle(r, checked)(t, status).background)
+        },
+    },
+    StyleRow {
+        field: "styles::button_toggle.text_color",
+        statuses: BUTTON_TOGGLE_STATUSES,
+        native: |r, s| native_button_toggle(r, s).1,
+        get: |t, r, (checked, status)| Ok(styles::button_toggle(r, checked)(t, status).text_color),
+    },
+];
+
+/// A toggle button wears the plain button's border, on or off.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_BORDER_ROWS: &[BorderRow<(bool, button::Status)>] = &[BorderRow {
+    field: "styles::button_toggle",
+    statuses: BUTTON_TOGGLE_STATUSES,
+    native: |r, (_, status)| native_button_border(r, status),
+    get: |t, r, (checked, status)| styles::button_toggle(r, checked)(t, status).border,
+}];
+
 /// The statuses of a class button whose fill and label the function itself
 /// decides, and so the only ones its rows and its contrast pair cover.
 #[cfg(feature = "widgets")]
@@ -1788,6 +1869,18 @@ pub(super) fn native_expander_fill(r: &ResolvedTheme, status: button::Status) ->
     }
 }
 
+/// The label the native fields give an expander header in `status`:
+/// `expander.font.color`, faded by `defaults.disabled_opacity` when disabled,
+/// since `ExpanderTheme` states no `disabled_opacity` of its own.
+#[cfg(feature = "widgets")]
+pub(super) fn native_expander_label(r: &ResolvedTheme, status: button::Status) -> Color {
+    let label = to_color(r.expander.font.color);
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => label,
+        button::Status::Disabled => dim(label, r.defaults.disabled_opacity),
+    }
+}
+
 /// Every color field of `styles::expander`.
 #[cfg(feature = "widgets")]
 pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
@@ -1805,7 +1898,7 @@ pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
     StyleRow {
         field: "styles::expander.text_color",
         statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.expander.font.color),
+        native: native_expander_label,
         get: |t, r, s| Ok(styles::expander(r)(t, s).text_color),
     },
 ];
@@ -1814,12 +1907,48 @@ pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
 pub(super) const EXPANDER_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
     field: "styles::expander",
     statuses: BUTTON_STATUSES,
-    native: |r, _| NativeBorder {
-        color: to_color(r.expander.border.color),
-        width: r.expander.border.line_width,
-        radius: r.expander.border.corner_radius,
+    native: |r, s| {
+        let color = to_color(r.expander.border.color);
+        NativeBorder {
+            color: if s == button::Status::Disabled {
+                dim(color, r.defaults.disabled_opacity)
+            } else {
+                color
+            },
+            // Where the theme states the frame, framed or not, the header
+            // draws none: the frame is `styles::expander_frame`'s.
+            width: match r.expander.frame_enabled {
+                Some(_) => 0.0,
+                None => r.expander.border.line_width,
+            },
+            radius: r.expander.border.corner_radius,
+        }
     },
     get: |t, r, s| styles::expander(r)(t, s).border,
+}];
+
+/// An expander's frame has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_FRAME_STATUSES: &[()] = &[()];
+
+/// `styles::expander_frame` emits no color field the model states but its
+/// border's: the frame has no fill and no label of its own, both iced's
+/// `None` in `DERIVED`.
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_FRAME_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::expander_frame",
+    statuses: EXPANDER_FRAME_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.expander.border.color),
+        // Drawn only where the theme states one frame round header and body.
+        width: if r.expander.frame_enabled == Some(true) {
+            r.expander.border.line_width
+        } else {
+            0.0
+        },
+        radius: r.expander.border.corner_radius,
+    },
+    get: |t, r, ()| styles::expander_frame(r)(t).border,
 }];
 
 // ---- `styles::aw`: the six `iced_aw` widgets (section 3a) ----
@@ -2295,6 +2424,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(SEGMENT_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(SEGMENT_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(EXPANDER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_TOGGLE_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -2312,6 +2442,8 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
     out.extend(border_row_fields(SEGMENTED_CONTROL_BORDER_ROWS));
     out.extend(border_row_fields(EXPANDER_BORDER_ROWS));
+    out.extend(border_row_fields(EXPANDER_FRAME_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_TOGGLE_BORDER_ROWS));
     // `styles::aw`, gated on the feature that declares it: its rows, its
     // `check_*` calls, its walkers and its pairs all carry the same gate, so
     // the two directions of `Checked::covers` agree in every configuration.

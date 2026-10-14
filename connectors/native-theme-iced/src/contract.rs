@@ -1172,6 +1172,17 @@ fn button_style_fields(style: &button::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `button::Style` `styles::button_toggle` emits.
+#[cfg(feature = "widgets")]
+fn button_toggle_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::button_toggle", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::button_toggle.border"));
+    out
+}
+
 /// Every field of the `button::Style` `styles::button_link` emits.
 #[cfg(feature = "widgets")]
 fn button_link_style_fields(style: &button::Style) -> Vec<String> {
@@ -1576,6 +1587,11 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
             button::Status::Active,
         )));
+        out.extend(button_toggle_style_fields(&styles::button_toggle(
+            resolved, true,
+        )(
+            theme, button::Status::Active
+        )));
         out.extend(text_input_style_fields(&styles::text_input(resolved)(
             theme,
             text_input::Status::Active,
@@ -1638,6 +1654,10 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
             button::Status::Active,
         )));
+        out.extend(container_fields(
+            &styles::expander_frame(resolved)(theme),
+            "styles::expander_frame",
+        ));
     }
     #[cfg(feature = "iced_aw")]
     {
@@ -2319,6 +2339,7 @@ fn every_status_list_names_each_status_once() {
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
         ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
+        ("EXPANDER_FRAME_STATUSES", EXPANDER_FRAME_STATUSES),
     ] {
         assert_eq!(
             statuses,
@@ -2328,22 +2349,27 @@ fn every_status_list_names_each_status_once() {
         );
     }
 
-    // A segment is a button that is selected or not: every button status,
-    // once for each.
-    for selected in [false, true] {
-        for status in BUTTON_STATUSES {
-            assert!(
-                SEGMENT_STATUSES.contains(&(selected, *status)),
-                "SEGMENT_STATUSES does not list {status:?} with selected = \
-                 {selected}, so no segment row covers it"
-            );
+    // A segment is a button that is selected or not, and a toggle button one
+    // that is checked or not: every button status, once for each.
+    for (what, statuses) in [
+        ("SEGMENT_STATUSES", SEGMENT_STATUSES),
+        ("BUTTON_TOGGLE_STATUSES", BUTTON_TOGGLE_STATUSES),
+    ] {
+        for on in [false, true] {
+            for status in BUTTON_STATUSES {
+                assert!(
+                    statuses.contains(&(on, *status)),
+                    "{what} does not list {status:?} with {on}, so no row \
+                     covers it"
+                );
+            }
         }
+        assert_eq!(
+            statuses.len(),
+            2 * BUTTON_STATUSES.len(),
+            "{what} must name each state exactly once"
+        );
     }
-    assert_eq!(
-        SEGMENT_STATUSES.len(),
-        2 * BUTTON_STATUSES.len(),
-        "SEGMENT_STATUSES must name each state exactly once"
-    );
     let all = [
         styles::SegmentPosition::First,
         styles::SegmentPosition::Middle,
@@ -3043,6 +3069,19 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_scalar_rows(SEGMENT_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(EXPANDER_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(EXPANDER_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        EXPANDER_FRAME_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_style_rows(BUTTON_TOGGLE_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        BUTTON_TOGGLE_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3194,6 +3233,13 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     check_style_pairs(TOOLTIP_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(SEGMENT_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(EXPANDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(
+        BUTTON_TOGGLE_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_pairs(AW_CARD_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
@@ -3345,6 +3391,137 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
         Ok(to_color(resolved.button.background_color)),
         "a cleared disabled_background copies the idle fill, as given"
     );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_checked_toggle_button_paints_the_checked_pair_or_the_pressed_one() -> native_theme::Result<()>
+{
+    // windows-11 states WinUI's checked ToggleButton as the accent fill,
+    // #0067c0 with #ffffff (native-theme/src/presets/windows-11.toml:144-145).
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert_eq!(
+        (
+            resolved.button.checked_background,
+            resolved.button.checked_text_color
+        ),
+        (
+            Some(Rgba::new(0x00, 0x67, 0xc0, 0xff)),
+            Some(Rgba::new(0xff, 0xff, 0xff, 0xff))
+        ),
+        "windows-11 no longer states WinUI's checked pair"
+    );
+    let theme = crate::to_theme(&resolved, "windows-11");
+    let plain = styles::button(&resolved);
+    let on = styles::button_toggle(&resolved, true);
+    let off = styles::button_toggle(&resolved, false);
+    for status in [
+        button::Status::Active,
+        button::Status::Hovered,
+        button::Status::Pressed,
+    ] {
+        let style = on(&theme, status);
+        assert_eq!(
+            (flat(style.background), style.text_color),
+            (
+                Ok(to_color(Rgba::new(0x00, 0x67, 0xc0, 0xff))),
+                to_color(Rgba::new(0xff, 0xff, 0xff, 0xff))
+            ),
+            "a checked toggle paints button.checked_background and \
+             .checked_text_color ({status:?})"
+        );
+    }
+    for &status in BUTTON_STATUSES {
+        assert_eq!(
+            off(&theme, status),
+            plain(&theme, status),
+            "a toggle that is off is the plain button ({status:?})"
+        );
+    }
+
+    // Unstated, a checked toggle is the pressed pair
+    // (docs/inheritance-rules.toml, "the pressed pair shows a checked toggle").
+    resolved.button.checked_background = None;
+    resolved.button.checked_text_color = None;
+    let theme = crate::to_theme(&resolved, "windows-11");
+    let pressed = styles::button(&resolved)(&theme, button::Status::Pressed);
+    let on = styles::button_toggle(&resolved, true);
+    for status in [
+        button::Status::Active,
+        button::Status::Hovered,
+        button::Status::Pressed,
+    ] {
+        let style = on(&theme, status);
+        assert_eq!(
+            (style.background, style.text_color),
+            (pressed.background, pressed.text_color),
+            "an unstated checked pair falls back to the pressed one ({status:?})"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_disabled_expander_header_fades_by_the_defaults_opacity() -> native_theme::Result<()> {
+    // `ExpanderTheme` states no `disabled_opacity`, so a disabled header
+    // fades by `defaults.disabled_opacity` (docs/inheritance-rules.toml,
+    // the disabled-state note), which adwaita states as 0.5.
+    let resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let opacity = resolved.defaults.disabled_opacity;
+    assert!(
+        opacity < 1.0,
+        "adwaita no longer fades a disabled widget, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "adwaita");
+    let style = styles::expander(&resolved)(&theme, button::Status::Disabled);
+    assert_eq!(
+        style.text_color,
+        dim(to_color(resolved.expander.font.color), opacity),
+        "a disabled header's label is expander.font.color faded by \
+         defaults.disabled_opacity"
+    );
+    assert_eq!(
+        style.border.color,
+        dim(to_color(resolved.expander.border.color), opacity),
+        "a disabled header's outline is faded by defaults.disabled_opacity"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn an_expander_that_states_its_frame_draws_no_header_border() -> native_theme::Result<()> {
+    // kde-breeze states `frame_enabled = false`: KCollapsibleGroupBox paints
+    // the arrow and the title and nothing else (docs/platform-facts.md
+    // §2.27), so the header has no outline.
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert_eq!(
+        resolved.expander.frame_enabled,
+        Some(false),
+        "kde-breeze no longer states an unframed expander"
+    );
+    assert!(
+        resolved.expander.border.line_width > 0.0,
+        "kde-breeze's expander border has no width, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "kde-breeze");
+    let header = styles::expander(&resolved);
+    for &status in BUTTON_STATUSES {
+        assert_eq!(
+            header(&theme, status).border.width,
+            0.0,
+            "an expander whose frame the theme states draws no header border \
+             ({status:?})"
+        );
+    }
     Ok(())
 }
 
@@ -3950,6 +4127,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::button_success(r));
     assert_clone(&styles::button_warning(r));
     assert_clone(&styles::button_link(r));
+    assert_clone(&styles::button_toggle(r, true));
     assert_clone(&styles::text_input(r));
     assert_clone(&styles::text_editor(r));
     assert_clone(&styles::checkbox(r));
@@ -3966,6 +4144,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::segmented_control(r));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
     assert_clone(&styles::expander(r));
+    assert_clone(&styles::expander_frame(r));
 
     // `styles::scrollbar` returns a value rather than a closure, and
     // `iced_widget::scrollable::Scrollbar` derives `Clone` and `Copy`

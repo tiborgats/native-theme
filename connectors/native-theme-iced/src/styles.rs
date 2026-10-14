@@ -217,6 +217,67 @@ pub fn button(
     }
 }
 
+/// The platform's own toggle button, for `button(..).style(..)`: [`button`]
+/// while it is off, and while `checked` a toggle button that is on.
+///
+/// A checked toggle is `button.checked_background` with `.checked_text_color`
+/// (`docs/platform-facts.md` §2.3: Breeze, WinUI, libadwaita and Material
+/// state the pair, AppKit none). Both are soft options, and `None` is the
+/// platform showing a checked toggle in the pressed pair
+/// (`docs/inheritance-rules.toml`): [`button`]'s pressed fill,
+/// `button.active_background` (the hover layer where that is unstated too)
+/// over the idle fill, and `.active_text_color` -- the fallback the gpui
+/// connector's `geometry::button_checked` takes. A stated checked fill
+/// replaces the idle one and is emitted as given, as gpui paints it.
+///
+/// The model states no hovered and no pressed checked toggle, so under the
+/// pointer and while pressed it is the checked one, as gpui-component paints
+/// a selected button, with no hover of its own (gpui-component 0.7.3
+/// `src/button/button.rs:716`, `!self.disabled && !selected`). Disabled, it
+/// is [`button`]'s disabled pair where the platform states a disabled fill;
+/// where it states none it dims by opacity alone (`docs/platform-facts.md`
+/// §2.1.6), and the toggle keeps its checked pair. Either has each colour's
+/// alpha multiplied by `button.disabled_opacity`, as iced has no widget
+/// opacity. The border, `shadow` and `snap` are [`button`]'s.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn button_toggle(
+    resolved: &ResolvedTheme,
+    checked: bool,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
+    use iced_widget::button::{Status, Style};
+
+    let plain = button(resolved);
+    let b = &resolved.button;
+
+    let pressed = composite_over(
+        to_color(b.active_background.unwrap_or(b.hover_background)),
+        to_color(b.background_color),
+    );
+    let fill = b.checked_background.map_or(pressed, to_color);
+    let label = to_color(b.checked_text_color.unwrap_or(b.active_text_color));
+    let (disabled, disabled_label) = match b.disabled_background {
+        Some(background) => (to_color(background), to_color(b.disabled_text_color)),
+        None => (fill, label),
+    };
+    let opacity = b.disabled_opacity;
+
+    move |theme, status| {
+        let style = plain(theme, status);
+        if !checked {
+            return style;
+        }
+        let (background, text_color) = match status {
+            Status::Active | Status::Hovered | Status::Pressed => (fill, label),
+            Status::Disabled => (faded(disabled, opacity), faded(disabled_label, opacity)),
+        };
+        Style {
+            background: Some(Background::Color(background)),
+            text_color,
+            ..style
+        }
+    }
+}
+
 /// A button class the platform names but does not describe in every state:
 /// `fill` and `label` are the idle pair it states, `class` is the iced class
 /// this replaces.
@@ -1637,12 +1698,20 @@ pub fn segment(
 /// `expander.hover_background` -- a soft option, whose `None` is the platform
 /// saying a hovered header looks no different -- emitted as given, because
 /// there is no fill of the header's own beneath it to layer it over. The model
-/// states no pressed and no disabled header, so a pressed header is the
-/// hovered one and a disabled header the resting one.
+/// states no pressed header, so a pressed header is the hovered one.
 ///
-/// The label is `expander.font.color` in every status, and the outline is
-/// `expander.border.*`. `shadow` and `snap` have no native source and come
-/// from `button::Style::default()`.
+/// The label is `expander.font.color`, and the outline is `expander.border.*`.
+/// A disabled header paints no fill, and its label's and outline's alpha is
+/// multiplied by `defaults.disabled_opacity`, as iced has no widget opacity:
+/// `ExpanderTheme` states no `disabled_opacity` of its own, and a widget
+/// without one fades by the defaults' (`docs/inheritance-rules.toml`).
+///
+/// Where the theme states `expander.frame_enabled`, the header draws no
+/// outline -- its width is 0 -- whichever way it is stated: a framed expander's
+/// frame holds its header and its body together, [`expander_frame`], and an
+/// unframed one has none (`docs/platform-facts.md` §2.27). Where the theme
+/// states nothing the header keeps `expander.border.*`. `shadow` and `snap`
+/// have no native source and come from `button::Style::default()`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn expander(
     resolved: &ResolvedTheme,
@@ -1653,22 +1722,86 @@ pub fn expander(
 
     let hovered = x.hover_background.map(to_color);
     let label = to_color(x.font.color);
+    // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
+    let opacity = resolved.defaults.disabled_opacity;
 
     let border = Border {
         color: to_color(x.border.color),
-        width: x.border.line_width,
+        // A stated frame, or a stated absence of one, is not the header's.
+        width: match x.frame_enabled {
+            Some(_) => 0.0,
+            None => x.border.line_width,
+        },
         radius: Radius::new(x.border.corner_radius),
     };
 
     move |_theme, status| {
         let iced = Style::default();
-        let background = match status {
-            Status::Active | Status::Disabled => None,
-            Status::Hovered | Status::Pressed => hovered,
+        let (background, text_color, border) = match status {
+            Status::Active => (None, label, border),
+            Status::Hovered | Status::Pressed => (hovered, label, border),
+            Status::Disabled => (None, faded(label, opacity), faded_border(border, opacity)),
         };
         Style {
             background: background.map(Background::Color),
-            text_color: label,
+            text_color,
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// The frame of the platform's own expander, for the `container(..).style(..)`
+/// that holds its header and its body, where the theme states
+/// `expander.frame_enabled = true`.
+///
+/// libadwaita and WinUI frame an expander's header and body together, and
+/// KDE frames neither (`docs/platform-facts.md` §2.27), so the frame is the
+/// container round both, and the header [`expander`] styles draws no outline
+/// of its own:
+///
+/// ```rust,ignore
+/// let x = &resolved.expander;
+/// let item = column![header, body];
+/// match x.frame_enabled {
+///     Some(true) => container(item)
+///         .padding(x.border.line_width)
+///         .style(styles::expander_frame(&resolved))
+///         .into(),
+///     _ => container(item).into(),
+/// }
+/// ```
+///
+/// The outline is `expander.border.*`. Where the theme does not state
+/// `frame_enabled = true` its width is 0, so a container in this style never
+/// draws a second outline round a header that draws its own, or a frame the
+/// platform does not. The model states no fill and no label for the frame,
+/// so `background` and `text_color` are `None`, iced's own for a container --
+/// no fill, and the label of whatever the expander sits in -- and `shadow`
+/// and `snap` come from `container::Style::default()`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn expander_frame(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
+
+    let x = &resolved.expander;
+
+    let border = Border {
+        color: to_color(x.border.color),
+        width: match x.frame_enabled {
+            Some(true) => x.border.line_width,
+            Some(false) | None => 0.0,
+        },
+        radius: Radius::new(x.border.corner_radius),
+    };
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: iced.text_color,
+            background: iced.background,
             border,
             shadow: iced.shadow,
             snap: iced.snap,
