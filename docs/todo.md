@@ -110,7 +110,7 @@ the file was pruned on 2026-10-11, not reordered.
       `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1321-1324`,
       §2.11). Breeze strokes only the selected tab; an unselected tab has no
       pen and rounds 5 on the row's outer ends only (breezehelper.cpp:1488-1507,
-      breezestyle.cpp:7248-7253), and Windows' cell (`:1320`) is also
+      breezestyle.cpp:7248-7253), and Windows' cell (`:1321`) is also
       selected-only. `TabTheme::border` (`native-theme/src/model/widgets/mod.rs`)
       does not say which tab its colour, width and radius belong to: document
       that it is the selected tab's, and check that each connector strokes the
@@ -1688,7 +1688,7 @@ model, the platform presets and the three connectors
       four platforms (§2.3 and the per-widget tables), and records size classes
       only for *dimensions* — NSTextField 22/19/17, NSSwitch 38x22/32x18/26x15,
       NSPopUpButton 21/18/15/24. On macOS the bezel corners are baked into
-      CoreUI `.car` artwork with no queryable constant (`:1312`), so a
+      CoreUI `.car` artwork with no queryable constant (`:1323`), so a
       size-dependent radius there is unmodelled rather than known to be absent.
       If one exists, `ResolvedBorderSpec` would need a per-size radius and
       `geometry::button` / `input_group_button` would follow it; today both

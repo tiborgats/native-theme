@@ -4,7 +4,7 @@ What each GitHub runner image's OS reported to `tools/os-probe` (`native-theme-o
 dispatched by hand on `v0.7.0-rc1` at `5ce19fcd` through `.github/workflows/os-probe.yml`
 (https://github.com/tiborgats/native-theme/actions/runs/38478334574), on 2026-10-14 at 00:31
 CEST (2026-10-13 22:31 UTC). Kept here because GitHub deletes run artifacts after 90 days, and
-`docs/platform-facts.md` cites them (§6 of `docs/todo_v0.7.0_gpui-kit-0.7.3-spec.md`).
+`docs/platform-facts.md` cites them (§6 of the GPUI Kit 0.7.3 specification).
 
 | Directory | OS reported | Runner image version |
 |-----------|-------------|----------------------|
