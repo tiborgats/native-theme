@@ -9200,3 +9200,36 @@ Checked and clean: no panic path in the public API (`frame_index` uses checked a
 ## M8 — Cross-cutting
 
 ## M9 — Showcases
+
+## G1 — GPUI Kit 0.7.3 (docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md)
+
+- **The showcase on GPUI Fast (2026-10-14, Task 7, spec §4.3 "A real run"; at `6874a939`).** Run
+  on the maintainer's KDE Plasma Wayland session, scale 1.0, from two release builds of
+  `showcase-gpui`: the default one (gpui-pre) and `--features gpui-fast` (the binary links
+  `gpui-fast-linux` and `gpui-fast-wgpu` 0.1.7 and no gpui-pre source; the default one the reverse).
+  - *Layout dumps:* `--theme <p> --variant <v> --tab basic --icon-set freedesktop --icon-theme
+    <breeze|breeze-dark|Adwaita> --dump-layout`, for kde-breeze and adwaita, light and dark, each
+    run twice per build. The two builds' dumps are byte-identical in all four (172 elements each,
+    every `x`/`y`/`w`/`h` equal; header `kind`/`preset`/`variant`/`scale` equal), and each build's
+    two runs are identical too. No difference to fix or explain.
+  - *Screenshots:* `--capture` plus `scripts/capture_window.sh`'s `capture_showcase` (spectacle;
+    `--screenshot` self-capture is macOS/Windows only), kde-breeze light and adwaita dark per build;
+    each passed the identity check (1280×720 content at +65+81). kde-breeze light: the two captures
+    are pixel-identical, frame included. adwaita dark: 10 pixels differ, all inside
+    `basic.spinner.indicator` (702,332 16×16), the spinning arc caught at another phase. Looked at:
+    the same page, fonts, icons and colours.
+  - *Live theme switch:* not driven in a running window. The session is Wayland, with no input
+    injector installed (no ydotool, wtype, kdotool or dotool; xdotool reaches only X11 clients),
+    and the showcase's own hooks cannot pick a preset: the Theme menu's rows switch the mode, not
+    the preset, and `--pointer … --press` sends one press, not a click. Evidence instead: the
+    showcase's theme-switch tests under `cargo test -p native-theme-gpui --features gpui-fast
+    --example showcase-gpui`, 10 passed: `a_theme_install_keeps_the_installed_preferences` and
+    `an_untouched_preference_follows_the_os_on_reinstall` (kde-breeze → adwaita),
+    `the_icon_theme_select_follows_the_preset` (kde-breeze → nord → kde-breeze),
+    `the_theme_settings_switch_the_preset` (the preset Combobox), `the_palette_installs_a_preset`
+    (Ctrl+K), `a_variant_alone_reinstalls_the_theme_in_its_mode`,
+    `a_theme_switch_clears_what_left_the_screen`, `the_about_dialog_follows_a_theme_switch`,
+    `the_chrome_follows_the_theme`, `a_failed_install_leaves_the_window_as_the_installed_theme_drew_it`;
+    the look of each theme comes from the separate-process runs above. No test switches
+    kde-breeze → adwaita → kde-breeze in one window; a by-hand switch on the GPUI Fast build is
+    left to the maintainer.
