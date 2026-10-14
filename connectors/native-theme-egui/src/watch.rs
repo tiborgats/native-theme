@@ -97,7 +97,7 @@ impl ThemeWatcher {
     /// Propagates [`from_system`](crate::from_system).
     pub fn system_rebuild() -> native_theme::Result<ThemeAtlas> {
         native_theme::detect::invalidate_caches();
-        crate::from_system().map(|(atlas, _, _)| atlas)
+        crate::from_system().map(|loaded| loaded.atlas)
     }
 
     /// Take the pending atlas, if the OS theme changed since the last call. Non-blocking, and

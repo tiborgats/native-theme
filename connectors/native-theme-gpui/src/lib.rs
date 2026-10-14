@@ -16,7 +16,8 @@
 //! ```ignore
 //! use native_theme_gpui::from_system;
 //!
-//! let (theme, resolved, is_dark) = from_system()?;
+//! let loaded = from_system()?;
+//! let (theme, resolved) = (loaded.theme, loaded.resolved);
 //! ```
 //!
 //! # Manual Path
@@ -173,6 +174,7 @@ pub use native_theme::detect::LinuxDesktop;
 use gpui::{App, Global, SharedString, px};
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
+use std::borrow::Cow;
 use std::rc::Rc;
 
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
@@ -316,13 +318,45 @@ pub fn from_preset(
     Ok((theme, resolved))
 }
 
+/// The OS theme as [`from_system()`] and [`SystemThemeExt::to_gpui_theme`]
+/// return it: the gpui-component theme of the OS colour mode's variant, with
+/// what the OS reading detected beside it.
+///
+/// `#[non_exhaustive]`, so a field added later is not a breaking change;
+/// read it by field, or destructure it with `..`.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct Loaded {
+    /// The gpui-component theme, built by [`to_theme()`] from
+    /// [`resolved`](Self::resolved) with [`accessibility`](Self::accessibility).
+    pub theme: GpuiTheme,
+    /// The resolved variant of the OS colour mode, for the per-widget
+    /// metrics the flat `ThemeColor` cannot represent.
+    pub resolved: ResolvedTheme,
+    /// The OS colour mode, the OS preference rather than a guess from the
+    /// background colour; [`resolved`](Self::resolved) is its variant.
+    pub mode: ColorMode,
+    /// The OS accessibility preferences the theme was built with, which
+    /// [`apply`] takes.
+    pub accessibility: AccessibilityPreferences,
+    /// The icon set the theme names ([`SystemTheme::icon_set`]).
+    pub icon_set: IconSet,
+    /// The icon theme of the OS colour mode's variant
+    /// ([`SystemTheme::icon_theme_for`]), for a freedesktop icon or spinner;
+    /// `None` where that variant states none and detection failed.
+    pub icon_theme: Option<Cow<'static, str>>,
+}
+
 /// Detect the OS theme and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
 /// Combines [`SystemTheme::from_system()`](native_theme::SystemTheme::from_system)
-/// with [`to_theme()`] using the system-detected name and dark-mode preference.
+/// with [`to_theme()`] using the system-detected name, dark-mode preference
+/// and accessibility preferences.
 ///
-/// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
-/// access per-widget metrics that the flat `ThemeColor` cannot represent.
+/// Returns the gpui Theme with the [`ResolvedTheme`], so callers can access
+/// per-widget metrics that the flat `ThemeColor` cannot represent, and the
+/// OS colour mode, the accessibility preferences, the icon set and the icon
+/// theme beside them, as a [`Loaded`].
 ///
 /// **Ownership note** (Issue 19/31): this function takes ownership of the
 /// `SystemTheme`'s active variant. The non-active variant (light when dark
@@ -341,17 +375,26 @@ pub fn from_preset(
 /// # Examples
 ///
 /// ```ignore
-/// let (theme, resolved, is_dark) = native_theme_gpui::from_system()?;
+/// let loaded = native_theme_gpui::from_system()?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
+pub fn from_system() -> Result<Loaded> {
     let sys = SystemTheme::from_system()?;
-    let is_dark = sys.mode.is_dark();
+    let mode = sys.mode;
+    let is_dark = mode.is_dark();
+    let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
     let name = sys.name; // K-5: move instead of clone
     let accessibility = sys.accessibility;
     let resolved = if is_dark { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name, is_dark, &accessibility);
-    Ok((theme, resolved, is_dark))
+    Ok(Loaded {
+        theme,
+        resolved,
+        mode,
+        accessibility,
+        icon_set: sys.icon_set,
+        icon_theme,
+    })
 }
 
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`GpuiTheme`].
@@ -362,26 +405,42 @@ pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
 /// use native_theme_gpui::SystemThemeExt;
 ///
 /// let sys = native_theme::SystemTheme::from_system()?;
-/// let theme = sys.to_gpui_theme();
+/// let theme = sys.to_gpui_theme().theme;
 /// ```
 pub trait SystemThemeExt {
-    /// Convert this system theme to a gpui-component [`GpuiTheme`].
+    /// Convert this system theme to a gpui-component [`GpuiTheme`], as a
+    /// [`Loaded`].
     ///
-    /// Uses the OS-active variant (based on `mode`), the theme name,
-    /// and the color mode from the `SystemTheme`.
+    /// Uses the OS-active variant (based on `mode`), the theme name, the
+    /// color mode and the accessibility preferences from the `SystemTheme`.
+    /// The variant is cloned out of `self`; [`from_system()`] moves it.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_gpui_theme(&self) -> GpuiTheme;
+    fn to_gpui_theme(&self) -> Loaded;
 }
 
 impl SystemThemeExt for SystemTheme {
-    fn to_gpui_theme(&self) -> GpuiTheme {
-        to_theme(
-            self.pick(self.mode),
-            &self.name,
-            self.mode.is_dark(),
-            &self.accessibility,
-        )
+    fn to_gpui_theme(&self) -> Loaded {
+        Loaded {
+            theme: system_gpui_theme(self),
+            resolved: self.pick(self.mode).clone(),
+            mode: self.mode,
+            accessibility: self.accessibility.clone(),
+            icon_set: self.icon_set,
+            icon_theme: self
+                .icon_theme_for(self.mode)
+                .map(|s| Cow::Owned(s.to_owned())),
+        }
     }
+}
+
+/// [`SystemThemeExt::to_gpui_theme`]'s theme, without cloning the variant.
+fn system_gpui_theme(sys: &SystemTheme) -> GpuiTheme {
+    to_theme(
+        sys.pick(sys.mode),
+        &sys.name,
+        sys.mode.is_dark(),
+        &sys.accessibility,
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -809,7 +868,7 @@ pub fn apply(
 /// and installing both `ThemeConfig`s, then [`apply`]; upstream's
 /// `Theme::sync_system_appearance` then reproduces native colours in either mode.
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
-    let theme = sys.to_gpui_theme();
+    let theme = system_gpui_theme(sys);
     apply_inner(
         theme,
         Some(&sys.light),
@@ -1459,12 +1518,17 @@ mod tests {
         let Ok(sys) = SystemTheme::from_system() else {
             return;
         };
-        let theme = sys.to_gpui_theme();
+        let loaded = sys.to_gpui_theme();
         assert_eq!(
-            theme.is_dark(),
+            loaded.theme.is_dark(),
             sys.mode.is_dark(),
             "to_gpui_theme() is_dark should match SystemTheme.mode"
         );
+        assert_eq!(&loaded.resolved, sys.pick(sys.mode));
+        assert_eq!(loaded.mode, sys.mode);
+        assert_eq!(loaded.accessibility, sys.accessibility);
+        assert_eq!(loaded.icon_set, sys.icon_set);
+        assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
     }
 
     #[test]
@@ -1474,14 +1538,18 @@ mod tests {
     }
 
     #[test]
-    fn from_system_returns_tuple() {
-        let Ok((theme, resolved, _is_dark)) = from_system() else {
+    fn from_system_matches_system_theme_ext() {
+        let (Ok(loaded), Ok(sys)) = (from_system(), SystemTheme::from_system()) else {
             return;
         };
-        // Theme and resolved should agree on basic properties
-        assert!(resolved.defaults.font.size > 0.0);
-        // Theme mode should be set
-        let _ = theme.is_dark();
+        let expected = sys.to_gpui_theme();
+        assert!(loaded.resolved.defaults.font.size > 0.0);
+        assert_eq!(loaded.theme.is_dark(), loaded.mode.is_dark());
+        assert_eq!(loaded.resolved, expected.resolved);
+        assert_eq!(loaded.mode, expected.mode);
+        assert_eq!(loaded.accessibility, expected.accessibility);
+        assert_eq!(loaded.icon_set, expected.icon_set);
+        assert_eq!(loaded.icon_theme, expected.icon_theme);
     }
 
     #[test]
@@ -1489,7 +1557,7 @@ mod tests {
         let Ok(sys) = SystemTheme::from_system() else {
             return;
         };
-        let via_convenience = sys.to_gpui_theme();
+        let via_convenience = sys.to_gpui_theme().theme;
         let via_manual = to_theme(
             sys.pick(sys.mode),
             &sys.name,

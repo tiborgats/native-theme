@@ -15,7 +15,7 @@ use crate::{
 use native_theme::theme::Theme;
 
 /// A bundled preset resolved for one mode, by the route the iced connector's `from_preset`
-/// takes (`connectors/native-theme-iced/src/lib.rs:304-318`).
+/// takes (`connectors/native-theme-iced/src/lib.rs:307-321`).
 pub(crate) fn resolved(name: &str, mode: ColorMode) -> ResolvedTheme {
     Theme::preset(name)
         .unwrap()
@@ -2201,15 +2201,22 @@ mod t18_constructors {
             }
         }
 
-        let (again, chosen, is_dark) = from_system().unwrap();
+        let loaded = from_system().unwrap();
         let fresh = SystemTheme::from_system().unwrap();
+        let again = &loaded.atlas;
         assert_eq!(again.name(), fresh.name);
         assert_eq!(again.os_mode(), Some(fresh.mode));
-        assert_eq!(is_dark, fresh.mode.is_dark());
+        assert_eq!(loaded.mode, fresh.mode);
         assert_eq!(again.resolved_for(egui::Theme::Light), &fresh.light);
         assert_eq!(again.resolved_for(egui::Theme::Dark), &fresh.dark);
-        assert_eq!(&chosen, if is_dark { &fresh.dark } else { &fresh.light });
-        assert!(same_styles(&again, &fresh.to_egui_atlas()));
+        assert_eq!(&loaded.resolved, fresh.pick(fresh.mode));
+        assert_eq!(loaded.accessibility, fresh.accessibility);
+        assert_eq!(loaded.icon_set, fresh.icon_set);
+        assert_eq!(
+            loaded.icon_theme.as_deref(),
+            fresh.icon_theme_for(fresh.mode)
+        );
+        assert!(same_styles(again, &fresh.to_egui_atlas()));
     }
 }
 
@@ -2555,7 +2562,7 @@ mod t13_accessibility {
     }
 
     /// T13 (d): the three connectors' `scaled_text_size` are one function in three places (§4.7);
-    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:1861-1874`).
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:1908-1921`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {

@@ -14,8 +14,8 @@
 //! use native_theme_egui::from_system;
 //!
 //! # fn install(cc: &eframe::CreationContext<'_>) -> native_theme_egui::Result<()> {
-//! let (atlas, _resolved, _is_dark) = from_system()?;
-//! atlas.install(&cc.egui_ctx);
+//! let loaded = from_system()?;
+//! loaded.atlas.install(&cc.egui_ctx);
 //! cc.egui_ctx.set_theme(egui::ThemePreference::System);
 //! # Ok(())
 //! # }
@@ -124,7 +124,7 @@ pub use accessors::{
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
 pub use ext::NativeThemeUiExt;
-pub use ext::{SystemThemeExt, from_preset, from_system, to_theme};
+pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(feature = "watch")]

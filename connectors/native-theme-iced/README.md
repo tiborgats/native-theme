@@ -86,7 +86,8 @@ Or read the OS theme at runtime:
 ```rust,ignore
 use native_theme_iced::from_system;
 
-let (theme, resolved, is_dark, accessibility) = from_system()?;
+let loaded = from_system()?;
+// `loaded.theme` is the iced Theme, `loaded.resolved` the OS mode's variant.
 ```
 
 ## Kerning
@@ -112,7 +113,7 @@ docs' *Kerning* section cites the sources.
 ## Core concepts
 
 - **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
-- **`from_system()`** — read the OS theme. Returns `(theme, resolved, is_dark, accessibility)`: the third value tells you which variant the OS is currently using, the fourth carries the user's accessibility preferences (see [Text scaling](#text-scaling)).
+- **`from_system()`** — read the OS theme. Returns a `Loaded`: `theme` and `resolved` for the variant the OS is currently using, `mode` (which variant that is), `accessibility` (the user's accessibility preferences, see [Text scaling](#text-scaling)), and `icon_set` and `icon_theme` for icons and the spinner. `SystemThemeExt::to_iced_theme` gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "App Name")`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else.
 - **`styles::*`** — one function per widget, each returning a closure for that widget's style setter. See [Styles](#styles).
 - **Metric helpers** — free functions that read geometry off `&ResolvedTheme` for use with iced's inline widget configuration.
@@ -342,9 +343,9 @@ them, and `font_size` and `mono_font_size` are that for `defaults.font` and
 ```rust,ignore
 use native_theme_iced::{font_size, from_system, scaled_text_size};
 
-let (theme, resolved, _is_dark, accessibility) = from_system()?;
-let body = font_size(&resolved, &accessibility);
-let label = scaled_text_size(resolved.button.font.size, &accessibility);
+let loaded = from_system()?;
+let body = font_size(&loaded.resolved, &loaded.accessibility);
+let label = scaled_text_size(loaded.resolved.button.font.size, &loaded.accessibility);
 ```
 
 With a preset there is no OS reading; pass

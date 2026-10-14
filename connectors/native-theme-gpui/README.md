@@ -182,8 +182,9 @@ variant.
   about 3 ms measured on one KDE machine; every later call returns the cached
   block in nanoseconds). `AccessibilityPreferences::from_system()` reads them
   afresh, running the platform reader each time.
-- **`from_system()`** — the OS theme as `(theme, resolved, is_dark)` without
-  installing it.
+- **`from_system()`** — the OS theme as a `Loaded` (`theme`, `resolved`,
+  `mode`, `accessibility`, `icon_set`, `icon_theme`) without installing it;
+  `SystemThemeExt::to_gpui_theme` gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "Display Name", is_dark, &prefs)`** — the underlying
   mapping if you already have a `ResolvedTheme`.
 - **`cx.native_theme()`** (`ActiveNativeTheme`) — the installed `NativeTheme`;

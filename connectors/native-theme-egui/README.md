@@ -143,8 +143,8 @@ fn main() -> eframe::Result {
         "my-app",
         eframe::NativeOptions::default(),
         Box::new(|cc| {
-            if let Ok((atlas, _resolved, _is_dark)) = from_system() {
-                atlas.install(&cc.egui_ctx);
+            if let Ok(loaded) = from_system() {
+                loaded.atlas.install(&cc.egui_ctx);
             }
             cc.egui_ctx.set_theme(egui::ThemePreference::System);
             Ok(Box::new(MyApp))

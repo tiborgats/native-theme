@@ -119,8 +119,9 @@ impl NativeThemeUiExt for egui::Ui {
     }
 }
 
-use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
+use native_theme::theme::{ColorMode, IconSet, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext, Result, SystemTheme};
+use std::borrow::Cow;
 
 /// Compile an atlas from one resolved variant. Pure mapping; borrows; never touches the OS.
 ///
@@ -141,7 +142,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
 /// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:267`), as
-/// in both siblings (`connectors/native-theme-iced/src/lib.rs:309`,
+/// in both siblings (`connectors/native-theme-iced/src/lib.rs:312`,
 /// `connectors/native-theme-gpui/src/lib.rs:295`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
@@ -217,30 +218,67 @@ pub fn from_preset(
 /// Detect and compile the OS theme, carrying **both** variants, the OS colour mode, the OS
 /// accessibility preferences, the OS [`LayoutTheme`](crate::LayoutTheme) and — with feature `system-fonts` — the
 /// OS typefaces through `fonts::FontPlan::from_system`, whose notes join
-/// [`ThemeAtlas::notes`](crate::ThemeAtlas::notes). Exactly [`SystemThemeExt::to_egui_atlas`] of
-/// `SystemTheme::from_system()`. The `bool` is `sys.mode.is_dark()` —
-/// the OS preference, not a luminance guess — and the [`ResolvedTheme`](crate::ResolvedTheme) is the variant it
-/// selects, as in both siblings' `from_system`.
+/// [`ThemeAtlas::notes`](crate::ThemeAtlas::notes). The [`Loaded::atlas`] is exactly
+/// [`SystemThemeExt::to_egui_atlas`] of `SystemTheme::from_system()`. The [`Loaded::mode`] is
+/// `sys.mode` — the OS preference, not a luminance guess — and the [`Loaded::resolved`] is the
+/// variant it selects, as in both siblings' `from_system`.
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
 ///
 /// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:497`), the platform reader's
 /// values merged field-wise over the preset's, fed to [`Builder::layout`](crate::Builder::layout); so this path
-/// reaches the same spacing fields [`from_preset`] does. The accessibility preferences travel
-/// inside the atlas ([`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility)), which is why the tuple has no fourth
-/// element as `native_theme_iced::from_system`'s does
-/// (`connectors/native-theme-iced/src/lib.rs:332-337`).
+/// reaches the same spacing fields [`from_preset`] does. The accessibility preferences, the
+/// icon set and the icon themes also travel inside the atlas
+/// ([`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility),
+/// [`ThemeAtlas::icon_set`](crate::ThemeAtlas::icon_set),
+/// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme)); [`Loaded`] carries them by the
+/// field names the iced and gpui connectors' `Loaded` uses.
 ///
 /// # Errors
 /// Propagates `SystemTheme::from_system`.
 #[must_use = "this builds the styles; it does not install them"]
-pub fn from_system() -> Result<(ThemeAtlas, ResolvedTheme, bool)> {
+pub fn from_system() -> Result<Loaded> {
     let sys = SystemTheme::from_system()?;
     let atlas = sys.to_egui_atlas();
-    let is_dark = sys.mode.is_dark();
-    let resolved = if is_dark { sys.dark } else { sys.light };
-    Ok((atlas, resolved, is_dark))
+    let mode = sys.mode;
+    let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
+    let resolved = if mode.is_dark() { sys.dark } else { sys.light };
+    Ok(Loaded {
+        atlas,
+        resolved,
+        mode,
+        accessibility: sys.accessibility,
+        icon_set: sys.icon_set,
+        icon_theme,
+    })
+}
+
+/// The OS theme as [`from_system`] returns it: the atlas of both OS variants, with the OS
+/// colour mode's variant and what the OS reading detected beside it, under the field names
+/// of the iced and gpui connectors' `Loaded` (`theme` there is `atlas` here).
+///
+/// `#[non_exhaustive]`, so a field added later is not a breaking change; read it by field, or
+/// destructure it with `..`.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct Loaded {
+    /// The atlas, exactly [`SystemThemeExt::to_egui_atlas`] of the detected theme: both
+    /// variants, ready to [`install`](ThemeAtlas::install).
+    pub atlas: ThemeAtlas,
+    /// The resolved variant of the OS colour mode.
+    pub resolved: ResolvedTheme,
+    /// The OS colour mode, the OS preference rather than a luminance guess;
+    /// [`resolved`](Self::resolved) is its variant.
+    pub mode: ColorMode,
+    /// The OS accessibility preferences, as [`ThemeAtlas::accessibility`] reports them.
+    pub accessibility: AccessibilityPreferences,
+    /// The icon set the theme names, as [`ThemeAtlas::icon_set`] reports it.
+    pub icon_set: IconSet,
+    /// The icon theme of the OS colour mode's variant (`SystemTheme::icon_theme_for`), for a
+    /// freedesktop icon or spinner; `None` where that variant states none and detection
+    /// failed.
+    pub icon_theme: Option<Cow<'static, str>>,
 }
 
 /// Compile a detected [`SystemTheme`](native_theme::SystemTheme). Sealed, like the extension trait of §4.5.
@@ -249,16 +287,20 @@ pub trait SystemThemeExt: sealed::Sealed {
     /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:497`).
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
-    /// (`connectors/native-theme-iced/src/lib.rs:354`) and `to_gpui_theme`
-    /// (`connectors/native-theme-gpui/src/lib.rs:360`), which return one toolkit theme: egui
-    /// stores one `Style` per `egui::Theme` and, under `ThemePreference::System`, picks one
-    /// every pass from `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so
-    /// returning one variant would guarantee a half-themed application. That input is the
+    /// (`connectors/native-theme-iced/src/lib.rs:389`) and `to_gpui_theme`
+    /// (`connectors/native-theme-gpui/src/lib.rs:418`), which return a `Loaded` holding one
+    /// toolkit theme, of the OS colour mode's variant: egui stores one `Style` per
+    /// `egui::Theme` and, under `ThemePreference::System`, picks one every pass from
+    /// `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so returning one variant
+    /// would guarantee a half-themed application. That input is the
     /// live OS scheme on macOS and Windows, where winit 0.30.13 reports one and sends
     /// `ThemeChanged` (egui-winit 0.36.2 `State::on_window_event`, lines 450–451 of its
     /// `src/lib.rs`); on Linux winit reports `None`, and the
     /// scheme egui sees is this atlas's OS mode, supplied by the install plugin (§3.2)
-    /// and renewed by the next atlas installed (a `ThemeWatcher` rebuild).
+    /// and renewed by the next atlas installed (a `ThemeWatcher` rebuild). It returns the
+    /// atlas, not a [`Loaded`]: the atlas already carries both variants, the OS mode, the
+    /// accessibility preferences, the icon set and both icon themes, which [`Loaded`] would
+    /// only repeat; [`from_system`] gives the [`Loaded`].
     ///
     /// Equivalent to — and the chain to spell out when adding [`Builder::style_patch`](crate::Builder::style_patch) or a
     /// plan of the application's own —

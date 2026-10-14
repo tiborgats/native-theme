@@ -15,7 +15,8 @@
 //! ```rust,no_run
 //! use native_theme_iced::from_system;
 //!
-//! let (theme, resolved, is_dark, accessibility) = from_system().unwrap();
+//! let loaded = from_system().unwrap();
+//! let (theme, resolved) = (loaded.theme, loaded.resolved);
 //! ```
 //!
 //! # Manual Path
@@ -101,8 +102,8 @@
 //!
 //! # Accessibility
 //!
-//! [`from_system()`] returns the user's [`AccessibilityPreferences`] as its
-//! fourth value. The OS text-scaling factor applies to every text size:
+//! [`from_system()`] returns the user's [`AccessibilityPreferences`] in
+//! [`Loaded::accessibility`]. The OS text-scaling factor applies to every text size:
 //! [`scaled_text_size()`] scales any size the resolved theme states (a
 //! widget's font, a `text_scale` role), and [`font_size()`] and
 //! [`mono_font_size()`] are that for the default fonts; a factor that is not
@@ -243,6 +244,8 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
 
+use std::borrow::Cow;
+
 /// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::theme::ResolvedTheme`].
 ///
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
@@ -317,48 +320,89 @@ pub fn from_preset(
     Ok((theme, resolved))
 }
 
+/// The OS theme as [`from_system()`] and [`SystemThemeExt::to_iced_theme`]
+/// return it: the iced theme of the OS colour mode's variant, with what the
+/// OS reading detected beside it.
+///
+/// `#[non_exhaustive]`, so a field added later is not a breaking change;
+/// read it by field, or destructure it with `..`.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct Loaded {
+    /// The iced theme, built by [`to_theme()`] from [`resolved`](Self::resolved).
+    pub theme: iced_core::theme::Theme,
+    /// The resolved variant of the OS colour mode, for the metric helpers.
+    pub resolved: ResolvedTheme,
+    /// The OS colour mode, the OS preference rather than a guess from the
+    /// background colour; [`resolved`](Self::resolved) is its variant.
+    pub mode: ColorMode,
+    /// The OS accessibility preferences, which [`font_size()`],
+    /// [`mono_font_size()`] and [`scaled_text_size()`] take.
+    pub accessibility: AccessibilityPreferences,
+    /// The icon set the theme names ([`SystemTheme::icon_set`]).
+    pub icon_set: IconSet,
+    /// The icon theme of the OS colour mode's variant
+    /// ([`SystemTheme::icon_theme_for`]), for a freedesktop icon or spinner;
+    /// `None` where that variant states none and detection failed.
+    pub icon_theme: Option<Cow<'static, str>>,
+}
+
 /// Detect the OS theme and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
-/// Returns the iced theme, the resolved variant, whether the system is in
-/// dark mode, and the OS accessibility preferences. The `is_dark` flag comes
-/// from the OS preference, not from background color analysis. The
-/// preferences are returned because [`font_size()`] and [`mono_font_size()`]
-/// need them.
+/// Returns the iced theme, the resolved variant, the OS colour mode, the OS
+/// accessibility preferences, and the icon set and icon theme, as a
+/// [`Loaded`]. The mode comes from the OS preference, not from background
+/// color analysis. The preferences are returned because [`font_size()`] and
+/// [`mono_font_size()`] need them.
 ///
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read.
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> Result<(
-    iced_core::theme::Theme,
-    native_theme::theme::ResolvedTheme,
-    bool,
-    AccessibilityPreferences,
-)> {
+pub fn from_system() -> Result<Loaded> {
     let sys = native_theme::SystemTheme::from_system()?;
-    let is_dark = sys.mode.is_dark();
+    let mode = sys.mode;
+    let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
     let name = sys.name;
-    let accessibility = sys.accessibility;
-    let resolved = if is_dark { sys.dark } else { sys.light };
+    let resolved = if mode.is_dark() { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name);
-    Ok((theme, resolved, is_dark, accessibility))
+    Ok(Loaded {
+        theme,
+        resolved,
+        mode,
+        accessibility: sys.accessibility,
+        icon_set: sys.icon_set,
+        icon_theme,
+    })
 }
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
 pub trait SystemThemeExt {
-    /// Convert this system theme to an iced [`iced_core::theme::Theme`] and its [`ResolvedTheme`].
+    /// Convert this system theme to an iced [`iced_core::theme::Theme`] of
+    /// its OS colour mode, as a [`Loaded`].
     ///
-    /// Returns both the iced theme and the resolved variant, so callers can
-    /// access per-widget metrics without re-resolving.
+    /// Returns the iced theme with the resolved variant, so callers can
+    /// access per-widget metrics without re-resolving, and the mode, the
+    /// accessibility preferences, the icon set and the icon theme beside
+    /// them. The variant is cloned out of `self`; [`from_system()`] moves it.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::theme::ResolvedTheme);
+    fn to_iced_theme(&self) -> Loaded;
 }
 
 impl SystemThemeExt for native_theme::SystemTheme {
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::theme::ResolvedTheme) {
+    fn to_iced_theme(&self) -> Loaded {
         let resolved = self.pick(self.mode).clone();
         let theme = to_theme(&resolved, &self.name);
-        (theme, resolved)
+        Loaded {
+            theme,
+            resolved,
+            mode: self.mode,
+            accessibility: self.accessibility.clone(),
+            icon_set: self.icon_set,
+            icon_theme: self
+                .icon_theme_for(self.mode)
+                .map(|s| Cow::Owned(s.to_owned())),
+        }
     }
 }
 
@@ -1050,8 +1094,11 @@ pub fn mono_font_size(
 /// # Example
 ///
 /// ```rust,no_run
-/// let (_, resolved, _, prefs) = native_theme_iced::from_system().unwrap();
-/// let label = native_theme_iced::scaled_text_size(resolved.button.font.size, &prefs);
+/// let loaded = native_theme_iced::from_system().unwrap();
+/// let label = native_theme_iced::scaled_text_size(
+///     loaded.resolved.button.font.size,
+///     &loaded.accessibility,
+/// );
 /// ```
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
@@ -2002,7 +2049,12 @@ mod tests {
         let Ok(sys) = native_theme::SystemTheme::from_system() else {
             return;
         };
-        let (_theme, _resolved) = sys.to_iced_theme();
+        let loaded = sys.to_iced_theme();
+        assert_eq!(&loaded.resolved, sys.pick(sys.mode));
+        assert_eq!(loaded.mode, sys.mode);
+        assert_eq!(loaded.accessibility, sys.accessibility);
+        assert_eq!(loaded.icon_set, sys.icon_set);
+        assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
     }
 
     #[test]
@@ -2011,13 +2063,19 @@ mod tests {
     }
 
     #[test]
-    fn from_system_returns_is_dark_and_preferences() {
-        // If system theme is available, verify it returns a quadruple
-        if let Ok((_theme, _resolved, is_dark, accessibility)) = from_system() {
-            // is_dark should be a valid bool (always true, but verify the return)
-            let _ = is_dark;
-            let _ = accessibility.text_scaling_factor;
-        }
+    fn from_system_matches_system_theme_ext() {
+        // May fail on CI -- skip gracefully
+        let (Ok(loaded), Ok(sys)) = (from_system(), native_theme::SystemTheme::from_system())
+        else {
+            return;
+        };
+        let expected = sys.to_iced_theme();
+        assert_eq!(loaded.resolved, expected.resolved);
+        assert_eq!(loaded.mode, expected.mode);
+        assert_eq!(loaded.accessibility, expected.accessibility);
+        assert_eq!(loaded.icon_set, expected.icon_set);
+        assert_eq!(loaded.icon_theme, expected.icon_theme);
+        assert_eq!(loaded.theme.palette(), expected.theme.palette());
     }
 
     #[test]
