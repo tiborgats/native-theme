@@ -88,8 +88,6 @@ native-theme = { workspace = true, features = ["macos"] }
 native-theme = { workspace = true, features = ["windows"] }
 
 [dev-dependencies]
-# Headless App for the apply/observer tests (#[gpui::test], TestAppContext).
-gpui = { package = "gpui-pre", version = "0.3.9", features = ["test-support"] }
 # The showcase uses the facade an application would: application(), init(),
 # open_window(), and the Lucide assets under gpui_kit::assets.
 # tree-sitter-rust: the grammar for the showcase's code editor section.
