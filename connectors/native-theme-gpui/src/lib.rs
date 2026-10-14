@@ -859,10 +859,12 @@ impl<'a> Native<'a> {
 ///    application since (gpui-base's 500 ms where it set none);
 /// 8. installs, once per `App`, the observer that restores step 5 and the 12
 ///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
-///    private in `ThemeConfigColors`; D43) whenever upstream rebuilds the
-///    theme, together with one deferred repeat for the update that installs it
-///    (the subscription activates only at the end of that update's effect
-///    flush, D38);
+///    private in `ThemeConfigColors`; D43), and installs step 7's delay for the
+///    mode then current, whenever upstream rebuilds the theme (a
+///    `Theme::change` or `sync_system_appearance` mode switch among them),
+///    together with one deferred repeat for the update that installs it (the
+///    subscription activates only at the end of that update's effect flush,
+///    D38);
 /// 9. refreshes every window so the change paints at once (D37).
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
@@ -999,6 +1001,16 @@ fn install_tooltip_delay(theme: Option<Duration>, cx: &mut App) {
     }
 }
 
+/// [`install_tooltip_delay`] for the stored variant of the styled theme's
+/// current mode, or for no delay where none is stored.
+fn install_variant_tooltip_delay(cx: &mut App) {
+    let delay = cx
+        .try_global::<NativeTheme>()
+        .and_then(|nt| nt.resolved(cx))
+        .and_then(tooltip_show_delay);
+    install_tooltip_delay(delay, cx);
+}
+
 fn apply_inner(
     theme: GpuiTheme,
     light: Option<&ResolvedTheme>,
@@ -1054,11 +1066,7 @@ fn apply_inner(
     // is active (§3.3), so it must not be marked as the observer's own.
     write_base_overrides(cx, false);
     forward_reduce_motion(prefs.reduce_motion, cx);
-    let delay = cx
-        .try_global::<NativeTheme>()
-        .and_then(|nt| nt.variant(is_dark))
-        .and_then(tooltip_show_delay);
-    install_tooltip_delay(delay, cx);
+    install_variant_tooltip_delay(cx);
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event. The theme is written through
@@ -1195,6 +1203,11 @@ fn install_observer_once(cx: &mut App) {
         // A rebuild also resets the 12 private base-palette colours (D43);
         // a plain comparison makes this safe on every delivery.
         repair_base_palette(cx);
+        // A mode switch upstream (`Theme::change`) ends in this rebuild, and
+        // the new mode's variant may state another delay. It writes only a
+        // changed delay, to `TooltipDefaults`, which this observer does not
+        // watch.
+        install_variant_tooltip_delay(cx);
         let Some(nt) = cx.try_global::<NativeTheme>() else {
             return;
         };
@@ -2271,6 +2284,44 @@ mod apply_tests {
             );
             apply_preset(&latte, cx);
             assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+    }
+
+    /// An upstream mode switch (`Theme::change`, which ends in a rebuild of
+    /// gpui-base's theme) installs the new mode's variant's delay, so a theme
+    /// whose two variants state different delays does not keep the previous
+    /// mode's.
+    #[gpui::test]
+    fn an_upstream_mode_switch_installs_that_variants_delay(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (dark_theme, dark) =
+            from_preset("kde-breeze", true, &prefs).expect("preset should load");
+        let (light_theme, mut light) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        assert_eq!(dark.tooltip.show_delay, Some(700), "precondition");
+        light.tooltip.show_delay = Some(300);
+        cx.update(|cx| {
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx);
+            assert!(!GpuiTheme::global(cx).is_dark());
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(300));
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            assert!(GpuiTheme::global(cx).is_dark());
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx).show_delay(),
+                ms(700),
+                "the dark variant's delay after the switch"
+            );
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx).show_delay(),
+                ms(300),
+                "the light variant's delay after the switch back"
+            );
         });
     }
 

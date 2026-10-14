@@ -5351,7 +5351,15 @@ pub(crate) fn tooltip_button(
     label: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, None, label, text);
+    let mut tooltip_info = info::feedback::tooltip(
+        cx.theme(),
+        false,
+        false,
+        tooltip_delay(cx),
+        gpui_base::TooltipDefaults::global(cx),
+        label,
+        text,
+    );
     let button = labelled(
         ui,
         cx,
@@ -5389,8 +5397,15 @@ pub(crate) fn built_tooltip_button(
     let style = native_geometry(cx, geometry::tooltip);
     let content = native_geometry(cx, geometry::tooltip_content);
     let delay = tooltip_delay(cx);
-    let mut tooltip_info =
-        info::feedback::tooltip(cx.theme(), true, style.is_some(), delay, label, text);
+    let mut tooltip_info = info::feedback::tooltip(
+        cx.theme(),
+        true,
+        style.is_some(),
+        delay,
+        gpui_base::TooltipDefaults::global(cx),
+        label,
+        text,
+    );
     let button = native_info(
         Button::new(id),
         cx,

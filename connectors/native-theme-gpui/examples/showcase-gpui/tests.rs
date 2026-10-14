@@ -5570,10 +5570,11 @@ fn a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog(cx: &m
 
 /// The showcase applies the theme's dialog entrance and tooltip delay, and
 /// says so: under kde-breeze, which states both, the Overlays page's Dialog
-/// records `geometry::dialog_entrance` and a toolbar Button's tooltip delay is
-/// the theme's 700ms; under catppuccin-mocha, which states neither, the Dialog
-/// keeps upstream's slide and the tooltip gpui's 500ms (Review Focus 2).
-/// Motion is reduced, so the entrance is named and not drawn.
+/// and AlertDialog record `geometry::dialog_entrance` and a toolbar Button's
+/// tooltip delay is the theme's 700ms; under catppuccin-mocha, which states
+/// neither, the dialogs keep upstream's slide and the tooltip gpui's 500ms
+/// (Review Focus 2). Motion is reduced, so the entrance is named and not
+/// drawn.
 #[gpui::test]
 fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -5619,38 +5620,46 @@ fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppCo
             );
         }
 
-        show(&mut cx, &showcase, Page::Overlays);
-        click(&mut cx, OVERLAYS_DIALOG_TRIGGER);
-        draw(&mut cx);
-        assert!(
-            a_dialog_is_open(&mut cx),
-            "{preset}: the Dialog did not open"
-        );
-        let dialog = settle_on(&mut cx, &showcase, "overlays-dialog-title");
-        let recorded = dialog.as_ref().is_some_and(|info| {
-            info.config
-                .iter()
-                .any(|n| n.text.starts_with("geometry::dialog_entrance:"))
-        });
-        let animation = dialog.as_ref().and_then(|info| {
-            info.not_themeable
-                .iter()
-                .find(|n| n.what == "animation")
-                .map(|n| n.text.clone())
-        });
-        assert_eq!(
-            recorded, stated,
-            "{preset}: the Dialog's geometry::dialog_entrance line: {dialog:?}"
-        );
-        assert!(
-            animation
-                .as_deref()
-                .is_some_and(|t| t.contains("DialogEntrance::Fade") == stated),
-            "{preset}: the Dialog's animation note: {animation:?}"
-        );
-        cx.update(|window, cx| window.close_dialog(cx));
-        cx.run_until_parked();
-        draw(&mut cx);
+        // Every kind of dialog the showcase opens: the Dialog (the palette's
+        // and the About dialog's take the same `demo::dialog_frame`) and the
+        // AlertDialog, which applies the entrance itself.
+        for (trigger, selector) in [
+            (OVERLAYS_DIALOG_TRIGGER, "overlays-dialog-title"),
+            (PROBE_ALERT_DIALOG, "overlays-alert-dialog-title"),
+        ] {
+            show(&mut cx, &showcase, Page::Overlays);
+            click(&mut cx, trigger);
+            draw(&mut cx);
+            assert!(
+                a_dialog_is_open(&mut cx),
+                "{preset}: {trigger} opened no dialog"
+            );
+            let dialog = settle_on(&mut cx, &showcase, selector);
+            let recorded = dialog.as_ref().is_some_and(|info| {
+                info.config
+                    .iter()
+                    .any(|n| n.text.starts_with("geometry::dialog_entrance:"))
+            });
+            let animation = dialog.as_ref().and_then(|info| {
+                info.not_themeable
+                    .iter()
+                    .find(|n| n.what == "animation")
+                    .map(|n| n.text.clone())
+            });
+            assert_eq!(
+                recorded, stated,
+                "{preset}: {selector}'s geometry::dialog_entrance line: {dialog:?}"
+            );
+            assert!(
+                animation
+                    .as_deref()
+                    .is_some_and(|t| t.contains("DialogEntrance::Fade") == stated),
+                "{preset}: {selector}'s animation note: {animation:?}"
+            );
+            cx.update(|window, cx| window.close_dialog(cx));
+            cx.run_until_parked();
+            draw(&mut cx);
+        }
     }
 }
 

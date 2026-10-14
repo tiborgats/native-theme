@@ -11,8 +11,8 @@ use gpui::{
 use super::WidgetInfo;
 
 /// How long a new choice must stay the choice before it replaces what is
-/// shown. The model states no hover delay (docs/todo.md, "A sidebar width
-/// and a tooltip delay are missing from the model"); this is the showcase's.
+/// shown: the showcase's own. The model's `tooltip.show_delay_ms` is how long
+/// a tooltip waits, and Widget Info is not a tooltip.
 pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 
 #[derive(Default)]

@@ -422,7 +422,9 @@ through gpui-component's tooltip overlay waits (a `Button::tooltip`'s, among
 others), and keeps the grace period installed. Where the theme states no
 delay, the application's comes back: the one installed before the connector's
 first write, or set by the application since (gpui-base's 500 ms where it set
-none). A delay is told apart by value: an application delay equal to the one
+none). The observer installs it again after every upstream rebuild, so a mode
+switch through `Theme::change` or `sync_system_appearance` brings the new
+mode's variant's delay. A delay is told apart by value: an application delay equal to the one
 the connector last wrote is taken for the connector's. GPUI's own `.tooltip()`
 on an element does not read `TooltipDefaults`: it waits GPUI's 500 ms unless
 the element is given `tooltip_show_delay(&resolved)` through
