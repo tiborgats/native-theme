@@ -230,6 +230,14 @@ the file was pruned on 2026-10-11, not reordered.
       high contrast is one of this entry's window-only sources. The same spec
       implements its Win32 replacement, `ThemeSettings`, with a top-level
       window that receives `WM_THEMECHANGED`.
+      Correction (2026-10-14, Task 5b review): `ThemeSettings` does not
+      create a window; it listens for `WM_THEMECHANGED` on an existing
+      top-level window the application passes as a `WindowId` (the spec's
+      "Why does this API require a WindowId?": "An alternative option is for
+      the API to create and manage its own top-level window, but we decided
+      to use an existing window"). The window-creating design the spec cites
+      is .NET's `SystemEvents`, the one this entry's hidden top-level window
+      follows.
 - [ ] [v0.7.x] **macOS watcher: check on a Mac which center posts the
       colour and scroller notifications.** The watcher observes
       `NSSystemColorsDidChangeNotification` and

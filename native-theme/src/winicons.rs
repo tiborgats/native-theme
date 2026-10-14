@@ -122,6 +122,23 @@ fn gray8_to_rgba(gray: u8) -> [u8; 4] {
     [255, 255, 255, alpha]
 }
 
+#[cfg(all(test, target_os = "windows"))]
+thread_local! {
+    /// The step at which this thread's last icon load failed, for the
+    /// tests' messages ([`note_failure`]).
+    static LAST_FAILURE: std::cell::Cell<Option<String>> = const { std::cell::Cell::new(None) };
+}
+
+/// Record, in a test build, the step at which an icon load failed, so a
+/// failing test names it; nothing in other builds.
+#[cfg(target_os = "windows")]
+fn note_failure(step: std::fmt::Arguments<'_>) {
+    #[cfg(test)]
+    LAST_FAILURE.with(|last| last.set(Some(step.to_string())));
+    #[cfg(not(test))]
+    let _ = step;
+}
+
 /// Extract RGBA pixels from an HICON handle.
 ///
 /// Uses GetIconInfo to obtain the color bitmap, then GetDIBits with a
@@ -136,7 +153,9 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
     let mut icon_info = ICONINFO::default();
     // SAFETY: `hicon` is an icon handle (the caller's contract) and
     // `icon_info` is a live ICONINFO for GetIconInfo to fill.
-    unsafe { GetIconInfo(hicon, &mut icon_info) }.ok()?;
+    unsafe { GetIconInfo(hicon, &mut icon_info) }
+        .inspect_err(|err| note_failure(format_args!("GetIconInfo: {err}")))
+        .ok()?;
 
     // SAFETY: GetIconInfo's colour bitmap belongs to this function and is
     // selected into no device context.
@@ -181,12 +200,21 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
         )
     };
     if written == 0 {
+        note_failure(format_args!("GetObjectW wrote nothing"));
         return None;
     }
 
-    let width = u32::try_from(bmp.bmWidth).ok()?;
-    let height = u32::try_from(bmp.bmHeight).ok()?;
-    let bytes = crate::icons::raster_bytes_in_bound(width, height)?;
+    let size = u32::try_from(bmp.bmWidth)
+        .ok()
+        .zip(u32::try_from(bmp.bmHeight).ok())
+        .and_then(|(w, h)| Some((w, h, crate::icons::raster_bytes_in_bound(w, h)?)));
+    let Some((width, height, bytes)) = size else {
+        note_failure(format_args!(
+            "a {} x {} bitmap is negative, empty or over the decode bound",
+            bmp.bmWidth, bmp.bmHeight
+        ));
+        return None;
+    };
 
     // Set up BITMAPINFOHEADER for 32-bit top-down BGRA
     let mut bmi = BITMAPINFO::default();
@@ -202,6 +230,7 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     // SAFETY: a memory DC compatible with the screen, deleted below.
     let hdc = unsafe { CreateCompatibleDC(None) };
     if hdc.is_invalid() {
+        note_failure(format_args!("CreateCompatibleDC returned no DC"));
         return None;
     }
     // SAFETY: `pixels` holds `height` rows of `width` 32-bit pixels, the
@@ -223,6 +252,9 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 
     // GetDIBits returns the number of scan lines copied, 0 on failure.
     if u32::try_from(lines).ok() != Some(height) {
+        note_failure(format_args!(
+            "GetDIBits copied {lines} of the {height} lines"
+        ));
         return None;
     }
     Some((width, height, pixels))
@@ -230,15 +262,15 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
 
 /// Held for each stock icon load, so that one runs at a time.
 ///
-/// On GitHub's `windows-latest` image, of the test threads that loaded
-/// `SIID_WARNING` at the same time, one got `None` and another, with the same
-/// arguments, the icon (CI run 38478340750). Microsoft documents no thread
-/// rule for SHGetStockIconInfo. Mozilla found that the shell's SHGetFileInfo,
-/// which like it gives the icons of the system image list
-/// (`SHGSI_SYSICONINDEX`), cannot be called from more than one thread at a
-/// time, and calls it from one thread
-/// (<https://bugzilla.mozilla.org/show_bug.cgi?id=1530190>, comments 11-12):
-/// a developer's finding, not Microsoft's.
+/// A mitigation for an unconfirmed cause. On GitHub's `windows-latest` image
+/// one test thread's load of `SIID_WARNING` returned `None` while another's,
+/// with the same arguments in the same process, returned the icon (CI run
+/// 38478340750): the failure depends on timing, and which step failed was not
+/// recorded. Loads running at once are one cause that fits; a first-use
+/// initialisation inside the shell fits equally well. Microsoft documents no
+/// thread rule for SHGetStockIconInfo. The lock is this crate's own: it does
+/// not serialise other code in the process that calls the shell's icon
+/// functions.
 #[cfg(target_os = "windows")]
 static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
@@ -265,7 +297,9 @@ fn load_stock_icon(name: &str) -> Option<IconData> {
             ..Default::default()
         };
 
-        SHGetStockIconInfo(siid, SHGSI_ICON | SHGSI_LARGEICON, &mut sii).ok()?;
+        SHGetStockIconInfo(siid, SHGSI_ICON | SHGSI_LARGEICON, &mut sii)
+            .inspect_err(|err| note_failure(format_args!("SHGetStockIconInfo: {err}")))
+            .ok()?;
 
         let result = hicon_to_rgba(sii.hIcon);
 
@@ -653,6 +687,49 @@ mod tests {
         load_windows_icon_by_name(icon_name(role, IconSet::SegoeFluent)?, None, None)
     }
 
+    /// The roles whose Segoe name is a stock icon (`SIID_*`), in
+    /// [`IconRole::ALL`]'s order.
+    fn stock_roles() -> Vec<IconRole> {
+        IconRole::ALL
+            .iter()
+            .copied()
+            .filter(|&role| {
+                icon_name(role, IconSet::SegoeFluent).is_some_and(|n| n.starts_with("SIID_"))
+            })
+            .collect()
+    }
+
+    /// The step at which this thread's last icon load failed
+    /// ([`note_failure`]).
+    #[cfg(target_os = "windows")]
+    fn last_failure() -> String {
+        LAST_FAILURE
+            .with(|last| last.take())
+            .unwrap_or_else(|| "no step recorded".to_owned())
+    }
+
+    #[test]
+    fn stock_roles_are_the_siid_roles() {
+        assert_eq!(
+            stock_roles(),
+            [
+                IconRole::DialogWarning,
+                IconRole::DialogError,
+                IconRole::DialogInfo,
+                IconRole::Shield,
+                IconRole::FileGeneric,
+                IconRole::FolderClosed,
+                IconRole::FolderOpen,
+                IconRole::TrashEmpty,
+                IconRole::TrashFull,
+                IconRole::StatusError,
+                IconRole::UserAccount,
+                IconRole::Help,
+                IconRole::Lock,
+            ]
+        );
+    }
+
     // === Platform-independent unit tests ===
 
     #[test]
@@ -859,7 +936,11 @@ mod tests {
     #[test]
     fn stock_icon_returns_rgba() {
         let result = load_role(IconRole::DialogWarning);
-        assert!(result.is_some(), "DialogWarning should return an icon");
+        assert!(
+            result.is_some(),
+            "DialogWarning should return an icon; failed at: {}",
+            last_failure()
+        );
         if let Some(IconData::Rgba(_)) = result {
             // Stock icons should return RGBA
         } else {
@@ -872,14 +953,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn stock_icons_load_from_threads_at_once() {
-        let roles: Vec<IconRole> = IconRole::ALL
-            .iter()
-            .copied()
-            .filter(|&role| {
-                icon_name(role, IconSet::SegoeFluent).is_some_and(|n| n.starts_with("SIID_"))
-            })
-            .collect();
-        assert!(!roles.is_empty());
+        let roles = stock_roles();
+        assert_eq!(roles.len(), 13);
         let start = std::sync::Barrier::new(roles.len());
         std::thread::scope(|scope| {
             let loads: Vec<_> = roles
@@ -888,15 +963,16 @@ mod tests {
                     let start = &start;
                     scope.spawn(move || {
                         start.wait();
-                        (role, load_role(role))
+                        let icon = load_role(role);
+                        (role, icon, last_failure())
                     })
                 })
                 .collect();
             for load in loads {
-                let (role, icon) = load.join().unwrap();
+                let (role, icon, failure) = load.join().unwrap();
                 assert!(
                     matches!(icon, Some(IconData::Rgba(_))),
-                    "{role:?} should load as RGBA"
+                    "{role:?} should load as RGBA; failed at: {failure}"
                 );
             }
         });
@@ -917,13 +993,17 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn rgba_dimensions_correct() {
-        if let Some(IconData::Rgba(rgba)) = load_role(IconRole::DialogWarning) {
-            assert_eq!(
-                (rgba.width() * rgba.height() * 4) as usize,
-                rgba.data().len(),
-                "RGBA buffer size must equal width * height * 4"
+        let Some(IconData::Rgba(rgba)) = load_role(IconRole::DialogWarning) else {
+            panic!(
+                "DialogWarning should load as RGBA; failed at: {}",
+                last_failure()
             );
-        }
+        };
+        assert_eq!(
+            (rgba.width() * rgba.height() * 4) as usize,
+            rgba.data().len(),
+            "RGBA buffer size must equal width * height * 4"
+        );
     }
 
     #[cfg(target_os = "windows")]
@@ -1069,6 +1149,10 @@ mod tests {
     #[test]
     fn load_by_name_stock_icon() {
         let result = load_windows_icon_by_name("SIID_WARNING", None, None);
-        assert!(result.is_some(), "SIID_WARNING stock icon should load");
+        assert!(
+            result.is_some(),
+            "SIID_WARNING stock icon should load; failed at: {}",
+            last_failure()
+        );
     }
 }

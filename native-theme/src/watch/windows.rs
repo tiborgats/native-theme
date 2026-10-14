@@ -115,10 +115,12 @@ impl Drop for ComGuard {
 /// Win32 process does not have (Windows App SDK,
 /// <https://github.com/microsoft/WindowsAppSDK/blob/main/specs/themes/ThemeSettings.md>),
 /// and GitHub's `windows-latest` image refuses its registration with
-/// "Element not found" (0x80070490). A change of high contrast is then
-/// announced to top-level windows only, which the watcher has none of: the
-/// Windows App SDK's replacement, `ThemeSettings`, creates a top-level window
-/// to receive `WM_THEMECHANGED`.
+/// "Element not found" (0x80070490). A change of high contrast is announced
+/// to top-level windows only, which the watcher has none of: the Windows App
+/// SDK's replacement, `ThemeSettings`, listens for `WM_THEMECHANGED` on a
+/// top-level window the application passes it (`CreateForWindowId`), and .NET's
+/// `SystemEvents` creates a top-level window of its own for it (the same spec,
+/// "Why does this API require a WindowId?" and "Similar APIs").
 ///
 /// Returns once the thread has its message queue and the subscriptions are
 /// in place, or with `Error::ReaderFailed` when COM, `UISettings`,
