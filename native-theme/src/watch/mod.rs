@@ -354,8 +354,9 @@ fn fire_debounced<T>(
 /// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
 /// the appearance, system-colour, scroller-style and accessibility-display
 /// notifications; on Windows `UISettings::ColorValuesChanged`,
-/// `TextScaleFactorChanged` and `AnimationsEnabledChanged` and
-/// `AccessibilitySettings::HighContrastChanged`. One change can raise several of them, so the
+/// `TextScaleFactorChanged`, `AnimationsEnabledChanged` and
+/// `AdvancedEffectsEnabledChanged` (a change of high contrast is announced to
+/// top-level windows only, and the watcher has none). One change can raise several of them, so the
 /// callback fires once per burst, 300 ms after the last.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
@@ -382,8 +383,8 @@ fn fire_debounced<T>(
 /// (it does not exist, or the inotify limits are reached); GNOME and Budgie,
 /// the watcher thread could not connect to the session bus or subscribe to
 /// the portal's `SettingChanged` signal; Windows, the watcher thread did not
-/// start or could not subscribe to `UISettings::ColorValuesChanged`,
-/// `TextScaleFactorChanged` or `AccessibilitySettings::HighContrastChanged`. The KDE backend sets up its watch on the
+/// start or could not subscribe to `UISettings::ColorValuesChanged` or
+/// `TextScaleFactorChanged`. The KDE backend sets up its watch on the
 /// calling thread, and the GNOME and Windows backends return only once their
 /// thread is subscribed; the macOS backend registers its observer on the
 /// calling thread and does not fail.
@@ -618,7 +619,6 @@ mod tests {
             "UISettings.TextScaleFactor",
             "TextScaleFactorChanged",
         ),
-        ("windows", "SPI_GETHIGHCONTRAST", "HighContrastChanged"),
         // `UISettings.AnimationsEnabled` and SPI_GETCLIENTAREAANIMATION read
         // the same on the three Windows probe images; no page says they are
         // one setting.

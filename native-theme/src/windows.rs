@@ -18,9 +18,6 @@
 //!   foreground, which tells light from dark (`UISettings::ColorValuesChanged`).
 //! - `UISettings.TextScaleFactor`: the text scale
 //!   (`UISettings::TextScaleFactorChanged`).
-//! - `SPI_GETHIGHCONTRAST`: high contrast
-//!   (`AccessibilitySettings::HighContrastChanged`, "the system high
-//!   contrast feature turns on or off").
 //! - `SPI_GETCLIENTAREAANIMATION`: reduced motion
 //!   (`UISettings::AnimationsEnabledChanged`, Windows 10 2004 and later).
 //!   No Microsoft page says `UISettings.AnimationsEnabled` is the same
@@ -41,8 +38,14 @@
 //! (<https://learn.microsoft.com/en-us/windows/win32/gdi/wm-syscolorchange>).
 //!
 //! - `SPI_GETNONCLIENTMETRICS`: the fonts.
-//! - `GetSysColor`: the high-contrast colours (a change of high contrast
-//!   itself is watched).
+//! - `SPI_GETHIGHCONTRAST`: high contrast. Its WinRT event,
+//!   `AccessibilitySettings::HighContrastChanged`, "never fires" outside UWP:
+//!   it relies on the `CoreWindow` to handle `WM_THEMECHANGED`, and a Win32
+//!   process has none
+//!   (<https://github.com/microsoft/WindowsAppSDK/blob/main/specs/themes/ThemeSettings.md>);
+//!   the watcher subscribes to it where Windows accepts the registration
+//!   (GitHub's `windows-latest` image refuses it with "Element not found").
+//! - `GetSysColor`: the high-contrast colours.
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};

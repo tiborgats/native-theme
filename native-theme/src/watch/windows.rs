@@ -3,12 +3,13 @@
 //! Creates a background thread with COM STA initialization and a
 //! `GetMessageW`/`DispatchMessageW` message pump. The WinRT events
 //! `UISettings::ColorValuesChanged`, `TextScaleFactorChanged`,
-//! `AnimationsEnabledChanged` and `AdvancedEffectsEnabledChanged` and
-//! `AccessibilitySettings::HighContrastChanged` fire whenever the user changes
-//! the system colours, the text scale, the animations, the transparency
-//! effects or high contrast; their handlers post a thread message to the
-//! pump, which fires the callback on the watcher thread. Shutdown is handled
-//! by posting
+//! `AnimationsEnabledChanged` and `AdvancedEffectsEnabledChanged` fire
+//! whenever the user changes the system colours, the text scale, the
+//! animations or the transparency effects; their handlers post a thread
+//! message to the pump, which fires the callback on the watcher thread.
+//! `AccessibilitySettings::HighContrastChanged` is subscribed too where
+//! Windows accepts it, but outside UWP it does not fire (see
+//! [`watch_windows`]). Shutdown is handled by posting
 //! `WM_QUIT` to the watcher thread via `PostThreadMessageW` from the
 //! `ThemeSubscription` Drop handler.
 
@@ -35,7 +36,8 @@ use ::windows::core::{IInspectable, Ref};
 use super::ThemeChangeEvent;
 
 /// The WinRT events the watcher subscribes to: the Windows reader's sources
-/// (`windows.rs`, "Sources").
+/// (`windows.rs`, "Sources"), and high contrast's where Windows accepts it
+/// (`windows.rs`, "Sources not watched").
 #[cfg(test)]
 pub(super) const SUBSCRIBED_EVENTS: [&str; 5] = [
     COLOR_VALUES_CHANGED,
@@ -52,6 +54,7 @@ const COLOR_VALUES_CHANGED: &str = "ColorValuesChanged";
 const TEXT_SCALE_FACTOR_CHANGED: &str = "TextScaleFactorChanged";
 
 /// `AccessibilitySettings::HighContrastChanged`, for `SPI_GETHIGHCONTRAST`.
+#[cfg(test)]
 const HIGH_CONTRAST_CHANGED: &str = "HighContrastChanged";
 
 /// `UISettings::AnimationsEnabledChanged`, for `SPI_GETCLIENTAREAANIMATION`.
@@ -96,17 +99,30 @@ impl Drop for ComGuard {
 ///
 /// Initializes COM as STA, subscribes to `UISettings::ColorValuesChanged`,
 /// `TextScaleFactorChanged`, `AnimationsEnabledChanged` and
-/// `AdvancedEffectsEnabledChanged` and to
-/// `AccessibilitySettings::HighContrastChanged`, and runs a
+/// `AdvancedEffectsEnabledChanged`, and runs a
 /// `GetMessageW`/`DispatchMessageW` message pump. The callback fires on the
 /// background thread, once per burst of events, 300ms after the last of them
 /// (a thread timer the pump receives), whenever the system colours change
 /// (e.g. the user switches between light and dark mode or picks an accent
-/// colour), or the text scale, the animations setting, the transparency
-/// effects setting or high contrast does.
+/// colour), or the text scale, the animations setting or the transparency
+/// effects setting does.
+///
+/// `AnimationsEnabledChanged` (Windows 10 2004 and later),
+/// `AdvancedEffectsEnabledChanged` (Windows 10 1703 and later) and
+/// `AccessibilitySettings::HighContrastChanged` are subscribed where Windows
+/// accepts them, and the watcher starts without those it refuses. Outside UWP
+/// `HighContrastChanged` "never fires", as it relies on the `CoreWindow` a
+/// Win32 process does not have (Windows App SDK,
+/// <https://github.com/microsoft/WindowsAppSDK/blob/main/specs/themes/ThemeSettings.md>),
+/// and GitHub's `windows-latest` image refuses its registration with
+/// "Element not found" (0x80070490). A change of high contrast is then
+/// announced to top-level windows only, which the watcher has none of: the
+/// Windows App SDK's replacement, `ThemeSettings`, creates a top-level window
+/// to receive `WM_THEMECHANGED`.
 ///
 /// Returns once the thread has its message queue and the subscriptions are
-/// in place, or with `Error::ReaderFailed` when a setup step failed.
+/// in place, or with `Error::ReaderFailed` when COM, `UISettings`,
+/// `ColorValuesChanged` or `TextScaleFactorChanged` failed to set up.
 pub(crate) fn watch_windows(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<super::ThemeSubscription> {
@@ -156,13 +172,8 @@ pub(crate) fn watch_windows(
             }
         };
 
-        let accessibility = match AccessibilitySettings::new() {
-            Ok(a) => a,
-            Err(err) => {
-                let _ = ready_tx.send(Err(setup_failed("AccessibilitySettings::new", err)));
-                return;
-            }
-        };
+        // Only for `HighContrastChanged`, which the watcher does without.
+        let accessibility = AccessibilitySettings::new().ok();
 
         // The handlers only post a message to this thread, so the callback
         // runs on it alone, never twice at once, whichever thread raises the
@@ -203,15 +214,16 @@ pub(crate) fn watch_windows(
                 return;
             }
         };
-        let high_contrast_token = match accessibility.HighContrastChanged(&high_contrast_handler) {
-            Ok(t) => t,
-            Err(err) => {
-                let _ = settings.RemoveColorValuesChanged(color_token);
-                let _ = settings.RemoveTextScaleFactorChanged(text_scale_token);
-                let _ = ready_tx.send(Err(setup_failed(HIGH_CONTRAST_CHANGED, err)));
-                return;
-            }
-        };
+        // Outside UWP the event "never fires": it relies on the `CoreWindow`
+        // to handle `WM_THEMECHANGED`, and a Win32 process has none (Windows
+        // App SDK, `specs/themes/ThemeSettings.md`). On GitHub's
+        // `windows-latest` image the registration fails with "Element not
+        // found" (0x80070490). Subscribed where Windows accepts it, and the
+        // watcher starts without it; high contrast counts as not watched
+        // (`windows.rs`, "Sources not watched").
+        let high_contrast_token = accessibility
+            .as_ref()
+            .and_then(|a| a.HighContrastChanged(&high_contrast_handler).ok());
         // For `SPI_GETCLIENTAREAANIMATION`: no Microsoft page says
         // `UISettings.AnimationsEnabled` is the same setting, but the two read
         // the same on the three Windows probe images (`docs/platform-facts.md`,
@@ -278,7 +290,9 @@ pub(crate) fn watch_windows(
         // `accessibility` drop here, before `_com` uninitializes COM.
         let _ = settings.RemoveColorValuesChanged(color_token);
         let _ = settings.RemoveTextScaleFactorChanged(text_scale_token);
-        let _ = accessibility.RemoveHighContrastChanged(high_contrast_token);
+        if let (Some(accessibility), Some(token)) = (&accessibility, high_contrast_token) {
+            let _ = accessibility.RemoveHighContrastChanged(token);
+        }
         if let Some(token) = animations_token {
             let _ = settings.RemoveAnimationsEnabledChanged(token);
         }

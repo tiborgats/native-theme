@@ -228,13 +228,33 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     Some((width, height, pixels))
 }
 
+/// Held for each stock icon load, so that one runs at a time.
+///
+/// On GitHub's `windows-latest` image, of the test threads that loaded
+/// `SIID_WARNING` at the same time, one got `None` and another, with the same
+/// arguments, the icon (CI run 38478340750). Microsoft documents no thread
+/// rule for SHGetStockIconInfo. Mozilla found that the shell's SHGetFileInfo,
+/// which like it gives the icons of the system image list
+/// (`SHGSI_SYSICONINDEX`), cannot be called from more than one thread at a
+/// time, and calls it from one thread
+/// (<https://bugzilla.mozilla.org/show_bug.cgi?id=1530190>, comments 11-12):
+/// a developer's finding, not Microsoft's.
+#[cfg(target_os = "windows")]
+static STOCK_ICON_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Load a stock system icon by its SIID_ name.
 ///
 /// Maps the name to a SHSTOCKICONID, calls SHGetStockIconInfo to get
-/// an HICON, extracts RGBA pixels, and cleans up the icon handle.
+/// an HICON, extracts RGBA pixels, and cleans up the icon handle, one load
+/// at a time ([`STOCK_ICON_LOCK`]).
 #[cfg(target_os = "windows")]
 fn load_stock_icon(name: &str) -> Option<IconData> {
     let siid = siid_from_name(name)?;
+    // The lock guards no data, so a load that panicked leaves nothing to
+    // repair.
+    let _one_at_a_time = STOCK_ICON_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     // SAFETY: `sii` is a live SHSTOCKICONINFO with `cbSize` set to its size, for
     // SHGetStockIconInfo to fill; on success `hIcon` is an icon this function owns,
@@ -845,6 +865,41 @@ mod tests {
         } else {
             panic!("Expected IconData::Rgba for stock icon");
         }
+    }
+
+    /// Every stock icon role loads while every other one loads on another
+    /// thread at the same moment, as tests and applications load them.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn stock_icons_load_from_threads_at_once() {
+        let roles: Vec<IconRole> = IconRole::ALL
+            .iter()
+            .copied()
+            .filter(|&role| {
+                icon_name(role, IconSet::SegoeFluent).is_some_and(|n| n.starts_with("SIID_"))
+            })
+            .collect();
+        assert!(!roles.is_empty());
+        let start = std::sync::Barrier::new(roles.len());
+        std::thread::scope(|scope| {
+            let loads: Vec<_> = roles
+                .iter()
+                .map(|&role| {
+                    let start = &start;
+                    scope.spawn(move || {
+                        start.wait();
+                        (role, load_role(role))
+                    })
+                })
+                .collect();
+            for load in loads {
+                let (role, icon) = load.join().unwrap();
+                assert!(
+                    matches!(icon, Some(IconData::Rgba(_))),
+                    "{role:?} should load as RGBA"
+                );
+            }
+        });
     }
 
     #[cfg(target_os = "windows")]

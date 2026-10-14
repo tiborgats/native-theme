@@ -220,6 +220,16 @@ the file was pruned on 2026-10-11, not reordered.
       here. High contrast turning on or off is reported by
       `AccessibilitySettings::HighContrastChanged` since 71db4793; whether a
       colour change inside a contrast theme reaches it is unverified.
+      G1 Task 5b (2026-10-14): it is not. Outside UWP the event "never
+      fires", as it relies on the `CoreWindow` to handle `WM_THEMECHANGED`
+      (<https://github.com/microsoft/WindowsAppSDK/blob/main/specs/themes/ThemeSettings.md>),
+      and the CI's `windows-latest` refused the registration with "Element
+      not found" (0x80070490, run 38478340750). The watcher now subscribes
+      where Windows accepts it and starts without it, and
+      `SPI_GETHIGHCONTRAST` is listed among the reader's sources not watched:
+      high contrast is one of this entry's window-only sources. The same spec
+      implements its Win32 replacement, `ThemeSettings`, with a top-level
+      window that receives `WM_THEMECHANGED`.
 - [ ] [v0.7.x] **macOS watcher: check on a Mac which center posts the
       colour and scroller notifications.** The watcher observes
       `NSSystemColorsDidChangeNotification` and
