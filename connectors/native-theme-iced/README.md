@@ -279,6 +279,8 @@ Full helper list: `button_padding`, `input_padding`, `text_area_padding`
 `padding_or`, `padding_inside_border`, `stated_padding`,
 `control_line_height`, `button_content_min_size`, `at_least`,
 `border_corner_radius`, `border_corner_radius_lg`, `scrollbar_groove_width`,
+`tooltip_show_delay` (for `Tooltip::delay`), `list_header_height` (a
+table header's height),
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
 `mono_font_size`, `mono_font_weight`, `system_font_family` (feature
 `system-fonts`), `scaled_text_size`,

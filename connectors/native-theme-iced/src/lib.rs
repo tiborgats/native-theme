@@ -220,10 +220,17 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (28 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
+//!
+//! The theme values of the widgets neither iced 0.14 nor `iced_aw` 0.14.1
+//! has reach no receiver here: the dialog's, `dialog.entrance` among them
+//! (whether an `iced_aw` `Card` is a dialog's receiver is a docs/todo.md
+//! item), the popover's, the toolbar's and the status bar's; and the window
+//! frame's colours, which iced takes no colour for (`decorations: bool`,
+//! `iced_core` 0.14 `window/settings.rs:65-66`).
 //!
 //! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
 //! scaled by the text-scaling factor, is named after the leaf's path, without
@@ -1091,6 +1098,32 @@ pub fn scrollbar_groove_width(resolved: &native_theme::theme::ResolvedTheme) -> 
     resolved.scrollbar.groove_width
 }
 
+/// Returns `tooltip.show_delay` as a `Duration`, for `Tooltip::delay`
+/// (iced_widget 0.14.2 `src/tooltip.rs:126`), or `None` where the theme
+/// states none: a `Tooltip` then keeps iced's own delay, `Duration::ZERO`
+/// (`:106`), and opens at once.
+#[must_use]
+pub fn tooltip_show_delay(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> Option<std::time::Duration> {
+    resolved
+        .tooltip
+        .show_delay
+        .map(|ms| std::time::Duration::from_millis(u64::from(ms)))
+}
+
+/// Returns `list.header_height`, the height of a table's header row in
+/// logical pixels, or `None` where the theme states none. iced's `table` has
+/// no row height of its own: it makes each row as tall as its tallest cell
+/// (iced_widget 0.14.2 `src/table.rs:312`, `:410`) and pads it by
+/// `padding_y` above and below, so the height reaches a header through its
+/// cells' height, less that padding. Where the theme states none, the header
+/// keeps the height the caller gives it otherwise (the showcase's: a row's).
+#[must_use]
+pub fn list_header_height(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
+    resolved.list.header_height
+}
+
 /// Returns the primary UI font family name from the resolved theme: the
 /// stated name. To name the family iced's font database holds for it, use
 /// `system_font_family` (feature `system-fonts`).
@@ -1545,6 +1578,34 @@ mod tests {
         let resolved = make_resolved(false);
         let w = scrollbar_groove_width(&resolved);
         assert!(w > 0.0, "scrollbar width should be > 0");
+    }
+
+    /// `tooltip_show_delay` is `tooltip.show_delay` as a `Duration` and
+    /// `list_header_height` is `list.header_height`, each `None` where the
+    /// theme states none.
+    #[test]
+    fn the_delay_and_header_height_accessors_return_their_leaves() {
+        for (preset, delay, header) in [
+            ("kde-breeze", Some(700_u64), None),
+            ("adwaita", Some(500), Some(30.0_f32)),
+            ("material-3", Some(0), Some(56.0)),
+            ("macos-monterey", None, Some(28.0)),
+            ("catppuccin-mocha", None, None),
+        ] {
+            for is_dark in [false, true] {
+                let resolved = make_resolved_preset(preset, is_dark);
+                assert_eq!(
+                    tooltip_show_delay(&resolved),
+                    delay.map(std::time::Duration::from_millis),
+                    "{preset} dark={is_dark}"
+                );
+                assert_eq!(
+                    list_header_height(&resolved),
+                    header,
+                    "{preset} dark={is_dark}"
+                );
+            }
+        }
     }
 
     /// A padding stated on two sides and not on the other two.

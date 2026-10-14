@@ -174,6 +174,7 @@ mod probes {
     pub const COMBO_BOX: &str = "probe-combo-box";
     pub const SLIDER: &str = "probe-slider";
     pub const VERTICAL_SLIDER: &str = "probe-vertical-slider";
+    pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
     #[cfg(feature = "iced_aw")]
     pub const SELECTION_LIST: &str = "probe-selection-list";
 }
@@ -4159,7 +4160,8 @@ fn chrome_tooltip<'a>(
         tooltip::Position::Bottom,
     )
     .gap(gap.widget)
-    .style(styles::tooltip(resolved));
+    .style(styles::tooltip(resolved))
+    .show_delay(resolved);
     match tooltip_padding(resolved) {
         Some(padding) => tip.padding(padding).into(),
         None => tip.into(),
@@ -5955,6 +5957,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "header_font.color") => "the header cells' text colour".into(),
         ("list", "header_background") => "the header row container's background".into(),
         ("list", "grid_color") => "the grid lines' colour (rules between the cells)".into(),
+        ("list", "header_height_px") => {
+            "list_header_height: the header row's height; a row's where unstated".into()
+        }
+        ("list", "row_height_px") if under("basic.table.header") => {
+            "the header row's height where list.header_height is unstated; the label's \
+             line box and padding where both are"
+                .into()
+        }
         ("list", "row_height_px") => {
             "a row's height; the label's line box and padding where unstated".into()
         }
@@ -6034,6 +6044,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("tooltip", "font") => "the tip's text size and theme_font".into(),
         ("tooltip", "font.color") => "styles::tooltip: container::Style::text_color".into(),
         ("tooltip", "max_width_px") => "the tip container's max_width".into(),
+        ("tooltip", "show_delay_ms") => {
+            "tooltip_show_delay: Tooltip::delay; iced's own, none, where unstated".into()
+        }
         ("tooltip", "border.color") => "styles::tooltip: border.color".into(),
         ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
         ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
@@ -7022,7 +7035,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         tooltip::Position::Bottom,
     )
     .gap(sp.xs)
-    .style(styles::tooltip(resolved));
+    .style(styles::tooltip(resolved))
+    .show_delay(resolved);
     let tip = match tip_padding {
         Some(padding) => tip.padding(padding),
         None => tip,
@@ -8294,7 +8308,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// The Basic page's table (Basic v3), built from containers: iced_widget's
 /// `table` has no style setter (iced_widget 0.14.2 `src/table.rs:149-196`),
 /// so its separators, header and rows could not take `list.*`. A header row
-/// `Name | Size` on `list.header_background` in `list.header_font`, two
+/// `Name | Size` on `list.header_background` in `list.header_font`,
+/// `list.header_height` tall where the theme states it, else as a row, two
 /// rows in `list.item_font` -- the second selected, in
 /// `list.selection_background` and `.selection_text_color` -- each
 /// `list.row_height` tall, or its
@@ -8359,7 +8374,9 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         };
         cell.width(Length::FillPortion(1)).into()
     };
-    let head_h = height(&l.header_font);
+    // `list.header_height` where the theme states it; else the header is a row.
+    let head_h =
+        native_theme_iced::list_header_height(resolved).unwrap_or_else(|| height(&l.header_font));
     let head_ink = to_color(l.header_font.color);
     let head_fill = to_color(l.header_background);
     let header = tagged(
@@ -9790,6 +9807,10 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let card_pad = native_theme_iced::padding_or(&card.border.padding, Padding::ZERO);
     let card_radius_s = format!("{card_radius:.0}px");
     let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
+    let delay_s = match native_theme_iced::tooltip_show_delay(resolved) {
+        Some(delay) => format!("{}ms, tooltip.show_delay", delay.as_millis()),
+        None => "none, iced's own (tooltip.show_delay unstated)".to_string(),
+    };
     let line_width_s = format!("{:.0}px", sep.line_width);
 
     let header = section_header(
@@ -9897,7 +9918,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("gap", "set per widget instance"),
-                ("delay", "none"),
+                ("delay", &delay_s),
                 ("max width", "iced wraps the tip's own content element"),
             ],
         ),
@@ -9913,7 +9934,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Top,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Bottom").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9923,7 +9945,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Bottom,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Left").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9933,7 +9956,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Left,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Right").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9943,7 +9967,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Right,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
             ]
             .spacing(sp.m),
         ]
@@ -10294,39 +10319,61 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         ),
     ];
 
+    // iced pads each row of a table by `padding_y` above and below its
+    // tallest cell (iced_widget 0.14.2 `src/table.rs:259`, `:312`), so a
+    // header cell is `list.header_height` less that padding where the theme
+    // states one, and its text's own height where it states none, as the
+    // rows' cells are.
+    let cell_pad_y = sp.xs;
+    let header_height = native_theme_iced::list_header_height(resolved);
+    let header_height_s = match header_height {
+        Some(h) => format!("{h:.0}px, list.header_height"),
+        None => "its text's (list.header_height unstated)".to_string(),
+    };
+    let header_cell = |title: &'static str| -> Element<'_, Message> {
+        let label = text(title).typeset(&resolved.list.header_font, a11y);
+        match header_height {
+            Some(h) => container(label)
+                .height(Length::Fixed((h - 2.0 * cell_pad_y).max(0.0)))
+                .align_y(iced::Center)
+                .into(),
+            None => label.into(),
+        }
+    };
     let scale_table = table(
         [
             table::column(
-                text("text_scale role").typeset(&resolved.list.header_font, a11y),
+                probe(
+                    probes::LAYOUT_TABLE_HEADER,
+                    Length::Shrink,
+                    header_cell("text_scale role"),
+                ),
                 {
                     let cell = resolved.list.item_font.clone();
                     move |r: ScaleRow| text(r.0).typeset(&cell, a11y)
                 },
             )
             .width(Length::Fixed(160.0)),
-            table::column(text("size").typeset(&resolved.list.header_font, a11y), {
+            table::column(header_cell("size"), {
                 let cell = resolved.list.item_font.clone();
                 move |r: ScaleRow| text(r.1).typeset(&cell, a11y)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("weight").typeset(&resolved.list.header_font, a11y), {
+            table::column(header_cell("weight"), {
                 let cell = resolved.list.item_font.clone();
                 move |r: ScaleRow| text(r.2).typeset(&cell, a11y)
             })
             .width(Length::Fixed(90.0)),
-            table::column(
-                text("line height").typeset(&resolved.list.header_font, a11y),
-                {
-                    let cell = resolved.list.item_font.clone();
-                    move |r: ScaleRow| text(r.3).typeset(&cell, a11y)
-                },
-            )
+            table::column(header_cell("line height"), {
+                let cell = resolved.list.item_font.clone();
+                move |r: ScaleRow| text(r.3).typeset(&cell, a11y)
+            })
             .width(Length::Fixed(110.0)),
         ],
         scale_rows,
     )
     .padding_x(sp.s)
-    .padding_y(sp.xs)
+    .padding_y(cell_pad_y)
     .separator_x(sep.line_width)
     .separator_y(sep.line_width)
     .width(Fill);
@@ -10351,6 +10398,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                     "header",
                     font_row("list.header_font", &resolved.list.header_font).as_str(),
                 ),
+                ("header height", &header_height_s),
                 (
                     "cells",
                     font_row("list.item_font", &resolved.list.item_font).as_str(),
@@ -12243,6 +12291,23 @@ impl Typeset for iced::widget::Text<'_> {
         // (`LineHeight::default`).
         self.typeset(font, a11y)
             .line_height(native_theme_iced::line_height(resolved))
+    }
+}
+
+/// Gives a tooltip the theme's show delay.
+trait ShowDelay {
+    /// The tip waits `tooltip.show_delay` before it opens
+    /// ([`native_theme_iced::tooltip_show_delay`]) where the theme states
+    /// one; where it states none, iced's own delay, none, stays.
+    fn show_delay(self, resolved: &ResolvedTheme) -> Self;
+}
+
+impl ShowDelay for iced::widget::Tooltip<'_, Message> {
+    fn show_delay(self, resolved: &ResolvedTheme) -> Self {
+        match native_theme_iced::tooltip_show_delay(resolved) {
+            Some(delay) => self.delay(delay),
+            None => self,
+        }
     }
 }
 
@@ -14848,6 +14913,121 @@ mod tests {
                 );
             }
             assert_eq!(tooltip_padding(&resolved), expected, "{preset}");
+        }
+    }
+
+    /// The Basic tab's tooltip waits `tooltip.show_delay` before it opens:
+    /// the pointer resting on its button, the bubble is drawn at once where
+    /// the theme states no delay (catppuccin-mocha: iced's own, none), once
+    /// the delay has passed where it states a short one, and not yet where
+    /// it states a long one. iced's `Tooltip` opens on the first event after
+    /// the delay (iced_widget 0.14.2 `src/tooltip.rs:223-245`), and a
+    /// snapshot sends one, `RedrawRequested`.
+    #[test]
+    fn the_basic_tooltip_waits_the_themes_show_delay() {
+        for (delay, opens) in [(None, true), (Some(1_u16), true), (Some(60_000), false)] {
+            let (theme, mut resolved) =
+                match native_theme_iced::from_preset("catppuccin-mocha", false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("catppuccin-mocha: {error}"),
+                };
+            assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
+            resolved.tooltip.show_delay = delay;
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let at = match drawn_layout().get("basic.buttons.tooltip") {
+                Some(rect) => rect.center(),
+                None => panic!("the tooltip's button is not drawn"),
+            };
+            assert!(
+                !drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                "{delay:?}: the bubble is drawn before the pointer is on the button"
+            );
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            std::thread::sleep(Duration::from_millis(2));
+            for _ in 0..3 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            assert_eq!(
+                drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                opens,
+                "{delay:?}: whether the bubble is drawn with the pointer on the button"
+            );
+        }
+    }
+
+    /// The Basic table's header row is `list.header_height` tall where the
+    /// theme states one (adwaita, material-3), else as tall as before
+    /// (catppuccin-mocha): `list.row_height`, or its line box in the header
+    /// font and `list.border.padding`. The Layout page's iced `table` makes
+    /// its header cells that height less the table's own `padding_y` above
+    /// and below, and leaves them their text's height where the theme states
+    /// none, as its rows are.
+    #[test]
+    fn the_tables_headers_take_the_themes_header_height() {
+        for preset in ["adwaita", "material-3", "catppuccin-mocha"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let stated = native_theme_iced::list_header_height(&r);
+            assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
+            let l = &r.list;
+            let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
+            let row = l
+                .row_height
+                .unwrap_or(l.header_font.size * r.defaults.line_height + pad.y());
+            let want = stated.unwrap_or(row);
+
+            let mut state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+            // A selector goes through the whole tree, as the dump's `Survey` does.
+            let _ = texts(&mut ui);
+            let header = match surveyed_layout().get("basic.table.header") {
+                Some(rect) => *rect,
+                None => panic!("{preset}: the Basic table's header is not laid out"),
+            };
+            assert!(
+                (header.height - want).abs() < 0.01,
+                "{preset}: the Basic table's header is {} tall, want {want}",
+                header.height
+            );
+            drop(ui);
+
+            state.active_tab = Tab::Layout;
+            let mut ui = interface(&state);
+            let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+            let want = match stated {
+                Some(h) => h - 2.0 * SP.xs,
+                None => height_of(&mut ui, "text_scale role"),
+            };
+            assert!(
+                (cell.height - want).abs() < 0.01,
+                "{preset}: the Layout table's header cell is {} tall, want {want}",
+                cell.height
+            );
         }
     }
 

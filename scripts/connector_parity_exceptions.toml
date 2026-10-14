@@ -206,18 +206,6 @@ name = "selection_text_color"
 kind = "absent"
 reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
 
-[[exception]]
-connector = "iced"
-name = "tooltip_show_delay"
-kind = "absent"
-reason = "not yet: the iced receiver of `tooltip.show_delay_ms`, for `Tooltip::delay`, lands after the gpui one; G2 Task 13 adds it"
-
-[[exception]]
-connector = "iced"
-name = "list_header_height"
-kind = "absent"
-reason = "not yet: the iced receiver of `list.header_height_px`, for the showcase's table header cells, lands after the egui one; G2 Task 13 adds it"
-
 # ── absent: egui ────────────────────────────────────────────────────────────
 # The egui accessors are the values no `Style` field carries (src/lib.rs,
 # "Where the theme reaches"); these leaves the atlas writes into the `Style`,
