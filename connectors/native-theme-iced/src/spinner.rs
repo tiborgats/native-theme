@@ -384,7 +384,9 @@ mod tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "symbolic-only", |icons| {
+        // The system's icon theme is one that does not exist, so only the
+        // theme the test names holds the indicator.
+        crate::icon_fixture::run(NAME, "no-such-icon-theme", |icons| {
             let theme = icons.join("symbolic-only");
             std::fs::create_dir_all(theme.join("actions")).unwrap();
             std::fs::write(

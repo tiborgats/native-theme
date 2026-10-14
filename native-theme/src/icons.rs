@@ -2381,6 +2381,10 @@ mod colorize_tests {
             !result_str.contains("#000000"),
             "fill=\"#000000\" should be replaced, got: {result_str}"
         );
+        assert!(
+            result_str.contains("fill=\"#ff0000\""),
+            "should contain the hex fill, got: {result_str}"
+        );
     }
 
     #[test]
@@ -2390,6 +2394,10 @@ mod colorize_tests {
         assert!(
             !result_str.contains("fill=\"#000\""),
             "fill=\"#000\" should be replaced, got: {result_str}"
+        );
+        assert!(
+            result_str.contains("fill=\"#14b852\""),
+            "should contain the hex fill, got: {result_str}"
         );
     }
 
@@ -2450,6 +2458,10 @@ mod colorize_tests {
             !result_str.contains("#000000"),
             "stroke=\"#000000\" should be replaced"
         );
+        assert!(
+            result_str.contains("stroke=\"#ff0000\""),
+            "should contain the hex stroke, got: {result_str}"
+        );
     }
 
     #[test]
@@ -2505,36 +2517,6 @@ mod colorize_tests {
         assert_eq!(
             colorize_monochrome_svg(svg, translucent),
             colorize_monochrome_svg(svg, RED)
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_fill_hex_black_with_the_hex() {
-        let svg = b"<svg><path fill=\"#000000\" d=\"M0 0\"/></svg>";
-        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
-        assert!(
-            result_str.contains("fill=\"#14b852\""),
-            "fill=\"#000000\" should be replaced, got: {result_str}"
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_fill_short_hex_black_with_the_hex() {
-        let svg = b"<svg><path fill=\"#000\" d=\"M0 0\"/></svg>";
-        let result_str = String::from_utf8(colorize_monochrome_svg(svg, BLUE)).unwrap();
-        assert!(
-            result_str.contains("fill=\"#3366cc\""),
-            "fill=\"#000\" should be replaced, got: {result_str}"
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_stroke_hex_black_with_the_hex() {
-        let svg = b"<svg><path stroke=\"#000000\" d=\"M0 0\"/></svg>";
-        let result_str = String::from_utf8(colorize_monochrome_svg(svg, GREEN)).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#14b852\""),
-            "stroke=\"#000000\" should be replaced, got: {result_str}"
         );
     }
 
