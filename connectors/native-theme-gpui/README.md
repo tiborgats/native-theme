@@ -73,8 +73,8 @@ crate sits.
 |---|---|
 | `gpui-component` | 0.7.3 |
 | `gpui-base` | 0.7.3 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.9 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.7.3 |
+| `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.9 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.7.3 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
@@ -440,7 +440,9 @@ gpui-component 0.7.0, whose own switch gained one).
 
 ## Features
 
-All six are on by default; `default-features = false` is the way to narrow.
+The first six are on by default; `default-features = false` is the way to
+narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
+(see [Backends](#backends)).
 
 | Feature | Enables |
 |---|---|
@@ -450,6 +452,7 @@ All six are on by default; `default-features = false` is the way to narrow.
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 
 Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
 gpui the SVG bytes (colorized first when a colour is given) as an
@@ -526,22 +529,46 @@ change that re-colorizes them — should drop each replaced source that way
 before letting go of it. `examples/showcase-gpui/support.rs` does it in
 `release_sources`.
 
-## GPUI as `gpui-pre`
+## Backends
 
-gpui-component 0.7 depends on GPUI published as the **`gpui-pre`** package:
-snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
-`0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
-arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.8" }`) so its `Hsla`, `Pixels`
-and `StyleRefinement` are gpui-component's types. Outside the `widgets`
-module its GPUI surface is small: colours and lengths (`Hsla`, `Rgba`,
-`Pixels`), `StyleRefinement`, images (`ImageSource`, `RenderImage`, and
-`Image` / `ImageFormat` without `svg-rasterize`), the `svg` spin animation,
-and `App` / `Global`; the `widgets` module draws elements of its own with
-GPUI's element API. To freeze a snapshot in an
-application, pin
-`gpui-pre = "=0.3.N"` there; a library must not, because an exact pin would
-conflict with any other dependency wanting a later snapshot.
+GPUI Kit 0.7.3 builds on one of two GPUI cores: **gpui-pre**, its default,
+and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
+rendering and layout), which its `gpui-fast` feature selects. The two cores'
+types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
+across the build graph: once any crate turns on `gpui-fast` for gpui-kit or
+gpui-component, every crate in the graph sees GPUI Fast's types.
+
+This crate names GPUI through gpui-kit (`extern crate gpui_kit as gpui;`, the
+alias gpui-kit documents), so it is built on the core gpui-kit is built on:
+
+- An application on **gpui-pre** needs nothing: it is the default.
+- An application on **GPUI Fast** through gpui-kit
+  (`gpui-kit = { version = "0.7.3", features = ["gpui-fast"] }`, with gpui-kit's
+  default `component` feature) needs nothing more either: this crate follows
+  gpui-kit.
+- Any other application on **GPUI Fast** (one that depends on gpui-component
+  rather than on gpui-kit, or uses gpui-kit without its `component` feature)
+  enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and
+  `gpui-component/gpui-fast` together. Turning on `gpui-component/gpui-fast`
+  alone leaves gpui-kit on gpui-pre, and gpui-kit itself then fails to
+  compile.
+
+The gpui-pre crates stay in the build on GPUI Fast as well: gpui-component and
+gpui-base depend on them either way. The documentation on docs.rs is built on
+gpui-pre.
+
+**gpui-pre** is GPUI as the gpui-kit maintainer publishes it: snapshots of
+Zed's `main` branch, republished as `0.3.N` patch bumps every other Sunday.
+Breaking changes from Zed therefore arrive as patch releases. This crate's
+manifest names the package (`gpui = { package = "gpui-pre", … }`) at the
+floor in [Compatibility](#compatibility). Outside the `widgets` module its
+GPUI surface is small: colours and lengths (`Hsla`, `Rgba`, `Pixels`),
+`StyleRefinement`, images (`ImageSource`, `RenderImage`, and `Image` /
+`ImageFormat` without `svg-rasterize`), the `svg` spin animation, and `App` /
+`Global`; the `widgets` module draws elements of its own with GPUI's element
+API. To freeze a snapshot in an application, pin `gpui-pre = "=0.3.N"` there;
+a library must not, because an exact pin would conflict with any other
+dependency wanting a later snapshot.
 
 ## What gets mapped
 

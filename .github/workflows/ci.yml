@@ -46,6 +46,9 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p ${{ matrix.package }} --all-targets
+      - name: Clippy (gpui connector, gpui-fast)
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
       - name: Clippy (iced connector, iced_aw)
         if: matrix.package == 'native-theme-iced'
         run: cargo clippy -p native-theme-iced --all-targets --features iced_aw
@@ -89,7 +92,9 @@ jobs:
       - name: Strict panic lints (gpui connector)
         if: matrix.package == 'native-theme-gpui'
         continue-on-error: true
-        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
+        run: |
+          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
+          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
@@ -164,7 +169,10 @@ jobs:
       - run: cargo check -p native-theme-egui -p native-theme-egui-widgets --all-features --locked
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
-      - run: cargo check -p native-theme-gpui --all-features --locked
+      # `--all-features` would turn on `gpui-fast`, which changes the GPUI
+      # core: the default core and GPUI Fast are checked one at a time.
+      - run: cargo check -p native-theme-gpui --locked
+      - run: cargo check -p native-theme-gpui --features gpui-fast --locked
 
   test-build-crate:
     name: Test native-theme-build
@@ -221,6 +229,11 @@ jobs:
       - name: Test the gpui connector without default features
         if: matrix.package == 'native-theme-gpui'
         run: cargo test -p native-theme-gpui --lib --no-default-features
+      # On GPUI Fast. Doctests excluded: each is a crate of its own that names
+      # gpui-pre as `gpui`, not GPUI through gpui-kit.
+      - name: Test the gpui connector on GPUI Fast
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo test -p native-theme-gpui --features gpui-fast --all-targets
       # Reads the toolkits' sources through `cargo metadata` and fails when an
       # upstream release adds a widget that no showcase renders or
       # docs/showcase-exceptions.toml excepts. Runs here because this leg already
@@ -232,6 +245,24 @@ jobs:
           python3 --version
           python3 scripts/check_widget_coverage.py
 
+  # The gpui connector on GPUI Fast is built for Windows and macOS too: no
+  # other job on push builds it there, and linking the showcase catches what
+  # a check cannot (one Windows manifest per binary, which GPUI Kit 0.7.3
+  # fixed; gpui-base and gpui-component enable
+  # `windows-manifest-provided-by-host` on gpui-fast).
+  gpui-fast-build:
+    name: Build gpui showcase on GPUI Fast (${{ matrix.os }})
+    needs: fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -p native-theme-gpui --example showcase-gpui --features gpui-fast
 
   # The showcase-parity comparator's static modes, as scripts/check_release.sh
   # runs them: --check-list validates docs/showcase-elements.toml and the

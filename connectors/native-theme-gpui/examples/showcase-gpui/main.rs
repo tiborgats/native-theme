@@ -40,6 +40,10 @@
 //! section-divider blocks (`// ─────`) separate one widget category, page or
 //! view from the next.
 
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
+
 mod app;
 mod chrome;
 mod demo;

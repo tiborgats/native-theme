@@ -1447,6 +1447,18 @@ model, the platform presets and the three connectors
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
       for that stated value.
 
+- [ ] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
+      unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks
+      for `unicode-properties = "=0.1.3"`, and a lockfile resolves every
+      target, so since the connector's `gpui-fast` feature (v0.7.0) the
+      workspace's Cargo.lock holds 0.1.3 (it was 0.1.4) for every user of it:
+      gpui-pre-web and `rustybuzz`, which the usvg of gpui-pre and of
+      gpui-component's resvg depend on (`cargo tree --workspace -i
+      unicode-properties --target all`, 2026-10-14; native-theme's own resvg
+      has no text support and does not reach it). Once a gpui-fast-web
+      release drops the exact pin, `cargo update -p unicode-properties` and
+      check the lockfile is back on 0.1.4.
+
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
 - [ ] [upstream] a `ghost_hover` / `ghost_hover_foreground` token pair separate from

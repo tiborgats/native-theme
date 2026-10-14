@@ -35,6 +35,10 @@
 //! inset is upstream's own, and without one the stated right side is drawn.
 //! Every other builder rests on the source citation in its doc comment.
 
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
+
 use gpui::{
     AbsoluteLength, AnyElement, App, AppContext as _, Bounds, Context, DefiniteLength,
     InteractiveElement as _, IntoElement, Length, ParentElement as _, Pixels, Render, SharedString,

@@ -108,7 +108,8 @@
 //!
 //! # Features
 //!
-//! All six are on by default.
+//! The first six are on by default; `gpui-fast` is off, because it changes the
+//! GPUI core rather than adding to it.
 //!
 //! | Feature | Enables |
 //! |---------|---------|
@@ -118,6 +119,12 @@
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
+//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+//!
+//! The crate names GPUI through gpui-kit, so it is built on whichever core
+//! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
+//! gpui-kit's `component` feature gets this crate on GPUI Fast without
+//! `gpui-fast` here. The README's *Backends* section says when to enable it.
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
@@ -128,6 +135,10 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
 
 pub mod base_layer;
 pub(crate) mod colors;

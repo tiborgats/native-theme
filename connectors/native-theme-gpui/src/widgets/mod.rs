@@ -45,10 +45,10 @@
 //! 0.7.3 and gpui-pre 0.3.9.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
-/// writes it (gpui-pre-macros `derive_into_element.rs`). Written out because
-/// the derive rewrites its `gpui::` paths to `gpui_kit::` whenever the
-/// manifest names gpui-kit (`gpui_pre_facade_paths.rs`), which this crate's
-/// dev-dependencies do, and the library does not depend on gpui-kit.
+/// writes it (gpui-pre-macros `derive_into_element.rs`). Written out, so the
+/// impl does not rest on the derive's path rewriting: the derive turns its
+/// `gpui::` paths into `gpui_kit::` whenever the manifest names gpui-kit
+/// (`gpui_pre_facade_paths.rs`).
 macro_rules! into_element {
     ($($widget:ty),+ $(,)?) => {$(
         impl gpui::IntoElement for $widget {

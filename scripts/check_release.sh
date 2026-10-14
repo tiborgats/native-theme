@@ -18,9 +18,10 @@
 #   (no argument)  the full run: every section below. Required on the last
 #                  commit of every fix phase and before the release commit.
 #   --commit       the per-commit subset: skips the release-only checks
-#                  (the release-tag check, docs.rs emulation, packaging,
-#                  semver checks, security audit, outdated dependencies, and
-#                  the visual-asset and compatibility stamp checks), each
+#                  (the release-tag check, the gpui connector's tests on GPUI
+#                  Fast, docs.rs emulation, packaging, semver checks,
+#                  security audit, outdated dependencies, and the
+#                  visual-asset and compatibility stamp checks), each
 #                  printing "skipped (--commit mode)", and names them in the
 #                  final summary.
 
@@ -35,9 +36,10 @@ Usage: scripts/check_release.sh [--commit]
                  every fix phase and before the release commit
   --commit       the per-commit subset: every lint, check, test, docs,
                  widget-coverage, showcase-parity and archive-index gate; skips
-                 the release-tag check, docs.rs emulation, packaging, semver
-                 checks, the security audit, outdated dependencies, and the
-                 visual-asset and compatibility stamp checks
+                 the release-tag check, the gpui connector's tests on GPUI
+                 Fast, docs.rs emulation, packaging, semver checks, the
+                 security audit, outdated dependencies, and the visual-asset
+                 and compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -555,6 +557,10 @@ for crate in $WORKSPACE_CRATES; do
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
 done
+# The gpui connector on GPUI Fast (its `gpui-fast` feature), which the loop's
+# default features leave off. Soft, as the connector's default clippy.
+run_check_soft "clippy (native-theme-gpui, gpui-fast)" \
+    cargo clippy -p native-theme-gpui --all-targets --features gpui-fast -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: strict panic lints (library code only)
@@ -604,6 +610,8 @@ run_check "strict-panic (native-theme-iced)" \
     bash scripts/check_strict_panic.sh -p native-theme-iced --lib
 run_check_soft "strict-panic (native-theme-gpui)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
+run_check_soft "strict-panic (native-theme-gpui, gpui-fast)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
 run_check "strict-panic (native-theme-egui)" \
     bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
 run_check "strict-panic (native-theme-egui-widgets)" \
@@ -629,6 +637,16 @@ done
 # compile without it. Same soft class as the connector's default test.
 run_tests_soft "test (native-theme-gpui, no features)" \
     cargo test -p native-theme-gpui --lib --no-default-features
+# The gpui connector on GPUI Fast: a second GPUI core and platform layer to
+# build, so the per-commit subset leaves it to the full run and CI. Doctests
+# excluded: each is a crate of its own that names gpui-pre as `gpui`.
+if [[ $COMMIT_MODE ]]; then
+    printf "${DIM}test (native-theme-gpui, gpui-fast)${NC}\n"
+    print_skipped "test (native-theme-gpui, gpui-fast)"
+else
+    run_tests_soft "test (native-theme-gpui, gpui-fast)" \
+        cargo test -p native-theme-gpui --features gpui-fast --all-targets
+fi
 # The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
 # only under `portal` + `watch`, which the default features leave off; the
 # test discriminates on a desktop whose session bus runs xdg-desktop-portal.
@@ -910,7 +928,14 @@ else
     SEMVER_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
         | jq -r '.packages[] | select(.publish != []) | select(any(.targets[]; any(.kind[]; . == "lib"))) | .name')
     for crate in $SEMVER_CRATES; do
-        run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate"
+        # The tool's own feature choice would turn on the gpui connector's
+        # `gpui-fast`, which changes the GPUI core its API is written in; the
+        # published API is the default features'.
+        if [ "$crate" = "native-theme-gpui" ]; then
+            run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate" --default-features
+        else
+            run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate"
+        fi
     done
 fi
 

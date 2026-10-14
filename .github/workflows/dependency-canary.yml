@@ -65,7 +65,7 @@ jobs:
             echo "## Resolved GPUI stack"
             echo
             echo '```'
-            for c in gpui-pre gpui-base gpui-component gpui-kit; do
+            for c in gpui-pre gpui-fast gpui-fast-apple gpui-fast-linux gpui-fast-macos gpui-fast-macros gpui-fast-platform gpui-fast-web gpui-fast-wgpu gpui-fast-windows gpui-base gpui-component gpui-kit; do
               cargo pkgid "$c" 2>/dev/null | sed -E 's|.*#||; s|@| |'
             done
             echo '```'
@@ -89,6 +89,7 @@ jobs:
           cargo clippy -p native-theme-iced --all-targets
           cargo clippy -p native-theme-iced --all-targets --features iced_aw
           cargo clippy -p native-theme-gpui --all-targets
+          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
           cargo clippy -p native-theme-egui --all-targets
           cargo clippy -p native-theme-egui --all-targets --all-features
           cargo clippy -p native-theme-egui-widgets --all-targets
@@ -104,6 +105,7 @@ jobs:
           cargo test -p native-theme-iced --features iced_aw
           cargo test -p native-theme-gpui
           cargo test -p native-theme-gpui --lib --no-default-features
+          cargo test -p native-theme-gpui --features gpui-fast --all-targets
           cargo test -p native-theme-egui
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features
