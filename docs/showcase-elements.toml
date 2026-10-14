@@ -802,7 +802,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.tooltip.bubble"
 name = "Tooltip"
 parent = "basic.buttons.tooltip"
-leaves = ["tooltip.background_color", "tooltip.font", "tooltip.font.color", "tooltip.max_width_px", "tooltip.border.color", "tooltip.border.corner_radius_px", "tooltip.border.line_width_px", "tooltip.border.shadow_enabled", "tooltip.border.padding_top_px", "tooltip.border.padding_right_px", "tooltip.border.padding_bottom_px", "tooltip.border.padding_left_px", "defaults.line_height"]
+leaves = ["tooltip.background_color", "tooltip.font", "tooltip.font.color", "tooltip.max_width_px", "tooltip.show_delay_ms", "tooltip.border.color", "tooltip.border.corner_radius_px", "tooltip.border.line_width_px", "tooltip.border.shadow_enabled", "tooltip.border.padding_top_px", "tooltip.border.padding_right_px", "tooltip.border.padding_bottom_px", "tooltip.border.padding_left_px", "defaults.line_height"]
 states = ["Shown"]
 when = "the Tooltip button is hovered"
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.0, 0.5, 0.5, 0.0] }
@@ -1847,7 +1847,7 @@ sample = { text = "glyph" }
 id = "basic.table.frame"
 name = "Table"
 parent = "basic.table.heading"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.header_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Row 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1855,7 +1855,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.table.header"
 name = "Table header"
 parent = "basic.table.frame"
-leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.header_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5] }

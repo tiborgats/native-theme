@@ -3948,6 +3948,25 @@ fn style_literals(source: &str) -> Vec<String> {
     out
 }
 
+/// A `_ms` leaf of the list reads as a `_px` one does: `tooltip.show_delay_ms` shows the
+/// resolved theme's `tooltip.show_delay` and finds its `mapping.toml` row,
+/// `tooltip.show_delay`.
+#[test]
+fn a_ms_leaf_reads_its_value() {
+    let prefs = AccessibilityPreferences::default();
+    let (atlas, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset builds");
+    let delay = atlas.resolved_for(egui::Theme::Light).tooltip.show_delay;
+    assert!(delay.is_some(), "kde-breeze states a tooltip delay");
+    let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
+    let shown = crate::info::listed_value(&json, "tooltip.show_delay_ms")
+        .map(|v| crate::info::leaf_text("tooltip.show_delay_ms", &v));
+    assert_eq!(shown, delay.map(|ms| ms.to_string()));
+    assert_eq!(
+        crate::info::mapping_key("tooltip.show_delay_ms"),
+        "tooltip.show_delay"
+    );
+}
+
 /// `docs/showcase-elements.toml`, as the showcase reads it.
 fn listed_elements() -> Vec<crate::elements::ShowcaseElement> {
     let elements = crate::elements::showcase_elements();

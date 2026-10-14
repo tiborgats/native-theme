@@ -5265,9 +5265,9 @@ fn element_title(element: &ShowcaseElement) -> String {
 }
 
 /// A leaf's value as the theme holds it, and its colour where it is one. The
-/// leaf is the registry's path (`button.border.padding_top_px`); the resolved
-/// theme spells the same field without the unit and with the padding's
-/// sides nested (`button.border.padding.top`). The layout distances, the
+/// leaf is the registry's path (`button.border.padding_top_px`,
+/// `tooltip.show_delay_ms`); the resolved theme spells the same field without
+/// the unit and with the padding's sides nested (`button.border.padding.top`). The layout distances, the
 /// icon set and the icon theme are not in `ResolvedTheme`: they are read
 /// where the showcase keeps them.
 fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Option<Color>) {
@@ -5300,7 +5300,10 @@ fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Optio
         _ => {}
     }
     let found = leaf.split('.').try_fold(values, |node, segment| {
-        let segment = segment.strip_suffix("_px").unwrap_or(segment);
+        let segment = segment
+            .strip_suffix("_px")
+            .or_else(|| segment.strip_suffix("_ms"))
+            .unwrap_or(segment);
         match segment.strip_prefix("padding_") {
             Some(side) => node.get("padding").and_then(|p| p.get(side)),
             None => node.get(segment),
@@ -15783,6 +15786,31 @@ mod tests {
         assert_eq!(
             value("defaults.line_height").0,
             format!("{}", r.defaults.line_height)
+        );
+    }
+
+    /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is
+    /// the resolved theme's `tooltip.show_delay`, a number as itself.
+    #[test]
+    fn a_ms_leaf_reads_its_value() {
+        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let delay = resolved.tooltip.show_delay;
+        assert!(delay.is_some(), "kde-breeze states a tooltip delay");
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            ..State::default()
+        };
+        let values = match toml::Value::try_from(&state.current_resolved) {
+            Ok(values) => values,
+            Err(error) => panic!("the resolved theme as TOML: {error}"),
+        };
+        assert_eq!(
+            Some(leaf_value(&state, &values, "tooltip.show_delay_ms").0),
+            delay.map(|ms| ms.to_string())
         );
     }
 

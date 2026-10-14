@@ -1265,7 +1265,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
-        "basic.table.header",
+        "basic.table",
         "list.header_height_px",
         "gpui: geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
     ),

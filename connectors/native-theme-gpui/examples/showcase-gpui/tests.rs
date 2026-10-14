@@ -9140,6 +9140,29 @@ fn a_leaf_value_reads_as_the_showcases_agreed() {
     }
 }
 
+/// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is the
+/// resolved theme's `tooltip.show_delay`, a number as itself.
+#[test]
+fn a_ms_leaf_reads_its_value() {
+    use crate::info::values::leaf_value;
+    let theme = native_theme::theme::Theme::preset("kde-breeze").expect("the preset loads");
+    let layout = theme.layout.clone();
+    let resolved = theme
+        .into_variant(native_theme::theme::ColorMode::Light)
+        .expect("the preset has the variant")
+        .into_resolved(&native_theme::ResolutionContext::for_tests())
+        .expect("the preset resolves");
+    let delay = resolved
+        .tooltip
+        .show_delay
+        .expect("kde-breeze states a tooltip delay");
+    let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
+    assert_eq!(
+        leaf_value("tooltip.show_delay_ms", &json, &layout, None).text,
+        delay.to_string()
+    );
+}
+
 #[gpui::test]
 fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppContext) {
     use crate::speech::{SilentRecognizer, SyntheticAudio};

@@ -58,13 +58,16 @@ pub fn leaf_value(
 }
 
 /// One step down a registry path in the resolved theme's JSON: a field by
-/// its own name, or by the name without its `_px` unit, a border side
-/// (`padding_top_px`) under `padding`.
+/// its own name, or by the name without its `_px` or `_ms` unit, a border
+/// side (`padding_top_px`) under `padding`.
 fn step<'a>(at: &'a serde_json::Value, segment: &str) -> Option<&'a serde_json::Value> {
     if let Some(found) = at.get(segment) {
         return Some(found);
     }
-    let bare = segment.strip_suffix("_px").unwrap_or(segment);
+    let bare = segment
+        .strip_suffix("_px")
+        .or_else(|| segment.strip_suffix("_ms"))
+        .unwrap_or(segment);
     if let Some(side) = bare.strip_prefix("padding_") {
         return at.get("padding").and_then(|padding| padding.get(side));
     }

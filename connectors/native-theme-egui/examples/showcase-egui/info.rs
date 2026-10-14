@@ -298,8 +298,8 @@ fn sink_text(sink: &Sink) -> String {
 }
 
 /// The value at a leaf as `docs/showcase-elements.toml` spells it, in `theme_json`'s tree: a
-/// `*_px` segment is the serialised name without the suffix, and `padding_<side>_px` the side of
-/// the border's `padding`.
+/// `*_px` or `*_ms` segment is the serialised name without the suffix, and `padding_<side>_px`
+/// the side of the border's `padding`.
 pub(crate) fn listed_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
     let mut current = json;
     for part in leaf.split('.') {
@@ -312,7 +312,7 @@ fn listed_step<'a>(value: &'a serde_json::Value, part: &str) -> Option<&'a serde
     if let Some(next) = value.get(part) {
         return Some(next);
     }
-    let bare = part.strip_suffix("_px")?;
+    let bare = unit_less(part)?;
     if let Some(next) = value.get(bare) {
         return Some(next);
     }
@@ -320,12 +320,18 @@ fn listed_step<'a>(value: &'a serde_json::Value, part: &str) -> Option<&'a serde
     value.get("padding")?.get(side)
 }
 
-/// The `mapping.toml` key of a leaf as `docs/showcase-elements.toml` spells it: each `*_px`
-/// segment without the suffix, `padding_<side>` as `padding.<side>`.
+/// A leaf's segment without its `_px` or `_ms` unit, if it has one.
+fn unit_less(part: &str) -> Option<&str> {
+    part.strip_suffix("_px")
+        .or_else(|| part.strip_suffix("_ms"))
+}
+
+/// The `mapping.toml` key of a leaf as `docs/showcase-elements.toml` spells it: each `*_px` or
+/// `*_ms` segment without the suffix, `padding_<side>` as `padding.<side>`.
 pub(crate) fn mapping_key(leaf: &str) -> String {
     leaf.split('.')
         .map(|part| {
-            let bare = part.strip_suffix("_px").unwrap_or(part);
+            let bare = unit_less(part).unwrap_or(part);
             match bare.strip_prefix("padding_") {
                 Some(side) => format!("padding.{side}"),
                 None => bare.to_string(),
