@@ -215,7 +215,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 /// `Spacing::window_margin`'s `Margin::same(6)` (`egui/src/style.rs:1456`), a panel frame's
 /// `Margin::symmetric(8, 2)` (`egui/src/containers/frame.rs:187`) — never an invented `0`.
 /// `base` is a parameter because only the call site knows the sink, as in iced's
-/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:422-432`). The call site reports a
+/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:492-502`). The call site reports a
 /// non-finite side, and a saturated one.
 #[inline]
 #[must_use]

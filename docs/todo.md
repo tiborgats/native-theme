@@ -50,7 +50,7 @@ the file was pruned on 2026-10-11, not reordered.
       of platform-facts has no hover row at all, so none of those 32 values
       is sourced there, and
       only `windows-11` says what its value is: "Fluent checkbox hover fill"
-      (`native-theme/src/presets/windows-11.toml:183-184`), without saying for
+      (`native-theme/src/presets/windows-11.toml:207-208`), without saying for
       which box state. Native toolkits do style the checked box under the
       pointer as a state of its own: WinUI3
       gives `CheckBoxCheckBackgroundFillCheckedPointerOver` =
@@ -254,7 +254,7 @@ the file was pruned on 2026-10-11, not reordered.
       `ThemeWatcher::system_rebuild`
       (`connectors/native-theme-egui/src/watch.rs:100`, then
       `SystemTheme::from_system()` at `ext.rs:242`), and gpui's
-      `from_system` (`connectors/native-theme-gpui/src/lib.rs:337`) calls it
+      `from_system` (`connectors/native-theme-gpui/src/lib.rs:389`) calls it
       too. An application that pinned `macos-monterey` on macOS 26 gets
       `macos-tahoe` after the first theme change. A feature gap, not a bug:
       decide whether a connector's re-read keeps the pinned preset (the
@@ -349,7 +349,7 @@ the file was pruned on 2026-10-11, not reordered.
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
       (`native-theme/src/presets/macos-monterey.toml:187-201`, `:640-654`;
-      `native-theme/src/presets/windows-11.toml:209-222`, `:706-719`). No
+      `native-theme/src/presets/windows-11.toml:237-250`, `:797-810`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
       resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:197`),
@@ -361,13 +361,13 @@ the file was pruned on 2026-10-11, not reordered.
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
       `native-theme/src/presets/macos-monterey.toml:199`, `:652`) and not on
-      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:220`,
-      `:717`): state the measured value in the two light variants, find a
+      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:250`,
+      `:810`): state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
       `preset-validator` agent over both presets against §2.8.
       *M4 T35 (2026-10-13):* windows-11 light states the measured `#c2c2c2`
-      (`native-theme/src/presets/windows-11.toml:232`); dark still has no
-      source (`:774`). WinUI 3 has one: `ScrollBarThumbFill` and
+      (`native-theme/src/presets/windows-11.toml:247`); dark still has no
+      source (`:806`). WinUI 3 has one: `ScrollBarThumbFill` and
       `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
       `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
       Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
@@ -392,7 +392,7 @@ the file was pruned on 2026-10-11, not reordered.
 
 ### Fonts: find a system face by family, weight and style
 
-- [ ] [1.0] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:480-485`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:203-205`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:5697-5711`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
+- [ ] [1.0] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:1156-1161`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:203-205`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:12394-12405`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
 
 ### Icons: one monochrome-SVG colouriser, in native-theme
 
@@ -817,7 +817,7 @@ model, the platform presets and the three connectors
       `:768`); the review reads these colours as not following dark mode,
       which no dark-mode probe has checked yet. Since M2b the dark preset's
       `button.hover_background` is WinUI's opaque, flattened `#323232`
-      (`windows-11.toml:613`), where it was a near-invisible translucent
+      (`windows-11.toml:687`), where it was a near-invisible translucent
       layer, so hovering such a light button turns it dark grey. The code
       predates M2; M4 decides with the rest of this entry whether the reader
       writes Win32 colours into the dark variant at all.
@@ -868,9 +868,9 @@ model, the platform presets and the three connectors
 - [ ] [v0.7.0] M4 T35 (2026-10-13) gave windows-11 WinUI 3's brushes where a
       value derives from the accent and no inheritance carries it: the text
       box's focused bottom line `SystemAccentColorDark1` / `Light2` (`#0067c0`
-      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml:158`, `:701`) and
+      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml:173`, `:733`) and
       the on switch's hover `AccentFillColorSecondary`, those shades at 0.9,
-      flattened (`#1875c5` / `#48b2e9`, `:419`, `:961`), each the UISettings
+      flattened (`#1875c5` / `#48b2e9`, `:434`, `:993`), each the UISettings
       shade of the default accent `#0078d4` on the OS probe. On a live system
       with another accent they stay the default accent's: the reader writes
       the shades only into the accent and checked buttons' fills
@@ -1409,14 +1409,14 @@ model, the platform presets and the three connectors
       `extreme_bg_color` takes.
       `windows-11` states the track transparent too since M2b Step 7b, WinUI's
       `SubtleFillColorTransparent`, `#ffffff00` in light and dark
-      (`native-theme/src/presets/windows-11.toml:211`, `:708`;
+      (`native-theme/src/presets/windows-11.toml:239`, `:799`;
       `docs/platform-facts.md:1277`), so the same holds there.
 - [ ] [v0.7.0] For M7: the left and right panels fill with
       `sidebar.background_color`
       (`connectors/native-theme-egui/src/style/frames.rs:190-193`), which
       `windows-11` states transparent since M2b Step 7b, WinUI's docked
       `NavigationView` pane, `#f3f3f300` / `#20202000`
-      (`native-theme/src/presets/windows-11.toml:335`, `:832`). eframe
+      (`native-theme/src/presets/windows-11.toml:379`, `:939`). eframe
       0.36.2's root `Ui` "has no margin or background color"
       (`eframe/src/epi.rs:173`), and its default `clear_color` is
       `rgba(12, 12, 12, 180)` (`epi.rs:248-252`), so an ordinary eframe app
@@ -2892,7 +2892,7 @@ the gap — closing it is a change, and each wants its own decision.
       is done (v0.5.9). WinUI measures its combobox's right padding, 0, to
       a separate 38px arrow column (platform-facts §2.24), a structure the
       model has no field for, so windows-11 states WinUI's right padding, 0
-      (`native-theme/src/presets/windows-11.toml:460`, `:956`), and no field
+      (`native-theme/src/presets/windows-11.toml:506`, `:1065`), and no field
       carries the column. An arrow-column field (or a
       right padding that includes it) would let a connector with such a
       column draw it.

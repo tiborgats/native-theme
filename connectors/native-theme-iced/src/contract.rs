@@ -3495,7 +3495,7 @@ fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_th
     // A translucent hover layer shows the difference between layering and
     // replacing (section 3.2). No bundled preset states one since M2b Step 7b
     // (windows-11 states WinUI's replacing fill flattened,
-    // native-theme/src/presets/windows-11.toml:116), so the fixture is
+    // native-theme/src/presets/windows-11.toml:127), so the fixture is
     // windows-11 light with that brush as the resource gives it,
     // `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1179).
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?

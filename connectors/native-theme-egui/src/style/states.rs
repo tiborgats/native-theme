@@ -243,7 +243,7 @@ mod tests {
 
     /// C17: a translucent hover layer is composited over the idle fill, not written as it
     /// stands. No bundled preset states one since M2b Step 7b (windows-11 states WinUI's
-    /// replacing fill flattened, `native-theme/src/presets/windows-11.toml:116`), so the
+    /// replacing fill flattened, `native-theme/src/presets/windows-11.toml:127`), so the
     /// fixture is windows-11 with that brush as the resource gives it,
     /// `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1179).
     #[test]
