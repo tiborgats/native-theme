@@ -18,7 +18,8 @@
 # Composite types used in property definitions below. Scalar types:
 #   "color"  — Rgba color value
 #   "f32"    — 32-bit float (dimensions in logical pixels, ratios)
-#   "u16"    — 16-bit unsigned int (CSS font-weight: 400=Normal, 700=Bold)
+#   "u16"    — 16-bit unsigned int (CSS font-weight: 400=Normal, 700=Bold;
+#              integer milliseconds for an `_ms` key)
 #   "bool"   — boolean
 #   "string" — UTF-8 string
 #   "enum"   — enumerated value (variants noted in comments)
@@ -259,6 +260,7 @@ border                       = "border"
 background_color             = "color"
 font                         = "font"
 max_width_px                 = "f32"
+show_delay_ms                = "u16"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════

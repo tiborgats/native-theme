@@ -205,6 +205,8 @@ shadow_enabled = false
 [light.tooltip]
 background_color = "#f7f7f7"
 max_width_px = 300.0
+# platform-facts.md:1264 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
+show_delay_ms = 700
 
 
 [light.tooltip.border]
@@ -663,6 +665,8 @@ shadow_enabled = false
 # platform-facts.md:1251 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)
 background_color = "#292c30"
 max_width_px = 300.0
+# platform-facts.md:1264 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
+show_delay_ms = 700
 
 
 [dark.tooltip.border]

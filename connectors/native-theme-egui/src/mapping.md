@@ -9,14 +9,14 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
-| Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
+| Surfaces (window, dialog, popover, card, tooltip, menu) | 109 | 8 | 55 | 31 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
 | Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **505** | **47** | **208** | **167** | **83** |
+| **TOTAL** | **506** | **47** | **208** | **167** | **84** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
+UNMAPPABLE sub-tags (§2): `egui-limited` 51, `receiver-pending` 1, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
 ## Rows
 
@@ -185,6 +185,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void
 | `tooltip.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `tooltip.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `tooltip.max_width` | DIRECT | `spacing.tooltip_width` |  |
+| `tooltip.show_delay` | UNMAPPABLE |  | `receiver-pending`: native-theme-egui: no receiver yet for Style::interaction.tooltip_delay, the delay in seconds (egui style.rs:928) |
 | `window.background_color` | SCOPED | \[window\] `fill` |  |
 | `window.border.color` | SCOPED | \[window\] `stroke.color` |  |
 | `window.border.corner_radius` | DIRECT | `visuals.window_corner_radius` |  |

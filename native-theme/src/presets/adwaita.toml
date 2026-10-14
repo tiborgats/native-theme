@@ -179,6 +179,8 @@ padding_vertical_px = 3.0
 [light.tooltip]
 background_color = "#2e3436"
 max_width_px = 360.0
+# platform-facts.md:1264 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+show_delay_ms = 500
 
 
 [light.tooltip.border]
@@ -555,6 +557,8 @@ padding_vertical_px = 3.0
 [dark.tooltip]
 background_color = "#3a3a3e"
 max_width_px = 360.0
+# platform-facts.md:1264 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+show_delay_ms = 500
 
 
 [dark.tooltip.border]

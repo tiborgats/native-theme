@@ -307,6 +307,12 @@ pub struct TooltipTheme {
     #[serde(rename = "max_width_px")]
     #[theme(check = "non_negative")]
     pub max_width: Option<f32>,
+    /// Delay in milliseconds between the pointer coming to rest on an element
+    /// and its tooltip showing. `None` where the platform states none: AppKit
+    /// documents no delay (docs/platform-facts.md §2.7).
+    #[serde(rename = "show_delay_ms")]
+    #[theme(category = "soft_option")]
+    pub show_delay: Option<u16>,
     /// Tooltip font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,

@@ -201,6 +201,8 @@ color = "#6750a4"
 background_color = "#322f35"
 # platform-facts.md:1255 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
 max_width_px = 200.0
+# platform-facts.md:1264 (§2.7): 0, shown on pointer enter (Compose BasicTooltip.kt:271-276; Tooltip.kt:1075-1099)
+show_delay_ms = 0
 
 
 [light.tooltip.font]
@@ -700,6 +702,8 @@ color = "#d0bcff"
 background_color = "#e6e0e9"
 # platform-facts.md:1255 (§2.7): Compose plainTooltipMaxWidth 200 (androidx 1e677685, Tooltip.kt:535)
 max_width_px = 200.0
+# platform-facts.md:1264 (§2.7): 0, shown on pointer enter (Compose BasicTooltip.kt:271-276; Tooltip.kt:1075-1099)
+show_delay_ms = 0
 
 
 [dark.tooltip.font]

@@ -1255,3 +1255,80 @@ fn native_themes_state_the_expanders_structure() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+/// One soft field per native preset against platform-facts' row at `line`,
+/// static and live, and the unsourced presets stating none: the mismatches.
+fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
+    field: &str,
+    line: usize,
+    want: &[(NativePreset, Option<T>)],
+    resolved: fn(&ResolvedTheme) -> Option<T>,
+    stated: fn(&ThemeMode) -> Option<T>,
+) -> Vec<String> {
+    let mut failures = Vec::new();
+    for preset in NativePreset::ALL {
+        let n = want.iter().filter(|(p, _)| *p == preset).count();
+        if n != 1 {
+            failures.push(format!("{preset:?}: {n} rows for {field}"));
+        }
+    }
+    for &(preset, expected) in want {
+        for variant in gate_variants(preset) {
+            match variant.and_then(|(source, name, v)| resolve(v).map(|t| (source, name, t))) {
+                Ok((source, name, t)) => {
+                    let got = resolved(&t);
+                    if got != expected {
+                        failures.push(format!(
+                            "{source} {name}: {field} {got:?}, platform-facts gives \
+                             {expected:?} (docs/platform-facts.md:{line})"
+                        ));
+                    }
+                }
+                Err(e) => failures.push(e),
+            }
+        }
+    }
+    for name in UNSOURCED_PRESETS {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) => {
+                    if let Some(got) = stated(&v) {
+                        failures.push(format!(
+                            "{name} {mode:?}: states {field} = {got:?}, with no source"
+                        ));
+                    }
+                }
+                Err(e) => failures.push(format!("{name} {mode:?}: {e}")),
+            }
+        }
+    }
+    failures
+}
+
+/// The tooltip's show delay per platform, in milliseconds, from
+/// platform-facts §2.7 (`:1264`); `None` where the cell states none.
+#[rustfmt::skip]
+const TOOLTIP_SHOW_DELAY: [(NativePreset, Option<u16>); 6] = [
+    (KdeBreeze, Some(700)),
+    (Adwaita, Some(500)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(800)),
+    (Material3, Some(0)),
+];
+
+/// The native themes state the tooltip's show delay as platform-facts gives
+/// it, static and live, and no other preset states one.
+#[test]
+fn native_themes_state_the_tooltip_show_delay() {
+    assert!(facts_line(1264).starts_with("| `show_delay`"));
+    assert!(facts_heading(1264).starts_with("### 2.7 "));
+    let failures = soft_field_failures(
+        "tooltip.show_delay_ms",
+        1264,
+        &TOOLTIP_SHOW_DELAY,
+        |t| t.tooltip.show_delay,
+        |v| v.tooltip.show_delay,
+    );
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

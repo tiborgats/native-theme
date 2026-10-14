@@ -679,6 +679,11 @@ sinks   = [{ path = "fill", surface = "tooltip" }]
 verdict = "direct"
 sinks   = [{ path = "spacing.tooltip_width" }]
 
+["tooltip.show_delay"]
+verdict  = "unmappable"
+sub_tag  = "receiver-pending"
+upstream = "native-theme-egui: no receiver yet for Style::interaction.tooltip_delay, the delay in seconds (egui style.rs:928)"
+
 ["tooltip.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"

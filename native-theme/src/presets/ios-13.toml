@@ -187,6 +187,7 @@ shadow_enabled = false
 [light.tooltip]
 background_color = "#2c2c2e"
 max_width_px = 300.0
+# show_delay_ms unset: UIToolTipInteraction, iOS 15+, states no delay
 
 
 [light.tooltip.font]
@@ -530,6 +531,7 @@ shadow_enabled = false
 [dark.tooltip]
 background_color = "#2c2c2e"
 max_width_px = 300.0
+# show_delay_ms unset: UIToolTipInteraction, iOS 15+, states no delay
 
 
 [dark.tooltip.font]

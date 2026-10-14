@@ -221,6 +221,8 @@ shadow_enabled = false
 # platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #F9F9F9
 background_color = "#f9f9f9"
 max_width_px = 320.0
+# platform-facts.md:1264 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
+show_delay_ms = 800
 
 
 [light.tooltip.border]
@@ -781,6 +783,8 @@ shadow_enabled = false
 # platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #2C2C2C
 background_color = "#2c2c2c"
 max_width_px = 320.0
+# platform-facts.md:1264 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
+show_delay_ms = 800
 
 
 [dark.tooltip.border]

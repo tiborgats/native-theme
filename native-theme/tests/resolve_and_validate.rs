@@ -519,6 +519,19 @@ fn a_negative_bar_height_is_a_validation_error() {
 }
 
 #[test]
+fn a_show_delay_past_u16_fails_to_load() {
+    let max = Theme::from_toml("[light.tooltip]\nshow_delay_ms = 65535\n").unwrap();
+    assert_eq!(max.light.and_then(|v| v.tooltip.show_delay), Some(u16::MAX));
+    assert!(
+        matches!(
+            Theme::from_toml("[light.tooltip]\nshow_delay_ms = 70000\n"),
+            Err(Error::Toml(_))
+        ),
+        "a show delay past u16::MAX milliseconds must be a TOML error"
+    );
+}
+
+#[test]
 fn row_heights_and_arrow_area_width_are_none_where_absent() {
     let mut v = Theme::preset("windows-11")
         .unwrap()
