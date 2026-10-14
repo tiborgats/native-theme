@@ -12,7 +12,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M2a–M2e | Steps 1–6 done 2026-10-11 (stop point A, branch `m2-research` merged into `v0.7.0-rc1`, D7). M2a, M2b, M2c, M2e: Step 7 done 2026-10-11 (stop point B); M2a Steps 8–12 done (`macos-tahoe`, version-aware selection); M2c Steps 16 and 18 (rename part) done, Step 17 (`ios-26`) deferred (`docs/todo.md`); M2d (Material 3) not started — waits for Compose Material3 1.5.0 stable |
 | M3 | done (2026-10-12) |
 | M4 | Steps 1–6 done 2026-10-12 (stop point A, fix plan T1–T33); Step 7 done 2026-10-13 (T1–T36, T34–T36 added in Step 7; final review and fix wave); Step 8 done 2026-10-13 (stop point B) |
-| M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Step 7 in progress |
+| M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `<FINAL>`) |
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | not started (after M5's fix phase) |
 | M6–M9 | not started |
@@ -817,7 +817,7 @@ On ordering: P0's version bounds, P1's value changes (D3) and P2's header conten
 **Changes required:** No union builder with ignored options. Move load_custom_via_builder into core as a public runtime-set function whose every option is honoured by every set: colour applied in the loader for the system sets, and via colorize_monochrome_svg for Material/Lucide, tied to todo:475's single colouriser. Add SystemTheme::icon(id, color), which fills the freedesktop theme internally from icon_theme_for(mode), so no caller-set option can be dropped. Keep the five typed loaders.
 
 **Decision:** adopt the critic's form (round 4): `load_custom_via_builder` moves into core as a runtime-set function whose every option every set honours (colour via the single colouriser for Material/Lucide, docs/todo.md:475), plus `SystemTheme::icon(id, color)`; the five typed loaders stay; no union builder.
-**Status:** scheduled: M4 (core), M5–M7 (connectors drop their copies) **M4:** core done in T8 (f1371e70, 6e5c151d): `icons::load_custom_icon`, `SystemTheme::icon`, `icon_indicator`; the connectors drop their copies in M5–M7.
+**Status:** scheduled: M4 (core), M5–M7 (connectors drop their copies) **M4:** core done in T8 (f1371e70, 6e5c151d): `icons::load_custom_icon`, `SystemTheme::icon`, `icon_indicator`; the connectors drop their copies in M5–M7. **M5:** iced dropped its copy in T8 (b256045b: core's `load_custom_icon`, and `None` after it); gpui and egui drop theirs in M6/M7.
 
 ### M1-T6-07 · no API break · System icons on macOS and Windows: fixed-size, fixed-colour rasters
 
@@ -918,7 +918,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** Adopt the `AccessibilityPreferences::text_scale_factor()` method, citing todo:2086-2088 and correcting it to three copies. Adopt the switch of iced and gpui to core's colouriser as the existing entry docs/todo.md:476-490, citing that entry as the item instead of presenting it as a new finding, and move their test cases into core. `ResolvedWidgetBorder::padding_outside()` is optional: if adopted, document that iced gains egui's non-finite filtering. Drop `Rgba::over`: each connector keeps its own composite, and egui's parity tolerance stays.
 
 **Decision:** adopt the critic's form (round 5): the text-scale method (docs/todo.md:2086, corrected to three copies) in M1 with M1-T6-03; iced and gpui switch to core's colouriser with their test cases moved into core (docs/todo.md:476-490) in M5 and M6; composites stay per toolkit; `padding_outside()` optional; no `Rgba::over`.
-**Status:** text-scale method fixed in 25d69ceb (docs/todo.md entry closed); the colouriser switch scheduled M5 (iced) and M6 (gpui)
+**Status:** text-scale method fixed in 25d69ceb (docs/todo.md entry closed); the colouriser switch scheduled M5 (iced) and M6 (gpui) **M5:** iced switched to core's colouriser in T8 (d809a666; its copy's test cases moved into core, d5a91c88); gpui in M6.
 
 ### M1-T7-02 · no API break · Spinner cycle position and arc constants stated once in core
 
@@ -978,7 +978,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** Scope the first step to the colour leaves, the domain the two contracts already own. Derive each row's leaves mechanically, not as a hand-written string: splice one leaf from another preset into the resolved theme and record which rows' `native` values change, egui's T2 method. Then assert that every colour leaf reaches a row, a `DERIVED` entry or an `UNREACHABLE` entry. Leave coverage of geometry leaves for a separate, later decision, with its own cost estimate. Re-estimate the cost after a dry run that counts the unmapped leaves.
 
 **Decision:** adopt the critic's scoped form (round 5): colour leaves only, each row's leaves derived by splicing a leaf from another preset (egui's T2 method), one coverage test per connector; a dry run counts the unmapped leaves and re-estimates the cost first; geometry leaves a later decision.
-**Status:** scheduled: M5 (iced), M6 (gpui)
+**Status:** scheduled: M5 (iced), M6 (gpui) **M5:** iced done in T12a/T12b (dry run 5cae7052; c95861d6, 5cdd55e0, 9c46d834, 5163695c, 19187374): `every_colour_leaf_reaches_a_row_or_is_named` in the default suite, 169 colour leaves (118 rows, 8 accessor rows, 26 named, 13 under 4 prefixes, 4 UNREACHABLE), 34 bases, about 2.5 s; gpui in M6.
 
 ### M1-T7-04 · no API break · The verification machinery pays; keep it, with the ledger of catches
 
@@ -1067,7 +1067,7 @@ Only read-only commands were run: grep, sed, git log/show, cargo tree --offline,
 **Changes required:** (1) Delete the stale agent file locally, with no commit since it is untracked. (2) Rename the accessors to the model's field names, gated by scripts/check_connector_parity.py with a reasoned exceptions list. (3) Give a named `#[non_exhaustive]` struct only to `from_system` and `SystemThemeExt`, where the fields are detected outputs. Keep `from_preset` returning (theme, resolved), since its mode and preferences are inputs. Whether that struct is core's generic or one per connector is decided at triage. (4) Present the whole proposal as a D1 item for the maintainer's approval, bundled with the other breaking changes.
 
 **Decision:** adopt the critic's form (round 5): a named `#[non_exhaustive]` result struct for `from_system` and `SystemThemeExt` only (core generic or per connector: decided at M5's triage), accessors renamed to the model's field names, `scripts/check_connector_parity.py` in check_release.sh with a reasoned exception list; `from_preset` keeps `(theme, resolved)`; the stale agent file deleted (untracked, in M1). Breaking, bundled with M1-T4-01 into 0.7.0. Lands across all three connectors in M5's fix phase, before M6's review.
-**Status:** the stale agent file deleted 2026-10-11 (untracked); the struct, renames and parity script scheduled M5
+**Status:** the stale agent file deleted 2026-10-11 (untracked); the struct, renames and parity script scheduled M5 **M5:** `Loaded` in all three connectors in T1 (dbc1f8b4); the accessor renames in T2 (76956acf) and `scripts/check_connector_parity.py` (24625350, 008457a4), run by check_release.sh and CI, following the crate roots' re-exports since eebd1274 (final fix wave); M6/M7 keep it green, as G2's two new iced accessors must.
 
 ### M1-T7-07 · no API break · Widget Info: three designs for one panel; generate iced's later
 
@@ -6950,7 +6950,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Before: `pub struct Resolved { pub variant: ResolvedTheme, pub icon_set: IconSet, pub icon_theme: Option<Cow<'static, str>>, pub icon_theme_explicit: bool }`. After: `pub struct Resolved { pub mode: ColorMode, /* the variant actually resolved: Dark iff `self.dark` was used */ pub variant: ResolvedTheme, pub icon_set: IconSet, pub icon_theme: Option<Cow<'static, str>>, pub icon_theme_explicit: bool }`, set in `resolve_with` from which `Option` `pick_variant` took (split `pick_variant` into a `pub(crate)` helper returning `(ColorMode, &ThemeMode)`), and documented beside the cross-fallback at mod.rs:363-366.
 **Verdict:** CONFIRMED — `Resolved` (model/resolved.rs:258-273) has no mode field, and pick_variant falls back silently (model/mod.rs:374-375). As a result gpui's `from_preset(name, true)` passes is_dark=true into to_theme with a light palette for a light-only preset (connectors/native-theme-gpui/src/lib.rs:293-304). Callers can already check `theme.dark.is_none()` or `PresetInfo::light_only` before resolving, so the extra field mainly pays for connectors.
 **Triage:** maintainer: approved 2026-10-11 (one AskUserQuestion round, the recommended option); reclassified api-add → api-break by the session: `Resolved` has public fields and no `#[non_exhaustive]`, so a new field breaks struct literals (it gets the attribute with M3-13)
-**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7
+**Status:** fixed in e60575e0 (breaking, approved); connectors adopt `Resolved.mode` in M5–M7 **M5:** iced in T4 (38048882, 707ba7df): `from_preset` sets `Extended::is_dark` from `Resolved.mode`, `from_system` and `to_iced_theme` from `SystemTheme::mode`; the public `to_theme` keeps iced's lightness test, a `ResolvedTheme` carrying no mode (a mode-taking public builder is a docs/todo.md item); gpui and egui in M6/M7.
 
 #### M3-16 · api · api-break · native-theme/src/lib.rs:151
 **Claim:** `native_theme::theme` and `native_theme::model` are the same public namespace, so a docs.rs reader following any README path (`native_theme::theme::Theme`) lands on a `theme` page that lists no items and is sent to `model::*`, and every model type is reachable by four paths.
@@ -7006,7 +7006,7 @@ One Workflow (`wf_4e98aba8-a6b`, 16.3 min): R1 model, R2 resolution, R3 pipeline
 **Fix (reviewer):** Cache the detected font DPI in DetectionContext beside the icon theme (ledger alternative B), cleared by invalidate_caches, which the watchers already call, so that from_system costs microseconds after the first call. Or give the iced and gpui from_preset a context like egui's.
 **Verdict:** CONFIRMED — iced lib.rs:315 and gpui lib.rs:303 call `resolve_system()`, which builds `ResolutionContext::from_system()` (resolve/mod.rs:290-291) and runs the DPI chain on every call. M1-T3-01's fix covered only egui's three sites (findings.md:449-466). The ledger's Status line records the cost figures, resolve 1.28-3.50 ms against resolve_with 21-34 µs (findings.md:466). To confirm the per-call cost, add a timings.rs row for iced/gpui `from_preset` next to a from_preset variant that takes a prebuilt context. The ms cost only arises with the kde/portal feature and no forceFontDPI.
 **Triage:** scheduled: M5 (iced) and M6 (gpui), connector code; gate: the connectors' `from_preset` timing added in their Step 1
-**Status:** scheduled: M5 (iced), M6 (gpui); unchanged in M3. **Re-scheduled 2026-10-12 (orchestrating session; the maintainer may veto):** the core half moves to M4 (detection): cache the detected font DPI in `DetectionContext` beside the icon theme, cleared by `invalidate_caches` (the reviewer's first fix), which removes the per-call `xrdb` from `Theme::resolve` and `ThemeMode::resolve_system` for every caller; M5 and M6 only confirm it with their `from_preset` timing gate. **M4:** core half done in T11 (9ed0ca92): the cached font DPI in DetectionContext, cleared by invalidate_caches (T17 generations).
+**Status:** scheduled: M5 (iced), M6 (gpui); unchanged in M3. **Re-scheduled 2026-10-12 (orchestrating session; the maintainer may veto):** the core half moves to M4 (detection): cache the detected font DPI in `DetectionContext` beside the icon theme, cleared by `invalidate_caches` (the reviewer's first fix), which removes the per-call `xrdb` from `Theme::resolve` and `ThemeMode::resolve_system` for every caller; M5 and M6 only confirm it with their `from_preset` timing gate. **M4:** core half done in T11 (9ed0ca92): the cached font DPI in DetectionContext, cleared by invalidate_caches (T17 generations). **M5:** iced's `from_preset` timed at Step 8 (2026-10-14; release, three runs, load about 2.7 with another project's cargo check): medians 45.6 / 45.3 / 44.6 µs, range 35.5–49.5 µs over 16 presets × 2 modes, against the Step 1 baseline 35.5–49.2 µs: microseconds, not milliseconds, so the gate is met; gpui in M6.
 
 #### M3-23 · perf · S3 · native-theme/src/pipeline.rs:636
 **Claim:** When XDG_CURRENT_DESKTOP is unset or unrecognised and the `portal` feature is on, every from_system / from_system_async call opens a new D-Bus session connection and lists activatable names to guess the desktop, though the desktop cannot change during the process. AccessibilityPreferences::from_system and every miss of the cached accessibility accessor do the same.
@@ -7587,7 +7587,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Make Rgba's fields private behind a checked constructor (`IconData::rgba(w, h, data) -> Option<Self>`) plus accessors, so an IconData::Rgba always holds w*h*4 bytes.
 **Verdict:** CONFIRMED — model/icons.rs:303-310: the Rgba fields are public. #[non_exhaustive] on the enum does not stop anyone constructing the variant, and the derived Deserialize skips any check too, so a checked constructor needs a custom Deserialize as well. The connectors already re-validate: egui icons.rs:309, gpui icons.rs:1311.
 **Triage:** maintainer — approved 2026-10-12 (Q1 item 3): `IconData::Rgba(RgbaData)` with private fields, `IconData::rgba(w, h, data) -> Option<Self>` checked, accessors, a checking `Deserialize`; the connectors drop their re-validation in M5–M7 (iced passes the fields to `Handle::from_rgba` unchecked today).
-**Status:** fixed in 90589e08 (breaking, approved)
+**Status:** fixed in 90589e08 (breaking, approved) **M5:** no change needed in iced: the connector reads `RgbaData` through its accessors (Step 6 ruling).
 *Source:* R4#8, API#11.
 
 #### M4-08 · api · api-break · native-theme/src/model/animated.rs:348
@@ -7663,7 +7663,7 @@ Cross-checks made by the session before triage:
 **Fix (reviewer):** Before: `pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon>`. After: `pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<AnimatedIcon>` dispatching `IconSet::Freedesktop => FreedesktopLoader::load_indicator(theme)`, `Material`/`Lucide` as today (`theme` documented as ignored only where the set has no themes — the same wording `IconSetChoice::freedesktop_theme` uses at icons.rs:847-850), plus `impl SystemTheme { pub fn icon_indicator(&self, mode: ColorMode) -> Option<AnimatedIcon> { load_icon_indicator(self.icon_set, self.icon_theme_for(mode)) } }` beside the planned `SystemTheme::icon`. The three connector sites collapse to one call each in M5–M7.
 **Verdict:** CONFIRMED — `load_icon_indicator` passes `None` as the freedesktop theme (icons.rs:556-563), and all three spinners re-dispatch by hand: egui-widgets spinner.rs:117-118, gpui widgets/spinner.rs:216-217, iced spinner.rs. M1-T6-06's decision (ledger :796) covers the runtime-set icon function and `SystemTheme::icon` but not the indicator. This extends that item rather than duplicating it.
 **Triage:** maintainer — approved 2026-10-12 (Q2 item 7): `load_icon_indicator(set, theme: Option<&str>)` plus `SystemTheme::icon_indicator(mode)`; the connectors' spinners collapse to one call in M5–M7.
-**Status:** fixed in f1371e70 and 6e5c151d (breaking, approved); the connectors adopt the core functions in M5–M7
+**Status:** fixed in f1371e70 and 6e5c151d (breaking, approved); the connectors adopt the core functions in M5–M7 **M5:** iced's `Spinner` loads through `load_icon_indicator(set, theme)` since T7 (182784c1); gpui and egui in M6/M7.
 *Source:* API#6.
 
 #### M4-16 · api · api-break · native-theme/src/icons.rs:145
@@ -8904,7 +8904,7 @@ The final whole-branch review triaged every deferred minor of the task reviews (
 
 ## M5 — iced connector
 
-**Status:** Steps 1–5 done 2026-10-13 (stop point A; review, verify, triage — no maintainer item). Step 6 done 2026-10-14 after G1 closed (fix plan T1–T12, below); Step 7 in progress. Read-only review on Opus 5.5 (session), beside native-theme-f1's G1 work.
+**Status:** Steps 1–5 done 2026-10-13 (stop point A; review, verify, triage — no maintainer item). Step 6 done 2026-10-14 after G1 closed (fix plan T1–T12, below); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `<FINAL>`). Read-only review on Opus 5.5 (session), beside native-theme-f1's G1 work.
 
 ### Step 1 — inventory
 
@@ -8933,7 +8933,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Add `styles::button_toggle(resolved, checked: bool)` (or `button_checked`). When checked it paints checked_background/checked_text_color, falling back to the pressed pair, and the contract claims both fields.
 **Verdict:** CONFIRMED — No function in src/ reads button.checked_background or checked_text_color (grep finds only the showcase's local toggle_on, showcase-iced.rs:6831-6851), and no contract row claims them. windows-11.toml:144-145 states #0067c0/#ffffff (AccentFillColorDefault, todo.md:770-815), so an iced toggle has no library style for it. The showcase's copy shows that the API is missing.
 **Triage:** fix — api-add.
-**Status:** open
+**Status:** fixed in aaa7241c (M5 T5): `styles::button_toggle`
 *Source:* R2-styles#3.
 
 #### M5-02 · api · api-add · connectors/native-theme-iced/Cargo.toml:43
@@ -8942,7 +8942,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** README.md:69-73 Quick start: `native-theme-iced = { version = "0.7", features = ["native"] }` (with `"watch"` for the theme-change recipe), and one sentence under Features: "the OS readers are native-theme's `native` (or `kde`/`portal`/`macos`/`windows`); without one `from_system()` is the platform preset on Linux and an error elsewhere". Cargo.toml `[features]` — before: no reader or watch passthrough; after: `native = ["native-theme/native"]` and `watch = ["native-theme/watch"]`, both off by default as in core (zbus, windows, objc2), so a user never has to name `native-theme` to get the OS theme.
 **Verdict:** CONFIRMED — The connector's `[features]` (Cargo.toml:22-43) forward no reader feature and no `watch`, while egui forwards `watch`. The Quick start (README.md:69-73) adds `native-theme = "0.6"` with no features. Without a reader, `from_system_inner` returns `FeatureDisabled` on macOS/Windows (native-theme/src/pipeline.rs:1084-1097) and `linux_fallback`'s preset on Linux (:1098-1104). Core's own README asks for `features = ["native"]` (native-theme/README.md:180). No todo or ledger entry covers this for the connectors.
 **Triage:** fix — api-add.
-**Status:** open
+**Status:** fixed in 80b9ad13 (M5 T3; the showcase's run instructions name `--features watch` in d444d571; `watch` and `native` in every gate since ad18ecde, final fix wave); gpui's and egui's passthroughs to M6/M7 (docs/todo.md)
 *Source:* API#0.
 
 #### M5-03 · api · api-add · connectors/native-theme-iced/README.md:89
@@ -8951,7 +8951,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Minimum (S4): a "Runtime theme change" section in README.md (after Text scaling) and in the crate docs: `let _watch = native_theme::watch::on_theme_change(move |_| flag.store(true, Release))?;` in the app state, an `iced::time::every` tick, and on the flag `native_theme::detect::invalidate_caches(); let sys = SystemTheme::from_system()?; let (theme, resolved) = sys.to_iced_theme(); spinner = Spinner::new(&resolved, sys.icon_set, sys.icon_theme_for(sys.mode));`. Optional api-add behind the `watch` feature of the previous finding, with `iced_futures = { version = "0.14", optional = true }`: before: no item; after: `#[cfg(feature = "watch")] pub fn theme_changes() -> iced_futures::Subscription<native_theme::watch::ThemeChangeEvent>` built with `Subscription::run(|| iced_futures::stream::channel(1, async |tx| { let _sub = on_theme_change(move |e| { let _ = tx.clone().try_send(e); }); std::future::pending::<()>().await }))` (iced_futures 0.14.0 subscription.rs:182, stream.rs:11), documented to call `invalidate_caches()` before the re-read, as the egui `ThemeWatcher` does.
 **Verdict:** CONFIRMED — Neither README.md nor src/*.rs mentions `on_theme_change`, `invalidate_caches` or watching (grep finds only README.md:136, which is about styles). The pattern exists only in examples/showcase-iced.rs:1801-1805, :2622 and :12723. The known M4 ruling fixes the invalidate-then-reread contract, not an iced recipe. The cited iced_futures lines check out: `Subscription::run` at subscription.rs:182 and `stream::channel` at stream.rs:11. The `theme_changes()` subscription is a design option, not a defect.
 **Triage:** fix — api-add.
-**Status:** open
+**Status:** fixed in 80b9ad13 and d444d571 (M5 T3): `theme_changes()` behind `watch` and the *Runtime theme change* recipe; `ThemeChangeEvent` re-exported in 2bdb1fdb (final fix wave)
 *Source:* API#1.
 
 #### M5-04 · bug · S2 · connectors/native-theme-iced/src/spinner.rs:109
@@ -8960,7 +8960,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** For IconSet::Freedesktop, fill in `currentColor` where the SVG sets no `color` of its own, as gpui's `paint_svg` does. The colour should match gpui's `indicator_colour` (defaults.text_color, the colour currentColor stands for), or use spinner.fill_color, which facts :1534 maps to text_color on KDE/GNOME. Then add the fixture test.
 **Verdict:** CONFIRMED — spinner.rs:109 sets `tint` only for Material/Lucide, so a Freedesktop symbolic indicator, whose placeholders core turns into `currentColor` (freedesktop.rs:613-614), reaches `iced_widget::svg` with the default style `color: None` (iced_widget-0.14.2 src/svg.rs:322-324). usvg 0.45.1 then resolves `currentColor` to black when no `color` is set (src/parser/style.rs:170-173). gpui fills it in (widgets/spinner.rs:151-160) and egui does too (ledger :7942); no iced contract test covers this. To see it you need a theme that ships only `process-working-symbolic`. Adwaita 48 on this machine does not (ledger :7944), so a fixture test is the way to confirm it.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 89ec7f61, 182784c1 and 47434547 (M5 T7): core's `icons::fill_current_color` with `defaults.text_color`; the showcase's Icons page draws a freedesktop indicator as `Spinner` does since b835a6e9 (final fix wave); gpui and egui adopt the function in M6/M7 (docs/todo.md)
 *Source:* R1-theme-palette#0.
 
 #### M5-05 · bug · S2 · connectors/native-theme-iced/src/icons.rs:96
@@ -8969,7 +8969,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** When switching to `native_theme::icons::load_custom_icon(provider, set, color)` (M1-T6-06), pass `None` to `to_svg_handle`/`to_image_handle` afterwards: core has already coloured each set the right way.
 **Verdict:** CONFIRMED — icons.rs:96 passes `color` to `to_svg_handle`, which runs `colorize_monochrome_svg` (icons.rs:55-56, :315-316) on whatever the loader returned. Breeze's `/usr/share/icons/breeze/places/32/folder.svg` paints its accent body `fill:currentColor`, so that part is replaced by `c`. Not quite the whole icon: the early return leaves the other paths alone. Core's `load_custom_icon` colours a freedesktop icon only when it is symbolic (native-theme/src/icons.rs:675-683), so the fix (pass `None` after the switch) is right, and M1-T6-06 does not record it.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in b256045b (M5 T8; its tests in 6cae8f9f and d5a91c88)
 *Source:* R1-theme-palette#1.
 
 #### M5-06 · bug · S2 · connectors/native-theme-iced/src/icons.rs:222
@@ -8978,7 +8978,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Take the remainder in integers before converting: `(elapsed.as_millis() % u128::from(duration_ms)) as f32 / duration_ms as f32` at icons.rs:222, and `elapsed.subsec_nanos() as f32 / 1e9` (one turn a second) at spinner.rs:180. Add the 14-days-plus-50-ms test for both.
 **Verdict:** CONFIRMED — icons.rs:222 converts `as_millis()` to f32 before taking the remainder, and spinner.rs:180 uses `as_secs_f32().fract()`. After one day (8.64e7 ms, about 2^26.4) the f32 step is 8 ms (7.8 ms in seconds), 2.9° of a 1000 ms turn (FREEDESKTOP_SPIN_DURATION_MS = 1000, freedesktop.rs:27). At 2^24 s the step is 2 s, so `fract()` is always 0 and the arc stands still. The showcase measures elapsed time from `animation_start` and resets it only in `reload_icons` (showcase-iced.rs:1455, :2117, :7707, :11692). The proposed 14-days-plus-50 ms test would confirm it.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 182784c1 (M5 T7)
 *Source:* R1-theme-palette#2.
 
 #### M5-07 · bug · S2 · connectors/native-theme-iced/src/styles.rs:964
@@ -8987,7 +8987,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Composite only a stated layer: `hovered = c.hover_background.map_or(idle, |h| composite_over(to_color(h), idle))`, and the same in toggler_over, checkbox_over, radio and segment. Update the five contract rows to match.
 **Verdict:** CONFIRMED — styles.rs:963-966 (pick_list) and :833-839 (toggler_over hovered_unchecked) composite the fallback, the idle fill itself, over the idle fill. macos-tahoe.toml:311/:680 states combo_box.background_color #00000014/#ffffff14 with no hover_background, and :263/:632 states switch.unchecked_background #00000019/#ffffff19 with no hover_unchecked_background. Both options are soft with no inheritance (inheritance-rules.toml:392, :397), so the hovered alpha comes out at about 0.15 against 0.078 at rest. That contradicts the soft-option meaning, 'no distinct appearance' (theme-contracts-spec.md:225-226; styles.rs:615-616). The contract (contract.rs:3485-3557, over(x,x)) locks the bug in; it does not justify it. This is not the known layer-or-replacement decision (todo.md:739), which is about a stated hover value.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in 98b522f7 and 6831cea7 (M5 T6; docs/todo.md's hover-layer entry in add954a0)
 *Source:* R2-styles#0.
 
 #### M5-08 · bug · S2 · connectors/native-theme-iced/src/styles.rs:1666
@@ -8996,7 +8996,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Capture `resolved.defaults.disabled_opacity`. In the Disabled arm return `faded(label, opacity)` and `faded_border(border, opacity)`, as button_link does, and update the doc and the contract row.
 **Verdict:** CONFIRMED — styles.rs:1666-1675: Status::Disabled shares Status::Active's arm, and text_color is `label` in every status. The expander has no disabled_opacity, while inheritance-rules.toml:351-358 says a widget without one fades by defaults.disabled_opacity, which button_link does (styles.rs:392-395). adwaita.toml:61 states 0.5 as libadwaita's whole-widget filter (platform-facts §2.1.6). The doc at :1640-1641 calls this the resting look, but that conflicts with the project's own rule.
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in aaa7241c (M5 T5)
 *Source:* R2-styles#1.
 
 #### M5-09 · bug · S2 · connectors/native-theme-iced/src/styles.rs:1656
@@ -9005,7 +9005,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Have styles::expander emit border width 0 when frame_enabled is Some(_), as unframed_when_stated does. Add a `styles::expander_frame(resolved)` container style for the Some(true) frame around header and body, and remove the showcase's local copies.
 **Verdict:** CONFIRMED — styles.rs:1654-1660 always builds the border from expander.border.*, and nothing in src/ reads frame_enabled; only the showcase does, through its local unframed_when_stated and frame (showcase-iced.rs:7958-8048). kde-breeze.toml:462 states frame_enabled = false, and expander.border inherits defaults.border (inheritance-rules.toml:85-93; kde-breeze.toml:69-72, #bcc0bf, radius 5, width 1). So a consumer of styles::expander gets a frame that KCollapsibleGroupBox does not paint (platform-facts §2.27 frame_enabled row).
 **Triage:** fix — CONFIRMED bug.
-**Status:** open
+**Status:** fixed in aaa7241c (M5 T5): `styles::expander_frame`
 *Source:* R2-styles#2.
 
 #### M5-10 · simplify · S4 · connectors/native-theme-iced/src/icons.rs:244
@@ -9014,7 +9014,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Have `to_svg_handle(data, c)` call a private `svg_handle(bytes: Cow<[u8]>, c)` that both use (borrowed: `Cow::Borrowed(&cow)`), and the same for the image pair, when the colouriser is switched to core's.
 **Verdict:** CONFIRMED — `into_svg_handle` (icons.rs:244-259) repeats `to_svg_handle` (icons.rs:49-64), colourise branch included, and `into_image_handle` (:228-240) repeats `to_image_handle` (:31-40). The ledger and todo.md do not record this. M1-T7-01 would have to touch both colouriser call sites. Core's private `colorize_svg_data(IconData, Option<Rgba>)` (native-theme/src/icons.rs:757-764) shows a single shared helper would do.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 68863dc0 (M5 T8)
 *Source:* R1-theme-palette#5.
 
 #### M5-11 · simplify · S4 · connectors/native-theme-iced/src/styles.rs:1591
@@ -9023,7 +9023,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Use `faded(idle, s.disabled_opacity)` and `faded(label, s.disabled_opacity)`, and rename `outer` to `inner_radius`.
 **Verdict:** CONFIRMED — styles.rs:1591-1594 `fade` multiplies alpha by s.disabled_opacity without the clamp or non-finite guard that `faded` (:107-117) has, and :1598 `outer = (corner_radius - line_width).max(0.0)` is the inner radius the doc at :1561-1563 describes. The change is cosmetic and safe.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 60c77f7e (M5 T10)
 *Source:* R2-styles#4.
 
 #### M5-12 · simplify · S4 · connectors/native-theme-iced/src/styles.rs:499
@@ -9032,7 +9032,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Factor a private `InputColors::new(&resolved.input)` with `fn pick(status) -> (Color, Color, Color)`, and a shared `CheckFills::new(&resolved.checkbox)`; text_editor/text_input and radio/checkbox_over then differ only in the Style they assemble.
 **Verdict:** CONFIRMED — text_editor (:507-537) repeats text_input's captures and match (:440-472) line for line, and radio (:732-738) repeats checkbox_over's fill, hover and border derivation (:617-631). One caveat for the fix: text_input::Status and text_editor::Status are distinct enums, so a shared pick needs a small mapping. The contract's per-read-site rows (contract.rs:3480-3482, 'radio: ...' entries) would also need updating.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 60c77f7e (M5 T10)
 *Source:* R2-styles#5.
 
 #### M5-13 · simplify · S4 · connectors/native-theme-iced/src/styles.rs:192
@@ -9041,7 +9041,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Add `pub(crate) fn border_of(b: &ResolvedWidgetBorder) -> Border` (or a public `to_border` beside `to_color` in palette.rs) and call it from each site.
 **Verdict:** CONFIRMED — There are ten identical ResolvedWidgetBorder-to-Border constructions: styles.rs:192-196, :259-263, :972-976, :1029-1033, :1316-1320, :1388-1392, :1430-1434, :1520-1524 (color via a `lines` local of the same field), :1657-1661, and styles/aw.rs:135-139. The showcase repeats the pattern at showcase-iced.rs:6352, :7911, :8023 and :8407, which is four sites, not three.
 **Triage:** fix — simplify; gate: net deletion, tests unchanged except tests of deleted code.
-**Status:** open
+**Status:** fixed in 60c77f7e (M5 T10): `border_of`, nine sites; `expander`/`expander_frame` keep their own (conditional width since T5); the showcase's copies stay for M9b
 *Source:* R2-styles#6.
 
 #### M5-14 · api · S4 · connectors/native-theme-iced/README.md:428
@@ -9050,7 +9050,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Add to README.md after Custom icons and to the `icons` module docs: `let sys = SystemTheme::from_system()?; let (theme, resolved) = sys.to_iced_theme(); let fg = resolved.defaults.text_color; if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) { let size = icon_sizes(&resolved).toolbar; match (icons::to_svg_handle(&data, None), icons::to_image_handle(&data)) { (Some(h), _) => svg(h).width(size).height(size), (_, Some(h)) => image(h).width(size).height(size), _ => .. } }` — `None` to `to_svg_handle` because `sys.icon` already coloured the bytes. No signature changes.
 **Verdict:** CONFIRMED — The only icon recipe in the README is Custom icons (README.md:428-438), and `SystemTheme::icon(id, mode, color)` exists in core (native-theme/src/lib.rs:686-695). The known M1-T6-06 item covers only dropping iced's `load_custom_via_builder`, not a user-facing role-icon recipe. `to_iced_theme` (lib.rs:354) and `icon_sizes` (lib.rs:1147) exist, as the proposed snippet needs.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#2.
 
 #### M5-15 · api · S4 · connectors/native-theme-iced/README.md:496
@@ -9059,7 +9059,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** README.md:496 — before: `Icon role mapping, SVG widget helpers, and animated icon playback`; after: `IconData` to iced `image`/`svg` handles (borrowing and consuming), a provider's custom icons, animated-frame handles and the spin angle; role icons come from `SystemTheme::icon`.
 **Verdict:** CONFIRMED — icons.rs has only handle conversions (`to_image_handle`/`to_svg_handle`/`into_*`), `custom_icon_to_*`, `animated_frames_to_svg_handles`, `spin_rotation_radians` and private helpers (icons.rs:31-302). Nothing in it maps a role, so the "Icon role mapping" at README.md:496 is wrong.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#3.
 
 #### M5-16 · api · S4 · connectors/native-theme-iced/README.md:477
@@ -9068,7 +9068,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** README.md:476-479 — before: `AnimatedIcon::Transform(_) => { let _angle = spin_rotation_radians(elapsed, 1000); .. }`; after: `AnimatedIcon::Transform(_) => { if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() { let angle = spin_rotation_radians(elapsed, duration_ms.get()); /* Svg::new(handle).rotation(Rotation::Floating(angle)) */ } }`. icons.rs:214 likewise: bind `duration_ms` from `anim.animation()` and pass `duration_ms.get()`.
 **Verdict:** CONFIRMED — README.md:477 passes a literal 1000 even though `TransformAnimation::Spin { duration_ms: NonZeroU32 }` carries the period (native-theme/src/model/animated.rs:121-126) and `AnimatedIcon::animation()` returns it (:342). The doc example at icons.rs:214 also passes 1000, but it is a standalone call to a pure function, so it matters less.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#4.
 
 #### M5-17 · api · S4 · connectors/native-theme-iced/README.md:302
@@ -9077,7 +9077,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** README.md:302 — before: `let size = resolved.input.font.size;`; after: `let size = scaled_text_size(resolved.input.font.size, &accessibility);` and :312 `let combo_size = scaled_text_size(resolved.combo_box.font.size, &accessibility);`, with `accessibility` from `from_system()` (or `AccessibilityPreferences::default()` under a preset) named in the snippet's `use`.
 **Verdict:** CONFIRMED — README.md:302 and :312 pass the unscaled `resolved.input.font.size` and `combo_box.font.size`. `control_line_height`'s own doc says to pass the size the control is drawn at, scaled by the text-scaling factor (lib.rs:550-552), and so does Text scaling (README.md:336-340, :364-367). The showcase scales them (showcase-iced.rs:6384 and :6463, `scaled_text_size(..)`).
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#5.
 
 #### M5-18 · api · S4 · connectors/native-theme-iced/src/lib.rs:795
@@ -9086,7 +9086,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** Add to the fn doc and to the README recipe: `pick_list(options, selected, on_select).handle(pick_list_handle::<iced::Renderer>(&resolved))` with one sentence: "name the renderer: the handle's font type is the renderer's, which the call cannot infer". No signature change (a non-generic form would fix a renderer the crate otherwise leaves open).
 **Verdict:** CONFIRMED — `Renderer` appears only in the projection `Handle<Renderer::Font>` (lib.rs:795-799), which Rust cannot invert, so the call needs a turbofish. The crate's own test (lib.rs:1718, `pick_list_handle::<iced_widget::Renderer>`) and the showcase (showcase-iced.rs:12206, `::<iced::Renderer>`) both use one. The README only names the function (README.md:236, :277) and never shows how to call it.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#7.
 
 #### M5-19 · api · S4 · connectors/native-theme-iced/README.md:215
@@ -9095,7 +9095,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** README.md:215 and aw.rs:437 — before: `container(Spinner::new()).style(styles::aw::spinner(&resolved))`; after: `container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))`, and in the `iced_aw` section one clause: "`iced_aw`'s `Spinner`, not this crate's `Spinner`, which draws the platform's indicator itself".
 **Verdict:** CONFIRMED — The crate re-exports its own `Spinner` at the root (lib.rs:232), and its `new` takes three arguments (spinner.rs:102). `iced_aw`'s `Spinner::new()` takes none (iced_aw-0.14.1 src/widget/spinner.rs:43, re-exported at lib.rs:148). The bare `Spinner::new()` at README.md:215 and src/styles/aw.rs:439 (not :437) is therefore ambiguous, although the prose before README:215 does name iced_aw's Spinner.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in 2abfb908 (M5 T11)
 *Source:* API#8.
 
 #### M5-20 · api · S4 · connectors/native-theme-iced/README.md:71
@@ -9104,7 +9104,7 @@ One Workflow (`wf_7c8d82a5-d83`, 16.2 min, 307 tool calls, 885k subagent tokens)
 **Fix (reviewer):** At release write `native-theme-iced = { version = "0.7", features = ["native"] }` (with the first finding), and add to compat.rs a test that the Quick start's `native-theme*` versions equal the workspace `version`'s `major.minor` (`WORKSPACE` is already read; `version.workspace = true` in the crate manifest), so a stale quick start fails `check_release.sh`. No signature change.
 **Verdict:** CONFIRMED — README.md:71-72 state "0.6" by hand, and iced's compat.rs only checks upstream floors from the manifest. Even gpui's quick-start check skips `native-theme` because it is `workspace = true` (gpui compat.rs:108-117). No script in scripts/ (check_release.sh included) compares README versions with the workspace `version = "0.6.1"`. The same stale "0.6" is in gpui/egui/build/core READMEs, so the fix belongs to the whole workspace.
 **Triage:** fix — docs/naming, no signature change.
-**Status:** open
+**Status:** fixed in b0efe9e3 and 05f4428b (M5 T11): `the_readme_depends_on_this_release` in compat.rs; the gpui, egui, core and build READMEs' checks to M6/M7/M8 (docs/todo.md)
 *Source:* API#9.
 
 ### Rejected
@@ -9225,6 +9225,25 @@ Rulings (Step 6):
 | T12 | test · the dry run's count, then the coverage test | M1-T7-03 (iced) | leaf walker and splice probe; a dry run listing unmapped colour leaves; the controller re-estimates, then the coverage test with DERIVED/UNREACHABLE classification |
 
 Step 8 then: full `check_release.sh`, cross-target clippy, `cargo semver-checks` for the touched crates, the timing re-run (M3-22's gate), ledger statuses, docs/todo.md (M6/M7/M8 items from the rulings above), memory, sweep.
+
+### Steps 7–8 — fix phase closed (2026-10-14)
+
+- Range `96a3a62f..<FINAL>`: 13 tasks (T1–T11, T12a, T12b; T12 split after its dry run) in 36 commits (dbc1f8b4..19187374), the final fix wave in 5 (ad18ecde, 2bdb1fdb, b835a6e9, 867d7f93, eebd1274) and Step 8's `scripts/update_compatibility.sh` iced leg in 1 (fbd9e079): 42 commits by `git log --oneline 96a3a62f..fbd9e079`, before this close's docs commits. Every task reviewed by a fresh reviewer, its fix rounds re-reviewed; the rulings are in the session's progress file. Every entry M5-01..M5-20 is fixed (statuses above); the scheduled items M1-T7-06, M1-T6-06, M1-T7-01, M1-T7-03, M3-15, M3-22, M4-07 and M4-15 carry their M5 outcome on their status lines; docs/todo.md:250 is settled for iced (M5-03), the hover-layer question (docs/todo.md:757) for iced in T6, the M4 T35 primary-hover entry done in T9 (07362c9b, cc9e933e), the T19 README claim in T11 (2abfb908).
+- Final whole-branch review (Opus, `96a3a62f..19187374`): With fixes, 0 Critical, 1 Important (the new `watch` feature in no gate: no test, clippy or strict-panic leg built it), 8 Minor; all fixed in the final fix wave with the parked items (the showcase Icons page's own colours, twelve pre-T9 stale windows-11.toml citations, publish.yml's iced_aw leg, T2's parity-scan minors), re-review clean. Its six declined-to-judge lines stand as set aside (ruled).
+- Timings (M3-22's gate; release, three runs, load about 2.7 with another project's cargo check): warm `from_preset` medians 45.6 / 45.3 / 44.6 µs, range 35.5–49.5 µs over 16 presets × 2 modes; Step 1 baseline 35.5–49.2 µs. Microseconds, not milliseconds: the gate is met.
+- Compatibility stamps: gpui, iced and egui all stale since T1/T2 touched every connector's sources; refreshed by the release asset run (`scripts/update_compatibility.sh run`), as in M3 and M4, so check_release's compatibility ❌ is expected until then.
+- Full check_release: `<FINAL-RESULT>`.
+- Carried to M6/M7/M8 (docs/todo.md):
+  - gpui and egui: `native` and `watch` passthrough features as iced's (M5 T3, 80b9ad13; ruling M5-02) — M6/M7: "Connectors: `native` and `watch` passthrough features in gpui and egui".
+  - gpui and egui adopt core's `icons::fill_current_color` and delete their own copies (M5 T7, 89ec7f61) — M6/M7: "Icons: one `currentColor` fill for a freedesktop indicator, in native-theme".
+  - The README dependency-version check (iced compat.rs since M5 T11, b0efe9e3) for the gpui, egui, core and build READMEs — M6/M7/M8: "READMEs: the dependency-version check beyond iced".
+  - gpui and egui: a pinned preset re-read at a theme change — M6/M7: the Theme watcher entry "For M5–M7: a preset pinned with `from_system_with_preset` is lost on the next system re-read".
+  - A public builder that takes the mode (M5 T4 ruling) — all three connectors: "Connectors: a public theme builder that takes the mode".
+  - Contract coverage of widgets (M5 T7 ruling) — all connectors: "Contracts: the connectors' widgets".
+  - iced: a style for the application's base reading `window.background_color` (M5 T12a ruling C4): "iced: an application style that reads `window.background_color`".
+  - iced on macOS: `theme_changes()` starts the watcher on iced's executor thread, unverified on a real Mac (M5 T3): the Theme watcher entry "iced on macOS: the watcher started from iced's executor thread".
+  - gpui: the `Loaded` equality test compares the theme by `is_dark()` only (M5 T1 review) — M6: "gpui: the `Loaded` equality test compares the theme by `is_dark()` only".
+  - iced showcase: four general button Widget Info lines would misdescribe the "On" toggle (latent; M5 T5): "iced showcase: the toggle's general button Widget Info lines".
 
 ## M6 — gpui connector
 
