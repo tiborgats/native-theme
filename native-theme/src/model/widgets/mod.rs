@@ -2,7 +2,9 @@
 
 use crate::Rgba;
 use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};
-use crate::model::{ArrowSide, DialogButtonOrder, FontSpec, ResolvedFontSpec, TabIndicatorSide};
+use crate::model::{
+    ArrowSide, DialogButtonOrder, DialogEntranceStyle, FontSpec, ResolvedFontSpec, TabIndicatorSide,
+};
 use native_theme_derive::{ThemeFields, ThemeWidget};
 
 // ── 2.2 Window / Application Chrome ────────────────────────────────────────
@@ -787,6 +789,12 @@ pub struct DialogTheme {
     pub icon_size: Option<f32>,
     /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
     pub button_order: Option<DialogButtonOrder>,
+    /// How the dialog moves onto the screen as it opens: scaling up while it
+    /// fades in, or fading in while it rises into place. `None` where the
+    /// platform states none: AppKit names no dialog motion
+    /// (docs/platform-facts.md §2.22).
+    #[theme(category = "soft_option")]
+    pub entrance: Option<DialogEntranceStyle>,
     /// Dialog title font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub title_font: Option<FontSpec>,

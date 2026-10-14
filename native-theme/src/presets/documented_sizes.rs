@@ -1332,3 +1332,31 @@ fn native_themes_state_the_tooltip_show_delay() {
     );
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+/// The dialog's entrance per platform, from platform-facts §2.22 (`:1506`);
+/// `None` where the cell states none.
+#[rustfmt::skip]
+const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>); 6] = [
+    (KdeBreeze, Some(crate::model::DialogEntranceStyle::FadeRise)),
+    (Adwaita, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+    (Material3, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+];
+
+/// The native themes state the dialog's entrance as platform-facts gives it,
+/// static and live, and no other preset states one.
+#[test]
+fn native_themes_state_the_dialog_entrance() {
+    assert!(facts_line(1506).starts_with("| `entrance`"));
+    assert!(facts_heading(1506).starts_with("### 2.22 "));
+    let failures = soft_field_failures(
+        "dialog.entrance",
+        1506,
+        &DIALOG_ENTRANCE,
+        |t| t.dialog.entrance,
+        |v| v.dialog.entrance,
+    );
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

@@ -448,6 +448,8 @@ background_color = "#f3f3f3"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
 # modern WinUI 3 ContentDialog. See docs/platform-facts.md:1496, 1838-1839.
 button_order = "primary_left"
+# platform-facts.md:1506 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
+entrance = "scale_fade"
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0
@@ -1009,6 +1011,8 @@ background_color = "#202020"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
 # modern WinUI 3 ContentDialog. See docs/platform-facts.md:1496, 1838-1839.
 button_order = "primary_left"
+# platform-facts.md:1506 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
+entrance = "scale_fade"
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0

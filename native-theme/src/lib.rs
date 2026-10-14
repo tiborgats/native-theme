@@ -237,11 +237,12 @@ pub mod prelude;
 pub mod theme {
     pub use crate::model::widgets::*;
     pub use crate::model::{
-        ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder, FontSize, FontSpec, FontStyle,
-        IconSet, IconSizes, Resolved, ResolvedDefaults, ResolvedDefaultsBorder, ResolvedFontSpec,
-        ResolvedIconSizes, ResolvedPadding, ResolvedTextScale, ResolvedTextScaleEntry,
-        ResolvedTheme, ResolvedWidgetBorder, TabIndicatorSide, TextScale, TextScaleEntry, Theme,
-        ThemeDefaults, ThemeMode, WidgetBorderSpec, intern_font_family,
+        ArrowSide, ColorMode, DefaultsBorderSpec, DialogButtonOrder, DialogEntranceStyle, FontSize,
+        FontSpec, FontStyle, IconSet, IconSizes, Resolved, ResolvedDefaults,
+        ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
+        ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder,
+        TabIndicatorSide, TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode,
+        WidgetBorderSpec, intern_font_family,
     };
     pub use crate::presets::PresetInfo;
 }

@@ -380,6 +380,8 @@ disabled_thumb_color = "#f0f0f0"
 
 [light.dialog]
 button_order = "primary_left"
+# platform-facts.md:1506 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
 min_height_px = 140.0
@@ -841,6 +843,8 @@ disabled_thumb_color = "#272a2e"
 
 [dark.dialog]
 button_order = "primary_left"
+# platform-facts.md:1506 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
 min_height_px = 140.0

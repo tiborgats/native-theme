@@ -324,6 +324,13 @@ fn arb_dialog_button_order() -> impl Strategy<Value = DialogButtonOrder> {
     ]
 }
 
+fn arb_dialog_entrance() -> impl Strategy<Value = DialogEntranceStyle> {
+    prop_oneof![
+        Just(DialogEntranceStyle::ScaleFade),
+        Just(DialogEntranceStyle::FadeRise),
+    ]
+}
+
 fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
     (
         proptest::option::of(arb_rgba()),
@@ -334,6 +341,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(8.0f32..128.0),
         proptest::option::of(arb_dialog_button_order()),
+        proptest::option::of(arb_dialog_entrance()),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_widget_border_spec()),
@@ -348,6 +356,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
                 gap,
                 icon_sz,
                 order,
+                entrance,
                 title_font,
                 body_font,
                 border,
@@ -361,6 +370,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
                     button_gap: gap,
                     icon_size: icon_sz,
                     button_order: order,
+                    entrance,
                     title_font,
                     body_font,
                     border,

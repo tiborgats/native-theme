@@ -317,6 +317,8 @@ hover_unchecked_background = "#c8c8c8"
 
 [light.dialog]
 button_order = "primary_right"
+# platform-facts.md:1506 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
 min_height_px = 140.0
@@ -697,6 +699,8 @@ hover_unchecked_background = "#56565a"
 
 [dark.dialog]
 button_order = "primary_right"
+# platform-facts.md:1506 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
 min_height_px = 140.0

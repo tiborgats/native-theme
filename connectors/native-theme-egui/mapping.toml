@@ -469,6 +469,11 @@ tested_by = "T18(a)"
 verdict   = "derived"
 tested_by = "T18(e)"
 
+["dialog.entrance"]
+verdict  = "unmappable"
+sub_tag  = "egui-limited"
+upstream = "egui: a scaling or rising entrance for Window and Modal, whose Area only fades in (containers/area.rs:347-354, :632-641)"
+
 ["dialog.title_font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"

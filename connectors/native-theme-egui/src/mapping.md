@@ -9,14 +9,14 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
-| Surfaces (window, dialog, popover, card, tooltip, menu) | 109 | 8 | 55 | 31 | 15 |
+| Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 31 | 16 |
 | Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
 | Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **506** | **47** | **208** | **167** | **84** |
+| **TOTAL** | **507** | **47** | **208** | **167** | **85** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 51, `receiver-pending` 1, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
+UNMAPPABLE sub-tags (§2): `egui-limited` 52, `receiver-pending` 1, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
 ## Rows
 
@@ -121,6 +121,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `receiver-pending` 1, `source-side
 | `dialog.border.shadow_enabled` | DERIVED | \[dialog\] `shadow.offset`; \[dialog\] `shadow.blur`; \[dialog\] `shadow.spread` (when: never: egui's own spread, 0, is Shadow::NONE's, §6.14); \[dialog\] `shadow.color` | probe `false` |
 | `dialog.button_gap` | SCOPED | «dialog» `spacing.item_spacing.x` |  |
 | `dialog.button_order` | DERIVED | → T18(e) |  |
+| `dialog.entrance` | UNMAPPABLE |  | `egui-limited`: egui: a scaling or rising entrance for Window and Modal, whose Area only fades in (containers/area.rs:347-354, :632-641) |
 | `dialog.icon_size` | DERIVED | → T18(a) |  |
 | `dialog.max_height` | DERIVED | → T18(a) |  |
 | `dialog.max_width` | DERIVED | → T18(a) |  |

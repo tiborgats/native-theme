@@ -413,6 +413,7 @@ fields = [
     "expander.content_indent",         # macOS documents no disclosure geometry (§2.27)
     "expander.frame_enabled",          # boolean: KDE unframed, GNOME/Windows framed (§2.27)
     "tooltip.show_delay",              # milliseconds: macOS documents no delay (§2.7)
+    "dialog.entrance",                 # enum: Windows/GNOME/Material scale_fade, KDE fade_rise (§2.22)
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,

@@ -41,6 +41,8 @@ pub(crate) mod border;
 pub(crate) mod bundled;
 /// Global theme defaults shared across widgets.
 pub(crate) mod defaults;
+/// Dialog entrance motion convention.
+pub(crate) mod dialog_entrance_style;
 /// Dialog button ordering convention.
 pub(crate) mod dialog_order;
 /// Per-widget font specification and text scale.
@@ -67,6 +69,7 @@ pub use border::{
 // Crate-internal; external code uses the per-set loaders in `crate::icons`.
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
+pub use dialog_entrance_style::DialogEntranceStyle;
 pub use dialog_order::DialogButtonOrder;
 pub use font::{
     FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry, intern_font_family,
