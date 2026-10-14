@@ -140,6 +140,14 @@ jobs:
           python3 --version
           python3 scripts/check_widget_coverage.py
 
+      # The connectors' accessor names against the model's leaves; `if:
+      # always()` for the same reason as the step above.
+      - name: Connector parity
+        if: always()
+        run: |
+          python3 --version
+          python3 scripts/check_connector_parity.py
+
       - name: Documentation
         if: always()
         env:

@@ -746,12 +746,12 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check_widget_coverage.py needs Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py and scripts/check_connector_parity.py need Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py and scripts/check_connector_parity.py need 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \

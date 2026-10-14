@@ -247,6 +247,14 @@ jobs:
         run: |
           python3 --version
           python3 scripts/check_widget_coverage.py
+      # Fails on a connector accessor named unlike the `ResolvedTheme` leaf it
+      # reads, or absent from a sibling connector, unless
+      # scripts/connector_parity_exceptions.toml lists it. Reads sources only.
+      - name: Connector parity
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          python3 --version
+          python3 scripts/check_connector_parity.py
 
   # The gpui connector on GPUI Fast is built for Windows and macOS too: no
   # other job on push builds it there, and linking the showcase catches what

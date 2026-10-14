@@ -367,11 +367,13 @@ in every connector, unless `scripts/connector_parity_exceptions.toml` lists it
 with its reason. A function it cannot classify needs an exception too, and it
 prints how many functions it put in each class. Exits 0 when clean, 1 on a
 violation or a stale exception, 2 on an input it cannot read (a field the
-model lacks, a malformed exception file). `--self-test` runs its built-in
+model lacks, a `Resolved*` type no model source declares, a connector with
+no one-field accessor found, a malformed exception file). `--self-test` runs its built-in
 scenarios, a planted violation of each rule among them; `--root DIR` reads a
 scratch copy of the tree instead, to try a change; `-v` lists every function
 with its class. `scripts/check_release.sh` (in the `--commit` subset too) runs
-the check and the self-test.
+the check and the self-test; `ci.yml`, `publish.yml` and `dependency-canary.yml`
+run the check.
 
 Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
 

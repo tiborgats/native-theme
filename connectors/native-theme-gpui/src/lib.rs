@@ -496,7 +496,7 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
 
 // --- Issue 15: Defaults field accessors ---
 
-/// Frame/border width from the resolved theme defaults.
+/// Border line width from the resolved theme defaults.
 #[must_use]
 pub fn border_line_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.line_width
@@ -628,7 +628,7 @@ fn substituted_family(_family: &str) -> Option<String> {
     None
 }
 
-// --- Issue 36: Line height multiplier ---
+// --- Issue 36: Line height ---
 
 /// Line height multiplier from the resolved theme defaults.
 #[must_use]

@@ -16,7 +16,9 @@ Run from the repository root:
 
 Exit 0 when every accessor passes or is excepted and no exception is stale,
 1 on a violation or a stale exception, 2 on an input it cannot read (a model
-field the type model lacks, a malformed exception file).
+field the type model lacks, a `Resolved*` type no model source declares, a
+connector in which it finds no one-field accessor, a malformed exception
+file).
 
 The naming rule
 ---------------
@@ -269,6 +271,11 @@ def parse_model(sources):
                 model["Resolved" + name] = fields
     if ROOT_TYPE not in model:
         raise Failure(f"the model sources declare no {ROOT_TYPE}")
+    # a `Resolved*` type the sources do not declare would read as a leaf
+    for struct, fields in model.items():
+        for field, type_ in fields.items():
+            if type_.startswith("Resolved") and type_ not in model:
+                raise Failure(f"{struct}.{field}: type {type_} is not in the model sources")
     return model
 
 
@@ -519,6 +526,8 @@ def check(connectors, exceptions):
                     f"{connector}: `{f.name}` (line {f.line}) reads `{f.leaf}` "
                     f"and is named unlike it: `{want}`"
                 )
+        if counts["one-field"] == 0:
+            raise Failure(f"{connector}: no one-field accessor found; the scan reads nothing")
         report.append(
             f"{connector:5s} pub fn {len(fns):3d}   "
             + "   ".join(f"{c} {counts[c]:2d}" for c in CLASSES)
@@ -767,6 +776,20 @@ pub fn is_dark(resolved: &ResolvedTheme) -> bool {
     try:
         scan(model, "pub fn x(r: &ResolvedTheme) -> f32 { r.defaults.no_such_leaf }", "t")
         failures.append("an unknown field: no error")
+    except Failure:
+        pass
+
+    # fail closed: a type the model lacks, a connector the scan finds nothing in
+    try:
+        parse_model([SELF_MODEL.replace("pub struct ResolvedDefaultsBorder", "pub struct Elsewhere")])
+        failures.append("a Resolved* type absent from the model: no error")
+    except Failure:
+        pass
+    try:
+        empty = dict(clean)
+        empty["egui"] = {n: f for n, f in clean["egui"].items() if f.cls != "one-field"}
+        check(empty, {})
+        failures.append("a connector with no one-field accessor: no error")
     except Failure:
         pass
 
