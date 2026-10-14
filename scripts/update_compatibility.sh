@@ -245,7 +245,8 @@ gates_iced() {
     run_gate "tests" cargo test -p native-theme-iced --locked
     run_gate "tests (no default features)" \
         cargo test -p native-theme-iced --locked --no-default-features
-    run_gate "tests (iced_aw)" cargo test -p native-theme-iced --locked --features iced_aw
+    run_gate "tests (iced_aw, watch, native)" \
+        cargo test -p native-theme-iced --locked --features iced_aw,watch,native
     run_gate "clippy" \
         cargo clippy -p native-theme-iced --all-targets --all-features --locked -- -D warnings
     run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \
