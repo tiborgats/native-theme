@@ -2756,49 +2756,108 @@ fn a_dragged_slider_handle_takes_its_fill_from_iced() -> native_theme::Result<()
     Ok(())
 }
 
+/// The statuses in which `styles::button_primary` paints what iced's own
+/// `button::primary` paints from a primary slot holding the primary pair.
+/// Disabled is `class_button`'s faded pair, which the rows cover.
+#[cfg(feature = "widgets")]
+const PRIMARY_AS_ICED_STATUSES: &[button::Status] = &[
+    button::Status::Active,
+    button::Status::Hovered,
+    button::Status::Pressed,
+];
+
+/// The iced theme `to_theme` builds from `r` with its accent pair replaced by
+/// the primary pair, so its palette's primary slot is
+/// `button.primary_background` and that slot's label `.primary_text_color`:
+/// the theme under which iced's own `button::primary` is the oracle for
+/// `styles::button_primary`.
+#[cfg(feature = "widgets")]
+fn primary_slot_theme(r: &ResolvedTheme) -> Theme {
+    let mut primary = r.clone();
+    primary.defaults.accent_color = r.button.primary_background;
+    primary.defaults.accent_text_color = r.button.primary_text_color;
+    let theme = crate::to_theme(&primary, "primary slot");
+    assert_eq!(
+        theme.palette().primary,
+        to_color(r.button.primary_background),
+        "the oracle's primary slot must hold button.primary_background"
+    );
+    assert_eq!(
+        theme.extended_palette().primary.base.text,
+        to_color(r.button.primary_text_color),
+        "the oracle's primary label must be button.primary_text_color"
+    );
+    theme
+}
+
+/// Where `styles::button_primary(r)` under `theme` differs from iced's own
+/// `button::primary` under [`primary_slot_theme`], one line per field, and
+/// how many fields were compared.
+#[cfg(feature = "widgets")]
+fn primary_vs_iced(what: &str, theme: &Theme, r: &ResolvedTheme) -> (Vec<String>, usize) {
+    let oracle = primary_slot_theme(r);
+    let style = styles::button_primary(r);
+    let mut failures = Vec::new();
+    let mut checks = 0;
+    for &status in PRIMARY_AS_ICED_STATUSES {
+        let emitted = style(theme, status);
+        let iced = button::primary(&oracle, status);
+        checks += 1;
+        if emitted.background != iced.background {
+            failures.push(format!(
+                "{what}: styles::button_primary.background ({status:?}) is {:?}, \
+                 button::primary from button.primary_background gives {:?}",
+                emitted.background, iced.background
+            ));
+        }
+        checks += 1;
+        if emitted.text_color != iced.text_color {
+            failures.push(format!(
+                "{what}: styles::button_primary.text_color ({status:?}) is {}, \
+                 button::primary from button.primary_text_color gives {}",
+                show(emitted.text_color),
+                show(iced.text_color)
+            ));
+        }
+    }
+    (failures, checks)
+}
+
 #[cfg(feature = "widgets")]
 #[test]
 fn a_primary_button_that_is_not_the_accent_hovers_from_its_own_fill() -> native_theme::Result<()> {
     // A live Windows theme states `AccentFillColorDefault` as the primary
     // fill and the system accent as `defaults.accent_color`, so the two differ
     // there. The hovered and pressed fills are iced's derivation from the
-    // primary's own fill, not from the palette slot the accent fills.
+    // primary's own fill, not from the palette slot the accent fills, and the
+    // label is the primary's own, not the accent's.
+    // Dark, because there the danger label (`#000000e4`) is not the accent's
+    // (`#000000`); in light both are white.
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
-        .into_variant(ColorMode::Light)?
+        .into_variant(ColorMode::Dark)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     resolved.button.primary_background = resolved.defaults.danger_color;
+    resolved.button.primary_text_color = resolved.defaults.danger_text_color;
     assert_ne!(
         resolved.button.primary_background, resolved.defaults.accent_color,
         "the primary fill must differ from the accent, or this proves nothing"
     );
-    let theme = crate::to_theme(&resolved, "windows-11");
-    let style = styles::button_primary(&resolved);
-    let pal = theme.palette();
-    let primary = Primary::generate(
-        to_color(resolved.button.primary_background),
-        pal.background,
-        pal.text,
-    );
-
-    for (status, fill) in [
-        (button::Status::Hovered, primary.strong.color),
-        (button::Status::Pressed, primary.base.color),
-    ] {
-        let emitted = style(&theme, status);
-        assert_eq!(
-            emitted.background,
-            Some(Background::Color(fill)),
-            "{status:?}: the fill must be iced's derivation from \
-             button.primary_background"
-        );
-        assert_eq!(
-            emitted.text_color,
-            to_color(resolved.button.primary_text_color),
-            "{status:?}: the label must be button.primary_text_color"
-        );
-    }
     assert_ne!(
-        style(&theme, button::Status::Hovered).background,
+        resolved.button.primary_text_color, resolved.defaults.accent_text_color,
+        "the primary label must differ from the accent's, or this proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "windows-11");
+
+    let (failures, checks) = primary_vs_iced("windows-11/dark, edited", &theme, &resolved);
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} primary-button fields differ from iced's own class \
+         painted from the primary pair:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    assert_ne!(
+        styles::button_primary(&resolved)(&theme, button::Status::Hovered).background,
         button::primary(&theme, button::Status::Hovered).background,
         "the hovered fill must not be iced's strengthened accent"
     );
@@ -2810,59 +2869,27 @@ fn a_primary_button_that_is_not_the_accent_hovers_from_its_own_fill() -> native_
 fn a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill()
 -> native_theme::Result<()> {
     // The model states no hovered and no pressed primary fill, so those two
-    // states are iced's derivation (spec section 3.3) -- applied to
-    // `button.primary_background`, not to `palette.primary`, which carries
-    // `defaults.accent_color`: `Primary::generate` of the primary fill, painted
-    // as `button::primary` paints its pair (`strong` hovered, `base` pressed,
-    // the pair's label in both). The rows cover only
+    // states are iced's derivation (spec section 3.3) -- applied to the
+    // primary pair, `button.primary_background` and `.primary_text_color`,
+    // not to `palette.primary`, which carries `defaults.accent_color`. The
+    // oracle is iced's own `button::primary` under a theme whose primary slot
+    // holds that pair, at rest as well. The rows cover only
     // `CLASS_BUTTON_NATIVE_STATUSES`, so the claim is asserted here.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
 
     for c in &combinations {
-        let r = &c.resolved;
-        let pal = c.theme.palette();
-        let primary = Primary::generate(
-            to_color(r.button.primary_background),
-            pal.background,
-            pal.text,
-        );
-        let label = to_color(r.button.primary_text_color);
-        let style = styles::button_primary(r);
-        for (status, fill) in [
-            (button::Status::Hovered, primary.strong.color),
-            (button::Status::Pressed, primary.base.color),
-        ] {
-            let emitted = style(&c.theme, status);
-            checks += 1;
-            if emitted.background != Some(Background::Color(fill)) {
-                failures.push(format!(
-                    "{}: styles::button_primary.background ({status:?}) is {:?}, \
-                     iced's derivation from button.primary_background gives {}",
-                    c.label(),
-                    emitted.background,
-                    show(fill)
-                ));
-            }
-            checks += 1;
-            if emitted.text_color != label {
-                failures.push(format!(
-                    "{}: styles::button_primary.text_color ({status:?}) is {}, \
-                     button.primary_text_color is {}",
-                    c.label(),
-                    show(emitted.text_color),
-                    show(label)
-                ));
-            }
-        }
+        let (failed, compared) = primary_vs_iced(&c.label(), &c.theme, &c.resolved);
+        failures.extend(failed);
+        checks += compared;
     }
 
-    println!("primary button vs iced's derivation from its own fill: {checks} field checks");
+    println!("primary button vs iced's own class from the primary pair: {checks} field checks");
     assert!(
         failures.is_empty(),
-        "{} of {checks} primary-button states differ from iced's derivation \
-         from button.primary_background:\n{}",
+        "{} of {checks} primary-button fields differ from iced's own class \
+         painted from the primary pair:\n{}",
         failures.len(),
         failures.join("\n")
     );
@@ -3456,7 +3483,7 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
 fn a_checked_toggle_button_paints_the_checked_pair_or_the_pressed_one() -> native_theme::Result<()>
 {
     // windows-11 states WinUI's checked ToggleButton as the accent fill,
-    // #0067c0 with #ffffff (native-theme/src/presets/windows-11.toml:144-145).
+    // #0067c0 with #ffffff (native-theme/src/presets/windows-11.toml:147-148).
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
