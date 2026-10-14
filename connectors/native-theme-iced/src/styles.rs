@@ -673,11 +673,13 @@ pub fn checkbox_over(
     let ground = backdrop;
 
     let checked = to_color(c.checked_background);
-    // Both soft options copy the checkbox's own fill: the platform saying the
-    // box looks no different unchecked, or under the pointer.
+    // Both soft options are the platform saying the box looks no different:
+    // unchecked, it has the checkbox's own fill; under the pointer, the fill
+    // it has at rest.
     let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
-    let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
-    let hovered_unchecked = composite_over(hover_layer, unchecked);
+    let hovered_unchecked = c.hover_background.map_or(unchecked, |hover| {
+        composite_over(to_color(hover), unchecked)
+    });
     // A translucent disabled fill replaces the idle one, so it is as given. With
     // none stated the platform dims by opacity alone
     // (`docs/platform-facts.md` §2.1.6): the box keeps its enabled look.
@@ -784,8 +786,9 @@ pub fn radio(
 
     let selected = to_color(c.checked_background);
     let unselected = to_color(c.unchecked_background.unwrap_or(c.background_color));
-    let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
-    let hovered_unselected = composite_over(hover_layer, unselected);
+    let hovered_unselected = c.hover_background.map_or(unselected, |hover| {
+        composite_over(to_color(hover), unselected)
+    });
 
     let dot = to_color(c.indicator_color);
     let label = to_color(c.font.color);
@@ -828,12 +831,13 @@ pub fn radio(
 /// halves the alpha of the thumb.
 ///
 /// The track is `switch.checked_background` or `.unchecked_background` by
-/// `is_toggled`, with `.hover_*` layered over it and `.disabled_*`
-/// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
-/// so emitted as given in every state -- `.unchecked_thumb_background`, where
-/// the theme states one, while not toggled -- and `.disabled_thumb_color`
-/// whenever the switch is disabled, toggled or not. A disabled switch is
-/// faded by `switch.disabled_opacity` as one widget over the window,
+/// `is_toggled`, with `.hover_*` layered over it where the theme states one
+/// and `.disabled_*` replacing it, as given. The thumb is
+/// `switch.thumb_background`, a thumb and so emitted as given in every state
+/// -- `.unchecked_thumb_background`, where the theme states one, while not
+/// toggled -- and `.disabled_thumb_color` whenever the switch is disabled,
+/// toggled or not. A disabled switch is faded by `switch.disabled_opacity` as
+/// one widget over the window,
 /// `defaults.background_color` ([`toggler_over`] takes another backdrop):
 /// the thumb over the track, the track over the window, each then faded over
 /// the window (`docs/platform-facts.md` §2.1.6, libadwaita's
@@ -887,18 +891,14 @@ pub fn toggler_over(
 
     let checked = to_color(s.checked_background);
     let unchecked = to_color(s.unchecked_background);
-    // Each hover layer is a soft option copying the track it covers.
-    let hovered_checked = composite_over(
-        to_color(s.hover_checked_background.unwrap_or(s.checked_background)),
-        checked,
-    );
-    let hovered_unchecked = composite_over(
-        to_color(
-            s.hover_unchecked_background
-                .unwrap_or(s.unchecked_background),
-        ),
-        unchecked,
-    );
+    // Each hover layer is a soft option: where it is unset the hovered track
+    // is the track at rest.
+    let hovered_checked = s
+        .hover_checked_background
+        .map_or(checked, |hover| composite_over(to_color(hover), checked));
+    let hovered_unchecked = s.hover_unchecked_background.map_or(unchecked, |hover| {
+        composite_over(to_color(hover), unchecked)
+    });
     let disabled_checked = to_color(
         s.disabled_checked_background
             .unwrap_or(s.checked_background),
@@ -997,9 +997,11 @@ pub fn toggler_over(
 /// primary family once it is hovered or open.
 ///
 /// The field is `combo_box.background_color` with `.hover_background` layered
-/// over it, its label is `combo_box.font.color` and its border is
-/// `combo_box.border.*`. The placeholder is `input.placeholder_color`: the
-/// model states it once, for every field that has one.
+/// over it -- a soft option, whose `None` is the platform saying a hovered
+/// field looks no different -- its label is `combo_box.font.color` and its
+/// border is `combo_box.border.*`. The placeholder is
+/// `input.placeholder_color`: the model states it once, for every field that
+/// has one.
 ///
 /// `pick_list::Status::Opened` carries whether the pointer is on the field
 /// (`pick_list.rs:838-849`), and that is what decides the fill here -- the
@@ -1022,10 +1024,9 @@ pub fn pick_list(
     let c = &resolved.combo_box;
 
     let idle = to_color(c.background_color);
-    let hovered = composite_over(
-        to_color(c.hover_background.unwrap_or(c.background_color)),
-        idle,
-    );
+    let hovered = c
+        .hover_background
+        .map_or(idle, |hover| composite_over(to_color(hover), idle));
 
     let label = to_color(c.font.color);
     let placeholder = to_color(resolved.input.placeholder_color);
@@ -1642,10 +1643,8 @@ pub fn segment(
     } else {
         (
             base,
-            composite_over(
-                to_color(s.hover_background.unwrap_or(s.background_color)),
-                base,
-            ),
+            s.hover_background
+                .map_or(base, |hover| composite_over(to_color(hover), base)),
             to_color(s.font.color),
         )
     };

@@ -725,10 +725,12 @@ pub(super) fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) 
         // states no hover for a checked one, and a state the platform does
         // not state has no distinct appearance.
         checkbox::Status::Hovered { is_checked: true } => native_checkbox_idle(r, true),
-        checkbox::Status::Hovered { is_checked: false } => over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, false),
-        ),
+        // Unset, the hover is the unchecked box at rest.
+        checkbox::Status::Hovered { is_checked: false } => {
+            let idle = native_checkbox_idle(r, false);
+            c.hover_background
+                .map_or(idle, |hover| over(to_color(hover), idle))
+        }
         // One disabled fill for both, replacing the idle one, as given; with
         // none stated the platform dims by opacity alone and the box is its
         // enabled self. Faded as one either way.
@@ -899,10 +901,11 @@ pub(super) fn native_radio_fill(r: &ResolvedTheme, status: radio::Status) -> Col
     match status {
         radio::Status::Active { is_selected } => native_checkbox_idle(r, is_selected),
         radio::Status::Hovered { is_selected: true } => native_checkbox_idle(r, true),
-        radio::Status::Hovered { is_selected: false } => over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, false),
-        ),
+        radio::Status::Hovered { is_selected: false } => {
+            let idle = native_checkbox_idle(r, false);
+            c.hover_background
+                .map_or(idle, |hover| over(to_color(hover), idle))
+        }
     }
 }
 
@@ -982,17 +985,17 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
     let s = &r.switch;
     match status {
         toggler::Status::Active { is_toggled } => native_toggler_idle(r, is_toggled),
-        // Each hover layer copies the track it covers when the platform
-        // states none, and is composited over it (C17).
-        toggler::Status::Hovered { is_toggled } => over(
-            to_color(if is_toggled {
-                s.hover_checked_background.unwrap_or(s.checked_background)
+        // Each hover layer is composited over the track it covers (C17);
+        // where the platform states none the track is as at rest.
+        toggler::Status::Hovered { is_toggled } => {
+            let idle = native_toggler_idle(r, is_toggled);
+            let hover = if is_toggled {
+                s.hover_checked_background
             } else {
                 s.hover_unchecked_background
-                    .unwrap_or(s.unchecked_background)
-            }),
-            native_toggler_idle(r, is_toggled),
-        ),
+            };
+            hover.map_or(idle, |hover| over(to_color(hover), idle))
+        }
         // A disabled track replaces the idle one, so it is as given, faded as
         // one with its thumb.
         toggler::Status::Disabled { is_toggled } => as_one(
@@ -1163,10 +1166,8 @@ pub(super) fn native_pick_list_fill(r: &ResolvedTheme, status: pick_list::Status
     let c = &r.combo_box;
     let idle = to_color(c.background_color);
     let hovered = || {
-        over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            idle,
-        )
+        c.hover_background
+            .map_or(idle, |hover| over(to_color(hover), idle))
     };
     match status {
         pick_list::Status::Active => idle,
@@ -1749,8 +1750,10 @@ pub(super) fn native_segment(
         let fill = to_color(s.active_background);
         (fill, fill, to_color(s.active_text_color))
     } else {
-        let layer = to_color(s.hover_background.unwrap_or(s.background_color));
-        (base, over(layer, base), to_color(s.font.color))
+        let hovered = s
+            .hover_background
+            .map_or(base, |hover| over(to_color(hover), base));
+        (base, hovered, to_color(s.font.color))
     };
     let fade = |c: Color| Color {
         a: c.a * s.disabled_opacity,

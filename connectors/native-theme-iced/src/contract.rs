@@ -3643,8 +3643,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let scrollbars = styles::scrollable(&resolved);
 
     // Every base-state value of section 3.2's table, read straight from the
-    // model. A hover layer copies the base state and is then composited over
-    // the fill it covers, so the two cases are spelled out separately.
+    // model. A cleared hover layer is the fill it would cover, at rest.
     let box_fill = to_color(resolved.checkbox.background_color);
     let box_border = to_color(resolved.checkbox.border.color);
     let track_on = to_color(resolved.switch.checked_background);
@@ -3659,7 +3658,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let tab_fill = to_color(resolved.tab.background_color);
 
     // One entry per read site, not per model field: two functions reading the
-    // same option have two `unwrap_or` expressions.
+    // same option have two read expressions.
     let read_sites = [
         (
             "checkbox.unchecked_background -> checkbox.background_color",
@@ -3669,7 +3668,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "checkbox.hover_background -> checkbox.background_color",
             fill(boxes(&theme, checkbox::Status::Hovered { is_checked: false }).background),
-            over(box_fill, box_fill),
+            box_fill,
         ),
         // No disabled fill stated is the platform dimming by opacity alone
         // (docs/platform-facts.md §2.1.6): the box is its enabled self, the
@@ -3696,7 +3695,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "radio: checkbox.hover_background -> checkbox.background_color",
             fill(buttons(&theme, radio::Status::Hovered { is_selected: false }).background),
-            over(box_fill, box_fill),
+            box_fill,
         ),
         (
             "radio: checkbox.unchecked_border_color -> checkbox.border.color",
@@ -3706,12 +3705,12 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "switch.hover_checked_background -> switch.checked_background",
             fill(switches(&theme, toggler::Status::Hovered { is_toggled: true }).background),
-            over(track_on, track_on),
+            track_on,
         ),
         (
             "switch.hover_unchecked_background -> switch.unchecked_background",
             fill(switches(&theme, toggler::Status::Hovered { is_toggled: false }).background),
-            over(track_off, track_off),
+            track_off,
         ),
         (
             "switch.disabled_checked_background -> switch.checked_background",
@@ -3731,7 +3730,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "combo_box.hover_background -> combo_box.background_color",
             fill(fields(&theme, pick_list::Status::Hovered).background),
-            over(field_fill, field_fill),
+            field_fill,
         ),
         (
             "slider.thumb_hover_color -> slider.thumb_color",
@@ -3780,6 +3779,79 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         failures.len(),
         failures.join("\n")
     );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
+    // macos-tahoe states a translucent drop-down field and a translucent off
+    // track, and no hover for either: a hovered one is the one at rest, not
+    // its fill composited over itself, which would double its alpha. The
+    // checkbox, the radio and the segment read the same rule, and are given
+    // the field's translucent fill and no hover here, since no bundled preset
+    // leaves theirs unset over a translucent fill; the unchecked box's fill is
+    // set apart from the checkbox's own, so that a hover falling back onto
+    // the latter is caught too.
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let mut resolved = native_theme::theme::Theme::preset("macos-tahoe")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        let translucent = resolved.combo_box.background_color;
+        assert!(
+            resolved.combo_box.hover_background.is_none()
+                && translucent.a < 255
+                && resolved.switch.hover_unchecked_background.is_none()
+                && resolved.switch.unchecked_background.a < 255
+                && resolved.checkbox.background_color != translucent,
+            "macos-tahoe ({mode:?}) no longer leaves a translucent field's or \
+             off track's hover unset, so this proves nothing"
+        );
+        resolved.checkbox.hover_background = None;
+        resolved.checkbox.unchecked_background = Some(translucent);
+        resolved.segmented_control.hover_background = None;
+        resolved.segmented_control.background_color = translucent;
+
+        let theme = crate::to_theme(&resolved, "macos-tahoe");
+        let idle = to_color(translucent);
+        assert_eq!(
+            styles::pick_list(&resolved)(&theme, pick_list::Status::Hovered).background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered field with no hover stated is \
+             the field at rest"
+        );
+        assert_eq!(
+            styles::toggler(&resolved)(&theme, toggler::Status::Hovered { is_toggled: false })
+                .background,
+            Background::Color(to_color(resolved.switch.unchecked_background)),
+            "macos-tahoe ({mode:?}): a hovered off track with no hover stated is \
+             the track at rest"
+        );
+        assert_eq!(
+            styles::checkbox(&resolved)(&theme, checkbox::Status::Hovered { is_checked: false })
+                .background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered unchecked box with no hover \
+             stated is the unchecked box"
+        );
+        assert_eq!(
+            styles::radio(&resolved)(&theme, radio::Status::Hovered { is_selected: false })
+                .background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered unselected radio with no hover \
+             stated is the unselected radio"
+        );
+        assert_eq!(
+            styles::segment(&resolved, false, styles::SegmentPosition::Only)(
+                &theme,
+                button::Status::Hovered
+            )
+            .background,
+            Some(Background::Color(idle)),
+            "macos-tahoe ({mode:?}): a hovered segment with no hover stated is \
+             the segment at rest"
+        );
+    }
     Ok(())
 }
 
