@@ -1127,6 +1127,24 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
     }
 }
 
+/// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
+/// `list.selection_text_color`. Apply it after [`list_item`], to a selected
+/// row only.
+///
+/// Colour, not geometry, carried because no `ThemeColor` field reaches it:
+/// upstream marks a selected row by its fill alone, `list_active` (or
+/// `accent`), painted after the refinement (`src/list/list_item.rs:257-264`),
+/// which the `list_active` row gives `list.selection_background`, and leaves
+/// its text the `foreground` it set before the refinement (`:205` → `:209`)
+/// -- or [`list_item`]'s `list.item_font.color` -- which a platform that
+/// letters its selected rows in a colour of their own (Breeze's white on its
+/// accent) does not. A row that is not selectable is muted after the
+/// refinement (`:235-237`), so its colour still wins.
+#[must_use]
+pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().text_color(rgba_to_hsla(n.resolved.list.selection_text_color))
+}
+
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
 /// text size and weight.
 ///
@@ -1732,6 +1750,40 @@ mod tests {
             }
         }
         assert!(stated > 0, "no preset states a checked button fill");
+    }
+
+    /// `list_item_selected` letters a selected row in
+    /// `list.selection_text_color` and carries nothing else: upstream changes
+    /// only a selected row's fill (`list/list_item.rs:257-264`), so its text
+    /// stays the `foreground` set before the refinement (`:205` → `:209`), or
+    /// [`list_item`]'s `list.item_font.color`, which the platforms' selected
+    /// text differs from.
+    #[test]
+    fn a_selected_list_row_is_lettered_in_the_platforms_selection_colour() {
+        let mut differs = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let out = list_item_selected(Native::unscaled(&r));
+                assert_eq!(
+                    out.text.color,
+                    Some(rgba_to_hsla(r.list.selection_text_color)),
+                    "{at}: selected row text"
+                );
+                let bare = StyleRefinement {
+                    text: Default::default(),
+                    ..out
+                };
+                assert_eq!(bare, StyleRefinement::default(), "{at}: only the text");
+                differs += usize::from(r.list.selection_text_color != r.list.item_font.color);
+            }
+        }
+        assert!(
+            differs > 0,
+            "no preset's selected row text differs from its row text any more, \
+             so this test proves nothing"
+        );
     }
 
     /// `link` carries the link's text size and weight, and removes upstream's

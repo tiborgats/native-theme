@@ -317,6 +317,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.checked_background and button.checked_text_color on a selected Button, the pressed pair (button.active_background, button.active_text_color) where none is stated, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
     ),
     (
+        "list_item_selected",
+        "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: upstream marks a selected row by its fill alone, painted after the refinement, and mutes a row that is not selectable after it too (list/list_item.rs, ListItem::render)",
+    ),
+    (
         "link",
         "link.font size and weight, defaults.line_height as the line height, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),

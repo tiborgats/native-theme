@@ -1443,7 +1443,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: the selected row's text colour (demo::ListRow)",
+        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (

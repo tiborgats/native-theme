@@ -4472,13 +4472,10 @@ impl RenderOnce for ListRow {
         // (list/list_item.rs, `RenderOnce for ListItem`).
         let selected_text = self
             .selected
-            .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+            .then(|| native_geometry(cx, geometry::list_item_selected))
             .flatten();
         if selected_text.is_some() {
-            row_info = row_info.config(
-                "selected text",
-                "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
-            );
+            row_info = row_info.geometry("list_item_selected");
         }
         // A row under the pointer lettered in `list.hover_text_color`: the
         // ListItem's own hover sets its fill alone, inside render
@@ -4501,7 +4498,7 @@ impl RenderOnce for ListRow {
             "list_item",
             &mut row_info,
         )
-        .when_some(selected_text, |item, text| item.text_color(text))
+        .map(|item| refined(item, selected_text.as_ref()))
         // Clear of the List's scrollbar where the theme's is not an overlay:
         // the List draws its bar over its rows (list/list.rs, `List::render`),
         // where a scrollbar that is not an overlay takes the room beside them
@@ -4584,13 +4581,10 @@ fn tree_row(
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
     // As a List row's: a selected row's text in `list.selection_text_color`.
     let selected_text = selected
-        .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+        .then(|| native_geometry(cx, geometry::list_item_selected))
         .flatten();
     if selected_text.is_some() {
-        row_info = row_info.config(
-            "selected text",
-            "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
-        );
+        row_info = row_info.geometry("list_item_selected");
     }
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
@@ -4599,7 +4593,7 @@ fn tree_row(
         "list_item",
         &mut row_info,
     )
-    .when_some(selected_text, |item, text| item.text_color(text));
+    .map(|item| refined(item, selected_text.as_ref()));
     let ui = ui.clone();
     // Plain text, as the List's rows.
     item.child(label)
