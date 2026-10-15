@@ -576,7 +576,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.border.color",
-        "gpui: geometry::select's and geometry::combobox's edge colour",
+        "gpui: the trigger's edge (demo::combo_fill)",
     ),
     (
         "",
@@ -2089,7 +2089,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: the surface's edge (demo::input_surface); geometry::text_area's edge colour, over the `input` token (input/input.rs:798)",
+        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:798)",
     ),
     (
         "",

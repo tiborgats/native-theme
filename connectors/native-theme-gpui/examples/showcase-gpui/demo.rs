@@ -3956,18 +3956,23 @@ pub(crate) fn select(
         .debug_selector(move || id.into())
 }
 
-/// No fill of its own for a drop-down trigger, a `Select` or a `Combobox`
-/// that is not disabled, or `None` before `apply` ran: [`combo_surface`]
-/// paints `geometry::combo_box_fill`'s fill under it. The trigger paints
-/// `input_background()` first and refines itself with the caller's style
-/// after (select.rs, `Select::render`; combobox.rs, `Combobox::render`), so
-/// this lands over it; its edge is `geometry::select`'s or
-/// `geometry::combobox`'s, `combo_box.border.color`.
+/// A drop-down trigger's edge, `combo_box.border.color`, and no fill of its
+/// own, for a `Select` or a `Combobox` that is not disabled, or `None`
+/// before `apply` ran: [`combo_surface`] paints `geometry::combo_box_fill`'s
+/// fill under it. The trigger paints `input_background()` and `input` first
+/// and refines itself with the caller's style after (select.rs,
+/// `Select::render`; combobox.rs, `Combobox::render`), so these land over
+/// them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
     // with (select.rs:542).
     let none = cx.theme().transparent;
-    native_value(cx, |_| StyleRefinement::default().bg(none))
+    native_value(cx, |n| {
+        let c = &n.resolved.combo_box;
+        StyleRefinement::default()
+            .bg(none)
+            .border_color(info::stated(c.border.color))
+    })
 }
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:

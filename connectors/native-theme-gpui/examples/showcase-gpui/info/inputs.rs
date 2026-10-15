@@ -134,30 +134,27 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
 /// lines are recorded where `demo::textarea` applies the builders.
 pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Textarea");
-    // geometry::text_area letters the field in input.font's colour and
-    // draws its edge in text_area.border.color, over upstream's (a Textarea
-    // renders as an Input, input/textarea.rs:221, which drops input_style's
-    // foreground, input/input.rs:707, and draws its edge in input,
-    // :798, then :803): its geometry line names them.
+    // geometry::text_area letters the field in input.font's colour, over
+    // the window's it inherits (a Textarea renders as an Input,
+    // input/textarea.rs:221, which drops input_style's foreground,
+    // input/input.rs:707): its geometry line names it.
     let info = if filled {
         info
     } else {
-        info.color(input_background(t))
-            .color(claim(
-                "text, inherited",
-                "foreground",
-                t.foreground,
-                "showcase",
-            ))
-            .color(claim(
-                "border",
-                "input",
-                t.input,
-                "gpui-component/input/input.rs:798",
-            ))
+        info.color(input_background(t)).color(claim(
+            "text, inherited",
+            "foreground",
+            t.foreground,
+            "showcase",
+        ))
     };
-    info
-        .color(claim(
+    info.color(claim(
+        "border",
+        "input",
+        t.input,
+        "gpui-component/input/input.rs:798",
+    ))
+    .color(claim(
             "focused border",
             "ring",
             t.ring,
@@ -1080,9 +1077,9 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
 
 /// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`,
 /// `geometry::combo_box_fill`'s, which the showcase paints under the trigger
-/// (`demo::combo_surface`), and `combo_box.border.color`, which
-/// `geometry::select` and `geometry::combobox` refine the trigger with over
-/// upstream's, where a native theme is installed; upstream's
+/// (`demo::combo_surface`), and `combo_box.border.color`, which the showcase
+/// refines the trigger with over upstream's (`demo::combo_fill`), where a
+/// native theme is installed; upstream's
 /// `input_background()` and `input` where none is, the edge read by a
 /// `Combobox` where `combobox`, by a `Select` where not.
 pub fn combo_fill(
@@ -1100,6 +1097,12 @@ pub fn combo_fill(
                     stated(r.combo_box.background_color),
                     "showcase",
                 ))
+                .color(claim(
+                    "trigger border",
+                    "color",
+                    stated(r.combo_box.border.color),
+                    "showcase",
+                ))
                 .geometry("combo_box_fill");
             let c = &r.combo_box;
             let info = if c.hover_background.is_some() {
@@ -1112,7 +1115,7 @@ pub fn combo_fill(
             } else {
                 info
             };
-            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color, which geometry::select and geometry::combobox give it over the input edge it paints first")
+            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (select.rs, Select::render; combobox.rs, Combobox::render)")
         }
         None => info
             .color(input_background(t))

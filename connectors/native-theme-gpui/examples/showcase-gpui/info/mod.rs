@@ -184,7 +184,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "text_area",
-        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius, line_width and color, which inherit the input's -- the colour over the input token upstream draws the edge in (input/input.rs, Input::render: border_color then refine_style) --, input.font including its colour at defaults.line_height; no height: the rows its state holds size it",
+        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font including its colour at defaults.line_height; no height: the rows its state holds size it",
     ),
     (
         "menu_item",
@@ -272,11 +272,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "select",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, border.color, over the input token upstream edges the trigger with first, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
     ),
     (
         "combobox",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, border.color, over the input token upstream edges the trigger with first, combo_box.font (native-theme-gpui geometry.rs, combobox)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui geometry.rs, combobox)",
     ),
     (
         "title_bar",

@@ -336,11 +336,8 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
 /// padding, corner radius and line width in place of the input's (the
-/// frame's inherit the input's, docs/platform-facts.md §2.29), and its edge in
-/// `text_area.border.color`, which inherits `input.border.color`
-/// (`docs/inheritance-rules.toml:173`), over the `input` token upstream draws
-/// it in before the refinement (`input/input.rs:798` → `:803`); the input's
-/// font at `defaults.line_height`, its colour included as in [`input`]; and no
+/// frame's inherit the input's, docs/platform-facts.md §2.29), the input's
+/// font at `defaults.line_height`, its colour included as in [`input`], and no
 /// height -- the rows the field's
 /// state holds size it (gpui-base `input/base/state.rs`,
 /// `InputBaseState::auto_grow`).
@@ -376,8 +373,7 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(
         with_padding(StyleRefinement::default(), &root)
             .rounded(px(a.border.corner_radius))
-            .border(px(a.border.line_width))
-            .border_color(rgba_to_hsla(a.border.color)),
+            .border(px(a.border.line_width)),
         &n.resolved.input.font,
         n,
     )
@@ -818,11 +814,6 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// upstream's own right padding (`input_px`, `select.rs:551`,
 /// `combobox.rs:996`) stands. Without an arrow column the stated right side
 /// is measured to the text, and is applied like the others.
-///
-/// The edge is `combo_box.border.color`, over the `input` token upstream
-/// draws it in before the refinement (`select.rs:548`, `combobox.rs:993`);
-/// a focused trigger still edges itself in `ring` after it (`select.rs:554-555`,
-/// `combobox.rs:999-1000`).
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
     let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
@@ -836,7 +827,6 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     with_padding(r, &padding)
         .min_w(px(c.min_width))
         .rounded(px(c.border.corner_radius))
-        .border_color(rgba_to_hsla(c.border.color))
 }
 
 /// `Select` (`src/select.rs:542-552` → `:553`); the arrow is inner, Tier U.
@@ -2595,11 +2585,6 @@ mod tests {
                 abs(cb.border.corner_radius.max(0.0))
             );
             assert_text(&out, r, &cb.font, s);
-            assert_eq!(out.border_color, Some(rgba_to_hsla(cb.border.color)));
-            assert_eq!(
-                combobox(n).border_color,
-                Some(rgba_to_hsla(cb.border.color))
-            );
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
             assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
             stated.padding(&combobox(n), &p, "combobox");
@@ -2837,22 +2822,6 @@ mod tests {
         assert_eq!(out.padding.bottom, def(1.0), "9 down: 9 − 8");
         assert_eq!(out.padding.left, def(2.0), "12 across: 12 − 10");
         assert_eq!(out.padding.right, None, "an unstated side is upstream's");
-    }
-
-    /// The multi-line field's edge is `text_area.border.color`, over the
-    /// `input` token upstream draws it in (`input/input.rs:798` → `:803`).
-    #[test]
-    fn the_text_area_draws_its_own_edge_colour() {
-        let mut r = resolved("kde-breeze", ColorMode::Light);
-        r.text_area.border.color = r.defaults.accent_color;
-        assert_ne!(
-            r.text_area.border.color, r.input.border.color,
-            "precondition"
-        );
-        assert_eq!(
-            text_area(Native::unscaled(&r)).border_color,
-            Some(rgba_to_hsla(r.text_area.border.color))
-        );
     }
 
     /// Without a stated bar height the toolbar is its content's height, with
