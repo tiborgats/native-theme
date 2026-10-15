@@ -226,10 +226,21 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:404",
+                "native-theme-gpui/widgets/spinner.rs:462",
             ))
+        } else if icons.spins {
+            // An SVG element draws the icon's alpha mask in its text colour
+            // (gpui-pre 0.3.9 src/svg_renderer.rs:241-250,
+            // src/window.rs:5007, :5032), the only element gpui turns.
+            info.color(claim(
+                "indicator",
+                "text_color",
+                stated(r.defaults.text_color),
+                "native-theme-gpui/widgets/spinner.rs:463",
+            ))
+            .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
-            info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
+            info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is defaults.text_color (native-theme/icons.rs, fill_current_color)")
         };
         return info
             .not_themeable("motion", "the indicator's own frames or turn (native-theme's AnimatedIcon); native-theme models no motion")

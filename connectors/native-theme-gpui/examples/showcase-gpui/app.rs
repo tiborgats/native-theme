@@ -745,6 +745,7 @@ impl Showcase {
                 .map(|t| SharedString::from(t.to_owned())),
             indicator: !self.animated_frame_sources.is_empty()
                 || !self.animated_spin_sources.is_empty(),
+            spins: !self.animated_spin_sources.is_empty(),
         }
     }
 

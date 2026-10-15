@@ -5001,13 +5001,14 @@ impl SpinnerKind {
 /// page's icons come: their set (`None` for gpui-component's own icons), the
 /// freedesktop theme they load from (`None`: the system's), and whether the
 /// set has an indicator (the Icons page's animated icons, loaded the same
-/// way).
+/// way) and whether it is one icon that spins rather than frames.
 #[derive(Clone, Default)]
 #[cfg_attr(not(feature = "widgets"), allow(dead_code))]
 pub(crate) struct SpinnerIcons {
     pub(crate) set: Option<IconSet>,
     pub(crate) theme: Option<SharedString>,
     pub(crate) indicator: bool,
+    pub(crate) spins: bool,
 }
 
 /// A `Spinner` of `kind`; the theme-drawn one draws `icons`' indicator.

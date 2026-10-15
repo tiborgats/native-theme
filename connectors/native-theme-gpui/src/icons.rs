@@ -2328,6 +2328,66 @@ mod tests {
         }
     }
 
+    /// A Material or Lucide frame is coloured as `colorize_monochrome_svg`
+    /// colours it, byte for byte once drawn: its `currentColor`, its explicit
+    /// black and its implicit black fill. A freedesktop frame of the same
+    /// bytes is not: only its `currentColor` takes the colour.
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn a_monochrome_set_s_frames_are_coloured_by_the_monochrome_colouriser() {
+        let frames: [&[u8]; 3] = [
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='currentColor' d='M2 2h20v20H2z'/></svg>",
+            br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M2 2h20v20H2z"/></svg>"#,
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M2 2h20v20H2z'/></svg>",
+        ];
+        let anim = AnimatedIcon::frames(
+            frames
+                .iter()
+                .map(|f| IconData::Svg(std::borrow::Cow::Borrowed(*f)))
+                .collect(),
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
+        let colour = gpui::hsla(0.6, 0.7, 0.4, 1.0);
+        let pixels = |source: ImageSource| rendered(source).as_bytes(0).map(<[u8]>::to_vec);
+        let expected: Vec<_> = frames
+            .iter()
+            .map(|f| {
+                let coloured = colorize_monochrome_svg(f, to_rgba(colour));
+                svg_bytes_to_image_source(&coloured, None, Some(24)).and_then(pixels)
+            })
+            .collect();
+        for set in [IconSet::Material, IconSet::Lucide] {
+            let drawn = animated_frames_to_image_sources_for(set, &anim, Some(colour), Some(24))
+                .expect("the frames convert");
+            let drawn: Vec<_> = drawn.sources.into_iter().map(pixels).collect();
+            assert!(
+                drawn == expected,
+                "{set:?}'s frames are not the colouriser's"
+            );
+        }
+        let freedesktop = animated_frames_to_image_sources_for(
+            IconSet::Freedesktop,
+            &anim,
+            Some(colour),
+            Some(24),
+        )
+        .expect("the frames convert");
+        let freedesktop: Vec<_> = freedesktop.sources.into_iter().map(pixels).collect();
+        assert!(
+            freedesktop.first() == expected.first(),
+            "a bare currentColor takes the colour"
+        );
+        assert!(
+            freedesktop.get(1) != expected.get(1),
+            "an explicit black stays black"
+        );
+        assert!(
+            freedesktop.get(2) != expected.get(2),
+            "an implicit black stays black"
+        );
+    }
+
     #[test]
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::transform(
