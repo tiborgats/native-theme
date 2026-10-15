@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: `CheckboxLook`, `SwitchLook`, `SliderLook`, `ProgressBarLook`, `SeparatorLook`, `SpinnerLook`, `TabLook`, `TabIndicator`, `ScrollbarGeometry` and `AnimatedImageSources` are `#[non_exhaustive]`, as `Loaded` is, so a field added to them later is not a breaking change; outside the crate they can no longer be built by struct literal or destructured without `..`. A `ScrollbarGeometry` for `apply_overrides` or `scrollbar_styles` is made by `scrollbar_geometry(&resolved)` and edited field by field.
 - **native-theme-iced**: `AnimatedSvgHandles` is `#[non_exhaustive]`, as the gpui connector's `AnimatedImageSources` is.
 - **native-theme-gpui**: `is_dark(resolved)` is gone: it was a second name for `is_dark_resolved(resolved)`, which stays for a caller holding only a `ResolvedTheme`.
+- **native-theme-gpui**: `ActiveNativeTheme::native()`: `cx.native()` gives the `Native` view the `geometry` builders take in one call, as `cx.theme()` gives gpui-component's theme (it was `cx.native_theme().and_then(|t| t.native(cx))`). It is a required method: a type outside the crate that implements `ActiveNativeTheme` must add it (the trait is implemented for `App`).
 
 ### Added
 
@@ -82,7 +83,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-egui**: the atlas writes `tooltip.show_delay_ms` into `Style::interaction.tooltip_delay`, which egui's own tooltips wait; `tooltip_show_delay(&resolved)` returns it as a `Duration` for a tooltip the application times itself, and `list_header_height(&resolved)` gives `TableBuilder::header` its height. `dialog.entrance` is unmappable: egui's `Window` and `Modal` only fade in.
 - **native-theme-iced**: `tooltip_show_delay(&resolved)`, a `Duration` for `Tooltip::delay`, and `list_header_height(&resolved)`, a table header's height. `dialog.entrance` has no receiver: iced 0.14 has no dialog widget.
 - **Showcases**: all three apply the new values: their tooltips wait the theme's delay and their tables' headers take `list.header_height` (egui's Theme Map table and iced's Layout table among them), gpui's dialogs open with the theme's entrance, and Widget Info prints a `_ms` value with " ms".
-- **native-theme-gpui**: `ActiveNativeTheme::native()`: `cx.native()` gives the `Native` view the `geometry` builders take in one call, as `cx.theme()` gives gpui-component's theme (it was `cx.native_theme().and_then(|t| t.native(cx))`). A type outside the crate that implements `ActiveNativeTheme` needs the method too.
 - **native-theme-gpui**: `Native` and `NativeTheme` implement `Debug`.
 
 ### Changed
