@@ -4,16 +4,16 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _,
-    StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px, transparent_black,
+    AnyElement, App, ElementId, Hsla, InteractiveElement as _, IntoElement, ParentElement, Pixels,
+    RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _, StyleRefinement,
+    Styled, Window, div, prelude::FluentBuilder as _, px, transparent_black,
 };
 use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, font_style, length, over, part_bounds, text_size};
-use crate::{ActiveNativeTheme, Native};
+use super::{Part, PartBounds, color, font_text, length, over, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
@@ -160,20 +160,6 @@ fn indicator(line: TabIndicator, look: &TabLook) -> gpui::Div {
     }
 }
 
-/// The text of a tab's label: `tab.font`'s family, size, weight and style,
-/// one line tall -- its size by `defaults.line_height`, the line box the
-/// model states.
-pub(super) fn label_text(n: Native<'_>) -> gpui::Div {
-    let font = &n.resolved.tab.font;
-    let mut text = div()
-        .font_family(crate::font_family(&font.family))
-        .text_size(text_size(font.size, n))
-        .line_height(gpui::relative(n.resolved.defaults.line_height))
-        .font_weight(FontWeight(f32::from(font.weight)));
-    text.text_style().font_style = Some(font_style(font.style));
-    text
-}
-
 /// One tab of a [`TabBar`]: its label.
 pub struct Tab {
     label: SharedString,
@@ -288,22 +274,29 @@ impl TabBar {
         self
     }
 
-    /// Called with the index of the tab clicked, once that tab is scrolled
-    /// into view ([`track_scroll`](Self::track_scroll)).
+    /// Called with the index of the tab clicked, after the bar has asked for
+    /// that tab to be scrolled into view on the next frame
+    /// ([`track_scroll`](Self::track_scroll)).
     #[must_use]
     pub fn on_click(mut self, handler: impl Fn(&usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Rc::new(handler));
         self
     }
 
-    /// Tracks the tabs' sideways scroll with `handle`, which the bar keeps
-    /// one of its own for where none is given.
+    /// Tracks the tabs' sideways scroll with `handle`. Without one, the bar
+    /// keeps a handle of its own.
     ///
-    /// A click on a tab scrolls it into view (`ScrollHandle::scroll_to_item`)
-    /// before the [`on_click`](Self::on_click) handler runs; a change of the
-    /// selection, the tabs or the layout scrolls nothing, as in
-    /// gpui-component's `TabBar::track_scroll` (tab/tab_bar.rs:124-128).
-    /// Use `handle` to reveal a tab otherwise.
+    /// Where an [`on_click`](Self::on_click) handler is set, a click on a tab
+    /// asks the handle to scroll the tab at that index into view
+    /// (`ScrollHandle::scroll_to_item`) before the handler runs. The scroll
+    /// lands when the next frame lays the tabs out: the handler still sees
+    /// the old offset and the tab's old bounds, a reveal it asks for itself
+    /// replaces the bar's, and a handler that reorders or removes tabs
+    /// reveals whichever tab is then at that index. Under
+    /// [`wrap`](Self::wrap) the tabs do not scroll, so a click reveals
+    /// nothing. A change of the selection, the tabs or the layout scrolls
+    /// nothing, as in gpui-component's `TabBar::track_scroll`
+    /// (tab/tab_bar.rs:124-128); use `handle` to reveal a tab otherwise.
     #[must_use]
     pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
         self.scroll = Some(handle.clone());
@@ -408,7 +401,7 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                .child(label_text(n).child(tab.label))
+                .child(font_text(&n.resolved.tab.font, n).child(tab.label))
                 .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
                     tab.relative().child(indicator(line, &look))
                 })

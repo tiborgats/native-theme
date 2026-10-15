@@ -4,9 +4,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Axis, Bounds, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StyleRefinement,
-    Styled, Window, canvas, div, fill, point, prelude::FluentBuilder as _, px, relative, svg,
+    AnyElement, App, Axis, Bounds, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window,
+    canvas, div, fill, point, prelude::FluentBuilder as _, px, svg,
 };
 use gpui_base::{
     Checkbox as BaseCheckbox, Radio as BaseRadio, RadioGroup as BaseRadioGroup, spring,
@@ -16,8 +16,8 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, font_style, length, over, part_bounds, text_size};
-use crate::{ActiveNativeTheme, Native};
+use super::{Part, PartBounds, color, faded, font_text, length, over, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -268,7 +268,7 @@ impl Parts {
             self.backdrop
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
         );
-        let text = label_text(n);
+        let text = font_text(&n.resolved.checkbox.font, n);
         let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
@@ -381,20 +381,6 @@ fn stroked_check_bounds(size: f32, stroke: f32) -> (f32, f32, f32, f32) {
         (right - left) * scale + stroke,
         (bottom - top) * scale + stroke,
     )
-}
-
-/// The text of a checkbox's or a radio's label: `checkbox.font`'s family,
-/// size, weight and style, on the platform's line height
-/// (`defaults.line_height`).
-pub(super) fn label_text(n: Native<'_>) -> gpui::Div {
-    let font = &n.resolved.checkbox.font;
-    let mut text = div()
-        .font_family(crate::font_family(&font.family))
-        .text_size(text_size(font.size, n))
-        .font_weight(FontWeight(f32::from(font.weight)))
-        .line_height(relative(n.resolved.defaults.line_height));
-    text.text_style().font_style = Some(font_style(font.style));
-    text
 }
 
 /// The indicator box, its mark and the label of a checkbox or radio in

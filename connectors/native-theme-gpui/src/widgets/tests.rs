@@ -745,7 +745,7 @@ fn the_checkbox_label_takes_the_stated_family_and_style() {
         (FontStyle::Oblique, gpui::FontStyle::Oblique),
     ] {
         r.checkbox.font.style = style;
-        let mut label = checkbox::label_text(crate::Native::unscaled(&r));
+        let mut label = font_text(&r.checkbox.font, crate::Native::unscaled(&r));
         let text = label.text_style();
         assert_eq!(
             text.font_family,
@@ -754,6 +754,14 @@ fn the_checkbox_label_takes_the_stated_family_and_style() {
         );
         assert_eq!(text.font_style, Some(drawn), "{style:?}");
         assert_eq!(text.font_size, Some(px(r.checkbox.font.size).into()));
+        assert_eq!(
+            text.font_weight,
+            Some(gpui::FontWeight(f32::from(r.checkbox.font.weight)))
+        );
+        assert_eq!(
+            text.line_height,
+            Some(gpui::relative(r.defaults.line_height))
+        );
     }
 }
 
@@ -769,7 +777,7 @@ fn the_tab_label_takes_the_stated_family_and_style() {
         (FontStyle::Oblique, gpui::FontStyle::Oblique),
     ] {
         r.tab.font.style = style;
-        let mut label = tab_bar::label_text(crate::Native::unscaled(&r));
+        let mut label = font_text(&r.tab.font, crate::Native::unscaled(&r));
         let text = label.text_style();
         assert_eq!(
             text.font_family,
@@ -778,6 +786,14 @@ fn the_tab_label_takes_the_stated_family_and_style() {
         );
         assert_eq!(text.font_style, Some(drawn), "{style:?}");
         assert_eq!(text.font_size, Some(px(r.tab.font.size).into()));
+        assert_eq!(
+            text.font_weight,
+            Some(gpui::FontWeight(f32::from(r.tab.font.weight)))
+        );
+        assert_eq!(
+            text.line_height,
+            Some(gpui::relative(r.defaults.line_height))
+        );
     }
 }
 
@@ -788,12 +804,12 @@ const TAB_NAMES: [&str; 8] = [
 
 /// A window drawing a kde-breeze tab bar of [`TAB_NAMES`]' eight tabs,
 /// across the harness's 200px column, `selected` selected and its scroll
-/// tracked by `handle` where one is given; a click records the tab's index
-/// in `clicked`.
+/// tracked by `handle` where one is given; a click hands `on_click` the
+/// tab's index.
 fn tab_window(
     cx: &mut TestAppContext,
     selected: Rc<Cell<usize>>,
-    clicked: Rc<Cell<Option<usize>>>,
+    on_click: Rc<dyn Fn(usize)>,
     handle: Option<gpui::ScrollHandle>,
 ) -> &mut VisualTestContext {
     window_with(
@@ -801,12 +817,12 @@ fn tab_window(
         Some(("kde-breeze", ColorMode::Light)),
         Box::new(move |_, _| {
             use gpui::prelude::FluentBuilder as _;
-            let clicked = clicked.clone();
+            let on_click = on_click.clone();
             TabBar::new("t")
                 .w_full()
                 .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
                 .selected_index(selected.get())
-                .on_click(move |ix, _, _| clicked.set(Some(*ix)))
+                .on_click(move |ix, _, _| on_click(*ix))
                 .when_some(handle.clone(), |bar, handle| bar.track_scroll(&handle))
                 .into_any_element()
         }),
@@ -826,13 +842,19 @@ fn half_hidden_tab(cx: &mut VisualTestContext) -> (usize, &'static str) {
         .expect("the bar's right edge cuts a tab")
 }
 
-/// M6-26: a click on a tab the bar's edge half hides scrolls it into view,
-/// before the caller's handler runs, with the bar's own handle where the
-/// caller tracks none.
+/// M6-26: a click on a tab the bar's edge half hides scrolls it into view
+/// on the next frame, with the bar's own handle where the caller tracks
+/// none.
 #[gpui::test]
 fn a_clicked_half_hidden_tab_scrolls_into_view(cx: &mut TestAppContext) {
     let clicked = Rc::new(Cell::new(None));
-    let cx = tab_window(cx, Rc::new(Cell::new(0)), clicked.clone(), None);
+    let c = clicked.clone();
+    let cx = tab_window(
+        cx,
+        Rc::new(Cell::new(0)),
+        Rc::new(move |ix| c.set(Some(ix))),
+        None,
+    );
     let bar = bounds(cx, "native-tab-bar");
     let (ix, name) = half_hidden_tab(cx);
     let tab = bounds(cx, name);
@@ -852,8 +874,7 @@ fn a_clicked_half_hidden_tab_scrolls_into_view(cx: &mut TestAppContext) {
 fn a_tracked_tab_bar_scrolls_its_handle_on_a_click_only(cx: &mut TestAppContext) {
     let handle = gpui::ScrollHandle::new();
     let selected = Rc::new(Cell::new(0));
-    let clicked = Rc::new(Cell::new(None));
-    let cx = tab_window(cx, selected.clone(), clicked, Some(handle.clone()));
+    let cx = tab_window(cx, selected.clone(), Rc::new(|_| {}), Some(handle.clone()));
     let (ix, name) = half_hidden_tab(cx);
     selected.set(ix);
     redraw(cx);
@@ -872,6 +893,33 @@ fn a_tracked_tab_bar_scrolls_its_handle_on_a_click_only(cx: &mut TestAppContext)
         bar.right() - tab.right(),
         "the tracked handle scrolled the tab just into view"
     );
+}
+
+/// M6-26: the bar asks for the clicked tab before the caller's handler runs,
+/// and the scroll lands on the next frame: the handler still sees the old
+/// offset, and a reveal it asks for itself replaces the bar's.
+#[gpui::test]
+fn a_click_asks_for_the_reveal_before_the_handler(cx: &mut TestAppContext) {
+    let handle = gpui::ScrollHandle::new();
+    let seen = Rc::new(Cell::new(None));
+    let (h, s) = (handle.clone(), seen.clone());
+    let cx = tab_window(
+        cx,
+        Rc::new(Cell::new(0)),
+        Rc::new(move |_| {
+            s.set(Some(h.offset().x));
+            h.scroll_to_item(0);
+        }),
+        Some(handle.clone()),
+    );
+    let bar = bounds(cx, "native-tab-bar");
+    let (_, name) = half_hidden_tab(cx);
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(seen.get(), Some(px(0.)), "the handler saw the old offset");
+    assert_eq!(handle.offset().x, px(0.), "the handler's reveal won");
 }
 
 #[test]

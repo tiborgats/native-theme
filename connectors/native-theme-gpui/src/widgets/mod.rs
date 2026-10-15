@@ -97,8 +97,12 @@ into_element!(
 
 use std::rc::Rc;
 
-use gpui::{App, Bounds, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, px};
+use gpui::{
+    App, Bounds, FontWeight, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, div, px,
+    relative,
+};
 use native_theme::color::Rgba;
+use native_theme::theme::{FontStyle, ResolvedFontSpec};
 
 use crate::Native;
 use crate::colors::over;
@@ -187,14 +191,21 @@ fn length(v: f32) -> Option<Pixels> {
     (v.is_finite() && v >= 0.0).then(|| px(v))
 }
 
-/// A stated font style as gpui's of the same name.
-fn font_style(style: native_theme::theme::FontStyle) -> gpui::FontStyle {
-    use native_theme::theme::FontStyle;
-    match style {
+/// The text of a widget's label in `font`: its family, size, weight and
+/// style (gpui's of the same name), one line tall -- its size by
+/// `defaults.line_height`, the line box the model states.
+fn font_text(font: &ResolvedFontSpec, n: Native<'_>) -> gpui::Div {
+    let mut text = div()
+        .font_family(crate::font_family(&font.family))
+        .text_size(text_size(font.size, n))
+        .font_weight(FontWeight(f32::from(font.weight)))
+        .line_height(relative(n.resolved.defaults.line_height));
+    text.text_style().font_style = Some(match font.style {
         FontStyle::Normal => gpui::FontStyle::Normal,
         FontStyle::Italic => gpui::FontStyle::Italic,
         FontStyle::Oblique => gpui::FontStyle::Oblique,
-    }
+    });
+    text
 }
 
 /// A font size the text-scaling factor scales, as the `geometry` builders
