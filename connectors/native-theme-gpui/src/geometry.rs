@@ -207,7 +207,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         n,
     );
     with_padding(r.min_w(px(b.min_width)), &b.border.padding)
-        .rounded(px(b.border.corner_radius.max(0.0)))
+        .rounded(px(b.border.corner_radius))
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
         // The weight, and deliberately not the size. This refinement lands on
@@ -310,7 +310,7 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
     with_text(
         with_padding(r, &i.border.padding)
-            .rounded(px(i.border.corner_radius.max(0.0)))
+            .rounded(px(i.border.corner_radius))
             .border(px(i.border.line_width)),
         &i.font,
         n,
@@ -357,7 +357,7 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
     };
     with_text(
         with_padding(StyleRefinement::default(), &root)
-            .rounded(px(a.border.corner_radius.max(0.0)))
+            .rounded(px(a.border.corner_radius))
             .border(px(a.border.line_width)),
         &n.resolved.input.font,
         n,
@@ -444,9 +444,9 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     };
     let mut r = with_coloured_text(
         with_padding(StyleRefinement::default(), &t.border.padding)
-            .rounded(px(t.border.corner_radius.max(0.0)))
+            .rounded(px(t.border.corner_radius))
             .bg(rgba_to_hsla(t.background_color))
-            .border(px(t.border.line_width.max(0.0)))
+            .border(px(t.border.line_width))
             .border_color(rgba_to_hsla(t.border.color)),
         &t.font,
         n,
@@ -496,7 +496,7 @@ pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
         * n.accessibility.text_scale_factor();
     let left = t.border.padding.left.unwrap_or(upstream_side);
     let right = t.border.padding.right.unwrap_or(upstream_side);
-    let inner = t.max_width - left - right - 2.0 * t.border.line_width.max(0.0);
+    let inner = t.max_width - left - right - 2.0 * t.border.line_width;
     StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
@@ -510,8 +510,7 @@ const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding)
-        .rounded(px(p.border.corner_radius.max(0.0)))
+    with_padding(StyleRefinement::default(), &p.border.padding).rounded(px(p.border.corner_radius))
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -557,7 +556,7 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
     with_padding(StyleRefinement::default(), &d.border.padding)
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
-        .rounded(px(d.border.corner_radius.max(0.0)))
+        .rounded(px(d.border.corner_radius))
 }
 
 /// For `Dialog::entrance` and `AlertDialog::entrance`
@@ -596,7 +595,7 @@ pub fn dialog_entrance(n: Native<'_>) -> Option<DialogEntrance> {
 /// it fits, and which [`button`]'s own height would push out of the field.
 #[must_use]
 pub fn input_group_button(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius.max(0.0)))
+    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius))
 }
 
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
@@ -643,7 +642,7 @@ pub fn list(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default()
         .border(px(b.line_width))
         .border_color(rgba_to_hsla(b.color))
-        .rounded(px(b.corner_radius.max(0.0)))
+        .rounded(px(b.corner_radius))
         .overflow_hidden()
 }
 
@@ -660,7 +659,7 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.progress_bar;
     StyleRefinement::default()
         .h(px(p.track_height))
-        .rounded(px(p.border.corner_radius.max(0.0)))
+        .rounded(px(p.border.corner_radius))
         .min_w(px(p.min_width))
 }
 
@@ -671,7 +670,7 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
     with_padding(StyleRefinement::default(), &c.border.padding)
-        .rounded(px(c.border.corner_radius.max(0.0)))
+        .rounded(px(c.border.corner_radius))
         .border(px(c.border.line_width))
         .border_color(rgba_to_hsla(c.border.color))
 }
@@ -761,7 +760,7 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     };
     with_padding(r, &padding)
         .min_w(px(c.min_width))
-        .rounded(px(c.border.corner_radius.max(0.0)))
+        .rounded(px(c.border.corner_radius))
 }
 
 /// `Select` (`src/select.rs:542-552` → `:553`); the arrow is inner, Tier U.

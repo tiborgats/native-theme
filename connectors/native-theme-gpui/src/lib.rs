@@ -284,9 +284,8 @@ pub fn to_theme(
     theme.font_size = px(d.font.size * s);
     theme.mono_font_family = font_family(&d.mono_font.family);
     theme.mono_font_size = px(d.mono_font.size * s);
-    // Issue 14: clamp radius to non-negative
-    theme.radius = px(d.border.corner_radius.max(0.0));
-    theme.radius_lg = px(d.border.corner_radius_lg.max(0.0));
+    theme.radius = px(d.border.corner_radius);
+    theme.radius_lg = px(d.border.corner_radius_lg);
     theme.shadow = d.border.shadow_enabled;
 
     // §8.3: the ring is drawn only when the theme gives it a width; its width
