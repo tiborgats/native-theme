@@ -282,7 +282,8 @@ window's `foreground`, which a field's text inherits and the macOS presets'
 `list_item`, `radio`, `select` and `accordion_title`. `title_bar`,
 `dialog_title` and `toolbar` displace nothing — upstream sets no text colour
 on the title bar, a dialog's title or a toolbar. Those seven change no
-pixel under any bundled preset — a widget that states no `font.color` inherits
+pixel under any bundled preset but ios-13, whose `select` text is the accent —
+a widget that states no `font.color` inherits
 the window's, and `foreground` is fed from that same field — but they carry it
 so that a source which *does* state, say, a list row colour, or the title bar
 colour the KDE reader takes from `[WM] activeForeground`, is honoured instead

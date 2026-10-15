@@ -65,8 +65,9 @@
 //! [`accordion_title`], and [`title_bar`], [`dialog_title`] and [`toolbar`]
 //! displace nothing (`title_bar.rs:331-346` paints the fill and the border,
 //! then refines; `dialog/title.rs:39-46` and `toolbar.rs:243-257` set no
-//! colour). Those seven change no pixel over the bundled
-//! presets, because a widget that states no `font.color` inherits the window's
+//! colour). Those seven change no pixel over the bundled presets but one --
+//! ios-13's [`select`], whose `combo_box.font.color` is the accent -- because
+//! a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a source that does state one is honoured rather
 //! than silently overridden — the KDE reader states
@@ -1291,6 +1292,14 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
 /// letters its selected rows in a colour of their own (Breeze's white on its
 /// accent) does not. A row that is not selectable is muted after the
 /// refinement (`:235-237`), so its colour still wins.
+///
+/// The fill is `list_active` only while gpui-component's
+/// `Theme::list.active_highlight` is true (`list_item.rs:258`), its default
+/// (gpui-base `list_settings.rs:14`), which this connector leaves alone; an
+/// application that turns it off gets `accent`, the menu
+/// hover fill (`menu.hover_background`, the `accent` row), under this text
+/// colour, which is still `list.selection_text_color` and was chosen for the
+/// selection fill, not for that one.
 #[must_use]
 pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().text_color(rgba_to_hsla(n.resolved.list.selection_text_color))
