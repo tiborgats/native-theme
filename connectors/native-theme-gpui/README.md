@@ -191,7 +191,9 @@ variant.
   the application keeping `resolved`; always forwards reduce-motion.
 - **`from_preset(name, is_dark, &prefs)`** — load a bundled preset. `is_dark`
   is explicit because some presets (`solarized`, `gruvbox`) have ambiguous
-  lightness. Pass `&AccessibilityPreferences::default()` for no scaling, or
+  lightness; the theme is built in the mode of the variant resolved
+  (`Resolved::mode`), so a light-only preset asked for dark gives a light
+  theme. Pass `&AccessibilityPreferences::default()` for no scaling, or
   `native_theme::detect::accessibility_preferences()` to honour the OS
   preferences under a preset: the cached reading, for a preset switch (the
   first call after a system read may still run the reduced-motion detection,
@@ -199,14 +201,19 @@ variant.
   block in nanoseconds). `AccessibilityPreferences::from_system()` reads them
   afresh, running the platform reader each time.
 - **`from_system()`** — the OS theme as a `Loaded` (`theme`, `resolved`,
-  `mode`, `accessibility`, `icon_set`, `icon_theme`) without installing it;
-  `SystemThemeExt::to_gpui_theme` gives the same from a `SystemTheme`.
+  `mode`, `accessibility`, `icon_set`, `icon_theme`; `#[non_exhaustive]`, so
+  read it by field) without installing it; `SystemThemeExt::to_gpui_theme`
+  gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "Display Name", is_dark, &prefs)`** — the underlying
   mapping if you already have a `ResolvedTheme`; `is_dark` is the theme's mode,
   `Resolved::mode` of the variant `Theme::resolve` resolved or `SystemTheme::mode`.
 - **`cx.native()`** (`ActiveNativeTheme`) — the `Native { resolved, accessibility }`
   view the geometry builders take, for the mode gpui-component currently shows;
   `cx.native_theme()` is the installed `NativeTheme`.
+- **`layer_over(base, layer)`** — the connector's state-layer composite
+  (source-over, straight alpha): the filled buttons' hover and pressed fills
+  and the widgets' hover states are a theme layer over the fill it covers, so
+  a layered state an application draws itself matches them through it.
 
 ## Per-widget geometry
 
@@ -388,8 +395,8 @@ role, and paints every part from the theme leaf that states it:
 |---|---|---|
 | `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
-| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps | a rail of its fill at 20% alpha, a thumb of its own size |
-| `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width | a track of its fill at 20% alpha |
+| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size |
+| `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
 | `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
 | `TabBar`, `Tab` | `tab.*`: the bar, an unselected tab's fill and label, the hover in place of that fill, the selected tab's fill, label and `tab.border` outline (the selected tab only, rounded on its top corners), sizes, padding, the gap between tabs (`item_gap`) and font | an idle tab painted transparent, and a primary underline or a frame of its own on the selected one |
 | `Separator` | a line `separator.line_width` thick in `separator.line_color` | a line a literal 1px thick |
@@ -424,7 +431,10 @@ Separator::horizontal();
 
 The spinner loads its indicator once per set, icon theme, colour and size,
 and keeps it for the life of the application. `TabBar` leaves the bar's own
-style to the caller (`Styled`): a rule under it, its inset.
+style to the caller (`Styled`): a rule under it, its inset. Where an
+`on_click` handler is set, a clicked tab the bar clips is scrolled into view
+on the next frame; `TabBar::track_scroll(&handle)` gives the bar the
+application's own `ScrollHandle`, to reveal a tab otherwise.
 
 ## How re-application works
 
