@@ -222,7 +222,7 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
 
-use gpui::{App, Global, SharedString, px};
+use gpui::{App, Global, Hsla, SharedString, px};
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::borrow::Cow;
@@ -613,6 +613,22 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
     prefs.scaled(size)
+}
+
+/// `layer` composited over `base` as the connector composites a theme's
+/// state layers: source-over with straight alpha in sRGB, so the result
+/// covers `layer.a + base.a × (1 − layer.a)`. The filled buttons' hover and
+/// pressed fills (`ThemeColor::button_hover`, `button_active`, …) and the
+/// widgets' hover states are this composite of the theme's layer over the
+/// fill it covers, so an application drawing a layered state of its own — a
+/// stated `hover_background` over a control's fill — matches them through
+/// it. An opaque layer comes back as it is and a transparent one gives
+/// `base`. Where `base` or `layer` is opaque this equals `Hsla::blend`;
+/// where both are translucent `blend` keeps `base`'s alpha, and this does
+/// not.
+#[must_use]
+pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
+    colors::over(base, layer)
 }
 
 /// The family gpui is asked to draw `family` in. On macOS (`macos`), the

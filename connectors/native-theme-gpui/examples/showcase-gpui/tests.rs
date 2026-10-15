@@ -5042,7 +5042,7 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
             let c = &n.resolved.combo_box;
             let fill = crate::info::stated(c.background_color);
             c.hover_background
-                .map_or(fill, |hover| fill.blend(crate::info::stated(hover)))
+                .map_or(fill, |hover| source_over(fill, crate::info::stated(hover)))
         })
     });
     assert_eq!(
@@ -6533,6 +6533,29 @@ fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
 /// gpui paints a bordered box as its fill and, apart, its border strips over
 /// a transparent fill (gpui-pre window.rs, Window::paint_quad), so the fill
 /// is the largest quad inside the element's bounds that is not transparent.
+/// `layer` over `base`, straight-alpha source-over in sRGB, written out here
+/// so a layered fill the showcase paints is checked against the rule rather
+/// than against `native_theme_gpui::layer_over`, which it calls.
+fn source_over(base: gpui::Hsla, layer: gpui::Hsla) -> gpui::Hsla {
+    if layer.a >= 1.0 {
+        return layer;
+    }
+    if layer.a <= 0.0 {
+        return base;
+    }
+    let (b, l) = (gpui::Rgba::from(base), gpui::Rgba::from(layer));
+    let under = b.a * (1.0 - l.a);
+    let a = l.a + under;
+    let mix = |below: f32, above: f32| ((above * l.a) + (below * under)) / a;
+    gpui::Rgba {
+        r: mix(b.r, l.r),
+        g: mix(b.g, l.g),
+        b: mix(b.b, l.b),
+        a,
+    }
+    .into()
+}
+
 fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {

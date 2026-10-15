@@ -3938,7 +3938,8 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:
 /// `combo_box.background_color`, and under the pointer
-/// `combo_box.hover_background` over it, rounded as the trigger is
+/// `combo_box.hover_background` laid over it as the connector lays its
+/// layers (`native_theme_gpui::layer_over`), rounded as the trigger is
 /// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
 /// sets no hover (select.rs:535-553; combobox.rs:981-998) and neither
 /// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:795), so the
@@ -3950,7 +3951,7 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
         (
             fill,
             c.hover_background
-                .map(|hover| fill.blend(info::stated(hover))),
+                .map(|hover| native_theme_gpui::layer_over(fill, info::stated(hover))),
             px(c.border.corner_radius.max(0.0)),
         )
     });
