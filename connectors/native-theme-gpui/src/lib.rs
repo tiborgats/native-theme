@@ -92,21 +92,23 @@
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
-//! | `sidebar` | 4 of 6 | background, font.color, selection_background, selection_text_color |
-//! | `window` | 4 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar` |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text via `geometry::input` |
+//! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
+//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; `text_area.border.color` via `geometry::text_area` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's size, weight and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
-//! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
+//! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and the border (`border.line_width`, `border.color`) via `geometry::popover` |
+//! | `combo_box` | geometry | height, width, padding, radius, edge colour, font via `geometry::select` and `geometry::combobox`; the fill, and a disabled trigger's fill and text colour, via `geometry::combo_box_fill` |
+//! | `card`, `expander` | geometry | the card's padding, radius, edge and fill via `geometry::group_box_content`; the expander's title height and colour via `geometry::accordion_title`, its edge colour via `geometry::accordion`, its hover fill via `geometry::accordion_hover` |
 //! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
-//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min height, radius via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
-//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
+//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
+//! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
 //! **Accessors.** The free functions of the crate root read what an application
