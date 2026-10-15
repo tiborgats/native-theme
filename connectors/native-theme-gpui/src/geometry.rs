@@ -523,21 +523,12 @@ pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
 /// `src/styles.rs:949-950`).
 const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 
-/// `Popover` (`src/popover.rs:355` → `:360`). An unstated side keeps
-/// upstream's `p_3` (`:355`).
-///
-/// The edge is `popover.border.line_width` wide in `popover.border.color`.
-/// Upstream draws a popover with no border by design: its edge is a ring in
-/// the `foreground` colour inside the popover's shadow (`popover_style`,
-/// `src/styled.rs:186-194`), which stays, and this border is drawn inside
-/// it.
+/// `Popover` (`src/popover.rs:308` → `:360`). An unstated side keeps
+/// upstream's `p_3` (`:308`).
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding)
-        .rounded(px(p.border.corner_radius))
-        .border(px(p.border.line_width))
-        .border_color(rgba_to_hsla(p.border.color))
+    with_padding(StyleRefinement::default(), &p.border.padding).rounded(px(p.border.corner_radius))
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -2175,8 +2166,6 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
             );
-            assert_eq!(out.border_widths.top, abs(p.border.line_width));
-            assert_eq!(out.border_color, Some(rgba_to_hsla(p.border.color)));
 
             let sb = &r.status_bar;
             let out = status_bar(n);

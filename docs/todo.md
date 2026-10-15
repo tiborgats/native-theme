@@ -1356,6 +1356,20 @@ model, the platform presets and the three connectors
       the list, so a preset's value for them cites nothing. Add the rows,
       sourced per platform, then state the presets' values with citations.
 
+### Presets: the toolbar's and the popover's edge width is the defaults'
+
+- [ ] [1.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
+      `defaults.border` (`docs/inheritance-rules.toml:86-90`,
+      `widgets_with_border`), so their resolved `border.line_width` is 1 or
+      0.5 in most presets (the toolbar's is 0 only in kde-breeze and
+      material-3, the popover's only in material-3), while
+      `docs/platform-facts.md` §2.13 states no toolbar frame and gpui-component
+      draws a popover's edge as its own ring inside the shadow (gpui-component
+      0.7.3 `styled.rs:186-194`). Should the inheritance give them a 0 width,
+      or should their presets state one from a source? Until then the gpui
+      connector carries neither `toolbar.border.color` nor
+      `popover.border.color`; M6 T16c names both in the coverage test.
+
 ### windows-11: the validator's findings after T35 left open
 
 - [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;

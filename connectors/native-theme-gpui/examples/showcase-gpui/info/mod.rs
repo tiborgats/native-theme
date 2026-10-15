@@ -204,7 +204,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "popover",
-        "the popover.border.padding sides the theme states, corner_radius, and line_width and color as a border inside the ring popover_style draws as its edge (styled.rs, popover_style); an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
+        "the popover.border.padding sides the theme states, and corner_radius; an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
     ),
     (
         "status_bar",
