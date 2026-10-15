@@ -840,6 +840,15 @@ model, the platform presets and the three connectors
       fill", which cites no source, now laid over the translucent fill
       where `blend` showed the fill alone). The switch and the
       slider leave an unset hover at rest; the checkbox's is M6-22 (M6 T11).
+      Fix round 1 (2026-10-15): over the window that composite lands within
+      one 8-bit level of `ControlAltFillColorTertiary`, the brush
+      *Checkbox: a checked checkbox's hover appearance* names for
+      `CheckBoxCheckBackgroundFillUncheckedPointerOver`, laid over the
+      window: light 228.0 against 228.7 (`#0F000000` over
+      `#f3f3f3`), dark 42.2 against 41.6 (`#0BFFFFFF` over `#202020`); the
+      brush's values as `windows-11.toml:437` and `:1000` cite them
+      (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45).
+      The gpui connector also exports the composite, `layer_over`.
 
 ### windows-11: what WinUI 3 draws, or what Win32 reports
 

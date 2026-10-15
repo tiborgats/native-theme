@@ -722,6 +722,8 @@ pub fn native_switch(
         })
         .config("drawn by", DRAWN_BY);
     let info = match (checked, disabled) {
+        // An unset hover is the track at rest (SwitchLook::of), so the swatch
+        // is the track's colour, not a layer of it.
         (true, false) => info
             .color(claim(
                 "track",
@@ -729,12 +731,22 @@ pub fn native_switch(
                 stated(s.checked_background),
                 "native-theme-gpui/widgets/switch.rs:72",
             ))
-            .color(claim(
-                "hover layer, over the track",
-                "hover_checked_background",
-                stated(s.hover_checked_background.unwrap_or(s.checked_background)),
-                "native-theme-gpui/widgets/switch.rs:82",
-            )),
+            .color(if s.hover_checked_background.is_some() {
+                claim(
+                    "hover layer, over the track",
+                    "hover_checked_background",
+                    s.hover_checked_background
+                        .map_or(stated(s.checked_background), stated),
+                    "native-theme-gpui/widgets/switch.rs:82",
+                )
+            } else {
+                claim(
+                    "hover, none stated: the track at rest",
+                    "checked_background",
+                    stated(s.checked_background),
+                    "native-theme-gpui/widgets/switch.rs:72",
+                )
+            }),
         (false, false) => info
             .color(claim(
                 "track",
@@ -742,15 +754,22 @@ pub fn native_switch(
                 stated(s.unchecked_background),
                 "native-theme-gpui/widgets/switch.rs:74",
             ))
-            .color(claim(
-                "hover layer, over the track",
-                "hover_unchecked_background",
-                stated(
+            .color(if s.hover_unchecked_background.is_some() {
+                claim(
+                    "hover layer, over the track",
+                    "hover_unchecked_background",
                     s.hover_unchecked_background
-                        .unwrap_or(s.unchecked_background),
-                ),
-                "native-theme-gpui/widgets/switch.rs:84",
-            )),
+                        .map_or(stated(s.unchecked_background), stated),
+                    "native-theme-gpui/widgets/switch.rs:84",
+                )
+            } else {
+                claim(
+                    "hover, none stated: the track at rest",
+                    "unchecked_background",
+                    stated(s.unchecked_background),
+                    "native-theme-gpui/widgets/switch.rs:74",
+                )
+            }),
         (true, true) => info.color(claim(
             "track",
             "disabled_checked_background",
@@ -872,7 +891,12 @@ pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
         .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:72"))
         .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:72"))
         .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:72"))
-        .color(claim("hover layer, over the thumb", "thumb_hover_color", stated(s.thumb_hover_color.unwrap_or(s.thumb_color)), "native-theme-gpui/widgets/slider.rs:75"))
+        // An unset hover is the thumb at rest (SliderLook::of).
+        .color(if s.thumb_hover_color.is_some() {
+            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:75")
+        } else {
+            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:75")
+        })
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
         .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")

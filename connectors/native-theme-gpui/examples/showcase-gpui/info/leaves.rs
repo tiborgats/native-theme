@@ -281,7 +281,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_background",
-        "gpui: ThemeColor button_active, the fill blended with it (colors.rs); the pressed fill",
+        "gpui: ThemeColor button_active, laid over the fill source-over (colors.rs, over); the pressed fill",
     ),
     (
         "",
@@ -361,7 +361,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_background",
-        "gpui: ThemeColor button_hover, the fill blended with it (colors.rs): the hover fill",
+        "gpui: ThemeColor button_hover, laid over the fill source-over (colors.rs, over): the hover fill",
     ),
     (
         "",
@@ -1821,7 +1821,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "slider.thumb_hover_color",
-        "gpui: over the thumb under the pointer (SliderLook)",
+        "gpui: over the thumb under the pointer (SliderLook); unset, the thumb at rest",
     ),
     (
         "",
@@ -1940,12 +1940,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.hover_checked_background",
-        "gpui: over the on track under the pointer (SwitchLook)",
+        "gpui: over the on track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
         "switch.hover_unchecked_background",
-        "gpui: over the off track under the pointer (SwitchLook)",
+        "gpui: over the off track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
