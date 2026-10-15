@@ -28,6 +28,36 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
     gpui_rgba.into()
 }
 
+/// `layer` composited over `base`, source-over with straight alpha in sRGB: the
+/// result covers `a = layer.a + base.a * (1 - layer.a)`, and each channel is
+/// the two channels weighted by what each contributes, divided by `a`. An
+/// opaque layer composites to itself and a transparent one to `base`.
+///
+/// Where `base` or `layer` is opaque this is `Hsla::blend` bit for bit (the
+/// same products, added in the same order, and `a` is exactly 1); `blend`
+/// keeps the base's alpha instead (gpui-pre `src/color.rs:58-71`, reached
+/// through `:580-593`), which a translucent layer over a translucent base
+/// shows.
+pub(crate) fn over(base: Hsla, layer: Hsla) -> Hsla {
+    if layer.a >= 1.0 {
+        return layer;
+    }
+    if layer.a <= 0.0 {
+        return base;
+    }
+    let (b, l) = (gpui::Rgba::from(base), gpui::Rgba::from(layer));
+    let under = b.a * (1.0 - l.a);
+    let a = l.a + under;
+    let mix = |below: f32, above: f32| ((below * under) + (above * l.a)) / a;
+    gpui::Rgba {
+        r: mix(b.r, l.r),
+        g: mix(b.g, l.g),
+        b: mix(b.b, l.b),
+        a,
+    }
+    .into()
+}
+
 /// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`
 /// when the alpha is below 1 (gpui parses both, gpui-pre
 /// `src/color.rs:224-262`). Alpha is quantised to 8 bits like the channels.
@@ -338,25 +368,24 @@ fn assign_buttons(tc: &mut ThemeColor) {
     tc.button = tc.secondary;
     // A filled button paints its own fill and upstream replaces that fill per
     // state, while the platform *layers* its hover and pressed colours over it
-    // (spec §3.2, C17). So the layer is composited over the idle fill; for an
-    // opaque value `blend` is the identity, so there is no branch. windows-11
-    // states its hover and pressed fills, WinUI's replacing fills, flattened
-    // over the window, so both are opaque (docs/todo.md, *Hover fills: a
-    // layer or a replacement*).
+    // (spec §3.2, C17). So the layer is composited over the idle fill,
+    // source-over (`over`); an opaque layer composites to itself, so there is
+    // no branch. windows-11 states its hover and pressed fills, WinUI's
+    // replacing fills, flattened over the window, so both are opaque
+    // (docs/todo.md, *Hover fills: a layer or a replacement*).
     //
-    // `Hsla::blend` is not quite source-over: it lerps the channels by the
-    // layer's alpha and keeps the *base's* alpha (`gpui-pre` color.rs:58-70,
-    // reached through `:580-593`), where source-over would give the result
-    // `layer.a + base.a * (1 - layer.a)`. The two agree whenever the base or
-    // the layer is opaque. Translucent bases (`TRANSLUCENT_BUTTON_FILL`: windows-11,
-    // macos-monterey dark, macos-tahoe; the reader's `COLOR_BTNFACE` is opaque) get
-    // opaque layers, except macos-tahoe's derived pressed one (docs/todo.md, M6).
-    tc.button_hover = tc.button.blend(tc.secondary_hover);
-    tc.button_active = tc.button.blend(tc.secondary_active);
+    // Over a translucent idle fill (`TRANSLUCENT_BUTTON_FILL`: windows-11,
+    // macos-monterey dark, macos-tahoe; the reader's `COLOR_BTNFACE` is
+    // opaque) a translucent layer covers more than the fill alone,
+    // `layer.a + base.a * (1 - layer.a)`: macos-tahoe's derived pressed fill
+    // does. The widgets composite their hover states with the same `over`, so
+    // a widget's states match the button's.
+    tc.button_hover = over(tc.button, tc.secondary_hover);
+    tc.button_active = over(tc.button, tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;
     tc.button_secondary = tc.secondary;
-    tc.button_secondary_hover = tc.button_secondary.blend(tc.secondary_hover);
-    tc.button_secondary_active = tc.button_secondary.blend(tc.secondary_active);
+    tc.button_secondary_hover = over(tc.button_secondary, tc.secondary_hover);
+    tc.button_secondary_active = over(tc.button_secondary, tc.secondary_active);
     tc.button_secondary_foreground = tc.secondary_foreground;
 
     tc.button_primary = tc.primary;
@@ -888,8 +917,10 @@ mod tests {
         // presets both claims are contract rows.
         assert_eq!(
             tc.button_hover,
-            rgba_to_hsla(resolved.button.background_color)
-                .blend(rgba_to_hsla(resolved.button.hover_background)),
+            over(
+                rgba_to_hsla(resolved.button.background_color),
+                rgba_to_hsla(resolved.button.hover_background)
+            ),
             "button_hover should composite button.hover_background over the button's own fill"
         );
         // Phase 54: list_hover comes from the resolved theme
@@ -1395,6 +1426,87 @@ mod tests {
             "list_active alpha={} should not be forced to 0.2",
             tc.list_active.a
         );
+    }
+
+    /// A pressed layer over a translucent fill is composited source-over, so
+    /// the pressed button covers more than its idle fill (C17).
+    ///
+    /// macos-tahoe light is the combination where both are translucent: macOS
+    /// 26 draws the push button in `#00000014` (docs/platform-facts.md:1164),
+    /// and with no stated pressed fill the connector derives one from it, as
+    /// translucent. A blend that keeps the base's alpha leaves the pressed
+    /// fill at the idle fill's 0.0784 (docs/todo.md, M6).
+    #[test]
+    fn pressed_fill_over_a_translucent_fill_is_source_over() {
+        let resolved = resolved_preset("macos-tahoe", ColorMode::Light);
+        let tc = to_theme_color(&resolved, false, false);
+        let base = rgba_to_hsla(resolved.button.background_color);
+        let layer = tc.secondary_active;
+        assert!(
+            base.a < 1.0 && layer.a > 0.0 && layer.a < 1.0,
+            "macos-tahoe light no longer discriminates: its button fill is {base:?} \
+             and its pressed fill {layer:?}, not both translucent"
+        );
+        let expected = layer.a + base.a * (1.0 - layer.a);
+        for (slot, actual) in [
+            ("button_active", tc.button_active),
+            ("button_secondary_active", tc.button_secondary_active),
+        ] {
+            assert_eq!(
+                actual.a, expected,
+                "{slot}'s alpha should be the source-over of the pressed fill's \
+                 {} over the button fill's {}",
+                layer.a, base.a
+            );
+        }
+    }
+
+    /// `over` is `Hsla::blend` bit for bit wherever the base or the layer is
+    /// opaque, so only a translucent layer over a translucent base moves; there
+    /// it covers both, and a transparent base leaves the layer as it is.
+    #[test]
+    fn over_is_blend_unless_both_are_translucent() {
+        let hsla = |r: f32, g: f32, b: f32, a: f32| Hsla::from(gpui::Rgba { r, g, b, a });
+        let opaque = [hsla(0.2, 0.4, 0.6, 1.0), hsla(1.0, 1.0, 1.0, 1.0)];
+        let layers = [
+            hsla(0.0, 0.0, 0.0, 0.078_431_375),
+            hsla(0.9, 0.1, 0.3, 0.5),
+            hsla(0.3, 0.7, 0.1, 1.0),
+            hsla(0.5, 0.5, 0.5, 0.0),
+        ];
+        for base in opaque {
+            for layer in layers {
+                assert_eq!(
+                    over(base, layer),
+                    base.blend(layer),
+                    "{layer:?} over {base:?}"
+                );
+            }
+        }
+        let opaque_layer = hsla(0.3, 0.7, 0.1, 1.0);
+        let translucent_base = hsla(1.0, 1.0, 1.0, 0.25);
+        assert_eq!(
+            over(translucent_base, opaque_layer),
+            translucent_base.blend(opaque_layer)
+        );
+
+        let layer = hsla(0.8, 0.2, 0.4, 0.5);
+        let mixed = over(translucent_base, layer);
+        assert_eq!(mixed.a, layer.a + translucent_base.a * (1.0 - layer.a));
+        let clear = hsla(0.0, 0.0, 0.0, 0.0);
+        let alone = gpui::Rgba::from(over(clear, layer));
+        let want = gpui::Rgba::from(layer);
+        for (got, expected) in [
+            (alone.r, want.r),
+            (alone.g, want.g),
+            (alone.b, want.b),
+            (alone.a, want.a),
+        ] {
+            assert!(
+                (got - expected).abs() < 1e-6,
+                "{layer:?} over nothing is {alone:?}, not {want:?}"
+            );
+        }
     }
 
     /// A status label is the platform's own, never a colour of ours.

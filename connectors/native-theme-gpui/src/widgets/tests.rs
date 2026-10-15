@@ -69,7 +69,10 @@ fn a_checkbox_paints_checkbox_theme() {
         );
         assert_eq!(
             idle.hover_fill,
-            Some(unchecked.blend(c(k.hover_background.unwrap_or(k.background_color)))),
+            Some(over(
+                unchecked,
+                c(k.hover_background.unwrap_or(k.background_color))
+            )),
             "{preset}"
         );
         assert_eq!(idle.mark, c(k.indicator_color), "{preset}");
@@ -196,7 +199,10 @@ fn a_disabled_switch_fades_as_one_over_its_backdrop() {
             .unwrap_or(r.switch.checked_background);
         assert_eq!(
             look.map(|l| l.track),
-            Some(ground.blend(ground.blend(c(track)).opacity(r.switch.disabled_opacity))),
+            Some(over(
+                ground,
+                over(ground, c(track)).opacity(r.switch.disabled_opacity)
+            )),
             "{mode:?}: the track over the window"
         );
     }
@@ -218,16 +224,16 @@ fn a_disabled_checkbox_fades_as_one_over_its_backdrop() {
     assert!(a < 1., "adwaita dims a disabled checkbox by opacity");
     let look = CheckboxLook::of(&r, true, true);
     let faded = look.map(|l| l.faded_over(ground));
-    let fill = look.map(|l| ground.blend(l.fill));
+    let fill = look.map(|l| over(ground, l.fill));
     assert_eq!(faded.map(|l| l.opacity), Some(1.));
     assert_eq!(
         faded.map(|l| l.mark),
         look.zip(fill)
-            .map(|(l, fill)| ground.blend(fill.blend(l.mark).opacity(a)))
+            .map(|(l, fill)| over(ground, over(fill, l.mark).opacity(a)))
     );
     assert_eq!(
         faded.map(|l| l.fill),
-        fill.map(|fill| ground.blend(fill.opacity(a)))
+        fill.map(|fill| over(ground, fill.opacity(a)))
     );
 }
 
@@ -249,9 +255,12 @@ fn a_switch_paints_switch_theme() {
         assert_eq!(on.track, c(s.checked_background), "{preset}");
         assert_eq!(
             on.hover_track,
-            Some(c(s.checked_background).blend(c(
-                s.hover_checked_background.unwrap_or(s.checked_background)
-            ))),
+            Some(
+                s.hover_checked_background
+                    .map_or(c(s.checked_background), |h| {
+                        over(c(s.checked_background), c(h))
+                    })
+            ),
             "{preset}"
         );
         assert_eq!(on.thumb_color, c(s.thumb_background), "{preset}");
@@ -313,6 +322,38 @@ fn a_switch_paints_switch_theme() {
     }
 }
 
+/// An unset hover is the part at rest, also where the part is translucent:
+/// a translucent colour laid over itself covers more than it does alone, so
+/// copying the colour it covers would show a hover no source gives.
+/// macos-tahoe states neither an off-track hover nor a thumb hover, over a
+/// translucent off track (both variants) and a translucent thumb (dark).
+#[test]
+fn an_unset_hover_leaves_a_translucent_part_at_rest() {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let r = resolved("macos-tahoe", mode);
+        let s = &r.switch;
+        assert!(
+            s.hover_unchecked_background.is_none() && c(s.unchecked_background).a < 1.,
+            "macos-tahoe {mode:?} no longer discriminates: its off-track hover is \
+             {:?} over {:?}",
+            s.hover_unchecked_background,
+            s.unchecked_background
+        );
+        let off = SwitchLook::of(&r, false, false).expect("finite");
+        assert_eq!(off.hover_track, Some(off.track), "{mode:?}: the off track");
+    }
+    let r = resolved("macos-tahoe", ColorMode::Dark);
+    let s = &r.slider;
+    assert!(
+        s.thumb_hover_color.is_none() && c(s.thumb_color).a < 1.,
+        "macos-tahoe dark no longer discriminates: its thumb hover is {:?} over {:?}",
+        s.thumb_hover_color,
+        s.thumb_color
+    );
+    let look = SliderLook::of(&r, false).expect("finite");
+    assert_eq!(look.hover_thumb, Some(look.thumb_color), "the thumb");
+}
+
 #[test]
 fn a_slider_paints_slider_theme() {
     for (preset, mode) in PRESETS {
@@ -331,7 +372,10 @@ fn a_slider_paints_slider_theme() {
         assert_eq!(look.thumb_color, c(s.thumb_color), "{preset}");
         assert_eq!(
             look.hover_thumb,
-            Some(c(s.thumb_color).blend(c(s.thumb_hover_color.unwrap_or(s.thumb_color)))),
+            Some(
+                s.thumb_hover_color
+                    .map_or(c(s.thumb_color), |h| over(c(s.thumb_color), c(h)))
+            ),
             "{preset}"
         );
         let disabled = SliderLook::of(&r, true).expect("finite");
@@ -448,7 +492,7 @@ fn a_tab_bar_paints_tab_theme() {
             assert_eq!(look.gap, px(gap), "{preset}: tab.item_gap");
         }
         let hover = t.hover_background.expect("both presets state a tab hover");
-        assert_eq!(look.hover, c(t.bar_background).blend(c(hover)), "{preset}");
+        assert_eq!(look.hover, over(c(t.bar_background), c(hover)), "{preset}");
     }
     // Breeze: the unselected tab is darker than the bar, and the hover
     // replaces that fill (docs/platform-facts.md §2.11).

@@ -827,6 +827,19 @@ model, the platform presets and the three connectors
       `ControlFillColorDefault`).
       iced (M5 T6, 98b522f7): a layer (C17 stays); an unset soft hover is
       the idle fill.
+      gpui (M6 T9, 2026-10-15): a layer (C17 stays), composited
+      source-over: one `colors::over` (straight alpha in sRGB) in place of
+      `Hsla::blend` for the button states and the widgets' hover states, so
+      a translucent layer over a translucent fill covers both (the
+      macos-tahoe entry under *For M6: two defects*, defect (1)). Over an
+      opaque base or under an opaque layer it is `blend` bit for bit; what
+      moved is macos-tahoe's derived pressed fill, material-3's checkbox
+      hover (a state layer over a transparent box, which `blend` hid) and
+      windows-11's checkbox hover (`#0000000a` over `#00000006`, dark
+      `#ffffff0f` over `#00000019`: the preset's "Fluent checkbox hover
+      fill", which cites no source, now laid over the translucent fill
+      where `blend` showed the fill alone). The switch and the
+      slider leave an unset hover at rest; the checkbox's is M6-22 (M6 T11).
 
 ### windows-11: what WinUI 3 draws, or what Win32 reports
 
@@ -1528,6 +1541,12 @@ model, the platform presets and the three connectors
       `docs/inheritance-rules.toml:159`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
       for that stated value.
+      (1) fixed (M6 T9, 2026-10-15): `colors::over` composites the pressed
+      layer source-over, so macos-tahoe light's `button_active` covers
+      0.1507 (`pressed_fill_over_a_translucent_fill_is_source_over`), and
+      the contract's `PRESSED_OVER_TRANSLUCENT` exception is gone. (2) stays:
+      `DERIVED_PRESSED_FILL` still holds, the pressed fill is derived and
+      translucent on both variants.
 
 - [ ] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
       unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks

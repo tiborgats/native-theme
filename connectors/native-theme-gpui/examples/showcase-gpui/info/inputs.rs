@@ -727,20 +727,20 @@ pub fn native_switch(
                 "track",
                 "checked_background",
                 stated(s.checked_background),
-                "native-theme-gpui/widgets/switch.rs:71",
+                "native-theme-gpui/widgets/switch.rs:72",
             ))
             .color(claim(
                 "hover layer, over the track",
                 "hover_checked_background",
                 stated(s.hover_checked_background.unwrap_or(s.checked_background)),
-                "native-theme-gpui/widgets/switch.rs:81",
+                "native-theme-gpui/widgets/switch.rs:82",
             )),
         (false, false) => info
             .color(claim(
                 "track",
                 "unchecked_background",
                 stated(s.unchecked_background),
-                "native-theme-gpui/widgets/switch.rs:73",
+                "native-theme-gpui/widgets/switch.rs:74",
             ))
             .color(claim(
                 "hover layer, over the track",
@@ -749,7 +749,7 @@ pub fn native_switch(
                     s.hover_unchecked_background
                         .unwrap_or(s.unchecked_background),
                 ),
-                "native-theme-gpui/widgets/switch.rs:83",
+                "native-theme-gpui/widgets/switch.rs:84",
             )),
         (true, true) => info.color(claim(
             "track",
@@ -758,7 +758,7 @@ pub fn native_switch(
                 s.disabled_checked_background
                     .unwrap_or(s.checked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:76",
+            "native-theme-gpui/widgets/switch.rs:77",
         )),
         (false, true) => info.color(claim(
             "track",
@@ -767,7 +767,7 @@ pub fn native_switch(
                 s.disabled_unchecked_background
                     .unwrap_or(s.unchecked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:77",
+            "native-theme-gpui/widgets/switch.rs:78",
         )),
     };
     // While focused the track draws the focus ring in `ring` at 50% alpha
@@ -780,7 +780,7 @@ pub fn native_switch(
             "focus ring, focus_ring_color at 50% alpha",
             "focus_ring_color",
             stated(r.defaults.focus_ring_color).alpha(0.5),
-            "native-theme-gpui/colors.rs:197",
+            "native-theme-gpui/colors.rs:227",
         ))
     };
     let rest_thumb = if checked {
@@ -794,39 +794,39 @@ pub fn native_switch(
                 "thumb",
                 "disabled_thumb_color",
                 stated(s.disabled_thumb_color.unwrap_or(rest_thumb)),
-                "native-theme-gpui/widgets/switch.rs:92",
+                "native-theme-gpui/widgets/switch.rs:94",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(r.defaults.disabled_text_color),
-                "native-theme-gpui/widgets/switch.rs:97",
+                "native-theme-gpui/widgets/switch.rs:99",
             )),
         (true, false) => info
             .color(claim(
                 "thumb",
                 "thumb_background",
                 stated(s.thumb_background),
-                "native-theme-gpui/widgets/switch.rs:87",
-            ))
-            .color(claim(
-                "label",
-                "text_color",
-                stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:99",
-            )),
-        (false, false) => info
-            .color(claim(
-                "thumb",
-                "unchecked_thumb_background",
-                stated(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
                 "native-theme-gpui/widgets/switch.rs:89",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:99",
+                "native-theme-gpui/widgets/switch.rs:101",
+            )),
+        (false, false) => info
+            .color(claim(
+                "thumb",
+                "unchecked_thumb_background",
+                stated(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
+                "native-theme-gpui/widgets/switch.rs:91",
+            ))
+            .color(claim(
+                "label",
+                "text_color",
+                stated(r.defaults.text_color),
+                "native-theme-gpui/widgets/switch.rs:101",
             )),
     };
     let info = info
@@ -869,10 +869,10 @@ pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
     let s = &r.slider;
     WidgetInfo::new("Slider")
         .config("drawn by", DRAWN_BY)
-        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:71"))
-        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:71"))
-        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:71"))
-        .color(claim("hover layer, over the thumb", "thumb_hover_color", stated(s.thumb_hover_color.unwrap_or(s.thumb_color)), "native-theme-gpui/widgets/slider.rs:76"))
+        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:72"))
+        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:72"))
+        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:72"))
+        .color(claim("hover layer, over the thumb", "thumb_hover_color", stated(s.thumb_hover_color.unwrap_or(s.thumb_color)), "native-theme-gpui/widgets/slider.rs:75"))
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
         .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")

@@ -638,7 +638,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The four base-palette colours the connector maps directly
-    // (`colors.rs:649-656`); their `_light` siblings are derived.
+    // (`colors.rs:684-691`); their `_light` siblings are derived.
     Row {
         slot: "red",
         native: |r| r.defaults.danger_color,
@@ -668,14 +668,12 @@ const ROWS: &[Row] = &[
 /// Composite `layer` over `base`: straight-alpha source-over, so a row's
 /// expected value is what the screen shows rather than the layer alone.
 ///
-/// Written here rather than taken from `Hsla::blend`, which the connector
+/// Written here rather than taken from `colors::over`, which the connector
 /// calls: an expectation computed with the code under test would agree with
-/// anything. The two agree bit for bit where `base` is opaque -- the same two
-/// products, added in the same order -- and
-/// `button_fill_is_opaque_outside_translucent_button_fill` shows that is every
-/// combination outside [`TRANSLUCENT_BUTTON_FILL`], whose layers over that
-/// fill are opaque, so the translucent-base arm is the general rule rather
-/// than a tolerance introduced to make a row pass.
+/// anything. The two are the same rule, the same products added in the same
+/// order, so they agree bit for bit; over an opaque `base` the result's alpha
+/// is exactly 1 and this is `Hsla::blend`, which the connector called before
+/// it composited a translucent layer over a translucent fill.
 fn over(layer: Hsla, base: Hsla) -> Hsla {
     if layer.a >= 1.0 {
         return layer;
@@ -684,16 +682,6 @@ fn over(layer: Hsla, base: Hsla) -> Hsla {
         return base;
     }
     let (l, b) = (gpui::Rgba::from(layer), gpui::Rgba::from(base));
-    if b.a >= 1.0 {
-        let mix = |l: f32, b: f32| (b * (1.0 - layer.a)) + (l * layer.a);
-        return gpui::Rgba {
-            r: mix(l.r, b.r),
-            g: mix(l.g, b.g),
-            b: mix(l.b, b.b),
-            a: b.a,
-        }
-        .into();
-    }
     let under = b.a * (1.0 - layer.a);
     let alpha = layer.a + under;
     if alpha <= 0.0 {
@@ -754,8 +742,9 @@ const COMPUTED_ROWS: &[ComputedRow] = &[
     // The four filled-button tokens: a `Default` or `Secondary` button paints
     // its own fill and upstream replaces that fill per state, so the
     // platform's hover and pressed layers are composited over it (C17).
-    // Windows 11 is the one preset where the layer is translucent and the
-    // compositing is therefore visible; everywhere else it is the identity.
+    // Every stated layer is opaque and composites to itself; macos-tahoe's
+    // derived pressed fill is the one translucent layer, over a translucent
+    // fill, so the compositing is visible there (`DERIVED_PRESSED_FILL`).
     ComputedRow {
         slot: "button_hover",
         source: "button.hover_background over button.background_color",
@@ -785,14 +774,14 @@ const COMPUTED_ROWS: &[ComputedRow] = &[
         source: "the pressed fill of `secondary_active` over button.background_color",
         native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_active,
-        exceptions: &[("macos-tahoe", PRESSED_OVER_TRANSLUCENT)],
+        exceptions: &[],
     },
     ComputedRow {
         slot: "button_secondary_active",
         source: "the pressed fill of `secondary_active` over button.background_color",
         native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_secondary_active,
-        exceptions: &[("macos-tahoe", PRESSED_OVER_TRANSLUCENT)],
+        exceptions: &[],
     },
 ];
 
@@ -1163,26 +1152,17 @@ const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
 /// translucent as the fill it is drawn over.
 const DERIVED_PRESSED_FILL: [&str; 2] = ["macos-tahoe/light", "macos-tahoe/dark"];
 
-/// Why `button_active` and `button_secondary_active` differ from their rows on
-/// macos-tahoe.
-const PRESSED_OVER_TRANSLUCENT: &str = "no macOS 26 pressed-fill source: gpui derives \
-                                        the pressed fill, and its blend does not \
-                                        composite a translucent layer over a \
-                                        translucent base (docs/todo.md, M6)";
-
 /// Every preset paints its buttons on an opaque fill, except the combinations
 /// in [`TRANSLUCENT_BUTTON_FILL`].
 ///
-/// `over` keeps the base's alpha where the base is opaque, which is the arm
-/// the four filled-button rows take and the only one that agrees bit for bit
-/// with the `Hsla::blend` the connector calls. A translucent idle fill would
-/// move those rows onto the general arm, where agreement is no longer exact,
-/// so the assumption is asserted rather than remembered. A declared
-/// combination's hover and pressed layers must be opaque: `over` then returns
-/// the layer itself, and those rows stay exact over the translucent fill. The
-/// one exception is a [`DERIVED_PRESSED_FILL`] combination's pressed fill,
-/// which must still be derived (no `button.active_background`) and translucent,
-/// so the entry fails once it no longer describes one.
+/// Over an opaque fill `over` is `Hsla::blend`, which the connector called
+/// before it composited source-over; only a translucent layer over a
+/// translucent fill tells the two apart, so where that happens is asserted
+/// rather than remembered. A declared combination's hover and pressed layers
+/// must be opaque, so they composite to themselves. The one exception is a
+/// [`DERIVED_PRESSED_FILL`] combination's pressed fill, which must still be
+/// derived (no `button.active_background`) and translucent, so the entry fails
+/// once it no longer describes one.
 #[test]
 fn button_fill_is_opaque_outside_translucent_button_fill() -> crate::Result<()> {
     let combinations = combinations()?;

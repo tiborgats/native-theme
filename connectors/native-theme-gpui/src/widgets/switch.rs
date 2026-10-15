@@ -61,9 +61,10 @@ impl SwitchLook {
     /// The look of a switch `checked` or not, `disabled` or not, or `None`
     /// when a length the theme gives is not finite.
     ///
-    /// The hover and disabled colours are soft options: a `None` copies the
-    /// colour it stands in for (C16), as the iced connector reads them
-    /// (`native-theme-iced` `styles::toggler`).
+    /// The hover and disabled colours are soft options, as the iced connector
+    /// reads them (`native-theme-iced` `styles::toggler`): a `None` disabled
+    /// colour copies the colour it stands in for (C16), and a `None` hover
+    /// leaves the track at rest.
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         let s = &resolved.switch;
@@ -82,7 +83,8 @@ impl SwitchLook {
         } else {
             s.hover_unchecked_background
         };
-        let hover_track = (!disabled).then(|| over(color(base), color(hover.unwrap_or(base))));
+        let hover_track =
+            (!disabled).then(|| hover.map_or(color(base), |h| over(color(base), color(h))));
         let rest_thumb = if checked {
             s.thumb_background
         } else {

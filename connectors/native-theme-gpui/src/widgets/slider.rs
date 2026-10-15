@@ -44,7 +44,8 @@ pub struct SliderLook {
     /// The thumb: `thumb_color`, or `disabled_thumb_color` disabled.
     pub thumb_color: Hsla,
     /// The thumb under the pointer: `thumb_hover_color` over `thumb_color`,
-    /// where the slider is enabled.
+    /// or the thumb at rest where no hover is stated, where the slider is
+    /// enabled.
     pub hover_thumb: Option<Hsla>,
     /// The thumb's outline, which the model does not state: gpui-component's
     /// fill colour at half alpha (gpui-component's, slider.rs:216-219).
@@ -71,10 +72,9 @@ impl SliderLook {
             (s.track_color, s.fill_color, s.thumb_color)
         };
         let hover_thumb = (!disabled).then(|| {
-            over(
-                color(s.thumb_color),
-                color(s.thumb_hover_color.unwrap_or(s.thumb_color)),
-            )
+            s.thumb_hover_color.map_or(color(s.thumb_color), |h| {
+                over(color(s.thumb_color), color(h))
+            })
         });
         let track_height = length(s.track_height)?;
         let thumb_diameter = length(s.thumb_diameter)?;

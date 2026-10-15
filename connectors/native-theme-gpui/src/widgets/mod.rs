@@ -32,10 +32,11 @@
 //!
 //! Rules, from `docs/archive/todo_gpui-widgets-spec.md` §1:
 //!
-//! * a hover colour is a layer composited over the idle fill; a `None` soft
-//!   option copies the colour it would cover (a tab's hover takes the place
-//!   of its fill, over the bar, as Breeze paints it: docs/platform-facts.md
-//!   §2.11);
+//! * a hover colour is a layer composited over the idle fill, source-over
+//!   (`colors::over`); a `None` soft option leaves the part at rest, which
+//!   the colour it would cover, laid over a translucent part, would not (a
+//!   tab's hover takes the place of its fill, over the bar, as Breeze paints
+//!   it: docs/platform-facts.md §2.11);
 //! * a disabled control paints its stated disabled colours and is faded by
 //!   its `disabled_opacity` on top: a platform dims by one of the two, and
 //!   its data makes the other an identity (docs/platform-facts.md §2.1.6);
@@ -100,6 +101,7 @@ use gpui::{App, Bounds, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, 
 use native_theme::color::Rgba;
 
 use crate::Native;
+use crate::colors::over;
 
 /// A part of a theme-drawn control, as [`PartBounds`] names it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -150,13 +152,6 @@ fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoEl
 /// A stated colour as gpui's.
 fn color(rgba: Rgba) -> Hsla {
     crate::colors::rgba_to_hsla(rgba)
-}
-
-/// `layer` composited over `base`: a hover state layer on the fill it covers
-/// (spec §1.3, C17). An opaque layer composites to itself. The same blend
-/// `colors.rs` composites the button states with.
-fn over(base: Hsla, layer: Hsla) -> Hsla {
-    base.blend(layer)
 }
 
 /// One colour of a control faded as one widget over `ground`, the colour
