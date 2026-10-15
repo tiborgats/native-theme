@@ -473,7 +473,7 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
 | `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 | `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
-| `watch` | `on_theme_change`, which runs a closure on gpui's foreground when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
+| `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
 
 The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
 `macos` and `windows`, one platform each), off by default as in native-theme;
@@ -507,9 +507,11 @@ apply_system_theme(&customised, cx);
 
 ### Runtime theme change
 
-With the `watch` feature, `on_theme_change(cx, f)` runs `f` on gpui's
-foreground, with the `App`, each time the OS theme changes, for as long as
-the returned `ThemeSubscription` is held. In `f`, clear native-theme's
+With the `watch` feature, `on_theme_change(window, cx, f)` runs `f` on gpui's
+foreground, with the window and the `App`, each time the OS theme changes,
+for as long as the returned `ThemeSubscription` is held and the window is
+open. Register it on the application's longest-lived window, the main
+window: once that window closes, events stop. In `f`, clear native-theme's
 detection caches, read the theme again and apply it. The caches hold the font
 DPI, dark mode, the icon theme and the accessibility preferences, so a
 re-read without `invalidate_caches()` gets the old ones. Naming
@@ -529,10 +531,10 @@ struct MyView {
     _theme_watcher: Option<ThemeSubscription>,
 }
 
-// In the view's constructor, with `cx: &mut Context<MyView>`:
-// a watcher that cannot start (a desktop with none) returns its error, and
-// `ok()` drops it.
-let _theme_watcher = on_theme_change(cx, |_event, cx| {
+// In the main window's view constructor, with `window: &mut Window` and
+// `cx: &mut Context<MyView>`: a watcher that cannot start (a desktop with
+// none) returns its error, and `ok()` drops it.
+let _theme_watcher = on_theme_change(window, cx, |_event, _window, cx| {
     native_theme::detect::invalidate_caches();
     if let Ok(sys) = SystemTheme::from_system() {
         apply_system_theme(&sys, cx);

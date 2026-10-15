@@ -489,9 +489,6 @@ pub(crate) struct Showcase {
     /// stops when this is dropped.
     #[cfg(feature = "watch")]
     pub(crate) _theme_watcher: Option<native_theme_gpui::ThemeSubscription>,
-    /// Set when the OS theme changed under the System colour mode; render()
-    /// reads the theme again, where the window is at hand.
-    pub(crate) pending_system_theme_change: bool,
 }
 
 /// The icon-theme Select's row for gpui-component's own icons, which no
@@ -1521,11 +1518,12 @@ impl Showcase {
             None
         } else {
             let showcase = cx.weak_entity();
-            native_theme_gpui::on_theme_change(cx, move |_event, cx| {
+            // The showcase's one window, so it watches as long as it runs.
+            native_theme_gpui::on_theme_change(window, cx, move |_event, window, cx| {
                 // Gone once the window closed; nothing to follow then.
                 let _ = showcase.update(cx, |this, cx| {
                     if matches!(this.color_mode, AppColorMode::System) {
-                        this.pending_system_theme_change = true;
+                        this.reload_system_theme(window, cx);
                         cx.notify();
                     }
                 });
@@ -1648,7 +1646,6 @@ impl Showcase {
             error_message: initial_error,
             #[cfg(feature = "watch")]
             _theme_watcher,
-            pending_system_theme_change: false,
         };
         showcase.rebuild_icon_caches(fg, window, cx);
         showcase.rebuild_animation_caches(window, cx);
@@ -2030,13 +2027,6 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Apply a deferred system theme change (set by the theme watcher's
-        // callback). Done here because apply_theme_by_name needs window access.
-        if self.pending_system_theme_change {
-            self.pending_system_theme_change = false;
-            self.reload_system_theme(window, cx);
-        }
-
         self.overlay_gap.set(geometry::widget_gap(&self.layout));
         self.dialog_icons.set(DialogIcons {
             dialog: self.sample_icon(IconName::CircleX),

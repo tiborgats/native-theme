@@ -289,10 +289,11 @@ the file was pruned on 2026-10-11, not reordered.
       (`connectors/native-theme-egui/src/watch.rs:98-101`), so a pinned
       preset needs the application's own re-read with
       `from_system_with_preset`, or a name the watcher keeps.
-      For gpui, settled as for iced (M6 T3, 2026-10-15): `on_theme_change(cx,
-      f)` (feature `watch`) only signals, running `f` on gpui's foreground,
-      and the README's and crate docs' *Runtime theme change* recipe re-reads
-      in `f` with the entry point the application used:
+      For gpui, settled as for iced (M6 T3, 2026-10-15):
+      `on_theme_change(window, cx, f)` (feature `watch`) only signals, running
+      `f` on gpui's foreground, and the README's and crate docs' *Runtime
+      theme change* recipe re-reads in `f` with the entry point the
+      application used:
       `SystemTheme::from_system()`, or
       `SystemTheme::from_system_with_preset(name)` for a pinned preset, then
       `apply_system_theme`. egui stays open (M7).

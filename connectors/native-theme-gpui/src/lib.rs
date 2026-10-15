@@ -135,7 +135,7 @@
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
 //! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 //! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
-//! | `watch` | `on_theme_change`, a closure run on gpui's foreground when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
+//! | `watch` | `on_theme_change`, a closure run on gpui's foreground, with a window, when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! The crate names GPUI through gpui-kit, so it is built on whichever core
 //! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
@@ -150,9 +150,10 @@
 //! # Runtime theme change
 //!
 //! With the `watch` feature and a reader feature (`native`),
-//! `on_theme_change(cx, f)` runs `f` on gpui's foreground, with the `App`,
-//! each time the OS theme changes, for as long as the `ThemeSubscription` it
-//! returns is held. In `f`, call `native_theme::detect::invalidate_caches()`,
+//! `on_theme_change(window, cx, f)` runs `f` on gpui's foreground, with the
+//! window and the `App`, each time the OS theme changes, for as long as the
+//! `ThemeSubscription` it returns is held and the window is open; register
+//! it on the main window, since events stop once that window closes. In `f`, call `native_theme::detect::invalidate_caches()`,
 //! read the theme again with the entry point the application used
 //! ([`SystemTheme::from_system()`], or
 //! [`SystemTheme::from_system_with_preset`] for a pinned preset), and
@@ -164,7 +165,7 @@
 //!
 //! // Held while the application follows the OS theme; dropping it stops
 //! // the watcher.
-//! let watcher = on_theme_change(cx, |_event, cx| {
+//! let watcher = on_theme_change(window, cx, |_event, _window, cx| {
 //!     native_theme::detect::invalidate_caches();
 //!     if let Ok(sys) = SystemTheme::from_system() {
 //!         apply_system_theme(&sys, cx);
