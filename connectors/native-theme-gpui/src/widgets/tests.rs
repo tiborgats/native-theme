@@ -980,24 +980,31 @@ fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
 }
 
 /// M6-28: a loading bar sweeps its fill across the track on
-/// gpui-component's motion (progress/progress.rs:149-160), the fill and the
-/// track in the theme's colours.
+/// gpui-component's motion (progress/progress.rs:149-160), over the theme's
+/// track. The fill's colour is checked still, under reduced motion: while it
+/// sweeps, it is under a pixel wide for part of each turn, and gpui drops a
+/// quad that empty.
 #[gpui::test]
 fn a_loading_progress_bar_sweeps_its_fill_in_the_theme(cx: &mut TestAppContext) {
     let (cx, look) = loading_window(cx);
     let bar = bounds(cx, "native-progress");
     assert_eq!(bar.size.height, look.height);
-    let first = fill_after(cx, 150);
-    assert_eq!(painted_fill(cx, first), Some(look.fill), "the theme's fill");
-    let second = fill_after(cx, 150);
-    assert_eq!(
-        painted_fill(cx, second),
-        Some(look.fill),
-        "the theme's fill"
-    );
-    assert_ne!(first, second, "the fill moves");
-    assert_eq!(second.size.height, bar.size.height, "the track's height");
     assert_eq!(painted_fill(cx, bar), Some(look.track), "the theme's track");
+    let first = fill_after(cx, 0);
+    assert_eq!(first.size.height, bar.size.height, "the track's height");
+    // Frames a little apart until one lays the fill out elsewhere: the sweep
+    // takes a second (progress/progress.rs:152), so 2 s of frames cover two
+    // turns however slowly the runner draws.
+    let start = std::time::Instant::now();
+    let moved = loop {
+        if fill_after(cx, 20) != first {
+            break true;
+        }
+        if start.elapsed() > std::time::Duration::from_secs(2) {
+            break false;
+        }
+    };
+    assert!(moved, "the fill moves");
 }
 
 /// M6-28: under reduced motion the loading fill stands still in the middle,
@@ -1326,6 +1333,48 @@ fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
     assert_eq!(fill.origin.x, at(0.2), "the fill from the start thumb");
     assert_eq!(fill.origin.x + fill.size.width, at(0.8), "to the end thumb");
     drop(state);
+}
+
+/// M6-20: the start of a range moves by pointer: a press on the rail nearer
+/// the start moves the start, as gpui-base picks the nearer thumb
+/// (slider.rs:677-689), and the start thumb follows; dragging that thumb
+/// moves the start, not the end.
+#[gpui::test]
+fn a_range_slider_moves_its_start_by_pointer(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.origin.x + radius + travel * fraction;
+    let y = centre(root).y;
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_click(point(at(0.05), y), Modifiers::default());
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "the start moved");
+    redraw(cx);
+    let start = bounds(cx, "native-slider-start-thumb");
+    assert_eq!(centre(start).x, at(0.05), "the start thumb follows");
+    cx.simulate_mouse_down(centre(start), gpui::MouseButton::Left, Modifiers::default());
+    // The first move starts the drag past gpui's threshold, the next moves
+    // the dragged thumb.
+    for x in [at(0.2), at(0.4)] {
+        cx.simulate_mouse_move(
+            point(x, y),
+            Some(gpui::MouseButton::Left),
+            Modifiers::default(),
+        );
+    }
+    cx.simulate_mouse_up(
+        point(at(0.4), y),
+        gpui::MouseButton::Left,
+        Modifiers::default(),
+    );
+    assert_eq!(
+        value(cx),
+        SliderValue::Range(40., 80.),
+        "dragged, the start"
+    );
 }
 
 /// M6-20: the keys move a range's end and keep its start, where a key turned

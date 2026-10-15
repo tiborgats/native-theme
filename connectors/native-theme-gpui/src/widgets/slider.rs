@@ -103,6 +103,11 @@ impl SliderLook {
     /// widget (docs/platform-facts.md §2.1.6), so the rail does not show
     /// through the fill nor the fill through the thumb, as fading each part
     /// on its own would show them.
+    ///
+    /// The outline is translucent (the fill at half alpha), and its 1 px
+    /// ring lies partly over the fill and partly over the rail, so taking it
+    /// over the fill is exact only where the ring covers the fill; the thumb,
+    /// inside it, is taken over the fill too.
     #[must_use]
     pub fn faded_over(self, ground: Hsla) -> Self {
         if self.opacity >= 1. {
@@ -139,6 +144,9 @@ impl SliderLook {
 /// each end and the fill between them, as gpui-component's slider does
 /// (slider.rs:149-156, :305-308): a press moves the nearer thumb, as
 /// gpui-base picks it, and the keys move the end, which stops at the start.
+/// The start moves by pointer only: a screen reader is told the range's end
+/// alone, as gpui-base's slider reports it (slider.rs:505), and AccessKit's
+/// Increment and Decrement step the end.
 ///
 /// Its length is the caller's (`Styled`): a horizontal slider's width, a
 /// vertical one's height, gpui-component's 120 px where not given. Without a
