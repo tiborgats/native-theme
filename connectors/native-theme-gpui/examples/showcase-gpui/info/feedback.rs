@@ -226,7 +226,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:373",
+                "native-theme-gpui/widgets/spinner.rs:400",
             ))
         } else {
             info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")

@@ -17,13 +17,13 @@ use gpui_base::Progress as BaseProgress;
 use gpui_component::plot::shape::{Arc, ArcData};
 use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
-use native_theme::detect::system_icon_set;
+use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
 use native_theme::theme::{IconSet, ResolvedTheme};
 
 use super::{color, length};
 use crate::ActiveNativeTheme;
-use crate::icons::{animated_frames_to_image_sources_for, with_spin_animation};
+use crate::icons::{MAX_ICON_SIZE, animated_frames_to_image_sources_for, with_spin_animation};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
 /// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
@@ -164,11 +164,36 @@ struct IndicatorKey {
     size: u32,
 }
 
+impl IndicatorKey {
+    /// The key of `set`'s indicator in `colour` at `size`. A freedesktop
+    /// set's icon theme is `icon_theme`, or where that is `None` the theme
+    /// `system_icon_theme()` names (a cached detection), so a key names the
+    /// theme its indicator comes from and a changed system theme, once
+    /// `invalidate_caches()` has cleared the detection, is a key of its own;
+    /// another set has no theme. The size is at most the 512 an SVG is
+    /// rasterized at (`icons::MAX_ICON_SIZE`), so the sizes above it share
+    /// their one image.
+    fn new(set: IconSet, icon_theme: Option<SharedString>, colour: Rgba, size: u32) -> Self {
+        let icon_theme = match set {
+            IconSet::Freedesktop => {
+                icon_theme.or_else(|| system_icon_theme().ok().map(SharedString::from))
+            }
+            _ => None,
+        };
+        Self {
+            set,
+            icon_theme,
+            colour: [colour.r, colour.g, colour.b, colour.a],
+            size: size.clamp(1, MAX_ICON_SIZE),
+        }
+    }
+}
+
 /// The indicators loaded so far, one per key: loading reads the file system
 /// for a freedesktop set and rasterizes every frame, so it is done once.
 /// Each key's images stay for the life of the application; a key is a set,
-/// an icon theme, a colour and a size, so there are as many as the
-/// combinations drawn.
+/// an icon theme (the system's as detected, where none is named), a colour
+/// and a size, so there are as many as the combinations drawn.
 #[derive(Default)]
 struct Indicators(HashMap<IndicatorKey, Option<Rc<Indicator>>>);
 
@@ -293,7 +318,9 @@ enum IconChoice {
 /// motion the first frame stands still. Name the set with
 /// [`icon_set`](Self::icon_set) and, for a freedesktop set,
 /// [`icon_theme`](Self::icon_theme); without them it is
-/// `native_theme::detect::system_icon_set()` with the system's icon theme.
+/// `native_theme::detect::system_icon_set()` with the system's icon theme,
+/// `native_theme::detect::system_icon_theme()`, whose change the spinner
+/// draws once `native_theme::detect::invalidate_caches()` has cleared it.
 ///
 /// **An arc for a set without one** (`SfSymbols`, `SegoeFluent`, an icon
 /// feature that is off, or `icon_set(None)`): `spinner.fill_color` at
@@ -390,12 +417,7 @@ impl RenderOnce for Spinner {
             let size = (f32::from(look.diameter) * window.scale_factor())
                 .ceil()
                 .max(1.) as u32;
-            let key = IndicatorKey {
-                set,
-                icon_theme: icon_theme.filter(|_| set == IconSet::Freedesktop),
-                colour: [colour.r, colour.g, colour.b, colour.a],
-                size,
-            };
+            let key = IndicatorKey::new(set, icon_theme, colour, size);
             Some((indicator(key, colour, cx)?, colour))
         });
         let root = BaseProgress::new(self.id)
@@ -490,13 +512,8 @@ mod tests {
 
     #[test]
     fn a_set_without_an_indicator_has_none() {
-        let key = |set| IndicatorKey {
-            set,
-            icon_theme: None,
-            colour: [0, 0, 0, 255],
-            size: 16,
-        };
         let black = Rgba::rgb(0, 0, 0);
+        let key = |set| IndicatorKey::new(set, None, black, 16);
         assert!(load(&key(IconSet::SfSymbols), black).is_none());
         assert!(load(&key(IconSet::SegoeFluent), black).is_none());
         #[cfg(feature = "lucide-icons")]
@@ -509,5 +526,63 @@ mod tests {
             load(&key(IconSet::Material), black),
             Some(Indicator::Frames { .. })
         ));
+    }
+
+    /// A size above the 512 an SVG is rasterized at most
+    /// (`icons::MAX_ICON_SIZE`) is one key, as it is one image.
+    #[test]
+    fn a_key_s_size_is_at_most_the_largest_raster() {
+        let black = Rgba::rgb(0, 0, 0);
+        let key = |size| IndicatorKey::new(IconSet::Material, None, black, size);
+        assert_eq!(key(4096).size, 512);
+        assert!(key(4096) == key(513));
+        assert_eq!(key(22).size, 22);
+    }
+
+    /// The system's icon theme is in the key of a freedesktop indicator that
+    /// names none, so after the system's theme changes, and the detection
+    /// caches are cleared, the spinner loads the new theme's indicator
+    /// instead of finding the old one. A named theme stays, and another set
+    /// has no theme. The themes are fixtures in a child process
+    /// ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_changed_system_icon_theme_is_a_new_indicator() -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "widgets::spinner::tests::a_changed_system_icon_theme_is_a_new_indicator";
+        const TWO: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><path fill="currentColor" d="M2 2h18v18H2zM6 28h10v10H6z"/></svg>"#;
+        const THREE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 66"><path fill="currentColor" d="M2 2h18v18H2zM6 28h10v10H6zM8 52h6v6H8z"/></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let black = Rgba::rgb(0, 0, 0);
+            let frames = |key: &IndicatorKey| match load(key, black) {
+                Some(Indicator::Frames { frames, .. }) => frames.len(),
+                _ => 0,
+            };
+            let first = IndicatorKey::new(IconSet::Freedesktop, None, black, 22);
+            assert_eq!(first.icon_theme.as_deref(), Some("first"));
+            assert_eq!(frames(&first), 2);
+
+            let config = std::env::var_os("XDG_CONFIG_HOME").ok_or("no config dir")?;
+            std::fs::write(
+                std::path::Path::new(&config).join("kdeglobals"),
+                "[Icons]\nTheme=second\n",
+            )?;
+            native_theme::detect::invalidate_caches();
+            let second = IndicatorKey::new(IconSet::Freedesktop, None, black, 22);
+            assert_eq!(second.icon_theme.as_deref(), Some("second"));
+            assert!(first != second, "a changed theme is a new key");
+            assert_eq!(frames(&second), 3);
+
+            let named = IndicatorKey::new(IconSet::Freedesktop, Some("first".into()), black, 22);
+            assert_eq!(named.icon_theme.as_deref(), Some("first"));
+            let other = IndicatorKey::new(IconSet::Material, Some("first".into()), black, 22);
+            assert_eq!(other.icon_theme, None);
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "first", |icons| {
+            crate::icon_fixture::write_indicator_theme(icons, "first", TWO)?;
+            crate::icon_fixture::write_indicator_theme(icons, "second", THREE)
+        })?;
+        Ok(())
     }
 }

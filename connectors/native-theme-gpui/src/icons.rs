@@ -642,7 +642,7 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 ///
 /// Values above this are clamped to prevent excessive memory allocation
 /// from a single icon render.
-const MAX_ICON_SIZE: u32 = 512;
+pub(crate) const MAX_ICON_SIZE: u32 = 512;
 
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
