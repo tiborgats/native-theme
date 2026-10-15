@@ -492,7 +492,7 @@ const ROWS: &[Row] = &[
     },
     Row {
         slot: "sidebar_border",
-        native: |r| r.window.border.color,
+        native: |r| r.sidebar.border.color,
         get: |tc| tc.sidebar_border,
         exceptions: &[],
     },
@@ -638,7 +638,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The four base-palette colours the connector maps directly
-    // (`colors.rs:684-691`); their `_light` siblings are derived.
+    // (`colors.rs:686-693`); their `_light` siblings are derived.
     Row {
         slot: "red",
         native: |r| r.defaults.danger_color,

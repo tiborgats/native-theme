@@ -204,7 +204,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "popover",
-        "the popover.border.padding sides the theme states, and corner_radius; an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
+        "the popover.border.padding sides the theme states, corner_radius, and line_width and color as a border inside the ring popover_style draws as its edge (styled.rs, popover_style); an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
     ),
     (
         "status_bar",
@@ -284,7 +284,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size and weight, and defaults.line_height as the line height",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size, weight and colour -- upstream's Toolbar sets no colour (toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
@@ -337,7 +337,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "link",
-        "link.font size and weight, defaults.line_height as the line height, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+        "link.font size and weight, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
     (
         "widget_gap",

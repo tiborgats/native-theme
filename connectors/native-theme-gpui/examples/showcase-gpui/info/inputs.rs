@@ -857,7 +857,7 @@ pub fn native_switch(
             "focus ring, focus_ring_color at 50% alpha",
             "focus_ring_color",
             stated(r.defaults.focus_ring_color).alpha(0.5),
-            "native-theme-gpui/colors.rs:227",
+            "native-theme-gpui/colors.rs:228",
         ))
     };
     let rest_thumb = if checked {

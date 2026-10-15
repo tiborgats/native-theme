@@ -118,6 +118,7 @@ struct ResolvedColors {
     input: Hsla,
     sidebar: Hsla,
     sidebar_fg: Hsla,
+    sidebar_border: Hsla,
     popover: Hsla,
     popover_fg: Hsla,
     list_bg: Hsla,
@@ -228,6 +229,7 @@ pub fn to_theme_color(
         input: rgba_to_hsla(resolved.input.border.color),
         sidebar: rgba_to_hsla(resolved.sidebar.background_color),
         sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
+        sidebar_border: rgba_to_hsla(resolved.sidebar.border.color),
         popover: rgba_to_hsla(resolved.popover.background_color),
         popover_fg: rgba_to_hsla(resolved.popover.font.color),
         list_bg: rgba_to_hsla(resolved.list.background_color),
@@ -474,7 +476,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.sidebar_foreground = c.sidebar_fg;
     tc.sidebar_accent = c.sidebar_selection_bg;
     tc.sidebar_accent_foreground = c.sidebar_selection_fg;
-    tc.sidebar_border = c.window_border;
+    tc.sidebar_border = c.sidebar_border;
     tc.sidebar_primary = c.primary;
     tc.sidebar_primary_foreground = c.primary_fg;
 

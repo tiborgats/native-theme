@@ -274,14 +274,14 @@ A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
 element with a token of its own before applying the refinement and re-applies
 its state colours after it or on a child, or upstream sets no colour on that
-element at all. Eleven do. Five displace a visibly different colour:
+element at all. Twelve do. Five displace a visibly different colour:
 `status_bar` and `dialog_description` displace upstream's `muted_foreground`,
 `tooltip` displaces `popover_foreground`, and `input` and `text_area` the
 window's `foreground`, which a field's text inherits and the macOS presets'
 `input.font.color` differs from. Four displace `foreground`:
-`list_item`, `radio`, `select` and `accordion_title`. `title_bar` and
-`dialog_title` displace nothing — upstream paints the bar's fill and border
-and sets no text colour on either. Those six change no
+`list_item`, `radio`, `select` and `accordion_title`. `title_bar`,
+`dialog_title` and `toolbar` displace nothing — upstream sets no text colour
+on the title bar, a dialog's title or a toolbar. Those seven change no
 pixel under any bundled preset — a widget that states no `font.color` inherits
 the window's, and `foreground` is fed from that same field — but they carry it
 so that a source which *does* state, say, a list row colour, or the title bar
@@ -308,14 +308,14 @@ test over every preset and mode says so.
 | `combo_box_fill(n, disabled)` | `combo_box.background_color`; disabled, `combo_box.disabled_background` (or `combo_box.background_color` where it is not stated), `combo_box.disabled_text_color` and `combo_box.disabled_opacity` | `Select`, `Combobox`, after `select` or `combobox`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a trigger as it fills an `Input`. The disabled text colour reaches a `Combobox`'s selected text; a `Select`'s title mutes itself when disabled |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
-| `link` | `link.underline_enabled`, `link.font` size and weight, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
+| `link` | `link.underline_enabled`, `link.font` size and weight, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
 | `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius` | the frame of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border of its own, while `DataTable` draws one from the same values through `Theme`, so this is what makes the three agree. It also clips to the radius, because a row's selected fill would otherwise show through the rounded corners. A tree is a list view — the model has no tree theme |
 | `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font`, `defaults.line_height` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
-| `popover` | `popover.border.padding` (the stated sides), `.corner_radius` | `Popover` |
+| `popover` | `popover.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `Popover`, `HoverCard`: a border inside the ring upstream draws as the popover's edge |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
 | `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |

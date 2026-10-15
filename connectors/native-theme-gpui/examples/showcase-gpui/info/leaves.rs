@@ -1236,7 +1236,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: not applied — the Link paints no fill (link.rs:70-90)",
+        "gpui: geometry::link's fill, where the Link paints none (link.rs:70-90)",
     ),
     (
         "",
@@ -2207,7 +2207,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "toolbar.font",
-        "gpui: geometry::toolbar's size and weight on the row; no text is drawn in it",
+        "gpui: geometry::toolbar's size, weight and colour on the row; no text is drawn in it",
     ),
     (
         "",

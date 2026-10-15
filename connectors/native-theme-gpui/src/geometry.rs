@@ -49,23 +49,23 @@
 //! [`data_table_size`] and [`list_header_height`], which compute the growth
 //! themselves, a `Size` being a fixed height.
 //!
-//! Geometry, with one exception that is not geometry: eleven builders also
+//! Geometry, with one exception that is not geometry: twelve builders also
 //! carry the platform's text colour. A builder carries it only where the
 //! carried colour actually reaches the text and upstream's state colours
 //! (disabled, muted) still win — either because upstream labels the very
 //! element the refinement lands on with a token of its own one refinement
 //! earlier and applies its state colours after the refinement or on a child,
 //! or because upstream sets no colour on that element at all, so there is
-//! nothing to displace. Five of the eleven displace a visibly different colour
+//! nothing to displace. Five of the twelve displace a visibly different colour
 //! today — [`status_bar`] and [`dialog_description`] displace
 //! `muted_foreground`, [`tooltip`] displaces `popover_foreground`, and
 //! [`input`] and [`text_area`] the window's `foreground`, which the field's
 //! text inherits and the macOS presets' `input.font.color` differs from —
 //! four displace `foreground`: [`list_item`], [`radio`], [`select`] and
-//! [`accordion_title`], and [`title_bar`] and [`dialog_title`] displace
-//! nothing (`title_bar.rs:331-346` paints the fill and the border, then
-//! refines; `dialog/title.rs:39-46` sets no colour). Those six change no pixel
-//! over the bundled
+//! [`accordion_title`], and [`title_bar`], [`dialog_title`] and [`toolbar`]
+//! displace nothing (`title_bar.rs:331-346` paints the fill and the border,
+//! then refines; `dialog/title.rs:39-46` and `toolbar.rs:243-257` set no
+//! colour). Those seven change no pixel over the bundled
 //! presets, because a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a source that does state one is honoured rather
@@ -523,12 +523,21 @@ pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
 /// `src/styles.rs:949-950`).
 const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 
-/// `Popover` (`src/popover.rs:308` → `:360`). An unstated side keeps
-/// upstream's `p_3` (`:308`).
+/// `Popover` (`src/popover.rs:355` → `:360`). An unstated side keeps
+/// upstream's `p_3` (`:355`).
+///
+/// The edge is `popover.border.line_width` wide in `popover.border.color`.
+/// Upstream draws a popover with no border by design: its edge is a ring in
+/// the `foreground` colour inside the popover's shadow (`popover_style`,
+/// `src/styled.rs:186-194`), which stays, and this border is drawn inside
+/// it.
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding).rounded(px(p.border.corner_radius))
+    with_padding(StyleRefinement::default(), &p.border.padding)
+        .rounded(px(p.border.corner_radius))
+        .border(px(p.border.line_width))
+        .border_color(rgba_to_hsla(p.border.color))
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -918,13 +927,18 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 /// wants a fixed height sets one after the refinement --,
 /// `toolbar.item_gap` between items where the theme states one, the
 /// `toolbar.border` padding sides the platform states,
-/// `toolbar.background_color`, and `toolbar.font` size and weight. An
-/// unstated side or gap is left to the application. No edge: §2.13 states
-/// none; an application that wants a rule draws a Separator.
+/// `toolbar.background_color`, and `toolbar.font`. An unstated side or gap
+/// is left to the application. No edge: §2.13 states none; an application
+/// that wants a rule draws a Separator.
+///
+/// The text colour displaces nothing: neither gpui-component's `Toolbar`
+/// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today
+/// every preset's toolbar text is the window's text colour, so this changes
+/// no pixel; it is what honours a source that states one of its own.
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    let r = with_text(StyleRefinement::default(), &t.font, n).h_auto();
+    let r = with_coloured_text(StyleRefinement::default(), &t.font, n).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
         None => r,
@@ -1263,11 +1277,13 @@ pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
 /// them, upstream's underline stands. The underline's colour, and the one
 /// upstream adds on hover and press (`:79-88`), are upstream's: the model
 /// states neither. The text colour is `ThemeColor::link`, the
-/// `link.font.color` row.
+/// `link.font.color` row. The fill is `link.background_color`: upstream paints
+/// none (`link.rs:73-90`), so it displaces nothing, and every preset states a
+/// transparent one, as inline links have none (`docs/inheritance-rules.toml:366`).
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
-    let r = with_text(StyleRefinement::default(), &l.font, n);
+    let r = with_text(StyleRefinement::default(), &l.font, n).bg(rgba_to_hsla(l.background_color));
     if l.underline_enabled {
         r
     } else {
@@ -1995,6 +2011,11 @@ mod tests {
                 let at = format!("{}/{mode:?}", info.key);
                 let out = link(n);
                 assert_text(&out, &r, &r.link.font, 1.0);
+                assert_eq!(
+                    out.background,
+                    Some(rgba_to_hsla(r.link.background_color).into()),
+                    "{at}: fill"
+                );
                 let thickness = out.text.underline.as_ref().map(|u| u.thickness);
                 if r.link.underline_enabled {
                     assert_eq!(thickness, None, "{at}: upstream's underline stands");
@@ -2101,6 +2122,8 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
             );
+            assert_eq!(out.border_widths.top, abs(p.border.line_width));
+            assert_eq!(out.border_color, Some(rgba_to_hsla(p.border.color)));
 
             let sb = &r.status_bar;
             let out = status_bar(n);
@@ -2155,7 +2178,7 @@ mod tests {
     /// reaches the text *and* upstream's state colours still win afterwards:
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
-    /// no colour on that element at all. Nine are checked here, over every
+    /// no colour on that element at all. Ten are checked here, over every
     /// preset in both modes, not just the `CASES` names; [`input`] and
     /// [`text_area`] in `a_field_draws_its_text_in_the_platforms_input_colour`.
     ///
@@ -2164,8 +2187,8 @@ mod tests {
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other six -- `list_item`, `radio`, `select`, `title_bar`,
-    /// `dialog_title`, `accordion_title` -- get no
+    /// The other seven -- `list_item`, `radio`, `select`, `title_bar`,
+    /// `dialog_title`, `accordion_title`, `toolbar` -- get no
     /// such `assert_ne!`, and deliberately: their native font colour equals
     /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
     /// select is the exception, its `combo_box.font.color` the accent), because
@@ -2175,8 +2198,9 @@ mod tests {
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child
     /// afterwards, an open accordion title with `foreground` and no disabled
-    /// colour at all, and it labels the title bar and a dialog's title with
-    /// nothing at all (`title_bar.rs:331-346`, `dialog/title.rs:39-46`) -- so
+    /// colour at all, and it labels the title bar, a dialog's title and a
+    /// toolbar with nothing at all (`title_bar.rs:331-346`,
+    /// `dialog/title.rs:39-46`, `toolbar.rs:243-257`) -- so
     /// the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
     /// reader does from `[WM] activeForeground`, the element is painted with it
@@ -2263,6 +2287,11 @@ mod tests {
                     accordion_title(n).text.color,
                     Some(rgba_to_hsla(r.expander.font.color)),
                     "{at}: accordion title text"
+                );
+                assert_eq!(
+                    toolbar(n).text.color,
+                    Some(rgba_to_hsla(r.toolbar.font.color)),
+                    "{at}: toolbar text"
                 );
 
                 // The two the route is blocked for; the guard below says why.
@@ -2642,7 +2671,11 @@ mod tests {
                     "{at}: background"
                 );
                 assert_text(&out, &r, &t.font, 1.0);
-                assert_eq!(out.text.color, None, "{at}: no text colour");
+                assert_eq!(
+                    out.text.color,
+                    Some(rgba_to_hsla(t.font.color)),
+                    "{at}: text colour"
+                );
                 assert_eq!(
                     out.border_widths,
                     StyleRefinement::default().border_widths,
