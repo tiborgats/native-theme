@@ -615,7 +615,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         )
     };
     info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
-        .config("font", format!("tab.font, {}px, weight {}", px_text(t.font.size), t.font.weight))
+        .config("font", format!("tab.font: {}, {}px, weight {}, {:?}", t.font.family, px_text(t.font.size), t.font.weight, t.font.style))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
         .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11)", px_text(t.border.line_width), px_text(t.border.corner_radius)))
         .not_themeable("selection mark", "none beyond the selected tab's fill, label and outline: tab.* states no underline or indicator (upstream's TabBar variants draw a primary underline or a framed tab of their own, tab/tab_bar.rs and tab/tab.rs, TabVariant; Breeze's 3px Highlight strip on the selected tab is no tab field)")

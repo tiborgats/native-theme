@@ -2046,7 +2046,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tab.font",
-        "gpui: each label's size and weight (widgets::TabBar); family: the window's",
+        "gpui: each label's family, size, weight and style (widgets::TabBar)",
     ),
     (
         "",

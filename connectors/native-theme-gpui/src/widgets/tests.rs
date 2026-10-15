@@ -757,6 +757,30 @@ fn the_checkbox_label_takes_the_stated_family_and_style() {
     }
 }
 
+/// M6-21: a tab's label is drawn in `tab.font`'s family and style, as in its
+/// size and weight, where the theme states them.
+#[test]
+fn the_tab_label_takes_the_stated_family_and_style() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.tab.font.family = "Noto Serif".into();
+    for (style, drawn) in [
+        (FontStyle::Normal, gpui::FontStyle::Normal),
+        (FontStyle::Italic, gpui::FontStyle::Italic),
+        (FontStyle::Oblique, gpui::FontStyle::Oblique),
+    ] {
+        r.tab.font.style = style;
+        let mut label = tab_bar::label_text(crate::Native::unscaled(&r));
+        let text = label.text_style();
+        assert_eq!(
+            text.font_family,
+            Some(crate::font_family(&r.tab.font.family)),
+            "{style:?}"
+        );
+        assert_eq!(text.font_style, Some(drawn), "{style:?}");
+        assert_eq!(text.font_size, Some(px(r.tab.font.size).into()));
+    }
+}
+
 #[test]
 fn a_length_that_is_not_finite_falls_back() {
     let mut r = resolved("kde-breeze", ColorMode::Light);

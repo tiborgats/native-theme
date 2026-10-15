@@ -12,8 +12,8 @@ use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, length, over, part_bounds, text_size};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, color, font_style, length, over, part_bounds, text_size};
+use crate::{ActiveNativeTheme, Native};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
@@ -160,6 +160,20 @@ fn indicator(line: TabIndicator, look: &TabLook) -> gpui::Div {
     }
 }
 
+/// The text of a tab's label: `tab.font`'s family, size, weight and style,
+/// one line tall -- its size by `defaults.line_height`, the line box the
+/// model states.
+pub(super) fn label_text(n: Native<'_>) -> gpui::Div {
+    let font = &n.resolved.tab.font;
+    let mut text = div()
+        .font_family(crate::font_family(&font.family))
+        .text_size(text_size(font.size, n))
+        .line_height(gpui::relative(n.resolved.defaults.line_height))
+        .font_weight(FontWeight(f32::from(font.weight)));
+    text.text_style().font_style = Some(font_style(font.style));
+    text
+}
+
 /// One tab of a [`TabBar`]: its label.
 pub struct Tab {
     label: SharedString,
@@ -207,9 +221,9 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// (tab/tab.rs, `TabVariant`), whatever the platform draws. Every tab is at
 /// least `min_width` by `min_height`, padded by the stated `border.padding`
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
-/// size and weight, `item_gap` from its neighbours (none where unstated, as
-/// gpui-component's). The tabs scroll sideways where they do not fit, or
-/// wrap onto a further row with [`wrap`](Self::wrap); a
+/// family, size, weight and style, `item_gap` from its neighbours (none
+/// where unstated, as gpui-component's). The tabs scroll sideways where they
+/// do not fit, or wrap onto a further row with [`wrap`](Self::wrap); a
 /// [`suffix`](Self::suffix) follows them.
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
@@ -327,9 +341,6 @@ impl RenderOnce for TabBar {
         let Some(look) = TabLook::of(n.resolved) else {
             return self.fallback();
         };
-        let font = &n.resolved.tab.font;
-        let (size, weight) = (text_size(font.size, n), FontWeight(f32::from(font.weight)));
-        let line_height = n.resolved.defaults.line_height;
         let total = self.tabs.len();
         let selected = self.selected;
         let observer = self.observer.clone();
@@ -365,15 +376,7 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                // One line of `tab.font` tall: its size by
-                // `defaults.line_height`, the line box the model states.
-                .child(
-                    div()
-                        .text_size(size)
-                        .line_height(gpui::relative(line_height))
-                        .font_weight(weight)
-                        .child(tab.label),
-                )
+                .child(label_text(n).child(tab.label))
                 .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
                     tab.relative().child(indicator(line, &look))
                 })
