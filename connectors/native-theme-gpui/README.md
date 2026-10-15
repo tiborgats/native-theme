@@ -299,7 +299,7 @@ test over every preset and mode says so.
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |
 | `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::with_size`; with `table` on the container for the cell text |
-| `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.header_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
+| `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding — the header's text is drawn in the container's font, which `table` sets | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |

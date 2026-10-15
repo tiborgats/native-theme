@@ -886,15 +886,20 @@ pub fn data_table_size(n: Native<'_>) -> Size {
 
 /// For `DataTable::header_row_height` (`src/table/data_table.rs:129`):
 /// `list.header_height`, grown above a text-scaling factor of 1 as
-/// [`data_table_size`] grows a row, with `list.header_font`, or `None` where
-/// the theme states none, so the header keeps the body rows' height, which
-/// upstream gives an unset header (`src/table/state.rs:775-779`) and
-/// [`data_table_size`] sets.
+/// [`data_table_size`] grows a row, or `None` where the theme states none, so
+/// the header keeps the body rows' height, which upstream gives an unset
+/// header (`src/table/state.rs:775-779`) and [`data_table_size`] sets.
+///
+/// It grows with `list.item_font`, the font the header's text is drawn in: a
+/// `Size::Size` header cell sets no text size (`src/table/state.rs:1681`
+/// through `render_cell`, `src/sizing.rs:323-333`), so it inherits the
+/// container's, which [`table`] sets; `list.header_font` reaches only the
+/// header's text colour (`ThemeColor::table_head_foreground`).
 #[must_use]
 pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
     let l = &n.resolved.list;
     l.header_height
-        .map(|h| table_row_height(px(h), &l.header_font, n))
+        .map(|h| table_row_height(px(h), &l.item_font, n))
 }
 
 /// A `DataTable` row's height by the control-height rule (module doc): at a
@@ -1428,8 +1433,8 @@ mod tests {
         let breeze = resolved("kde-breeze", ColorMode::Light);
         assert_eq!(breeze.list.header_height, None, "precondition");
         assert_eq!(list_header_height(Native::unscaled(&breeze)), None);
-        // The stated height at a text scale of 1, grown with the header font
-        // above it, and nothing where the theme states none.
+        // The stated height at a text scale of 1, grown with the font the
+        // header draws in above it, and nothing where the theme states none.
         let mut grown = false;
         for factor in [1.0, 1.5] {
             let prefs = scaled(factor);
@@ -1445,14 +1450,41 @@ mod tests {
                         resolved: &r,
                         accessibility: &prefs,
                     };
-                    let expected =
-                        stated.map(|h| grown_row(px(h), &r, &r.list.header_font, factor));
+                    let expected = stated.map(|h| grown_row(px(h), &r, &r.list.item_font, factor));
                     grown |= expected != stated.map(px);
                     assert_eq!(list_header_height(n), expected, "{preset} {mode:?}");
                 }
             }
         }
         assert!(grown, "no case grows a header with its text");
+    }
+
+    /// The header text is drawn in the table container's font, which
+    /// [`table`] gives `list.item_font`; `list.header_font` reaches only the
+    /// header's colour (`colors.rs`, `list_header_fg`). A header font smaller
+    /// than the item font must not leave the stated header too short for it.
+    #[test]
+    fn a_header_grows_with_the_font_it_draws_in() {
+        let mut r = resolved("adwaita", ColorMode::Light);
+        let stated = r
+            .list
+            .header_height
+            .expect("adwaita states a header height");
+        r.list.item_font.size = stated;
+        r.list.header_font.size = 1.0;
+        let factor = 2.0;
+        let prefs = scaled(factor);
+        let n = Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        let expected = grown_row(px(stated), &r, &r.list.item_font, factor);
+        assert_ne!(
+            expected,
+            px(stated),
+            "precondition: the item font needs growth"
+        );
+        assert_eq!(list_header_height(n), Some(expected));
     }
 
     #[test]
