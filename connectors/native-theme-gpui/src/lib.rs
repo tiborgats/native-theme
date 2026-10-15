@@ -273,11 +273,11 @@ use std::time::Duration;
 /// `.SystemUIFont`, so Core Text supplies the system font itself; a family
 /// the system lacks is the one the platform substitutes for it (feature
 /// `system-fonts`); every other family is passed as stated. The platform is
-/// asked on the calling thread, once per family per process: on Linux the
-/// first theme to bring a family runs one `fc-match` (about 12.5 ms
-/// measured on one Linux machine, with a 2 s timeout), so a theme with a new
-/// UI and a new mono family costs about 25 ms once, and every later theme
-/// with those families nothing.
+/// asked on the calling thread, once per family per process: on Linux and
+/// the other non-Apple, non-Android unix systems the first theme to bring a
+/// family runs one `fc-match` (about 12.5 ms measured on one Linux machine,
+/// with a 2 s timeout), so a theme with a new UI and a new mono family costs
+/// about 25 ms once, and every later theme with those families nothing.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &ResolvedTheme,
@@ -368,9 +368,10 @@ pub fn to_theme(
 ///
 /// The first preset to bring a font family not yet seen in the process asks
 /// the platform for its substitute on the calling thread ([`font_family`],
-/// feature `system-fonts`): on Linux one `fc-match` per new family, about
-/// 12.5 ms measured on one Linux machine, so a first switch to a preset
-/// with a new UI and a new mono family costs about 25 ms more, once.
+/// feature `system-fonts`): on Linux and the other non-Apple, non-Android
+/// unix systems one `fc-match` per new family, about 12.5 ms measured on one
+/// Linux machine, so a first switch to a preset with a new UI and a new mono
+/// family costs about 25 ms more, once.
 ///
 /// # Errors
 ///
@@ -688,16 +689,18 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// The family gpui is asked to draw a theme's `family` in: the macOS alias
 /// of `ui_font_family`; with feature `system-fonts`, where the system
 /// lacks `family`, the family the platform substitutes for it
-/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
-/// the font every native application of the system gets); else `family` as
+/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux
+/// and the other non-Apple, non-Android unix systems, the font every native
+/// application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
 /// list of its own, `.ZedMono` first (gpui-pre 0.3.9 `src/text_system.rs`
 /// lines 255-266, 370-379), not the platform's. The platform is asked once
 /// per family and the answer kept for the process, so a caller may ask
 /// every frame. The first ask for a family runs on the calling thread: on
-/// Linux one `fc-match` process, about 12.5 ms measured on one Linux
-/// machine, with a 2 s timeout. A thread asking for another family, or for
-/// one already answered, does not wait for it.
+/// Linux and the other non-Apple, non-Android unix systems one `fc-match`
+/// process, about 12.5 ms measured on one Linux machine, with a 2 s timeout.
+/// A thread asking for another family, or for one already answered, does
+/// not wait for it.
 #[must_use]
 pub fn font_family(family: &std::sync::Arc<str>) -> SharedString {
     let alias = ui_font_family(family, cfg!(target_os = "macos"));
@@ -727,10 +730,16 @@ type AskedFamilies = std::sync::Mutex<std::collections::HashMap<String, Option<S
 
 /// `ask`'s answer for `family`, kept in `asked`. The lock is held for the
 /// look-up and the insert only, not across `ask`: the platform's ask starts
-/// a process (`fc-match` on Linux, with a 2 s timeout, native-theme
-/// `src/fonts.rs` `substitute_family`), and a thread building any other
-/// theme must not wait for it. Two first askers of one family may both ask;
-/// the answer is the same, and the last one is kept.
+/// a process (native-theme `src/fonts.rs` `substitute_family`: `fc-match`
+/// on Linux and the other non-Apple, non-Android unix systems, bounded by
+/// `SUBPROCESS_TIMEOUT`, 2 s, native-theme `src/detect.rs:20`), and a thread
+/// building any other theme must not wait for it. The 12.5 ms per ask the
+/// public docs state was measured by M6-03's verifier with a logging
+/// `fc-match` shim first on `PATH` over the release `timings` binary: two
+/// asks of about 12.5 ms in each preset's first call that brings two new
+/// families (docs/todo_code-review-findings.md, M6-03). Two first askers of
+/// one family may both ask; the answer is the same, and the last one is
+/// kept.
 #[cfg(feature = "system-fonts")]
 fn asked_once(
     asked: &AskedFamilies,
@@ -1524,7 +1533,7 @@ mod tests {
             let asked = asked.clone();
             move || {
                 asked_once(&asked, "First", |_| {
-                    started_tx.send(()).unwrap();
+                    let _ = started_tx.send(());
                     let _ = release_rx.recv();
                     Some("First substitute".to_owned())
                 })
@@ -1539,9 +1548,9 @@ mod tests {
             let asked = asked.clone();
             move || {
                 let cached = asked_once(&asked, "Cached", |_| Some("asked again".to_owned()));
-                done_tx.send(("Cached", cached)).unwrap();
+                let _ = done_tx.send(("Cached", cached));
                 let second = asked_once(&asked, "Second", |_| Some("Second substitute".to_owned()));
-                done_tx.send(("Second", second)).unwrap();
+                let _ = done_tx.send(("Second", second));
             }
         });
         let while_in_flight: Vec<_> = (0..2)
