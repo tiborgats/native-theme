@@ -90,12 +90,15 @@ impl std::fmt::Debug for AnimatedImageSources {
 ///
 /// # Examples
 ///
-/// ```ignore
+/// `IconName` has no `PartialEq`, so a variant is told by `matches!`:
+///
+/// ```
+/// use gpui_component::IconName;
 /// use native_theme::icons::IconRole;
 /// use native_theme_gpui::icons::icon_name;
 ///
-/// assert_eq!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert));
-/// assert_eq!(icon_name(IconRole::Shield), None);
+/// assert!(matches!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert)));
+/// assert!(icon_name(IconRole::Shield).is_none());
 /// ```
 #[must_use]
 pub fn icon_name(role: IconRole) -> Option<IconName> {
@@ -696,11 +699,12 @@ pub(crate) const MAX_ICON_SIZE: u32 = 512;
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme::icons::IconData;
 /// use native_theme_gpui::icons::to_image_source;
 /// use std::borrow::Cow;
 ///
+/// # let color = gpui::black();
 /// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// let source = to_image_source(&svg, None, None);         // uncolorized, 48px
 /// let colored = to_image_source(&svg, Some(color), None);  // colorized, 48px
@@ -796,7 +800,7 @@ pub fn custom_icon_to_image_source(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use gpui_component::IconName;
 /// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::bundled_icon_to_image_source;
