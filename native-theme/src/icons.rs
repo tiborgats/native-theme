@@ -139,7 +139,7 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 // compile error.
 //
 // For runtime-set dispatch (common in connector code), use the free
-// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color)`
+// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color, size)`
 // and `load_icon_indicator(set, theme)` at the bottom of this section.
 
 /// Loader for freedesktop.org icon themes (GTK / Linux).
@@ -665,7 +665,7 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 }
 
 /// Load a custom icon from an [`IconProvider`] for a set known only at
-/// runtime, in `color`.
+/// runtime, in `color`, at `size`.
 ///
 /// The provider's [`icon_name`](IconProvider::icon_name) for `set` is loaded
 /// first; where it has none, or the set has no such icon, its own
@@ -682,28 +682,40 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// icon, so give a colour only for monochrome icons; with `None` a
 /// full-colour SVG is returned unchanged.
 ///
+/// `size` reaches each system set's loader as that loader takes it: the
+/// pixel size a freedesktop icon is looked up at
+/// ([`FreedesktopLoader::size`], which picks the theme's directory nearest
+/// it, so a PNG icon comes back at that directory's size), an SF Symbol's
+/// point size ([`SfSymbolsLoader::size`]) and a Segoe glyph's pixel size
+/// ([`SegoeFluentLoader::size`]). `None` keeps each loader's default (24
+/// pixels, 24 points and 32 pixels). A Material or Lucide icon, or the
+/// provider's own SVG, is scalable and loads the same at every size.
+///
 /// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
 pub fn load_custom_icon(
     provider: &(impl IconProvider + ?Sized),
     set: IconSet,
     color: Option<Rgba>,
+    size: Option<u32>,
 ) -> Option<IconData> {
-    load_provider_icon(provider, set, None, color)
+    load_provider_icon(provider, set, None, color, size)
 }
 
 /// The runtime-set load behind [`load_custom_icon`] and
 /// [`SystemTheme::icon`](crate::SystemTheme::icon): `id` from `set` in
-/// `color`, a freedesktop icon from `theme` (the system's where `None`).
+/// `color` at `size`, a freedesktop icon from `theme` (the system's where
+/// `None`).
 pub(crate) fn load_icon_in<'a>(
     id: IconId<'a>,
     set: IconSet,
     theme: Option<&'a str>,
     color: Option<Rgba>,
+    size: Option<u32>,
 ) -> Option<IconData> {
     match id {
-        IconId::Custom(provider) => load_provider_icon(provider, set, theme, color),
-        id => load_set_icon(id, set, theme, color),
+        IconId::Custom(provider) => load_provider_icon(provider, set, theme, color, size),
+        id => load_set_icon(id, set, theme, color, size),
     }
 }
 
@@ -714,9 +726,10 @@ fn load_provider_icon(
     set: IconSet,
     theme: Option<&str>,
     color: Option<Rgba>,
+    size: Option<u32>,
 ) -> Option<IconData> {
     if let Some(name) = provider.icon_name(set)
-        && let Some(data) = load_set_icon(IconId::Name(name), set, theme, color)
+        && let Some(data) = load_set_icon(IconId::Name(name), set, theme, color, size)
     {
         return Some(data);
     }
@@ -725,24 +738,44 @@ fn load_provider_icon(
         .map(|svg| colorize_svg_data(IconData::Svg(svg), color))
 }
 
-/// A role or a name from `set`'s loader, in `color`.
+/// A role or a name from `set`'s loader, in `color`, at `size` where the
+/// loader takes one.
 fn load_set_icon<'a>(
     id: IconId<'a>,
     set: IconSet,
     theme: Option<&'a str>,
     color: Option<Rgba>,
+    size: Option<u32>,
 ) -> Option<IconData> {
     match set {
         IconSet::Freedesktop => {
             let loader = FreedesktopLoader::new(id).color_opt(color);
+            let loader = match size {
+                Some(size) => loader.size(size),
+                None => loader,
+            };
             match theme {
                 Some(theme) => loader.theme(theme),
                 None => loader,
             }
             .load()
         }
-        IconSet::SfSymbols => SfSymbolsLoader::new(id).color_opt(color).load(),
-        IconSet::SegoeFluent => SegoeFluentLoader::new(id).color_opt(color).load(),
+        IconSet::SfSymbols => {
+            let loader = SfSymbolsLoader::new(id).color_opt(color);
+            match size {
+                Some(size) => loader.size(size),
+                None => loader,
+            }
+            .load()
+        }
+        IconSet::SegoeFluent => {
+            let loader = SegoeFluentLoader::new(id).color_opt(color);
+            match size {
+                Some(size) => loader.size(size),
+                None => loader,
+            }
+            .load()
+        }
         IconSet::Material => MaterialLoader::new(id)
             .load()
             .map(|data| colorize_svg_data(data, color)),
@@ -1794,7 +1827,7 @@ mod runtime_set_icon_tests {
     #[cfg(feature = "material-icons")]
     fn material_role_comes_back_in_the_colour() {
         let svg = svg_text(
-            load_custom_icon(&IconRole::ActionCopy, IconSet::Material, Some(COLOR)).unwrap(),
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Material, Some(COLOR), None).unwrap(),
         );
         assert!(
             svg.contains("#123456"),
@@ -1806,7 +1839,7 @@ mod runtime_set_icon_tests {
     #[cfg(feature = "lucide-icons")]
     fn lucide_role_comes_back_in_the_colour() {
         let svg = svg_text(
-            load_custom_icon(&IconRole::ActionCopy, IconSet::Lucide, Some(COLOR)).unwrap(),
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Lucide, Some(COLOR), None).unwrap(),
         );
         assert!(
             svg.contains("#123456"),
@@ -1818,7 +1851,8 @@ mod runtime_set_icon_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn no_colour_leaves_the_bundled_bytes() {
-        let loaded = load_custom_icon(&IconRole::ActionCopy, IconSet::Material, None).unwrap();
+        let loaded =
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Material, None, None).unwrap();
         assert_eq!(
             loaded,
             MaterialLoader::new(IconRole::ActionCopy).load().unwrap()
@@ -1834,7 +1868,7 @@ mod runtime_set_icon_tests {
             IconSet::Material,
             IconSet::Lucide,
         ] {
-            let svg = svg_text(load_custom_icon(&SvgOnlyProvider, set, Some(COLOR)).unwrap());
+            let svg = svg_text(load_custom_icon(&SvgOnlyProvider, set, Some(COLOR), None).unwrap());
             assert!(svg.contains("fill=\"#123456\""), "{set:?}: {svg}");
         }
     }
@@ -1842,7 +1876,7 @@ mod runtime_set_icon_tests {
     #[test]
     fn unsized_provider_is_accepted() {
         let provider: &dyn IconProvider = &SvgOnlyProvider;
-        assert!(load_custom_icon(provider, IconSet::Material, None).is_some());
+        assert!(load_custom_icon(provider, IconSet::Material, None, None).is_some());
     }
 
     #[test]
@@ -1855,6 +1889,7 @@ mod runtime_set_icon_tests {
                 IconSet::Material,
                 None,
                 Some(COLOR),
+                None,
             )
             .unwrap(),
         );
@@ -1873,7 +1908,7 @@ mod runtime_set_icon_tests {
                 None
             }
         }
-        assert!(load_custom_icon(&NullProvider, IconSet::Material, Some(COLOR)).is_none());
+        assert!(load_custom_icon(&NullProvider, IconSet::Material, Some(COLOR), None).is_none());
     }
 
     #[test]

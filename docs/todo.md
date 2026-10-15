@@ -1148,6 +1148,20 @@ model, the platform presets and the three connectors
       adopt `.scale(f32)` on both loaders (and the connectors' window scale)
       or record that it is not needed.
 
+### System icons: `SystemTheme::icon` at a size
+
+- [ ] [1.0] From M6-13 (M6 T4): `icons::load_custom_icon(provider, set, color, size)`
+      hands `size` to each system set's loader (`FreedesktopLoader::size`,
+      `SfSymbolsLoader::size`, `SegoeFluentLoader::size`), but
+      `SystemTheme::icon(id, mode, color)` has no size and passes `None`
+      (`native-theme/src/lib.rs`, `icons::load_icon_in`), so a system icon
+      loaded from the theme comes at the loaders' defaults: a freedesktop
+      icon looked up at 24 pixels (a PNG-only one from the theme's directory
+      nearest 24), an SF Symbol at 24 points, a Segoe glyph at 32 pixels. M6's
+      ruling kept its shape for 0.7.0; a size parameter (or a sized variant)
+      is a signature change the maintainer decides with the icon API's
+      other 1.0 questions.
+
 ### Segoe Fluent icons as SVG outlines
 
 - [ ] [v0.7.0] For M6 (M1-T6-07's Segoe item, deferred by M4's plan ruling,

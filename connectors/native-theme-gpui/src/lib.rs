@@ -192,6 +192,8 @@ pub(crate) mod config;
 mod contract;
 pub(crate) mod derive;
 pub mod geometry;
+#[cfg(test)]
+mod icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod showcase;

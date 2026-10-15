@@ -91,7 +91,12 @@ pub fn custom_icon_to_image_handle(
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::image::Handle> {
-    into_image_handle(load_custom_icon(provider, icon_set, color.map(to_rgba))?)
+    into_image_handle(load_custom_icon(
+        provider,
+        icon_set,
+        color.map(to_rgba),
+        None,
+    )?)
 }
 
 /// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
@@ -108,7 +113,7 @@ pub fn custom_icon_to_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     into_svg_handle(
-        load_custom_icon(provider, icon_set, color.map(to_rgba))?,
+        load_custom_icon(provider, icon_set, color.map(to_rgba), None)?,
         None,
     )
 }

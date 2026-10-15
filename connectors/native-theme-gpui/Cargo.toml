@@ -102,14 +102,14 @@ serde_json = "1.0.151"
 # The showcase reads docs/showcase-elements.toml, the elements the three
 # showcases share. Already in Cargo.lock as native-theme's dependency.
 toml = { workspace = true }
+# `png`: the icon tests write a PNG-only freedesktop fixture theme, and the
+# showcase's window captures on macOS and Windows write and read back PNGs.
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
-# `png`: the showcase reads back the size of the PNG `screencapture` wrote.
-image = { version = "0.25.10", default-features = false, features = ["png"] }
 objc2 = "0.6.4"
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
-image = { version = "0.25.10", default-features = false, features = ["png"] }
 windows = { version = "0.62.2", default-features = false, features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",

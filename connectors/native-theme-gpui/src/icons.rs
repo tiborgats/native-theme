@@ -38,8 +38,7 @@ use gpui::{
 };
 use gpui_component::IconName;
 use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, IconProvider, IconRole, SegoeFluentLoader,
-    SfSymbolsLoader, load_icon,
+    AnimatedIcon, IconData, IconProvider, IconRole, load_custom_icon, load_icon,
 };
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -1006,18 +1005,23 @@ pub fn into_image_source(
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Loads the provider's icon for `icon_set`, then converts it with
-/// [`to_image_source()`]. A system set's icon (`Freedesktop`, `SfSymbols`,
-/// `SegoeFluent`) named by the provider is loaded in `color` through
-/// [`FreedesktopLoader`], [`SfSymbolsLoader`] or [`SegoeFluentLoader`], since
-/// its monochrome glyphs arrive in the colour they are loaded in; a bundled
-/// set's goes through [`load_icon`].
+/// Loads the provider's icon for `icon_set` through [`load_custom_icon`] in
+/// `color` at `size`, then converts it with [`to_image_source()`] with no
+/// colour of its own. [`load_custom_icon`] colours each set its own way: an
+/// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
+/// or the provider's own SVG, goes through the monochrome colouriser, and a
+/// freedesktop icon is coloured only where it is symbolic, so a full-colour
+/// one keeps its own palette. `size` reaches the system sets' loaders too: a
+/// freedesktop icon is looked up at it, so a PNG one comes back from the
+/// theme's directory nearest it, an SF Symbol is configured at it in points
+/// and a Segoe glyph drawn at it in pixels, and the RGBA they return is
+/// handed to gpui at its own size.
 ///
 /// Returns `None` if the provider has no icon for the given set or if
 /// conversion fails.
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters,
-/// and for what an SVG becomes without the `svg-rasterize` feature.
+/// See [`to_image_source()`] for details on the `size` parameter, and for
+/// what an SVG becomes without the `svg-rasterize` feature.
 #[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
@@ -1025,38 +1029,8 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(hsla_to_rgb))?;
-    to_image_source(&data, color, size)
-}
-
-/// Internal helper: load an icon from a provider using the typed per-set loaders.
-///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
-/// set's icon is loaded in `color`; a bundled set goes through [`load_icon`].
-/// This preserves the `?Sized` bound on the public API.
-fn load_custom_via_builder(
-    provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
-    color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    use native_theme::theme::IconSet;
-    let color = color.map(|[r, g, b]| native_theme::Rgba::rgb(r, g, b));
-    // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
-            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeFluent => SegoeFluentLoader::new(name).color_opt(color).load(),
-            set => load_icon(name, set),
-        }
-    {
-        return Some(data);
-    }
-    // Step 2: Try bundled SVG from provider
-    if let Some(svg) = provider.icon_svg(icon_set) {
-        return Some(IconData::Svg(svg));
-    }
-    None
+    let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
+    to_image_source(&data, None, size)
 }
 
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
@@ -1334,6 +1308,13 @@ fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSo
     Some(ImageSource::Render(Arc::new(RenderImage::new([
         image::Frame::new(buffer),
     ]))))
+}
+
+/// An `Hsla` colour as an opaque [`native_theme::Rgba`], each channel
+/// clamped to `0.0..=1.0`.
+fn to_rgba(color: Hsla) -> native_theme::Rgba {
+    let [r, g, b] = hsla_to_rgb(color);
+    native_theme::Rgba::rgb(r, g, b)
 }
 
 /// An `Hsla` colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
@@ -2451,6 +2432,132 @@ mod tests {
         assert!(result.is_some());
     }
 
+    /// Names `folder` for the freedesktop set and has no SVG of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[derive(Debug)]
+    struct FolderProvider;
+
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    impl native_theme::icons::IconProvider for FolderProvider {
+        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
+            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        }
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            None
+        }
+    }
+
+    /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
+    /// its body `fill:currentColor`, the accent its stylesheet states, under
+    /// a fill of its own.
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    const FULL_COLOUR_FOLDER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.ColorScheme-Accent { color: #3daee9 }</style><path style="fill:currentColor" class="ColorScheme-Accent" d="M2 3h12l2 2h14v24H1V10h1z"/><path style="fill:#ffffff;fill-opacity:0.2" d="M14 3l1 3h15V5H16z"/></svg>"##;
+
+    /// A full-colour freedesktop icon loaded for a colour comes back as the
+    /// theme has it: the colour is for a symbolic icon, and a second pass
+    /// through the monochrome colouriser repainted the folder's body in it.
+    /// The theme is a fixture in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn custom_icon_to_image_source_leaves_a_full_colour_freedesktop_icon_as_it_is()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::custom_icon_to_image_source_leaves_a_full_colour_freedesktop_icon_as_it_is";
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let loaded = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+                Some(32),
+            )
+            .ok_or("the fixture theme has no folder")?;
+            let own = to_image_source(
+                &IconData::Svg(std::borrow::Cow::Borrowed(FULL_COLOUR_FOLDER.as_bytes())),
+                None,
+                Some(32),
+            )
+            .ok_or("the folder does not rasterize")?;
+            assert!(
+                rendered(loaded).as_bytes(0) == rendered(own).as_bytes(0),
+                "the full-colour icon was recoloured"
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "full-colour", |icons| {
+            let theme = icons.join("full-colour");
+            std::fs::create_dir_all(theme.join("places"))?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
+                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )?;
+            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER)
+        })?;
+        Ok(())
+    }
+
+    /// A raster freedesktop icon comes back at the size asked for: the size
+    /// reaches the theme lookup, which picks the theme's directory of that
+    /// size. It was looked up at the loader's default 24, which took the
+    /// 16-pixel folder whatever the size. The theme is a fixture in a child
+    /// process ([`crate::icon_fixture`]) with a PNG folder at 16 and at 48.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_image_source_loads_a_raster_freedesktop_icon_at_the_size_asked_for()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::custom_icon_to_image_source_loads_a_raster_freedesktop_icon_at_the_size_asked_for";
+        if crate::icon_fixture::in_child() {
+            for size in [16, 48] {
+                let image = custom_icon_to_image_source(
+                    &FolderProvider,
+                    native_theme::theme::IconSet::Freedesktop,
+                    None,
+                    Some(size),
+                )
+                .ok_or("the fixture theme has no folder")?;
+                let side = gpui::DevicePixels(i32::try_from(size)?);
+                assert_eq!(
+                    rendered(image).size(0),
+                    gpui::size(side, side),
+                    "asked for {size}"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "raster-only", |icons| {
+            let theme = icons.join("raster-only");
+            std::fs::create_dir_all(&theme)?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=raster-only\nDirectories=16/places,48/places\n\n\
+                 [16/places]\nSize=16\nType=Fixed\n\n\
+                 [48/places]\nSize=48\nType=Fixed\n",
+            )?;
+            for size in [16, 48] {
+                let dir = theme.join(format!("{size}/places"));
+                std::fs::create_dir_all(&dir)?;
+                let mut png = std::io::Cursor::new(Vec::new());
+                image::RgbaImage::from_pixel(size, size, image::Rgba([61, 174, 233, 255]))
+                    .write_to(&mut png, image::ImageFormat::Png)
+                    .map_err(std::io::Error::other)?;
+                std::fs::write(dir.join("folder.png"), png.into_inner())?;
+            }
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     // --- bundled_icon_to_image_source tests ---
 
     #[cfg(feature = "lucide-icons")]
@@ -2579,6 +2686,7 @@ mod freedesktop_mapping_tests {
     use super::tests::ALL_ICON_NAMES;
     use super::*;
     use native_theme::detect::LinuxDesktop;
+    use native_theme::icons::FreedesktopLoader;
 
     #[test]
     fn every_gpui_icon_has_a_freedesktop_name_on_kde() {

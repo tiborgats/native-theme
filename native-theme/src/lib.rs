@@ -668,7 +668,10 @@ impl SystemTheme {
     /// load the icon in it (freedesktop for a symbolic icon), and a Material
     /// or Lucide SVG (or a provider's own SVG) is coloured through
     /// [`colorize_monochrome_svg`](crate::icons::colorize_monochrome_svg).
-    /// `None` leaves each icon in the colour it loads in.
+    /// `None` leaves each icon in the colour it loads in. A system set's icon
+    /// loads at its loader's default size (a freedesktop icon looked up at 24
+    /// pixels, an SF Symbol at 24 points, a Segoe glyph at 32 pixels);
+    /// [`load_custom_icon`](crate::icons::load_custom_icon) takes a size.
     ///
     /// `None` where the set has no such icon, or without the set's feature
     /// (see the loaders in [`icons`]).
@@ -691,7 +694,7 @@ impl SystemTheme {
         color: Option<Rgba>,
     ) -> Option<IconData> {
         self.with_icon_source(mode, |set, theme| {
-            icons::load_icon_in(id.into(), set, theme, color)
+            icons::load_icon_in(id.into(), set, theme, color, None)
         })
     }
 
