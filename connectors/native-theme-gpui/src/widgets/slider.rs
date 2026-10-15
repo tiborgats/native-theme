@@ -31,7 +31,8 @@ const VERTICAL_LENGTH: Pixels = gpui::px(120.);
 /// The group name the thumb's hover style listens to.
 const THUMB_GROUP: &str = "native-theme-slider-thumb";
 
-/// What a slider paints, per state, from `SliderTheme` (spec §2.4).
+/// What a slider paints, per state, from `SliderTheme`
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.4).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct SliderLook {
@@ -128,7 +129,7 @@ impl SliderLook {
 }
 
 /// A slider over a gpui-base `SliderState` whose rail, fill and thumbs are
-/// `SliderTheme`'s (spec §2.4), horizontal or vertical ([`Slider::axis`]).
+/// `SliderTheme`'s (`docs/archive/todo_gpui-widgets-spec.md` §2.4), horizontal or vertical ([`Slider::axis`]).
 ///
 /// gpui-base's parts own the pointer: a press on the rail sets the value, a
 /// drag of the rail or the thumb moves it, and `SliderEvent::Change` /

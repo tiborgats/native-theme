@@ -1,5 +1,7 @@
 //! Native values for the gpui-base layer, which paints scrollbars and resize
-//! handles without going through gpui-component (spec §8.2, §8.3).
+//! handles without going through gpui-component
+//! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.2, §8.3, "the
+//! spec" below).
 //!
 //! gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
 //! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component
@@ -67,7 +69,8 @@ pub struct ScrollbarGeometry {
     pub thumb_active: Hsla,
 }
 
-/// Compute the scrollbar values (spec §8.2).
+/// Compute the scrollbar values (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md`
+/// §8.2).
 #[must_use]
 pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
     let sb = &resolved.scrollbar;
@@ -129,7 +132,8 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
     px(f32::from(g.min_thumb_length) + 2.0 * f32::from(g.thumb_inset))
 }
 
-/// Resize-handle colours from the splitter (spec §8.3). Upstream projects
+/// Resize-handle colours from the splitter
+/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.3). Upstream projects
 /// `border` / `drag_border` into the same two slots
 /// (gpui-component `src/theme/mod.rs:451-453`); the handle width is a
 /// constant upstream (gpui-base `src/resizable/resize_handle.rs:13`), Tier U.

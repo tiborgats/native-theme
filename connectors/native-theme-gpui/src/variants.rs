@@ -45,8 +45,8 @@ use gpui_component::button::ButtonCustomVariant;
 /// fills from `button.font.color`, `button.hover_background` and, where
 /// stated, `button.active_background` (else derived from the button's
 /// background), so a button built in `render` follows a light/dark switch.
-/// The label keeps its colour on hover, as platform-facts records for all
-/// four platforms (§2.3 `hover_text_color`).
+/// The label keeps its colour on hover, as docs/platform-facts.md records
+/// for all four platforms (§2.3, `hover_text_color`).
 #[must_use]
 pub fn ghost_button(cx: &App) -> ButtonCustomVariant {
     let theme = cx.theme();

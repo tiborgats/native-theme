@@ -25,7 +25,7 @@ use crate::ActiveNativeTheme;
 const HOVER_GROUP: &str = "native-theme-checkbox";
 
 /// What a checkbox or a radio paints, per state, from `CheckboxTheme`
-/// (spec §2.1). The render reads only this; the tests check it leaf by leaf.
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.1). The render reads only this; the tests check it leaf by leaf.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct CheckboxLook {
@@ -509,7 +509,7 @@ fn indicator_and_label(
 }
 
 /// A checkbox whose indicator, mark, label and states are `CheckboxTheme`'s
-/// (spec §2.1), on gpui-base's headless `Checkbox`: click, Enter and Space
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.1), on gpui-base's headless `Checkbox`: click, Enter and Space
 /// toggle it, a pointer press does not move focus, a disabled one is inert,
 /// and it reports itself as a checkbox with its toggled state.
 ///

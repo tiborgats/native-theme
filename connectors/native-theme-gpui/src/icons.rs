@@ -166,7 +166,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 ///
 /// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Lucide has no equivalent (today only
-/// `StarFill`, spec §10.2); every `Some` is Lucide's own file name
+/// `StarFill`, `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §10.2); every `Some` is Lucide's own file name
 /// (`LucideLoader::new(name)` resolves it).
 #[must_use]
 pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {

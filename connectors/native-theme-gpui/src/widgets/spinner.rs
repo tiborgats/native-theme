@@ -38,7 +38,8 @@ const SMALL_RATIO: f32 = 0.875;
 /// `src/icon.rs:191-192`).
 const LARGE_RATIO: f32 = 1.5;
 
-/// What a spinner paints, from `SpinnerTheme` (spec §2.6).
+/// What a spinner paints, from `SpinnerTheme`
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.6).
 ///
 /// The diameter depends on the [`Size`]: Medium is `spinner.diameter`, the
 /// platform's spinner; XSmall, Small and Large are `spinner.diameter` × 0.75,

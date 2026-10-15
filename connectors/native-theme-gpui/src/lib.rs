@@ -455,7 +455,7 @@ pub struct Loaded {
 /// OS colour mode, the accessibility preferences, the icon set and the icon
 /// theme beside them, as a [`Loaded`].
 ///
-/// **Ownership note** (Issue 19/31): this function takes ownership of the
+/// **Ownership note:** this function takes ownership of the
 /// `SystemTheme`'s active variant. The non-active variant (light when dark
 /// is active, or vice versa) is dropped. If you need both variants, use
 /// `SystemTheme::from_system()` directly and call [`to_theme()`] on each.
@@ -870,10 +870,11 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
 /// Stores both resolved variants of one theme (when known) because upstream's
 /// `Theme::change` switches modes without going through the connector, and the
 /// re-apply observer must then find the variant of the mode upstream switched
-/// to (rationale §2.22). Each variant is kept with the display name of the
-/// theme that stored it, so a later `apply` of another theme drops it. Every
-/// field's default is the right initial state, so `Default` is derived (a
-/// hand-written impl would trip clippy's `derivable_impls`).
+/// to (`docs/archive/todo_v0.5.8_gpui-component-0.6-rationale.md` §2.22).
+/// Each variant is kept with the display name of the theme that stored it, so
+/// a later `apply` of another theme drops it. Every field's default is the
+/// right initial state, so `Default` is derived (a hand-written impl would
+/// trip clippy's `derivable_impls`).
 #[derive(Debug, Default)]
 pub struct NativeTheme {
     light: Option<StoredVariant>,
@@ -961,7 +962,8 @@ impl ActiveNativeTheme for App {
     }
 }
 
-/// Borrowed inputs of every `geometry` builder (spec §9.1).
+/// Borrowed inputs of every `geometry` builder
+/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9.1).
 #[derive(Clone, Copy, Debug)]
 pub struct Native<'a> {
     /// The resolved theme the values come from.
@@ -982,7 +984,8 @@ impl<'a> Native<'a> {
 }
 
 /// Install `theme` as gpui-component's global theme with the native base-layer
-/// overrides, and keep them installed across upstream rebuilds (spec §8.1, §3.3).
+/// overrides, and keep them installed across upstream rebuilds
+/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.1, §3.3).
 ///
 /// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`],
 ///    dropping the other mode's stored variant when another theme (one of a
@@ -995,7 +998,7 @@ impl<'a> Native<'a> {
 ///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
-///    either mode (D34);
+///    either mode;
 /// 4. projects into gpui-base (`sync_base`);
 /// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
@@ -1011,13 +1014,13 @@ impl<'a> Native<'a> {
 ///    application since (gpui-base's 500 ms where it set none);
 /// 8. installs, once per `App`, the observer that restores step 5 and the 12
 ///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
-///    private in `ThemeConfigColors`; D43), and installs step 7's delay for the
+///    private in `ThemeConfigColors`), and installs step 7's delay for the
 ///    mode then current, whenever upstream rebuilds the theme (a
 ///    `Theme::change` or `sync_system_appearance` mode switch among them),
 ///    together with one deferred repeat for the update that installs it (the
-///    subscription activates only at the end of that update's effect flush,
-///    D38);
-/// 9. refreshes every window so the change paints at once (D37).
+///    subscription activates only at the end of that update's effect
+///    flush);
+/// 9. refreshes every window so the change paints at once.
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards resets the theme to upstream's default. A single-variant
@@ -1080,7 +1083,7 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
 /// a settings toggle). When a variant is stored for the current mode, the
 /// styled theme is rebuilt from it with `prefs` and re-installed through the
 /// [`apply`] path, so text scaling and transparency take effect and both
-/// configs are refreshed (D35); the stored variants are kept. Without a stored
+/// configs are refreshed; the stored variants are kept. Without a stored
 /// variant only the reduced-motion request is forwarded and the preferences
 /// are stored.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {

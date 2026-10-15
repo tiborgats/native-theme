@@ -27,7 +27,8 @@ type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
 /// control the pointer hovers.
 const HOVER_GROUP: &str = "native-theme-switch";
 
-/// What a switch paints, per state, from `SwitchTheme` (spec §2.3).
+/// What a switch paints, per state, from `SwitchTheme`
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.3).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct SwitchLook {
@@ -159,7 +160,8 @@ impl SwitchLook {
     }
 }
 
-/// A switch whose track, thumb and states are `SwitchTheme`'s (spec §2.3),
+/// A switch whose track, thumb and states are `SwitchTheme`'s
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.3),
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
 /// state. The thumb travels on gpui-component's spring (switch.rs:215-224).

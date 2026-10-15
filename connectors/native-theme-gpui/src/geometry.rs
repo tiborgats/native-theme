@@ -1,4 +1,6 @@
-//! Per-widget geometry for gpui-component 0.7.3 widgets (spec §9).
+//! Per-widget geometry for gpui-component 0.7.3 widgets
+//! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9, "the spec"
+//! below).
 //!
 //! Every builder is a pure function of a [`Native`] view (the four layout
 //! accessors, of a `LayoutTheme`) and returns a
@@ -540,7 +542,8 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// `:728`.
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
 /// refinement. Kept here for an application-drawn dialog and for the day
-/// upstream takes a `max_h` prop (spec v0.5.9 §4, E18).
+/// upstream takes a `max_h` prop
+/// (`docs/archive/todo_v0.5.9_gpui-kit-0.6.4-spec.md` §4).
 ///
 /// Upstream reads the four padding sides back out of this style
 /// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so
