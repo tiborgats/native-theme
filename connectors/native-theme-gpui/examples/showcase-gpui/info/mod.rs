@@ -283,6 +283,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "window.title_bar_font size, weight and colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
+        "title_bar_inactive",
+        "window.inactive_title_bar_background as a flat fill over upstream's gradient, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
+    ),
+    (
         "toolbar",
         "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size, weight and colour -- upstream's Toolbar sets no colour (toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),

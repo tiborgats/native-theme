@@ -102,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: `geometry::list_item_selected`, the text colour of a selected `ListItem`, `list.selection_text_color`, applied after `geometry::list_item` to a selected row, beside `geometry::button_checked` for a toggle button that is on.
 - **native-theme-gpui**: `geometry::combo_box_fill(n, disabled)`, the fill of a `Select` or `Combobox` trigger in the state it is built in, applied after `geometry::select` or `geometry::combobox` as `geometry::input_fill` is after `geometry::input`.
 - **native-theme-gpui**: `geometry::accordion`, an `Accordion`'s and its items' edge colour, and `geometry::accordion_hover`, for `AccordionItem::hover`: `expander.hover_background` where the theme states one, and nothing where it does not.
+- **native-theme-gpui**: `geometry::title_bar_inactive`, a `TitleBar`'s fill and text while gpui's `Window::is_window_active` is false, applied after `geometry::title_bar`.
 
 ### Changed
 
@@ -250,6 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: an `Accordion` follows the theme's expander: `geometry::accordion_title` letters an item's title in `expander.font.color`, over the `foreground` upstream sets on an open one; `geometry::accordion` edges the Accordion's card and the line under each item in `expander.border.color`, which upstream draws in the window's `border` token; and `geometry::accordion_hover` fills a title row under the pointer with `expander.hover_background`, where upstream draws no hover (see *Added*).
 - **native-theme-gpui**: `geometry::group_box_content` fills a `GroupBox`'s content with `card.background_color`: a `Fill` box painted the `group_box` token, which the connector derives from the button fill over the window, so no preset's card colour reached it, and a `Normal` or `Outline` box, which the builder already edges as a card, painted no fill.
 - **native-theme-gpui**: `ThemeColor::sidebar_border`, the edge of a `Sidebar`, is `sidebar.border.color`, which inherits `defaults.border.color`; it was `window.border.color`. `geometry::toolbar` letters the row in `toolbar.font.color`, where gpui-component's `Toolbar` sets no colour; `geometry::link` fills a `Link` with `link.background_color`, transparent in every bundled preset; and `geometry::popover` draws a `Popover`'s or `HoverCard`'s border, `popover.border.line_width` wide in `popover.border.color`, inside the ring upstream draws as the popover's edge, which had no border at all.
+- **native-theme-gpui**: the title bar of a window that is not the active one can take `window.inactive_title_bar_background` and `window.inactive_title_bar_text_color`, through `geometry::title_bar_inactive` (see *Added*): gpui-component's `TitleBar` reads no window activation and draws every bar alike. The showcase's title bar takes it while its window is inactive.
 
 ## [0.6.1] - 2026-10-09
 

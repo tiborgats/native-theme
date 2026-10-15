@@ -917,6 +917,29 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// A `TitleBar` of a window that is not the active one: the fill
+/// `window.inactive_title_bar_background` and the text
+/// `window.inactive_title_bar_text_color`. Apply it after [`title_bar`] while
+/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:2973`);
+/// gpui redraws the window when that changes (`:1999-2013`).
+///
+/// Colour, carried because neither `TitleBar` nor `ThemeColor` knows of a
+/// window's activation: upstream paints every bar the same, a gradient from
+/// `title_bar` mixed with `background` down to `title_bar`
+/// (`src/title_bar.rs:22-37`, painted at `:342-345` and refined at `:346`).
+/// The refinement's fill replaces that gradient with the platform's flat
+/// inactive fill, and its text colour [`title_bar`]'s. A separate builder,
+/// not a parameter of [`title_bar`], as [`button_disabled`] and
+/// [`button_checked`] are for a Button's states: [`title_bar`]'s signature
+/// stays, and an active bar takes nothing more.
+#[must_use]
+pub fn title_bar_inactive(n: Native<'_>) -> StyleRefinement {
+    let w = &n.resolved.window;
+    StyleRefinement::default()
+        .bg(rgba_to_hsla(w.inactive_title_bar_background))
+        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color))
+}
+
 /// A toolbar row (docs/platform-facts.md §2.13), the application's own or
 /// gpui-component's `Toolbar`: its height the content's, at least
 /// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
@@ -1827,6 +1850,36 @@ mod tests {
         assert!(
             stated > 0 && unstated > 0,
             "both arms must be exercised ({stated} stated, {unstated} unstated)"
+        );
+    }
+
+    /// `title_bar_inactive` is the window's inactive title-bar pair, and
+    /// nothing else; the pair differs from the active one in some preset, or
+    /// the builder would change nothing.
+    #[test]
+    fn title_bar_inactive_is_the_platforms_inactive_pair() {
+        let mut differs = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let w = &r.window;
+                assert_eq!(
+                    title_bar_inactive(Native::unscaled(&r)),
+                    StyleRefinement::default()
+                        .bg(rgba_to_hsla(w.inactive_title_bar_background))
+                        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color)),
+                    "{at}"
+                );
+                differs += usize::from(
+                    w.inactive_title_bar_background != w.title_bar_background
+                        || w.inactive_title_bar_text_color != w.title_bar_font.color,
+                );
+            }
+        }
+        assert!(
+            differs > 0,
+            "no preset's inactive title bar differs from its active one"
         );
     }
 

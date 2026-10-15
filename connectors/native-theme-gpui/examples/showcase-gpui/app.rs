@@ -2220,7 +2220,12 @@ impl Render for Showcase {
             .child(
                 v_flex()
                     .size_full()
-                    .children(chrome::window_top(self, self.frame(window), cx))
+                    .children(chrome::window_top(
+                        self,
+                        self.frame(window),
+                        window.is_window_active(),
+                        cx,
+                    ))
                     .child(chrome::toolbar(self, cx))
                     .child(
                         h_flex()

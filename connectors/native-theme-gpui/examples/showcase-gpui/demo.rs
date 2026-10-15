@@ -161,33 +161,44 @@ fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
 /// the application's menus (`app_menus`) where the platform has no menu bar
 /// of its own, and quitting
 /// the application from its close button: the window's title bar, where the
-/// window was granted client-side decorations (spec S8).
+/// window was granted client-side decorations (spec S8). While the window is
+/// not `active` it is refined by `geometry::title_bar_inactive` as well.
 pub(crate) fn title_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     label: impl Into<SharedString>,
     menus: &Entity<MenuBar>,
+    active: bool,
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
-    let mut bar_info = info::title_bar(cx.theme(), &label);
+    // After `geometry::title_bar`: the inactive window's fill and text,
+    // over upstream's gradient (title_bar.rs:342-346).
+    let inactive = (!active)
+        .then(|| native_geometry(cx, geometry::title_bar_inactive))
+        .flatten();
+    let mut bar_info = info::title_bar(cx.theme(), &label, inactive.is_some());
     let bar = native_info(
         TitleBar::new(),
         cx,
         geometry::title_bar,
         "title_bar",
         &mut bar_info,
-    )
-    // Linux only: upstream drops the handler on every other platform
-    // (title_bar.rs:96-105). On Windows the OS acts on the X itself; macOS
-    // draws its own controls.
-    .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
-    // Plain text, not a Label: `Label::render` sets `foreground` on its own
-    // element (label.rs:211), which would hide the title-bar font's colour
-    // `geometry::title_bar` just gave the bar.
-    .child(label)
-    .when(cfg!(not(target_os = "macos")), |bar| {
-        bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
-    });
+    );
+    if inactive.is_some() {
+        bar_info = bar_info.geometry("title_bar_inactive");
+    }
+    let bar = refined(bar, inactive.as_ref())
+        // Linux only: upstream drops the handler on every other platform
+        // (title_bar.rs:96-105). On Windows the OS acts on the X itself; macOS
+        // draws its own controls.
+        .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
+        // Plain text, not a Label: `Label::render` sets `foreground` on its own
+        // element (label.rs:211), which would hide the title-bar font's colour
+        // `geometry::title_bar` just gave the bar.
+        .child(label)
+        .when(cfg!(not(target_os = "macos")), |bar| {
+            bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
+        });
     bar.info(ui, "chrome-title-bar", bar_info)
 }
 

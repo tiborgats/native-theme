@@ -54,10 +54,16 @@ pub(crate) fn menus() -> Vec<Menu> {
 /// The top of the window, by the decorations it was granted, `frame` (spec
 /// S8). Where the window manager draws the frame, the menu-bar row -- none on
 /// macOS, whose menus are in the system's menu bar. Where it leaves the
-/// frame to the application, the window's TitleBar.
-pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option<AnyElement> {
+/// frame to the application, the window's TitleBar, drawn as inactive while
+/// the window is not `active`.
+pub(crate) fn window_top(
+    app: &Showcase,
+    frame: Decorations,
+    active: bool,
+    cx: &App,
+) -> Option<AnyElement> {
     match frame {
-        Decorations::Client { .. } => Some(title_bar(app, cx).into_any_element()),
+        Decorations::Client { .. } => Some(title_bar(app, active, cx).into_any_element()),
         Decorations::Server if cfg!(target_os = "macos") => None,
         Decorations::Server => Some(menu_bar(app, cx).into_any_element()),
     }
@@ -66,8 +72,8 @@ pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option
 /// The window's title bar under client-side decorations (spec §2.1, §3.4,
 /// S8): this crate's name and version, the window's title, and the
 /// application's menus where the platform has no menu bar of its own.
-fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, &app.menus)
+fn title_bar(app: &Showcase, active: bool, cx: &App) -> impl IntoElement {
+    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, &app.menus, active)
         .debug_selector(|| CHROME_TITLE_BAR.into())
 }
 

@@ -15,9 +15,9 @@ use crate::support::ChromeIcon;
 /// window's title bar where the window was granted client-side decorations.
 /// Its geometry line is recorded by `native_info` where `demo::title_bar`
 /// applies the builder.
-pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
+pub fn title_bar(t: &Theme, label: &str, inactive: bool) -> WidgetInfo {
     // macOS draws no window controls of upstream's (title_bar.rs:256-258).
-    let info = title_bar_colours(t, cfg!(not(target_os = "macos")));
+    let info = title_bar_colours(t, cfg!(not(target_os = "macos")), inactive);
     let info = if cfg!(target_os = "macos") {
         info
     } else {
@@ -26,7 +26,7 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
             super::own_icons("the window controls' WindowMinimize, WindowMaximize or WindowRestore, and WindowClose (title_bar.rs, ControlIcon)"),
         )
     };
-    title_bar_notes(info)
+    title_bar_notes(info, inactive)
     .instance(
         "window",
         "the window asked the window manager to draw its frame, and was granted client-side decorations instead -- a Wayland compositor that offers none, as GNOME's Mutter, leaves the frame to the application -- so this bar is the window's title bar, and Root draws the rest of the frame (window_border.rs, WindowBorder)",
@@ -62,7 +62,7 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
 pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     // Upstream draws its controls on Windows in any window, on Linux only in
     // a client-decorated one, and on macOS never (title_bar.rs:256-272).
-    let info = title_bar_colours(t, cfg!(target_os = "windows"));
+    let info = title_bar_colours(t, cfg!(target_os = "windows"), false);
     let info = if cfg!(target_os = "windows") {
         info.not_themeable(
             "own icons",
@@ -71,7 +71,7 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     } else {
         info
     };
-    title_bar_notes(info)
+    title_bar_notes(info, false)
         .instance(
             "sample",
             "the window manager draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is where the window manager leaves the frame to the application",
@@ -97,21 +97,27 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
 }
 
 /// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
-/// its window controls' colours.
-fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("TitleBar")
-        .color(claim(
+/// its window controls' colours. `inactive` is whether
+/// `geometry::title_bar_inactive` refined it, whose geometry line then names
+/// the fill.
+fn title_bar_colours(t: &Theme, controls: bool, inactive: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("TitleBar");
+    let info = if inactive {
+        info
+    } else {
+        info.color(claim(
             "bg",
             "title_bar",
             t.title_bar,
             "gpui-component/title_bar.rs:343",
         ))
-        .color(claim(
-            "border",
-            "title_bar_border",
-            t.title_bar_border,
-            "gpui-component/title_bar.rs:341",
-        ));
+    };
+    let info = info.color(claim(
+        "border",
+        "title_bar_border",
+        t.title_bar_border,
+        "gpui-component/title_bar.rs:341",
+    ));
     if !controls {
         return info;
     }
@@ -159,16 +165,24 @@ fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
     ))
 }
 
-/// What cannot be given to a `TitleBar`.
-fn title_bar_notes(info: WidgetInfo) -> WidgetInfo {
-    info.not_themeable(
+/// What cannot be given to a `TitleBar`; `inactive` as
+/// `title_bar_colours`'.
+fn title_bar_notes(info: WidgetInfo, inactive: bool) -> WidgetInfo {
+    let info = info.not_themeable(
         "height",
         "TITLE_BAR_HEIGHT, 34px, and settable: TitleBar applies the caller's refinement after it (title_bar.rs, TitleBar). The model states no title-bar height -- our gap. Only the window controls stay 34px wide",
-    )
-    .not_themeable(
-        "fill",
-        "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)",
-    )
+    );
+    if inactive {
+        info.config(
+            "fill",
+            "window.inactive_title_bar_background, flat, which geometry::title_bar_inactive lays over upstream's gradient while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
+        )
+    } else {
+        info.not_themeable(
+            "fill",
+            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, geometry::title_bar_inactive's flat inactive fill",
+        )
+    }
 }
 
 /// What the application's menus sit in, and so what shows through them.
