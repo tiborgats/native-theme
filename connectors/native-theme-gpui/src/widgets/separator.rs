@@ -11,6 +11,7 @@ use super::{color, length, native};
 
 /// What a separator paints, from `SeparatorTheme`.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SeparatorLook {
     /// `separator.line_color`.
     pub color: Hsla,

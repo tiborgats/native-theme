@@ -16,6 +16,7 @@ use super::{Part, PartBounds, color, length, native, part_bounds};
 
 /// What a progress bar paints, from `ProgressBarTheme` (spec §2.5).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct ProgressBarLook {
     /// `progress_bar.track_height`: the bar's height, frame included.
     pub height: Pixels,

@@ -31,6 +31,7 @@ use gpui_component::{
 };
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -478,7 +479,7 @@ pub(crate) struct Showcase {
     pub(crate) animated_frame_indices: Vec<usize>,
     /// The SVG of each transform-based (spin) animation, which the page
     /// turns with `with_spin_animation` (set name, SVG bytes, duration_ms).
-    pub(crate) animated_spin_sources: Vec<(String, Vec<u8>, u32)>,
+    pub(crate) animated_spin_sources: Vec<(String, Vec<u8>, NonZeroU32)>,
     /// Timer task handle for frame cycling (dropped to cancel).
     pub(crate) animation_timer: Option<Task<()>>,
 
@@ -643,7 +644,7 @@ impl Showcase {
                         self.animated_spin_sources.push((
                             set_name.to_string(),
                             bytes.to_vec(),
-                            duration_ms.get(),
+                            *duration_ms,
                         ));
                     }
                 }

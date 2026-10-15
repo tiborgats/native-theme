@@ -28,6 +28,7 @@ const THUMB_GROUP: &str = "native-theme-slider-thumb";
 
 /// What a slider paints, per state, from `SliderTheme` (spec §2.4).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SliderLook {
     /// `slider.track_height`: the rail's height.
     pub track_height: Pixels,

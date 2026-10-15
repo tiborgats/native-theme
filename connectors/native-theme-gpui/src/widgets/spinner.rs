@@ -5,6 +5,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::f32::consts::TAU;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -51,6 +52,7 @@ const LARGE_RATIO: f32 = 1.5;
 /// less than `spinner.min_diameter`. The stroke is `spinner.stroke_width` at
 /// every size.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SpinnerLook {
     /// The indicator's size: `spinner.diameter` for Medium, scaled for the
     /// other sizes ([`SpinnerLook::of_size`]), and no less than
@@ -188,7 +190,10 @@ enum Indicator {
     /// element but not an image (gpui-pre elements/svg.rs,
     /// `Svg::with_transformation`), and an SVG element paints every shape in
     /// its text colour.
-    Spin { svg: Rc<[u8]>, duration_ms: u32 },
+    Spin {
+        svg: Rc<[u8]>,
+        duration_ms: NonZeroU32,
+    },
 }
 
 /// Which indicator, drawn how.
@@ -241,7 +246,7 @@ fn load(key: &IndicatorKey, colour: Rgba) -> Option<Indicator> {
             (IconData::Svg(bytes), TransformAnimation::Spin { duration_ms, .. }) => {
                 Some(Indicator::Spin {
                     svg: paint_svg(key.set, bytes, colour).into(),
-                    duration_ms: duration_ms.get(),
+                    duration_ms: *duration_ms,
                 })
             }
             _ => None,

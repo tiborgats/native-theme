@@ -1,6 +1,6 @@
 //! Demo helpers the pages share.
 
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{cell::Cell, num::NonZeroU32, rc::Rc, time::Duration};
 
 use gpui::DefiniteLength;
 use gpui::{
@@ -7794,7 +7794,7 @@ pub(crate) enum AnimatedKind {
     /// Frame by frame: `count` frames, `duration_ms` each.
     Frames { count: usize, duration_ms: u32 },
     /// One SVG turned a full circle every `duration_ms`.
-    Spin { duration_ms: u32 },
+    Spin { duration_ms: NonZeroU32 },
 }
 
 /// An animated icon, with what the page draws it from.
@@ -7806,7 +7806,10 @@ pub(crate) enum AnimatedArt<'a> {
         duration_ms: u32,
     },
     /// The SVG to turn.
-    Spin { svg: &'a [u8], duration_ms: u32 },
+    Spin {
+        svg: &'a [u8],
+        duration_ms: NonZeroU32,
+    },
 }
 
 /// A card holding the animated icon `set` ships as `art`, in the

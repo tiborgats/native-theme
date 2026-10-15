@@ -26,6 +26,7 @@ const HOVER_GROUP: &str = "native-theme-checkbox";
 /// What a checkbox or a radio paints, per state, from `CheckboxTheme`
 /// (spec §2.1). The render reads only this; the tests check it leaf by leaf.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct CheckboxLook {
     /// `checkbox.indicator_width`: the square's side, or the circle's
     /// diameter (docs/platform-facts.md:980).

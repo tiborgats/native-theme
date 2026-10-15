@@ -510,11 +510,12 @@ let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material,
 ### Animated spinners
 
 ```rust,ignore
-use native_theme::icons::{AnimatedIcon, MaterialLoader};
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
 use native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
 
-if let Some(anim) = MaterialLoader::load_indicator() {
+let loaded = native_theme_gpui::from_system()?;
+if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
     if prefers_reduced_motion() {
         let static_icon = to_image_source(anim.first_frame(), None, None);
     } else {
@@ -524,8 +525,12 @@ if let Some(anim) = MaterialLoader::load_indicator() {
                 let sources = animated_frames_to_image_sources(&anim, None, None);
             }
             AnimatedIcon::Transform(_) => {
-                let spinner = gpui::svg().path("spinner.svg");
-                let element = with_spin_animation(spinner, "loading", 1000);
+                // The icon carries its SVG and its period.
+                if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
+                    (anim.icon(), anim.animation())
+                {
+                    let element = with_spin_animation(gpui::svg().data(bytes), "loading", *duration_ms);
+                }
             }
             _ => {}
         }

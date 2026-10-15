@@ -40,6 +40,7 @@ use native_theme::icons::{
 /// Returned by [`animated_frames_to_svg_handles`]. Contains the
 /// SVG handles and the per-frame duration needed to drive playback.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct AnimatedSvgHandles {
     /// SVG handles ready for iced rendering.
     pub handles: Vec<iced_core::svg::Handle>,

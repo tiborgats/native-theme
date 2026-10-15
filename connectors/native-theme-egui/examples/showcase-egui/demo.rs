@@ -872,7 +872,7 @@ impl ChromeIcon {
 }
 
 /// Whether the desktop names its icons as GNOME's Adwaita does, as native-theme-gpui decides it
-/// (`connectors/native-theme-gpui/src/icons.rs:437-445`).
+/// (`connectors/native-theme-gpui/src/icons.rs:439-447`).
 #[cfg(target_os = "linux")]
 fn gtk_desktop() -> bool {
     use native_theme::detect::LinuxDesktop;

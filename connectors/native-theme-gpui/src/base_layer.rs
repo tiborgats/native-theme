@@ -25,7 +25,11 @@ use crate::colors::rgba_to_hsla;
 /// only `Clone, Default` (gpui-base `src/scrollbar.rs:640, 667, 706`),
 /// so the geometry is computed into this inspectable struct, tested, and then
 /// converted with one setter per field by [`scrollbar_styles`].
+///
+/// A geometry of its own for [`scrollbar_styles`] or [`apply_overrides`] is
+/// made by [`scrollbar_geometry`] and edited field by field.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct ScrollbarGeometry {
     /// `scrollbar.groove_width`, applied to all three track states.
     pub track_width: Pixels,

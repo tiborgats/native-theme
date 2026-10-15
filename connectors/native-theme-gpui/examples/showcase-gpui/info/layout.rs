@@ -66,7 +66,7 @@ pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
             "line",
             "line_color",
             stated(s.line_color),
-            "native-theme-gpui/widgets/separator.rs:28",
+            "native-theme-gpui/widgets/separator.rs:29",
         ))
         .config(
             "thickness",
@@ -542,37 +542,37 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:101",
+            "native-theme-gpui/widgets/tab_bar.rs:103",
         ))
         .color(claim(
             "unselected tab",
             "background_color",
             stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:102",
+            "native-theme-gpui/widgets/tab_bar.rs:104",
         ))
         .color(claim(
             "label",
             "font",
             stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:107",
+            "native-theme-gpui/widgets/tab_bar.rs:109",
         ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:110",
+            "native-theme-gpui/widgets/tab_bar.rs:112",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:111",
+            "native-theme-gpui/widgets/tab_bar.rs:113",
         ))
         .color(claim(
             "selected tab's outline",
             "border",
             stated(t.border.color),
-            "native-theme-gpui/widgets/tab_bar.rs:112",
+            "native-theme-gpui/widgets/tab_bar.rs:114",
         ))
         .color(claim(
             "rule under the bar",
@@ -585,7 +585,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             stated(t.hover_background.unwrap_or(t.background_color)),
-            "native-theme-gpui/widgets/tab_bar.rs:108",
+            "native-theme-gpui/widgets/tab_bar.rs:110",
         ))
     } else {
         info
@@ -594,7 +594,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         "hovered label",
         "hover_text_color",
         stated(t.hover_text_color),
-        "native-theme-gpui/widgets/tab_bar.rs:109",
+        "native-theme-gpui/widgets/tab_bar.rs:111",
     ));
     // Only where the theme states the line: TabBar draws none otherwise.
     let info = if t.active_indicator_color.is_some() {
@@ -602,7 +602,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "selected tab's line",
             "active_indicator_color",
             stated(t.active_indicator_color.unwrap_or(t.active_background)),
-            "native-theme-gpui/widgets/tab_bar.rs:123",
+            "native-theme-gpui/widgets/tab_bar.rs:125",
         ))
     } else {
         info

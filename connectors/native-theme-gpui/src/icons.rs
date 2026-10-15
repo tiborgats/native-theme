@@ -41,6 +41,7 @@ use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconProvider, IconRole, SegoeFluentLoader,
     SfSymbolsLoader, load_icon,
 };
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -49,11 +50,12 @@ use std::time::Duration;
 /// Returned by [`animated_frames_to_image_sources`]. Contains the
 /// rasterized frames and the per-frame duration needed to drive playback.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct AnimatedImageSources {
     /// Rasterized frames ready for gpui rendering.
     pub sources: Vec<ImageSource>,
-    /// Duration of each frame in milliseconds.
-    pub frame_duration_ms: u32,
+    /// Duration of each frame in milliseconds (non-zero, as the icon data's).
+    pub frame_duration_ms: NonZeroU32,
 }
 
 impl std::fmt::Debug for AnimatedImageSources {
@@ -1166,7 +1168,7 @@ fn svg_bytes_to_image_source(
 /// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
 ///
-/// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
+/// if let Some(AnimatedImageSources { sources, frame_duration_ms, .. }) =
 ///     load_icon_indicator(IconSet::Lucide, None)
 ///         .and_then(|anim| animated_frames_to_image_sources(&anim, None, None))
 /// {
@@ -1195,7 +1197,7 @@ pub fn animated_frames_to_image_sources(
                 .collect();
             sources.map(|s| AnimatedImageSources {
                 sources: s,
-                frame_duration_ms: data.frame_duration_ms().get(),
+                frame_duration_ms: data.frame_duration_ms(),
             })
         }
         _ => None,
@@ -1218,27 +1220,43 @@ pub fn animated_frames_to_image_sources(
 /// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to a static icon when the user has requested reduced motion.
 ///
-/// A `duration_ms` of 0 produces a zero-duration animation -- caller's
-/// responsibility to pass valid durations.
+/// The period is a [`NonZeroU32`], as the icon data's is: gpui divides the
+/// elapsed time by it, and a zero period would make the rotation NaN, which
+/// a debug build asserts against (gpui-pre `src/elements/animation.rs`,
+/// `AnimationElement::request_layout`). A zero does not compile:
+///
+/// ```compile_fail,E0308
+/// use native_theme_gpui::icons::with_spin_animation;
+///
+/// let _ = with_spin_animation(gpui::svg(), "spin", 0);
+/// ```
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
+/// use native_theme::icons::{IconData, TransformAnimation, load_icon_indicator};
+/// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::with_spin_animation;
+/// use gpui::Styled;
 ///
-/// let spinner = gpui::svg().path("spinner.svg").size_6();
-/// let animated = with_spin_animation(spinner, "my-spinner", 1000);
-/// // Use `animated` as a child element in your gpui view
+/// if let Some(anim) = load_icon_indicator(IconSet::Material, None)
+///     && let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
+///         (anim.icon(), anim.animation())
+/// {
+///     let spinner = gpui::svg().data(bytes).size_6();
+///     let animated = with_spin_animation(spinner, "my-spinner", *duration_ms);
+///     // Use `animated` as a child element in your gpui view
+/// }
 /// ```
 #[must_use]
 pub fn with_spin_animation(
     element: Svg,
     animation_id: impl Into<gpui::ElementId>,
-    duration_ms: u32,
+    duration_ms: NonZeroU32,
 ) -> impl gpui::IntoElement {
     element.with_animation(
         animation_id,
-        Animation::new(Duration::from_millis(duration_ms as u64)).repeat(),
+        Animation::new(Duration::from_millis(u64::from(duration_ms.get()))).repeat(),
         |el, delta| el.with_transformation(Transformation::rotate(percentage(delta))),
     )
 }
@@ -2511,7 +2529,7 @@ mod tests {
         let result = animated_frames_to_image_sources(&anim, None, None);
         let ais = result.expect("Frames variant should return Some");
         assert_eq!(ais.sources.len(), 3);
-        assert_eq!(ais.frame_duration_ms, 80);
+        assert_eq!(ais.frame_duration_ms.get(), 80);
         for source in ais.sources {
             assert_eq!(rendered(source).frame_count(), 1);
         }
@@ -2546,7 +2564,11 @@ mod tests {
         let svg_element = gpui::svg();
         // with_spin_animation wraps an Svg element with continuous rotation.
         // This is pure construction -- no gpui render context needed.
-        let _animated = with_spin_animation(svg_element, "test-spin", 1000);
+        let _animated = with_spin_animation(
+            svg_element,
+            "test-spin",
+            std::num::NonZeroU32::new(1000).expect("test constant"),
+        );
     }
 }
 

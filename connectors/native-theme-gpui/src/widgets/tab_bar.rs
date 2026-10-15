@@ -21,6 +21,7 @@ const TAB_PADDING: f32 = 12.;
 
 /// What a tab bar paints, from `TabTheme`.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct TabLook {
     /// `tab.bar_background`: the bar behind the tabs.
     pub bar: Hsla,
@@ -71,6 +72,7 @@ pub struct TabLook {
 /// (docs/platform-facts.md §2.11: Breeze's `Highlight` strip on top,
 /// libadwaita's accent and Material's `primary` at the bottom).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct TabIndicator {
     /// `tab.active_indicator_color`.
     pub color: Hsla,

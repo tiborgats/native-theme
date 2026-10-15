@@ -25,6 +25,7 @@ const HOVER_GROUP: &str = "native-theme-switch";
 
 /// What a switch paints, per state, from `SwitchTheme` (spec §2.3).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SwitchLook {
     /// `switch.track_width`.
     pub track_width: Pixels,

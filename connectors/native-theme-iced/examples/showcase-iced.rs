@@ -66,7 +66,7 @@ use native_theme::theme::{
     ArrowSide, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
-use native_theme_iced::icons::{AnimatedSvgHandles, spin_rotation_radians, to_svg_handle};
+use native_theme_iced::icons::{spin_rotation_radians, to_svg_handle};
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{
@@ -1402,6 +1402,14 @@ fn load_all_icons(
 // Animated icon cache builder
 // ---------------------------------------------------------------------------
 
+/// A frame-based indicator's frames as the Icons page draws them, each
+/// [`indicator_svg_handle`]'s, and the period of each frame.
+#[derive(Debug, Clone)]
+struct FrameHandles {
+    handles: Vec<iced_core::svg::Handle>,
+    frame_duration_ms: u32,
+}
+
 /// Whether the Icons page tints `icon_set`'s animated indicator in the text
 /// colour: the bundled monochrome sets (Material, Lucide), which `Spinner`
 /// recolours too. A freedesktop indicator keeps its own colours, as in
@@ -1442,7 +1450,7 @@ fn build_animation_caches(
     freedesktop_theme: Option<&str>,
     text_color: native_theme::Rgba,
 ) -> (
-    Vec<(String, AnimatedSvgHandles)>,          // animated_frames
+    Vec<(String, FrameHandles)>,                // animated_frames
     Vec<usize>,                                 // animated_frame_indices
     Vec<Duration>,                              // animated_frame_elapsed
     Vec<(String, iced_core::svg::Handle, u32)>, // animated_spins
@@ -1469,7 +1477,7 @@ fn build_animation_caches(
                     // keeps them: the page draws each through `svg`.
                     let handles: Vec<_> = data.frames().iter().filter_map(handle_of).collect();
                     if !handles.is_empty() {
-                        let anim_handles = AnimatedSvgHandles {
+                        let anim_handles = FrameHandles {
                             handles,
                             frame_duration_ms: data.frame_duration_ms().get(),
                         };
@@ -1664,8 +1672,8 @@ struct State {
     installed_themes: Vec<String>,
 
     // Animated Icons state
-    /// Cached SVG handles for frame-based animations: (set_name, AnimatedSvgHandles).
-    animated_frames: Vec<(String, AnimatedSvgHandles)>,
+    /// Cached SVG handles for frame-based animations: (set_name, FrameHandles).
+    animated_frames: Vec<(String, FrameHandles)>,
     /// Current frame index per frame-based animation.
     animated_frame_indices: Vec<usize>,
     /// Elapsed time tracker per frame-based animation (for correct per-animation timing).
