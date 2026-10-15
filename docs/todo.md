@@ -441,7 +441,9 @@ the file was pruned on 2026-10-11, not reordered.
       `currentColor` with an explicit black is coloured alike in all three
       connectors, and delete the two copies, moving into native-theme any
       test case of theirs the core's tests lack.
-      iced: switched in M5 T8 (d809a666); gpui in M6.
+      iced: switched in M5 T8 (d809a666); gpui in M6 T4: each of its eleven
+      `colorize_svg` cases is a case of native-theme's `colorize_tests` of
+      the same name and input, so none moved.
 
 ### Icons: one `currentColor` fill for a freedesktop indicator, in native-theme
 

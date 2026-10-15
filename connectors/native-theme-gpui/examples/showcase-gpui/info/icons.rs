@@ -55,7 +55,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
             .color(claim("icon", "foreground", opaque(fg), "showcase"))
             .not_themeable(
                 "icon pixels",
-                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
             )
             .instance(
                 "size",
@@ -185,12 +185,12 @@ pub fn animated_icon(
                 info.color(claim("frames", "foreground", opaque(fg), "showcase"))
                     .not_themeable(
                         "frame pixels",
-                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
                     )
             } else {
                 info.not_themeable(
                     "frame pixels",
-                    "the icon theme's own indicator artwork, recoloured with foreground only where it is drawn in currentColor or black (native-theme-gpui/icons.rs, colorize_svg); a multi-colour sprite keeps its colours",
+                    "the icon theme's own indicator artwork, recoloured with foreground only where it is drawn in currentColor or black (native-theme/icons.rs, colorize_monochrome_svg); a multi-colour sprite keeps its colours",
                 )
             };
             info.instance("frames", format!("{count}, {duration_ms}ms each"))

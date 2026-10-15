@@ -38,7 +38,8 @@ use gpui::{
 };
 use gpui_component::IconName;
 use native_theme::icons::{
-    AnimatedIcon, IconData, IconProvider, IconRole, load_custom_icon, load_icon,
+    AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, load_custom_icon,
+    load_icon,
 };
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -907,8 +908,9 @@ const MAX_ICON_SIZE: u32 = 512;
 /// # Parameters
 ///
 /// - `color`: If `Some`, colorizes monochrome SVGs with the given color
-///   (replaces `currentColor`, explicit black fills/strokes, or injects a fill
-///   attribute). Best for bundled icon sets (Material, Lucide). Pass `None`
+///   through [`colorize_monochrome_svg`] (replaces `currentColor`, explicit
+///   black fills/strokes, or injects a fill attribute). Best for bundled icon
+///   sets (Material, Lucide). Pass `None`
 ///   for system/OS icons to preserve their native palette.
 ///   RGBA icons are passed through unchanged regardless of this parameter --
 ///   the color's alpha channel is discarded during SVG colorization because
@@ -966,17 +968,8 @@ pub fn to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    // Issue 28: clamp icon size to 1..=512
-    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
     match data {
-        IconData::Svg(bytes) => {
-            if let Some(c) = color {
-                let colored = colorize_svg(bytes, c);
-                svg_to_render_source(&colored, raster_size)
-            } else {
-                svg_to_render_source(bytes, raster_size)
-            }
-        }
+        IconData::Svg(bytes) => svg_bytes_to_image_source(bytes, color, size),
         IconData::Rgba(rgba) => rgba_to_render_source(rgba.width(), rgba.height(), rgba.data()),
         _ => None,
     }
@@ -1093,11 +1086,12 @@ pub fn bundled_svg_to_image_source(
     svg_bytes_to_image_source(svg_bytes, color, size)
 }
 
-/// Internal: rasterize SVG bytes to an [`ImageSource`] without copying to [`IconData`].
+/// Internal: rasterize SVG bytes to an [`ImageSource`] without copying to [`IconData`],
+/// coloured through [`colorize_monochrome_svg`] where `color` is given: the
+/// SVG path of [`to_image_source()`] and [`bundled_svg_to_image_source()`].
 ///
 /// Issue 27: avoids the heap copy that wrapping in `IconData::Svg(bytes.to_vec())`
-/// would incur. Uses the same colorize + rasterize logic as `to_image_source`'s
-/// SVG branch.
+/// would incur. Issue 28: the size is clamped to `1..=512`.
 fn svg_bytes_to_image_source(
     svg_bytes: &[u8],
     color: Option<Hsla>,
@@ -1105,7 +1099,7 @@ fn svg_bytes_to_image_source(
 ) -> Option<ImageSource> {
     let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
     if let Some(c) = color {
-        let colored = colorize_svg(svg_bytes, c);
+        let colored = colorize_monochrome_svg(svg_bytes, to_rgba(c));
         svg_to_render_source(&colored, raster_size)
     } else {
         svg_to_render_source(svg_bytes, raster_size)
@@ -1313,109 +1307,12 @@ fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSo
 /// An `Hsla` colour as an opaque [`native_theme::Rgba`], each channel
 /// clamped to `0.0..=1.0`.
 fn to_rgba(color: Hsla) -> native_theme::Rgba {
-    let [r, g, b] = hsla_to_rgb(color);
-    native_theme::Rgba::rgb(r, g, b)
-}
-
-/// An `Hsla` colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
-fn hsla_to_rgb(color: Hsla) -> [u8; 3] {
     let rgba: gpui::Rgba = color.into();
-    [
+    native_theme::Rgba::rgb(
         (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8,
         (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
         (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
-    ]
-}
-
-/// Rewrite SVG bytes to use the given color for strokes and fills.
-///
-/// Handles four SVG color patterns (in order):
-/// 1. **`currentColor`** -- replaced with the hex color (Lucide-style SVGs).
-/// 2. **Explicit black fills** -- `fill="black"`, `fill="#000000"`, `fill="#000"`
-///    are replaced with the hex color (third-party SVGs with hardcoded black).
-/// 3. **Explicit black strokes** -- `stroke="black"`, `stroke="#000000"`,
-///    `stroke="#000"` are also replaced (Issue 10).
-/// 4. **Implicit black** -- if the root `<svg>` tag has no `fill=` attribute,
-///    injects `fill="<hex>"` (Material-style SVGs).
-///
-/// **Limitations** (Issue 34): CSS inline styles (`style="fill:black"`),
-/// `fill="rgb(0,0,0)"`, and explicit black on child elements when the root
-/// tag has a different fill are not handled. This function is designed for
-/// monochrome icon sets; multi-color SVGs should not be colorized.
-///
-/// **Alpha discard** (Issue 21): the Hsla color's alpha channel is discarded.
-/// SVG fill/stroke attributes only accept opaque hex (`#rrggbb`); semi-transparent
-/// colors are converted to their opaque RGB equivalent.
-fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
-    let [r, g, b] = hsla_to_rgb(color);
-    let hex = format!("#{r:02x}{g:02x}{b:02x}");
-
-    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
-        // Non-UTF-8 SVGs pass through unmodified -- no corruption risk.
-        // These are typically multi-color system icons that shouldn't be colorized.
-        return svg_bytes.to_vec();
-    };
-
-    // 1. Replace currentColor (handles Lucide-style SVGs)
-    let replaced = if svg_str.contains("currentColor") {
-        svg_str.replace("currentColor", &hex)
-    } else {
-        svg_str.to_owned()
-    };
-
-    // 2. Replace explicit black fills (handles third-party SVGs)
-    let fill_hex = format!("fill=\"{hex}\"");
-    let replaced = replaced
-        .replace("fill=\"black\"", &fill_hex)
-        .replace("fill=\"#000000\"", &fill_hex)
-        .replace("fill=\"#000\"", &fill_hex);
-
-    // 3. Issue 10: also replace explicit black strokes
-    let stroke_hex = format!("stroke=\"{hex}\"");
-    let replaced = replaced
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
-
-    if replaced != svg_str {
-        return replaced.into_bytes();
-    }
-
-    // 4. No currentColor or explicit black -- inject fill into root <svg> tag
-    // (handles Material-style SVGs with implicit black fill)
-    if let Some(pos) = svg_str.find("<svg")
-        && let Some(tail) = svg_str.get(pos..)
-        && let Some(close) = tail.find('>')
-    {
-        let tag_end = pos.saturating_add(close);
-        if let Some(tag) = svg_str.get(pos..tag_end)
-            && !tag.contains("fill=")
-        {
-            // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let is_self_closing = tag_end > 0
-                && svg_str
-                    .as_bytes()
-                    .get(tag_end.saturating_sub(1))
-                    .is_some_and(|&b| b == b'/');
-            let inject_pos = if is_self_closing {
-                tag_end.saturating_sub(1)
-            } else {
-                tag_end
-            };
-            if let Some(before) = svg_str.get(..inject_pos)
-                && let Some(after) = svg_str.get(inject_pos..)
-            {
-                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
-                result.push_str(before);
-                result.push_str(&format!(" fill=\"{hex}\""));
-                result.push_str(after);
-                return result.into_bytes();
-            }
-        }
-    }
-
-    // SVG already has non-black fill and no currentColor -- return as-is
-    svg_bytes.to_vec()
+    )
 }
 
 #[cfg(test)]
@@ -2079,7 +1976,10 @@ mod tests {
         };
         assert_eq!(colored.format, gpui::ImageFormat::Svg);
         assert_ne!(colored.bytes.as_slice(), svg_bytes(&svg));
-        assert_eq!(colored.bytes, colorize_svg(svg_bytes(&svg), color));
+        assert_eq!(
+            colored.bytes,
+            colorize_monochrome_svg(svg_bytes(&svg), to_rgba(color))
+        );
     }
 
     #[cfg(not(feature = "svg-rasterize"))]
@@ -2135,181 +2035,6 @@ mod tests {
         // 2x2 image expects 16 bytes, provide 20
         let rgba = vec![0u8; 20];
         assert!(rgba_to_render_source(2, 2, &rgba).is_none());
-    }
-    // --- colorize_svg tests ---
-
-    #[test]
-    fn colorize_svg_replaces_fill_black() {
-        let svg = b"<svg><path fill=\"black\" d=\"M0 0h24v24H0z\"/></svg>";
-        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0); // a blue-ish color
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should contain hex fill, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_fill_hex_black() {
-        let svg = b"<svg><rect fill=\"#000000\" width=\"24\" height=\"24\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("#000000"),
-            "fill=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_fill_short_hex_black() {
-        let svg = b"<svg><rect fill=\"#000\" width=\"24\" height=\"24\"/></svg>";
-        let color = gpui::hsla(0.3, 0.8, 0.4, 1.0); // green
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"#000\""),
-            "fill=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_current_color_still_works() {
-        let svg = b"<svg><path stroke=\"currentColor\" d=\"M0 0\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("currentColor"),
-            "currentColor should be replaced"
-        );
-        assert!(result_str.contains('#'), "should contain hex color");
-    }
-
-    #[test]
-    fn colorize_svg_implicit_black_still_works() {
-        // SVG with no fill attribute at all (Material-style)
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should inject fill into root svg tag, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_non_utf8_returns_original() {
-        // Non-UTF-8 bytes: valid SVG prefix followed by invalid byte sequence
-        let mut svg = b"<svg><path fill=\"black\" d=\"M0 0\"/>".to_vec();
-        svg.push(0xFF); // invalid UTF-8 byte
-        svg.extend_from_slice(b"</svg>");
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(&svg, color);
-        assert_eq!(result, svg, "non-UTF-8 input should be returned unchanged");
-    }
-
-    // Issue 10: stroke="black" replacement
-    #[test]
-    fn colorize_svg_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0h24\"/></svg>";
-        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("stroke=\"black\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("stroke=\"#"),
-            "should contain hex stroke, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_stroke_hex_black() {
-        let svg = b"<svg><line stroke=\"#000000\" x1=\"0\" y1=\"0\" x2=\"24\" y2=\"24\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("#000000"),
-            "stroke=\"#000000\" should be replaced"
-        );
-    }
-
-    #[test]
-    fn colorize_self_closing_svg_produces_valid_xml() {
-        // Self-closing <svg .../> tag — fill must be injected before '/'
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" />";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should inject fill, got: {}",
-            result_str
-        );
-        // Must NOT produce '/ fill=' (broken XML)
-        assert!(
-            !result_str.contains("/ fill="),
-            "fill must be before '/', got: {}",
-            result_str
-        );
-        // Must end with '/>' (valid self-closing)
-        assert!(
-            result_str.trim().ends_with("/>"),
-            "should remain self-closing, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 66: colorize_svg preserves non-black fill on root <svg>
-    #[test]
-    fn colorize_svg_with_fill_white_root() {
-        // SVG root has fill="white" — should NOT be replaced with target color
-        let svg = b"<svg fill=\"white\"><path/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"white\""),
-            "fill=\"white\" should be preserved, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 66: colorize_svg replaces stroke="black" even when root has fill="none"
-    #[test]
-    fn colorize_svg_with_fill_none_root() {
-        let svg = b"<svg fill=\"none\"><path stroke=\"black\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // stroke="black" should be replaced with the target color hex
-        assert!(
-            !result_str.contains("stroke=\"black\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("stroke=\"#"),
-            "should contain hex stroke, got: {}",
-            result_str
-        );
     }
 
     // --- into_image_source tests ---
