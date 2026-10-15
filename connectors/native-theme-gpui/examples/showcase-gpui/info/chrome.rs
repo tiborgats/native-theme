@@ -175,12 +175,12 @@ fn title_bar_notes(info: WidgetInfo, inactive: bool) -> WidgetInfo {
     if inactive {
         info.config(
             "fill",
-            "window.inactive_title_bar_background, flat, which geometry::title_bar_inactive lays over upstream's gradient while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
+            "a gradient between window.inactive_title_bar_background and background, upstream's gradient drawn from the inactive colour, which geometry::title_bar_inactive gives the bar while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
         )
     } else {
         info.not_themeable(
             "fill",
-            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, geometry::title_bar_inactive's flat inactive fill",
+            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.inactive_title_bar_background, through geometry::title_bar_inactive",
         )
     }
 }

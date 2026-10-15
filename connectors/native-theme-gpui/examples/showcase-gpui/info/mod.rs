@@ -284,7 +284,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "title_bar_inactive",
-        "window.inactive_title_bar_background as a flat fill over upstream's gradient, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
+        "window.inactive_title_bar_background, drawn as upstream's gradient is from title_bar, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
     ),
     (
         "toolbar",

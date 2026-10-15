@@ -900,17 +900,50 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 /// window's activation: upstream paints every bar the same, a gradient from
 /// `title_bar` mixed with `background` down to `title_bar`
 /// (`src/title_bar.rs:22-37`, painted at `:342-345` and refined at `:346`).
-/// The refinement's fill replaces that gradient with the platform's flat
-/// inactive fill, and its text colour [`title_bar`]'s. A separate builder,
-/// not a parameter of [`title_bar`], as [`button_disabled`] and
+/// The refinement's fill is that gradient drawn from the inactive fill in
+/// place of `title_bar` -- `background` is `window.background_color`, as the
+/// connector installs it -- so an inactive bar has the active one's shape,
+/// and a theme whose inactive pair is the active one draws the same bar in
+/// both states; its text colour replaces [`title_bar`]'s. A separate
+/// builder, not a parameter of [`title_bar`], as [`button_disabled`] and
 /// [`button_checked`] are for a Button's states: [`title_bar`]'s signature
 /// stays, and an active bar takes nothing more.
 #[must_use]
 pub fn title_bar_inactive(n: Native<'_>) -> StyleRefinement {
     let w = &n.resolved.window;
     StyleRefinement::default()
-        .bg(rgba_to_hsla(w.inactive_title_bar_background))
+        .bg(title_bar_gradient(
+            rgba_to_hsla(w.inactive_title_bar_background),
+            rgba_to_hsla(w.background_color),
+        ))
         .text_color(rgba_to_hsla(w.inactive_title_bar_text_color))
+}
+
+/// The weight of the bar's own colour in the colour its gradient starts
+/// from, the window background's being the rest: upstream's
+/// `default_title_bar_background` (`src/title_bar.rs:25-30`), which is
+/// private.
+const TITLE_BAR_GRADIENT_OWN: f32 = 0.55;
+
+/// Upstream's title-bar fill (`src/title_bar.rs:22-37`) from `bar` and
+/// `background`: a top-to-bottom gradient from `bar` mixed with
+/// `background` in gamma-encoded RGB, [`TITLE_BAR_GRADIENT_OWN`] to the
+/// rest, down to `bar` itself.
+fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Background {
+    let (b, w) = (bar.to_rgb(), background.to_rgb());
+    let own = TITLE_BAR_GRADIENT_OWN;
+    let rest = 1. - own;
+    let start = gpui::Hsla::from(gpui::Rgba {
+        r: b.r * own + w.r * rest,
+        g: b.g * own + w.g * rest,
+        b: b.b * own + w.b * rest,
+        a: b.a * own + w.a * rest,
+    });
+    gpui::linear_gradient(
+        180.,
+        gpui::linear_color_stop(start, 0.),
+        gpui::linear_color_stop(bar, 1.),
+    )
 }
 
 /// A toolbar row (docs/platform-facts.md §2.13), the application's own or
@@ -1826,9 +1859,50 @@ mod tests {
         );
     }
 
-    /// `title_bar_inactive` is the window's inactive title-bar pair, and
-    /// nothing else; the pair differs from the active one in some preset, or
-    /// the builder would change nothing.
+    /// What upstream's `TitleBar` paints for `title_bar` and `background`
+    /// (`title_bar.rs:22-37`, at `:342-345`), written out again from the
+    /// tokens it reads.
+    fn upstream_bar(title_bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Background {
+        let (t, b) = (title_bar.to_rgb(), background.to_rgb());
+        let mixed = gpui::Hsla::from(gpui::Rgba {
+            r: t.r * 0.55 + b.r * 0.45,
+            g: t.g * 0.55 + b.g * 0.45,
+            b: t.b * 0.55 + b.b * 0.45,
+            a: t.a * 0.55 + b.a * 0.45,
+        });
+        gpui::linear_gradient(
+            180.,
+            gpui::linear_color_stop(mixed, 0.),
+            gpui::linear_color_stop(title_bar, 1.),
+        )
+    }
+
+    /// Where the inactive pair is the active one, the inactive form draws
+    /// what upstream draws for the active bar -- its gradient from the
+    /// installed `title_bar` and `background` tokens -- under the active
+    /// text colour, so the bar does not change on a focus change.
+    #[test]
+    fn an_inactive_bar_with_the_active_pair_is_the_active_bar() {
+        use gpui::Refineable as _;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let mut r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                r.window.inactive_title_bar_background = r.window.title_bar_background;
+                r.window.inactive_title_bar_text_color = r.window.title_bar_font.color;
+                let n = Native::unscaled(&r);
+                let tc = crate::colors::to_theme_color(&r, mode == ColorMode::Dark, false);
+                let active = title_bar(n).bg(upstream_bar(tc.title_bar, tc.background));
+                let mut inactive = title_bar(n);
+                inactive.refine(&title_bar_inactive(n));
+                assert_eq!(inactive, active, "{at}");
+            }
+        }
+    }
+
+    /// `title_bar_inactive` is the window's inactive title-bar pair, the fill
+    /// as upstream's gradient, and nothing else; the pair differs from the
+    /// active one in some preset, or the builder would change nothing.
     #[test]
     fn title_bar_inactive_is_the_platforms_inactive_pair() {
         let mut differs = 0usize;
@@ -1840,7 +1914,10 @@ mod tests {
                 assert_eq!(
                     title_bar_inactive(Native::unscaled(&r)),
                     StyleRefinement::default()
-                        .bg(rgba_to_hsla(w.inactive_title_bar_background))
+                        .bg(upstream_bar(
+                            rgba_to_hsla(w.inactive_title_bar_background),
+                            rgba_to_hsla(w.background_color)
+                        ))
                         .text_color(rgba_to_hsla(w.inactive_title_bar_text_color)),
                     "{at}"
                 );
