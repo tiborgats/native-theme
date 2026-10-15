@@ -1843,7 +1843,8 @@ fn native_tab_bar(
         TabBarKind::Pages => ("page-tabs", "chrome-page-tabs", true, NATIVE_TAB_BAR_MENU),
     };
     let mut bar_info = info::layout::native_tab_row(n.resolved, variant)
-        .instance("padding", info::tab_bar_padding(container_margin));
+        .instance("padding", info::tab_bar_padding(container_margin))
+        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled just into view (widgets::TabBar, ScrollHandle::scroll_to_item)");
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
     }

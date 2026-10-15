@@ -781,6 +781,99 @@ fn the_tab_label_takes_the_stated_family_and_style() {
     }
 }
 
+/// The tabs of `tab_window`'s bar, each its own debug selector.
+const TAB_NAMES: [&str; 8] = [
+    "tab0", "tab1", "tab2", "tab3", "tab4", "tab5", "tab6", "tab7",
+];
+
+/// A window drawing a kde-breeze tab bar of [`TAB_NAMES`]' eight tabs,
+/// across the harness's 200px column, `selected` selected and its scroll
+/// tracked by `handle` where one is given; a click records the tab's index
+/// in `clicked`.
+fn tab_window(
+    cx: &mut TestAppContext,
+    selected: Rc<Cell<usize>>,
+    clicked: Rc<Cell<Option<usize>>>,
+    handle: Option<gpui::ScrollHandle>,
+) -> &mut VisualTestContext {
+    window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            use gpui::prelude::FluentBuilder as _;
+            let clicked = clicked.clone();
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .selected_index(selected.get())
+                .on_click(move |ix, _, _| clicked.set(Some(*ix)))
+                .when_some(handle.clone(), |bar, handle| bar.track_scroll(&handle))
+                .into_any_element()
+        }),
+    )
+}
+
+/// The first tab, of `tab_window`'s, that the bar's right edge cuts.
+fn half_hidden_tab(cx: &mut VisualTestContext) -> (usize, &'static str) {
+    let bar = bounds(cx, "native-tab-bar");
+    TAB_NAMES
+        .into_iter()
+        .enumerate()
+        .find(|(_, name)| {
+            let tab = bounds(cx, name);
+            tab.left() < bar.right() && tab.right() > bar.right()
+        })
+        .expect("the bar's right edge cuts a tab")
+}
+
+/// M6-26: a click on a tab the bar's edge half hides scrolls it into view,
+/// before the caller's handler runs, with the bar's own handle where the
+/// caller tracks none.
+#[gpui::test]
+fn a_clicked_half_hidden_tab_scrolls_into_view(cx: &mut TestAppContext) {
+    let clicked = Rc::new(Cell::new(None));
+    let cx = tab_window(cx, Rc::new(Cell::new(0)), clicked.clone(), None);
+    let bar = bounds(cx, "native-tab-bar");
+    let (ix, name) = half_hidden_tab(cx);
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(clicked.get(), Some(ix), "the caller's handler ran");
+    let shown = bounds(cx, name);
+    assert_eq!(shown.right(), bar.right(), "scrolled just into view");
+    assert!(shown.left() >= bar.left());
+}
+
+/// M6-26: a tracked handle is the one the bar scrolls; a change of the
+/// selection scrolls nothing, as gpui-component's `TabBar::track_scroll`
+/// says (tab/tab_bar.rs:124-128).
+#[gpui::test]
+fn a_tracked_tab_bar_scrolls_its_handle_on_a_click_only(cx: &mut TestAppContext) {
+    let handle = gpui::ScrollHandle::new();
+    let selected = Rc::new(Cell::new(0));
+    let clicked = Rc::new(Cell::new(None));
+    let cx = tab_window(cx, selected.clone(), clicked, Some(handle.clone()));
+    let (ix, name) = half_hidden_tab(cx);
+    selected.set(ix);
+    redraw(cx);
+    assert_eq!(
+        handle.offset().x,
+        px(0.),
+        "a selection change reveals nothing"
+    );
+    let bar = bounds(cx, "native-tab-bar");
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        handle.offset().x,
+        bar.right() - tab.right(),
+        "the tracked handle scrolled the tab just into view"
+    );
+}
+
 #[test]
 fn a_length_that_is_not_finite_falls_back() {
     let mut r = resolved("kde-breeze", ColorMode::Light);

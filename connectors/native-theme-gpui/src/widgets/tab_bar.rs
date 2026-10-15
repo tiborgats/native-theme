@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _,
+    ParentElement, Pixels, RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _,
     StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px, transparent_black,
 };
 use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
@@ -223,8 +223,9 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
 /// family, size, weight and style, `item_gap` from its neighbours (none
 /// where unstated, as gpui-component's). The tabs scroll sideways where they
-/// do not fit, or wrap onto a further row with [`wrap`](Self::wrap); a
-/// [`suffix`](Self::suffix) follows them.
+/// do not fit, a clicked tab into view
+/// ([`track_scroll`](Self::track_scroll)), or wrap onto a further row with
+/// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them.
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
 /// inset. Without a native theme, or with a length that is not finite, it
@@ -238,6 +239,7 @@ pub struct TabBar {
     style: StyleRefinement,
     observer: Option<PartBounds>,
     wrap: bool,
+    scroll: Option<ScrollHandle>,
 }
 
 impl TabBar {
@@ -253,6 +255,7 @@ impl TabBar {
             style: StyleRefinement::default(),
             observer: None,
             wrap: false,
+            scroll: None,
         }
     }
 
@@ -285,10 +288,25 @@ impl TabBar {
         self
     }
 
-    /// Called with the index of the tab clicked.
+    /// Called with the index of the tab clicked, once that tab is scrolled
+    /// into view ([`track_scroll`](Self::track_scroll)).
     #[must_use]
     pub fn on_click(mut self, handler: impl Fn(&usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Rc::new(handler));
+        self
+    }
+
+    /// Tracks the tabs' sideways scroll with `handle`, which the bar keeps
+    /// one of its own for where none is given.
+    ///
+    /// A click on a tab scrolls it into view (`ScrollHandle::scroll_to_item`)
+    /// before the [`on_click`](Self::on_click) handler runs; a change of the
+    /// selection, the tabs or the layout scrolls nothing, as in
+    /// gpui-component's `TabBar::track_scroll` (tab/tab_bar.rs:124-128).
+    /// Use `handle` to reveal a tab otherwise.
+    #[must_use]
+    pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
+        self.scroll = Some(handle.clone());
         self
     }
 
@@ -318,6 +336,7 @@ impl TabBar {
                 }
             }))
             .selected_index(self.selected)
+            .when_some(self.scroll.as_ref(), |bar, handle| bar.track_scroll(handle))
             .when_some(on_click, |bar, on_click| {
                 bar.on_click(move |ix, window, cx| on_click(ix, window, cx))
             })
@@ -334,11 +353,23 @@ impl Styled for TabBar {
 }
 
 impl RenderOnce for TabBar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = cx.native() else {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let Some(look) = cx.native().and_then(|n| TabLook::of(n.resolved)) else {
             return self.fallback();
         };
-        let Some(look) = TabLook::of(n.resolved) else {
+        // Without a tracked handle the bar keeps one, to reveal a clicked
+        // tab, as gpui-component's does (tab/tab_bar.rs:429-437).
+        let scroll = self.scroll.clone().unwrap_or_else(|| {
+            window
+                .use_keyed_state(format!("{}-scroll", self.id), cx, |_, _| {
+                    ScrollHandle::new()
+                })
+                .read(cx)
+                .clone()
+        });
+        let view = window.current_view();
+        // Read again: the keyed handle took `cx` mutably.
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let total = self.tabs.len();
@@ -346,6 +377,7 @@ impl RenderOnce for TabBar {
         let observer = self.observer.clone();
         let tabs = self.tabs.into_iter().enumerate().map(|(ix, tab)| {
             let on_click = self.on_click.clone();
+            let scroll = scroll.clone();
             let is_selected = ix == selected;
             BaseTab::new(ix)
                 .selected(is_selected)
@@ -386,7 +418,11 @@ impl RenderOnce for TabBar {
                         .map(|o| part_bounds(Part::Tab(ix), o, look.border_width)),
                 )
                 .when_some(on_click, |tab, on_click| {
-                    tab.on_click(move |_, window, cx| on_click(&ix, window, cx))
+                    tab.on_click(move |_, window, cx| {
+                        scroll.scroll_to_item(ix);
+                        cx.notify(view);
+                        on_click(&ix, window, cx)
+                    })
                 })
                 .when_some(tab.selector, |tab, selector| {
                     tab.debug_selector(|| selector)
@@ -407,6 +443,7 @@ impl RenderOnce for TabBar {
                 }
             })
             .gap(look.gap)
+            .track_scroll(&scroll)
             .children(tabs);
         div()
             .id(self.id)
