@@ -888,14 +888,14 @@ pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
     let s = &r.slider;
     WidgetInfo::new("Slider")
         .config("drawn by", DRAWN_BY)
-        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:72"))
-        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:72"))
-        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:72"))
+        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:76"))
+        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:76"))
+        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:76"))
         // An unset hover is the thumb at rest (SliderLook::of).
         .color(if s.thumb_hover_color.is_some() {
-            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:75")
+            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:79")
         } else {
-            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:75")
+            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:79")
         })
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))

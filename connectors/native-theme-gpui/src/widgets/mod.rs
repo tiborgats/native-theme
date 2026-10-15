@@ -118,8 +118,10 @@ pub enum Part {
     Track,
     /// The filled stretch of a slider's rail or a progress bar's track.
     Fill,
-    /// A switch's or a slider's thumb.
+    /// A switch's or a slider's thumb; a range slider's end thumb.
     Thumb,
+    /// A range slider's start thumb.
+    StartThumb,
     /// The tab at this index of a [`TabBar`].
     Tab(usize),
 }

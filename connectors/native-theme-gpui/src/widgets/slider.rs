@@ -2,12 +2,12 @@
 //! thumb, painted from `SliderTheme`, and made focusable with keyboard steps.
 
 use gpui::{
-    AccessibleAction, AnyElement, App, ElementId, Entity, Hsla, InteractiveElement, IntoElement,
-    KeyDownEvent, MouseButton, Orientation, ParentElement, Pixels, RenderOnce, Role,
-    StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
+    AccessibleAction, AnyElement, App, Axis, ElementId, Entity, Hsla, InteractiveElement,
+    IntoElement, KeyDownEvent, Length, MouseButton, Orientation, ParentElement, Pixels, RenderOnce,
+    Role, StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder as _, px, relative,
 };
-use gpui_base::slider::{SliderEvent, SliderState};
+use gpui_base::slider::{SliderEvent, SliderState, SliderValue};
 use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
@@ -23,6 +23,10 @@ const THUMB_OUTLINE_ALPHA: f32 = 0.5;
 /// The outline's width inside the thumb: gpui-component's `p(px(1.))`
 /// (slider.rs:219).
 const THUMB_OUTLINE_WIDTH: Pixels = gpui::px(1.);
+
+/// The length of a vertical slider, which `SliderTheme` does not state:
+/// gpui-component's own, `h(px(120.))` (slider.rs:268).
+const VERTICAL_LENGTH: Pixels = gpui::px(120.);
 
 /// The group name the thumb's hover style listens to.
 const THUMB_GROUP: &str = "native-theme-slider-thumb";
@@ -118,8 +122,8 @@ impl SliderLook {
     }
 }
 
-/// A horizontal slider over a gpui-base `SliderState` whose rail, fill and
-/// thumb are `SliderTheme`'s (spec §2.4).
+/// A slider over a gpui-base `SliderState` whose rail, fill and thumbs are
+/// `SliderTheme`'s (spec §2.4), horizontal or vertical ([`Slider::axis`]).
 ///
 /// gpui-base's parts own the pointer: a press on the rail sets the value, a
 /// drag of the rail or the thumb moves it, and `SliderEvent::Change` /
@@ -127,13 +131,21 @@ impl SliderLook {
 /// a slider with its value, range and step, and answers AccessKit's
 /// Increment and Decrement. Unlike gpui-component's, it takes keyboard focus:
 /// Left and Down step it down, Right and Up up, Home and End to the ends,
-/// each emitting `SliderEvent::Change`. The thumb's centre travels the width
-/// less one thumb radius at each end, so the thumb stays inside the widget.
+/// each emitting `SliderEvent::Change`. The thumb's centre travels the
+/// widget's length less one thumb radius at each end, so the thumb stays
+/// inside the widget.
 ///
-/// Its width is the caller's (`Styled`). Without a native theme it renders
-/// gpui-component's `Slider`.
+/// A range state (`SliderState::default_value(20.0..80.0)`) draws a thumb at
+/// each end and the fill between them, as gpui-component's slider does
+/// (slider.rs:149-156, :305-308): a press moves the nearer thumb, as
+/// gpui-base picks it, and the keys move the end, which stops at the start.
+///
+/// Its length is the caller's (`Styled`): a horizontal slider's width, a
+/// vertical one's height, gpui-component's 120 px where not given. Without a
+/// native theme it renders gpui-component's `Slider`.
 pub struct Slider {
     state: Entity<SliderState>,
+    axis: Axis,
     disabled: bool,
     style: StyleRefinement,
     observer: Option<PartBounds>,
@@ -141,16 +153,26 @@ pub struct Slider {
 }
 
 impl Slider {
-    /// A slider over `state`.
+    /// A horizontal slider over `state`.
     #[must_use]
     pub fn new(state: &Entity<SliderState>) -> Self {
         Self {
             state: state.clone(),
+            axis: Axis::Horizontal,
             disabled: false,
             style: StyleRefinement::default(),
             observer: None,
             backdrop: None,
         }
+    }
+
+    /// The axis it lies along: `Axis::Horizontal`, its minimum at the left,
+    /// or `Axis::Vertical`, its minimum at the bottom, as gpui-base maps the
+    /// pointer (slider.rs:367-371).
+    #[must_use]
+    pub fn axis(mut self, axis: Axis) -> Self {
+        self.axis = axis;
+        self
     }
 
     /// Whether it is disabled: inert, unfocusable, in the disabled colours.
@@ -169,7 +191,7 @@ impl Slider {
         self
     }
 
-    /// Hands `observer` the bounds of the rail, its fill and the thumb as
+    /// Hands `observer` the bounds of the rail, its fill and the thumbs as
     /// each frame lays them out ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
@@ -179,6 +201,7 @@ impl Slider {
 
     fn fallback(self) -> AnyElement {
         gpui_component::slider::Slider::new(&self.state)
+            .when(self.axis == Axis::Vertical, |slider| slider.vertical())
             .disabled(self.disabled)
             .refine_style(&self.style)
             .into_any_element()
@@ -191,28 +214,35 @@ impl Styled for Slider {
     }
 }
 
-/// The value a key moves `state` to, if the key is one the slider answers.
-fn stepped(state: &SliderState, key: &str) -> Option<f32> {
+/// The value a key moves `state` to, if the key is one the slider answers: a
+/// range's end, with its start as it was, the end kept from passing the
+/// start, as a pointer keeps it (gpui-base slider.rs:378-382).
+fn stepped(state: &SliderState, key: &str) -> Option<SliderValue> {
     let (min, max) = (state.min_value(), state.max_value());
-    let value = state.value().end();
+    let value = state.value();
     let step = state.step_value();
     let target = match key {
-        "left" | "down" => value - step,
-        "right" | "up" => value + step,
+        "left" | "down" => value.end() - step,
+        "right" | "up" => value.end() + step,
         "home" => min,
         "end" => max,
         _ => return None,
     };
     // `max` then `min`, never `clamp`: a state built with `min > max` must
     // not panic here.
-    Some(target.max(min).min(max))
+    Some(match value {
+        SliderValue::Range(start, _) => {
+            SliderValue::from((start, target.max(min).max(start).min(max)))
+        }
+        SliderValue::Single(_) => SliderValue::from(target.max(min).min(max)),
+    })
 }
 
 /// Sets `state` to the value `step` gives it and emits the change, as a
 /// pointer does. Returns whether it answered.
 fn step_by(
     state: &Entity<SliderState>,
-    step: impl FnOnce(&SliderState) -> Option<f32>,
+    step: impl FnOnce(&SliderState) -> Option<SliderValue>,
     window: &mut Window,
     cx: &mut App,
 ) -> bool {
@@ -224,6 +254,44 @@ fn step_by(
         cx.emit(SliderEvent::Change(state.value()));
         true
     })
+}
+
+/// A thumb of `state` at `position` of the travel along `axis`, the range's
+/// start thumb if `start`: the thumb's colour inside its outline, centred
+/// across the rail.
+fn thumb(
+    state: &Entity<SliderState>,
+    look: &SliderLook,
+    axis: Axis,
+    position: f32,
+    start: bool,
+    disabled: bool,
+) -> SliderThumb {
+    let across = px((f32::from(look.track_height) - f32::from(look.thumb)) / 2.);
+    let back = px(-f32::from(look.thumb) / 2.);
+    SliderThumb::new(state)
+        .axis(axis)
+        .start(start)
+        .disabled(disabled)
+        .group(THUMB_GROUP)
+        .absolute()
+        .map(|thumb| match axis {
+            Axis::Vertical => thumb.left(across).bottom(relative(position)).mb(back),
+            Axis::Horizontal => thumb.top(across).left(relative(position)).ml(back),
+        })
+        .size(look.thumb)
+        .rounded_full()
+        .bg(look.outline)
+        .p(THUMB_OUTLINE_WIDTH)
+        .child(
+            div()
+                .size_full()
+                .rounded_full()
+                .bg(look.thumb_color)
+                .when_some(look.hover_thumb, |inner, hover| {
+                    inner.group_hover(THUMB_GROUP, move |style| style.bg(hover))
+                }),
+        )
 }
 
 impl RenderOnce for Slider {
@@ -238,18 +306,23 @@ impl RenderOnce for Slider {
             self.backdrop
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
         );
+        let axis = self.axis;
+        let vertical = axis == Axis::Vertical;
         let disabled = self.disabled;
         let observer = self.observer.as_ref();
         let state = self.state.clone();
         let entity_id = state.entity_id();
-        let (value, min, max, step, percentage) = {
+        let (value, range, min, max, step, start, end) = {
             let s = state.read(cx);
+            let percentage = s.percentage();
             (
                 s.value().end(),
+                s.value().is_range(),
                 s.min_value(),
                 s.max_value(),
                 s.step_value(),
-                s.percentage().end.clamp(0., 1.),
+                percentage.start.clamp(0., 1.),
+                percentage.end.clamp(0., 1.),
             )
         };
         let id = ElementId::from(("native-theme-slider", entity_id));
@@ -259,49 +332,51 @@ impl RenderOnce for Slider {
             .clone();
         let focused = !disabled && focus_handle.is_focused(window);
         let radius = px(f32::from(look.thumb) / 2.);
+        let beyond = px(-f32::from(radius));
         // The rail is a pill unless the theme squares its corners
         // (slider.rs:174); `SliderTheme` states no rail radius.
         let pill = cx.theme().radius_full();
 
-        let thumb = SliderThumb::new(&state)
-            .disabled(disabled)
-            .group(THUMB_GROUP)
-            .absolute()
-            .top(px(
-                (f32::from(look.track_height) - f32::from(look.thumb)) / 2.
-            ))
-            .left(relative(percentage))
-            .ml(px(-f32::from(radius)))
-            .size(look.thumb)
-            .rounded_full()
-            .bg(look.outline)
-            .p(THUMB_OUTLINE_WIDTH)
+        // The end thumb, the one the keys move, draws the focus ring.
+        let end_thumb = thumb(&state, &look, axis, end, false, disabled)
             .debug_selector(|| "native-slider-thumb".into())
             .when(focused, |thumb| thumb.focus_ring_style(window, cx))
-            .child(
-                div()
-                    .size_full()
-                    .rounded_full()
-                    .bg(look.thumb_color)
-                    .when_some(look.hover_thumb, |inner, hover| {
-                        inner.group_hover(THUMB_GROUP, move |style| style.bg(hover))
-                    }),
-            )
             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))));
+        let start_thumb = range.then(|| {
+            thumb(&state, &look, axis, start, true, disabled)
+                .debug_selector(|| "native-slider-start-thumb".into())
+                .children(observer.map(|o| part_bounds(Part::StartThumb, o, px(0.))))
+        });
+        // The fill from the rail's end, or a range's start thumb, to the end
+        // thumb.
+        let fill_from: Length = if range {
+            relative(start).into()
+        } else {
+            beyond.into()
+        };
+        let fill_to = relative(1. - end);
         // The travel the thumb's centre covers, and the pointer maps onto
         // (gpui-base records its bounds, slider.rs `SliderIndicator`): the
         // rail and the fill reach one thumb radius past it at each end.
         let travel = SliderIndicator::new(&state)
             .relative()
-            .w_full()
-            .h(look.track_height)
+            .map(|travel| {
+                if vertical {
+                    travel.h_full().w(look.track_height)
+                } else {
+                    travel.w_full().h(look.track_height)
+                }
+            })
             .child(
                 div()
                     .absolute()
-                    .top_0()
-                    .bottom_0()
-                    .left(px(-f32::from(radius)))
-                    .right(px(-f32::from(radius)))
+                    .map(|rail| {
+                        if vertical {
+                            rail.left_0().right_0().top(beyond).bottom(beyond)
+                        } else {
+                            rail.top_0().bottom_0().left(beyond).right(beyond)
+                        }
+                    })
                     .rounded(pill)
                     .bg(look.track)
                     .debug_selector(|| "native-slider-rail".into())
@@ -310,22 +385,32 @@ impl RenderOnce for Slider {
             .child(
                 div()
                     .absolute()
-                    .top_0()
-                    .bottom_0()
-                    .left(px(-f32::from(radius)))
-                    .right(relative(1. - percentage))
+                    .map(|fill| {
+                        if vertical {
+                            fill.left_0().right_0().bottom(fill_from).top(fill_to)
+                        } else {
+                            fill.top_0().bottom_0().left(fill_from).right(fill_to)
+                        }
+                    })
                     .rounded(pill)
                     .bg(look.fill)
                     .debug_selector(|| "native-slider-fill".into())
                     .children(observer.map(|o| part_bounds(Part::Fill, o, px(0.)))),
             )
-            .child(thumb);
+            .children(start_thumb)
+            .child(end_thumb);
         let track = SliderTrack::new(&state)
+            .axis(axis)
             .disabled(disabled)
             .flex()
-            .items_center()
             .size_full()
-            .px(radius)
+            .map(|track| {
+                if vertical {
+                    track.justify_center().py(radius)
+                } else {
+                    track.items_center().px(radius)
+                }
+            })
             .child(travel);
 
         div()
@@ -335,10 +420,19 @@ impl RenderOnce for Slider {
             .aria_min_numeric_value(f64::from(min))
             .aria_max_numeric_value(f64::from(max))
             .aria_numeric_value_step(f64::from(step))
-            .aria_orientation(Orientation::Horizontal)
+            .aria_orientation(if vertical {
+                Orientation::Vertical
+            } else {
+                Orientation::Horizontal
+            })
             .flex()
-            .items_center()
-            .h(look.height)
+            .map(|root| {
+                if vertical {
+                    root.justify_center().w(look.height).h(VERTICAL_LENGTH)
+                } else {
+                    root.items_center().h(look.height)
+                }
+            })
             .opacity(look.opacity)
             .refine_style(&self.style)
             .debug_selector(|| "native-slider".into())

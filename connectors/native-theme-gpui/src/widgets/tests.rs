@@ -1234,6 +1234,125 @@ fn a_slider_follows_the_pointer_over_its_travel(cx: &mut TestAppContext) {
     assert_eq!(slider_value(cx, &state), 100.);
 }
 
+fn range_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, Entity<SliderState>) {
+    let state = cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(20.0..80.0)
+    });
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+    );
+    (cx, state)
+}
+
+/// M6-20: a range state draws a thumb at each end, the fill between them,
+/// as gpui-component's slider draws one (slider.rs:149-156, :305-308).
+#[gpui::test]
+fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    // The travel the thumbs' centres cover: the width less a radius at each
+    // end.
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.origin.x + radius + travel * fraction;
+    let start = bounds(cx, "native-slider-start-thumb");
+    let end = bounds(cx, "native-slider-thumb");
+    assert_eq!(centre(start).x, at(0.2), "the start thumb at 20");
+    assert_eq!(centre(end).x, at(0.8), "the end thumb at 80");
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(fill.origin.x, at(0.2), "the fill from the start thumb");
+    assert_eq!(fill.origin.x + fill.size.width, at(0.8), "to the end thumb");
+    drop(state);
+}
+
+/// M6-20: the keys move a range's end and keep its start, where a key turned
+/// `Range(20, 80)` into `Single(81)`; the end never passes the start, as a
+/// pointer keeps it (gpui-base slider.rs:378-382).
+#[gpui::test]
+fn a_range_slider_keeps_its_range_on_the_keys(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    let (cx, state) = range_window(cx);
+    focus_next(cx);
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_keystrokes("right");
+    assert_eq!(value(cx), SliderValue::Range(20., 81.));
+    cx.simulate_keystrokes("left left");
+    assert_eq!(value(cx), SliderValue::Range(20., 79.));
+    cx.simulate_keystrokes("end");
+    assert_eq!(value(cx), SliderValue::Range(20., 100.));
+    cx.simulate_keystrokes("home");
+    assert_eq!(value(cx), SliderValue::Range(20., 20.), "down to the start");
+}
+
+/// M6-20: along the vertical axis the rail stands up the widget, its minimum
+/// at the bottom, as gpui-base maps the pointer (slider.rs:367-371), and the
+/// thumb travels it.
+#[gpui::test]
+fn a_vertical_slider_lays_its_rail_out_vertically(cx: &mut TestAppContext) {
+    let state = cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(25.)
+    });
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            Slider::new(&s)
+                .axis(gpui::Axis::Vertical)
+                .h(px(140.))
+                .into_any_element()
+        }),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let sl = &r.slider;
+    let radius = px(sl.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    assert_eq!(root.size.height, px(140.));
+    assert_eq!(root.size.width, px(sl.thumb_diameter.max(sl.track_height)));
+    let rail = bounds(cx, "native-slider-rail");
+    assert_eq!(rail.size.width, px(sl.track_height), "the rail's thickness");
+    assert_eq!(
+        rail.size.height, root.size.height,
+        "the rail spans the widget"
+    );
+    let thumb = bounds(cx, "native-slider-thumb");
+    assert_eq!(thumb.size.width, px(sl.thumb_diameter));
+    assert_eq!(centre(thumb).x, centre(rail).x, "centred on the rail");
+    let travel = root.size.height - radius * 2.;
+    assert_eq!(
+        centre(thumb).y,
+        root.origin.y + root.size.height - radius - travel * 0.25,
+        "at 25 a quarter up from the bottom"
+    );
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(
+        fill.origin.y + fill.size.height,
+        root.origin.y + root.size.height
+    );
+    assert_eq!(fill.origin.y, centre(thumb).y, "filled up to the thumb");
+    // A press at the top of the travel is the maximum.
+    cx.simulate_click(
+        point(centre(root).x, root.origin.y + radius),
+        Modifiers::default(),
+    );
+    assert_eq!(slider_value(cx, &state), 100.);
+    focus_next(cx);
+    cx.simulate_keystrokes("down");
+    assert_eq!(slider_value(cx, &state), 99.);
+}
+
 /// The solid fill of the quad painted at `b`, given in window pixels.
 fn painted_fill(cx: &mut VisualTestContext, b: Bounds<Pixels>) -> Option<gpui::Hsla> {
     cx.update(|window, _| {
