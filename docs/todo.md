@@ -1362,13 +1362,19 @@ model, the platform presets and the three connectors
       `defaults.border` (`docs/inheritance-rules.toml:86-90`,
       `widgets_with_border`), so their resolved `border.line_width` is 1 or
       0.5 in most presets (the toolbar's is 0 only in kde-breeze and
-      material-3, the popover's only in material-3), while
+      material-3; the popover's is stated only by adwaita, 1 from libadwaita's
+      outline, `adwaita.toml:296`, and by material-3, 0), while
       `docs/platform-facts.md` §2.13 states no toolbar frame and gpui-component
       draws a popover's edge as its own ring inside the shadow (gpui-component
-      0.7.3 `styled.rs:186-194`). Should the inheritance give them a 0 width,
-      or should their presets state one from a source? Until then the gpui
-      connector carries neither `toolbar.border.color` nor
-      `popover.border.color`; M6 T16c names both in the coverage test.
+      0.7.3 `styled.rs:186-194`). The card's fill is the same kind of value:
+      `card.background_color` inherits `defaults.surface_color`
+      (`docs/inheritance-rules.toml:266`), and only material-3 states one,
+      while §2.26 (`docs/platform-facts.md:1590`) states no card for macOS and
+      KDE. Should the inheritance give the toolbar and the popover a 0 width
+      and the card no fill, or should their presets state them from a source?
+      Until then the gpui connector carries neither `toolbar.border.color`,
+      `popover.border.color` nor `card.background_color`; M6 T16c names all
+      three in the coverage test.
 
 ### windows-11: the validator's findings after T35 left open
 
