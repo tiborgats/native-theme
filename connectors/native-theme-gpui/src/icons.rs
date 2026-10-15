@@ -429,11 +429,14 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// by desktop environment.
 ///
 /// The name has to exist in the icon theme the icon is loaded from, which the
-/// desktop does not decide: the adwaita preset's `Adwaita` on KDE, or any
+/// desktop does not decide: the adwaita preset's `Adwaita` on KDE, or a
 /// GTK-convention theme on Sway, Hyprland or COSMIC, lacks the Breeze name
-/// this returns there for every icon the two conventions name apart. Load
-/// through [`freedesktop_name_candidates`] instead, trying each name in the
-/// one theme in use.
+/// this returns there for most icons the two conventions name apart (48 of
+/// the 50 in Adwaita and the AdwaitaLegacy it inherits, which has
+/// `emblem-favorite` and `applications-office` as rasters). Load through
+/// [`freedesktop_name_candidates`] instead, with
+/// [`FreedesktopLoader::any`](native_theme::icons::FreedesktopLoader::any) in
+/// the one theme in use.
 ///
 /// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) get the GTK
 /// (Adwaita) name, every other desktop the Breeze name; where the two
@@ -467,23 +470,26 @@ pub fn freedesktop_name_for_gpui_icon(
     .copied()
 }
 
-/// The freedesktop names a gpui-component [`IconName`] may have, to be tried
-/// in order in the one icon theme the icon is loaded from.
+/// The freedesktop names a gpui-component [`IconName`] may have, for
+/// [`FreedesktopLoader::any`](native_theme::icons::FreedesktopLoader::any) in
+/// the one icon theme the icon is loaded from.
 ///
 /// One name where the GTK (Adwaita) and Breeze conventions agree, else two:
 /// Breeze's, then GTK's. Which one exists is the icon theme's convention, not
-/// the desktop's, so a caller loads each in turn from the theme it uses and
-/// takes the first that loads. Every name is tried in that one theme, so no
-/// icon comes from another set; a theme that has none of them has no icon
-/// for it.
+/// the desktop's. `FreedesktopLoader::any` searches the theme for every name
+/// before the theme it inherits from, so the theme's own icon wins: loaded
+/// name by name, Adwaita's `Heart` would be AdwaitaLegacy's raster
+/// `emblem-favorite`, not Adwaita's own `starred`. Every name is looked up in
+/// that one theme, so no icon comes from another set; a theme that has none
+/// of them has no icon for it.
 ///
 /// ```ignore
 /// use native_theme::icons::FreedesktopLoader;
 /// use native_theme_gpui::icons::freedesktop_name_candidates;
 ///
-/// let data = freedesktop_name_candidates(gpui_component::IconName::Eye)
-///     .iter()
-///     .find_map(|&name| FreedesktopLoader::new(name).theme("Adwaita").load());
+/// let data = FreedesktopLoader::any(freedesktop_name_candidates(gpui_component::IconName::Eye))
+///     .theme("Adwaita")
+///     .load();
 /// ```
 ///
 /// ## Confidence levels
@@ -2391,35 +2397,269 @@ mod freedesktop_mapping_tests {
         );
     }
 
-    /// The two fixture themes [`every_candidate_list_resolves_in_either_conventions_theme`]
-    /// loads from: each holds every icon under one convention's name only.
+    /// Every `IconName` with its Breeze and its GTK (Adwaita) freedesktop
+    /// name, the same name twice where the conventions agree: the fixture
+    /// themes of [`the_theme_s_own_name_wins_in_each_convention_s_theme`] are
+    /// written from this copy of the table, not from the functions under
+    /// test.
     #[cfg(feature = "system-icons")]
-    const CONVENTION_THEMES: [(&str, LinuxDesktop); 2] = [
-        ("gtk-only", LinuxDesktop::Gnome),
-        ("breeze-only", LinuxDesktop::Kde),
+    const CONVENTIONS: &[(IconName, &str, &str)] = &[
+        (IconName::Ban, "action-unavailable", "action-unavailable"),
+        (IconName::Battery, "battery", "battery"),
+        (IconName::BookOpen, "help-contents", "help-contents"),
+        (IconName::Bot, "face-smile", "face-smile"),
+        (IconName::ChevronDown, "go-down", "go-down"),
+        (IconName::ChevronLeft, "go-previous", "go-previous"),
+        (IconName::ChevronRight, "go-next", "go-next"),
+        (IconName::ChevronUp, "go-up", "go-up"),
+        (
+            IconName::CircleAlert,
+            "emblem-important",
+            "emblem-important",
+        ),
+        (IconName::CircleX, "dialog-error", "dialog-error"),
+        (IconName::Copy, "edit-copy", "edit-copy"),
+        (IconName::Dash, "list-remove", "list-remove"),
+        (IconName::Delete, "edit-delete", "edit-delete"),
+        (IconName::File, "text-x-generic", "text-x-generic"),
+        (IconName::FileText, "text-x-generic", "text-x-generic"),
+        (IconName::Folder, "folder", "folder"),
+        (IconName::FolderClosed, "folder", "folder"),
+        (IconName::FolderOpen, "folder-open", "folder-open"),
+        (IconName::HardDrive, "drive-harddisk", "drive-harddisk"),
+        (IconName::HeartOff, "non-starred", "non-starred"),
+        (IconName::Info, "dialog-information", "dialog-information"),
+        (IconName::LayoutDashboard, "view-grid", "view-grid"),
+        (IconName::Map, "find-location", "find-location"),
+        (IconName::Maximize, "view-fullscreen", "view-fullscreen"),
+        (IconName::Menu, "open-menu", "open-menu"),
+        (
+            IconName::Mic,
+            "audio-input-microphone",
+            "audio-input-microphone",
+        ),
+        (IconName::Minimize, "window-minimize", "window-minimize"),
+        (IconName::Minus, "list-remove", "list-remove"),
+        (IconName::Moon, "weather-clear-night", "weather-clear-night"),
+        (IconName::Network, "network-workgroup", "network-workgroup"),
+        (
+            IconName::Pause,
+            "media-playback-pause",
+            "media-playback-pause",
+        ),
+        (
+            IconName::Play,
+            "media-playback-start",
+            "media-playback-start",
+        ),
+        (IconName::Plus, "list-add", "list-add"),
+        (IconName::Redo, "edit-redo", "edit-redo"),
+        (IconName::Redo2, "edit-redo", "edit-redo"),
+        (IconName::RefreshCw, "view-refresh", "view-refresh"),
+        (IconName::Replace, "edit-find-replace", "edit-find-replace"),
+        (
+            IconName::RotateCw,
+            "object-rotate-right",
+            "object-rotate-right",
+        ),
+        (IconName::Search, "edit-find", "edit-find"),
+        (
+            IconName::Settings,
+            "preferences-system",
+            "preferences-system",
+        ),
+        (
+            IconName::SortAscending,
+            "view-sort-ascending",
+            "view-sort-ascending",
+        ),
+        (
+            IconName::SortDescending,
+            "view-sort-descending",
+            "view-sort-descending",
+        ),
+        (
+            IconName::Square,
+            "media-playback-stop",
+            "media-playback-stop",
+        ),
+        (
+            IconName::SquareTerminal,
+            "utilities-terminal",
+            "utilities-terminal",
+        ),
+        (IconName::Star, "non-starred", "non-starred"),
+        (IconName::StarFill, "starred", "starred"),
+        (IconName::StarOff, "non-starred", "non-starred"),
+        (IconName::Sun, "weather-clear", "weather-clear"),
+        (IconName::TriangleAlert, "dialog-warning", "dialog-warning"),
+        (IconName::Undo, "edit-undo", "edit-undo"),
+        (IconName::Undo2, "edit-undo", "edit-undo"),
+        (IconName::User, "system-users", "system-users"),
+        (IconName::WindowClose, "window-close", "window-close"),
+        (
+            IconName::WindowMaximize,
+            "window-maximize",
+            "window-maximize",
+        ),
+        (
+            IconName::WindowMinimize,
+            "window-minimize",
+            "window-minimize",
+        ),
+        (IconName::WindowRestore, "window-restore", "window-restore"),
+        (IconName::ArrowDown, "go-down-skip", "go-bottom"),
+        (IconName::ArrowLeft, "go-previous-skip", "go-first"),
+        (IconName::ArrowRight, "go-next-skip", "go-last"),
+        (IconName::ArrowUp, "go-up-skip", "go-top"),
+        (
+            IconName::BatteryCharging,
+            "battery-100-charging",
+            "battery-full-charging",
+        ),
+        (IconName::BatteryFull, "battery-100", "battery-full"),
+        (IconName::BatteryLow, "battery-020", "battery-low"),
+        (IconName::BatteryMedium, "battery-050", "battery-good"),
+        (IconName::BatteryWarning, "battery-010", "battery-caution"),
+        (IconName::Calendar, "view-calendar", "x-office-calendar"),
+        (IconName::Check, "dialog-ok", "object-select"),
+        (IconName::CircleCheck, "emblem-ok-symbolic", "object-select"),
+        (IconName::CircleUser, "user-identity", "avatar-default"),
+        (IconName::Close, "tab-close", "window-close"),
+        (IconName::Cpu, "cpu", "computer"),
+        (IconName::Ellipsis, "overflow-menu", "view-more-horizontal"),
+        (IconName::EllipsisVertical, "overflow-menu", "view-more"),
+        (IconName::Eye, "view-visible", "view-reveal"),
+        (IconName::EyeOff, "view-hidden", "view-conceal"),
+        (IconName::Frame, "select-rectangular", "selection-mode"),
+        (IconName::Heart, "emblem-favorite", "starred"),
+        (IconName::Loader, "process-working", "content-loading"),
+        (IconName::LoaderCircle, "process-working", "content-loading"),
+        (IconName::MemoryStick, "memory", "media-flash"),
+        (IconName::Palette, "palette", "color-select"),
+        (IconName::PanelLeft, "sidebar-expand-left", "sidebar-show"),
+        (IconName::PanelLeftClose, "view-left-close", "sidebar-show"),
+        (IconName::PanelLeftOpen, "view-left-new", "sidebar-show"),
+        (
+            IconName::PanelRight,
+            "sidebar-expand-right",
+            "sidebar-show-right",
+        ),
+        (
+            IconName::PanelRightClose,
+            "view-right-close",
+            "sidebar-show-right",
+        ),
+        (
+            IconName::PanelRightOpen,
+            "view-right-new",
+            "sidebar-show-right",
+        ),
+        (IconName::ResizeCorner, "drag-handle", "list-drag-handle"),
+        (IconName::Settings2, "configure", "preferences-other"),
+        (IconName::ALargeSmall, "format-font-size-more", "zoom-in"),
+        (IconName::Asterisk, "rating", "starred"),
+        (IconName::Bell, "notification-active", "alarm"),
+        (
+            IconName::Building2,
+            "applications-office",
+            "network-workgroup",
+        ),
+        (
+            IconName::CaseSensitive,
+            "format-text-uppercase",
+            "format-text-rich",
+        ),
+        (
+            IconName::ChartPie,
+            "office-chart-pie",
+            "x-office-spreadsheet",
+        ),
+        (IconName::ChevronsUpDown, "handle-sort", "list-drag-handle"),
+        (IconName::ExternalLink, "external-link", "insert-link"),
+        (
+            IconName::GalleryVerticalEnd,
+            "view-list-icons",
+            "view-paged",
+        ),
+        (IconName::Github, "vcs-branch", "applications-engineering"),
+        (IconName::Globe, "globe", "web-browser"),
+        (IconName::Inbox, "mail-folder-inbox", "mail-send-receive"),
+        (
+            IconName::Inspector,
+            "code-context",
+            "preferences-system-details",
+        ),
+        (IconName::PanelBottom, "view-split-top-bottom", "view-dual"),
+        (
+            IconName::PanelBottomOpen,
+            "view-split-top-bottom",
+            "view-dual",
+        ),
+        (IconName::ThumbsDown, "rating-unrated", "process-stop"),
+        (IconName::ThumbsUp, "approved", "checkbox-checked"),
     ];
 
-    /// Whichever convention the icon theme follows, one of an icon's
-    /// candidates is the name that theme has it under, on any desktop: the
-    /// child's is KDE, whose Breeze name a GTK-only theme lacks for every
-    /// icon the conventions name apart. The themes are fixtures in a child
-    /// process ([`crate::icon_fixture`]).
+    /// The theme a fixture icon came from and the name it has there, as the
+    /// fixture writes them into each SVG.
+    #[cfg(feature = "system-icons")]
+    fn fixture_svg(theme: &str, name: &str) -> String {
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><title>{theme}/{name}</title><path d="M2 2h12v12H2z"/></svg>"#
+        )
+    }
+
+    /// An icon loaded from a theme by its candidates is the one that theme
+    /// has under its own convention's name: a GTK-only theme's GTK name, a
+    /// Breeze-only theme's Breeze name, and, in a GTK-only theme that
+    /// inherits a legacy theme carrying the Breeze names as PNGs (Adwaita
+    /// inherits AdwaitaLegacy, which has `emblem-favorite` and
+    /// `applications-office`), the theme's own GTK-named SVG, not its
+    /// parent's raster. The code under test never reads the desktop; the
+    /// child process is for the fixture's icon dirs
+    /// ([`crate::icon_fixture`]).
     #[cfg(feature = "system-icons")]
     #[test]
-    fn every_candidate_list_resolves_in_either_conventions_theme()
+    fn the_theme_s_own_name_wins_in_each_convention_s_theme()
     -> Result<(), Box<dyn std::error::Error>> {
-        const NAME: &str = "icons::freedesktop_mapping_tests::every_candidate_list_resolves_in_either_conventions_theme";
+        const NAME: &str = "icons::freedesktop_mapping_tests::the_theme_s_own_name_wins_in_each_convention_s_theme";
+        let mut listed: Vec<&str> = CONVENTIONS
+            .iter()
+            .map(|(icon, _, _)| super::tests::variant_name(icon))
+            .collect();
+        let mut all: Vec<&str> = ALL_ICON_NAMES
+            .iter()
+            .map(super::tests::variant_name)
+            .collect();
+        listed.sort_unstable();
+        all.sort_unstable();
+        assert_eq!(listed, all, "CONVENTIONS lists every IconName once");
         if crate::icon_fixture::in_child() {
-            let mut missing = Vec::new();
-            for (theme, _) in CONVENTION_THEMES {
-                for icon in ALL_ICON_NAMES {
+            let mut wrong = Vec::new();
+            for &(ref icon, breeze, gtk) in CONVENTIONS {
+                for (theme, expected) in [
+                    ("gtk-only", format!("gtk-only/{gtk}")),
+                    ("breeze-only", format!("breeze-only/{breeze}")),
+                    ("gtk-over-legacy", format!("gtk-over-legacy/{gtk}")),
+                ] {
                     let candidates = freedesktop_name_candidates(icon.clone());
-                    if !candidates
-                        .iter()
-                        .any(|&name| FreedesktopLoader::new(name).theme(theme).load().is_some())
-                    {
-                        missing.push(format!(
-                            "{theme}: {} ({})",
+                    let loaded = FreedesktopLoader::any(candidates).theme(theme).load();
+                    let found = match &loaded {
+                        Some(IconData::Svg(svg)) => {
+                            let svg = String::from_utf8_lossy(svg);
+                            svg.split_once("<title>")
+                                .and_then(|(_, rest)| rest.split_once("</title>"))
+                                .map_or_else(
+                                    || "an SVG without a title".to_string(),
+                                    |(t, _)| t.to_string(),
+                                )
+                        }
+                        Some(_) => "a raster".to_string(),
+                        None => "nothing".to_string(),
+                    };
+                    if found != expected {
+                        wrong.push(format!(
+                            "{theme}: {} ({}) loaded {found}, not {expected}",
                             super::tests::variant_name(icon),
                             candidates.join(", ")
                         ));
@@ -2427,30 +2667,53 @@ mod freedesktop_mapping_tests {
                 }
             }
             assert!(
-                missing.is_empty(),
-                "{} candidate lists resolved in neither name:\n  {}",
-                missing.len(),
-                missing.join("\n  "),
+                wrong.is_empty(),
+                "{} icons loaded the wrong name:\n  {}",
+                wrong.len(),
+                wrong.join("\n  "),
             );
             return Ok(());
         }
         crate::icon_fixture::run(NAME, "gtk-only", |icons| {
-            const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>"#;
-            for (theme, de) in CONVENTION_THEMES {
-                let dir = icons.join(theme).join("actions");
-                std::fs::create_dir_all(&dir)?;
+            let theme = |name: &str,
+                         inherits: &str,
+                         section: &str|
+             -> std::io::Result<std::path::PathBuf> {
+                let dir = icons.join(name);
+                std::fs::create_dir_all(dir.join("actions"))?;
                 std::fs::write(
-                    icons.join(theme).join("index.theme"),
+                    dir.join("index.theme"),
                     format!(
-                        "[Icon Theme]\nName={theme}\nDirectories=actions\n\n\
-                         [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
+                        "[Icon Theme]\nName={name}\n{inherits}Directories=actions\n\n\
+                         [actions]\n{section}\n"
                     ),
                 )?;
-                for icon in ALL_ICON_NAMES {
-                    if let Some(name) = freedesktop_name_for_gpui_icon(icon.clone(), de) {
-                        std::fs::write(dir.join(format!("{name}.svg")), SVG)?;
-                    }
-                }
+                Ok(dir.join("actions"))
+            };
+            const SCALABLE: &str = "Size=16\nType=Scalable\nMinSize=8\nMaxSize=512";
+            let gtk_only = theme("gtk-only", "", SCALABLE)?;
+            let breeze_only = theme("breeze-only", "", SCALABLE)?;
+            let over_legacy = theme("gtk-over-legacy", "Inherits=breeze-legacy\n", SCALABLE)?;
+            let legacy = theme("breeze-legacy", "", "Size=24\nType=Fixed")?;
+            let mut png = std::io::Cursor::new(Vec::new());
+            image::RgbaImage::from_pixel(24, 24, image::Rgba([61, 174, 233, 255]))
+                .write_to(&mut png, image::ImageFormat::Png)
+                .map_err(std::io::Error::other)?;
+            let png = png.into_inner();
+            for &(_, breeze, gtk) in CONVENTIONS {
+                std::fs::write(
+                    gtk_only.join(format!("{gtk}.svg")),
+                    fixture_svg("gtk-only", gtk),
+                )?;
+                std::fs::write(
+                    breeze_only.join(format!("{breeze}.svg")),
+                    fixture_svg("breeze-only", breeze),
+                )?;
+                std::fs::write(
+                    over_legacy.join(format!("{gtk}.svg")),
+                    fixture_svg("gtk-over-legacy", gtk),
+                )?;
+                std::fs::write(legacy.join(format!("{breeze}.png")), &png)?;
             }
             Ok(())
         })?;

@@ -307,6 +307,59 @@ fn find_icon_with(
     lookup_in_chain(name, size, &chain).map(|path| (path, name.ends_with("-symbolic")))
 }
 
+/// [`find_icon`] for the first of several names: each theme of `theme`'s
+/// chain is searched for every name, in order, before the next theme of
+/// the chain, so the theme's own icon under a later name wins over a
+/// parent's icon under an earlier one (Adwaita has `starred-symbolic`, its
+/// parent AdwaitaLegacy the raster `emblem-favorite`). Within a theme each
+/// name is tried as `<name>-symbolic`, then as itself, as [`find_icon`]
+/// tries it.
+///
+/// GTK 3.24.41's lookup of several names searches theme by theme in the
+/// same way, names in order within a theme (`gtk/gtkicontheme.c:1752-1762`,
+/// `real_choose_icon`); it first searches every theme for the names that
+/// end in `-symbolic` (`:1740-1750`). Here a name's symbolic form is tried
+/// with the name, so a later name's symbolic icon does not displace an
+/// earlier name's icon in the same theme: Breeze's `cpu` stays the `Cpu`
+/// icon over its `computer-symbolic`. With one name the order differs from
+/// [`find_icon`]'s only where a theme has the plain name and a parent the
+/// symbolic one: [`find_icon`] takes the parent's.
+fn find_any_icon(names: &[&str], theme: &str, size: u16) -> Option<(PathBuf, bool)> {
+    let chain = cached_theme_chain(theme)?;
+    first_of_names(names, &chain, |name, theme| {
+        lookup_in_chain(name, size, std::slice::from_ref(theme))
+    })
+}
+
+/// The first icon `lookup` finds in a theme of `chain` for one of `names`,
+/// in [`find_any_icon`]'s order, with whether it is symbolic.
+fn first_of_names(
+    names: &[&str],
+    chain: &[String],
+    mut lookup: impl FnMut(&str, &String) -> Option<PathBuf>,
+) -> Option<(PathBuf, bool)> {
+    chain.iter().find_map(|theme| {
+        names.iter().find_map(|&name| {
+            lookup(&format!("{name}-symbolic"), theme)
+                .map(|path| (path, true))
+                .or_else(|| lookup(name, theme).map(|path| (path, name.ends_with("-symbolic"))))
+        })
+    })
+}
+
+/// [`load_freedesktop_icon_by_name`] for the first of `names` the theme
+/// has, in [`find_any_icon`]'s order.
+#[must_use]
+pub(crate) fn load_freedesktop_icon_by_names(
+    names: &[&str],
+    theme: &str,
+    size: u32,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
+    let (path, is_symbolic) = find_any_icon(names, theme, lookup_size(size))?;
+    load_icon_file(&path, is_symbolic, fg_color)
+}
+
 /// Load a freedesktop icon by name from the given theme.
 ///
 /// Looks up the name in the specified theme directory (with `-symbolic`
@@ -1187,6 +1240,97 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// A lookup over `files`, the (theme, name) pairs a fake chain has, that
+    /// answers with the path `theme/name`.
+    fn fake_lookup<'a>(
+        files: &'a [(&'a str, &'a str)],
+    ) -> impl FnMut(&str, &String) -> Option<PathBuf> + 'a {
+        move |name, theme| {
+            files
+                .iter()
+                .any(|&(t, n)| t == theme && n == name)
+                .then(|| PathBuf::from(theme).join(name))
+        }
+    }
+
+    /// The theme's own icon under a later name wins over its parent's under
+    /// an earlier name: Adwaita's shape, whose parent AdwaitaLegacy has
+    /// Breeze's `emblem-favorite` as a raster.
+    #[test]
+    fn first_of_names_searches_a_theme_for_every_name_before_its_parent() {
+        let chain = ["Adwaita".to_string(), "AdwaitaLegacy".to_string()];
+        let files = [
+            ("AdwaitaLegacy", "emblem-favorite"),
+            ("Adwaita", "starred-symbolic"),
+        ];
+        assert_eq!(
+            first_of_names(&["emblem-favorite", "starred"], &chain, fake_lookup(&files)),
+            Some((PathBuf::from("Adwaita/starred-symbolic"), true))
+        );
+        assert_eq!(
+            first_of_names(&["emblem-favorite", "no-such"], &chain, fake_lookup(&files)),
+            Some((PathBuf::from("AdwaitaLegacy/emblem-favorite"), false))
+        );
+        assert_eq!(first_of_names(&[], &chain, fake_lookup(&files)), None);
+    }
+
+    /// Within a theme the names keep their order, each tried as its
+    /// symbolic form and then as itself: a later name's symbolic icon does
+    /// not displace an earlier name's plain one (Breeze has both `cpu` and
+    /// `computer-symbolic`), and a name's own symbolic form wins over it.
+    #[test]
+    fn first_of_names_keeps_the_names_order_within_a_theme() {
+        let chain = ["breeze".to_string()];
+        let files = [
+            ("breeze", "cpu"),
+            ("breeze", "computer-symbolic"),
+            ("breeze", "edit-copy"),
+            ("breeze", "edit-copy-symbolic"),
+        ];
+        assert_eq!(
+            first_of_names(&["cpu", "computer"], &chain, fake_lookup(&files)),
+            Some((PathBuf::from("breeze/cpu"), false))
+        );
+        assert_eq!(
+            first_of_names(&["edit-copy"], &chain, fake_lookup(&files)),
+            Some((PathBuf::from("breeze/edit-copy-symbolic"), true))
+        );
+        assert_eq!(
+            first_of_names(&["computer-symbolic"], &chain, fake_lookup(&files)),
+            Some((PathBuf::from("breeze/computer-symbolic"), true))
+        );
+    }
+
+    /// On the installed Adwaita, `Heart`'s names in the gpui connector's
+    /// order, Breeze's `emblem-favorite` first, load Adwaita's own
+    /// `starred-symbolic`, not AdwaitaLegacy's `emblem-favorite` raster.
+    #[test]
+    fn find_any_icon_takes_adwaita_s_own_icon_over_adwaita_legacy_s() {
+        let icons = Path::new("/usr/share/icons");
+        let legacy = icons.join("AdwaitaLegacy");
+        if !has_theme_index("Adwaita", icon_base_dirs())
+            || !theme_icon_stems("AdwaitaLegacy", icon_base_dirs()).contains("emblem-favorite")
+            || !theme_icon_stems("Adwaita", icon_base_dirs()).contains("starred-symbolic")
+        {
+            eprintln!(
+                "skipped: needs Adwaita's starred-symbolic and AdwaitaLegacy's emblem-favorite"
+            );
+            return;
+        }
+        let (path, symbolic) = find_any_icon(&["emblem-favorite", "starred"], "Adwaita", 24)
+            .expect("Adwaita has starred-symbolic");
+        assert!(
+            symbolic && !path.starts_with(&legacy),
+            "loaded {}",
+            path.display()
+        );
+        assert!(
+            find_icon("emblem-favorite", "Adwaita", 24)
+                .is_some_and(|(path, _)| path.starts_with(&legacy)),
+            "the name-by-name lookup this replaces takes AdwaitaLegacy's raster"
+        );
     }
 
     /// Adwaita inherits AdwaitaLegacy: an icon only AdwaitaLegacy has is

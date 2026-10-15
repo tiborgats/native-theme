@@ -3416,9 +3416,10 @@ the plan's close.
       unreachable after the bound check above it.
 - [ ] [v0.7.0] For M8's api batch (M6-12 ruling, 2026-10-15): ask the maintainer whether
       `native_theme_gpui::icons::freedesktop_name_for_gpui_icon(icon, de)` goes. It picks a
-      name by desktop, where the icon theme in use decides which name exists (an Adwaita
-      theme lacks the Breeze name for the 50 icons the conventions name apart); M6 T7 added
-      `freedesktop_name_candidates(icon)` beside it, moved the gpui showcase to it, and the old
+      name by desktop, where the icon theme in use decides which name exists (Adwaita, with
+      the AdwaitaLegacy it inherits, lacks the Breeze name for 48 of the 50 icons the
+      conventions name apart); M6 T7 added `freedesktop_name_candidates(icon)` beside it and
+      core's `FreedesktopLoader::any(names)`, moved the gpui showcase to them, and the old
       function's docs point there. Removing it is an api-break of a released `pub fn`. The
       iced showcase's `panel_left_name` (`examples/showcase-iced.rs`, beside `PanelLeft`'s
       doc) makes the same desktop-keyed choice for `sidebar-show` / `sidebar-expand-left`.

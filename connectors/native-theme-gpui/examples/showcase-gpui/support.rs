@@ -736,14 +736,10 @@ pub(crate) fn load_gpui_icons(
     // convention decides which it has, not the desktop's (no theme mixing).
     #[cfg(target_os = "linux")]
     let load_by_name = |icon: &IconName, theme: &str| {
-        freedesktop_name_candidates(icon.clone())
-            .iter()
-            .find_map(|&fd_name| {
-                FreedesktopLoader::new(fd_name)
-                    .theme(theme)
-                    .color_opt(fg_color)
-                    .load()
-            })
+        FreedesktopLoader::any(freedesktop_name_candidates(icon.clone()))
+            .theme(theme)
+            .color_opt(fg_color)
+            .load()
     };
 
     GPUI_ICONS

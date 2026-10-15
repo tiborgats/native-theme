@@ -184,7 +184,7 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 pub struct FreedesktopLoader<'a> {
     // Fields read only in the Linux + system-icons cfg branch of `load`.
     #[allow(dead_code)]
-    id: IconId<'a>,
+    wanted: Wanted<'a>,
     #[allow(dead_code)]
     size: u32,
     #[allow(dead_code)]
@@ -193,11 +193,54 @@ pub struct FreedesktopLoader<'a> {
     theme: Option<&'a str>,
 }
 
+/// What a [`FreedesktopLoader`] looks up.
+#[derive(Debug)]
+enum Wanted<'a> {
+    /// One icon: a role, a name or a provider ([`FreedesktopLoader::new`]).
+    // Read only in the Linux + system-icons cfg branch of `load`.
+    #[allow(dead_code)]
+    Id(IconId<'a>),
+    /// The first of several names the theme has ([`FreedesktopLoader::any`]).
+    #[allow(dead_code)]
+    AnyOf(&'a [&'a str]),
+}
+
 impl<'a> FreedesktopLoader<'a> {
     /// Create a freedesktop loader. Defaults: size 24, no fg_color, system theme.
     pub fn new(id: impl Into<IconId<'a>>) -> Self {
+        Self::wanting(Wanted::Id(id.into()))
+    }
+
+    /// Create a loader for the first of `names` the theme has, for a
+    /// concept icon themes name differently (Breeze's `view-visible`,
+    /// Adwaita's `view-reveal`). Each theme of the chain (see
+    /// [`FreedesktopLoader`]) is searched for every name, in order, before
+    /// the theme it inherits from, so the theme's own icon under a later
+    /// name wins over its parent's under an earlier one: Adwaita's
+    /// `starred-symbolic` over AdwaitaLegacy's raster `emblem-favorite`,
+    /// which [`Self::new`] tried name by name would load. Within a theme a
+    /// name is tried as `<name>-symbolic`, then as itself. Every name is
+    /// looked up in the one theme and its chain, so no icon comes from
+    /// another set. Defaults as [`Self::new`]; no names load `None`.
+    ///
+    /// ```
+    /// # #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    /// # {
+    /// use native_theme::icons::FreedesktopLoader;
+    ///
+    /// let _eye = FreedesktopLoader::any(&["view-visible", "view-reveal"])
+    ///     .theme("Adwaita")
+    ///     .load();
+    /// # }
+    /// ```
+    pub fn any(names: &'a [&'a str]) -> Self {
+        Self::wanting(Wanted::AnyOf(names))
+    }
+
+    /// A loader for `wanted`, with [`Self::new`]'s defaults.
+    fn wanting(wanted: Wanted<'a>) -> Self {
         Self {
-            id: id.into(),
+            wanted,
             size: 24,
             fg_color: None,
             theme: None,
@@ -267,8 +310,14 @@ impl<'a> FreedesktopLoader<'a> {
                     detected.as_deref()
                 }
             };
-            match self.id {
-                IconId::Role(role) => {
+            match self.wanted {
+                Wanted::AnyOf(names) => crate::freedesktop::load_freedesktop_icon_by_names(
+                    names,
+                    theme?,
+                    self.size,
+                    self.fg_color,
+                ),
+                Wanted::Id(IconId::Role(role)) => {
                     let name = icon_name(role, IconSet::Freedesktop)?;
                     crate::freedesktop::load_freedesktop_icon_by_name(
                         name,
@@ -277,13 +326,15 @@ impl<'a> FreedesktopLoader<'a> {
                         self.fg_color,
                     )
                 }
-                IconId::Name(name) => crate::freedesktop::load_freedesktop_icon_by_name(
-                    name,
-                    theme?,
-                    self.size,
-                    self.fg_color,
-                ),
-                IconId::Custom(provider) => {
+                Wanted::Id(IconId::Name(name)) => {
+                    crate::freedesktop::load_freedesktop_icon_by_name(
+                        name,
+                        theme?,
+                        self.size,
+                        self.fg_color,
+                    )
+                }
+                Wanted::Id(IconId::Custom(provider)) => {
                     if let Some(theme) = theme
                         && let Some(name) = provider.icon_name(IconSet::Freedesktop)
                         && let Some(data) = crate::freedesktop::load_freedesktop_icon_by_name(
