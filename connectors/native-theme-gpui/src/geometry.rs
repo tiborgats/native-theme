@@ -49,21 +49,22 @@
 //! [`data_table_size`] and [`list_header_height`], which compute the growth
 //! themselves, a `Size` being a fixed height.
 //!
-//! Geometry, with one exception that is not geometry: nine builders also
+//! Geometry, with one exception that is not geometry: ten builders also
 //! carry the platform's text colour. A builder carries it only where the
 //! carried colour actually reaches the text and upstream's state colours
 //! (disabled, muted) still win — either because upstream labels the very
 //! element the refinement lands on with a token of its own one refinement
 //! earlier and applies its state colours after the refinement or on a child,
 //! or because upstream sets no colour on that element at all, so there is
-//! nothing to displace. Five of the nine displace a visibly different colour
+//! nothing to displace. Five of the ten displace a visibly different colour
 //! today — [`status_bar`] and [`dialog_description`] displace
 //! `muted_foreground`, [`tooltip`] displaces `popover_foreground`, and
 //! [`input`] and [`text_area`] the window's `foreground`, which the field's
 //! text inherits and the macOS presets' `input.font.color` differs from —
 //! three displace `foreground`: [`list_item`], [`radio`] and [`select`], and
-//! [`title_bar`] displaces nothing (`title_bar.rs:331-346` paints the fill and
-//! the border, then refines). Those four change no pixel over the bundled
+//! [`title_bar`] and [`dialog_title`] displace nothing (`title_bar.rs:331-346`
+//! paints the fill and the border, then refines; `dialog/title.rs:39-46` sets
+//! no colour). Those five change no pixel over the bundled
 //! presets, because a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a source that does state one is honoured rather
@@ -545,10 +546,13 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:633-643, 723-724` → `:728`); width through
+/// `Dialog` (`src/dialog/dialog.rs:633-643, 720-724` → `:728`); width through
 /// [`dialog_max_width`] and `Dialog::max_w`. The radius is the dialog's own
 /// (`dialog.border.corner_radius`), which upstream would otherwise take from
-/// `radius_lg` (`:723`); the two differ on Adwaita.
+/// `radius_lg` (`:723`); the two differ on Adwaita. The fill and the edge are
+/// the dialog's own too, `dialog.background_color` and `dialog.border.color`,
+/// over the window's `background` and `border` tokens upstream paints the
+/// dialog with before the refinement (`:720`, `:722`).
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
 /// dialog to what is left of the viewport *after* applying this style -- in
@@ -574,6 +578,8 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
         .rounded(px(d.border.corner_radius))
+        .bg(rgba_to_hsla(d.background_color))
+        .border_color(rgba_to_hsla(d.border.color))
 }
 
 /// For `Dialog::entrance` and `AlertDialog::entrance`
@@ -623,9 +629,15 @@ pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
 
 /// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`): the platform's line
 /// height in place of upstream's `relative(1.25)` (`:44`).
+///
+/// The colour is carried because upstream sets none on the title
+/// (`:39-46`), so it takes the dialog's text colour and the platform's
+/// `dialog.title_font.color` displaces nothing. Today every preset's title
+/// colour is the window's text colour, so this changes no pixel; it is what
+/// honours a source that states a title colour of its own.
 #[must_use]
 pub fn dialog_title(n: Native<'_>) -> StyleRefinement {
-    with_text(StyleRefinement::default(), &n.resolved.dialog.title_font, n)
+    with_coloured_text(StyleRefinement::default(), &n.resolved.dialog.title_font, n)
 }
 
 /// `DialogDescription` (`src/dialog/description.rs:49` → `:51`).
@@ -2061,7 +2073,7 @@ mod tests {
     /// reaches the text *and* upstream's state colours still win afterwards:
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
-    /// no colour on that element at all. Seven are checked here, over every
+    /// no colour on that element at all. Eight are checked here, over every
     /// preset in both modes, not just the `CASES` names; [`input`] and
     /// [`text_area`] in `a_field_draws_its_text_in_the_platforms_input_colour`.
     ///
@@ -2070,7 +2082,8 @@ mod tests {
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other four -- `list_item`, `radio`, `select`, `title_bar` -- get no
+    /// The other five -- `list_item`, `radio`, `select`, `title_bar`,
+    /// `dialog_title` -- get no
     /// such `assert_ne!`, and deliberately: their native font colour equals
     /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
     /// select is the exception, its `combo_box.font.color` the accent), because
@@ -2079,8 +2092,9 @@ mod tests {
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child
-    /// afterwards, and it labels the title bar with nothing at all
-    /// (`title_bar.rs:331-346`) -- so the day a source states
+    /// afterwards, and it labels the title bar and a dialog's title with
+    /// nothing at all (`title_bar.rs:331-346`, `dialog/title.rs:39-46`) -- so
+    /// the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
     /// reader does from `[WM] activeForeground`, the element is painted with it
     /// instead of silently keeping the window's.
@@ -2156,6 +2170,11 @@ mod tests {
                     title_bar(n).text.color,
                     Some(rgba_to_hsla(r.window.title_bar_font.color)),
                     "{at}: title bar text"
+                );
+                assert_eq!(
+                    dialog_title(n).text.color,
+                    Some(rgba_to_hsla(r.dialog.title_font.color)),
+                    "{at}: dialog title text"
                 );
 
                 // The two the route is blocked for; the guard below says why.
@@ -2298,6 +2317,15 @@ mod tests {
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(d.border.corner_radius.max(0.0))
+            );
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(d.background_color).into())
+            );
+            assert_eq!(out.border_color, Some(rgba_to_hsla(d.border.color)));
+            assert_eq!(
+                dialog_title(n).text.color,
+                Some(rgba_to_hsla(d.title_font.color))
             );
             assert_eq!(dialog_footer(n).gap.width, def(d.button_gap));
             assert_eq!(dialog_footer(n).gap.height, def(d.button_gap));

@@ -74,6 +74,7 @@ pub fn dialog(
         t,
         reduce_motion,
         entrance,
+        styled,
         true,
         "the title, the content and the footer",
     );
@@ -148,6 +149,7 @@ pub fn alert_dialog(
             t,
             reduce_motion,
             entrance,
+            styled,
             false,
             if icon.shown() {
                 "the icon, the title and the description"
@@ -172,7 +174,11 @@ pub fn alert_dialog(
     ))
     .not_themeable(
         "surface",
-        "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, so its fill is background and not the popover colour the panel had claimed",
+        if styled {
+            "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, which geometry::dialog fills with dialog.background_color"
+        } else {
+            "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, so its fill is background and not the popover colour the panel had claimed"
+        },
     )
     .not_themeable(
         "footer",

@@ -1160,14 +1160,16 @@ pub fn resize_handle(
 /// the surface, its edge, and the backdrop behind it; and what upstream
 /// builds around the parts it is given. `close_button` is whether the Dialog
 /// draws its close button, `reported` the parts that report it,
-/// `reduce_motion` gpui's reduced motion while it is drawn, and `entrance`
+/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance`
 /// whether it enters as `geometry::dialog_entrance` gives the theme's
-/// `dialog.entrance`.
+/// `dialog.entrance`, and `styled` whether `geometry::dialog` refined it,
+/// whose geometry line then names the surface's fill and edge.
 pub(super) fn dialog_surface(
     info: WidgetInfo,
     t: &Theme,
     reduce_motion: bool,
     entrance: bool,
+    styled: bool,
     close_button: bool,
     reported: &str,
 ) -> WidgetInfo {
@@ -1179,28 +1181,35 @@ pub(super) fn dialog_surface(
     } else {
         info
     };
+    // geometry::dialog paints the surface and its edge with
+    // dialog.background_color and dialog.border.color, which no ThemeColor
+    // field holds, over upstream's.
+    let info = if styled {
+        info
+    } else {
+        info.color(claim(
+            "bg",
+            "background",
+            t.background,
+            "gpui-component/dialog/dialog.rs:720",
+        ))
+        .color(claim(
+            "border",
+            "border",
+            t.border,
+            "gpui-component/dialog/dialog.rs:722",
+        ))
+        .not_themeable(
+            "fill",
+            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.background_color where a native theme is installed",
+        )
+    };
     info.color(claim(
-        "bg",
-        "background",
-        t.background,
-        "gpui-component/dialog/dialog.rs:720",
-    ))
-    .color(claim(
-        "border",
-        "border",
-        t.border,
-        "gpui-component/dialog/dialog.rs:722",
-    ))
-    .color(claim(
         "backdrop",
         "overlay",
         t.overlay,
         "gpui-component/dialog/dialog.rs:327",
     ))
-    .not_themeable(
-        "fill",
-        "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog)",
-    )
     .not_themeable(
         "width",
         "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog_max_width caps it",
@@ -1233,12 +1242,13 @@ pub(super) fn dialog_surface(
 /// `demo::command_palette` applies the builders; its info target is the
 /// title, because the Command fills the rest of its content. `entrance` as
 /// `dialog_surface`'s.
-pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool) -> WidgetInfo {
+pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bool) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("Command Palette"),
         t,
         reduce_motion,
         entrance,
+        styled,
         true,
         "the title and the content",
     )
@@ -1585,14 +1595,21 @@ pub fn preference_switch(
 /// The About dialog (spec §2.8). Its geometry lines are recorded where
 /// `demo::about` applies the builders; its title and its content report it.
 /// `gapped` is whether the installed theme states the gap between its lines,
-/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance` as
-/// `dialog_surface`'s.
-pub fn about_dialog(t: &Theme, gapped: bool, reduce_motion: bool, entrance: bool) -> WidgetInfo {
+/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance` and
+/// `styled` as `dialog_surface`'s.
+pub fn about_dialog(
+    t: &Theme,
+    gapped: bool,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("About"),
         t,
         reduce_motion,
         entrance,
+        styled,
         true,
         "the title and the content",
     )

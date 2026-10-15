@@ -274,13 +274,14 @@ A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
 element with a token of its own before applying the refinement and re-applies
 its state colours after it or on a child, or upstream sets no colour on that
-element at all. Nine do. Five displace a visibly different colour:
+element at all. Ten do. Five displace a visibly different colour:
 `status_bar` and `dialog_description` displace upstream's `muted_foreground`,
 `tooltip` displaces `popover_foreground`, and `input` and `text_area` the
 window's `foreground`, which a field's text inherits and the macOS presets'
 `input.font.color` differs from. Three displace `foreground`:
-`list_item`, `radio` and `select`. `title_bar` displaces nothing — upstream
-paints the bar's fill and border and sets no text colour. Those four change no
+`list_item`, `radio` and `select`. `title_bar` and `dialog_title` displace
+nothing — upstream paints the bar's fill and border and sets no text colour on
+either. Those five change no
 pixel under any bundled preset — a widget that states no `font.color` inherits
 the window's, and `foreground` is fed from that same field — but they carry it
 so that a source which *does* state, say, a list row colour, or the title bar
@@ -316,7 +317,7 @@ test over every preset and mode says so.
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |

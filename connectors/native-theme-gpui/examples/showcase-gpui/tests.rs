@@ -6452,7 +6452,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
         (
             "About Dialog",
-            chrome::about_dialog(&t, false, false, false),
+            chrome::about_dialog(&t, false, false, false, false),
         ),
         ("Settings", layout::settings(&t)),
         ("Pagination", data::pagination(&t, false, 1, 12, false)),

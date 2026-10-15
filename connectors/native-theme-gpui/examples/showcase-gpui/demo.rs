@@ -2356,6 +2356,7 @@ pub(crate) fn command_palette(
         cx.theme(),
         cx.reduce_motion(),
         themed_entrance(cx).is_some(),
+        cx.native().is_some(),
     );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
@@ -2396,6 +2397,7 @@ pub(crate) fn about(
         gap.is_some(),
         cx.reduce_motion(),
         themed_entrance(cx).is_some(),
+        cx.native().is_some(),
     );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
