@@ -32,8 +32,8 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
   the native heights, paddings, radii, borders and text sizes for the widgets
   where gpui-component applies the caller's style after its own — and the
-  native text colour for the seven whose label would otherwise be left to a
-  token of upstream's.
+  native colours for the widgets whose text, fill or edge would otherwise be
+  left to a token of upstream's.
 - **Theme-drawn widgets** (feature `widgets`): a checkbox, radio, switch,
   slider, progress bar, spinner, tab bar and separator built on gpui-base's
   headless primitives and painted from the resolved theme, for the parts
@@ -274,9 +274,11 @@ A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
 element with a token of its own before applying the refinement and re-applies
 its state colours after it or on a child, or upstream sets no colour on that
-element at all. Seven do. Three displace a visibly different colour:
+element at all. Nine do. Five displace a visibly different colour:
 `status_bar` and `dialog_description` displace upstream's `muted_foreground`,
-`tooltip` displaces `popover_foreground`. Three displace `foreground`:
+`tooltip` displaces `popover_foreground`, and `input` and `text_area` the
+window's `foreground`, which a field's text inherits and the macOS presets'
+`input.font.color` differs from. Three displace `foreground`:
 `list_item`, `radio` and `select`. `title_bar` displaces nothing — upstream
 paints the bar's fill and border and sets no text colour. Those four change no
 pixel under any bundled preset — a widget that states no `font.color` inherits
@@ -300,8 +302,8 @@ test over every preset and mode says so.
 | `toggle` | `button.font` size and weight, `defaults.line_height` | `Toggle` |
 | `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:267-288`, `input/number_input.rs:158-165`, `input/input.rs:784-786`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
-| `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
-| `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated) and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement |
+| `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `.color`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
+| `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated), `input.disabled_text_color` and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement. The disabled text colour is what gpui-base then draws at half its alpha, as it draws every disabled field's text |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
 | `link` | `link.underline_enabled`, `link.font` size and weight, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |

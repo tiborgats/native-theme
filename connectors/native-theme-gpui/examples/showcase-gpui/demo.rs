@@ -3188,6 +3188,12 @@ fn text_field(
             if let (true, Some(r), Some(fill)) = (disabled, resolved, &fill) {
                 input_info = info::inputs::disabled_input_surface(input_info);
                 let none = cx.theme().transparent;
+                // The fill goes under the field; the disabled text colour
+                // stays on it, where the editor reads it.
+                let input = match fill.text.color {
+                    Some(ink) => input.text_color(ink),
+                    None => input,
+                };
                 return faded_surface(&r.input.border, fill, input.bg(none).border_color(none))
                     .w(width)
                     .info(ui, id, input_info)

@@ -26,7 +26,8 @@ pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
 
 /// `info` of a disabled field over its surface (`demo::disabled_input_surface`).
 pub fn disabled_input_surface(info: WidgetInfo) -> WidgetInfo {
-    info.config("surface", "geometry::input_fill's fill inside input.border.color's line, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+    info.instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
+        .config("surface", "geometry::input_fill's fill inside input.border.color's line, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
@@ -55,22 +56,26 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     } else {
         info.color(input_background(t))
     };
-    let info = info
-        // Input takes only the fill from input_style and drops its foreground
-        // (input/input.rs:707), so the text is the colour the showcase sets
-        // on its window.
-        .color(claim(
+    // Input takes only the fill from input_style and drops its foreground
+    // (input/input.rs:707), so the text is the colour of the root: the one
+    // geometry::input refines it with, or else the colour the showcase sets
+    // on its window.
+    let info = if filled {
+        info.instance("text", "input.font's colour, which geometry::input refines the root with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
+    } else {
+        info.color(claim(
             "text, inherited",
             "foreground",
             t.foreground,
             "showcase",
         ))
-        .color(claim(
-            "placeholder",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/input/input.rs:559",
-        ));
+    };
+    let info = info.color(claim(
+        "placeholder",
+        "muted_foreground",
+        t.muted_foreground,
+        "gpui-component/input/input.rs:559",
+    ));
     // geometry::input carries border.corner_radius, which the refinement
     // applies after upstream's own (input/input.rs:796, then :803).
     let info = if field == InputField::HeightOnly || !styled {
@@ -84,16 +89,24 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     } else {
         info.not_themeable("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs); geometry::input_fill gives a refined field the platform's")
     };
+    let info = if filled {
+        info
+    } else {
+        info.not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.font's")
+    };
     let info = info
-        .not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window")
         .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
     let info = if filled {
         info
     } else {
         info.not_themeable("disabled fill", "input_style's Oklab mix of 80% input and 20% transparent, then faded to half alpha, because a disabled Input fades its fill again (input/input.rs, Input::render) -- a literal pair, and not muted")
     };
+    let info = if filled {
+        info
+    } else {
+        info.not_themeable("disabled text colour", "the window's text colour at half alpha: the editor dims its own text when disabled, in its paint preparation (gpui-base/input/base/element.rs, prepaint); geometry::input_fill gives a refined disabled field input.disabled_text_color to dim")
+    };
     let info = info
-        .not_themeable("disabled text colour", "the window's text colour at half alpha: the editor dims its own text when disabled, in its paint preparation (gpui-base/input/base/element.rs, prepaint), so input.disabled_text_color has no route")
         .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)");
     match field {
         InputField::Refined if styled => info,
@@ -121,26 +134,29 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
 /// lines are recorded where `demo::textarea` applies the builders.
 pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Textarea");
+    // geometry::text_area letters the field in input.font's colour and
+    // draws its edge in text_area.border.color, over upstream's (a Textarea
+    // renders as an Input, input/textarea.rs:221, which drops input_style's
+    // foreground, input/input.rs:707, and draws its edge in input,
+    // :798, then :803): its geometry line names them.
     let info = if filled {
         info
     } else {
         info.color(input_background(t))
+            .color(claim(
+                "text, inherited",
+                "foreground",
+                t.foreground,
+                "showcase",
+            ))
+            .color(claim(
+                "border",
+                "input",
+                t.input,
+                "gpui-component/input/input.rs:798",
+            ))
     };
     info
-        // A Textarea renders as an Input (input/textarea.rs:221), which
-        // drops input_style's foreground (input/input.rs:707).
-        .color(claim(
-            "text, inherited",
-            "foreground",
-            t.foreground,
-            "showcase",
-        ))
-        .color(claim(
-            "border",
-            "input",
-            t.input,
-            "gpui-component/input/input.rs:798",
-        ))
         .color(claim(
             "focused border",
             "ring",

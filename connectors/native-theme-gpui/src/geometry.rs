@@ -49,17 +49,19 @@
 //! [`data_table_size`] and [`list_header_height`], which compute the growth
 //! themselves, a `Size` being a fixed height.
 //!
-//! Geometry, with one exception that is not geometry: seven builders also
+//! Geometry, with one exception that is not geometry: nine builders also
 //! carry the platform's text colour. A builder carries it only where the
 //! carried colour actually reaches the text and upstream's state colours
 //! (disabled, muted) still win — either because upstream labels the very
 //! element the refinement lands on with a token of its own one refinement
 //! earlier and applies its state colours after the refinement or on a child,
 //! or because upstream sets no colour on that element at all, so there is
-//! nothing to displace. Three of the seven displace a visibly different colour
+//! nothing to displace. Five of the nine displace a visibly different colour
 //! today — [`status_bar`] and [`dialog_description`] displace
-//! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — three
-//! displace `foreground`: [`list_item`], [`radio`] and [`select`], and
+//! `muted_foreground`, [`tooltip`] displaces `popover_foreground`, and
+//! [`input`] and [`text_area`] the window's `foreground`, which the field's
+//! text inherits and the macOS presets' `input.font.color` differs from —
+//! three displace `foreground`: [`list_item`], [`radio`] and [`select`], and
 //! [`title_bar`] displaces nothing (`title_bar.rs:331-346` paints the fill and
 //! the border, then refines). Those four change no pixel over the bundled
 //! presets, because a widget that states no `font.color` inherits the window's
@@ -306,11 +308,19 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
 /// sides: the inner Input already pads (`input/group.rs:267-288` and
 /// `input/number_input.rs:158-165` each render an `Input`, which pads itself
 /// at `input/input.rs:784-786`).
+///
+/// The text is `input.font.color`. The root sets no text colour of its own
+/// (`input/input.rs:707-803`; `input_style`'s foreground is dropped at
+/// `:707`), and gpui-base paints the field's text in the colour the root
+/// inherits (gpui-base `input/base/element.rs:2539-2542`), so without the
+/// refinement it is the window's `foreground`. gpui-base halves that
+/// colour's alpha in a disabled field (`:2541-2542`): [`input_fill`] for a
+/// disabled field gives it `input.disabled_text_color` to halve.
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
     let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
-    with_text(
+    with_coloured_text(
         with_padding(r, &i.border.padding)
             .rounded(px(i.border.corner_radius))
             .border(px(i.border.line_width)),
@@ -324,8 +334,12 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
 /// padding, corner radius and line width in place of the input's (the
-/// frame's inherit the input's, docs/platform-facts.md §2.29), the input's
-/// font at `defaults.line_height`, and no height -- the rows the field's
+/// frame's inherit the input's, docs/platform-facts.md §2.29), and its edge in
+/// `text_area.border.color`, which inherits `input.border.color`
+/// (`docs/inheritance-rules.toml:173`), over the `input` token upstream draws
+/// it in before the refinement (`input/input.rs:798` → `:803`); the input's
+/// font at `defaults.line_height`, its colour included as in [`input`]; and no
+/// height -- the rows the field's
 /// state holds size it (gpui-base `input/base/state.rs`,
 /// `InputBaseState::auto_grow`).
 ///
@@ -357,10 +371,11 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
         bottom: rest(p.bottom, down),
         left: rest(p.left, across),
     };
-    with_text(
+    with_coloured_text(
         with_padding(StyleRefinement::default(), &root)
             .rounded(px(a.border.corner_radius))
-            .border(px(a.border.line_width)),
+            .border(px(a.border.line_width))
+            .border_color(rgba_to_hsla(a.border.color)),
         &n.resolved.input.font,
         n,
     )
@@ -1010,7 +1025,8 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// The fill of an `Input` root (`src/input/input.rs:707-718`, painted at
 /// `:795`, refined at `:803`), for a field built with `disabled`: the
 /// platform's `input.background_color`, or disabled its
-/// `input.disabled_background`. Apply it after [`input`].
+/// `input.disabled_background` and its text in `input.disabled_text_color`.
+/// Apply it after [`input`].
 ///
 /// Colour, not geometry, and carried for the reason the builders that carry a
 /// text colour carry it (module doc): no `ThemeColor` field maps to it. Upstream fills an enabled
@@ -1027,6 +1043,13 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// colours or by that opacity, and its data makes the other an identity
 /// (docs/platform-facts.md §2.1.6), so a platform that states no disabled
 /// fill (`input.disabled_background` is `None`) gets the enabled fill, faded.
+///
+/// The disabled text colour replaces [`input`]'s `input.font.color` on the
+/// root, whose colour gpui-base paints the field's text in; it feeds
+/// gpui-base's dim rather than replacing it, since the editor halves the
+/// alpha of a disabled field's text whatever its colour (gpui-base
+/// `input/base/element.rs:2541-2542`), and the field's
+/// `input.disabled_opacity` fades it with the rest of the field.
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let i = &n.resolved.input;
@@ -1035,6 +1058,7 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
             .bg(rgba_to_hsla(
                 i.disabled_background.unwrap_or(i.background_color),
             ))
+            .text_color(rgba_to_hsla(i.disabled_text_color))
             .opacity(unit(i.disabled_opacity))
     } else {
         StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
@@ -1542,9 +1566,39 @@ mod tests {
         stated.assert_each_compared();
     }
 
+    /// `input` and `text_area` letter the field in `input.font.color`: the
+    /// Input root sets no text colour (`input/input.rs:707-803`) and gpui-base
+    /// paints the field's text in the window's (gpui-base
+    /// `input/base/element.rs:2539-2542`), which is `foreground`, fed from
+    /// `defaults.text_color`. macos-monterey and macos-tahoe state another, in
+    /// both modes.
+    #[test]
+    fn a_field_draws_its_text_in_the_platforms_input_colour() {
+        let mut differs = Vec::new();
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let ink = Some(rgba_to_hsla(r.input.font.color));
+                assert_eq!(input(n).text.color, ink, "{at}: input text");
+                assert_eq!(text_area(n).text.color, ink, "{at}: text area text");
+                if r.input.font.color != r.defaults.text_color {
+                    differs.push(at);
+                }
+            }
+        }
+        assert!(
+            !differs.is_empty(),
+            "no preset states an input text colour other than the window's \
+             any more, so this test proves nothing"
+        );
+    }
+
     /// `input_fill` is `input.background_color`, or for a disabled field
     /// `input.disabled_background` (the enabled fill where none is stated)
-    /// faded by `input.disabled_opacity`; it carries nothing else.
+    /// and `input.disabled_text_color`, faded by `input.disabled_opacity`; it
+    /// carries nothing else.
     #[test]
     fn input_fill_is_the_platforms_in_either_state() {
         let mut stated_disabled = 0usize;
@@ -1560,6 +1614,7 @@ mod tests {
                     "{at}: enabled fill"
                 );
                 assert_eq!(enabled.opacity, None, "{at}: enabled, no fade");
+                assert_eq!(enabled.text.color, None, "{at}: enabled, input's text");
                 let disabled = input_fill(n, true);
                 assert_eq!(
                     disabled.background,
@@ -1578,16 +1633,22 @@ mod tests {
                     Some(r.input.disabled_opacity),
                     "{at}: disabled fade"
                 );
+                assert_eq!(
+                    disabled.text.color,
+                    Some(rgba_to_hsla(r.input.disabled_text_color)),
+                    "{at}: disabled text"
+                );
                 stated_disabled += usize::from(r.input.disabled_background.is_some());
                 let bare = StyleRefinement {
                     background: None,
                     opacity: None,
+                    text: Default::default(),
                     ..disabled
                 };
                 assert_eq!(
                     bare,
                     StyleRefinement::default(),
-                    "{at}: only the fill and the fade"
+                    "{at}: only the fill, the text colour and the fade"
                 );
             }
         }
@@ -1846,8 +1907,9 @@ mod tests {
     /// reaches the text *and* upstream's state colours still win afterwards:
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
-    /// no colour on that element at all. Seven do, over every preset in both
-    /// modes, not just the `CASES` names.
+    /// no colour on that element at all. Seven are checked here, over every
+    /// preset in both modes, not just the `CASES` names; [`input`] and
+    /// [`text_area`] in `a_field_draws_its_text_in_the_platforms_input_colour`.
     ///
     /// The `assert_ne!`s below are the reason the first three exist: each of
     /// those native colours differs from the token upstream would otherwise
@@ -2425,6 +2487,22 @@ mod tests {
         assert_eq!(out.padding.bottom, def(1.0), "9 down: 9 − 8");
         assert_eq!(out.padding.left, def(2.0), "12 across: 12 − 10");
         assert_eq!(out.padding.right, None, "an unstated side is upstream's");
+    }
+
+    /// The multi-line field's edge is `text_area.border.color`, over the
+    /// `input` token upstream draws it in (`input/input.rs:798` → `:803`).
+    #[test]
+    fn the_text_area_draws_its_own_edge_colour() {
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        r.text_area.border.color = r.defaults.accent_color;
+        assert_ne!(
+            r.text_area.border.color, r.input.border.color,
+            "precondition"
+        );
+        assert_eq!(
+            text_area(Native::unscaled(&r)).border_color,
+            Some(rgba_to_hsla(r.text_area.border.color))
+        );
     }
 
     /// Without a stated bar height the toolbar is its content's height, with

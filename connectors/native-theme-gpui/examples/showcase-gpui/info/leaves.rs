@@ -1094,7 +1094,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:2541)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (input/base/element.rs:2541)",
     ),
     (
         "",
@@ -1114,7 +1114,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.font.color",
-        "gpui: not carried — the Input letters its text in `foreground` (input/input.rs:105)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (input/input.rs:707)",
     ),
     (
         "basic.number_input",
@@ -2089,7 +2089,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:798)",
+        "gpui: the surface's edge (demo::input_surface); geometry::text_area's edge colour, over the `input` token (input/input.rs:798)",
     ),
     (
         "",
