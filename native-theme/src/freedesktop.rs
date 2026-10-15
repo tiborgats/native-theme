@@ -1306,13 +1306,15 @@ mod tests {
     /// On the installed Adwaita, `Heart`'s names in the gpui connector's
     /// order, Breeze's `emblem-favorite` first, load Adwaita's own
     /// `starred-symbolic`, not AdwaitaLegacy's `emblem-favorite` raster.
+    /// Skipped where the two themes are not installed; the hermetic test of
+    /// the order is the gpui connector's fixture test
+    /// (`the_theme_s_own_name_wins_in_each_convention_s_theme`).
     #[test]
     fn find_any_icon_takes_adwaita_s_own_icon_over_adwaita_legacy_s() {
-        let icons = Path::new("/usr/share/icons");
-        let legacy = icons.join("AdwaitaLegacy");
-        if !has_theme_index("Adwaita", icon_base_dirs())
-            || !theme_icon_stems("AdwaitaLegacy", icon_base_dirs()).contains("emblem-favorite")
-            || !theme_icon_stems("Adwaita", icon_base_dirs()).contains("starred-symbolic")
+        let bases = icon_base_dirs();
+        if !has_theme_index("Adwaita", bases)
+            || !theme_icon_stems("AdwaitaLegacy", bases).contains("emblem-favorite")
+            || !theme_icon_stems("Adwaita", bases).contains("starred-symbolic")
         {
             eprintln!(
                 "skipped: needs Adwaita's starred-symbolic and AdwaitaLegacy's emblem-favorite"
@@ -1322,13 +1324,16 @@ mod tests {
         let (path, symbolic) = find_any_icon(&["emblem-favorite", "starred"], "Adwaita", 24)
             .expect("Adwaita has starred-symbolic");
         assert!(
-            symbolic && !path.starts_with(&legacy),
+            symbolic && is_in_theme_dir(&path, "Adwaita", bases),
             "loaded {}",
             path.display()
         );
         assert!(
-            find_icon("emblem-favorite", "Adwaita", 24)
-                .is_some_and(|(path, _)| path.starts_with(&legacy)),
+            find_icon("emblem-favorite", "Adwaita", 24).is_some_and(|(path, _)| is_in_theme_dir(
+                &path,
+                "AdwaitaLegacy",
+                bases
+            )),
             "the name-by-name lookup this replaces takes AdwaitaLegacy's raster"
         );
     }

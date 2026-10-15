@@ -223,6 +223,12 @@ impl<'a> FreedesktopLoader<'a> {
     /// looked up in the one theme and its chain, so no icon comes from
     /// another set. Defaults as [`Self::new`]; no names load `None`.
     ///
+    /// With one name, `any(&[name])` differs from `new(name)` in one case: a
+    /// theme that has the plain `name` while a theme it inherits from has
+    /// `<name>-symbolic`. `any` takes the theme's own plain icon, as it
+    /// searches a theme before its parent; `new` searches the whole chain for
+    /// the symbolic form first and takes the parent's.
+    ///
     /// ```
     /// # #[cfg(all(target_os = "linux", feature = "system-icons"))]
     /// # {

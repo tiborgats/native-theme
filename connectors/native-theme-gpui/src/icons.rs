@@ -2615,9 +2615,11 @@ mod freedesktop_mapping_tests {
     /// inherits a legacy theme carrying the Breeze names as PNGs (Adwaita
     /// inherits AdwaitaLegacy, which has `emblem-favorite` and
     /// `applications-office`), the theme's own GTK-named SVG, not its
-    /// parent's raster. The code under test never reads the desktop; the
-    /// child process is for the fixture's icon dirs
-    /// ([`crate::icon_fixture`]).
+    /// parent's raster. A theme holding both names, as some themes have both
+    /// (Breeze ships `object-select-symbolic` beside `dialog-ok`), gives the
+    /// first candidate, Breeze's, so the table's order is pinned too. The
+    /// code under test never reads the desktop; the child process is for the
+    /// fixture's icon dirs ([`crate::icon_fixture`]).
     #[cfg(feature = "system-icons")]
     #[test]
     fn the_theme_s_own_name_wins_in_each_convention_s_theme()
@@ -2641,6 +2643,7 @@ mod freedesktop_mapping_tests {
                     ("gtk-only", format!("gtk-only/{gtk}")),
                     ("breeze-only", format!("breeze-only/{breeze}")),
                     ("gtk-over-legacy", format!("gtk-over-legacy/{gtk}")),
+                    ("both-names", format!("both-names/{breeze}")),
                 ] {
                     let candidates = freedesktop_name_candidates(icon.clone());
                     let loaded = FreedesktopLoader::any(candidates).theme(theme).load();
@@ -2695,6 +2698,7 @@ mod freedesktop_mapping_tests {
             let breeze_only = theme("breeze-only", "", SCALABLE)?;
             let over_legacy = theme("gtk-over-legacy", "Inherits=breeze-legacy\n", SCALABLE)?;
             let legacy = theme("breeze-legacy", "", "Size=24\nType=Fixed")?;
+            let both = theme("both-names", "", SCALABLE)?;
             let mut png = std::io::Cursor::new(Vec::new());
             image::RgbaImage::from_pixel(24, 24, image::Rgba([61, 174, 233, 255]))
                 .write_to(&mut png, image::ImageFormat::Png)
@@ -2714,6 +2718,12 @@ mod freedesktop_mapping_tests {
                     fixture_svg("gtk-over-legacy", gtk),
                 )?;
                 std::fs::write(legacy.join(format!("{breeze}.png")), &png)?;
+                for name in [breeze, gtk] {
+                    std::fs::write(
+                        both.join(format!("{name}.svg")),
+                        fixture_svg("both-names", name),
+                    )?;
+                }
             }
             Ok(())
         })?;
