@@ -25,6 +25,9 @@
 //! sized with `geometry::data_table_size` whose container is refined with
 //! `geometry::table`.
 //!
+//! A DataTable cell's text lies inside its row under every native preset at
+//! text scales 1, 1.1 and 2.
+//!
 //! A tooltip's text wrapped to two lines under `geometry::tooltip` is two
 //! lines of the platform's `defaults.line_height` tall.
 //!
@@ -1177,6 +1180,9 @@ fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {
 
 // --- The DataTable ------------------------------------------------------------
 
+/// The debug selector on the [`OneCell`] table's row.
+const ROW: &str = "row";
+
 /// One column, one row, whose cell is the text probe.
 struct OneCell;
 
@@ -1191,6 +1197,15 @@ impl TableDelegate for OneCell {
 
     fn column(&self, _: usize, _: &App) -> Column {
         Column::new("c", "C")
+    }
+
+    fn render_tr(
+        &mut self,
+        row_ix: usize,
+        _: &mut Window,
+        _: &mut Context<TableState<Self>>,
+    ) -> gpui::Stateful<gpui::Div> {
+        div().id(("row", row_ix)).debug_selector(|| ROW.into())
     }
 
     fn render_td(
@@ -1274,6 +1289,50 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
                 s,
                 e,
                 &format!("{preset} data table cell at text scale {factor}"),
+            );
+        }
+    }
+}
+
+/// Under every native preset, at its own DPI: the text of a cell in a
+/// `DataTable` sized with `geometry::data_table_size`, whose container is
+/// refined with `geometry::table`, lies inside its row at text scales 1, 1.1
+/// and 2, and at 1 the row is `data_table_size`'s stated height. Upstream sets
+/// a `Size::Size` row's height verbatim (`table/state.rs:2047`, `:2061`;
+/// `sizing.rs:57-64`), so above a text scale of 1 the builder grows the row
+/// around the scaled text, which at 2 overruns every native preset's row.
+#[gpui::test]
+fn a_data_table_row_holds_its_text_at_every_scale(cx: &mut TestAppContext) {
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        for factor in [1.0, 1.1, 2.0] {
+            let prefs = scaled_by(factor);
+            let n = Native {
+                resolved: &r,
+                accessibility: &prefs,
+            };
+            let [text, row] = laid_out_as(
+                cx,
+                preset,
+                &r,
+                &prefs,
+                Some(geometry::table(n)),
+                native_table,
+                [TEXT, ROW],
+            );
+            if factor <= 1.0 {
+                let gpui_component::Size::Size(stated) = geometry::data_table_size(n) else {
+                    panic!("{preset}: data_table_size is not a Size::Size");
+                };
+                assert_eq!(
+                    row.size.height, stated,
+                    "{preset}: at text scale 1 the row is not data_table_size's {stated:?}"
+                );
+            }
+            assert!(
+                text.top() >= row.top() && text.bottom() <= row.bottom(),
+                "{preset}: at text scale {factor} the cell text at {text:?} is not inside its \
+                 row at {row:?}"
             );
         }
     }

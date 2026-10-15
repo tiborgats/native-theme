@@ -278,11 +278,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ("spinner_size", "spinner.diameter"),
     (
         "data_table_size",
-        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size)",
+        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height and upstream's own cell padding, so the row holds its text (sizing.rs, table_cell_padding)",
     ),
     (
         "list_header_height",
-        "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height)",
+        "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height); above a text scale of 1 at least list.header_font's scaled line box at defaults.line_height and upstream's own cell padding",
     ),
     (
         "icon_size_toolbar",

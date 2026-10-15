@@ -43,7 +43,9 @@
 //! 1, 1.1 and 2. Where the theme states no height (`menu.row_height` and
 //! `list.row_height` are optional, and KDE states neither), the builder sets
 //! the line height alone and the row keeps the toolkit's own height. The rule
-//! is for single-line controls.
+//! is for single-line controls. A `DataTable` row and header follow it through
+//! [`data_table_size`] and [`list_header_height`], which compute the growth
+//! themselves, a `Size` being a fixed height.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -76,13 +78,15 @@
 //! without a builder's refinement, and checks what arrives: the heights of
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`]; [`tooltip`] and [`tooltip_content`] keeping a tooltip's text
-//! inside its bubble, its wrapped lines at the platform's line height; and, under every native preset at its own DPI, the
-//! drawn left padding of an [`input`], a [`select`] and a [`combobox`], an
-//! [`input`]'s right padding, a Textarea refined by [`input`] with its padding
-//! cleared, and six single-line controls -- a Button, an Input, a Select, a
-//! Combobox, a ListItem and an application-drawn row under [`menu_item`] --
-//! at their stated height with their text inside them at text scales 1, 1.1
-//! and 2. It also checks that [`select`] and [`combobox`]
+//! inside its bubble, its wrapped lines at the platform's line height; and,
+//! under every native preset at its own DPI, the drawn left padding of an
+//! [`input`], a [`select`] and a [`combobox`], an [`input`]'s right padding,
+//! a Textarea refined by [`input`] with its padding cleared, six single-line
+//! controls -- a Button, an Input, a Select, a Combobox, a ListItem and an
+//! application-drawn row under [`menu_item`] -- at their stated height with
+//! their text inside them at text scales 1, 1.1 and 2, and a `DataTable` row
+//! under [`data_table_size`] holding its cell's text at the same scales. It
+//! also checks that [`select`] and [`combobox`]
 //! keep upstream's right padding beside a stated arrow column and apply a
 //! stated one without it. The other builders rest on the source citations in
 //! their doc comments.
@@ -858,7 +862,13 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 }
 
 /// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
-/// Medium row height where the theme states none.
+/// Medium row height where the theme states none. Above a text-scaling factor
+/// of 1 the row is at least the scaled `list.item_font`'s line box at
+/// `defaults.line_height`, rounded up, and upstream's own top and bottom cell
+/// padding (`Size::table_cell_padding`, `src/sizing.rs:89-94`): the
+/// control-height rule (module doc), computed here because upstream gives
+/// every row this height (`src/table/state.rs:2047`, `:2061`) and clips each
+/// cell to it (`:1406-1412`).
 ///
 /// Under `Size::Size` gpui-component sets the row height verbatim
 /// (`src/sizing.rs:57-64`) and the cells no text size (`:323-333`), so they
@@ -868,21 +878,40 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 /// font.
 #[must_use]
 pub fn data_table_size(n: Native<'_>) -> Size {
-    Size::Size(
-        n.resolved
-            .list
-            .row_height
-            .map_or_else(|| Size::Medium.table_row_height(), px),
-    )
+    let l = &n.resolved.list;
+    let stated = l
+        .row_height
+        .map_or_else(|| Size::Medium.table_row_height(), px);
+    Size::Size(table_row_height(stated, &l.item_font, n))
 }
 
 /// For `DataTable::header_row_height` (`src/table/data_table.rs:129`):
-/// `list.header_height`, or `None` where the theme states none, so the header
-/// keeps the body rows' height, which upstream gives an unset header
-/// (`src/table/state.rs:775-779`) and [`data_table_size`] sets.
+/// `list.header_height`, grown above a text-scaling factor of 1 as
+/// [`data_table_size`] grows a row, with `list.header_font`, or `None` where
+/// the theme states none, so the header keeps the body rows' height, which
+/// upstream gives an unset header (`src/table/state.rs:775-779`) and
+/// [`data_table_size`] sets.
 #[must_use]
 pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
-    n.resolved.list.header_height.map(px)
+    let l = &n.resolved.list;
+    l.header_height
+        .map(|h| table_row_height(px(h), &l.header_font, n))
+}
+
+/// A `DataTable` row's height by the control-height rule (module doc): at a
+/// text-scaling factor of 1 or less `stated`, verbatim; above 1 at least the
+/// line box of `font`'s scaled size at `defaults.line_height`, rounded up,
+/// and upstream's own top and bottom cell padding for `Size::Size`. A `Size`
+/// is a number, so the growth the single-line controls get from an automatic
+/// height is computed here.
+fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
+    if n.accessibility.text_scale_factor() <= 1.0 {
+        return stated;
+    }
+    let padding = Size::Size(stated).table_cell_padding();
+    let line = (f32::from(scaled_text_size(font, n)) * n.resolved.defaults.line_height).ceil();
+    let fit = line + f32::from(padding.top) + f32::from(padding.bottom);
+    px(f32::from(stated).max(fit))
 }
 
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
@@ -1348,12 +1377,25 @@ mod tests {
         });
     }
 
+    /// The control-height rule for a table row: `stated` at s <= 1; above 1
+    /// at least the scaled text's line box, rounded up, and upstream's own
+    /// `Size::Size` cell padding top and bottom.
+    fn grown_row(stated: Pixels, r: &ResolvedTheme, font: &ResolvedFontSpec, s: f32) -> Pixels {
+        if s <= 1.0 {
+            return stated;
+        }
+        let cell = Size::Size(stated).table_cell_padding();
+        let line = (font.size * s * r.defaults.line_height).ceil();
+        px(f32::from(stated).max(line + f32::from(cell.top) + f32::from(cell.bottom)))
+    }
+
     #[test]
     fn data_table_size_falls_back_to_upstream_medium() {
         let mut stated = 0;
         let mut unstated = 0;
-        for_each_case(|r, _, n| {
-            let expected = match r.list.row_height {
+        let mut grown = 0;
+        for_each_case(|r, s, n| {
+            let base = match r.list.row_height {
                 Some(h) => {
                     stated += 1;
                     px(h)
@@ -1363,11 +1405,15 @@ mod tests {
                     Size::Medium.table_row_height()
                 }
             };
+            let expected = grown_row(base, r, &r.list.item_font, s);
+            if expected != base {
+                grown += 1;
+            }
             assert!(matches!(data_table_size(n), Size::Size(h) if h == expected));
         });
         assert!(
-            stated > 0 && unstated > 0,
-            "both branches must be exercised"
+            stated > 0 && unstated > 0 && grown > 0,
+            "both branches, and a row grown with its text, must be exercised"
         );
     }
 
@@ -1383,10 +1429,12 @@ mod tests {
         let breeze = resolved("kde-breeze", ColorMode::Light);
         assert_eq!(breeze.list.header_height, None, "precondition");
         assert_eq!(list_header_height(Native::unscaled(&breeze)), None);
-        // A height, not a text size: the text-scaling factor leaves it alone.
+        // The stated height at a text scale of 1, grown with the header font
+        // above it, and nothing where the theme states none.
+        let mut grown = false;
         for factor in [1.0, 1.5] {
             let prefs = scaled(factor);
-            for (preset, expected) in [
+            for (preset, stated) in [
                 ("adwaita", Some(30.0)),
                 ("material-3", Some(56.0)),
                 ("windows-11", None),
@@ -1398,10 +1446,14 @@ mod tests {
                         resolved: &r,
                         accessibility: &prefs,
                     };
-                    assert_eq!(list_header_height(n), expected.map(px), "{preset} {mode:?}");
+                    let expected =
+                        stated.map(|h| grown_row(px(h), &r, &r.list.header_font, factor));
+                    grown |= expected != stated.map(px);
+                    assert_eq!(list_header_height(n), expected, "{preset} {mode:?}");
                 }
             }
         }
+        assert!(grown, "no case grows a header with its text");
     }
 
     #[test]

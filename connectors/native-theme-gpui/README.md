@@ -240,7 +240,10 @@ Control heights follow one rule in `button`, `input`, `select`, `combobox`,
 as the control's line height and is its stated height (`h`) at a text-scaling
 factor of 1 or less, in place of upstream's own (a `Select` or `Combobox`
 trigger's `h_8`); above 1 the stated height is a minimum and the height is
-automatic, so the control grows around its drawn text and padding. The rule
+automatic, so the control grows around its drawn text and padding. A
+`DataTable` row and header (`data_table_size`, `list_header_height`) follow it
+too: above 1 they are at least the scaled text's line box and upstream's own
+cell padding, since a `Size` is a fixed height. The rule
 is for single-line controls: refine a multi-line `Input` or a `Textarea` with
 `text_area`, which sets no height (the rows the field holds size it). To give
 one a fixed height, set it after the builder as `Styled::h(input, height)`,
@@ -295,8 +298,8 @@ test over every preset and mode says so.
 | `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |
-| `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated | `DataTable::with_size`; with `table` on the container for the cell text |
-| `list_header_height` | `list.header_height` | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
+| `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::with_size`; with `table` on the container for the cell text |
+| `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.header_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
