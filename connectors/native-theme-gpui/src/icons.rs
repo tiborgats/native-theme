@@ -8,6 +8,7 @@
 //! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`Option<&str>`) |
 //! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`Option<&str>`) |
 //! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (`Option<&str>`, Linux only) |
+//! | [`freedesktop_name_candidates`] | Map [`IconName`] → freedesktop names to try in one theme (`&[&str]`, Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
@@ -424,31 +425,22 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
     })
 }
 
-/// Map a gpui-component [`IconName`] to its freedesktop icon name for the
-/// given desktop environment.
+/// Map a gpui-component [`IconName`] to one of its freedesktop names, chosen
+/// by desktop environment.
 ///
-/// Returns the best freedesktop name for the detected DE's naming
-/// convention. When KDE and GNOME use different names for the same
-/// concept, the DE parameter selects the right one. For freedesktop
-/// standard names (present in all themes), the DE is ignored.
+/// The name has to exist in the icon theme the icon is loaded from, which the
+/// desktop does not decide: the adwaita preset's `Adwaita` on KDE, or any
+/// GTK-convention theme on Sway, Hyprland or COSMIC, lacks the Breeze name
+/// this returns there for every icon the two conventions name apart. Load
+/// through [`freedesktop_name_candidates`] instead, trying each name in the
+/// one theme in use.
 ///
-/// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) share the
-/// Adwaita/GNOME naming convention. Qt-based DEs (KDE, LxQt) and
-/// Unknown share the Breeze/KDE convention.
+/// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) get the GTK
+/// (Adwaita) name, every other desktop the Breeze name; where the two
+/// conventions agree the DE is ignored.
 ///
-/// ## Confidence levels
-///
-/// Each mapping is annotated with a confidence level:
-/// - `exact`: the freedesktop icon is semantically identical
-/// - `close`: same concept, minor visual difference
-/// - `approximate`: best available match, different metaphor
-///
-/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
-/// returns `None`. Returns `None` where the freedesktop icon naming
-/// specification has no name for the concept (today every variant has one,
-/// some only as a labelled `close` or `approximate` substitute: `StarOff` and
-/// `HeartOff` both take `non-starred`, the "not starred / not favourite"
-/// state).
+/// Returns `None` for an `IconName` newer than gpui-component 0.7.3, as
+/// [`freedesktop_name_candidates`] returns no name for it.
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
@@ -466,426 +458,168 @@ pub fn freedesktop_name_for_gpui_icon(
             | LinuxDesktop::Mate
             | LinuxDesktop::Xfce
     );
+    let candidates = freedesktop_name_candidates(icon);
+    if is_gtk {
+        candidates.last()
+    } else {
+        candidates.first()
+    }
+    .copied()
+}
 
-    Some(match icon {
+/// The freedesktop names a gpui-component [`IconName`] may have, to be tried
+/// in order in the one icon theme the icon is loaded from.
+///
+/// One name where the GTK (Adwaita) and Breeze conventions agree, else two:
+/// Breeze's, then GTK's. Which one exists is the icon theme's convention, not
+/// the desktop's, so a caller loads each in turn from the theme it uses and
+/// takes the first that loads. Every name is tried in that one theme, so no
+/// icon comes from another set; a theme that has none of them has no icon
+/// for it.
+///
+/// ```ignore
+/// use native_theme::icons::FreedesktopLoader;
+/// use native_theme_gpui::icons::freedesktop_name_candidates;
+///
+/// let data = freedesktop_name_candidates(gpui_component::IconName::Eye)
+///     .iter()
+///     .find_map(|&name| FreedesktopLoader::new(name).theme("Adwaita").load());
+/// ```
+///
+/// ## Confidence levels
+///
+/// Each mapping is annotated with a confidence level:
+/// - `exact`: the freedesktop icon is semantically identical
+/// - `close`: same concept, minor visual difference
+/// - `approximate`: best available match, different metaphor
+///
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
+/// returns an empty slice. Every variant has a name today, some only as a
+/// labelled `close` or `approximate` substitute: `StarOff` and `HeartOff`
+/// both take `non-starred`, the "not starred / not favourite" state.
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn freedesktop_name_candidates(icon: IconName) -> &'static [&'static str] {
+    match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        IconName::Ban => "action-unavailable", // exact: circle with a slash (Adwaita, Breeze)
-        IconName::Battery => "battery",        // exact
-        IconName::BookOpen => "help-contents", // close
-        IconName::Bot => "face-smile",         // approximate
-        IconName::ChevronDown => "go-down",    // close: full nav arrow, not disclosure chevron
-        IconName::ChevronLeft => "go-previous", // close
-        IconName::ChevronRight => "go-next",   // close
-        IconName::ChevronUp => "go-up",        // close
-        IconName::CircleAlert => "emblem-important", // close: Adwaita a circle with "!", Breeze a bare "!"
-        IconName::CircleX => "dialog-error",         // close
-        IconName::Copy => "edit-copy",               // exact
-        IconName::Dash => "list-remove",             // exact
-        IconName::Delete => "edit-delete",           // exact
-        IconName::File => "text-x-generic",          // exact
-        IconName::FileText => "text-x-generic",      // exact
-        IconName::Folder => "folder",                // exact
-        IconName::FolderClosed => "folder",          // exact
-        IconName::FolderOpen => "folder-open",       // exact
-        IconName::HardDrive => "drive-harddisk",     // exact
-        IconName::HeartOff => "non-starred", // approximate: un-favourite semantics, star metaphor
-        IconName::Info => "dialog-information", // exact
-        IconName::LayoutDashboard => "view-grid", // close
-        IconName::Map => "find-location",    // close
-        IconName::Maximize => "view-fullscreen", // exact
-        IconName::Menu => "open-menu",       // exact
-        IconName::Mic => "audio-input-microphone", // exact (Icon Naming Spec, Devices)
-        IconName::Minimize => "window-minimize", // exact
-        IconName::Minus => "list-remove",    // exact
-        IconName::Moon => "weather-clear-night", // close: dark mode toggle
-        IconName::Network => "network-workgroup", // close
-        IconName::Pause => "media-playback-pause", // exact
-        IconName::Play => "media-playback-start", // exact
-        IconName::Plus => "list-add",        // exact
-        IconName::Redo => "edit-redo",       // exact
-        IconName::Redo2 => "edit-redo",      // exact
-        IconName::RefreshCw => "view-refresh", // exact
-        IconName::Replace => "edit-find-replace", // exact
-        IconName::RotateCw => "object-rotate-right", // exact
-        IconName::Search => "edit-find",     // exact
-        IconName::Settings => "preferences-system", // exact
-        IconName::SortAscending => "view-sort-ascending", // exact
-        IconName::SortDescending => "view-sort-descending", // exact
-        IconName::Square => "media-playback-stop", // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
-        IconName::SquareTerminal => "utilities-terminal", // close
-        IconName::Star => "non-starred", // close: the hollow star, the "not starred" state; `starred` is StarFill's
-        IconName::StarFill => "starred", // exact: the filled "starred" state
-        IconName::StarOff => "non-starred", // approximate: freedesktop has no slashed star; the "not starred" state
-        IconName::Sun => "weather-clear",   // close: light mode toggle
-        IconName::TriangleAlert => "dialog-warning", // exact
-        IconName::Undo => "edit-undo",      // exact
-        IconName::Undo2 => "edit-undo",     // exact
-        IconName::User => "system-users",   // exact
-        IconName::WindowClose => "window-close", // exact
-        IconName::WindowMaximize => "window-maximize", // exact
-        IconName::WindowMinimize => "window-minimize", // exact
-        IconName::WindowRestore => "window-restore", // exact
+        IconName::Ban => &["action-unavailable"], // exact: circle with a slash (Adwaita, Breeze)
+        IconName::Battery => &["battery"],        // exact
+        IconName::BookOpen => &["help-contents"], // close
+        IconName::Bot => &["face-smile"],         // approximate
+        IconName::ChevronDown => &["go-down"],    // close: full nav arrow, not disclosure chevron
+        IconName::ChevronLeft => &["go-previous"], // close
+        IconName::ChevronRight => &["go-next"],   // close
+        IconName::ChevronUp => &["go-up"],        // close
+        IconName::CircleAlert => &["emblem-important"], // close: Adwaita a circle with "!", Breeze a bare "!"
+        IconName::CircleX => &["dialog-error"],         // close
+        IconName::Copy => &["edit-copy"],               // exact
+        IconName::Dash => &["list-remove"],             // exact
+        IconName::Delete => &["edit-delete"],           // exact
+        IconName::File => &["text-x-generic"],          // exact
+        IconName::FileText => &["text-x-generic"],      // exact
+        IconName::Folder => &["folder"],                // exact
+        IconName::FolderClosed => &["folder"],          // exact
+        IconName::FolderOpen => &["folder-open"],       // exact
+        IconName::HardDrive => &["drive-harddisk"],     // exact
+        IconName::HeartOff => &["non-starred"], // approximate: un-favourite semantics, star metaphor
+        IconName::Info => &["dialog-information"], // exact
+        IconName::LayoutDashboard => &["view-grid"], // close
+        IconName::Map => &["find-location"],    // close
+        IconName::Maximize => &["view-fullscreen"], // exact
+        IconName::Menu => &["open-menu"],       // exact
+        IconName::Mic => &["audio-input-microphone"], // exact (Icon Naming Spec, Devices)
+        IconName::Minimize => &["window-minimize"], // exact
+        IconName::Minus => &["list-remove"],    // exact
+        IconName::Moon => &["weather-clear-night"], // close: dark mode toggle
+        IconName::Network => &["network-workgroup"], // close
+        IconName::Pause => &["media-playback-pause"], // exact
+        IconName::Play => &["media-playback-start"], // exact
+        IconName::Plus => &["list-add"],        // exact
+        IconName::Redo => &["edit-redo"],       // exact
+        IconName::Redo2 => &["edit-redo"],      // exact
+        IconName::RefreshCw => &["view-refresh"], // exact
+        IconName::Replace => &["edit-find-replace"], // exact
+        IconName::RotateCw => &["object-rotate-right"], // exact
+        IconName::Search => &["edit-find"],     // exact
+        IconName::Settings => &["preferences-system"], // exact
+        IconName::SortAscending => &["view-sort-ascending"], // exact
+        IconName::SortDescending => &["view-sort-descending"], // exact
+        IconName::Square => &["media-playback-stop"], // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
+        IconName::SquareTerminal => &["utilities-terminal"], // close
+        IconName::Star => &["non-starred"], // close: the hollow star, the "not starred" state; `starred` is StarFill's
+        IconName::StarFill => &["starred"], // exact: the filled "starred" state
+        IconName::StarOff => &["non-starred"], // approximate: freedesktop has no slashed star; the "not starred" state
+        IconName::Sun => &["weather-clear"],   // close: light mode toggle
+        IconName::TriangleAlert => &["dialog-warning"], // exact
+        IconName::Undo => &["edit-undo"],      // exact
+        IconName::Undo2 => &["edit-undo"],     // exact
+        IconName::User => &["system-users"],   // exact
+        IconName::WindowClose => &["window-close"], // exact
+        IconName::WindowMaximize => &["window-maximize"], // exact
+        IconName::WindowMinimize => &["window-minimize"], // exact
+        IconName::WindowRestore => &["window-restore"], // exact
 
-        // --- Icons where KDE and GNOME both have names but they differ ---
-        IconName::ArrowDown => {
-            if is_gtk {
-                "go-bottom"
-            } else {
-                "go-down-skip"
-            }
-        } // close
-        IconName::ArrowLeft => {
-            if is_gtk {
-                "go-first"
-            } else {
-                "go-previous-skip"
-            }
-        } // close
-        IconName::ArrowRight => {
-            if is_gtk {
-                "go-last"
-            } else {
-                "go-next-skip"
-            }
-        } // close
-        IconName::ArrowUp => {
-            if is_gtk {
-                "go-top"
-            } else {
-                "go-up-skip"
-            }
-        } // close
-        IconName::BatteryCharging => {
-            if is_gtk {
-                "battery-full-charging"
-            } else {
-                "battery-100-charging"
-            }
-        } // close
-        IconName::BatteryFull => {
-            if is_gtk {
-                "battery-full"
-            } else {
-                "battery-100"
-            }
-        } // exact
-        IconName::BatteryLow => {
-            if is_gtk {
-                "battery-low"
-            } else {
-                "battery-020"
-            }
-        } // close
-        IconName::BatteryMedium => {
-            if is_gtk {
-                "battery-good"
-            } else {
-                "battery-050"
-            }
-        } // close
-        IconName::BatteryWarning => {
-            if is_gtk {
-                "battery-caution"
-            } else {
-                "battery-010"
-            }
-        } // close (GNOME) / approximate (KDE: near-empty level, no alert icon)
-        IconName::Calendar => {
-            if is_gtk {
-                "x-office-calendar"
-            } else {
-                "view-calendar"
-            }
-        } // exact
-        IconName::Check => {
-            if is_gtk {
-                "object-select"
-            } else {
-                "dialog-ok"
-            }
-        } // close
-        IconName::CircleCheck => {
-            if is_gtk {
-                "object-select"
-            } else {
-                "emblem-ok-symbolic"
-            }
-        } // close
-        IconName::CircleUser => {
-            if is_gtk {
-                "avatar-default"
-            } else {
-                "user-identity"
-            }
-        } // close
-        IconName::Close => {
-            if is_gtk {
-                "window-close"
-            } else {
-                "tab-close"
-            }
-        } // close
-        IconName::Cpu => {
-            if is_gtk {
-                "computer"
-            } else {
-                "cpu"
-            }
-        } // approximate (GNOME) / exact (KDE)
-        IconName::Ellipsis => {
-            if is_gtk {
-                "view-more-horizontal"
-            } else {
-                "overflow-menu"
-            }
-        } // exact
-        IconName::EllipsisVertical => {
-            if is_gtk {
-                "view-more"
-            } else {
-                "overflow-menu"
-            }
-        } // close: no vertical variant in KDE
-        IconName::Eye => {
-            if is_gtk {
-                "view-reveal"
-            } else {
-                "view-visible"
-            }
-        } // exact
-        IconName::EyeOff => {
-            if is_gtk {
-                "view-conceal"
-            } else {
-                "view-hidden"
-            }
-        } // exact
-        IconName::Frame => {
-            if is_gtk {
-                "selection-mode"
-            } else {
-                "select-rectangular"
-            }
-        } // close
-        IconName::Heart => {
-            if is_gtk {
-                "starred"
-            } else {
-                "emblem-favorite"
-            }
-        } // close
-        IconName::Loader => {
-            if is_gtk {
-                "content-loading"
-            } else {
-                "process-working"
-            }
-        } // exact
-        IconName::LoaderCircle => {
-            if is_gtk {
-                "content-loading"
-            } else {
-                "process-working"
-            }
-        } // exact
-        IconName::MemoryStick => {
-            if is_gtk {
-                "media-flash"
-            } else {
-                "memory"
-            }
-        } // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
-        IconName::Palette => {
-            if is_gtk {
-                "color-select"
-            } else {
-                "palette"
-            }
-        } // close
-        IconName::PanelLeft => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "sidebar-expand-left"
-            }
-        } // close
-        IconName::PanelLeftClose => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "view-left-close"
-            }
-        } // close
-        IconName::PanelLeftOpen => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "view-left-new"
-            }
-        } // close
-        IconName::PanelRight => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "sidebar-expand-right"
-            }
-        } // Breeze's pair of PanelLeft's sidebar-expand-left
-        IconName::PanelRightClose => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "view-right-close"
-            }
-        } // close
-        IconName::PanelRightOpen => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "view-right-new"
-            }
-        } // close
-        IconName::ResizeCorner => {
-            if is_gtk {
-                "list-drag-handle"
-            } else {
-                "drag-handle"
-            }
-        } // close
-        IconName::Settings2 => {
-            if is_gtk {
-                "preferences-other"
-            } else {
-                "configure"
-            }
-        } // close
+        // --- Icons where KDE and GNOME both have names but they differ:
+        // Breeze's first, then GTK's ---
+        IconName::ArrowDown => &["go-down-skip", "go-bottom"], // close
+        IconName::ArrowLeft => &["go-previous-skip", "go-first"], // close
+        IconName::ArrowRight => &["go-next-skip", "go-last"],  // close
+        IconName::ArrowUp => &["go-up-skip", "go-top"],        // close
+        IconName::BatteryCharging => &["battery-100-charging", "battery-full-charging"], // close
+        IconName::BatteryFull => &["battery-100", "battery-full"], // exact
+        IconName::BatteryLow => &["battery-020", "battery-low"], // close
+        IconName::BatteryMedium => &["battery-050", "battery-good"], // close
+        IconName::BatteryWarning => &["battery-010", "battery-caution"], // close (GNOME) / approximate (KDE: near-empty level, no alert icon)
+        IconName::Calendar => &["view-calendar", "x-office-calendar"],   // exact
+        IconName::Check => &["dialog-ok", "object-select"],              // close
+        IconName::CircleCheck => &["emblem-ok-symbolic", "object-select"], // close
+        IconName::CircleUser => &["user-identity", "avatar-default"],    // close
+        IconName::Close => &["tab-close", "window-close"],               // close
+        IconName::Cpu => &["cpu", "computer"], // approximate (GNOME) / exact (KDE)
+        IconName::Ellipsis => &["overflow-menu", "view-more-horizontal"], // exact
+        IconName::EllipsisVertical => &["overflow-menu", "view-more"], // close: no vertical variant in KDE
+        IconName::Eye => &["view-visible", "view-reveal"],             // exact
+        IconName::EyeOff => &["view-hidden", "view-conceal"],          // exact
+        IconName::Frame => &["select-rectangular", "selection-mode"],  // close
+        IconName::Heart => &["emblem-favorite", "starred"],            // close
+        IconName::Loader => &["process-working", "content-loading"],   // exact
+        IconName::LoaderCircle => &["process-working", "content-loading"], // exact
+        IconName::MemoryStick => &["memory", "media-flash"], // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
+        IconName::Palette => &["palette", "color-select"],   // close
+        IconName::PanelLeft => &["sidebar-expand-left", "sidebar-show"], // close
+        IconName::PanelLeftClose => &["view-left-close", "sidebar-show"], // close
+        IconName::PanelLeftOpen => &["view-left-new", "sidebar-show"], // close
+        IconName::PanelRight => &["sidebar-expand-right", "sidebar-show-right"], // Breeze's pair of PanelLeft's sidebar-expand-left
+        IconName::PanelRightClose => &["view-right-close", "sidebar-show-right"], // close
+        IconName::PanelRightOpen => &["view-right-new", "sidebar-show-right"],   // close
+        IconName::ResizeCorner => &["drag-handle", "list-drag-handle"],          // close
+        IconName::Settings2 => &["configure", "preferences-other"],              // close
 
         // --- Icons where GNOME uses a different (approximate) alternative ---
-        IconName::ALargeSmall => {
-            if is_gtk {
-                "zoom-in"
-            } else {
-                "format-font-size-more"
-            }
-        } // approximate
-        IconName::Asterisk => {
-            if is_gtk {
-                "starred"
-            } else {
-                "rating"
-            }
-        } // approximate
-        IconName::Bell => {
-            if is_gtk {
-                "alarm"
-            } else {
-                "notification-active"
-            }
-        } // close
-        IconName::Building2 => {
-            if is_gtk {
-                "network-workgroup"
-            } else {
-                "applications-office"
-            }
-        } // approximate
-        IconName::CaseSensitive => {
-            if is_gtk {
-                "format-text-rich"
-            } else {
-                "format-text-uppercase"
-            }
-        } // approximate
-        IconName::ChartPie => {
-            if is_gtk {
-                "x-office-spreadsheet"
-            } else {
-                "office-chart-pie"
-            }
-        } // approximate
-        IconName::ChevronsUpDown => {
-            if is_gtk {
-                "list-drag-handle"
-            } else {
-                "handle-sort"
-            }
-        } // close
-        IconName::ExternalLink => {
-            if is_gtk {
-                "insert-link"
-            } else {
-                "external-link"
-            }
-        } // close
-        IconName::GalleryVerticalEnd => {
-            if is_gtk {
-                "view-paged"
-            } else {
-                "view-list-icons"
-            }
-        } // approximate
-        IconName::Github => {
-            if is_gtk {
-                "applications-engineering"
-            } else {
-                "vcs-branch"
-            }
-        } // approximate
-        IconName::Globe => {
-            if is_gtk {
-                "web-browser"
-            } else {
-                "globe"
-            }
-        } // close
-        IconName::Inbox => {
-            if is_gtk {
-                "mail-send-receive"
-            } else {
-                "mail-folder-inbox"
-            }
-        } // close
-        IconName::Inspector => {
-            if is_gtk {
-                "preferences-system-details"
-            } else {
-                "code-context"
-            }
-        } // approximate
-        IconName::PanelBottom => {
-            if is_gtk {
-                "view-dual"
-            } else {
-                "view-split-top-bottom"
-            }
-        } // close
-        IconName::PanelBottomOpen => {
-            if is_gtk {
-                "view-dual"
-            } else {
-                "view-split-top-bottom"
-            }
-        } // close
-        IconName::ThumbsDown => {
-            if is_gtk {
-                "process-stop"
-            } else {
-                "rating-unrated"
-            }
-        } // approximate
-        IconName::ThumbsUp => {
-            if is_gtk {
-                "checkbox-checked"
-            } else {
-                "approved"
-            }
-        } // approximate
+        IconName::ALargeSmall => &["format-font-size-more", "zoom-in"], // approximate
+        IconName::Asterisk => &["rating", "starred"],                   // approximate
+        IconName::Bell => &["notification-active", "alarm"],            // close
+        IconName::Building2 => &["applications-office", "network-workgroup"], // approximate
+        IconName::CaseSensitive => &["format-text-uppercase", "format-text-rich"], // approximate
+        IconName::ChartPie => &["office-chart-pie", "x-office-spreadsheet"], // approximate
+        IconName::ChevronsUpDown => &["handle-sort", "list-drag-handle"], // close
+        IconName::ExternalLink => &["external-link", "insert-link"],    // close
+        IconName::GalleryVerticalEnd => &["view-list-icons", "view-paged"], // approximate
+        IconName::Github => &["vcs-branch", "applications-engineering"], // approximate
+        IconName::Globe => &["globe", "web-browser"],                   // close
+        IconName::Inbox => &["mail-folder-inbox", "mail-send-receive"], // close
+        IconName::Inspector => &["code-context", "preferences-system-details"], // approximate
+        IconName::PanelBottom => &["view-split-top-bottom", "view-dual"], // close
+        IconName::PanelBottomOpen => &["view-split-top-bottom", "view-dual"], // close
+        IconName::ThumbsDown => &["rating-unrated", "process-stop"],    // approximate
+        IconName::ThumbsUp => &["approved", "checkbox-checked"],        // approximate
         // An `IconName` newer than this table (upstream adds icons in patch
         // releases) draws nothing from this set rather than another set's
         // glyph. The test module's `variant_name` is the match without a
         // wildcard that makes the dependency canary report the newcomer.
         #[allow(unreachable_patterns)]
-        _ => return None,
-    })
+        _ => &[],
+    }
 }
 
 /// Default rasterization size for SVG icons.
@@ -2655,5 +2389,71 @@ mod freedesktop_mapping_tests {
             "These GNOME mappings did not resolve in Adwaita:\n  {}",
             missing.join("\n  "),
         );
+    }
+
+    /// The two fixture themes [`every_candidate_list_resolves_in_either_conventions_theme`]
+    /// loads from: each holds every icon under one convention's name only.
+    #[cfg(feature = "system-icons")]
+    const CONVENTION_THEMES: [(&str, LinuxDesktop); 2] = [
+        ("gtk-only", LinuxDesktop::Gnome),
+        ("breeze-only", LinuxDesktop::Kde),
+    ];
+
+    /// Whichever convention the icon theme follows, one of an icon's
+    /// candidates is the name that theme has it under, on any desktop: the
+    /// child's is KDE, whose Breeze name a GTK-only theme lacks for every
+    /// icon the conventions name apart. The themes are fixtures in a child
+    /// process ([`crate::icon_fixture`]).
+    #[cfg(feature = "system-icons")]
+    #[test]
+    fn every_candidate_list_resolves_in_either_conventions_theme()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::freedesktop_mapping_tests::every_candidate_list_resolves_in_either_conventions_theme";
+        if crate::icon_fixture::in_child() {
+            let mut missing = Vec::new();
+            for (theme, _) in CONVENTION_THEMES {
+                for icon in ALL_ICON_NAMES {
+                    let candidates = freedesktop_name_candidates(icon.clone());
+                    if !candidates
+                        .iter()
+                        .any(|&name| FreedesktopLoader::new(name).theme(theme).load().is_some())
+                    {
+                        missing.push(format!(
+                            "{theme}: {} ({})",
+                            super::tests::variant_name(icon),
+                            candidates.join(", ")
+                        ));
+                    }
+                }
+            }
+            assert!(
+                missing.is_empty(),
+                "{} candidate lists resolved in neither name:\n  {}",
+                missing.len(),
+                missing.join("\n  "),
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "gtk-only", |icons| {
+            const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>"#;
+            for (theme, de) in CONVENTION_THEMES {
+                let dir = icons.join(theme).join("actions");
+                std::fs::create_dir_all(&dir)?;
+                std::fs::write(
+                    icons.join(theme).join("index.theme"),
+                    format!(
+                        "[Icon Theme]\nName={theme}\nDirectories=actions\n\n\
+                         [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
+                    ),
+                )?;
+                for icon in ALL_ICON_NAMES {
+                    if let Some(name) = freedesktop_name_for_gpui_icon(icon.clone(), de) {
+                        std::fs::write(dir.join(format!("{name}.svg")), SVG)?;
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        Ok(())
     }
 }

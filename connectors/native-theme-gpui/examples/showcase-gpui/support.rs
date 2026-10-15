@@ -17,8 +17,6 @@ use gpui_component::{
 };
 
 #[cfg(target_os = "linux")]
-use native_theme::detect::parse_linux_desktop;
-#[cfg(target_os = "linux")]
 use native_theme::detect::system_icon_theme;
 #[cfg(target_os = "linux")]
 use native_theme::icons::icon_name as native_icon_name;
@@ -28,7 +26,7 @@ use native_theme::icons::{
 };
 use native_theme::theme::IconSet;
 #[cfg(target_os = "linux")]
-use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
+use native_theme_gpui::icons::freedesktop_name_candidates;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{ActiveNativeTheme, Native};
 
@@ -722,23 +720,30 @@ pub(crate) fn load_gpui_icons(
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
     );
 
-    // On Linux with freedesktop, detect DE + theme once for the whole batch.
-    // Use the CLI override first, then the default_theme, then system fallback.
+    // On Linux with freedesktop, pick the theme once for the whole batch:
+    // the CLI override first, then the default_theme, then the system's. No
+    // theme where the system's cannot be detected: then no icon loads.
     #[cfg(target_os = "linux")]
-    let (linux_de, fd_theme) = if is_system_set && icon_set == IconSet::Freedesktop {
-        // No theme where the system's cannot be detected: then no icon loads.
-        let theme = cli_override
+    let fd_theme = if is_system_set && icon_set == IconSet::Freedesktop {
+        cli_override
             .or(default_theme)
             .map(|s| s.to_string())
-            .or_else(|| system_icon_theme().ok());
-        (
-            Some(parse_linux_desktop(
-                &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
-            )),
-            theme,
-        )
+            .or_else(|| system_icon_theme().ok())
     } else {
-        (None, None)
+        None
+    };
+    // An icon's freedesktop names, each tried in the one theme: the theme's
+    // convention decides which it has, not the desktop's (no theme mixing).
+    #[cfg(target_os = "linux")]
+    let load_by_name = |icon: &IconName, theme: &str| {
+        freedesktop_name_candidates(icon.clone())
+            .iter()
+            .find_map(|&fd_name| {
+                FreedesktopLoader::new(fd_name)
+                    .theme(theme)
+                    .color_opt(fg_color)
+                    .load()
+            })
     };
 
     GPUI_ICONS
@@ -796,18 +801,13 @@ pub(crate) fn load_gpui_icons(
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(_) => IconSource::System,
                 };
-                // If the system set has no icon for the role, try
-                // freedesktop_name_for_gpui_icon before giving up (no theme mixing)
+                // If the system set has no icon for the role, try the icon's
+                // freedesktop names in the same theme before giving up
                 #[cfg(target_os = "linux")]
                 if source == IconSource::NotFound
-                    && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
+                    && let Some(theme) = &fd_theme
                 {
-                    if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                        && let Some(fd_data) = FreedesktopLoader::new(fd_name)
-                            .theme(theme)
-                            .color_opt(fg_color)
-                            .load()
-                    {
+                    if let Some(fd_data) = load_by_name(icon, theme) {
                         return (
                             *name,
                             icon.clone(),
@@ -824,13 +824,8 @@ pub(crate) fn load_gpui_icons(
 
             // No IconRole mapping — try by-name lookup for the active icon set
             #[cfg(target_os = "linux")]
-            if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
-                if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                    && let Some(data) = FreedesktopLoader::new(fd_name)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
-                {
+            if let Some(theme) = &fd_theme {
+                if let Some(data) = load_by_name(icon, theme) {
                     return (*name, icon.clone(), None, Some(data), IconSource::System);
                 }
                 // System set but no system icon — do NOT fall back to bundled

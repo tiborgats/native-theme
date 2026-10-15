@@ -157,11 +157,11 @@ pub fn gpui_icon(
         ),
         (_, Some(role)) => info.instance(
             "lookup",
-            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for the name the connector gives the icon there instead, never another theme (showcase-gpui/support.rs, load_gpui_icons)"),
+            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
         ),
         (_, None) => info.instance(
             "lookup",
-            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there (showcase-gpui/support.rs, load_gpui_icons)",
+            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
         ),
     }
 }
