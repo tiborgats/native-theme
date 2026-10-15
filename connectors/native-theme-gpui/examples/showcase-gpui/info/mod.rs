@@ -196,7 +196,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
     ),
     (
         "tooltip_content",
@@ -208,7 +208,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "status_bar",
-        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style)",
+        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style) — and defaults.line_height as the line height",
     ),
     (
         "dialog",
@@ -226,10 +226,13 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "dialog_footer",
         "dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)",
     ),
-    ("dialog_title", "dialog.title_font"),
+    (
+        "dialog_title",
+        "dialog.title_font, and defaults.line_height as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
+    ),
     (
         "dialog_description",
-        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render)",
+        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and defaults.line_height as the line height",
     ),
     (
         "list",
@@ -237,7 +240,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "table",
-        "list.item_font on the table root (table/table.rs, Table::render: text_sm then refine_style)",
+        "list.item_font and defaults.line_height as the line height on the table root (table/table.rs, Table::render: text_sm then refine_style)",
     ),
     (
         "progress",
@@ -248,10 +251,13 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "the card.border.padding sides the theme states, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)",
     ),
     ("accordion_title", "expander.header_height"),
-    ("checkbox", "checkbox.label_gap, checkbox.font"),
+    (
+        "checkbox",
+        "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (checkbox.rs, RenderOnce for Checkbox)",
+    ),
     (
         "radio",
-        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's)",
+        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (radio.rs, RenderOnce for Radio)",
     ),
     (
         "select",
@@ -263,11 +269,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "title_bar",
-        "window.title_bar_font size, weight and colour -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
+        "window.title_bar_font size, weight and colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size and weight",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size and weight, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
@@ -312,7 +318,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "link",
-        "link.font size and weight, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+        "link.font size and weight, defaults.line_height as the line height, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
     (
         "widget_gap",

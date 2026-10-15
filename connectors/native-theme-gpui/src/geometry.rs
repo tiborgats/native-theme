@@ -17,7 +17,8 @@
 //! Each widget applies the caller's refinement after its own geometry at the
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
-//! do not (spec §3.4). Every value is a `ResolvedTheme` field or the one
+//! do not (spec §3.4). Every builder that sets a text size also sets the
+//! platform's `defaults.line_height`. Every value is a `ResolvedTheme` field or the one
 //! derivation in spec §9.4 (`scaled_text_size`), with two conversions the
 //! receiving widget forces: [`tooltip_content`] turns the platform's outer
 //! tooltip width into the inner box its text wraps in, and
@@ -75,7 +76,7 @@
 //! without a builder's refinement, and checks what arrives: the heights of
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`]; [`tooltip`] and [`tooltip_content`] keeping a tooltip's text
-//! inside its bubble; and, under every native preset at its own DPI, the
+//! inside its bubble, its wrapped lines at the platform's line height; and, under every native preset at its own DPI, the
 //! drawn left padding of an [`input`], a [`select`] and a [`combobox`], an
 //! [`input`]'s right padding, a Textarea refined by [`input`] with its padding
 //! cleared, and six single-line controls -- a Button, an Input, a Select, a
@@ -107,10 +108,24 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
     FontWeight(f32::from(font.weight))
 }
 
-/// Text size and weight from a font spec.
+/// Text size and weight from a font spec, at the platform's
+/// `defaults.line_height`.
+///
+/// The line height goes wherever a text size does: gpui's own default is the
+/// golden ratio (gpui-pre `src/style.rs:494`), which upstream leaves in place
+/// on most text it sets (`src/tooltip.rs:110-133`, `src/status_bar.rs:86-96`)
+/// and replaces with `relative(1.25)` on a dialog title before the caller's
+/// refinement (`src/dialog/title.rs:44` → `:45`), so wrapped text would
+/// otherwise be spaced by a metric of gpui's or upstream's own.
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
-    r.text_size(scaled_text_size(font, n))
-        .font_weight(weight_of(font))
+    with_line_height(r.text_size(scaled_text_size(font, n)), n).font_weight(weight_of(font))
+}
+
+/// The platform's `defaults.line_height` alone: [`with_text`]'s, for the two
+/// builders that set a control's line height and no text size, [`button`]
+/// and [`input_height`].
+fn with_line_height(r: StyleRefinement, n: Native<'_>) -> StyleRefinement {
+    r.line_height(relative(n.resolved.defaults.line_height))
 }
 
 /// Text size, weight and colour from a font spec.
@@ -154,17 +169,17 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
 
 /// The control-height rule (module doc, rationale §5 point 3).
 ///
-/// The platform's `defaults.line_height` becomes the control's line height:
-/// each receiving widget takes the refinement after its own line height
+/// The platform's `defaults.line_height` is the control's line height, which
+/// [`with_text`] sets, or [`with_line_height`] where no text size is: each
+/// receiving widget takes the refinement after its own line height
 /// (`button/button.rs:743` → `:744`, `input/input.rs:783` → `:803`) or sets
 /// none (`list/list_item.rs:198-209`, `select.rs:542-553`,
 /// `combobox.rs:981-998`), so the platform's wins. `stated` is the control's
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
 /// and the height is automatic, so layout grows the control around its drawn
-/// text and padding. Without a stated height, the line height alone: the
-/// control keeps the toolkit's own height.
+/// text and padding. Without a stated height the control keeps the toolkit's
+/// own height.
 fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
-    let r = r.line_height(relative(n.resolved.defaults.line_height));
     let Some(stated) = stated else {
         return r;
     };
@@ -182,7 +197,11 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    let r = with_height_rule(StyleRefinement::default(), Some(b.min_height), n);
+    let r = with_height_rule(
+        with_line_height(StyleRefinement::default(), n),
+        Some(b.min_height),
+        n,
+    );
     with_padding(r.min_w(px(b.min_width)), &b.border.padding)
         .rounded(px(b.border.corner_radius.max(0.0)))
         .border(px(b.border.line_width))
@@ -237,8 +256,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// Buttons that gpui-component's own widgets build are out of reach.
 #[must_use]
 pub fn button_label(n: Native<'_>) -> StyleRefinement {
-    let line = StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height));
-    with_text(line, &n.resolved.button.font, n)
+    with_text(StyleRefinement::default(), &n.resolved.button.font, n)
 }
 
 /// `Toggle` (`src/button/toggle.rs:182-187` → `:222`): [`button_label`]'s
@@ -334,12 +352,9 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
         left: rest(p.left, across),
     };
     with_text(
-        with_padding(
-            StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height)),
-            &root,
-        )
-        .rounded(px(a.border.corner_radius.max(0.0)))
-        .border(px(a.border.line_width)),
+        with_padding(StyleRefinement::default(), &root)
+            .rounded(px(a.border.corner_radius.max(0.0)))
+            .border(px(a.border.line_width)),
         &n.resolved.input.font,
         n,
     )
@@ -586,7 +601,8 @@ pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.dialog.button_gap))
 }
 
-/// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`).
+/// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`): the platform's line
+/// height in place of upstream's `relative(1.25)` (`:44`).
 #[must_use]
 pub fn dialog_title(n: Native<'_>) -> StyleRefinement {
     with_text(StyleRefinement::default(), &n.resolved.dialog.title_font, n)
@@ -682,6 +698,11 @@ fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
 /// refinement (`:260-264`), so a carried colour would displace the disabled
 /// colour of custom children. [`radio`], whose label child sets no colour of
 /// its own, carries it.
+///
+/// The platform's line height lands on the row, over upstream's
+/// `relative(1.)` (`:281`); the label column sets its own `relative(1.25)`
+/// (`:334`), which stands, and on which upstream centres the indicator
+/// (`:298-299`).
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     with_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
@@ -694,7 +715,9 @@ pub fn checkbox(n: Native<'_>) -> StyleRefinement {
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the row with `foreground` (`:220`) before applying this refinement, and its
 /// disabled muting is on the label child (`:261-262`), which wins over
-/// whatever the row carries.
+/// whatever the row carries. The line height, as for [`checkbox`], lands on
+/// the row (over `:222`), and the label column keeps its own `relative(1.25)`
+/// (`:255`).
 #[must_use]
 pub fn radio(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
@@ -943,7 +966,7 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 #[must_use]
 pub fn input_height(n: Native<'_>) -> StyleRefinement {
     with_height_rule(
-        StyleRefinement::default(),
+        with_line_height(StyleRefinement::default(), n),
         Some(n.resolved.input.min_height),
         n,
     )
@@ -1249,8 +1272,11 @@ mod tests {
         }
     }
 
-    fn assert_text(out: &StyleRefinement, font: &ResolvedFontSpec, s: f32) {
+    /// A text size, weight and the platform's line height, which every builder
+    /// that sets a text size carries.
+    fn assert_text(out: &StyleRefinement, r: &ResolvedTheme, font: &ResolvedFontSpec, s: f32) {
         assert_eq!(out.text.font_size, abs(font.size * s));
+        assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
         assert_eq!(
             out.text.font_weight,
             Some(FontWeight(f32::from(font.weight)))
@@ -1293,7 +1319,7 @@ mod tests {
     fn button_label_carries_the_button_font() {
         for_each_case(|r, s, n| {
             let out = button_label(n);
-            assert_text(&out, &r.button.font, s);
+            assert_text(&out, r, &r.button.font, s);
             assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
             assert_eq!(
                 out.text.color, None,
@@ -1426,7 +1452,7 @@ mod tests {
                 abs(i.border.corner_radius.max(0.0))
             );
             assert_eq!(out.border_widths.top, abs(i.border.line_width));
-            assert_text(&out, &i.font, s);
+            assert_text(&out, r, &i.font, s);
         });
         stated.assert_each_compared();
     }
@@ -1574,7 +1600,7 @@ mod tests {
                 let n = Native::unscaled(&r);
                 let at = format!("{}/{mode:?}", info.key);
                 let out = link(n);
-                assert_text(&out, &r.link.font, 1.0);
+                assert_text(&out, &r, &r.link.font, 1.0);
                 let thickness = out.text.underline.as_ref().map(|u| u.thickness);
                 if r.link.underline_enabled {
                     assert_eq!(thickness, None, "{at}: upstream's underline stands");
@@ -1615,13 +1641,13 @@ mod tests {
             stated.padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
-            assert_text(&out, &m.font, s);
+            assert_text(&out, r, &m.font, s);
 
             let l = &r.list;
             let out = list_item(n);
             stated.height(&out, r, l.row_height, s, "list_item");
             stated.padding(&out, &l.border.padding, "list_item");
-            assert_text(&out, &l.item_font, s);
+            assert_text(&out, r, &l.item_font, s);
         });
         stated.assert_each_compared();
     }
@@ -1649,7 +1675,7 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(t.border.corner_radius.max(0.0))
             );
-            assert_text(&out, &t.font, s);
+            assert_text(&out, r, &t.font, s);
             assert_eq!(
                 out.background,
                 Some(rgba_to_hsla(t.background_color).into()),
@@ -1685,7 +1711,7 @@ mod tests {
             let sb = &r.status_bar;
             let out = status_bar(n);
             stated.padding(&out, &sb.border.padding, "status_bar");
-            assert_text(&out, &sb.font, s);
+            assert_text(&out, r, &sb.font, s);
         });
         stated.assert_each_compared();
     }
@@ -1974,11 +2000,11 @@ mod tests {
             );
             assert_eq!(dialog_footer(n).gap.width, def(d.button_gap));
             assert_eq!(dialog_footer(n).gap.height, def(d.button_gap));
-            assert_text(&dialog_title(n), &d.title_font, s);
-            assert_text(&dialog_description(n), &d.body_font, s);
+            assert_text(&dialog_title(n), r, &d.title_font, s);
+            assert_text(&dialog_description(n), r, &d.body_font, s);
             assert_eq!(dialog_max_width(n), px(d.max_width));
-            assert_text(&table(n), &r.list.item_font, s);
-            assert_text(&title_bar(n), &r.window.title_bar_font, s);
+            assert_text(&table(n), r, &r.list.item_font, s);
+            assert_text(&title_bar(n), r, &r.window.title_bar_font, s);
         });
         stated.assert_each_compared();
     }
@@ -2057,10 +2083,10 @@ mod tests {
             let c = &r.checkbox;
             let out = checkbox(n);
             assert_eq!(out.gap.width, def(c.label_gap));
-            assert_text(&out, &c.font, s);
+            assert_text(&out, r, &c.font, s);
             // platform-facts §2.5: radio metrics are the checkbox's.
             assert_eq!(radio(n).gap.width, def(c.label_gap));
-            assert_text(&radio(n), &c.font, s);
+            assert_text(&radio(n), r, &c.font, s);
 
             let cb = &r.combo_box;
             // Beside a stated arrow column the right side is upstream's (D2,
@@ -2080,7 +2106,7 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(cb.border.corner_radius.max(0.0))
             );
-            assert_text(&out, &cb.font, s);
+            assert_text(&out, r, &cb.font, s);
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
             assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
             stated.padding(&combobox(n), &p, "combobox");
@@ -2181,7 +2207,7 @@ mod tests {
                     Some(rgba_to_hsla(t.background_color).into()),
                     "{at}: background"
                 );
-                assert_text(&out, &t.font, 1.0);
+                assert_text(&out, &r, &t.font, 1.0);
                 assert_eq!(out.text.color, None, "{at}: no text colour");
                 assert_eq!(
                     out.border_widths,

@@ -25,6 +25,9 @@
 //! sized with `geometry::data_table_size` whose container is refined with
 //! `geometry::table`.
 //!
+//! A tooltip's text wrapped to two lines under `geometry::tooltip` is two
+//! lines of the platform's `defaults.line_height` tall.
+//!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
 //! side; an Input with no suffix is laid out with the stated right side; a
@@ -505,6 +508,61 @@ fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
         short.size.width < text.size.width && short.size.width < inner,
         "a short tooltip text was stretched to {:?}",
         short.size.width,
+    );
+}
+
+/// windows-11 states a 320 px tooltip at 9 pt and the platform's widest line
+/// height, 1.43, so the gap to gpui's own (1.618) is widest there.
+const LINE_HEIGHT_PRESET: &str = "windows-11";
+/// Two lines at windows-11's tooltip width: wider than one, well short of three.
+const TWO_LINE_TOOLTIP: &str =
+    "Saves the document under its current name, in the folder it was opened from.";
+
+fn two_line_tooltip(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    tooltip_of(TWO_LINE_TOOLTIP, s, w, cx)
+}
+
+/// A tooltip's text wraps at `geometry::tooltip_content`'s width, so its lines
+/// are spaced by the line height the bubble gives the text: the platform's
+/// `defaults.line_height`, which `geometry::tooltip` carries, not gpui's
+/// default, the golden ratio (gpui-pre `src/style.rs:494`), which upstream's
+/// tooltip leaves in place (`src/tooltip.rs:110-133` sets none).
+#[gpui::test]
+fn wrapped_tooltip_text_takes_the_platform_line_height(cx: &mut TestAppContext) {
+    let r = resolved(LINE_HEIGHT_PRESET);
+    let style = native_style(LINE_HEIGHT_PRESET, geometry::tooltip);
+    let [one] = laid_out(
+        cx,
+        LINE_HEIGHT_PRESET,
+        Some(style.clone()),
+        short_tooltip,
+        [TOOLTIP_TEXT],
+    );
+    let [two] = laid_out(
+        cx,
+        LINE_HEIGHT_PRESET,
+        Some(style),
+        two_line_tooltip,
+        [TOOLTIP_TEXT],
+    );
+    assert_eq!(
+        two.size.height,
+        one.size.height * 2.0,
+        "the text is not two lines of the one-line tooltip's {:?}: pick another text",
+        one.size.height
+    );
+    let expected = 2.0 * r.tooltip.font.size * r.defaults.line_height;
+    let drawn = f32::from(two.size.height);
+    assert!(
+        (drawn - expected).abs() <= 1.0,
+        "two lines of {LINE_HEIGHT_PRESET} tooltip text are {drawn} px tall, not 2 × {} px × {} \
+         = {expected} px",
+        r.tooltip.font.size,
+        r.defaults.line_height
     );
 }
 
