@@ -142,10 +142,14 @@ theme to upstream's default.
 
 ### Light and dark under a preset
 
-```rust,ignore
-use native_theme_gpui::{AccessibilityPreferences, apply, from_preset};
+The OS accessibility preferences come from native-theme's detection cache
+(`native_theme::detect`), which needs a `native-theme` dependency of its own
+(see [Runtime theme change](#runtime-theme-change)):
 
-let prefs = AccessibilityPreferences::from_system();
+```rust,ignore
+use native_theme_gpui::{apply, from_preset};
+
+let prefs = native_theme::detect::accessibility_preferences();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);

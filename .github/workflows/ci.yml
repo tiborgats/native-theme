@@ -175,7 +175,8 @@ jobs:
       # `--all-features` would turn on `gpui-fast`, which changes the GPUI
       # core: the default core and GPUI Fast are checked one at a time.
       - run: cargo check -p native-theme-gpui --locked
-      - run: cargo check -p native-theme-gpui --features gpui-fast --locked
+      - run: cargo check -p native-theme-gpui --features native,watch --locked
+      - run: cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
 
   test-build-crate:
     name: Test native-theme-build
@@ -278,7 +279,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build -p native-theme-gpui --example showcase-gpui --features gpui-fast
+      # With `native` and `watch`, so `on_theme_change` and the showcase's
+      # `watch` code build on macOS and Windows too.
+      - run: cargo build -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
 
   # The showcase-parity comparator's static modes, as scripts/check_release.sh
   # runs them: --check-list validates docs/showcase-elements.toml and the

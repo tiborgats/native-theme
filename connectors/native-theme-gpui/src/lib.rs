@@ -153,8 +153,9 @@
 //! `on_theme_change(window, cx, f)` runs `f` on gpui's foreground, with the
 //! window and the `App`, each time the OS theme changes, for as long as the
 //! `ThemeSubscription` it returns is held and the window is open; register
-//! it on the main window, since events stop once that window closes. In `f`, call `native_theme::detect::invalidate_caches()`,
-//! read the theme again with the entry point the application used
+//! it on the main window, since events stop once that window closes. In
+//! `f`, call `native_theme::detect::invalidate_caches()`, read the theme
+//! again with the entry point the application used
 //! ([`SystemTheme::from_system()`], or
 //! [`SystemTheme::from_system_with_preset`] for a pinned preset), and
 //! [`apply_system_theme`] it; gpui-component's `Theme::sync_system_appearance`
