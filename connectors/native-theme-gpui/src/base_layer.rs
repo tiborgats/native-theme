@@ -45,7 +45,7 @@ pub struct ScrollbarGeometry {
     /// proportional thumb still loses `2 × inset` along the axis, which the
     /// one inset gpui-base takes for both directions cannot avoid.
     pub thumb_inset: Pixels,
-    /// `defaults.border.corner_radius.max(0)`, mirroring upstream's projection
+    /// `defaults.border.corner_radius`, mirroring upstream's projection
     /// (gpui-component `src/theme/mod.rs:419-439`); the theme has no
     /// scrollbar radius and platform-facts records none.
     pub thumb_radius: Pixels,
@@ -76,7 +76,7 @@ pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
         track_width: px(sb.groove_width),
         thumb_width: px(sb.thumb_width),
         thumb_inset: px(((sb.groove_width - sb.thumb_width) / 2.0).max(0.0)),
-        thumb_radius: px(d.border.corner_radius.max(0.0)),
+        thumb_radius: px(d.border.corner_radius),
         min_thumb_length: px(sb.min_thumb_length),
         track: rgba_to_hsla(sb.track_color),
         track_active_border: rgba_to_hsla(d.border.color),
