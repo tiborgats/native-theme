@@ -3423,8 +3423,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ### GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7
 Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at
 the plan's close.
-- [ ] [v0.7.0] For M6: `connectors/native-theme-gpui/src/contract.rs:641` cites our own
+- [x] [v0.7.0] For M6: `connectors/native-theme-gpui/src/contract.rs:641` cites our own
       `colors.rs:649-656`, which has moved since; own-file citations were outside G1's scope.
+      M6 T16a (2026-10-15): already corrected by M6 T9 (0c69f9bd), which moved the lines
+      and changed the citation to `colors.rs:684-691`, where `assign_base_colors` assigns
+      `red` … `yellow_light`; checked again at T16a's base, 3b696688.
 - [ ] [v0.7.0] For M6: no test clicks the DataTable's sort button, so the showcase's
       `perform_sort` (`examples/showcase-gpui/support.rs`) is untested; upstream gives the
       button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
