@@ -135,6 +135,17 @@ state is missing" (gpui-component `src/root.rs:112, 130`), and text scaling
 fails silently, the rem staying gpui's default (`src/root.rs:21, 438-440`;
 gpui-base `src/root.rs:44-45`).
 
+gpui-base's `Root` paints no background of its own (gpui-base
+`src/root.rs:280-310`). The root plugin `gpui_kit::init` registers fills the
+root of every window `gpui_kit::open_window` opens with the theme's
+`background`, the theme's `window.background_color`, and draws its text in
+the theme's font and `foreground` (gpui-component `src/root.rs:444-452`). A view opened with
+gpui's own `cx.open_window`, outside that root, has no background until the
+application paints `cx.theme().background` on it, as the showcase's root view
+does (`examples/showcase-gpui/app.rs:2213`). A surface the theme states
+translucent, such as windows-11's sidebar (`#f3f3f300`, WinUI's docked
+`NavigationView` pane), shows that background through it.
+
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
 layer itself only when it is absent; an `init` after `apply` would reset the

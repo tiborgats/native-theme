@@ -1520,6 +1520,14 @@ model, the platform presets and the three connectors
       root background the same way; gpui-base 0.7.1's `Root` paints none
       (`gpui-base/src/root.rs:281-309`), and the gpui showcase sets one
       (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:2227`).
+      M6 T15 (2026-10-15), the gpui half: a README paragraph under Quick
+      start. gpui-base 0.7.3's `Root` paints none (`src/root.rs:280-310`),
+      but gpui-component 0.7.3's root plugin, which `gpui_kit::init`
+      registers, fills every `gpui_kit::open_window` root with the theme's
+      `background` (`window.background_color`; gpui-component
+      `src/root.rs:444-452`), so only a view opened with gpui's own
+      `cx.open_window` paints its own (`cx.theme().background`, as the
+      showcase's root view does, `app.rs:2213`). The egui half stays M7's.
 
 ### native-theme-gpui connector
 
