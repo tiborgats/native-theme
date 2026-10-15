@@ -16,8 +16,9 @@ use crate::convert::{
 use crate::{AccessibilityPreferences, Role, TextRole};
 
 /// A text size from the theme times the user's text-scaling factor,
-/// [`AccessibilityPreferences::scaled`]: a factor that is not finite and positive is ignored.
-/// `native_theme_iced::scaled_text_size` and `native_theme_gpui::scaled_text_size` call the
+/// [`AccessibilityPreferences::scaled`]: a factor that is not finite and positive is ignored,
+/// and a size whose product with the factor is not a normal positive number is returned as it
+/// is. `native_theme_iced::scaled_text_size` and `native_theme_gpui::scaled_text_size` call the
 /// same method.
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`

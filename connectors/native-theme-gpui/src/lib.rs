@@ -57,7 +57,7 @@
 //!
 //! | Flag | The connector applies | The application forwards |
 //! |------|-----------------------|--------------------------|
-//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`], through [`AccessibilityPreferences::scaled`] (a size the factor would make infinite or zero stays as stated); `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
+//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`], through [`AccessibilityPreferences::scaled`] (a size the factor would make infinite, subnormal or zero stays as stated); `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
 //! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
 //! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
 //! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md`, the item "the gpui connector reads `AccessibilityPreferences::high_contrast`"); [`is_high_contrast`] reads it | its own colours, if they should change |
@@ -608,8 +608,8 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 /// For a size the connector does not apply itself: a `text_scale` role's
 /// (`resolved.text_scale.caption.size`, …) or a widget font set by hand. The
 /// factor applies to every text size alike. A factor that is not finite and
-/// positive is ignored, and a size whose product with the factor is not
-/// finite and positive is returned as it is.
+/// positive is ignored, and a size whose product with the factor is not a
+/// normal positive number is returned as it is.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
     prefs.scaled(size)

@@ -479,10 +479,10 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 /// A side the platform does not state is upstream's own `px_2`
 /// (`src/tooltip.rs:124`), which is 0.5 rem (gpui-pre-macros
 /// `src/styles.rs:949-950`), converted at the font size this connector
-/// installs as the rem: `defaults.font.size` × the text-scaling factor
-/// (`theme.font_size` in [`crate::to_theme`], which gpui-component's
-/// `WindowState` root plugin sets as the window's rem size,
-/// `src/root.rs:440`).
+/// installs as the rem: `defaults.font.size` scaled by
+/// [`crate::scaled_text_size`] (`theme.font_size` in [`crate::to_theme`],
+/// which gpui-component's `WindowState` root plugin sets as the window's rem
+/// size, `src/root.rs:440`).
 ///
 /// Never negative: a platform that states a width narrower than its own
 /// paddings leaves nothing for the text rather than a width gpui would reject.
@@ -492,8 +492,7 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     let upstream_side = TOOLTIP_UPSTREAM_PX_REM
-        * n.resolved.defaults.font.size
-        * n.accessibility.text_scale_factor();
+        * crate::scaled_text_size(n.resolved.defaults.font.size, n.accessibility);
     let left = t.border.padding.left.unwrap_or(upstream_side);
     let right = t.border.padding.right.unwrap_or(upstream_side);
     let inner = t.max_width - left - right - 2.0 * t.border.line_width;
@@ -2484,6 +2483,29 @@ mod tests {
                 "at s = {s}"
             );
         }
+    }
+
+    /// A factor that overflows the rem leaves the unstated sides at upstream's
+    /// 0.5 rem of the unscaled font size, so the text keeps its width.
+    #[test]
+    fn tooltip_content_takes_the_unscaled_rem_where_the_factor_overflows_it() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.tooltip.border.padding = ResolvedPadding {
+            top: None,
+            right: None,
+            bottom: None,
+            left: None,
+        };
+        assert!((r.defaults.font.size * f32::MAX).is_infinite());
+        let prefs = scaled(f32::MAX);
+        let n = Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        let rem = r.defaults.font.size;
+        let expected = r.tooltip.max_width - 2.0 * 0.5 * rem - 2.0 * r.tooltip.border.line_width;
+        assert!(expected > 0.0);
+        assert_eq!(tooltip_content(n).max_size.width, len(expected));
     }
 
     /// At s <= 1 the stated height is exact; above 1 it is a floor and the

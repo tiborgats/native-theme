@@ -1213,7 +1213,8 @@ pub fn mono_font_size(
 /// widget's font (`resolved.button.font.size`, …) and a `text_scale` role's
 /// size (`resolved.text_scale.caption.size`, …) are the theme's own sizes,
 /// unscaled, as `defaults.font.size` is. A factor that is not finite and
-/// positive is ignored.
+/// positive is ignored, and a size whose product with the factor is not a
+/// normal positive number is returned as it is.
 ///
 /// # Example
 ///
