@@ -139,12 +139,12 @@ gpui-base's `Root` paints no background of its own (gpui-base
 `src/root.rs:280-310`). The root plugin `gpui_kit::init` registers fills the
 root of every window `gpui_kit::open_window` opens with the theme's
 `background`, the theme's `window.background_color`, and draws its text in
-the theme's font and `foreground` (gpui-component `src/root.rs:444-452`). A view opened with
-gpui's own `cx.open_window`, outside that root, has no background until the
-application paints `cx.theme().background` on it, as the showcase's root view
-does (`examples/showcase-gpui/app.rs:2213`). A surface the theme states
-translucent, such as windows-11's sidebar (`#f3f3f300`, WinUI's docked
-`NavigationView` pane), shows that background through it.
+the theme's font and `foreground` (gpui-component `src/root.rs:444-452`). A
+view opened with gpui's own `cx.open_window`, outside that root, has no
+background until the application paints `cx.theme().background` on it. A
+surface the theme states translucent, such as windows-11's sidebar
+(`#f3f3f300`, WinUI's docked `NavigationView` pane), shows that background
+through it.
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
@@ -655,10 +655,19 @@ let diameter = px(loaded.resolved.spinner.diameter);
 if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
     match &anim {
         AnimatedIcon::Frames(_) => {
-            // Cache this — do not call on every frame tick. Under reduced
-            // motion, show the first frame and stand still.
-            let frames =
-                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(text), None);
+            // Cache this — do not call on every frame tick.
+            if let Some(frames) =
+                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(text), None)
+            {
+                let element = if prefers_reduced_motion() {
+                    // The first frame, standing still.
+                    frames.sources.first().cloned().map(gpui::img)
+                } else {
+                    // On each tick of `frames.frame_duration_ms`, the next of
+                    // `frames.sources`, through `gpui::img`.
+                    None
+                };
+            }
         }
         AnimatedIcon::Transform(_) => {
             // The icon carries its SVG and its period; the SVG element draws
