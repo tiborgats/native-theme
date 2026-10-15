@@ -2032,6 +2032,9 @@ What is still open on the iced side:
       (`native-theme/src/kde/mod.rs:42-52`, `src/detect.rs:674-685`). Decide
       whether native-theme should model motion — durations, easings,
       distances — which is a core-type change.
+      Since M6 T5 (M6-01) `apply` keeps the installed theme's `motion`, as
+      upstream's `Theme::change` does, so a value the application set survives
+      a theme switch; the connector still sets none.
 - [ ] [1.0] Preset font families that are not installed: GPUI resolves a named,
       missing family through its fallback stack on every text run (upstream's
       statement, gpui-component 0.6.4 `src/theme/system_font.rs:3-9`; not
@@ -3378,9 +3381,13 @@ the plan's close.
 - [ ] [v0.7.0] For M6: the gpui showcase evaluates `themed_entrance(cx)` more than once per
       dialog (`examples/showcase-gpui/demo.rs`); `info/chrome.rs`'s `panel_toggle` carries a
       `too_many_arguments` allow.
-- [ ] [v0.7.0] For M6: no test shows an application's own `TooltipDefaults` delay surviving
+- [x] [v0.7.0] For M6: no test shows an application's own `TooltipDefaults` delay surviving
       an upstream mode switch to a variant that states no delay (the install path is tested,
       this case is not).
+      Done in M6 T5: `the_applications_delay_survives_a_mode_switch_to_a_variant_without_one`
+      (`connectors/native-theme-gpui/src/lib.rs`) switches to a variant of the same theme that
+      states none, and to the unstored mode of a theme applied in one variant after another
+      (M6-02).
 - [ ] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
       auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
       `catppuccin-mocha`'s header label (19 px) is taller than its stated header height

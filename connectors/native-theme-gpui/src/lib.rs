@@ -793,16 +793,17 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
 /// The native theme installed by [`apply`]; one per `App`, read with
 /// [`ActiveNativeTheme::native_theme`].
 ///
-/// Stores both resolved variants (when known) because upstream's
+/// Stores both resolved variants of one theme (when known) because upstream's
 /// `Theme::change` switches modes without going through the connector, and the
 /// re-apply observer must then find the variant of the mode upstream switched
-/// to (rationale §2.22). Every field's default is the right initial state, so
-/// `Default` is derived (a hand-written impl would trip clippy's
-/// `derivable_impls`).
+/// to (rationale §2.22). Each variant is kept with the display name of the
+/// theme that stored it, so a later `apply` of another theme drops it. Every
+/// field's default is the right initial state, so `Default` is derived (a
+/// hand-written impl would trip clippy's `derivable_impls`).
 #[derive(Debug, Default)]
 pub struct NativeTheme {
-    light: Option<ResolvedTheme>,
-    dark: Option<ResolvedTheme>,
+    light: Option<StoredVariant>,
+    dark: Option<StoredVariant>,
     accessibility: AccessibilityPreferences,
     /// Set by the observer around its own write of `gpui_base::Theme`, so it
     /// can tell that notification from an upstream rebuild (§3.3).
@@ -815,6 +816,13 @@ pub struct NativeTheme {
 
 impl Global for NativeTheme {}
 
+/// A resolved variant and the display name of the theme that stored it.
+#[derive(Debug)]
+struct StoredVariant {
+    name: SharedString,
+    resolved: ResolvedTheme,
+}
+
 impl NativeTheme {
     fn is_dark(&self, cx: &App) -> bool {
         cx.try_global::<GpuiTheme>()
@@ -822,12 +830,16 @@ impl NativeTheme {
             .unwrap_or(self.last_is_dark)
     }
 
-    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+    fn stored(&self, is_dark: bool) -> Option<&StoredVariant> {
         if is_dark {
             self.dark.as_ref()
         } else {
             self.light.as_ref()
         }
+    }
+
+    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+        self.stored(is_dark).map(|stored| &stored.resolved)
     }
 
     /// The stored variant for the styled theme's current mode, if any.
@@ -898,11 +910,15 @@ impl<'a> Native<'a> {
 /// Install `theme` as gpui-component's global theme with the native base-layer
 /// overrides, and keep them installed across upstream rebuilds (spec §8.1, §3.3).
 ///
-/// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`];
+/// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`],
+///    dropping the other mode's stored variant when another theme (one of a
+///    different display name) stored it;
 /// 2. initialises gpui-component if its theme global is absent (upstream
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
-/// 3. writes the styled theme, then installs a `ThemeConfig` for the *other*
+/// 3. writes the styled theme, keeping the application's own `notification`,
+///    `list`, `sheet` and `motion` settings of the installed one, as upstream's
+///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
 ///    either mode (D34);
@@ -931,10 +947,13 @@ impl<'a> Native<'a> {
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards resets the theme to upstream's default. A single-variant
-/// `apply` leaves the other mode's config at `ThemeConfig::default()`, so a
+/// `apply` of a theme whose other variant is not stored (none was, or another
+/// theme's was, which step 1 drops) leaves the other mode's config at
+/// `ThemeConfig::default()`, a light config that carries no colours, so a
 /// `Theme::change` to the unstored mode shows upstream's built-in
-/// `ThemeColor::light()` / `dark()` constants (the default config carries no
-/// colours);
+/// `ThemeColor::light()` constants, in light mode even when the change asked
+/// for dark (upstream's `apply_config` takes the mode from the config,
+/// gpui-component src/theme/schema.rs:1108);
 /// call `apply` once per variant to store both.
 ///
 /// Reduced motion: a flag that is already on is left to whoever switched it on
@@ -987,9 +1006,8 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
     let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
         let is_dark = nt.is_dark(cx);
-        let resolved = nt.variant(is_dark)?;
-        let name = cx.try_global::<GpuiTheme>()?.theme_name().clone();
-        Some(to_theme(resolved, &name, is_dark, prefs))
+        let stored = nt.stored(is_dark)?;
+        Some(to_theme(&stored.resolved, &stored.name, is_dark, prefs))
     });
     match rebuilt {
         // `None, None` keeps the stored variants; apply_inner stores `prefs`.
@@ -1074,7 +1092,7 @@ fn install_variant_tooltip_delay(cx: &mut App) {
 }
 
 fn apply_inner(
-    theme: GpuiTheme,
+    mut theme: GpuiTheme,
     light: Option<&ResolvedTheme>,
     dark: Option<&ResolvedTheme>,
     prefs: &AccessibilityPreferences,
@@ -1086,11 +1104,21 @@ fn apply_inner(
     let name: SharedString = theme.theme_name().clone();
     {
         let nt = cx.default_global::<NativeTheme>();
+        // The stored pair is the two modes of one theme: another theme's
+        // variant would be installed under this theme's name.
+        nt.light.take_if(|stored| stored.name != name);
+        nt.dark.take_if(|stored| stored.name != name);
         if let Some(light) = light {
-            nt.light = Some(light.clone());
+            nt.light = Some(StoredVariant {
+                name: name.clone(),
+                resolved: light.clone(),
+            });
         }
         if let Some(dark) = dark {
-            nt.dark = Some(dark.clone());
+            nt.dark = Some(StoredVariant {
+                name: name.clone(),
+                resolved: dark.clone(),
+            });
         }
         nt.accessibility = prefs.clone();
         nt.last_is_dark = is_dark;
@@ -1100,7 +1128,15 @@ fn apply_inner(
     if !cx.has_global::<GpuiTheme>() {
         gpui_component::init(cx);
     }
-    *GpuiTheme::global_mut(cx) = theme;
+    // The application's settings, not theme data: upstream's own switch
+    // (`Theme::change` -> `apply_config`, gpui-component
+    // src/theme/schema.rs:1064-1108) leaves them, and so does `apply`.
+    let installed = GpuiTheme::global_mut(cx);
+    theme.notification = installed.notification.clone();
+    theme.list = installed.list.clone();
+    theme.sheet = installed.sheet.clone();
+    theme.motion = installed.motion.clone();
+    *installed = theme;
 
     // D34: the other mode's config from its stored variant, so Theme::change
     // reproduces the native palette instead of the registry default.
@@ -1341,9 +1377,10 @@ mod tests {
             colors: _,
             tokens: _,
             transparent: _,
-            // Left at upstream's default on purpose: native-theme models no
-            // notification placement, list highlight default, sheet margin or
-            // motion tokens (`ResolvedTheme` has no such field).
+            // Left to the application: native-theme models no notification
+            // placement, list highlight default, sheet margin or motion tokens
+            // (`ResolvedTheme` has no such field), so `to_theme` leaves
+            // upstream's default and `apply` keeps the installed theme's.
             notification: _,
             list: _,
             sheet: _,
@@ -2426,6 +2463,56 @@ mod apply_tests {
         });
     }
 
+    /// An upstream mode switch to a variant that states no delay brings the
+    /// application's own delay back: a variant of the same theme, and the
+    /// unstored mode of a theme applied in one variant after another theme
+    /// (M6-02).
+    #[gpui::test]
+    fn the_applications_delay_survives_a_mode_switch_to_a_variant_without_one(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let (dark_theme, dark) =
+            from_preset("kde-breeze", true, &prefs).expect("preset should load");
+        let (light_theme, mut light) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        assert_eq!(dark.tooltip.show_delay, Some(700), "precondition");
+        light.tooltip.show_delay = None;
+        let [_, _, latte] = tooltip_delay_presets();
+        let own = gpui_base::TooltipDefaults::new().with_show_delay(ms(250));
+        cx.update(|cx| {
+            own.install(cx);
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(700));
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own,
+                "the light variant states no delay"
+            );
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own,
+                "Catppuccin Latte stores no dark variant, and KDE Breeze's is gone"
+            );
+        });
+    }
+
     #[gpui::test]
     fn apply_accessibility_forwards_reduce_motion(cx: &mut TestAppContext) {
         cx.update(|cx| {
@@ -2433,6 +2520,107 @@ mod apply_tests {
             assert!(cx.reduce_motion());
             apply_accessibility(&prefs(false), cx);
             assert!(!cx.reduce_motion());
+        });
+    }
+
+    /// M6-01: `notification`, `list`, `sheet` and `motion` are the
+    /// application's settings, not theme data, so `apply` and
+    /// `apply_accessibility` keep the values the application set, as
+    /// upstream's own `Theme::change` does.
+    #[gpui::test]
+    fn apply_keeps_the_applications_own_settings(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = from_preset("nord", true, &prefs).expect("preset should load");
+        assert_ne!(theme.sheet.margin_top, px(40.), "precondition");
+        assert_ne!(theme.notification.max_items, 3, "precondition");
+        assert!(theme.list.active_highlight, "precondition");
+        assert_ne!(theme.motion.duration_normal, Duration::ZERO, "precondition");
+        let assert_kept = |cx: &App| {
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.sheet.margin_top, px(40.));
+            assert_eq!(styled.notification.max_items, 3);
+            assert!(!styled.list.active_highlight);
+            assert_eq!(styled.motion.duration_normal, Duration::ZERO);
+        };
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            let styled = GpuiTheme::global_mut(cx);
+            styled.sheet.margin_top = px(40.);
+            styled.notification.max_items = 3;
+            styled.list.active_highlight = false;
+            styled.motion.duration_normal = Duration::ZERO;
+            apply(theme, &resolved, &prefs, cx);
+            assert_kept(cx);
+            let mut scaled = AccessibilityPreferences::default();
+            scaled.text_scaling_factor = 1.5;
+            apply_accessibility(&scaled, cx);
+            assert_kept(cx);
+        });
+    }
+
+    /// M6-02: a one-variant `apply` of another theme drops the variant an
+    /// earlier theme stored for the other mode, so a `Theme::change` to that
+    /// mode shows upstream's built-in palette, not the earlier theme's. The
+    /// unstored config is `ThemeConfig::default()`, a light one: a change to
+    /// an unstored dark mode keeps the window light (gpui-component
+    /// src/theme/schema.rs:1108), as the `apply` doc says.
+    #[gpui::test]
+    fn a_one_variant_apply_of_another_theme_drops_the_earlier_themes_other_mode(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let (breeze_theme, breeze) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        let (mocha_theme, mocha) =
+            from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
+        assert!(
+            !breeze_theme.is_dark() && mocha_theme.is_dark(),
+            "precondition"
+        );
+        assert_ne!(
+            breeze_theme.theme_name(),
+            mocha_theme.theme_name(),
+            "precondition"
+        );
+        let upstream_light =
+            colors::hsla_to_hex(gpui_component::theme::ThemeColor::light().background);
+        for earlier in [&breeze, &mocha] {
+            assert_ne!(
+                colors::hsla_to_hex(colors::rgba_to_hsla(earlier.defaults.background_color)),
+                upstream_light,
+                "precondition"
+            );
+        }
+        cx.update(|cx| {
+            apply(breeze_theme.clone(), &breeze, &prefs, cx);
+            apply(mocha_theme, &mocha, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(!styled.is_dark());
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                upstream_light,
+                "upstream's light palette, not KDE Breeze's"
+            );
+            assert!(
+                cx.native().is_none(),
+                "no light variant of Catppuccin Mocha"
+            );
+        });
+        cx.update(|cx| {
+            apply(breeze_theme, &breeze, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(!styled.is_dark(), "the unstored dark config is a light one");
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                upstream_light,
+                "upstream's light palette, not Catppuccin Mocha's"
+            );
         });
     }
 
@@ -2454,7 +2642,10 @@ mod apply_tests {
         let prefs = AccessibilityPreferences::default();
         let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
         let nt = NativeTheme {
-            dark: Some(resolved.clone()),
+            dark: Some(StoredVariant {
+                name: theme.theme_name().clone(),
+                resolved: resolved.clone(),
+            }),
             ..NativeTheme::default()
         };
         let (g, r) =
