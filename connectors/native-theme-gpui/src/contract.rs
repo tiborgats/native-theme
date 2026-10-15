@@ -11,7 +11,11 @@
 //! `ThemeColor` fields -- enumerated through serde, the same mechanism
 //! `colors::tests::no_theme_color_field_is_left_at_default` uses, so a field
 //! added upstream appears here without anyone listing it -- must appear in
-//! exactly one of the rows and `DERIVED`.
+//! exactly one of the rows and `DERIVED`. Its converse walks the model rather
+//! than the output: with `widgets`,
+//! `every_colour_leaf_reaches_a_sink_or_is_named` splices every colour leaf of
+//! `ResolvedTheme` and requires each to move one of the connector's outputs,
+//! or to be named by `UNREAD_COLOURS` or `NO_RECEIVER`.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -961,6 +965,9 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    (`tab/tab_bar.rs:542-556`), which the `border` row gives \
                    `defaults.border.color`.",
     },
+    // With `widgets` the connector's own switch draws it (`SwitchLook`), and
+    // the colour-leaf coverage test, which runs only there, sees it reached.
+    #[cfg(not(feature = "widgets"))]
     NoReceiver {
         field: "switch.checked_background",
         stated_none: &[],
@@ -971,6 +978,337 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    `Switch::color` is a per-instance receiver (`switch.rs:102`), \
                    which an application can feed and the connector does not. \
                    Recorded at `colors.rs`'s Issue 51 note as well.",
+    },
+];
+
+/// Why a colour leaf of `ResolvedTheme` reaches no sink: the classes of
+/// `UNREAD_COLOURS`, each with its evidence. iced's `Unread`
+/// (`native-theme-iced/src/contract/derived.rs`) has the same shape.
+#[cfg(feature = "widgets")]
+enum Unread {
+    /// gpui-component and gpui-base 0.7.3 have nowhere to draw the value as
+    /// the model states it, or only a receiver that would also paint a
+    /// variant upstream leaves bare. The evidence cites the upstream source,
+    /// `file.rs:line`.
+    NoReceiver(&'static str),
+    /// The value reaches the connector through the widget leaves that inherit
+    /// it, which sinks read. The evidence cites
+    /// `docs/inheritance-rules.toml:line`.
+    Inherited(&'static str),
+    /// A receiver exists, but the presets' value is the defaults' by
+    /// inheritance rather than a platform's statement, and drawing it would
+    /// add an edge no platform states. The evidence cites the inheritance
+    /// and the docs/todo.md item that asks the data to settle it.
+    NoEdgeByData(&'static str),
+    /// As [`Unread::NoEdgeByData`], for a fill.
+    NoFillByData(&'static str),
+}
+
+/// One colour leaf no sink reads, and why.
+#[cfg(feature = "widgets")]
+struct UnreadColour {
+    /// The leaf's dotted path in the serialised `ResolvedTheme`.
+    leaf: &'static str,
+    why: Unread,
+}
+
+/// gpui-component's text fields draw the selected text in the field's text
+/// colour: the selection is a fill behind it.
+#[cfg(feature = "widgets")]
+const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
+     selected-text colour (`input/input.rs:556-563`), so a selected run is \
+     drawn in the field's text colour";
+
+/// The docs/todo.md item that holds the toolbar's and the popover's edge and
+/// the card's fill.
+#[cfg(feature = "widgets")]
+const BY_DATA_ITEM: &str = "Presets: the toolbar's and the popover's edge width is the defaults'";
+
+/// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
+/// bundled combinations and that `NO_RECEIVER` does not name, each with its
+/// reason.
+///
+/// `every_colour_leaf_reaches_a_sink_or_is_named` holds the list to the
+/// model: a colour leaf that reaches no sink and is named nowhere fails it,
+/// and so does an entry that names a leaf a sink now reads, or no colour leaf
+/// at all. It is a table of its own rather than more of `NO_RECEIVER`, whose
+/// entries are about `ThemeColor` and must be stated by every preset: several
+/// entries here reach gpui through the leaves that inherit them, and five
+/// have a receiver the connector leaves unfilled by a ruling: the trigger's
+/// and the text area's edge, which would paint a frameless variant, and the
+/// three the presets inherit rather than state.
+#[cfg(feature = "widgets")]
+const UNREAD_COLOURS: &[UnreadColour] = &[
+    UnreadColour {
+        leaf: "defaults.accent_text_color",
+        why: Unread::Inherited(
+            "the primary button's label and the check mark inherit it, \
+             `button.primary_text_color` and `checkbox.indicator_color` \
+             (`docs/inheritance-rules.toml:157`, `:181`), and they reach \
+             `primary_foreground` and `CheckboxLook`",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.font.color",
+        why: Unread::Inherited(
+            "every widget's font colour inherits it \
+             (`docs/inheritance-rules.toml:109`), and the widgets' own reach \
+             their sinks: `checkbox.font.color`, `input.font.color`, \
+             `list.item_font.color`, `popover.font.color`, \
+             `status_bar.font.color` and `window.title_bar_font.color` among \
+             them",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.link_color",
+        why: Unread::Inherited(
+            "`link.font.color` inherits it (`docs/inheritance-rules.toml:286`), \
+             and the `link` row reads that",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_background",
+        why: Unread::Inherited(
+            "the selections that sinks read inherit it: \
+             `menu.hover_background`, `sidebar.selection_background` and \
+             `list.selection_background` (`docs/inheritance-rules.toml:189`, \
+             `:218`, `:234`), and `input.selection_background` through \
+             `defaults.text_selection_background` (`:54`, `:167`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_text_color",
+        why: Unread::Inherited(
+            "the selected-item labels that sinks read inherit it: \
+             `menu.hover_text_color`, `sidebar.selection_text_color` and \
+             `list.selection_text_color` (`docs/inheritance-rules.toml:190`, \
+             `:219`, `:235`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.surface_color",
+        why: Unread::Inherited(
+            "the surfaces that sinks read inherit it: \
+             `window.title_bar_background`, `slider.thumb_color`, \
+             `list.header_background` and `switch.thumb_background` \
+             (`docs/inheritance-rules.toml:150`, `:203`, `:236`, `:250`); \
+             `card.background_color` inherits it too (`:266`) and has its \
+             own entry here",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_background",
+        why: Unread::Inherited(
+            "`input.selection_background` inherits it \
+             (`docs/inheritance-rules.toml:167`), and the `selection` row \
+             reads that",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.mono_font.color",
+        why: Unread::NoReceiver(
+            "`Theme` has `mono_font_family` and `mono_font_size` and no mono \
+             colour (`theme/mod.rs:181-183`); an editor's text is the root's \
+             text colour or the highlight theme's",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_inactive_background",
+        why: Unread::NoReceiver(
+            "none of the 139 `ThemeColor` fields is an inactive selection \
+             (`theme/theme_color.rs:59-343`), and a selected `ListItem` fills \
+             `list_active` or `accent` whatever the window's state \
+             (`list/list_item.rs:257-264`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "input.selection_text_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "button.hover_text_color",
+        why: Unread::NoReceiver(
+            "a hovered Default, Primary or Secondary button keeps its \
+             `text_color` (`button/button.rs:1198-1203`), and a \
+             `ButtonCustomVariant` has one foreground for every state \
+             (`:40-45`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.hover_background",
+        why: Unread::NoReceiver(
+            "neither trigger has a hover style (`select.rs:536-555`, \
+             `combobox.rs:981-998`), and a `StyleRefinement` has no hover \
+             state",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.border.color",
+        why: Unread::NoReceiver(
+            "the trigger's edge is `border_color(input)` (`select.rs:548`, \
+             `combobox.rs:993`) before the refinement (`select.rs:553`, \
+             `combobox.rs:998`), the only receiver, and a trigger built with \
+             `appearance(false)` keeps `border_1()` in `transparent` \
+             (`select.rs:542-543`, `combobox.rs:987-988`), which an edge \
+             colour in the refinement would paint. The leaf equals \
+             `input.border.color`, which the `input` row reads, in all 34 \
+             combinations",
+        ),
+    },
+    UnreadColour {
+        leaf: "text_area.border.color",
+        why: Unread::NoReceiver(
+            "a text area's edge is `border_color(input)` \
+             (`input/input.rs:798`) before the refinement (`:803`), the only \
+             receiver, and a field built with `bordered(false)` or \
+             `appearance(false)` draws no edge (`input/input.rs:795-799`), \
+             which an edge colour in the refinement would paint over the \
+             width `geometry::text_area` sets. The leaf inherits \
+             `input.border.color` (`docs/inheritance-rules.toml:173`), which \
+             the `input` row reads, and equals it in all 34 combinations",
+        ),
+    },
+    UnreadColour {
+        leaf: "expander.arrow_color",
+        why: Unread::NoReceiver(
+            "an Accordion's chevron is `muted_foreground`, with no style hook \
+             (`accordion.rs:328-332`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "input.focus_border_color",
+        why: Unread::NoReceiver(
+            "a focused field's edge is `ring` (`input/input.rs:761`, `:806`), \
+             the token every focus ring shares, which the `ring` row gives \
+             `defaults.focus_ring_color`",
+        ),
+    },
+    UnreadColour {
+        leaf: "input.hover_border_color",
+        why: Unread::NoReceiver(
+            "an `Input` has no hover style: its render \
+             (`input/input.rs:707-803`) sets no `.hover(`",
+        ),
+    },
+    UnreadColour {
+        leaf: "input.placeholder_color",
+        why: Unread::NoReceiver(
+            "the placeholder is `editor_style.muted_foreground` (gpui-base \
+             `input/base/element.rs:2543-2547`), which is \
+             `theme.muted_foreground` (`input/input.rs:559`), the token all \
+             muted text shares",
+        ),
+    },
+    UnreadColour {
+        leaf: "link.disabled_text_color",
+        why: Unread::NoReceiver("`Link` has no disabled state (`link.rs:69-90`)"),
+    },
+    UnreadColour {
+        leaf: "link.visited_text_color",
+        why: Unread::NoReceiver("`Link` has no visited state (`link.rs:69-90`)"),
+    },
+    UnreadColour {
+        leaf: "list.disabled_text_color",
+        why: Unread::NoReceiver(
+            "a non-selectable `ListItem` takes `muted_foreground` \
+             (`list/list_item.rs:235-237`) after the refinement (`:209`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "list.hover_text_color",
+        why: Unread::NoReceiver(
+            "a hovered `ListItem` changes only its fill \
+             (`list/list_item.rs:226-232`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.background_color",
+        why: Unread::NoReceiver(
+            "a `PopupMenu` paints `popover_style` (`menu/popup_menu.rs:1499` \
+             -> `styled.rs:190`) and is not `Styled`: its fill is the \
+             `popover` token, which the `popover` row gives \
+             `popover.background_color`",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.border.color",
+        why: Unread::NoReceiver(
+            "the menu's edge is the popover ring, `foreground` at a fixed ink \
+             (`styled.rs:36-38`, `:192`), not a border",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.disabled_text_color",
+        why: Unread::NoReceiver(
+            "a disabled `MenuItem` takes `muted_foreground` \
+             (`menu/menu_item.rs:131-133`), the token all muted text shares",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.font.color",
+        why: Unread::NoReceiver(
+            "menu text is `popover_foreground` (`menu/popup_menu.rs:1500`), \
+             which the `popover_foreground` row gives `popover.font.color`",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.separator_color",
+        why: Unread::NoReceiver(
+            "the separator is a hairline in `border` \
+             (`menu/popup_menu.rs:1270-1276`), the token every edge shares",
+        ),
+    },
+    UnreadColour {
+        leaf: "segmented_control.hover_background",
+        why: Unread::NoReceiver(
+            "a segment's fill is `tokens.background` or transparent \
+             (`tab/tab.rs:197-204`), the site of the segmented control's \
+             `NO_RECEIVER` entries",
+        ),
+    },
+    UnreadColour {
+        leaf: "sidebar.hover_background",
+        why: Unread::NoReceiver(
+            "a hovered sidebar item takes `sidebar_accent` at 0.8, the \
+             selection's token (`sidebar/menu.rs:305-308`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "toolbar.border.color",
+        why: Unread::NoEdgeByData(
+            "the toolbar's edge inherits `defaults.border` \
+             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`), \
+             while docs/platform-facts.md §2.13 (:1344) has no border row and \
+             Breeze's `ToolBar_FrameWidth` is 0 (:1355); \
+             `geometry::toolbar` draws no edge. docs/todo.md item \"Presets: \
+             the toolbar's and the popover's edge width is the defaults'\"",
+        ),
+    },
+    UnreadColour {
+        leaf: "popover.border.color",
+        why: Unread::NoEdgeByData(
+            "the popover's edge inherits `defaults.border` \
+             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`), \
+             and gpui-component draws a popover's edge as its own ring inside \
+             the shadow (`styled.rs:186-194`); `geometry::popover` draws no \
+             border. docs/todo.md item \"Presets: the toolbar's and the \
+             popover's edge width is the defaults'\"",
+        ),
+    },
+    UnreadColour {
+        leaf: "card.background_color",
+        why: Unread::NoFillByData(
+            "the card's fill inherits `defaults.surface_color` \
+             (`docs/inheritance-rules.toml:266`), and only material-3 states \
+             one, while docs/platform-facts.md §2.26 (:1590) states no card \
+             for macOS and KDE; `geometry::group_box_content` fills nothing. \
+             docs/todo.md item \"Presets: the toolbar's and the popover's \
+             edge width is the defaults'\"",
+        ),
     },
 ];
 
@@ -2147,6 +2485,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
 /// value: the walk descends into objects and keeps everything else, a `null`
 /// (an unstated soft option) included. iced's `leaf_values`
 /// (`native-theme-iced/src/contract.rs`) is the same walk.
+#[cfg(feature = "widgets")]
 fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
     fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
         match value {
@@ -2170,6 +2509,7 @@ fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
 
 /// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
 /// theme; `None` where the leaf already holds it or does not take a colour.
+#[cfg(feature = "widgets")]
 fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
     let pointer = format!("/{}", leaf.replace('.', "/"));
     let value = serde_json::Value::String(hex.to_owned());
@@ -2184,6 +2524,7 @@ fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<Res
 /// The colour leaves of one serialised theme: a leaf whose value is a colour,
 /// or a `null` a colour splices into -- an `Option<Rgba>` the theme leaves
 /// unstated.
+#[cfg(feature = "widgets")]
 fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
     leaf_values(json)
         .into_iter()
@@ -2199,6 +2540,7 @@ fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
 /// An opaque colour whose red, green and blue appear in no colour of `json`,
 /// so that no sink can show it by passing another leaf through: counting up
 /// from `#13579b` in the red channel.
+#[cfg(feature = "widgets")]
 fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
     let taken: std::collections::BTreeSet<(u8, u8, u8)> = leaf_values(json)
         .into_iter()
@@ -2212,15 +2554,17 @@ fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
 }
 
 /// A `geometry` builder that returns a refinement.
+#[cfg(feature = "widgets")]
 type Refinement = fn(crate::Native<'_>) -> gpui::StyleRefinement;
 
 /// What the connector builds from one theme, without a window, as text keyed
 /// by sink: every `ThemeColor` field `to_theme_color` writes, every field of
 /// the `base_palette` `apply`'s observer copies back, every
 /// `ScrollbarGeometry` field and the `ResizableTheme` the base layer
-/// installs, every `geometry` builder that takes a `Native`, and, with
-/// `widgets`, each Look in each of its states, as built and as drawn over
-/// the default backdrop, `defaults.background_color`.
+/// installs, every `geometry` builder that takes a `Native`, and each of the
+/// `widgets` Looks in each of its states, as built and as drawn over the
+/// default backdrop, `defaults.background_color`.
+#[cfg(feature = "widgets")]
 fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String, String> {
     let mut out = std::collections::BTreeMap::new();
     let mut fields = |prefix: &str, tc: ThemeColor| {
@@ -2325,81 +2669,100 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         out.insert(format!("geometry::{name}"), value);
     }
 
-    #[cfg(feature = "widgets")]
-    {
-        use crate::widgets::{
-            CheckboxLook, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook, SwitchLook,
-            TabLook,
-        };
-        let ground = rgba_to_hsla(r.defaults.background_color);
-        for checked in [false, true] {
-            for disabled in [false, true] {
-                let state = format!("({checked}, {disabled})");
-                let checkbox = CheckboxLook::of(r, checked, disabled);
-                let radio = CheckboxLook::radio(r, checked, disabled);
-                let switch = SwitchLook::of(r, checked, disabled);
-                out.insert(format!("CheckboxLook::of{state}"), format!("{checkbox:?}"));
-                out.insert(
-                    format!("CheckboxLook::of{state} drawn"),
-                    format!("{:?}", checkbox.map(|l| l.faded_over(ground))),
-                );
-                out.insert(format!("CheckboxLook::radio{state}"), format!("{radio:?}"));
-                out.insert(
-                    format!("CheckboxLook::radio{state} drawn"),
-                    format!("{:?}", radio.map(|l| l.faded_over(ground))),
-                );
-                out.insert(format!("SwitchLook::of{state}"), format!("{switch:?}"));
-                out.insert(
-                    format!("SwitchLook::of{state} drawn"),
-                    format!("{:?}", switch.map(|l| l.faded_over(ground))),
-                );
-            }
-        }
+    use crate::widgets::{
+        CheckboxLook, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook, SwitchLook, TabLook,
+    };
+    let ground = rgba_to_hsla(r.defaults.background_color);
+    for checked in [false, true] {
         for disabled in [false, true] {
-            let slider = SliderLook::of(r, disabled);
-            out.insert(format!("SliderLook::of({disabled})"), format!("{slider:?}"));
+            let state = format!("({checked}, {disabled})");
+            let checkbox = CheckboxLook::of(r, checked, disabled);
+            let radio = CheckboxLook::radio(r, checked, disabled);
+            let switch = SwitchLook::of(r, checked, disabled);
+            out.insert(format!("CheckboxLook::of{state}"), format!("{checkbox:?}"));
             out.insert(
-                format!("SliderLook::of({disabled}) drawn"),
-                format!("{:?}", slider.map(|l| l.faded_over(ground))),
+                format!("CheckboxLook::of{state} drawn"),
+                format!("{:?}", checkbox.map(|l| l.faded_over(ground))),
+            );
+            out.insert(format!("CheckboxLook::radio{state}"), format!("{radio:?}"));
+            out.insert(
+                format!("CheckboxLook::radio{state} drawn"),
+                format!("{:?}", radio.map(|l| l.faded_over(ground))),
+            );
+            out.insert(format!("SwitchLook::of{state}"), format!("{switch:?}"));
+            out.insert(
+                format!("SwitchLook::of{state} drawn"),
+                format!("{:?}", switch.map(|l| l.faded_over(ground))),
             );
         }
-        out.insert(
-            "ProgressBarLook::of".to_owned(),
-            format!("{:?}", ProgressBarLook::of(r)),
-        );
-        out.insert(
-            "SeparatorLook::of".to_owned(),
-            format!("{:?}", SeparatorLook::of(r)),
-        );
-        out.insert(
-            "SpinnerLook::of".to_owned(),
-            format!("{:?}", SpinnerLook::of(r)),
-        );
-        out.insert("TabLook::of".to_owned(), format!("{:?}", TabLook::of(r)));
     }
+    for disabled in [false, true] {
+        let slider = SliderLook::of(r, disabled);
+        out.insert(format!("SliderLook::of({disabled})"), format!("{slider:?}"));
+        out.insert(
+            format!("SliderLook::of({disabled}) drawn"),
+            format!("{:?}", slider.map(|l| l.faded_over(ground))),
+        );
+    }
+    out.insert(
+        "ProgressBarLook::of".to_owned(),
+        format!("{:?}", ProgressBarLook::of(r)),
+    );
+    out.insert(
+        "SeparatorLook::of".to_owned(),
+        format!("{:?}", SeparatorLook::of(r)),
+    );
+    out.insert(
+        "SpinnerLook::of".to_owned(),
+        format!("{:?}", SpinnerLook::of(r)),
+    );
+    out.insert("TabLook::of".to_owned(), format!("{:?}", TabLook::of(r)));
     out
 }
 
-/// M1-T7-03's dry run, gpui's half (M6 T16a): which sinks each colour leaf
-/// of `ResolvedTheme` reaches.
+/// The sinks whose text differs between two readings.
+#[cfg(feature = "widgets")]
+fn moved(
+    before: &std::collections::BTreeMap<String, String>,
+    after: &std::collections::BTreeMap<String, String>,
+) -> Vec<String> {
+    before
+        .iter()
+        .filter(|(name, value)| after.get(*name) != Some(*value))
+        .map(|(name, _)| name.clone())
+        .collect()
+}
+
+/// M1-T7-03, gpui's half: every colour leaf of `ResolvedTheme` reaches one of
+/// the connector's sinks, or a table says why it does not.
 ///
-/// iced's method (`native-theme-iced/src/contract.rs`,
-/// `every_colour_leaf_reaches_a_row_or_is_named`) with gpui's sinks
-/// ([`sinks`]). Each of the 34 preset/mode combinations is a base. Every
+/// The tripwire (`every_theme_color_field_has_a_declared_source`) walks what
+/// the connector emits into `ThemeColor`, so it cannot see a model value
+/// nothing reads. This walks the model instead, by iced's method
+/// (`native-theme-iced/src/contract.rs`,
+/// `every_colour_leaf_reaches_a_row_or_is_named`) over gpui's outputs
+/// ([`sinks`]). Each of the 34 preset/mode combinations is a base, and every
 /// colour leaf of the serialised theme -- a colour, or an unstated
-/// `Option<Rgba>` a colour splices into -- is spliced in turn with three
-/// values -- the leaf's value in another preset of the same mode, and an
-/// opaque and a half-transparent sentinel no colour of the base shares its
-/// channels with -- and the sinks are read again: a leaf *reaches* a sink
-/// when the sink's text moves, in at least one base.
+/// `Option<Rgba>` a colour splices into -- is spliced in turn with the leaf's
+/// value in another preset of the same mode and with an opaque and a
+/// half-transparent sentinel no colour of the base shares its channels with,
+/// so neither a passthrough of another leaf nor a composite under an opaque
+/// layer hides the change. A leaf *reaches* a sink when the sink's text
+/// moves, in at least one base: a soft option's fallback moves its sink only
+/// where the option is unstated (`checkbox.background_color`, in 2 of the
+/// 34), which is why every base is read. A leaf that reaches a sink is not
+/// spliced in the bases after.
 ///
-/// Prints, asserts nothing. For each leaf no sink reads it also prints
-/// whether `NO_RECEIVER` names it and the reached leaves it equals in every
-/// combination. `cargo test -p native-theme-gpui --lib colour_leaf_dry_run
-/// -- --ignored --nocapture`.
+/// Every leaf that reaches no sink must be named once, by `UNREAD_COLOURS` or
+/// `NO_RECEIVER`. An entry of either that names a leaf a sink reads is stale,
+/// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
+///
+/// The Looks are sinks only with `widgets`, the feature that builds them, and
+/// without it the leaves only they read would reach nothing; so the test runs
+/// with it, as iced's runs with `iced_aw`.
+#[cfg(feature = "widgets")]
 #[test]
-#[ignore = "M1-T7-03 dry run: prints the colour-leaf map, asserts nothing"]
-fn colour_leaf_dry_run() -> crate::Result<()> {
+fn every_colour_leaf_reaches_a_sink_or_is_named() -> crate::Result<()> {
     use std::collections::{BTreeMap, BTreeSet};
 
     let started = std::time::Instant::now();
@@ -2419,17 +2782,8 @@ fn colour_leaf_dry_run() -> crate::Result<()> {
         leaves.extend(colour_leaves(json));
     }
 
-    #[derive(Default)]
-    struct Reach {
-        sinks: BTreeSet<String>,
-        bases: BTreeSet<String>,
-        splices: usize,
-    }
-    let mut reach: BTreeMap<String, Reach> = leaves
-        .iter()
-        .map(|l| (l.clone(), Reach::default()))
-        .collect();
-
+    // The sinks each leaf first moved, in the first base it moved one in.
+    let mut reached: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let n = combinations.len();
     for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
         let base = sinks(&c.resolved, c.is_dark);
@@ -2443,72 +2797,92 @@ fn colour_leaf_dry_run() -> crate::Result<()> {
             format!("#{red:02x}{green:02x}{blue:02x}80"),
         ];
         for leaf in &leaves {
+            if reached.contains_key(leaf) {
+                continue;
+            }
             let pointer = format!("/{}", leaf.replace('.', "/"));
             let from_donor = donor
                 .and_then(|d| d.pointer(&pointer))
                 .and_then(|v| v.as_str())
                 .map(str::to_owned);
-            let entry = reach.entry(leaf.clone()).or_default();
             for hex in from_donor.iter().chain(&sentinels) {
                 let Some(r) = spliced_colour(json, leaf, hex) else {
                     continue;
                 };
-                entry.splices += 1;
-                let after = sinks(&r, c.is_dark);
-                let moved: Vec<String> = base
-                    .iter()
-                    .filter(|(name, value)| after.get(*name) != Some(*value))
-                    .map(|(name, _)| name.clone())
-                    .collect();
+                let moved = moved(&base, &sinks(&r, c.is_dark));
                 if !moved.is_empty() {
-                    entry.bases.insert(c.label());
+                    reached.insert(leaf.clone(), moved);
+                    break;
                 }
-                entry.sinks.extend(moved);
             }
         }
     }
 
-    let elapsed = started.elapsed();
-    let reached = reach.values().filter(|x| !x.sinks.is_empty()).count();
+    let mut failures = Vec::new();
+    let (mut by_sinks, mut by_unread, mut by_no_receiver) = (0, 0, 0);
+    for leaf in &leaves {
+        let unread = UNREAD_COLOURS.iter().filter(|e| e.leaf == leaf).count();
+        let no_receiver = NO_RECEIVER.iter().filter(|u| u.field == leaf).count();
+        match reached.get(leaf) {
+            Some(moved) => {
+                by_sinks += 1;
+                if unread + no_receiver > 0 {
+                    failures.push(format!(
+                        "{leaf}: reaches {} yet is named unread ({unread} by \
+                         UNREAD_COLOURS, {no_receiver} by NO_RECEIVER)",
+                        moved.join(", ")
+                    ));
+                }
+            }
+            None => match (unread, no_receiver) {
+                (1, 0) => by_unread += 1,
+                (0, 1) => by_no_receiver += 1,
+                (0, 0) => failures.push(format!(
+                    "{leaf}: reaches no sink, and neither UNREAD_COLOURS nor \
+                     NO_RECEIVER names it"
+                )),
+                _ => failures.push(format!(
+                    "{leaf}: named {unread} time(s) by UNREAD_COLOURS and \
+                     {no_receiver} by NO_RECEIVER"
+                )),
+            },
+        }
+    }
+
+    for entry in UNREAD_COLOURS {
+        if !leaves.contains(entry.leaf) {
+            failures.push(format!(
+                "UNREAD_COLOURS names {}, which is no colour leaf",
+                entry.leaf
+            ));
+        }
+        let (cited, needs) = match entry.why {
+            Unread::NoReceiver(evidence) => (evidence.contains(".rs:"), "an upstream file.rs:line"),
+            Unread::Inherited(evidence) => (
+                evidence.contains("inheritance-rules.toml:"),
+                "a docs/inheritance-rules.toml line",
+            ),
+            Unread::NoEdgeByData(evidence) | Unread::NoFillByData(evidence) => (
+                evidence.contains("inheritance-rules.toml:") && evidence.contains(BY_DATA_ITEM),
+                "a docs/inheritance-rules.toml line and the docs/todo.md item",
+            ),
+        };
+        if !cited {
+            failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
+        }
+    }
+
     println!(
-        "colour leaves: {}, reaching a sink: {reached}, unmapped: {}, run time {elapsed:.2?}",
-        reach.len(),
-        reach.len() - reached
+        "{} colour leaves: {by_sinks} reach a sink, {by_unread} named by \
+         UNREAD_COLOURS, {by_no_receiver} by NO_RECEIVER; {:.2?}",
+        leaves.len(),
+        started.elapsed()
     );
-    println!("\n## Reached");
-    for (leaf, x) in reach.iter().filter(|(_, x)| !x.sinks.is_empty()) {
-        println!(
-            "{leaf} -> {} sinks, {} bases: {}",
-            x.sinks.len(),
-            x.bases.len(),
-            x.sinks.iter().cloned().collect::<Vec<_>>().join(", ")
-        );
-    }
-    println!("\n## Unmapped");
-    let value_in = |json: &serde_json::Value, leaf: &str| {
-        json.pointer(&format!("/{}", leaf.replace('.', "/")))
-            .cloned()
-    };
-    for (leaf, x) in reach.iter().filter(|(_, x)| x.sinks.is_empty()) {
-        let no_receiver = NO_RECEIVER.iter().any(|u| u.field == leaf);
-        // The reached leaves this one equals in every combination: what it
-        // carries where a sink would read it today.
-        let twins: Vec<&str> = reach
-            .iter()
-            .filter(|(other, y)| {
-                !y.sinks.is_empty()
-                    && jsons
-                        .iter()
-                        .all(|json| value_in(json, leaf) == value_in(json, other))
-            })
-            .map(|(other, _)| other.as_str())
-            .collect();
-        println!(
-            "{leaf} ({} splices){}: equal everywhere to [{}]",
-            x.splices,
-            if no_receiver { " NO_RECEIVER" } else { "" },
-            twins.join(", ")
-        );
-    }
+    assert!(
+        failures.is_empty(),
+        "{} colour-leaf classification(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     Ok(())
 }
