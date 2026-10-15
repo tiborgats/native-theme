@@ -2301,6 +2301,8 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         ("link", gm::link),
         ("input_fill(false)", |n| gm::input_fill(n, false)),
         ("input_fill(true)", |n| gm::input_fill(n, true)),
+        ("combo_box_fill(false)", |n| gm::combo_box_fill(n, false)),
+        ("combo_box_fill(true)", |n| gm::combo_box_fill(n, true)),
     ];
     for (name, builder) in refinements {
         out.insert(format!("geometry::{name}"), format!("{:?}", builder(n)));

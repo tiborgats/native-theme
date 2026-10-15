@@ -3943,28 +3943,25 @@ pub(crate) fn select(
         .debug_selector(move || id.into())
 }
 
-/// A drop-down trigger's edge, `combo_box.border.color`, and no fill of its
-/// own, for a `Select` or a `Combobox` that is not disabled, or `None`
-/// before `apply` ran: [`combo_surface`] paints the fill under it. The
-/// trigger paints `input_background()` and `input` first and refines itself
-/// with the caller's style after (select.rs, `Select::render`; combobox.rs,
-/// `Combobox::render`), so these land over them.
+/// No fill of its own for a drop-down trigger, a `Select` or a `Combobox`
+/// that is not disabled, or `None` before `apply` ran: [`combo_surface`]
+/// paints `geometry::combo_box_fill`'s fill under it. The trigger paints
+/// `input_background()` first and refines itself with the caller's style
+/// after (select.rs, `Select::render`; combobox.rs, `Combobox::render`), so
+/// this lands over it; its edge is `geometry::select`'s or
+/// `geometry::combobox`'s, `combo_box.border.color`.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
     // with (select.rs:542).
     let none = cx.theme().transparent;
-    native_value(cx, |n| {
-        let c = &n.resolved.combo_box;
-        StyleRefinement::default()
-            .bg(none)
-            .border_color(info::stated(c.border.color))
-    })
+    native_value(cx, |_| StyleRefinement::default().bg(none))
 }
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:
-/// `combo_box.background_color`, and under the pointer
-/// `combo_box.hover_background` laid over it as the connector lays its
-/// layers (`native_theme_gpui::layer_over`), rounded as the trigger is
+/// `geometry::combo_box_fill`'s fill, `combo_box.background_color`, moved
+/// under the trigger so that under the pointer `combo_box.hover_background`
+/// can be laid over it as the connector lays its layers
+/// (`native_theme_gpui::layer_over`), rounded as the trigger is
 /// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
 /// sets no hover (select.rs:535-553; combobox.rs:981-998) and neither
 /// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:795), so the
@@ -3972,18 +3969,18 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
     let look = native_value(cx, |n| {
         let c = &n.resolved.combo_box;
-        let fill = info::stated(c.background_color);
         (
-            fill,
-            c.hover_background
-                .map(|hover| native_theme_gpui::layer_over(fill, info::stated(hover))),
+            geometry::combo_box_fill(n, false).background,
+            c.hover_background.map(|hover| {
+                native_theme_gpui::layer_over(info::stated(c.background_color), info::stated(hover))
+            }),
             px(c.border.corner_radius.max(0.0)),
         )
     });
     match look {
         Some((fill, hover, radius)) => div()
             .rounded(radius)
-            .bg(fill)
+            .when_some(fill, |surface, fill| surface.bg(fill))
             .when_some(hover, |surface, hover| {
                 surface.hover(move |style| style.bg(hover))
             })

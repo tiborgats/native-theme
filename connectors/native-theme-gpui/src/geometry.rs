@@ -765,6 +765,11 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// upstream's own right padding (`input_px`, `select.rs:551`,
 /// `combobox.rs:996`) stands. Without an arrow column the stated right side
 /// is measured to the text, and is applied like the others.
+///
+/// The edge is `combo_box.border.color`, over the `input` token upstream
+/// draws it in before the refinement (`select.rs:548`, `combobox.rs:993`);
+/// a focused trigger still edges itself in `ring` after it (`select.rs:554-555`,
+/// `combobox.rs:999-1000`).
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
     let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
@@ -778,6 +783,7 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     with_padding(r, &padding)
         .min_w(px(c.min_width))
         .rounded(px(c.border.corner_radius))
+        .border_color(rgba_to_hsla(c.border.color))
 }
 
 /// `Select` (`src/select.rs:542-552` → `:553`); the arrow is inner, Tier U.
@@ -818,7 +824,8 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 /// `muted_foreground` through that same call, before the refinement at `:998`,
 /// and the selected-title child (`:585-591`) sets no colour to re-mute with —
 /// so a carried colour would beat the disabled colour instead of yielding to
-/// it.
+/// it. A disabled trigger takes the platform's disabled text colour from
+/// [`combo_box_fill`] instead.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
     with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
@@ -1062,6 +1069,46 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
             .opacity(unit(i.disabled_opacity))
     } else {
         StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
+    }
+}
+
+/// The fill of a `Select` or `Combobox` trigger (`src/select.rs:545`,
+/// `src/combobox.rs:990`, refined at `select.rs:553` and `combobox.rs:998`),
+/// for a trigger built with `disabled`: `combo_box.background_color`, or
+/// disabled `combo_box.disabled_background` (the enabled fill where the theme
+/// states none) and the text in `combo_box.disabled_text_color`, faded by
+/// `combo_box.disabled_opacity`. Apply it after [`select`] or [`combobox`].
+///
+/// Colour, carried for the reason [`input_fill`] is: upstream fills an
+/// enabled trigger with `Theme::input_background` and a disabled one with the
+/// `input` token mixed toward transparent (`input_style`,
+/// `src/input/input.rs:97-107`), and no `ThemeColor` field maps to the
+/// platform's combo box fill. Disabled, the fade replaces upstream's
+/// `opacity(0.5)` on the trigger (`select.rs:547`, `combobox.rs:992`), both
+/// set before the refinement: a platform dims by its disabled colours or by
+/// that opacity, and its data makes the other an identity
+/// (docs/platform-facts.md §2.1.6).
+///
+/// The disabled text colour reaches a `Combobox`'s selected text: its
+/// trigger takes `muted_foreground` from `input_style` before the refinement
+/// (`input/input.rs:99-103` → `combobox.rs:991` → `:998`), and the title
+/// elements set none (`combobox.rs:570-591`). It does not reach a `Select`'s
+/// title, which re-mutes itself when disabled (`select.rs:484-485`), nor the
+/// placeholder or the caret of either, which are `muted_foreground` on
+/// elements of their own (`select.rs:452`, `:597-600`; `combobox.rs:557`,
+/// `:652-656`).
+#[must_use]
+pub fn combo_box_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
+    let c = &n.resolved.combo_box;
+    if disabled {
+        StyleRefinement::default()
+            .bg(rgba_to_hsla(
+                c.disabled_background.unwrap_or(c.background_color),
+            ))
+            .text_color(rgba_to_hsla(c.disabled_text_color))
+            .opacity(unit(c.disabled_opacity))
+    } else {
+        StyleRefinement::default().bg(rgba_to_hsla(c.background_color))
     }
 }
 
@@ -1671,6 +1718,61 @@ mod tests {
             }
         }
         assert!(stated_disabled > 0, "no preset states a disabled fill");
+    }
+
+    /// `combo_box_fill` is `combo_box.background_color`, or for a disabled
+    /// trigger `combo_box.disabled_background` (the enabled fill where none
+    /// is stated) and `combo_box.disabled_text_color`, faded by
+    /// `combo_box.disabled_opacity`; it carries nothing else.
+    #[test]
+    fn combo_box_fill_is_the_platforms_in_either_state() {
+        let mut stated_disabled = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let c = &r.combo_box;
+                let enabled = combo_box_fill(n, false);
+                assert_eq!(
+                    enabled,
+                    StyleRefinement::default().bg(rgba_to_hsla(c.background_color)),
+                    "{at}: enabled, the fill alone"
+                );
+                let disabled = combo_box_fill(n, true);
+                assert_eq!(
+                    disabled.background,
+                    Some(rgba_to_hsla(c.disabled_background.unwrap_or(c.background_color)).into()),
+                    "{at}: disabled fill"
+                );
+                assert_eq!(
+                    disabled.text.color,
+                    Some(rgba_to_hsla(c.disabled_text_color)),
+                    "{at}: disabled text"
+                );
+                assert_eq!(
+                    disabled.opacity,
+                    Some(c.disabled_opacity),
+                    "{at}: disabled fade"
+                );
+                stated_disabled += usize::from(c.disabled_background.is_some());
+                let bare = StyleRefinement {
+                    background: None,
+                    opacity: None,
+                    text: Default::default(),
+                    ..disabled
+                };
+                assert_eq!(
+                    bare,
+                    StyleRefinement::default(),
+                    "{at}: only the fill, the text colour and the fade"
+                );
+            }
+        }
+        assert!(
+            stated_disabled > 0,
+            "no preset states a disabled combo box fill"
+        );
     }
 
     /// `button_disabled` is `button.disabled_background` (or
@@ -2306,6 +2408,11 @@ mod tests {
                 abs(cb.border.corner_radius.max(0.0))
             );
             assert_text(&out, r, &cb.font, s);
+            assert_eq!(out.border_color, Some(rgba_to_hsla(cb.border.color)));
+            assert_eq!(
+                combobox(n).border_color,
+                Some(rgba_to_hsla(cb.border.color))
+            );
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
             assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
             stated.padding(&combobox(n), &p, "combobox");

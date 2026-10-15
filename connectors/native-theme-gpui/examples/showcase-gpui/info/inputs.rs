@@ -1078,11 +1078,13 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (select.rs, SelectState::new)"))
 }
 
-/// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`
-/// and `combo_box.border.color`, which the showcase refines the trigger with
-/// over upstream's (`demo::combo_fill`), where a native theme is installed;
-/// upstream's `input_background()` and `input` where none is, the edge read
-/// by a `Combobox` where `combobox`, by a `Select` where not.
+/// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`,
+/// `geometry::combo_box_fill`'s, which the showcase paints under the trigger
+/// (`demo::combo_surface`), and `combo_box.border.color`, which
+/// `geometry::select` and `geometry::combobox` refine the trigger with over
+/// upstream's, where a native theme is installed; upstream's
+/// `input_background()` and `input` where none is, the edge read by a
+/// `Combobox` where `combobox`, by a `Select` where not.
 pub fn combo_fill(
     info: WidgetInfo,
     t: &Theme,
@@ -1098,12 +1100,7 @@ pub fn combo_fill(
                     stated(r.combo_box.background_color),
                     "showcase",
                 ))
-                .color(claim(
-                    "trigger border",
-                    "color",
-                    stated(r.combo_box.border.color),
-                    "showcase",
-                ));
+                .geometry("combo_box_fill");
             let c = &r.combo_box;
             let info = if c.hover_background.is_some() {
                 info.color(claim(
@@ -1115,7 +1112,7 @@ pub fn combo_fill(
             } else {
                 info
             };
-            info.config("fill", "combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color over the input edge it paints first")
+            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color, which geometry::select and geometry::combobox give it over the input edge it paints first")
         }
         None => info
             .color(input_background(t))

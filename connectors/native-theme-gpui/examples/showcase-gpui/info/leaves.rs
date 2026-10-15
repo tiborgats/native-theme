@@ -571,12 +571,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.background_color",
-        "gpui: the fill under the trigger (demo::combo_surface)",
+        "gpui: geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
     ),
     (
         "",
         "combo_box.border.color",
-        "gpui: the trigger's edge (demo::combo_fill)",
+        "gpui: geometry::select's and geometry::combobox's edge colour",
     ),
     (
         "",

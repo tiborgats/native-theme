@@ -261,11 +261,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "select",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, border.color, over the input token upstream edges the trigger with first, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
     ),
     (
         "combobox",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui geometry.rs, combobox)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, border.color, over the input token upstream edges the trigger with first, combo_box.font (native-theme-gpui geometry.rs, combobox)",
     ),
     (
         "title_bar",
@@ -307,6 +307,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "input_fill",
         "input.background_color, or for a disabled field input.disabled_background (the enabled fill where the theme states none) and input.disabled_text_color, which the editor halves the alpha of as it does any disabled field's text (gpui-base/input/base/element.rs, prepaint), faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+    ),
+    (
+        "combo_box_fill",
+        "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; select.rs, Select::render; combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
     (
         "button_disabled",
