@@ -1346,20 +1346,14 @@ fn a11y_node(
     node
 }
 
-/// The names a probe's three controls announce: one labelled and named
-/// apart, one labelled only, one named only.
-const NAMED: [Option<&str>; 3] = [Some("Announced"), Some("Shown"), Some("Only announced")];
-
-fn names(announced: Vec<Option<String>>) -> Vec<Option<&'static str>> {
-    announced
-        .iter()
-        .map(|name| {
-            NAMED
-                .into_iter()
-                .flatten()
-                .find(|n| Some(*n) == name.as_deref())
-        })
-        .collect()
+/// The names a probe's three controls announce: the first labelled and
+/// named apart, the second labelled only, the third named only.
+fn three_names() -> Vec<Option<String>> {
+    vec![
+        Some("Announced".to_owned()),
+        Some("Shown".to_owned()),
+        Some("Only announced".to_owned()),
+    ]
 }
 
 /// M6-27: a checkbox announces its `accessibility_label`, or else its label.
@@ -1379,7 +1373,7 @@ fn a_checkbox_announces_its_accessibility_label(cx: &mut TestAppContext) {
         })
         .to_vec()
     });
-    assert_eq!(names(announced), NAMED);
+    assert_eq!(announced, three_names());
 }
 
 /// M6-27: a radio announces its `accessibility_label`, or else its label.
@@ -1399,7 +1393,7 @@ fn a_radio_announces_its_accessibility_label(cx: &mut TestAppContext) {
         })
         .to_vec()
     });
-    assert_eq!(names(announced), NAMED);
+    assert_eq!(announced, three_names());
 }
 
 /// M6-27: a switch announces its `accessibility_label`, or else its label.
@@ -1419,7 +1413,36 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
         })
         .to_vec()
     });
-    assert_eq!(names(announced), NAMED);
+    assert_eq!(announced, three_names());
+}
+
+/// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
+/// ring: with the theme's focus ring on, gpui-component's
+/// `focus_ring_style` tints the track's border in `ThemeColor::ring`
+/// (styled.rs:257-262), and the track sets no border colour of its own.
+#[gpui::test]
+fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| div().into_any_element()),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let look = SwitchLook::of(&r, false, false).expect("finite");
+    let border = |cx: &mut VisualTestContext, focus_ring: bool| {
+        cx.update(|window, cx| {
+            let switch = Switch::new("s").focus_ring(focus_ring);
+            let mut track = switch.track(&look, true, look.thumb_left(false), window, cx);
+            track.style().border_color
+        })
+    };
+    let ring = cx.update(|_, cx| {
+        use gpui_component::ActiveTheme as _;
+        assert!(cx.theme().focus_ring, "the theme draws focus rings");
+        cx.theme().ring
+    });
+    assert_eq!(border(cx, true), Some(ring));
+    assert_eq!(border(cx, false), None);
 }
 
 #[derive(Clone, Copy)]

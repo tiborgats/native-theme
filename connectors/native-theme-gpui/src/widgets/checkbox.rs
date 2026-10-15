@@ -529,7 +529,8 @@ fn indicator_and_label(
 ///
 /// Controlled, as gpui-component's: [`Checkbox::on_change`] receives the
 /// requested value, and the owner writes it back. Its `Styled` style refines
-/// the row, indicator and label, after the widget's own. Without a native
+/// the row, after the widget's own: the row's layout, box and spacing; the
+/// indicator and the label set their own colours and text. Without a native
 /// theme it renders gpui-component's `Checkbox`.
 pub struct Checkbox {
     parts: Parts,

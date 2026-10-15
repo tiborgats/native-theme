@@ -168,7 +168,8 @@ impl SwitchLook {
 /// (switch.rs:279-282).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Its
-/// `Styled` style refines the row, track and label, after the widget's own.
+/// `Styled` style refines the row, after the widget's own: the row's layout,
+/// box and spacing; the track and the label set their own colours and text.
 /// Without a native theme it renders gpui-component's `Switch`.
 pub struct Switch {
     id: ElementId,
@@ -343,39 +344,7 @@ impl Switch {
             .read(cx)
             .clone();
         let focused = focus_handle.is_focused(window);
-        let track = SwitchTrack::new((self.id.clone(), "track"))
-            .checked(checked)
-            .disabled(self.disabled)
-            .relative()
-            .flex_none()
-            .w(look.track_width)
-            .h(look.track_height)
-            .rounded(look.track_radius)
-            .bg(look.track)
-            .when(focused && !self.disabled && self.focus_ring, |track| {
-                track.focus_ring_style(window, cx)
-            })
-            .when_some(look.hover_track, |track, hover| {
-                track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
-            })
-            .debug_selector(|| "native-switch-track".into())
-            .child(
-                SwitchThumb::new(checked)
-                    .disabled(self.disabled)
-                    .absolute()
-                    .top(look.inset)
-                    .left(thumb_left)
-                    .size(look.thumb)
-                    .rounded_full()
-                    .bg(look.thumb_color)
-                    .child(
-                        div()
-                            .size_full()
-                            .debug_selector(|| "native-switch-thumb".into())
-                            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
-                    ),
-            )
-            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))));
+        let track = self.track(&look, focused, thumb_left, window, cx);
         Ok(BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
@@ -418,6 +387,55 @@ impl Switch {
                         .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
                 )
             }))
+    }
+}
+
+impl Switch {
+    /// The track in `look`, its thumb `thumb_left` from its left edge; while
+    /// `focused`, enabled, and told to (`focus_ring`), it draws the focus
+    /// ring.
+    pub(super) fn track(
+        &self,
+        look: &SwitchLook,
+        focused: bool,
+        thumb_left: Pixels,
+        window: &Window,
+        cx: &App,
+    ) -> SwitchTrack {
+        let observer = self.observer.as_ref();
+        SwitchTrack::new((self.id.clone(), "track"))
+            .checked(self.checked)
+            .disabled(self.disabled)
+            .relative()
+            .flex_none()
+            .w(look.track_width)
+            .h(look.track_height)
+            .rounded(look.track_radius)
+            .bg(look.track)
+            .when(focused && !self.disabled && self.focus_ring, |track| {
+                track.focus_ring_style(window, cx)
+            })
+            .when_some(look.hover_track, |track, hover| {
+                track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
+            })
+            .debug_selector(|| "native-switch-track".into())
+            .child(
+                SwitchThumb::new(self.checked)
+                    .disabled(self.disabled)
+                    .absolute()
+                    .top(look.inset)
+                    .left(thumb_left)
+                    .size(look.thumb)
+                    .rounded_full()
+                    .bg(look.thumb_color)
+                    .child(
+                        div()
+                            .size_full()
+                            .debug_selector(|| "native-switch-thumb".into())
+                            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
+                    ),
+            )
+            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))))
     }
 }
 
