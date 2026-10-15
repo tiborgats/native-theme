@@ -961,6 +961,61 @@ fn the_progress_bar_and_spinner_are_the_stated_sizes(cx: &mut TestAppContext) {
     assert_eq!(spinner.size.height, px(r.spinner.diameter));
 }
 
+/// A loading bar in a 200 px column, under kde-breeze, and its look.
+fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressBarLook) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| ProgressBar::new("p").loading(true).into_any_element()),
+    );
+    let look = ProgressBarLook::of(&resolved("kde-breeze", ColorMode::Light)).expect("finite");
+    (cx, look)
+}
+
+/// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
+fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
+    std::thread::sleep(std::time::Duration::from_millis(ms));
+    redraw(cx);
+    bounds(cx, "native-progress-fill")
+}
+
+/// M6-28: a loading bar sweeps its fill across the track on
+/// gpui-component's motion (progress/progress.rs:149-160), the fill and the
+/// track in the theme's colours.
+#[gpui::test]
+fn a_loading_progress_bar_sweeps_its_fill_in_the_theme(cx: &mut TestAppContext) {
+    let (cx, look) = loading_window(cx);
+    let bar = bounds(cx, "native-progress");
+    assert_eq!(bar.size.height, look.height);
+    let first = fill_after(cx, 150);
+    assert_eq!(painted_fill(cx, first), Some(look.fill), "the theme's fill");
+    let second = fill_after(cx, 150);
+    assert_eq!(
+        painted_fill(cx, second),
+        Some(look.fill),
+        "the theme's fill"
+    );
+    assert_ne!(first, second, "the fill moves");
+    assert_eq!(second.size.height, bar.size.height, "the track's height");
+    assert_eq!(painted_fill(cx, bar), Some(look.track), "the theme's track");
+}
+
+/// M6-28: under reduced motion the loading fill stands still in the middle,
+/// gpui-component's `left(relative(0.325)).right(relative(0.325))`
+/// (progress/progress.rs:161-164).
+#[gpui::test]
+fn a_loading_progress_bar_stands_still_under_reduced_motion(cx: &mut TestAppContext) {
+    let (cx, look) = loading_window(cx);
+    cx.update(|_, cx| cx.set_reduce_motion(true));
+    let bar = bounds(cx, "native-progress");
+    let first = fill_after(cx, 0);
+    let inset = bar.size.width * 0.325;
+    assert_eq!(first.origin.x, bar.origin.x + inset);
+    assert_eq!(first.size.width, bar.size.width - inset * 2.);
+    assert_eq!(painted_fill(cx, first), Some(look.fill), "the theme's fill");
+    assert_eq!(fill_after(cx, 150), first, "still");
+}
+
 /// The spinner draws the icon set's indicator where the set has one, filling
 /// `spinner.diameter`, and the arc for a set without one.
 #[gpui::test]

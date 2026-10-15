@@ -174,9 +174,9 @@ pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo
     let p = &r.progress_bar;
     WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:51"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:50"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:49"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:78"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:77"))
+        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:76"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
