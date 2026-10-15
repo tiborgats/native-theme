@@ -57,7 +57,7 @@
 //!
 //! | Flag | The connector applies | The application forwards |
 //! |------|-----------------------|--------------------------|
-//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`]; `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
+//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`], through [`AccessibilityPreferences::scaled`] (a size the factor would make infinite or zero stays as stated); `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
 //! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
 //! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
 //! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md`, the item "the gpui connector reads `AccessibilityPreferences::high_contrast`"); [`is_high_contrast`] reads it | its own colours, if they should change |
@@ -263,7 +263,6 @@ pub fn to_theme(
     is_dark: bool,
     prefs: &AccessibilityPreferences,
 ) -> GpuiTheme {
-    let s = prefs.text_scale_factor();
     let theme_color = colors::to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let mode = if is_dark {
         GpuiThemeMode::Dark
@@ -281,9 +280,9 @@ pub fn to_theme(
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
     // to font_size (gpui-component src/root.rs:440), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
-    theme.font_size = px(d.font.size * s);
+    theme.font_size = px(prefs.scaled(d.font.size));
     theme.mono_font_family = font_family(&d.mono_font.family);
-    theme.mono_font_size = px(d.mono_font.size * s);
+    theme.mono_font_size = px(prefs.scaled(d.mono_font.size));
     theme.radius = px(d.border.corner_radius);
     theme.radius_lg = px(d.border.corner_radius_lg);
     theme.shadow = d.border.shadow_enabled;
@@ -609,7 +608,8 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 /// For a size the connector does not apply itself: a `text_scale` role's
 /// (`resolved.text_scale.caption.size`, …) or a widget font set by hand. The
 /// factor applies to every text size alike. A factor that is not finite and
-/// positive is ignored.
+/// positive is ignored, and a size whose product with the factor is not
+/// finite and positive is returned as it is.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
     prefs.scaled(size)
@@ -1628,6 +1628,36 @@ mod tests {
             assert_eq!(
                 theme.font_size,
                 px(resolved.defaults.font.size),
+                "factor {factor}"
+            );
+        }
+    }
+
+    /// A finite factor whose product with a font size overflows f32 leaves
+    /// the sizes as the theme states them, in the theme and in its config.
+    #[test]
+    fn to_theme_leaves_a_font_size_the_factor_overflows_unscaled() {
+        let resolved = test_resolved();
+        let d = &resolved.defaults;
+        for factor in [f32::MAX / 4.0, f32::MAX] {
+            assert!((d.font.size * factor).is_infinite(), "factor {factor}");
+            assert!((d.mono_font.size * factor).is_infinite(), "factor {factor}");
+            let theme = to_theme(&resolved, "Overflow", true, &scaled(factor));
+            assert!(f32::from(theme.font_size).is_finite(), "factor {factor}");
+            assert_eq!(theme.font_size, px(d.font.size), "factor {factor}");
+            assert_eq!(
+                theme.mono_font_size,
+                px(d.mono_font.size),
+                "factor {factor}"
+            );
+            assert_eq!(
+                theme.dark_theme.font_size,
+                Some(d.font.size),
+                "factor {factor}"
+            );
+            assert_eq!(
+                theme.dark_theme.mono_font_size,
+                Some(d.mono_font.size),
                 "factor {factor}"
             );
         }

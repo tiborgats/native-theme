@@ -34,7 +34,6 @@ pub fn to_theme_config(
 ) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
-    let s = prefs.text_scale_factor();
 
     let radius = d.border.corner_radius.round() as usize;
     let radius_lg = d.border.corner_radius_lg.round() as usize;
@@ -62,9 +61,9 @@ pub fn to_theme_config(
         // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
         // scaled sizes.
         font_family: Some(crate::font_family(&d.font.family)),
-        font_size: Some(d.font.size * s),
+        font_size: Some(prefs.scaled(d.font.size)),
         mono_font_family: Some(crate::font_family(&d.mono_font.family)),
-        mono_font_size: Some(d.mono_font.size * s),
+        mono_font_size: Some(prefs.scaled(d.mono_font.size)),
 
         radius: Some(radius),
         radius_lg: Some(radius_lg),

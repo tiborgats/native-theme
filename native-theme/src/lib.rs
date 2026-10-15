@@ -398,10 +398,18 @@ impl AccessibilityPreferences {
     /// A text size times [`text_scale_factor`](Self::text_scale_factor).
     ///
     /// For every text size alike: a widget's font, a `text_scale` role's
-    /// size, the default fonts. No other length is scaled.
+    /// size, the default fonts. No other length is scaled. Where the product
+    /// is not finite and positive (a finite factor large enough to overflow
+    /// `f32`, or one small enough to underflow to zero), `size` is returned
+    /// unscaled, as for a factor that is not finite and positive.
     #[must_use]
     pub fn scaled(&self, size: f32) -> f32 {
-        size * self.text_scale_factor()
+        let product = size * self.text_scale_factor();
+        if product.is_finite() && product > 0.0 {
+            product
+        } else {
+            size
+        }
     }
 }
 
@@ -1372,5 +1380,19 @@ mod accessibility_tests {
             assert_eq!(prefs(f).text_scale_factor(), 1.0, "{f}");
             assert_eq!(prefs(f).scaled(10.0), 10.0, "{f}");
         }
+    }
+
+    #[test]
+    fn scaled_keeps_a_size_whose_product_is_not_finite_and_positive() {
+        // A finite factor whose product overflows f32, and one whose
+        // product underflows to zero.
+        assert_eq!(prefs(f32::MAX).scaled(13.0), 13.0);
+        assert_eq!(prefs(3e37).scaled(13.0), 13.0);
+        assert_eq!(
+            prefs(f32::MIN_POSITIVE).scaled(f32::MIN_POSITIVE),
+            f32::MIN_POSITIVE
+        );
+        // A product that stays finite and positive is scaled, however large.
+        assert_eq!(prefs(2e37).scaled(13.0), 13.0 * 2e37);
     }
 }
