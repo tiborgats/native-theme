@@ -4,34 +4,51 @@
 //!
 //! # Quick Start
 //!
-//! ```ignore
-//! use native_theme_gpui::{AccessibilityPreferences, from_preset};
+//! Initialise gpui-component, then install the OS theme, or a bundled preset
+//! where the OS theme cannot be read:
 //!
-//! let prefs = AccessibilityPreferences::from_system();
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
+//! ```no_run
+//! use native_theme_gpui::{
+//!     AccessibilityPreferences, SystemTheme, apply, apply_system_theme, from_preset,
+//! };
+//!
+//! gpui_kit::application().run(|cx| {
+//!     // Before `apply`: an `init` afterwards resets the theme to upstream's default.
+//!     gpui_kit::init(cx);
+//!     match SystemTheme::from_system() {
+//!         // Both variants, so `Theme::sync_system_appearance` switches between them.
+//!         Ok(sys) => apply_system_theme(&sys, cx),
+//!         Err(_) => {
+//!             let prefs = AccessibilityPreferences::from_system();
+//!             if let Ok((theme, resolved)) = from_preset("adwaita", false, &prefs) {
+//!                 apply(theme, &resolved, &prefs, cx);
+//!             }
+//!         }
+//!     }
+//!     // Then open the windows with `gpui_kit::open_window`.
+//! });
 //! ```
 //!
-//! Or from the OS-detected theme:
-//!
-//! ```ignore
-//! use native_theme_gpui::from_system;
-//!
-//! let loaded = from_system()?;
-//! let (theme, resolved) = (loaded.theme, loaded.resolved);
-//! ```
+//! [`SystemTheme::from_system()`] reads the OS theme with the `native` feature
+//! (see [Features](#features)). Nothing reaches the windows until [`apply`] or
+//! [`apply_system_theme`] runs; [`from_preset()`], [`from_system()`] and
+//! [`to_theme()`] only build a theme. Once one is installed,
+//! [`cx.native()`](ActiveNativeTheme::native) is the input of the [`geometry`]
+//! builders.
 //!
 //! # Manual Path
 //!
 //! For full control over the resolve/validate/convert pipeline:
 //!
-//! ```ignore
-//! use native_theme::theme::{ColorMode, Theme};
-//! use native_theme_gpui::{AccessibilityPreferences, to_theme};
+//! ```no_run
+//! use native_theme_gpui::{AccessibilityPreferences, ColorMode, Theme, to_theme};
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
 //! let resolved = nt.resolve(ColorMode::Dark)?;
 //! let prefs = AccessibilityPreferences::from_system();
 //! let theme = to_theme(&resolved.variant, &nt.name, resolved.mode.is_dark(), &prefs);
+//! // Then `apply(theme, &resolved.variant, &prefs, cx)`.
+//! # Ok::<(), native_theme_gpui::Error>(())
 //! ```
 //!
 //! # Single-Mode Behavior
@@ -324,8 +341,9 @@ pub fn to_theme(
 
 /// Load a bundled preset and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
-/// This is the primary entry point for most users. It handles the full pipeline:
-/// load preset, pick variant, resolve, validate, and convert to gpui Theme.
+/// The preset half of the common task; [`apply`] installs the result. It
+/// handles the full pipeline: load preset, pick variant, resolve, validate,
+/// and convert to gpui Theme.
 ///
 /// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
 /// access per-widget metrics (button padding, scrollbar width, etc.) that the
@@ -360,12 +378,13 @@ pub fn to_theme(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_gpui::AccessibilityPreferences;
 ///
 /// let prefs = AccessibilityPreferences::from_system();
 /// let (dark_theme, resolved) = native_theme_gpui::from_preset("dracula", true, &prefs)?;
 /// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false, &prefs)?;
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn from_preset(
@@ -454,8 +473,9 @@ pub struct Loaded {
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// let loaded = native_theme_gpui::from_system()?;
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn from_system() -> Result<Loaded> {
@@ -481,11 +501,12 @@ pub fn from_system() -> Result<Loaded> {
 ///
 /// Useful when you already have a `SystemTheme` and want method syntax:
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_gpui::SystemThemeExt;
 ///
 /// let sys = native_theme::SystemTheme::from_system()?;
 /// let theme = sys.to_gpui_theme().theme;
+/// # Ok::<(), native_theme::Error>(())
 /// ```
 pub trait SystemThemeExt {
     /// Convert this system theme to a gpui-component [`GpuiTheme`], as a
