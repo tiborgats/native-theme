@@ -227,14 +227,61 @@ impl Parts {
         }
     }
 
-    /// The look of this control faded as one over its backdrop:
-    /// [`CheckboxLook::faded_over`] the backdrop the caller gave, or the
-    /// window's, `defaults.background_color`.
-    fn faded(&self, look: CheckboxLook, resolved: &ResolvedTheme) -> CheckboxLook {
-        look.faded_over(
+    /// The control drawn from the theme: the look `of` gives, faded as one
+    /// over the backdrop the caller gave or the window's,
+    /// `defaults.background_color` ([`CheckboxLook::faded_over`]); its
+    /// indicator, round when `round`, and its label in `checkbox.font`, in
+    /// the row `base` builds from these parts and the row's focus handle --
+    /// the control's headless primitive, styled as the row the pointer hovers
+    /// and the focus ring follows. Without a native theme or a finite look
+    /// it hands the parts back, for gpui-component's control.
+    fn render<E>(
+        self,
+        of: fn(&ResolvedTheme, bool, bool) -> Option<CheckboxLook>,
+        round: bool,
+        window: &mut Window,
+        cx: &mut App,
+        base: impl FnOnce(Self, &gpui::FocusHandle) -> E,
+    ) -> Result<E, Self>
+    where
+        E: Styled + ParentElement + InteractiveElement + IntoElement,
+    {
+        let Some(n) = cx.native() else {
+            return Err(self);
+        };
+        let Some(look) = of(n.resolved, self.checked, self.disabled) else {
+            return Err(self);
+        };
+        let look = look.faded_over(
             self.backdrop
-                .unwrap_or_else(|| color(resolved.defaults.background_color)),
-        )
+                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
+        );
+        let font = &n.resolved.checkbox.font;
+        let font = (
+            text_size(font.size, n),
+            FontWeight(f32::from(font.weight)),
+            n.resolved.defaults.line_height,
+        );
+        let (indicator, label) = indicator_and_label(&self, &look, round, font, window, cx);
+        let focus_handle = window
+            .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
+            .read(cx)
+            .clone();
+        let focused = focus_handle.is_focused(window);
+        Ok(base(self, &focus_handle)
+            .group(HOVER_GROUP)
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(look.label_gap)
+            // The row the focus ring follows, as gpui-component rounds it
+            // (checkbox.rs:287).
+            .rounded(px(f32::from(cx.theme().radius) / 2.))
+            .when(focused, |row| row.focus_ring_style(window, cx))
+            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+            .opacity(look.opacity)
+            .child(indicator)
+            .children(label))
     }
 }
 
@@ -523,8 +570,7 @@ impl Checkbox {
         self
     }
 
-    fn fallback(self) -> AnyElement {
-        let parts = self.parts;
+    fn fallback(parts: Parts) -> AnyElement {
         gpui_component::checkbox::Checkbox::new(parts.id)
             .when_some(parts.label, |checkbox, label| checkbox.label(label))
             .checked(parts.checked)
@@ -538,60 +584,28 @@ impl Checkbox {
 
 impl RenderOnce for Checkbox {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = cx.native() else {
-            return self.fallback();
-        };
-        let Some(look) = CheckboxLook::of(n.resolved, self.parts.checked, self.parts.disabled)
-        else {
-            return self.fallback();
-        };
-        let look = self.parts.faded(look, n.resolved);
-        let font = &n.resolved.checkbox.font;
-        let font = (
-            text_size(font.size, n),
-            FontWeight(f32::from(font.weight)),
-            n.resolved.defaults.line_height,
-        );
-        let (indicator, label) = indicator_and_label(&self.parts, &look, false, font, window, cx);
-        let Parts {
-            id,
-            label: name,
-            checked,
-            disabled,
-            on_change,
-            observer: _,
-            backdrop: _,
-        } = self.parts;
-        let focus_handle = window
-            .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
-            .read(cx)
-            .clone();
-        let focused = focus_handle.is_focused(window);
-        BaseCheckbox::new(id)
-            .checked(checked)
-            .disabled(disabled)
-            .track_focus(&focus_handle)
-            .when_some(name, |checkbox, name| checkbox.accessibility_label(name))
-            .when_some(on_change, |checkbox, on_change| {
-                checkbox.on_change(move |_, _, window, cx| {
-                    window.prevent_default();
-                    on_change(&!checked, window, cx);
-                })
-            })
-            .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap(look.label_gap)
-            // The row the focus ring follows, as gpui-component rounds it
-            // (checkbox.rs:287).
-            .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when(focused, |row| row.focus_ring_style(window, cx))
-            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .opacity(look.opacity)
-            .child(indicator)
-            .children(label)
-            .into_any_element()
+        let row = self
+            .parts
+            .render(CheckboxLook::of, false, window, cx, |parts, focus| {
+                let checked = parts.checked;
+                BaseCheckbox::new(parts.id)
+                    .checked(checked)
+                    .disabled(parts.disabled)
+                    .track_focus(focus)
+                    .when_some(parts.label, |checkbox, name| {
+                        checkbox.accessibility_label(name)
+                    })
+                    .when_some(parts.on_change, |checkbox, on_change| {
+                        checkbox.on_change(move |_, _, window, cx| {
+                            window.prevent_default();
+                            on_change(&!checked, window, cx);
+                        })
+                    })
+            });
+        match row {
+            Ok(row) => row.into_any_element(),
+            Err(parts) => Self::fallback(parts),
+        }
     }
 }
 
@@ -669,8 +683,7 @@ impl Radio {
         self
     }
 
-    fn fallback(self) -> AnyElement {
-        let parts = self.parts;
+    fn fallback(parts: Parts) -> AnyElement {
         gpui_component::radio::Radio::new(parts.id)
             .when_some(parts.label, |radio, label| radio.label(label))
             .checked(parts.checked)
@@ -684,61 +697,29 @@ impl Radio {
 
 impl RenderOnce for Radio {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = cx.native() else {
-            return self.fallback();
-        };
-        let Some(look) = CheckboxLook::radio(n.resolved, self.parts.checked, self.parts.disabled)
-        else {
-            return self.fallback();
-        };
-        let look = self.parts.faded(look, n.resolved);
-        let font = &n.resolved.checkbox.font;
-        let font = (
-            text_size(font.size, n),
-            FontWeight(f32::from(font.weight)),
-            n.resolved.defaults.line_height,
-        );
-        let (indicator, label) = indicator_and_label(&self.parts, &look, true, font, window, cx);
-        let Parts {
-            id,
-            label: name,
-            checked,
-            disabled,
-            on_change,
-            observer: _,
-            backdrop: _,
-        } = self.parts;
-        let focus_handle = window
-            .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
-            .read(cx)
-            .clone();
-        let focused = focus_handle.is_focused(window);
-        BaseRadio::new(id)
-            .checked(checked)
-            .disabled(disabled)
-            .track_focus(&focus_handle)
-            .when_some(name, |radio, name| radio.accessibility_label(name))
-            .when_some(self.position, |radio, (position, size)| {
-                radio.set_position(position, size)
-            })
-            .when_some(on_change, |radio, on_change| {
-                radio.on_change(move |next, _, window, cx| {
-                    window.prevent_default();
-                    on_change(&next, window, cx);
-                })
-            })
-            .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap(look.label_gap)
-            .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when(focused, |row| row.focus_ring_style(window, cx))
-            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .opacity(look.opacity)
-            .child(indicator)
-            .children(label)
-            .into_any_element()
+        let position = self.position;
+        let row = self
+            .parts
+            .render(CheckboxLook::radio, true, window, cx, |parts, focus| {
+                BaseRadio::new(parts.id)
+                    .checked(parts.checked)
+                    .disabled(parts.disabled)
+                    .track_focus(focus)
+                    .when_some(parts.label, |radio, name| radio.accessibility_label(name))
+                    .when_some(position, |radio, (position, size)| {
+                        radio.set_position(position, size)
+                    })
+                    .when_some(parts.on_change, |radio, on_change| {
+                        radio.on_change(move |next, _, window, cx| {
+                            window.prevent_default();
+                            on_change(&next, window, cx);
+                        })
+                    })
+            });
+        match row {
+            Ok(row) => row.into_any_element(),
+            Err(parts) => Self::fallback(parts),
+        }
     }
 }
 
