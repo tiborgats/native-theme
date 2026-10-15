@@ -2338,6 +2338,10 @@ the gap — closing it is a change, and each wants its own decision.
       Carousel, the charts and the plot tooltip at once. Decide first whether
       a *theme* should carry motion at all, or whether this belongs with the
       accessibility preferences.
+      2026-10-15: since c1208377 (M6 T5, M6-01) `apply` no longer overwrites
+      `motion`: it keeps the installed theme's, as upstream's `Theme::change`
+      does, so a value the application set survives a theme switch; the
+      connector still sets none.
 - [ ] [1.0] **There is no ambient `font.weight`.** The `geometry::` builders that
       carry a font spec already carry the weight with it — `with_text` sets
       `font_weight` alongside the size (`geometry.rs:80-83`), which covers

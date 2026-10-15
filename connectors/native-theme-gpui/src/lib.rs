@@ -949,12 +949,18 @@ impl<'a> Native<'a> {
 /// `init` afterwards resets the theme to upstream's default. A single-variant
 /// `apply` of a theme whose other variant is not stored (none was, or another
 /// theme's was, which step 1 drops) leaves the other mode's config at
-/// `ThemeConfig::default()`, a light config that carries no colours, so a
-/// `Theme::change` to the unstored mode shows upstream's built-in
-/// `ThemeColor::light()` constants, in light mode even when the change asked
-/// for dark (upstream's `apply_config` takes the mode from the config,
-/// gpui-component src/theme/schema.rs:1108);
-/// call `apply` once per variant to store both.
+/// `ThemeConfig::default()`, a light config with no colours and an empty name.
+/// Upstream's `apply_config` takes the mode from the config and stores it in
+/// that mode's slot (gpui-component src/theme/schema.rs:1065-1069, :1108), so
+/// a `Theme::change` to the unstored mode shows upstream's built-in
+/// `ThemeColor::light()` constants, in light mode. Where the stored variant is
+/// the light one, a change to dark therefore leaves the window light and
+/// replaces the theme's light config with the empty one: a later change back
+/// to light shows upstream's constants too, while the base palette,
+/// scrollbars, resize handles, tooltip delay and [`ActiveNativeTheme::native`]
+/// still follow the stored light variant, until the next `apply` or
+/// [`apply_accessibility`] rebuilds the theme from it. Call `apply` once per
+/// variant, or [`apply_system_theme`], to store both and avoid this.
 ///
 /// Reduced motion: a flag that is already on is left to whoever switched it on
 /// — gpui-base following the OS, or the application. While the connector's own
@@ -2620,6 +2626,59 @@ mod apply_tests {
                 colors::hsla_to_hex(styled.background),
                 upstream_light,
                 "upstream's light palette, not Catppuccin Mocha's"
+            );
+            assert_eq!(
+                styled.theme_name().as_ref(),
+                "",
+                "the empty config replaced KDE Breeze's light one"
+            );
+            assert!(
+                cx.native().is_some(),
+                "the stored light variant is the current mode's"
+            );
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                colors::hsla_to_hex(GpuiTheme::global(cx).background),
+                upstream_light,
+                "a change back to light does not bring KDE Breeze back"
+            );
+        });
+    }
+
+    /// After a change to an unstored dark mode the styled theme's name is the
+    /// empty config's, while the stored light variant keeps its theme's name:
+    /// `apply_accessibility` rebuilds from that variant under its own name, so
+    /// the stored variants survive and the theme comes back.
+    #[gpui::test]
+    fn apply_accessibility_rebuilds_under_the_stored_name(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, breeze) = from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        let name = theme.theme_name().clone();
+        assert!(!name.is_empty(), "precondition");
+        cx.update(|cx| {
+            apply(theme, &breeze, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                GpuiTheme::global(cx).theme_name().as_ref(),
+                "",
+                "precondition"
+            );
+            let mut scaled = AccessibilityPreferences::default();
+            scaled.text_scaling_factor = 1.5;
+            apply_accessibility(&scaled, cx);
+        });
+        cx.update(|cx| {
+            assert!(cx.native().is_some(), "the stored light variant survives");
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.theme_name(), &name);
+            assert_eq!(styled.font_size, px(breeze.defaults.font.size * 1.5));
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(breeze.defaults.background_color))
             );
         });
     }
