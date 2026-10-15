@@ -129,7 +129,8 @@ impl SliderLook {
 }
 
 /// A slider over a gpui-base `SliderState` whose rail, fill and thumbs are
-/// `SliderTheme`'s (`docs/archive/todo_gpui-widgets-spec.md` §2.4), horizontal or vertical ([`Slider::axis`]).
+/// `SliderTheme`'s (`docs/archive/todo_gpui-widgets-spec.md` §2.4),
+/// horizontal or vertical ([`Slider::axis`]).
 ///
 /// gpui-base's parts own the pointer: a press on the rail sets the value, a
 /// drag of the rail or the thumb moves it, and `SliderEvent::Change` /

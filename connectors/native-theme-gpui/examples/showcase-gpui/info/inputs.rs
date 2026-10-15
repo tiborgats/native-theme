@@ -771,7 +771,7 @@ pub fn native_switch(
                 "track",
                 "checked_background",
                 stated(s.checked_background),
-                "native-theme-gpui/widgets/switch.rs:75",
+                "native-theme-gpui/widgets/switch.rs:76",
             ))
             .color(if s.hover_checked_background.is_some() {
                 claim(
@@ -779,14 +779,14 @@ pub fn native_switch(
                     "hover_checked_background",
                     s.hover_checked_background
                         .map_or(stated(s.checked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:85",
+                    "native-theme-gpui/widgets/switch.rs:86",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "checked_background",
                     stated(s.checked_background),
-                    "native-theme-gpui/widgets/switch.rs:75",
+                    "native-theme-gpui/widgets/switch.rs:76",
                 )
             }),
         (false, false) => info
@@ -794,7 +794,7 @@ pub fn native_switch(
                 "track",
                 "unchecked_background",
                 stated(s.unchecked_background),
-                "native-theme-gpui/widgets/switch.rs:77",
+                "native-theme-gpui/widgets/switch.rs:78",
             ))
             .color(if s.hover_unchecked_background.is_some() {
                 claim(
@@ -802,14 +802,14 @@ pub fn native_switch(
                     "hover_unchecked_background",
                     s.hover_unchecked_background
                         .map_or(stated(s.unchecked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:87",
+                    "native-theme-gpui/widgets/switch.rs:88",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "unchecked_background",
                     stated(s.unchecked_background),
-                    "native-theme-gpui/widgets/switch.rs:77",
+                    "native-theme-gpui/widgets/switch.rs:78",
                 )
             }),
         (true, true) => info.color(claim(
@@ -819,7 +819,7 @@ pub fn native_switch(
                 s.disabled_checked_background
                     .unwrap_or(s.checked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:80",
+            "native-theme-gpui/widgets/switch.rs:81",
         )),
         (false, true) => info.color(claim(
             "track",
@@ -828,7 +828,7 @@ pub fn native_switch(
                 s.disabled_unchecked_background
                     .unwrap_or(s.unchecked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:81",
+            "native-theme-gpui/widgets/switch.rs:82",
         )),
     };
     // While focused the track draws the focus ring in `ring` at 50% alpha
@@ -855,39 +855,39 @@ pub fn native_switch(
                 "thumb",
                 "disabled_thumb_color",
                 stated(s.disabled_thumb_color.unwrap_or(rest_thumb)),
-                "native-theme-gpui/widgets/switch.rs:97",
+                "native-theme-gpui/widgets/switch.rs:98",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(r.defaults.disabled_text_color),
-                "native-theme-gpui/widgets/switch.rs:102",
+                "native-theme-gpui/widgets/switch.rs:103",
             )),
         (true, false) => info
             .color(claim(
                 "thumb",
                 "thumb_background",
                 stated(s.thumb_background),
-                "native-theme-gpui/widgets/switch.rs:92",
+                "native-theme-gpui/widgets/switch.rs:93",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:104",
+                "native-theme-gpui/widgets/switch.rs:105",
             )),
         (false, false) => info
             .color(claim(
                 "thumb",
                 "unchecked_thumb_background",
                 stated(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
-                "native-theme-gpui/widgets/switch.rs:94",
+                "native-theme-gpui/widgets/switch.rs:95",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:104",
+                "native-theme-gpui/widgets/switch.rs:105",
             )),
     };
     let info = info
@@ -930,14 +930,14 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
     let s = &r.slider;
     let info = slider_shape(WidgetInfo::new("Slider"), vertical, range)
         .config("drawn by", DRAWN_BY)
-        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:76"))
-        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:76"))
-        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:76"))
+        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:77"))
+        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:77"))
+        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:77"))
         // An unset hover is the thumb at rest (SliderLook::of).
         .color(if s.thumb_hover_color.is_some() {
-            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:79")
+            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:80")
         } else {
-            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:79")
+            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:80")
         })
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))

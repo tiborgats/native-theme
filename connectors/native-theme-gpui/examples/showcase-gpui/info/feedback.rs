@@ -202,9 +202,9 @@ pub fn native_progress(
     let p = &r.progress_bar;
     let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:78"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:77"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:76"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
+        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:77"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
@@ -261,7 +261,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:462",
+                "native-theme-gpui/widgets/spinner.rs:463",
             ))
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
@@ -271,7 +271,7 @@ pub fn native_spinner(
                 "indicator",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/spinner.rs:463",
+                "native-theme-gpui/widgets/spinner.rs:464",
             ))
             .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
@@ -286,7 +286,7 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:90"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:91"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {

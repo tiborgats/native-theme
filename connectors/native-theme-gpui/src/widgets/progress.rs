@@ -82,9 +82,10 @@ impl ProgressBarLook {
 }
 
 /// A progress bar whose track, fill and frame are `ProgressBarTheme`'s
-/// (`docs/archive/todo_gpui-widgets-spec.md` §2.5), on gpui-base's headless `Progress`: it reports itself as a
-/// progress indicator with its value out of 100. The fill follows a new
-/// value on gpui-component's eased transition (progress/progress.rs:111-118).
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.5), on gpui-base's headless
+/// `Progress`: it reports itself as a progress indicator with its value out
+/// of 100. The fill follows a new value on gpui-component's eased transition
+/// (progress/progress.rs:111-118).
 /// A [`loading`](Self::loading) bar is indeterminate: its fill sweeps across
 /// the track on gpui-component's motion.
 ///
