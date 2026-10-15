@@ -12,7 +12,8 @@ use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, native, over, part_bounds};
+use super::{Part, PartBounds, color, length, over, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
 /// gpui-component's own, its fill colour at half alpha round the thumb
@@ -190,7 +191,7 @@ fn step_by(
 
 impl RenderOnce for Slider {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = SliderLook::of(n.resolved, self.disabled) else {

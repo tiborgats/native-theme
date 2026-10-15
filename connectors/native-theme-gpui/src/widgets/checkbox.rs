@@ -16,7 +16,8 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
+use crate::ActiveNativeTheme;
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -537,7 +538,7 @@ impl Checkbox {
 
 impl RenderOnce for Checkbox {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = CheckboxLook::of(n.resolved, self.parts.checked, self.parts.disabled)
@@ -683,7 +684,7 @@ impl Radio {
 
 impl RenderOnce for Radio {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = CheckboxLook::radio(n.resolved, self.parts.checked, self.parts.disabled)

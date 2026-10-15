@@ -9,7 +9,7 @@
 //! use gpui_component::StyledExt;
 //! use native_theme_gpui::{ActiveNativeTheme, geometry};
 //!
-//! let n = cx.native_theme().and_then(|t| t.native(cx));
+//! let n = cx.native();
 //! let button = Button::new("save").label("Save");
 //! let button = match n { Some(n) => button.refine_style(&geometry::button(n)), None => button };
 //! ```

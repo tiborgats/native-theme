@@ -24,9 +24,11 @@
 //! `px(1.)` thick (`separator.rs:78-82`).
 //!
 //! Each widget reads the variant [`apply`](crate::apply) installed for the
-//! current mode at render, through [`ActiveNativeTheme`]. With none installed,
-//! or with a length that is not finite, it renders gpui-component's own
-//! control instead, so nothing here ever paints a value no source gives.
+//! current mode at render, through
+//! [`ActiveNativeTheme::native`](crate::ActiveNativeTheme::native). With none
+//! installed, or with a length that is not finite, it renders
+//! gpui-component's own control instead, so nothing here ever paints a value
+//! no source gives.
 //!
 //! Rules, from `docs/archive/todo_gpui-widgets-spec.md` §1:
 //!
@@ -97,7 +99,7 @@ use std::rc::Rc;
 use gpui::{App, Bounds, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, px};
 use native_theme::color::Rgba;
 
-use crate::{ActiveNativeTheme, Native};
+use crate::Native;
 
 /// A part of a theme-drawn control, as [`PartBounds`] names it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -143,11 +145,6 @@ fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoEl
     .left(px(-f32::from(border)))
     .right(px(-f32::from(border)))
     .bottom(px(-f32::from(border)))
-}
-
-/// The installed native view for the current mode, if any.
-fn native(cx: &App) -> Option<Native<'_>> {
-    cx.native_theme().and_then(|nt| nt.native(cx))
 }
 
 /// A stated colour as gpui's.

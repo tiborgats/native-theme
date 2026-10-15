@@ -186,10 +186,11 @@ variant.
   `mode`, `accessibility`, `icon_set`, `icon_theme`) without installing it;
   `SystemThemeExt::to_gpui_theme` gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "Display Name", is_dark, &prefs)`** — the underlying
-  mapping if you already have a `ResolvedTheme`.
-- **`cx.native_theme()`** (`ActiveNativeTheme`) — the installed `NativeTheme`;
-  `.native(cx)` gives the `Native { resolved, accessibility }` view the geometry
-  builders take, for the mode gpui-component currently shows.
+  mapping if you already have a `ResolvedTheme`; `is_dark` is the theme's mode,
+  `Resolved::mode` of the variant `Theme::resolve` resolved or `SystemTheme::mode`.
+- **`cx.native()`** (`ActiveNativeTheme`) — the `Native { resolved, accessibility }`
+  view the geometry builders take, for the mode gpui-component currently shows;
+  `cx.native_theme()` is the installed `NativeTheme`.
 
 ## Per-widget geometry
 
@@ -203,7 +204,7 @@ use gpui::{ParentElement, Styled, div};
 use gpui_component::{StyledExt, button::Button};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 
-let button = match cx.native_theme().and_then(|t| t.native(cx)) {
+let button = match cx.native() {
     Some(n) => Button::new("save")
         .refine_style(&geometry::button(n))
         .child(

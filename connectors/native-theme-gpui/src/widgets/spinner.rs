@@ -25,7 +25,8 @@ use native_theme::icons::{
 };
 use native_theme::theme::{IconSet, ResolvedTheme};
 
-use super::{color, length, native};
+use super::{color, length};
+use crate::ActiveNativeTheme;
 use crate::icons::{to_image_source, with_spin_animation};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
@@ -415,7 +416,7 @@ impl Sizable for Spinner {
 
 impl RenderOnce for Spinner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some((look, fill, text)) = native(cx).and_then(|n| {
+        let Some((look, fill, text)) = cx.native().and_then(|n| {
             let r = n.resolved;
             Some((
                 SpinnerLook::of_size(r, self.size)?,

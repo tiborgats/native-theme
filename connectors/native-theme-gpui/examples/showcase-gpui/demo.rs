@@ -741,7 +741,7 @@ const MENU_TITLES: [&str; 4] = [
 
 impl Render for MenuBar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let native = cx.native_theme().and_then(|nt| nt.native(cx));
+        let native = cx.native();
         let look = native.as_ref().map(MenuLook::of);
         let open = self.open;
         let menus = app_menu_rows();
@@ -808,7 +808,7 @@ fn app_menus(
     host: info::MenuHost,
     menus: &Entity<MenuBar>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let menus_info = info::app_menus(cx.theme(), host, native.as_ref().map(|n| n.resolved));
     div()
         .child(menus.clone())
@@ -966,7 +966,7 @@ pub(crate) fn status_bar(
     widget_gap: Option<Pixels>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut bar_info = info::status_bar(cx.theme(), styled);
     let text_line = native_value(cx, |n| line_height_of(&n, &n.resolved.status_bar.font));
     // Its top edge `status_bar.border.line_width` thick, over upstream's
@@ -1031,7 +1031,7 @@ pub(crate) fn preset_combobox(
     cx: &App,
     state: &Entity<ComboboxState<PresetDelegate>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut combobox_info = info::preset_combobox(cx.theme(), native.as_ref().map(|n| n.resolved));
     let combobox = native_info(
         Combobox::new(state)
@@ -1056,7 +1056,7 @@ pub(crate) fn color_mode_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::color_mode_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
@@ -1078,7 +1078,7 @@ pub(crate) fn icon_set_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::icon_set_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
@@ -1430,7 +1430,7 @@ fn sidebar_label(
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let text_div = match &native {
         Some(n) => font_text(n, &n.resolved.sidebar.font, text),
         None => div().text_sm().child(text),
@@ -1713,7 +1713,7 @@ pub(crate) fn tab_bar(
             info::page_tab_bar(cx.theme()),
         ),
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
@@ -1969,7 +1969,7 @@ pub(crate) fn tab_row(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
         let tabs: Vec<(&'static str, &'static str)> =
@@ -2044,7 +2044,7 @@ pub(crate) fn segmented(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let control_info = info::layout::segmented(
         cx.theme(),
         labels,
@@ -2200,7 +2200,7 @@ pub(crate) fn resize_handles(
             // lays out no wider than HANDLE_SIZE; `splitter.hover_color`
             // under the pointer, through the group upstream names the
             // handle (resizable/resize_handle.rs, `ResizeHandle`).
-            let native = cx.native_theme().and_then(|nt| nt.native(cx));
+            let native = cx.native();
             let splitter = native.as_ref().map(|n| {
                 let s = &n.resolved.splitter;
                 (px(s.divider_width), info::stated(s.hover_color))
@@ -2889,7 +2889,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         icon,
     } = spec;
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let drawn = icon.as_ref().and_then(SampleIcon::icon);
     let mut button_info =
         info::buttons::button(cx.theme(), kind, state, drawn.is_some(), None, styled);
@@ -3051,7 +3051,7 @@ pub(crate) fn toggle(
     on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut toggle_info = info::buttons::toggle(
         cx.theme(),
         icon.shown(),
@@ -3078,7 +3078,7 @@ pub(crate) fn toggle_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut group_info = info::buttons::toggle_group(cx.theme(), styled);
     if styled {
         group_info = group_info.geometry("toggle");
@@ -3159,7 +3159,7 @@ fn text_field(
     tokens: bool,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut input_info = info::inputs::input(cx.theme(), field, styled);
     if disabled {
         input_info = input_info.variant("disabled");
@@ -3517,7 +3517,7 @@ pub(crate) fn number_input(
     width: Pixels,
 ) -> Stateful<Div> {
     let mut number_info = info::inputs::number_input(cx.theme());
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let Some(n) = native else {
         return NumberInput::new(state)
             .placeholder("Enter a number")
@@ -3812,7 +3812,7 @@ pub(crate) fn switch(
             .info(ui, id, switch_info)
             .debug_selector(move || id.into());
     }
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let resolved = native.as_ref().map(|n| n.resolved);
     let checked_background = native_color(cx, |n| n.resolved.switch.checked_background);
     Switch::new(id)
@@ -3903,7 +3903,7 @@ pub(crate) fn select(
     placeholder: &'static str,
     width: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state).placeholder(placeholder).w(width),
@@ -4089,7 +4089,7 @@ pub(crate) fn data_table(
         (delegate.rows.len(), delegate.columns.len())
     };
     // What `native_value` and `.native` apply the builders under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let header = native_value(cx, geometry::list_header_height).flatten();
     DataTable::new(state)
         .with_size(native_value(cx, geometry::data_table_size).unwrap_or_default())
@@ -4320,7 +4320,7 @@ pub(crate) fn list(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut list_info = info::data::list(
         state.read(cx).delegate().items.len(),
         native.as_ref().map(|n| n.resolved),
@@ -4438,7 +4438,7 @@ impl RenderOnce for ListRow {
         let id = format!("{}-{}", self.prefix, self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
         // What `native_info` applies the builder under.
-        let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+        let styled = cx.native().is_some();
         let mut row_info = info::data::list_row(cx.theme(), &self.label, state, styled);
         // A selected row's text in `list.selection_text_color`, over the
         // list font's colour `geometry::list_item` gives every row: the row
@@ -4511,7 +4511,7 @@ pub(crate) fn tree(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut tree_info = info::data::tree(native.as_ref().map(|n| n.resolved));
     let fill = native_color(cx, |n| n.resolved.list.background_color);
     let rows = ui.clone();
@@ -4554,7 +4554,7 @@ fn tree_row(
 ) -> ListItem {
     let id = format!("data-tree-row-{ix}");
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
     // As a List row's: a selected row's text in `list.selection_text_color`.
     let selected_text = selected
@@ -4756,7 +4756,7 @@ pub(crate) fn action_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -5043,7 +5043,7 @@ pub(crate) fn spinner(
             None => (kind.size(), false),
         },
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let spinner_info = info::feedback::spinner(
         cx.theme(),
         kind,
@@ -5993,7 +5993,7 @@ pub(crate) fn separator(
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
         SeparatorKind::Vertical => Separator::vertical(),
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let line = native_color(cx, |n| n.resolved.separator.line_color);
     separator
         .when_some(line, |separator, line| separator.color(line))
@@ -6054,7 +6054,7 @@ pub(crate) fn group_box(
     about: &'static str,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut box_info =
         info::layout::group_box(cx.theme(), kind, styled, title).instance("content", about);
     // `GroupBox::content_style` takes a refinement rather than being one.
@@ -6088,7 +6088,7 @@ pub(crate) fn card(
     width: Pixels,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut card_info = info::layout::card(
         cx.theme(),
         native.as_ref().map(|n| n.resolved),
@@ -6162,7 +6162,7 @@ pub(crate) fn scroll_area(
     items: usize,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
     let viewport = native_info(
         div()
@@ -6260,7 +6260,7 @@ pub(crate) fn expander(
     gap: Option<Pixels>,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     if let Some(n) = &native {
         let spec = ExpanderSpec {
             id,
@@ -6792,7 +6792,7 @@ fn field_input(
     state: &Entity<InputState>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut input_info = info::inputs::input(cx.theme(), InputField::Refined, styled);
     native_info(
         Input::new(state),
@@ -6977,7 +6977,7 @@ pub(crate) fn overlay_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::overlays::trigger(cx.theme(), overlay, styled);
     let button = labelled(
         ui,
@@ -7011,7 +7011,7 @@ pub(crate) fn confirm_dialog(
     gap: Option<Pixels>,
     icon: &SampleIcon,
 ) -> Dialog {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut dialog_info = info::overlays::dialog(
         cx.theme(),
         cx.reduce_motion(),
@@ -7111,7 +7111,7 @@ pub(crate) fn alert_dialog(
     alert: AlertDialog,
     icon: &SampleIcon,
 ) -> AlertDialog {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let entrance = themed_entrance(cx);
     let mut alert_info = info::overlays::alert_dialog(
         cx.theme(),
@@ -7204,7 +7204,7 @@ pub(crate) fn popover(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut popover_info = info::overlays::popover(cx.theme(), styled);
     let trigger = labelled(
         ui,
@@ -7269,7 +7269,7 @@ pub(crate) fn hover_card(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut card_info = info::overlays::hover_card(cx.theme(), styled);
     let trigger = labelled(
         ui,
@@ -8035,7 +8035,7 @@ pub(crate) fn swatch(
 ) -> Stateful<Div> {
     let t = cx.theme();
     // What the connector writes the colours under.
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let value = info::theme_map::row(t, token).value;
     let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
     let label = SharedString::from(format!("{} {}", value.field, hsla_to_hex(value.value)));
@@ -8157,7 +8157,7 @@ pub(crate) fn toggle_button(
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -8202,7 +8202,7 @@ pub(crate) fn icon_button(
     drawn: &(ChromeIcon, Option<IconName>),
     listed: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let icon = role_icon_of(drawn);
     let mut button_info = info::buttons::button(
         cx.theme(),
@@ -8382,7 +8382,7 @@ pub(crate) fn files_table(
     selected: usize,
     width: Pixels,
 ) -> Stateful<Div> {
-    let Some(n) = cx.native_theme().and_then(|nt| nt.native(cx)) else {
+    let Some(n) = cx.native() else {
         let [(first, _), (second, _)] = head;
         return table(ui, cx, id, "Files", [first, second], rows);
     };

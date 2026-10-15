@@ -361,10 +361,7 @@ fn tooltip_of(
     window: &mut Window,
     cx: &mut Context<Harness>,
 ) -> AnyElement {
-    let content = cx
-        .native_theme()
-        .and_then(|nt| nt.native(cx))
-        .map(geometry::tooltip_content);
+    let content = cx.native().map(geometry::tooltip_content);
     let tooltip = Tooltip::element(move |_, _| {
         let body = div().debug_selector(|| TOOLTIP_TEXT.into()).child(text);
         match &content {
@@ -1184,8 +1181,7 @@ fn native_table(
     cx: &mut Context<Harness>,
 ) -> AnyElement {
     let size = cx
-        .native_theme()
-        .and_then(|nt| nt.native(cx))
+        .native()
         .map(geometry::data_table_size)
         .expect("the native theme is installed");
     one_cell_table(size, s, window, cx)

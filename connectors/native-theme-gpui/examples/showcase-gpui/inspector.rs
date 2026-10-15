@@ -428,7 +428,7 @@ impl PanelLook {
     /// The look under the installed native theme, with the layout and icon
     /// set `showcase` installed; `None` before `apply` ran.
     fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
-        let n = cx.native_theme()?.native(cx)?;
+        let n = cx.native()?;
         let r = n.resolved;
         let (layout, icon_set) = showcase
             .upgrade()

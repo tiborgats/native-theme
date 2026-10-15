@@ -46,14 +46,6 @@ name = "expander_icon"
 kind = "name"
 reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none"
 
-# ── undecided ───────────────────────────────────────────────────────────────
-
-[[exception]]
-connector = "gpui"
-name = "is_dark"
-kind = "undecided"
-reason = "passes the theme to `is_dark_resolved` and returns its result: the same derived flag, excepted above"
-
 # ── absent: gpui ────────────────────────────────────────────────────────────
 # `to_theme` writes these leaves into gpui-component's `Theme` (its
 # `ThemeConfig` fields) and `ThemeColor`, which a gpui application reads

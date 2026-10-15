@@ -198,7 +198,7 @@ pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
     cx: &App,
     build: F,
 ) -> Option<StyleRefinement> {
-    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+    cx.native().map(build)
 }
 
 /// Applies a geometry refinement when one is available; the widget keeps
@@ -286,7 +286,7 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
 /// The value a size or length builder gives for the installed native theme,
 /// or `None` before `apply` ran (spec §9.3, §9.4).
 pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
-    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+    cx.native().map(build)
 }
 
 /// A colour of the installed native theme, as gpui paints it, or `None`

@@ -11,7 +11,8 @@ use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
+use crate::ActiveNativeTheme;
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:246).
@@ -248,7 +249,7 @@ impl Switch {
 
 impl RenderOnce for Switch {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = SwitchLook::of(n.resolved, self.checked, self.disabled) else {

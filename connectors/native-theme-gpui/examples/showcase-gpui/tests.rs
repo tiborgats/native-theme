@@ -270,14 +270,12 @@ fn use_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &
 /// draws its scrollbars as overlays; a zero width means no native theme is
 /// installed, which the caller asserts against.
 fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pixels, bool) {
-    read(cx, showcase, |_this, cx| {
-        match cx.native_theme().and_then(|nt| nt.native(cx)) {
-            Some(n) => (
-                px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
-                n.resolved.scrollbar.overlay_mode,
-            ),
-            None => (px(0.), false),
-        }
+    read(cx, showcase, |_this, cx| match cx.native() {
+        Some(n) => (
+            px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
+            n.resolved.scrollbar.overlay_mode,
+        ),
+        None => (px(0.), false),
     })
 }
 
@@ -1127,8 +1125,7 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         let model = read(&mut cx, &showcase, |_this, cx| {
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
+            cx.native()
                 .map(|n| (n.resolved.toolbar.bar_height, n.resolved.toolbar.item_gap))
         });
         assert!(
@@ -1261,9 +1258,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     };
     let toolbar_padding = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |_this, cx| {
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
-                .map(|n| n.resolved.toolbar.border.padding)
+            cx.native().map(|n| n.resolved.toolbar.border.padding)
         })
     };
     for preset in ["kde-breeze", "windows-11"] {
@@ -3575,9 +3570,7 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
-            .map(|n| n.resolved.status_bar.border.padding)
+        cx.native().map(|n| n.resolved.status_bar.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
@@ -3642,8 +3635,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let right_padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
+        cx.native()
             .and_then(|n| n.resolved.status_bar.border.padding.right)
     });
     assert!(
@@ -4125,8 +4117,7 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let expected = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
+        cx.native()
             .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
     });
     let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
@@ -4788,7 +4779,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
         );
         // The builder's fills, which its unit test holds to the two fields.
         let (fill, disabled_fill) = read(&mut cx, &showcase, |_this, cx| {
-            match cx.native_theme().and_then(|nt| nt.native(cx)) {
+            match cx.native() {
                 Some(n) => {
                     let solid = |r: gpui::StyleRefinement| {
                         r.background
@@ -6929,10 +6920,7 @@ fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
         "--variant {variant} alone did not install the theme in that mode"
     );
     assert!(
-        read(&mut cx, &showcase, |_this, cx| cx
-            .native_theme()
-            .and_then(|nt| nt.native(cx))
-            .is_some()),
+        read(&mut cx, &showcase, |_this, cx| cx.native().is_some()),
         "--variant {variant} alone left no native variant installed for its mode"
     );
 }
@@ -7501,7 +7489,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
                     .cloned()
                     .unwrap_or_default(),
                 this.error_message.clone(),
-                cx.native_theme().and_then(|nt| nt.native(cx)).is_some(),
+                cx.native().is_some(),
             )
         });
         assert_eq!(name, key, "--theme {key} did not install it");
@@ -7834,9 +7822,7 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     use_preset(&mut cx, &showcase, "nord");
     let (item_gap, widget_gap) = read(&mut cx, &showcase, |this, cx| {
         (
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
-                .map(|n| n.resolved.toolbar.item_gap),
+            cx.native().map(|n| n.resolved.toolbar.item_gap),
             geometry::widget_gap(&this.layout),
         )
     });
@@ -8480,9 +8466,7 @@ fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     without_motion(&mut cx);
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
-            .map(|n| n.resolved.dialog.border.padding)
+        cx.native().map(|n| n.resolved.dialog.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(

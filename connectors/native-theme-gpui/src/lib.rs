@@ -29,10 +29,9 @@
 //! use native_theme_gpui::{AccessibilityPreferences, to_theme};
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
-//! let variant = nt.into_variant(ColorMode::Dark)?;
-//! let resolved = variant.resolve_system()?;
+//! let resolved = nt.resolve(ColorMode::Dark)?;
 //! let prefs = AccessibilityPreferences::from_system();
-//! let theme = to_theme(&resolved, "Catppuccin Mocha", true, &prefs);
+//! let theme = to_theme(&resolved.variant, &nt.name, resolved.mode.is_dark(), &prefs);
 //! ```
 //!
 //! # Single-Mode Behavior
@@ -41,10 +40,13 @@
 //! one mode (light or dark). The `is_dark` parameter selects which variant to
 //! load from the preset's TOML. Presets that only define one variant will return
 //! that variant for both `is_dark=true` and `is_dark=false` (the resolution
-//! pipeline falls back to the available variant). To support runtime light/dark
-//! switching, call [`from_preset()`] once per mode and [`apply`] both: each
-//! `apply` stores its variant, and gpui-component's `Theme::change` /
-//! `sync_system_appearance` then switch between the two native palettes.
+//! pipeline falls back to the available variant), and [`from_preset()`] builds
+//! the theme in that variant's mode
+//! ([`Resolved::mode`](native_theme::theme::Resolved::mode)). To support
+//! runtime light/dark switching, call [`from_preset()`] once per mode and
+//! [`apply`] both: each `apply` stores its variant, and gpui-component's
+//! `Theme::change` / `sync_system_appearance` then switch between the two
+//! native palettes.
 //!
 //! # What each flag does
 //!
@@ -199,11 +201,13 @@ use std::time::Duration;
 /// This avoids the fragile apply-then-restore pattern where `apply_config`
 /// would overwrite all 139 color fields with defaults.
 ///
-/// The `is_dark` parameter is required rather than auto-derived because
-/// several presets (e.g. solarized, gruvbox) have borderline lightness
-/// values where auto-detection would disagree with the user's intent.
-/// To auto-derive: `let is_dark = resolved.defaults.background_color` lightness < 0.5
-/// via [`is_dark_resolved()`].
+/// A [`ResolvedTheme`] carries no colour mode, so `is_dark` is the theme's:
+/// [`Resolved::mode`](native_theme::theme::Resolved::mode) of the variant
+/// [`Theme::resolve`] resolved, as [`from_preset()`] passes it, or
+/// [`SystemTheme::mode`], as [`from_system()`] does. [`is_dark_resolved()`]
+/// guesses it from the background's lightness for a caller holding only a
+/// `ResolvedTheme`; on a borderline background (solarized, gruvbox) the
+/// guess can disagree with the theme's mode.
 ///
 /// Note: `is_dark` is an explicit parameter here; the iced connector's
 /// `to_theme` takes no mode.
@@ -285,6 +289,10 @@ pub fn to_theme(
 /// access per-widget metrics (button padding, scrollbar width, etc.) that the
 /// flat `ThemeColor` cannot represent.
 ///
+/// The gpui theme is dark when the variant resolved is the dark one
+/// ([`Resolved::mode`](native_theme::theme::Resolved::mode)), so a light-only
+/// preset asked for dark gives a light theme.
+///
 /// The theme's display name is the preset's `name` field (`"Dracula"` for
 /// `"dracula"`), not the name passed in.
 ///
@@ -317,16 +325,27 @@ pub fn from_preset(
     is_dark: bool,
     prefs: &AccessibilityPreferences,
 ) -> Result<(GpuiTheme, ResolvedTheme)> {
-    let spec = Theme::preset(name)?;
-    let display_name = spec.name.clone();
-    let variant = spec.into_variant(if is_dark {
+    from_spec(&Theme::preset(name)?, is_dark, prefs)
+}
+
+/// [`from_preset()`] of a theme already loaded.
+fn from_spec(
+    spec: &Theme,
+    is_dark: bool,
+    prefs: &AccessibilityPreferences,
+) -> Result<(GpuiTheme, ResolvedTheme)> {
+    let resolved = spec.resolve(if is_dark {
         ColorMode::Dark
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.resolve_system()?;
-    let theme = to_theme(&resolved, &display_name, is_dark, prefs);
-    Ok((theme, resolved))
+    let theme = to_theme(
+        &resolved.variant,
+        &spec.name,
+        resolved.mode.is_dark(),
+        prefs,
+    );
+    Ok((theme, resolved.variant))
 }
 
 /// The OS theme as [`from_system()`] and [`SystemThemeExt::to_gpui_theme`]
@@ -470,14 +489,6 @@ pub fn is_dark_resolved(resolved: &ResolvedTheme) -> bool {
 }
 
 // --- Issue 32: Accessibility helpers ---
-
-/// Returns `true` if the resolved theme is considered dark.
-///
-/// Equivalent to [`is_dark_resolved()`] -- delegates to background lightness.
-#[must_use]
-pub fn is_dark(resolved: &ResolvedTheme) -> bool {
-    is_dark_resolved(resolved)
-}
 
 /// Whether the user/OS has requested reduced motion.
 #[must_use]
@@ -747,7 +758,7 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
 /// to (rationale §2.22). Every field's default is the right initial state, so
 /// `Default` is derived (a hand-written impl would trip clippy's
 /// `derivable_impls`).
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct NativeTheme {
     light: Option<ResolvedTheme>,
     dark: Option<ResolvedTheme>,
@@ -801,20 +812,30 @@ impl NativeTheme {
     }
 }
 
-/// `cx.native_theme()`, mirroring gpui-component's `cx.theme()`.
+/// `cx.native_theme()` and `cx.native()`, mirroring gpui-component's
+/// `cx.theme()`.
 pub trait ActiveNativeTheme {
     /// The installed [`NativeTheme`], or `None` before [`apply`] ran.
     fn native_theme(&self) -> Option<&NativeTheme>;
+
+    /// The [`Native`] view for the styled theme's current mode, or `None`
+    /// before [`apply`] ran or when no variant is stored for that mode
+    /// ([`NativeTheme::native`] of [`native_theme`](Self::native_theme)).
+    fn native(&self) -> Option<Native<'_>>;
 }
 
 impl ActiveNativeTheme for App {
     fn native_theme(&self) -> Option<&NativeTheme> {
         self.try_global::<NativeTheme>()
     }
+
+    fn native(&self) -> Option<Native<'_>> {
+        self.native_theme()?.native(self)
+    }
 }
 
 /// Borrowed inputs of every `geometry` builder (spec §9.1).
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Native<'a> {
     /// The resolved theme the values come from.
     pub resolved: &'a ResolvedTheme,
@@ -1597,6 +1618,43 @@ mod tests {
         .expect("light should work");
     }
 
+    #[test]
+    fn from_preset_takes_is_dark_from_the_resolved_mode() {
+        let prefs = AccessibilityPreferences::default();
+        let presets = Theme::list_presets();
+        assert!(!presets.is_empty());
+        for info in presets {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let (theme, _) = from_preset(info.key, mode.is_dark(), &prefs)
+                    .unwrap_or_else(|e| panic!("{} {mode:?}: {e}", info.key));
+                let resolved = Theme::preset(info.key)
+                    .and_then(|spec| spec.resolve(mode))
+                    .unwrap_or_else(|e| panic!("{} {mode:?}: {e}", info.key));
+                assert_eq!(
+                    theme.is_dark(),
+                    resolved.mode.is_dark(),
+                    "{} asked for {mode:?}",
+                    info.key
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn from_preset_light_only_asked_for_dark_is_light() {
+        let mut spec = Theme::preset("catppuccin-latte").expect("preset should load");
+        spec.dark = None;
+        let (theme, resolved) = from_spec(&spec, true, &AccessibilityPreferences::default())
+            .expect("the light variant should resolve");
+        assert!(!theme.is_dark());
+        assert_eq!(
+            Some(resolved.defaults.background_color),
+            spec.light
+                .as_ref()
+                .and_then(|light| light.defaults.background_color)
+        );
+    }
+
     // -- SystemThemeExt + from_system tests --
 
     #[test]
@@ -1632,6 +1690,8 @@ mod tests {
         let expected = sys.to_gpui_theme();
         assert!(loaded.resolved.defaults.font.size > 0.0);
         assert_eq!(loaded.theme.is_dark(), loaded.mode.is_dark());
+        assert_eq!(loaded.theme.is_dark(), expected.theme.is_dark());
+        assert_eq!(loaded.theme.background, expected.theme.background);
         assert_eq!(loaded.resolved, expected.resolved);
         assert_eq!(loaded.mode, expected.mode);
         assert_eq!(loaded.accessibility, expected.accessibility);

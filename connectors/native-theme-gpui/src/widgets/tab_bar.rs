@@ -12,7 +12,8 @@ use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, length, over, part_bounds, text_size};
+use crate::ActiveNativeTheme;
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
@@ -320,7 +321,7 @@ impl Styled for TabBar {
 
 impl RenderOnce for TabBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = TabLook::of(n.resolved) else {

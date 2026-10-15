@@ -12,7 +12,8 @@ use gpui_base::{
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, native, part_bounds};
+use super::{Part, PartBounds, color, length, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// What a progress bar paints, from `ProgressBarTheme` (spec §2.5).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -124,7 +125,7 @@ impl Styled for ProgressBar {
 
 impl RenderOnce for ProgressBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
         let Some(look) = ProgressBarLook::of(n.resolved) else {
