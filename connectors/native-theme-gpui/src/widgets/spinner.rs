@@ -2,7 +2,6 @@
 //! without one, an arc painted from `SpinnerTheme`, on gpui-base's headless
 //! progress indicator.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::f32::consts::TAU;
 use std::num::NonZeroU32;
@@ -19,15 +18,12 @@ use gpui_component::plot::shape::{Arc, ArcData};
 use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
 use native_theme::detect::system_icon_set;
-use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, TransformAnimation, colorize_monochrome_svg,
-    load_icon_indicator,
-};
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
 use native_theme::theme::{IconSet, ResolvedTheme};
 
 use super::{color, length};
 use crate::ActiveNativeTheme;
-use crate::icons::{to_image_source, with_spin_animation};
+use crate::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
 /// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
@@ -129,46 +125,6 @@ fn frame_at(delta: f32, count: usize) -> usize {
     ix.min(count.saturating_sub(1))
 }
 
-/// Whether an SVG sets a `color` of its own (a `color` property or
-/// attribute): egui's `native_theme_egui::icons::sets_color`, so a
-/// freedesktop icon is coloured as the egui connector colours it.
-fn sets_color(svg: &str) -> bool {
-    let bytes = svg.as_bytes();
-    svg.match_indices("color").any(|(at, _)| {
-        let preceded = at
-            .checked_sub(1)
-            .and_then(|i| bytes.get(i))
-            .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'-' || *b == b'_');
-        if preceded {
-            return false;
-        }
-        at.checked_add("color".len())
-            .and_then(|i| bytes.get(i..))
-            .and_then(|rest| rest.iter().find(|b| !b.is_ascii_whitespace()))
-            .is_some_and(|b| *b == b':' || *b == b'=')
-    })
-}
-
-/// An indicator frame's bytes in `colour`: a monochrome bundled set's
-/// coloured through `colorize_monochrome_svg`; a freedesktop icon's
-/// `currentColor` replaced where the document sets no `color` of its own
-/// (Breeze's stylesheet sets one per scheme); any other as it is.
-fn paint_svg(set: IconSet, bytes: &[u8], colour: Rgba) -> Vec<u8> {
-    match set {
-        IconSet::Material | IconSet::Lucide => colorize_monochrome_svg(bytes, colour),
-        IconSet::Freedesktop => match std::str::from_utf8(bytes) {
-            Ok(text) if text.contains("currentColor") && !sets_color(text) => text
-                .replace(
-                    "currentColor",
-                    &format!("#{:02x}{:02x}{:02x}", colour.r, colour.g, colour.b),
-                )
-                .into_bytes(),
-            _ => bytes.to_vec(),
-        },
-        _ => bytes.to_vec(),
-    }
-}
-
 /// The colour an indicator of `set` is drawn in: `fill`
 /// (`spinner.fill_color`) for the monochrome bundled sets, `text`
 /// (`defaults.text_color`, the colour `currentColor` stands for) for the
@@ -190,7 +146,8 @@ enum Indicator {
     /// One SVG turned a full turn every `duration_ms`. gpui turns an SVG
     /// element but not an image (gpui-pre elements/svg.rs,
     /// `Svg::with_transformation`), and an SVG element paints every shape in
-    /// its text colour.
+    /// its text colour: it rasterizes the SVG to an alpha mask and draws that
+    /// in the colour (gpui-pre 0.3.9 `src/window.rs:5007`, `:5032`).
     Spin {
         svg: Rc<[u8]>,
         duration_ms: NonZeroU32,
@@ -218,35 +175,28 @@ struct Indicators(HashMap<IndicatorKey, Option<Rc<Indicator>>>);
 impl Global for Indicators {}
 
 /// Load `key`'s indicator: `None` where its set has none, or it cannot be
-/// made an image.
+/// made an image. Frames are coloured as their set is, in `colour`
+/// ([`animated_frames_to_image_sources_for`]); a spinning SVG is kept as it
+/// is, as the SVG element draws it as a mask in its text colour.
 fn load(key: &IndicatorKey, colour: Rgba) -> Option<Indicator> {
-    let anim = match key.set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(key.icon_theme.as_deref()),
-        other => load_icon_indicator(other, None),
-    }?;
+    let anim = load_icon_indicator(key.set, key.icon_theme.as_deref())?;
     match &anim {
-        AnimatedIcon::Frames(data) => {
-            let frames: Option<Vec<ImageSource>> = data
-                .frames()
-                .iter()
-                .map(|frame| match frame {
-                    IconData::Svg(bytes) => to_image_source(
-                        &IconData::Svg(Cow::Owned(paint_svg(key.set, bytes, colour))),
-                        None,
-                        Some(key.size),
-                    ),
-                    other => to_image_source(other, None, Some(key.size)),
-                })
-                .collect();
+        AnimatedIcon::Frames(_) => {
+            let frames = animated_frames_to_image_sources_for(
+                key.set,
+                &anim,
+                Some(color(colour)),
+                Some(key.size),
+            )?;
             Some(Indicator::Frames {
-                frames: frames?.into(),
-                frame_ms: data.frame_duration_ms().get(),
+                frames: frames.sources.into(),
+                frame_ms: frames.frame_duration_ms.get(),
             })
         }
         AnimatedIcon::Transform(data) => match (data.icon(), data.animation()) {
             (IconData::Svg(bytes), TransformAnimation::Spin { duration_ms, .. }) => {
                 Some(Indicator::Spin {
-                    svg: paint_svg(key.set, bytes, colour).into(),
+                    svg: bytes.as_ref().into(),
                     duration_ms: *duration_ms,
                 })
             }
@@ -536,21 +486,6 @@ mod tests {
         assert_eq!(frame_at(-1., 24), 0);
         assert_eq!(frame_at(f32::NAN, 24), 0);
         assert_eq!(frame_at(0.5, 0), 0);
-    }
-
-    #[test]
-    fn a_freedesktop_icon_keeps_its_own_colour() {
-        let red = Rgba::rgb(255, 0, 0);
-        let breeze = br#"<svg><style>.ColorScheme-Text { color:#232629; }</style><path class="ColorScheme-Text" fill="currentColor"/></svg>"#;
-        assert_eq!(
-            paint_svg(IconSet::Freedesktop, breeze, red),
-            breeze.to_vec()
-        );
-        let plain = br#"<svg><path fill="currentColor"/></svg>"#;
-        assert_eq!(
-            paint_svg(IconSet::Freedesktop, plain, red),
-            br##"<svg><path fill="#ff0000"/></svg>"##.to_vec()
-        );
     }
 
     #[test]

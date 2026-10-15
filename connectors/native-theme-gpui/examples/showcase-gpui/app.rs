@@ -43,7 +43,7 @@ use native_theme::icons::{
 };
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::IconSet;
-use native_theme_gpui::icons::{animated_frames_to_image_sources, to_image_source};
+use native_theme_gpui::icons::{animated_frames_to_image_sources_for, to_image_source};
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
 
@@ -612,17 +612,21 @@ impl Showcase {
         let anim = match self.icon_set_enum {
             Some(IconSet::Freedesktop) => {
                 FreedesktopLoader::load_indicator(self.freedesktop_theme())
+                    .map(|anim| (IconSet::Freedesktop, anim))
             }
-            Some(icon_set) => load_icon_indicator(icon_set, None),
+            Some(icon_set) => load_icon_indicator(icon_set, None).map(|anim| (icon_set, anim)),
             None => None,
         };
         let set_name = &self.icon_theme_name;
         let fg = self.icon_cache_fg;
-        if let Some(anim) = anim {
+        if let Some((icon_set, anim)) = anim {
             match &anim {
+                // Coloured as the set colours it: a freedesktop theme's
+                // frames keep the colour their stylesheet sets, as the
+                // connector's Spinner draws them.
                 AnimatedIcon::Frames(data) => {
                     if let Some(anim_sources) =
-                        animated_frames_to_image_sources(&anim, Some(fg), None)
+                        animated_frames_to_image_sources_for(icon_set, &anim, Some(fg), None)
                     {
                         self.animated_frame_durations
                             .push(data.frame_duration_ms().get());

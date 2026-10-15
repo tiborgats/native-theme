@@ -24,6 +24,22 @@ pub(crate) fn in_child() -> bool {
     std::env::var_os(ROOT).is_some()
 }
 
+/// Writes the theme `name` into `icons` with `svg` as its loading indicator,
+/// `animations/22/process-working.svg` in a directory declared as Breeze's
+/// is (`/usr/share/icons/breeze/index.theme`, `[animations/22]`).
+pub(crate) fn write_indicator_theme(icons: &Path, name: &str, svg: &str) -> std::io::Result<()> {
+    let theme = icons.join(name);
+    std::fs::create_dir_all(theme.join("animations/22"))?;
+    std::fs::write(
+        theme.join("index.theme"),
+        format!(
+            "[Icon Theme]\nName={name}\nDirectories=animations/22\n\n\
+             [animations/22]\nSize=22\nContext=Animations\nType=Scalable\nMinSize=22\nMaxSize=256\n"
+        ),
+    )?;
+    std::fs::write(theme.join("animations/22/process-working.svg"), svg)
+}
+
 /// Runs the test `name` (its path from the crate root) again in a child
 /// process whose system icon theme is `theme`, an icon theme `write` puts in
 /// the icons dir it is given, and asserts that the test passed there.

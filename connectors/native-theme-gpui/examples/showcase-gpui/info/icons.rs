@@ -190,7 +190,7 @@ pub fn animated_icon(
             } else {
                 info.not_themeable(
                     "frame pixels",
-                    "the icon theme's own indicator artwork, recoloured with foreground only where it is drawn in currentColor or black (native-theme/icons.rs, colorize_monochrome_svg); a multi-colour sprite keeps its colours",
+                    "the icon theme's own indicator artwork, its currentColor drawn in foreground only where the artwork sets no colour of its own, so a colour its stylesheet sets (Breeze's .ColorScheme-Text) and a multi-colour sprite stay as drawn (native-theme/icons.rs, fill_current_color)",
                 )
             };
             info.instance("frames", format!("{count}, {duration_ms}ms each"))

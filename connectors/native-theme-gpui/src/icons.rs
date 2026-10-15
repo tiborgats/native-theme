@@ -15,6 +15,7 @@
 //! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
 //! | [`bundled_svg_to_image_source`] | Convert raw SVG bytes → [`ImageSource`] with optional color/size |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
+//! | [`animated_frames_to_image_sources_for`] | Convert an icon set's animation frames → [`AnimatedImageSources`], coloured as the set is |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
 //!
 //! Every [`ImageSource`] this module builds is an `ImageSource::Render`: an
@@ -39,16 +40,19 @@ use gpui::{
 };
 use gpui_component::IconName;
 use native_theme::icons::{
-    AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, load_custom_icon,
-    load_icon,
+    AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, fill_current_color,
+    load_custom_icon, load_icon,
 };
+use native_theme::theme::IconSet;
+use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 
 /// Converted animation frames with timing metadata.
 ///
-/// Returned by [`animated_frames_to_image_sources`]. Contains the
+/// Returned by [`animated_frames_to_image_sources`] and
+/// [`animated_frames_to_image_sources_for`]. Contains the
 /// rasterized frames and the per-frame duration needed to drive playback.
 #[derive(Clone)]
 #[non_exhaustive]
@@ -857,6 +861,12 @@ fn svg_bytes_to_image_source(
 /// with one `ImageSource` per frame. Returns `None` for `Transform` variants
 /// or if any frame fails to convert.
 ///
+/// When `color` is `Some`, every SVG frame goes through the monochrome
+/// colouriser, as in [`to_image_source()`]: the colour is for a monochrome
+/// bundled set's frames (Material, Lucide). Pass `None` for a system set's
+/// frames, which this colouriser would repaint over the theme's own colours,
+/// or colour them per set with [`animated_frames_to_image_sources_for()`].
+///
 /// **All-or-nothing semantics:** if any single frame fails to rasterize, the
 /// entire animation returns `None`. This prevents timing glitches where a
 /// dropped frame would cause the animation to play faster than intended.
@@ -896,18 +906,71 @@ pub fn animated_frames_to_image_sources(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<AnimatedImageSources> {
+    frames_to_image_sources(anim, |frame| to_image_source(frame, color, size))
+}
+
+/// Convert all frames of an [`AnimatedIcon::Frames`] of `set` to gpui
+/// [`ImageSource`]s, each SVG frame coloured as `set` colours it.
+///
+/// With `color` given, a Material or Lucide frame goes through
+/// [`colorize_monochrome_svg`], as in [`to_image_source()`]; a freedesktop
+/// frame has its `currentColor` filled in `color` only where the document
+/// sets no `color` of its own ([`fill_current_color`]), so a theme whose
+/// stylesheet sets one (Breeze's `process-working`, under
+/// `.ColorScheme-Text { color:#232629 }`) keeps it, and a symbolic frame
+/// whose `currentColor` nothing resolves is drawn in `color`, not black; an
+/// SF Symbols or Segoe Fluent frame, and any RGBA frame, is drawn as it is.
+/// With `color` `None` every frame is drawn as it is.
+///
+/// Otherwise as [`animated_frames_to_image_sources()`]: `None` for a
+/// `Transform` animation or if any frame fails to convert, and the result is
+/// for caching, not for every frame tick.
+///
+/// # Examples
+///
+/// ```no_run
+/// use native_theme::icons::load_icon_indicator;
+/// use native_theme::theme::IconSet;
+/// use native_theme_gpui::icons::animated_frames_to_image_sources_for;
+///
+/// # let text_color = gpui::black();
+/// let set = IconSet::Freedesktop;
+/// let frames = load_icon_indicator(set, None)
+///     .and_then(|anim| animated_frames_to_image_sources_for(set, &anim, Some(text_color), None));
+/// ```
+#[must_use]
+pub fn animated_frames_to_image_sources_for(
+    set: IconSet,
+    anim: &AnimatedIcon,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<AnimatedImageSources> {
+    let color = color.map(to_rgba);
+    frames_to_image_sources(anim, |frame| match frame {
+        IconData::Svg(bytes) => {
+            let svg = match (set, color) {
+                (IconSet::Material | IconSet::Lucide, Some(c)) => {
+                    Cow::Owned(colorize_monochrome_svg(bytes, c))
+                }
+                (IconSet::Freedesktop, Some(c)) => fill_current_color(bytes, c),
+                _ => Cow::Borrowed(bytes.as_ref()),
+            };
+            svg_bytes_to_image_source(&svg, None, size)
+        }
+        other => to_image_source(other, None, size),
+    })
+}
+
+/// Each frame of an [`AnimatedIcon::Frames`] through `convert`, all or
+/// nothing: `None` for a `Transform` animation or if any frame fails, so a
+/// dropped frame never makes the animation play faster.
+fn frames_to_image_sources(
+    anim: &AnimatedIcon,
+    convert: impl Fn(&IconData) -> Option<ImageSource>,
+) -> Option<AnimatedImageSources> {
     match anim {
         AnimatedIcon::Frames(data) => {
-            // FrameList is guaranteed non-empty by construction, so no
-            // is_empty() check needed.
-            // Issue 4: use map + collect::<Option<Vec<_>>> so the whole
-            // animation fails if any frame fails. This prevents timing
-            // glitches from silently dropped frames.
-            let sources: Option<Vec<ImageSource>> = data
-                .frames()
-                .iter()
-                .map(|f| to_image_source(f, color, size))
-                .collect();
+            let sources: Option<Vec<ImageSource>> = data.frames().iter().map(convert).collect();
             sources.map(|s| AnimatedImageSources {
                 sources: s,
                 frame_duration_ms: data.frame_duration_ms(),
@@ -2040,6 +2103,90 @@ mod tests {
                  [places]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
             )?;
             std::fs::write(theme.join("places/folder.svg"), BARE)
+        })?;
+        Ok(())
+    }
+
+    /// A freedesktop theme's sprite-sheet indicator keeps the colour its own
+    /// stylesheet gives `currentColor` (Breeze's `process-working`, under
+    /// `.ColorScheme-Text { color:#232629 }`), and one whose `currentColor`
+    /// nothing in it resolves takes the colour asked for (M5-04's rule). The
+    /// themes are fixtures in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn a_freedesktop_indicator_is_coloured_where_it_sets_no_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::a_freedesktop_indicator_is_coloured_where_it_sets_no_colour";
+        const STYLED: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><g fill="currentColor"><path class="ColorScheme-Text" d="M2 2h18v18H2z"/><path class="ColorScheme-Text" d="M6 28h10v10H6z"/></g></svg>"#;
+        const BARE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><g fill="currentColor"><path d="M2 2h18v18H2z"/><path d="M6 28h10v10H6z"/></g></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let frames = |theme: &str, color: Option<Hsla>| {
+                let anim = native_theme::icons::FreedesktopLoader::load_indicator(Some(theme))
+                    .ok_or_else(|| format!("{theme} has no indicator"))?;
+                let AnimatedIcon::Frames(data) = &anim else {
+                    return Err(format!("{theme}'s indicator is not a sprite sheet"));
+                };
+                let raw: Vec<Vec<u8>> = data
+                    .frames()
+                    .iter()
+                    .map(|frame| match frame {
+                        IconData::Svg(svg) => svg.to_vec(),
+                        _ => Vec::new(),
+                    })
+                    .collect();
+                let drawn = animated_frames_to_image_sources_for(
+                    IconSet::Freedesktop,
+                    &anim,
+                    color,
+                    Some(22),
+                )
+                .ok_or_else(|| format!("{theme}'s frames do not rasterize"))?;
+                Ok::<_, String>((raw, drawn.sources))
+            };
+            let pixels = |svg: Vec<u8>| {
+                to_image_source(&IconData::Svg(std::borrow::Cow::Owned(svg)), None, Some(22))
+                    .map(|source| rendered(source).as_bytes(0).map(<[u8]>::to_vec))
+            };
+
+            let (raw, drawn) = frames("styled", Some(red))?;
+            assert_eq!(drawn.len(), 2, "the styled sheet has two frames");
+            let first = drawn.first().cloned().ok_or("no first frame")?;
+            for (svg, source) in raw.into_iter().zip(drawn) {
+                assert!(
+                    rendered(source).as_bytes(0).map(<[u8]>::to_vec) == pixels(svg).flatten(),
+                    "the styled frame was not drawn in its own colour"
+                );
+            }
+            // The rect's centre, BGRA (`rgba_to_render_source`): #232629.
+            let centre = (11 * 22 + 11) * 4;
+            assert_eq!(
+                rendered(first)
+                    .as_bytes(0)
+                    .and_then(|b| b.get(centre..centre + 4)),
+                Some(&[0x29, 0x26, 0x23, 0xff][..])
+            );
+
+            let (raw, drawn) = frames("bare", Some(red))?;
+            assert_eq!(drawn.len(), 2, "the bare sheet has two frames");
+            for (svg, source) in raw.into_iter().zip(drawn) {
+                let in_red = String::from_utf8_lossy(&svg).replace("currentColor", "#ff0000");
+                assert!(
+                    rendered(source).as_bytes(0).map(<[u8]>::to_vec)
+                        == pixels(in_red.into_bytes()).flatten(),
+                    "the bare frame was not drawn in the colour"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "styled", |icons| {
+            crate::icon_fixture::write_indicator_theme(icons, "styled", STYLED)?;
+            crate::icon_fixture::write_indicator_theme(icons, "bare", BARE)
         })?;
         Ok(())
     }
