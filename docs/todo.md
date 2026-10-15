@@ -3194,6 +3194,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`native-theme-build = "0.6"`, `native-theme-build/README.md:30`).
       Give each crate the same check: gpui in M6, egui in M7, core and build
       in M8.
+      gpui done (M6 T3, 2026-10-15): `the_readme_depends_on_this_release`
+      and its parser test in `connectors/native-theme-gpui/src/compat.rs`,
+      beside the floor checks; the README's two `toml` blocks (the Quick
+      start, *Runtime theme change*) name 0.6 until the 0.7.0 bump, which
+      the test then fails until they follow. egui, core and build stay.
 
 ### Connectors: a public theme builder that takes the mode
 
