@@ -774,17 +774,20 @@ impl Styled for RadioGroup {
 impl RenderOnce for RadioGroup {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let total = self.radios.len();
-        let flex = match self.axis {
-            Axis::Vertical => div().flex().flex_col(),
-            Axis::Horizontal => div().flex().flex_row(),
-        };
-        BaseRadioGroup::new(self.id).axis(self.axis).child(
-            flex.refine_style(&self.style).children(
-                self.radios
-                    .into_iter()
-                    .enumerate()
-                    .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
-            ),
+        let group = BaseRadioGroup::new(self.id)
+            .axis(self.axis)
+            .debug_selector(|| "native-radio-group".into())
+            .flex();
+        match self.axis {
+            Axis::Vertical => group.flex_col(),
+            Axis::Horizontal => group.flex_row(),
+        }
+        .refine_style(&self.style)
+        .children(
+            self.radios
+                .into_iter()
+                .enumerate()
+                .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
         )
     }
 }

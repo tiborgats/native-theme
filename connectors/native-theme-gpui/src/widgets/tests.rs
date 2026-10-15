@@ -1275,6 +1275,29 @@ fn a_radio_group_reports_the_radio_clicked(cx: &mut TestAppContext) {
     assert_eq!(picked.get(), Some(1));
 }
 
+/// M6-23: the caller's style is the group's own, so a layout style such as
+/// `w_full()` reaches the element its parent lays out.
+#[gpui::test]
+fn a_radio_groups_style_reaches_its_root(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .flex()
+                .flex_row()
+                .w(px(200.))
+                .child(
+                    RadioGroup::new("g")
+                        .w_full()
+                        .children([Radio::new("r").label("R")]),
+                )
+                .into_any_element()
+        }),
+    );
+    assert_eq!(bounds(cx, "native-radio-group").size.width, px(200.));
+}
+
 fn slider_window(
     cx: &mut TestAppContext,
     disabled: bool,
