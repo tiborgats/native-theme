@@ -18,6 +18,43 @@
 //! | [`animated_frames_to_image_sources_for`] | Convert an icon set's animation frames → [`AnimatedImageSources`], coloured as the set is |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
 //!
+//! # Role icons
+//!
+//! An icon by its role, in the theme's icon set and text colour:
+//! [`SystemTheme::icon`](native_theme::SystemTheme::icon) loads it from the
+//! set the theme names (a freedesktop icon from that colour mode's icon
+//! theme) and colours it, a freedesktop icon only where its foreground is
+//! left to the caller (a symbolic icon, a `currentColor` the icon sets no
+//! colour for), so a full-colour one keeps its own palette; [`to_image_source`]
+//! then converts it, given no colour of its own. An icon the set does not
+//! have is `None`; nothing is substituted. [`icon_name`] is another thing: the
+//! [`IconName`] of gpui-component's bundled Lucide glyph, whatever the
+//! theme's set.
+//!
+//! ```no_run
+//! use gpui::{Styled, img, px};
+//! use native_theme_gpui::icons::to_image_source;
+//! use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
+//!
+//! # fn role_icon(window: &gpui::Window) -> native_theme_gpui::Result<()> {
+//! let sys = SystemTheme::from_system()?;
+//! let resolved = sys.pick(sys.mode);
+//! let fg = resolved.defaults.text_color;
+//! if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+//!     let logical = icon_sizes(resolved).toolbar;
+//!     let physical = (logical * window.scale_factor()).round() as u32;
+//!     // `None`: `sys.icon` has coloured the icon already.
+//!     if let Some(source) = to_image_source(&data, None, Some(physical)) {
+//!         let icon = img(source).size(px(logical));
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! An SVG icon is rasterized at the size given; a raster one comes at the
+//! size its loader looked it up at, which `SystemTheme::icon` states.
+//!
 //! Every [`ImageSource`] this module builds is an `ImageSource::Render`: an
 //! image gpui draws from as it stands, in the frame that asks for it. The
 //! alternative, `ImageSource::Image`, hands gpui encoded bytes and is decoded

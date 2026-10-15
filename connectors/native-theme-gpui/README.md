@@ -580,6 +580,39 @@ use native_theme::theme::IconSet;
 let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material, None, None);
 ```
 
+### Role icons
+
+An icon by its role, in the theme's icon set and text colour:
+`SystemTheme::icon` loads it from the set the theme names — a freedesktop
+icon from that colour mode's icon theme — and colours it, a freedesktop icon
+only where its foreground is left to the caller (a symbolic icon, a
+`currentColor` the icon sets no colour for), so a full-colour one keeps its
+own palette. An icon the set does not have is `None`; nothing is substituted.
+`icons::icon_name` is another thing: the `IconName` of gpui-component's
+bundled Lucide glyph, whatever the theme's set.
+
+```rust,ignore
+use gpui::{Styled, img, px};
+use native_theme_gpui::icons::to_image_source;
+use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
+
+let sys = SystemTheme::from_system()?;
+let resolved = sys.pick(sys.mode);
+let fg = resolved.defaults.text_color;
+if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+    let logical = icon_sizes(resolved).toolbar;
+    let physical = (logical * window.scale_factor()).round() as u32;
+    // `None`: `sys.icon` has coloured the icon already.
+    if let Some(source) = to_image_source(&data, None, Some(physical)) {
+        let icon = img(source).size(px(logical));
+    }
+}
+```
+
+An SVG icon is rasterized at the size given; a raster one comes at the size
+its loader looked it up at, which `SystemTheme::icon` states. The `icons`
+module documentation has the same recipe as a compiled example.
+
 ### Animated spinners
 
 ```rust,ignore
@@ -695,7 +728,8 @@ dependency wanting a later snapshot.
   Material Symbols Outlined files (`StarOff` has none), the freedesktop table
   names Breeze/Adwaita icons. `None` means the set has no equivalent; nothing
   is substituted. 31 of the 42 `IconRole` variants map to `IconName`
-  (`icons::icon_name`).
+  (`icons::icon_name`); a role's icon in the theme's own set is
+  `SystemTheme::icon` (see [Role icons](#role-icons)).
 
 ## Showcase
 
