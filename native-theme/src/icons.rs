@@ -672,15 +672,20 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// [`icon_svg`](IconProvider::icon_svg) for `set` is used. No other set is
 /// tried.
 ///
-/// Every set honours `color`: the system sets load the icon in it
-/// ([`FreedesktopLoader::color`] for a symbolic icon, [`SfSymbolsLoader::color`],
-/// [`SegoeFluentLoader::color`]), and a Material or Lucide icon, or the
-/// provider's own SVG, is coloured through [`colorize_monochrome_svg`]. `None`
-/// leaves each icon in the colour it loads in. A freedesktop icon comes from
-/// the system's icon theme; [`SystemTheme::icon`](crate::SystemTheme::icon)
-/// takes the theme's own. A provider's own SVG is coloured as a monochrome
-/// icon, so give a colour only for monochrome icons; with `None` a
-/// full-colour SVG is returned unchanged.
+/// Each set takes `color` its own way: an SF Symbol or a Segoe glyph loads
+/// in it ([`SfSymbolsLoader::color`], [`SegoeFluentLoader::color`]), and a
+/// Material or Lucide icon, or the provider's own SVG, is coloured through
+/// [`colorize_monochrome_svg`]. A freedesktop icon is coloured only where
+/// [`FreedesktopLoader::color`] colours it, a symbolic icon's foreground
+/// placeholders: a full-colour icon keeps its palette, and an icon whose own
+/// stylesheet sets the `color` its `currentColor` takes (Breeze's
+/// `current-color-scheme`) keeps that colour (docs/todo.md, "Icons: recolour
+/// a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader
+/// does"). `None` leaves each icon in the colour it loads in. A freedesktop
+/// icon comes from the system's icon theme;
+/// [`SystemTheme::icon`](crate::SystemTheme::icon) takes the theme's own. A
+/// provider's own SVG is coloured as a monochrome icon, so give a colour only
+/// for monochrome icons; with `None` a full-colour SVG is returned unchanged.
 ///
 /// `size` reaches each system set's loader as that loader takes it: the
 /// pixel size a freedesktop icon is looked up at

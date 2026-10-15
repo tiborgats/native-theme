@@ -1004,7 +1004,9 @@ pub fn into_image_source(
 /// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
 /// or the provider's own SVG, goes through the monochrome colouriser, and a
 /// freedesktop icon is coloured only where it is symbolic, so a full-colour
-/// one keeps its own palette. `size` reaches the system sets' loaders too: a
+/// one keeps its own palette and one whose stylesheet sets its colour (a
+/// Breeze `current-color-scheme`) keeps that colour. `size`, clamped to
+/// `1..=512` as for an SVG, reaches the system sets' loaders too: a
 /// freedesktop icon is looked up at it, so a PNG one comes back from the
 /// theme's directory nearest it, an SF Symbol is configured at it in points
 /// and a Segoe glyph drawn at it in pixels, and the RGBA they return is
@@ -1022,6 +1024,7 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
+    let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
     let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
     to_image_source(&data, None, size)
 }
@@ -2037,6 +2040,23 @@ mod tests {
         assert!(rgba_to_render_source(2, 2, &rgba).is_none());
     }
 
+    /// The HSL conversion gpui-pre does (`src/color.rs:194-221`), by hand:
+    /// h 0, s 1, l 0.5 has chroma 1 and m 0, so (1, 0, 0); h 0.5 (sector 3,
+    /// `(m, x + m, c + m)`), s 1, l 0.25 has chroma 0.5, x 0.5 and m 0, so
+    /// (0, 0.5, 0.5), and 0.5 × 255 = 127.5 rounds to 128. The alpha goes:
+    /// the colour is opaque.
+    #[test]
+    fn to_rgba_is_the_opaque_rgb_of_the_hsla() {
+        assert_eq!(
+            to_rgba(gpui::hsla(0.0, 1.0, 0.5, 1.0)),
+            native_theme::Rgba::new(255, 0, 0, 255)
+        );
+        assert_eq!(
+            to_rgba(gpui::hsla(0.5, 1.0, 0.25, 0.4)),
+            native_theme::Rgba::new(0, 128, 128, 255)
+        );
+    }
+
     // --- into_image_source tests ---
 
     #[test]
@@ -2243,7 +2263,9 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         const NAME: &str = "icons::tests::custom_icon_to_image_source_loads_a_raster_freedesktop_icon_at_the_size_asked_for";
         if crate::icon_fixture::in_child() {
-            for size in [16, 48] {
+            // 0 is clamped to 1 and 99999 to 512, whose nearest
+            // directories are the 16 and the 48.
+            for (size, side) in [(16, 16), (48, 48), (0, 16), (99_999, 48)] {
                 let image = custom_icon_to_image_source(
                     &FolderProvider,
                     native_theme::theme::IconSet::Freedesktop,
@@ -2251,7 +2273,7 @@ mod tests {
                     Some(size),
                 )
                 .ok_or("the fixture theme has no folder")?;
-                let side = gpui::DevicePixels(i32::try_from(size)?);
+                let side = gpui::DevicePixels(side);
                 assert_eq!(
                     rendered(image).size(0),
                     gpui::size(side, side),
@@ -2411,6 +2433,7 @@ mod freedesktop_mapping_tests {
     use super::tests::ALL_ICON_NAMES;
     use super::*;
     use native_theme::detect::LinuxDesktop;
+    #[cfg(feature = "system-icons")]
     use native_theme::icons::FreedesktopLoader;
 
     #[test]
