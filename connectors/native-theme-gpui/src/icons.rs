@@ -752,7 +752,7 @@ pub fn into_image_source(
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
 /// Loads the provider's icon for `icon_set` through [`load_custom_icon`] in
-/// `color` at `size`, then converts it with [`to_image_source()`] with no
+/// `color` at `size`, then converts it with [`into_image_source()`] with no
 /// colour of its own. [`load_custom_icon`] colours each set its own way: an
 /// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
 /// or the provider's own SVG, goes through the monochrome colouriser, and a
@@ -781,7 +781,7 @@ pub fn custom_icon_to_image_source(
 ) -> Option<ImageSource> {
     let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
     let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
-    to_image_source(&data, None, size)
+    into_image_source(data, None, size)
 }
 
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
