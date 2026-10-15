@@ -6256,15 +6256,6 @@ pub(crate) fn accordion(
         "accordion_title",
         &mut accordion_info,
     );
-    // The edge colour lands on the Accordion's card and on each item's line
-    // (accordion.rs:108-114, :380-384).
-    let accordion = native_info(
-        Accordion::new(id),
-        cx,
-        geometry::accordion,
-        "accordion",
-        &mut accordion_info,
-    );
     let edge = native_geometry(cx, geometry::accordion);
     let hover = native_geometry(cx, geometry::accordion_hover);
     if hover.is_some() {
@@ -6273,20 +6264,30 @@ pub(crate) fn accordion(
     items
         .into_iter()
         .enumerate()
-        .fold(accordion, |accordion, (ix, (title, answer_id, answer))| {
-            let (edge, hover) = (edge.clone(), hover.clone());
-            accordion.item(|item| {
-                let item = refined(item, edge.as_ref())
-                    .title_style(title_style.clone())
-                    .title(title)
-                    .open(ix == 0)
-                    .child(label(ui, cx, answer_id, answer));
-                match hover {
-                    Some(hover) => item.hover(move |_| hover),
-                    None => item,
-                }
-            })
-        })
+        .fold(
+            // The edge colour lands on the Accordion's card and on each
+            // item's line (accordion.rs:108-114, :380-384).
+            native_info(
+                Accordion::new(id),
+                cx,
+                geometry::accordion,
+                "accordion",
+                &mut accordion_info,
+            ),
+            |accordion, (ix, (title, answer_id, answer))| {
+                accordion.item(|item| {
+                    let item = refined(item, edge.as_ref())
+                        .title_style(title_style.clone())
+                        .title(title)
+                        .open(ix == 0)
+                        .child(label(ui, cx, answer_id, answer));
+                    match hover.clone() {
+                        Some(hover) => item.hover(move |_| hover),
+                        None => item,
+                    }
+                })
+            },
+        )
         .info(ui, id, accordion_info)
         .debug_selector(move || id.into())
 }
