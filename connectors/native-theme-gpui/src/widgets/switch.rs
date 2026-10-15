@@ -5,10 +5,13 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, Styled, Window, div, prelude::FluentBuilder as _, px, rems,
+    Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
-use gpui_component::{ActiveTheme as _, Disableable as _, ThemeStyled as _};
+use gpui_component::{
+    ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _, ThemeStyled as _,
+};
 use native_theme::theme::ResolvedTheme;
 
 use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
@@ -164,8 +167,9 @@ impl SwitchLook {
 /// (`defaults.focus_ring_color`), as gpui-component's switch does
 /// (switch.rs:279-282).
 ///
-/// Controlled: [`Switch::on_change`] receives the requested value. Without a
-/// native theme it renders gpui-component's `Switch`.
+/// Controlled: [`Switch::on_change`] receives the requested value. Its
+/// `Styled` style refines the row, track and label, after the widget's own.
+/// Without a native theme it renders gpui-component's `Switch`.
 pub struct Switch {
     id: ElementId,
     label: Option<SharedString>,
@@ -174,10 +178,17 @@ pub struct Switch {
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
     backdrop: Option<Hsla>,
+    accessibility_label: Option<SharedString>,
+    tab_stop: bool,
+    tab_index: isize,
+    focus_ring: bool,
+    style: StyleRefinement,
 }
 
 impl Switch {
-    /// A new switch, off.
+    /// A new switch, off: a tab stop at index 0, as gpui-base's
+    /// (switch.rs:256-257), that draws the focus ring, as gpui-component's
+    /// (switch.rs:49-51).
     #[must_use]
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
@@ -188,7 +199,43 @@ impl Switch {
             on_change: None,
             observer: None,
             backdrop: None,
+            accessibility_label: None,
+            tab_stop: true,
+            tab_index: 0,
+            focus_ring: true,
+            style: StyleRefinement::default(),
         }
+    }
+
+    /// The name a screen reader announces, where it is not the label drawn
+    /// beside the track or no label is drawn; the drawn label stays as it
+    /// is.
+    #[must_use]
+    pub fn accessibility_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.accessibility_label = Some(label.into());
+        self
+    }
+
+    /// Whether Tab stops on it; `true` by default.
+    #[must_use]
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.tab_stop = tab_stop;
+        self
+    }
+
+    /// Its place in its tab group's Tab order; `0` by default.
+    #[must_use]
+    pub fn tab_index(mut self, tab_index: isize) -> Self {
+        self.tab_index = tab_index;
+        self
+    }
+
+    /// Whether the track draws the focus ring while focused; `true` by
+    /// default, as gpui-component's `FocusableExt::focus_ring`.
+    #[must_use]
+    pub fn focus_ring(mut self, focus_ring: bool) -> Self {
+        self.focus_ring = focus_ring;
+        self
     }
 
     /// The colour under the switch, which a disabled one is faded over as
@@ -209,7 +256,7 @@ impl Switch {
     }
 
     /// The label drawn beside the track, and the name a screen reader
-    /// announces.
+    /// announces where [`Switch::accessibility_label`] gives none.
     #[must_use]
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
@@ -240,8 +287,15 @@ impl Switch {
     fn fallback(self) -> AnyElement {
         gpui_component::switch::Switch::new(self.id)
             .when_some(self.label, |switch, label| switch.label(label))
+            .when_some(self.accessibility_label, |switch, label| {
+                switch.accessibility_label(label)
+            })
             .checked(self.checked)
             .disabled(self.disabled)
+            .tab_stop(self.tab_stop)
+            .tab_index(self.tab_index)
+            .focus_ring(self.focus_ring)
+            .refine_style(&self.style)
             .when_some(self.on_change, |switch, on_change| {
                 switch.on_click(move |checked, window, cx| on_change(checked, window, cx))
             })
@@ -249,13 +303,21 @@ impl Switch {
     }
 }
 
-impl RenderOnce for Switch {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Styled for Switch {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.style
+    }
+}
+
+impl Switch {
+    /// The theme-drawn row on gpui-base's switch, or the switch back where
+    /// gpui-component's switch is drawn instead.
+    pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseSwitch, Box<Self>> {
         let Some(n) = cx.native() else {
-            return self.fallback();
+            return Err(Box::new(self));
         };
         let Some(look) = SwitchLook::of(n.resolved, self.checked, self.disabled) else {
-            return self.fallback();
+            return Err(Box::new(self));
         };
         let look = look.faded_over(
             self.backdrop
@@ -290,7 +352,7 @@ impl RenderOnce for Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
-            .when(focused && !self.disabled, |track| {
+            .when(focused && !self.disabled && self.focus_ring, |track| {
                 track.focus_ring_style(window, cx)
             })
             .when_some(look.hover_track, |track, hover| {
@@ -314,22 +376,30 @@ impl RenderOnce for Switch {
                     ),
             )
             .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))));
-        BaseSwitch::new(self.id)
+        Ok(BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
             .track_focus(&focus_handle)
-            .when_some(self.label.clone(), |switch, label| {
-                switch.accessibility_label(label)
-            })
+            .tab_stop(self.tab_stop)
+            .tab_index(self.tab_index)
+            .when_some(
+                self.accessibility_label.or_else(|| self.label.clone()),
+                |switch, label| switch.accessibility_label(label),
+            )
             .when_some(self.on_change, |switch, on_change| {
                 switch.on_change(move |next, _, window, cx| on_change(&next, window, cx))
             })
+            .debug_selector(|| "native-switch-row".into())
             .group(HOVER_GROUP)
             .flex()
             .flex_row()
             .items_center()
             .gap(LABEL_GAP)
             .opacity(look.opacity)
+            // The caller's style, refined onto the row after the widget's
+            // own, as gpui-component refines its checkbox's (checkbox.rs:291);
+            // its switch refines it onto a box round the row (switch.rs:227).
+            .refine_style(&self.style)
             .child(track)
             .when_some(self.label, |switch, label| {
                 switch.child(
@@ -347,7 +417,15 @@ impl RenderOnce for Switch {
                         .child(label)
                         .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
                 )
-            })
-            .into_any_element()
+            }))
+    }
+}
+
+impl RenderOnce for Switch {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        match self.row(window, cx) {
+            Ok(row) => row.into_any_element(),
+            Err(switch) => switch.fallback(),
+        }
     }
 }

@@ -9,13 +9,13 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, AppContext as _, Bounds, Context, Entity, InteractiveElement as _, IntoElement,
-    Modifiers, ParentElement as _, Pixels, Render, Styled as _, TestAppContext, VisualTestContext,
-    Window, div, point, px,
+    AnyElement, AppContext as _, Bounds, Context, Element as _, Entity, InteractiveElement as _,
+    IntoElement, Modifiers, ParentElement as _, Pixels, Render, Styled as _, TestAppContext,
+    VisualTestContext, Window, accesskit, div, point, px,
 };
 use gpui_base::slider::SliderState;
 use native_theme::theme::{ColorMode, FontStyle, ResolvedTheme, TabIndicatorSide, Theme};
@@ -1296,6 +1296,250 @@ fn a_radio_groups_style_reaches_its_root(cx: &mut TestAppContext) {
         }),
     );
     assert_eq!(bounds(cx, "native-radio-group").size.width, px(200.));
+}
+
+/// What gpui writes into the accessibility node of each control `probe`
+/// builds while a frame is laid out under kde-breeze, as gpui-base's own
+/// tests read a control's node (checkbox.rs,
+/// `accessibility_exposes_role_label_and_all_toggle_states`): the name each
+/// announces.
+fn announced(
+    cx: &mut TestAppContext,
+    probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
+) -> Vec<Option<String>> {
+    let captured = Rc::new(RefCell::new(Vec::new()));
+    let c = captured.clone();
+    window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let c = c.clone();
+            gpui::canvas(
+                move |_, window, cx| *c.borrow_mut() = probe(window, cx),
+                |_, (), _, _| {},
+            )
+            .size_full()
+            .into_any_element()
+        }),
+    );
+    captured
+        .take()
+        .iter()
+        .map(|node| node.label().map(str::to_owned))
+        .collect()
+}
+
+/// The node `base`, a control's headless primitive, writes; an empty one
+/// where the control is not theme-drawn (`None`).
+fn a11y_node(
+    role: accesskit::Role,
+    base: Option<impl gpui::RenderOnce>,
+    window: &mut Window,
+    cx: &mut gpui::App,
+) -> accesskit::Node {
+    let mut node = accesskit::Node::new(role);
+    if let Some(base) = base {
+        base.render(window, cx)
+            .into_element()
+            .write_a11y_info(&mut node);
+    }
+    node
+}
+
+/// The names a probe's three controls announce: one labelled and named
+/// apart, one labelled only, one named only.
+const NAMED: [Option<&str>; 3] = [Some("Announced"), Some("Shown"), Some("Only announced")];
+
+fn names(announced: Vec<Option<String>>) -> Vec<Option<&'static str>> {
+    announced
+        .iter()
+        .map(|name| {
+            NAMED
+                .into_iter()
+                .flatten()
+                .find(|n| Some(*n) == name.as_deref())
+        })
+        .collect()
+}
+
+/// M6-27: a checkbox announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_checkbox_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Checkbox::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Checkbox::new("b").label("Shown"),
+            Checkbox::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|checkbox| {
+            let base = checkbox.row(window, cx).ok();
+            a11y_node(accesskit::Role::CheckBox, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(names(announced), NAMED);
+}
+
+/// M6-27: a radio announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_radio_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Radio::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Radio::new("b").label("Shown"),
+            Radio::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|radio| {
+            let base = radio.row(window, cx).ok();
+            a11y_node(accesskit::Role::RadioButton, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(names(announced), NAMED);
+}
+
+/// M6-27: a switch announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Switch::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Switch::new("b").label("Shown"),
+            Switch::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|switch| {
+            let base = switch.row(window, cx).ok();
+            a11y_node(accesskit::Role::Switch, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(names(announced), NAMED);
+}
+
+#[derive(Clone, Copy)]
+enum Control {
+    Checkbox,
+    Radio,
+    Switch,
+}
+
+/// The controls activated, in order, by three rounds of Tab and Space over
+/// a column of three `control`s: "late" at Tab index 2, "early" at 1, and
+/// "skipped", which is no tab stop.
+fn activated_in_tab_order(cx: &mut TestAppContext, control: Control) -> Vec<&'static str> {
+    let fired = Rc::new(RefCell::new(Vec::new()));
+    let f = fired.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let one = |id: &'static str, index: isize, stop: bool| {
+                let f = f.clone();
+                let on_change =
+                    move |_: &bool, _: &mut Window, _: &mut gpui::App| f.borrow_mut().push(id);
+                match control {
+                    Control::Checkbox => Checkbox::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                    Control::Radio => Radio::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                    Control::Switch => Switch::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                }
+            };
+            div()
+                .flex()
+                .flex_col()
+                .child(one("late", 2, true))
+                .child(one("early", 1, true))
+                .child(one("skipped", 0, false))
+                .into_any_element()
+        }),
+    );
+    for _ in 0..3 {
+        focus_next(cx);
+        activate_key(cx, "space");
+        redraw(cx);
+    }
+    fired.take()
+}
+
+/// M6-27: `tab_index` orders a control in its tab group, and
+/// `tab_stop(false)` takes it out of the Tab order.
+#[gpui::test]
+fn a_checkbox_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Checkbox),
+        ["early", "late", "early"]
+    );
+}
+
+#[gpui::test]
+fn a_radio_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Radio),
+        ["early", "late", "early"]
+    );
+}
+
+#[gpui::test]
+fn a_switch_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Switch),
+        ["early", "late", "early"]
+    );
+}
+
+/// M6-27: the caller's style refines the row after the widget's own, so
+/// `w_full()` reaches it and a gap of the caller's replaces `label_gap`.
+#[gpui::test]
+fn the_callers_style_reaches_the_row(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .w(px(200.))
+                        .child(Checkbox::new("c").label("C").w_full().gap(px(37.))),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .w(px(200.))
+                        .child(Switch::new("s").label("S").w_full()),
+                )
+                .into_any_element()
+        }),
+    );
+    assert_eq!(bounds(cx, "native-checkbox-row").size.width, px(200.));
+    assert_eq!(bounds(cx, "native-switch-row").size.width, px(200.));
+    let indicator = bounds(cx, "native-checkbox-indicator");
+    let label = bounds(cx, "native-checkbox-label");
+    assert_eq!(label.origin.x - indicator.right(), px(37.));
 }
 
 fn slider_window(

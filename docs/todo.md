@@ -3385,7 +3385,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
 
 ### gpui: the native Switch lacks 0.7.0's focus options
-- [ ] [1.0] gpui-component 0.7.0's `Switch` gained `tab_stop`, `tab_index` and `focus_ring(bool)`; the connector's `widgets::Switch` offers none of them.
+- [x] [1.0] gpui-component 0.7.0's `Switch` gained `tab_stop`, `tab_index` and `focus_ring(bool)`; the connector's `widgets::Switch` offers none of them.
+      Done in M6 T11 (M6-27): `widgets::Switch` has `tab_stop`, `tab_index`, `focus_ring`,
+      `accessibility_label` and `Styled`, and `Checkbox` and `Radio` the same but `focus_ring`
+      (`a_switch_keeps_its_tab_order`, `a_switch_announces_its_accessibility_label`,
+      `the_callers_style_reaches_the_row` in `connectors/native-theme-gpui/src/widgets/tests.rs`).
 
 ### gpui: the `Loaded` equality test compares the theme by `is_dark()` only
 - [ ] [v0.7.0] For M6 (M5 T1 review, Minor): gpui's `from_system_matches_system_theme_ext` (`connectors/native-theme-gpui/src/lib.rs:1549-1561`) compares every other `Loaded` field of `from_system()` with `SystemTheme::to_gpui_theme()`'s, but the gpui `Theme` only through `is_dark()` (`:1555`), where iced's sibling test compares the palette (`connectors/native-theme-iced/src/lib.rs:2208-2221`, `:2220`). Compare a `ThemeColor` field too, such as `background`, so the two tests are equally strong.
