@@ -10,7 +10,7 @@
 //! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (`Option<&str>`, Linux only) |
 //! | [`freedesktop_name_candidates`] | Map [`IconName`] → freedesktop names to try in one theme (`&[&str]`, Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
-//! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
+//! | [`into_image_source`] | Consuming variant of [`to_image_source`] (an RGBA icon's buffer is not copied) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
 //! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
 //! | [`bundled_svg_to_image_source`] | Convert raw SVG bytes → [`ImageSource`] with optional color/size |
@@ -714,7 +714,9 @@ pub fn to_image_source(
 ) -> Option<ImageSource> {
     match data {
         IconData::Svg(bytes) => svg_bytes_to_image_source(bytes, color, size),
-        IconData::Rgba(rgba) => rgba_to_render_source(rgba.width(), rgba.height(), rgba.data()),
+        IconData::Rgba(rgba) => {
+            rgba_to_render_source(rgba.width(), rgba.height(), rgba.data().to_vec())
+        }
         _ => None,
     }
 }
@@ -722,9 +724,10 @@ pub fn to_image_source(
 /// Convert [`IconData`] to a gpui [`ImageSource`], consuming the data.
 ///
 /// This is the consuming variant of [`to_image_source()`]. It takes ownership
-/// of the `IconData` so the caller doesn't need to keep it alive. Internally
-/// delegates to [`to_image_source()`] -- the `Vec<u8>` is borrowed, not moved,
-/// because rasterization always produces new output buffers.
+/// of the `IconData` so the caller doesn't need to keep it alive. An RGBA
+/// icon's pixel buffer is converted in place and handed to gpui, not copied;
+/// an SVG is converted as [`to_image_source()`] converts it, since
+/// rasterization produces a new buffer.
 ///
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
 /// unknown variant).
@@ -737,7 +740,13 @@ pub fn into_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    to_image_source(&data, color, size)
+    match data {
+        IconData::Rgba(rgba) => {
+            let (width, height) = (rgba.width(), rgba.height());
+            rgba_to_render_source(width, height, rgba.into_data())
+        }
+        other => to_image_source(&other, color, size),
+    }
 }
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
@@ -1045,7 +1054,8 @@ fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
     let Ok(IconData::Rgba(rgba)) = native_theme::rasterize::rasterize_svg(svg_bytes, size) else {
         return None;
     };
-    rgba_to_render_source(rgba.width(), rgba.height(), rgba.data())
+    let (width, height) = (rgba.width(), rgba.height());
+    rgba_to_render_source(width, height, rgba.into_data())
 }
 
 /// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
@@ -1064,7 +1074,8 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
     ))))
 }
 
-/// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from.
+/// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from,
+/// converting the buffer in place.
 ///
 /// `ImageSource::Render` is answered from the value itself, in the frame that
 /// asks for it; `ImageSource::Image` goes through `window.use_asset`, which
@@ -1090,19 +1101,18 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should hand each replaced source to `App::drop_image`
 /// before dropping it, or the old tiles stay for the life of the window.
-fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSource> {
+fn rgba_to_render_source(width: u32, height: u32, mut pixels: Vec<u8>) -> Option<ImageSource> {
     if width == 0 || height == 0 {
         return None;
     }
     let expected = (width as usize)
         .checked_mul(height as usize)?
         .checked_mul(4)?;
-    if rgba.len() != expected {
+    if pixels.len() != expected {
         return None;
     }
     // `as_chunks_mut::<4>()` yields `[u8; 4]` pixels, so the destructuring is
     // irrefutable and needs no indexing.
-    let mut pixels = rgba.to_vec();
     for [r, _g, b, _a] in pixels.as_chunks_mut::<4>().0 {
         std::mem::swap(r, b);
     }
@@ -1803,7 +1813,7 @@ mod tests {
     #[test]
     fn rgba_to_render_source_keeps_the_pixels_and_the_size() {
         let rgba = vec![0u8; 4 * 4 * 4]; // 4x4 image
-        let image = rendered(rgba_to_render_source(4, 4, &rgba).expect("valid input"));
+        let image = rendered(rgba_to_render_source(4, 4, rgba.clone()).expect("valid input"));
         assert_eq!(
             image.size(0),
             gpui::size(gpui::DevicePixels(4), gpui::DevicePixels(4))
@@ -1815,34 +1825,34 @@ mod tests {
     fn rgba_to_render_source_pixel_order_is_bgra() {
         // Input RGBA: R=0xAA, G=0xBB, B=0xCC, A=0xDD
         let rgba = vec![0xAA, 0xBB, 0xCC, 0xDD];
-        let image = rendered(rgba_to_render_source(1, 1, &rgba).expect("valid input"));
+        let image = rendered(rgba_to_render_source(1, 1, rgba).expect("valid input"));
         assert_eq!(image.as_bytes(0), Some([0xCC, 0xBB, 0xAA, 0xDD].as_slice()));
     }
 
     #[test]
     fn rgba_to_render_source_zero_width_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(rgba_to_render_source(0, 1, &rgba).is_none());
+        assert!(rgba_to_render_source(0, 1, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_zero_height_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(rgba_to_render_source(1, 0, &rgba).is_none());
+        assert!(rgba_to_render_source(1, 0, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_mismatched_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 12
         let rgba = vec![0u8; 12];
-        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
+        assert!(rgba_to_render_source(2, 2, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_oversized_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 20
         let rgba = vec![0u8; 20];
-        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
+        assert!(rgba_to_render_source(2, 2, rgba).is_none());
     }
 
     /// The HSL conversion gpui-pre does (`src/color.rs:194-221`), by hand:
@@ -1874,7 +1884,7 @@ mod tests {
     }
 
     #[test]
-    fn into_image_source_rgba_returns_some() {
+    fn into_image_source_rgba_is_the_buffer_in_bgra_order() {
         let rgba = IconData::rgba(
             2,
             2,
@@ -1883,8 +1893,20 @@ mod tests {
             ],
         )
         .expect("a 2 x 2 buffer");
-        let result = into_image_source(rgba, None, None);
-        assert!(result.is_some(), "RGBA should convert");
+        let image = rendered(into_image_source(rgba, None, None).expect("RGBA should convert"));
+        assert_eq!(
+            image.size(0),
+            gpui::size(gpui::DevicePixels(2), gpui::DevicePixels(2))
+        );
+        assert_eq!(
+            image.as_bytes(0),
+            Some(
+                [
+                    0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255, 0, 255, 255, 255
+                ]
+                .as_slice()
+            )
+        );
     }
 
     #[test]
