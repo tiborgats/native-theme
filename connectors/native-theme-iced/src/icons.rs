@@ -104,8 +104,10 @@ pub fn custom_icon_to_image_handle(
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
 /// icon is RGBA. The icon is loaded through [`load_custom_icon`], which colours
 /// each set its own way: a Material or Lucide icon, or the provider's own SVG,
-/// through the monochrome colouriser, a freedesktop icon only where it is
-/// symbolic, so a full-colour one keeps its own palette.
+/// through the monochrome colouriser, a freedesktop icon only where its
+/// foreground is left to the caller (a symbolic icon's placeholders, a
+/// `currentColor` the icon sets no `color` for), so a full-colour one keeps
+/// its own palette and one whose stylesheet sets its colour keeps that.
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),

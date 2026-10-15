@@ -547,7 +547,9 @@ let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, No
 An icon by its role, in the theme's icon set and text colour:
 `SystemTheme::icon` loads it from the set the theme names — a freedesktop
 icon from that colour mode's icon theme — and colours it, a freedesktop icon
-only where it is symbolic, so a full-colour one keeps its own palette. An icon
+only where its foreground is left to the caller (a symbolic icon, a
+`currentColor` the icon sets no colour for), so a full-colour one keeps its
+own palette. An icon
 the set does not have is `None`; nothing is substituted.
 
 ```rust,ignore

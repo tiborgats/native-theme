@@ -675,13 +675,15 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// Each set takes `color` its own way: an SF Symbol or a Segoe glyph loads
 /// in it ([`SfSymbolsLoader::color`], [`SegoeFluentLoader::color`]), and a
 /// Material or Lucide icon, or the provider's own SVG, is coloured through
-/// [`colorize_monochrome_svg`]. A freedesktop icon is coloured only where
-/// [`FreedesktopLoader::color`] colours it, a symbolic icon's foreground
-/// placeholders: a full-colour icon keeps its palette, and an icon whose own
+/// [`colorize_monochrome_svg`]. A freedesktop icon takes it where it has a
+/// foreground left to the caller: a symbolic icon's placeholders
+/// ([`FreedesktopLoader::color`]) and a `currentColor` the document sets no
+/// `color` for ([`fill_current_color`]) are drawn in it. An icon whose own
 /// stylesheet sets the `color` its `currentColor` takes (Breeze's
 /// `current-color-scheme`) keeps that colour (docs/todo.md, "Icons: recolour
 /// a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader
-/// does"). `None` leaves each icon in the colour it loads in. A freedesktop
+/// does"), and a full-colour icon keeps its palette. `None` leaves each icon
+/// in the colour it loads in. A freedesktop
 /// icon comes from the system's icon theme;
 /// [`SystemTheme::icon`](crate::SystemTheme::icon) takes the theme's own. A
 /// provider's own SVG is coloured as a monochrome icon, so give a colour only
@@ -764,6 +766,7 @@ fn load_set_icon<'a>(
                 None => loader,
             }
             .load()
+            .map(|data| fill_freedesktop_svg_data(data, color))
         }
         IconSet::SfSymbols => {
             let loader = SfSymbolsLoader::new(id).color_opt(color);
@@ -796,6 +799,24 @@ fn colorize_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
     match (data, color) {
         (IconData::Svg(svg), Some(color)) => {
             IconData::Svg(Cow::Owned(colorize_monochrome_svg(&svg, color)))
+        }
+        (data, _) => data,
+    }
+}
+
+/// A freedesktop SVG's `currentColor` filled in with `color` through
+/// [`fill_current_color`] where the document sets no `color` of its own, as
+/// a rasteriser would otherwise draw it black; an SVG that sets its own (a
+/// Breeze `current-color-scheme` stylesheet), one without `currentColor`, a
+/// raster, or no `color`, unchanged.
+fn fill_freedesktop_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
+    match (data, color) {
+        (IconData::Svg(svg), Some(color)) => {
+            let filled = match fill_current_color(&svg, color) {
+                Cow::Owned(filled) => Some(filled),
+                Cow::Borrowed(_) => None,
+            };
+            IconData::Svg(filled.map_or(svg, Cow::Owned))
         }
         (data, _) => data,
     }
@@ -1914,6 +1935,47 @@ mod runtime_set_icon_tests {
             }
         }
         assert!(load_custom_icon(&NullProvider, IconSet::Material, Some(COLOR), None).is_none());
+    }
+
+    /// The SVG's text; empty for an icon that is not an SVG, which then
+    /// fails the comparison.
+    fn svg_of(data: IconData) -> String {
+        match data {
+            IconData::Svg(svg) => String::from_utf8_lossy(&svg).into_owned(),
+            _ => String::new(),
+        }
+    }
+
+    /// A freedesktop SVG whose `currentColor` nothing in the document
+    /// resolves is filled in with the colour asked for (M5-04): a rasteriser
+    /// draws an unset `currentColor` black.
+    #[test]
+    fn a_freedesktop_svg_s_bare_current_color_is_filled_in_the_colour() {
+        let bare = br#"<svg xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M0 0h16v16H0z"/></svg>"#;
+        let filled = fill_freedesktop_svg_data(IconData::Svg(Cow::Borrowed(bare)), Some(COLOR));
+        assert_eq!(
+            svg_of(filled),
+            r##"<svg xmlns="http://www.w3.org/2000/svg"><path fill="#123456" d="M0 0h16v16H0z"/></svg>"##
+        );
+    }
+
+    /// A freedesktop SVG whose own stylesheet sets the `color` its
+    /// `currentColor` takes (Breeze's `current-color-scheme`), and a
+    /// full-colour one, come back as they loaded, colour or not; so does
+    /// any icon loaded with no colour.
+    #[test]
+    fn a_freedesktop_svg_with_its_own_colour_is_left_as_it_is() {
+        let styled = br#"<svg xmlns="http://www.w3.org/2000/svg"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><path class="ColorScheme-Text" style="fill:currentColor" d="M0 0h16v16H0z"/></svg>"#;
+        let full_colour = br##"<svg xmlns="http://www.w3.org/2000/svg"><path fill="#3daee9" d="M0 0h16v16H0z"/><path fill="#ffffff" d="M2 2h4v4H2z"/></svg>"##;
+        let bare = br#"<svg xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M0 0h16v16H0z"/></svg>"#;
+        for (svg, color) in [
+            (&styled[..], Some(COLOR)),
+            (&full_colour[..], Some(COLOR)),
+            (&bare[..], None),
+        ] {
+            let data = fill_freedesktop_svg_data(IconData::Svg(Cow::Borrowed(svg)), color);
+            assert_eq!(svg_of(data), String::from_utf8_lossy(svg));
+        }
     }
 
     #[test]

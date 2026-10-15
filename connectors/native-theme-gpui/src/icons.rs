@@ -1003,9 +1003,11 @@ pub fn into_image_source(
 /// colour of its own. [`load_custom_icon`] colours each set its own way: an
 /// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
 /// or the provider's own SVG, goes through the monochrome colouriser, and a
-/// freedesktop icon is coloured only where it is symbolic, so a full-colour
-/// one keeps its own palette and one whose stylesheet sets its colour (a
-/// Breeze `current-color-scheme`) keeps that colour. `size`, clamped to
+/// freedesktop icon is coloured where its foreground is left to the caller (a
+/// symbolic icon's placeholders, a `currentColor` the document sets no
+/// `color` for), so one whose stylesheet sets its colour (a Breeze
+/// `current-color-scheme`) keeps that colour and a full-colour one its own
+/// palette. `size`, clamped to
 /// `1..=512` as for an SVG, reaches the system sets' loaders too: a
 /// freedesktop icon is looked up at it, so a PNG one comes back from the
 /// theme's directory nearest it, an SF Symbol is configured at it in points
@@ -2248,6 +2250,56 @@ mod tests {
                  [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
             )?;
             std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER)
+        })?;
+        Ok(())
+    }
+
+    /// A freedesktop icon whose `currentColor` nothing in it resolves is
+    /// drawn in the colour asked for, not in the black a rasteriser gives an
+    /// unset `currentColor` (M5-04's rule). The theme is a fixture in a child
+    /// process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn custom_icon_to_image_source_draws_a_bare_current_color_in_the_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::custom_icon_to_image_source_draws_a_bare_current_color_in_the_colour";
+        const BARE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let loaded = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+                Some(16),
+            )
+            .ok_or("the fixture theme has no folder")?;
+            let in_red = BARE.replace("currentColor", "#ff0000");
+            let expected = to_image_source(
+                &IconData::Svg(std::borrow::Cow::Owned(in_red.into_bytes())),
+                None,
+                Some(16),
+            )
+            .ok_or("the folder does not rasterize")?;
+            assert!(
+                rendered(loaded).as_bytes(0) == rendered(expected).as_bytes(0),
+                "the bare currentColor was not drawn in the colour"
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "bare-current-color", |icons| {
+            let theme = icons.join("bare-current-color");
+            std::fs::create_dir_all(theme.join("places"))?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=bare-current-color\nDirectories=places\n\n\
+                 [places]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )?;
+            std::fs::write(theme.join("places/folder.svg"), BARE)
         })?;
         Ok(())
     }

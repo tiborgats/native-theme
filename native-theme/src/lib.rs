@@ -668,14 +668,16 @@ impl SystemTheme {
     /// a Segoe glyph loads in it, and a Material or Lucide SVG (or a
     /// provider's own SVG) is coloured through
     /// [`colorize_monochrome_svg`](crate::icons::colorize_monochrome_svg). A
-    /// freedesktop icon is coloured only where
-    /// [`FreedesktopLoader::color`](crate::icons::FreedesktopLoader::color)
-    /// colours it, a symbolic icon's foreground placeholders: a full-colour
-    /// icon keeps its palette, and an icon whose own stylesheet sets the
-    /// `color` its `currentColor` takes (Breeze's `current-color-scheme`)
-    /// keeps that colour (docs/todo.md, "Icons: recolour a Breeze
-    /// `current-color-scheme` stylesheet from the theme, as KIconLoader
-    /// does"). `None` leaves each icon in the colour it loads in. A system set's icon
+    /// freedesktop icon takes it where it has a foreground left to the
+    /// caller: a symbolic icon's placeholders
+    /// ([`FreedesktopLoader::color`](crate::icons::FreedesktopLoader::color))
+    /// and a `currentColor` the document sets no `color` for
+    /// ([`fill_current_color`](crate::icons::fill_current_color)). An icon
+    /// whose own stylesheet sets the `color` its `currentColor` takes
+    /// (Breeze's `current-color-scheme`) keeps that colour (docs/todo.md,
+    /// "Icons: recolour a Breeze `current-color-scheme` stylesheet from the
+    /// theme, as KIconLoader does"), and a full-colour icon keeps its
+    /// palette. `None` leaves each icon in the colour it loads in. A system set's icon
     /// loads at its loader's default size (a freedesktop icon looked up at 24
     /// pixels, an SF Symbol at 24 points, a Segoe glyph at 32 pixels);
     /// [`load_custom_icon`](crate::icons::load_custom_icon) takes a size.
