@@ -1358,7 +1358,7 @@ model, the platform presets and the three connectors
 
 ### Presets: the toolbar's and the popover's edge width is the defaults'
 
-- [ ] [1.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
+- [ ] [v0.7.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
       `defaults.border` (`docs/inheritance-rules.toml:86-90`,
       `widgets_with_border`), so their resolved `border.line_width` is 1 or
       0.5 in most presets (the toolbar's is 0 only in kde-breeze and
@@ -1368,13 +1368,21 @@ model, the platform presets and the three connectors
       draws a popover's edge as its own ring inside the shadow (gpui-component
       0.7.3 `styled.rs:186-194`). The card's fill is the same kind of value:
       `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:266`), and only material-3 states one,
-      while §2.26 (`docs/platform-facts.md:1590`) states no card for macOS and
+      (`docs/inheritance-rules.toml:266`), and only material-3 (both modes)
+      and adwaita (dark, `#ffffff14`, `adwaita.toml:771`, libadwaita
+      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1590`) states no card for macOS and
       KDE. Should the inheritance give the toolbar and the popover a 0 width
       and the card no fill, or should their presets state them from a source?
       Until then the gpui connector carries neither `toolbar.border.color`,
       `popover.border.color` nor `card.background_color`; M6 T16c names all
       three in the coverage test.
+      M6 T16c fix round 1 (2026-10-16): adwaita also states the popover's
+      edge colour, `#0000000d` in both modes from libadwaita's outline
+      (`adwaita.toml:296`, `:678`, `docs/platform-facts.md:1410`). A resolved
+      theme cannot tell a stated value from an inherited one, so until this
+      is settled gpui draws neither adwaita's stated popover edge nor its dark
+      card fill, nor material-3's card fill: sourced values not drawn, so the
+      item is retagged [v0.7.0], for M8.
 
 ### Presets: expander hover fills with no source
 
@@ -2602,6 +2610,9 @@ the gap — closing it is a change, and each wants its own decision.
       it per instance. A helper, or a `variants::` function like
       `ghost_button`, would reach every switch an application builds. Found
       2026-09-22.
+      M6 T16c (2026-10-16, 12be97dd): with `widgets` the leaf reaches
+      `SwitchLook` (the connector's own switch draws it), so the contract's
+      `NoReceiver` entry for it exists only without `widgets`.
 - [ ] [upstream] **`Theme::shadow` has one reader.** The connector sets it from
       `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
       `button/button.rs:612`, for a `ButtonVariant::Custom` built with

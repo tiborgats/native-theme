@@ -995,10 +995,13 @@ enum Unread {
     /// it, which sinks read. The evidence cites
     /// `docs/inheritance-rules.toml:line`.
     Inherited(&'static str),
-    /// A receiver exists, but the presets' value is the defaults' by
-    /// inheritance rather than a platform's statement, and drawing it would
-    /// add an edge no platform states. The evidence cites the inheritance
-    /// and the docs/todo.md item that asks the data to settle it.
+    /// A receiver exists, but in most presets the value is the defaults' by
+    /// inheritance rather than a platform's statement, where drawing it would
+    /// add an edge no platform states. A resolved theme cannot tell a stated
+    /// value from an inherited one, so the connector draws none until the
+    /// docs/todo.md item settles the data, and a preset that states one from
+    /// a source loses it in gpui. The evidence cites the inheritance and that
+    /// item.
     NoEdgeByData(&'static str),
     /// As [`Unread::NoEdgeByData`], for a fill.
     NoFillByData(&'static str),
@@ -1036,7 +1039,7 @@ const BY_DATA_ITEM: &str = "Presets: the toolbar's and the popover's edge width 
 /// entries here reach gpui through the leaves that inherit them, and five
 /// have a receiver the connector leaves unfilled by a ruling: the trigger's
 /// and the text area's edge, which would paint a frameless variant, and the
-/// three the presets inherit rather than state.
+/// three most presets inherit rather than state.
 #[cfg(feature = "widgets")]
 const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
@@ -1280,7 +1283,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "toolbar.border.color",
         why: Unread::NoEdgeByData(
-            "the toolbar's edge inherits `defaults.border` \
+            "in every preset the toolbar's edge inherits `defaults.border` \
              (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`), \
              while docs/platform-facts.md §2.13 (:1344) has no border row and \
              Breeze's `ToolBar_FrameWidth` is 0 (:1355); \
@@ -1291,23 +1294,28 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "popover.border.color",
         why: Unread::NoEdgeByData(
-            "the popover's edge inherits `defaults.border` \
-             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`), \
-             and gpui-component draws a popover's edge as its own ring inside \
-             the shadow (`styled.rs:186-194`); `geometry::popover` draws no \
-             border. docs/todo.md item \"Presets: the toolbar's and the \
-             popover's edge width is the defaults'\"",
+            "in most presets the popover's edge inherits `defaults.border` \
+             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`); \
+             adwaita states one in both modes from a source (`#0000000d`, \
+             libadwaita's outline, docs/platform-facts.md §2.16 :1410), and \
+             gpui-component draws a popover's edge as its own ring inside the \
+             shadow (`styled.rs:186-194`). `geometry::popover` draws no \
+             border until docs/todo.md item \"Presets: the toolbar's and the \
+             popover's edge width is the defaults'\" is settled, so adwaita's \
+             stated edge is not drawn",
         ),
     },
     UnreadColour {
         leaf: "card.background_color",
         why: Unread::NoFillByData(
-            "the card's fill inherits `defaults.surface_color` \
-             (`docs/inheritance-rules.toml:266`), and only material-3 states \
-             one, while docs/platform-facts.md §2.26 (:1590) states no card \
-             for macOS and KDE; `geometry::group_box_content` fills nothing. \
-             docs/todo.md item \"Presets: the toolbar's and the popover's \
-             edge width is the defaults'\"",
+            "in most presets the card's fill inherits \
+             `defaults.surface_color` (`docs/inheritance-rules.toml:266`), \
+             while docs/platform-facts.md §2.26 (:1590) states no card for \
+             macOS and KDE; material-3 (both modes) and adwaita (dark, \
+             libadwaita's `card_bg_color`) state one from a source. \
+             `geometry::group_box_content` fills nothing until docs/todo.md \
+             item \"Presets: the toolbar's and the popover's edge width is \
+             the defaults'\" is settled, so their stated fills are not drawn",
         ),
     },
 ];
