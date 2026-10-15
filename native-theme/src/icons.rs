@@ -680,10 +680,9 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// ([`FreedesktopLoader::color`]) and a `currentColor` the document sets no
 /// `color` for ([`fill_current_color`]) are drawn in it. An icon whose own
 /// stylesheet sets the `color` its `currentColor` takes (Breeze's
-/// `current-color-scheme`) keeps that colour (docs/todo.md, "Icons: recolour
-/// a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader
-/// does"), and a full-colour icon keeps its palette. `None` leaves each icon
-/// in the colour it loads in. A freedesktop
+/// `current-color-scheme`) keeps that colour, as it is not yet rewritten from
+/// the theme as KDE's own icon loader does, and a full-colour icon keeps its
+/// palette. `None` leaves each icon in the colour it loads in. A freedesktop
 /// icon comes from the system's icon theme;
 /// [`SystemTheme::icon`](crate::SystemTheme::icon) takes the theme's own. A
 /// provider's own SVG is coloured as a monochrome icon, so give a colour only
