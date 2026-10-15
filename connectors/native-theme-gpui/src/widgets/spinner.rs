@@ -92,10 +92,14 @@ impl SpinnerLook {
     }
 
     /// The radius of the stroke's centre line: the model gives the diameter
-    /// as the ring's outer size, and the stroke is centred on its path.
+    /// as the ring's outer size, and the stroke is centred on its path. No
+    /// less than 0: a stroke wider than the diameter fills the disc, as
+    /// `ring` clamps its inner radius at 0. Nothing draws with it; the tests
+    /// check the look against the model through it.
+    #[cfg(test)]
     #[must_use]
-    pub fn path_radius(&self) -> Pixels {
-        px((f32::from(self.diameter) - f32::from(self.stroke)) / 2.)
+    pub(crate) fn path_radius(&self) -> Pixels {
+        px(((f32::from(self.diameter) - f32::from(self.stroke)) / 2.).max(0.))
     }
 }
 
@@ -526,6 +530,20 @@ mod tests {
             load(&key(IconSet::Material), black),
             Some(Indicator::Frames { .. })
         ));
+    }
+
+    /// A stroke wider than the diameter, which `of_size` does not bound, has
+    /// its centre line at the centre, as `ring` clamps the inner radius at
+    /// 0, not at a negative radius.
+    #[test]
+    fn the_path_radius_is_never_negative() {
+        let look = |diameter: f32, stroke: f32| SpinnerLook {
+            diameter: px(diameter),
+            stroke: px(stroke),
+            color: gpui::black(),
+        };
+        assert_eq!(look(4., 6.).path_radius(), px(0.));
+        assert_eq!(look(16., 2.).path_radius(), px(7.));
     }
 
     /// A size above the 512 an SVG is rasterized at most
