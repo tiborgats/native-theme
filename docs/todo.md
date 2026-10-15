@@ -1376,6 +1376,22 @@ model, the platform presets and the three connectors
       `popover.border.color` nor `card.background_color`; M6 T16c names all
       three in the coverage test.
 
+### Presets: expander hover fills with no source
+
+- [ ] [1.0] From M6 T16b (2026-10-16): `docs/platform-facts.md` §2.27 has no
+      `hover_background` row, and these presets state `expander.hover_background`
+      in both modes with no citation: adwaita (`adwaita.toml:399`, `:784`),
+      macos-monterey (`:440`, `:898`, "disclosure hover -- subtle highlight"),
+      ios-13 (`:364`, `:708`), material-3 (`:509`, `:1014`; M3 has no expander,
+      §2.27), and the community presets catppuccin-latte, -frappe, -macchiato,
+      -mocha, dracula, gruvbox, nord, one-dark, solarized and tokyo-night
+      (`:243`/`:486` or `:241`/`:484`). kde-breeze's was unset in M6 T16b: the
+      §2.27 `frame_enabled` row (`docs/platform-facts.md:1619`) says
+      `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
+      nothing else. Find each platform's source for a hovered expander header
+      (a facts row), or unset the value; the gpui connector's
+      `geometry::accordion_hover` draws whatever the preset states.
+
 ### windows-11: the validator's findings after T35 left open
 
 - [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;

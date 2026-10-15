@@ -464,7 +464,8 @@ arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-hover_background = "#dee0e2"
+# hover_background not stated: platform-facts.md:1619 (§2.27): KCollapsibleGroupBox::paintEvent
+# paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#232629"
 
 [light.expander.border]
@@ -927,7 +928,8 @@ arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-hover_background = "#31363b"
+# hover_background not stated: platform-facts.md:1619 (§2.27): KCollapsibleGroupBox::paintEvent
+# paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#fcfcfc"
 
 [dark.expander.border]
