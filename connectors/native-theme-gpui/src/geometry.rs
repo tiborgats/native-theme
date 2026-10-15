@@ -49,22 +49,23 @@
 //! [`data_table_size`] and [`list_header_height`], which compute the growth
 //! themselves, a `Size` being a fixed height.
 //!
-//! Geometry, with one exception that is not geometry: ten builders also
+//! Geometry, with one exception that is not geometry: eleven builders also
 //! carry the platform's text colour. A builder carries it only where the
 //! carried colour actually reaches the text and upstream's state colours
 //! (disabled, muted) still win — either because upstream labels the very
 //! element the refinement lands on with a token of its own one refinement
 //! earlier and applies its state colours after the refinement or on a child,
 //! or because upstream sets no colour on that element at all, so there is
-//! nothing to displace. Five of the ten displace a visibly different colour
+//! nothing to displace. Five of the eleven displace a visibly different colour
 //! today — [`status_bar`] and [`dialog_description`] displace
 //! `muted_foreground`, [`tooltip`] displaces `popover_foreground`, and
 //! [`input`] and [`text_area`] the window's `foreground`, which the field's
 //! text inherits and the macOS presets' `input.font.color` differs from —
-//! three displace `foreground`: [`list_item`], [`radio`] and [`select`], and
-//! [`title_bar`] and [`dialog_title`] displace nothing (`title_bar.rs:331-346`
-//! paints the fill and the border, then refines; `dialog/title.rs:39-46` sets
-//! no colour). Those five change no pixel over the bundled
+//! four displace `foreground`: [`list_item`], [`radio`], [`select`] and
+//! [`accordion_title`], and [`title_bar`] and [`dialog_title`] displace
+//! nothing (`title_bar.rs:331-346` paints the fill and the border, then
+//! refines; `dialog/title.rs:39-46` sets no colour). Those six change no pixel
+//! over the bundled
 //! presets, because a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a source that does state one is honoured rather
@@ -705,9 +706,49 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).
+///
+/// The title's colour is carried because upstream sets `foreground` on an
+/// open item's title row one line before the refinement (`:306` → `:307`)
+/// and none on a closed one's, and draws no disabled colour of its own:
+/// `expander.font.color` displaces `foreground` there and nothing here. Today
+/// every preset's expander text is the window's text colour, so this changes
+/// no pixel; it is what honours a source that states a colour of its own.
 #[must_use]
 pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().h(px(n.resolved.expander.header_height))
+    let e = &n.resolved.expander;
+    StyleRefinement::default()
+        .h(px(e.header_height))
+        .text_color(rgba_to_hsla(e.font.color))
+}
+
+/// The edge of an `Accordion` and of each of its `AccordionItem`s:
+/// `expander.border.color`, which each takes through `Styled`.
+///
+/// A bordered `Accordion` (upstream's default, `src/accordion.rs:37`) draws
+/// one rounded card around its items, and each item but the last a line
+/// under it, both in the `border` token and before the caller's refinement
+/// (`:108-113` → `:114` on the Accordion, `:380-382` → `:384` on the item),
+/// so the platform's colour wins on both. Only the colour: where no edge is
+/// drawn -- an unbordered Accordion, the last item -- it colours nothing.
+/// Today every preset's expander edge is the window's border colour, so this
+/// changes no pixel; it is what honours a source that states one of its own.
+#[must_use]
+pub fn accordion(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().border_color(rgba_to_hsla(n.resolved.expander.border.color))
+}
+
+/// For `AccordionItem::hover` (`src/accordion.rs:230-233`): the title row's
+/// fill under the pointer, `expander.hover_background`, which the item lays
+/// over the row there (`:322-324`), or nothing where the theme states none,
+/// so the row stays as it is at rest. gpui-component draws no hover of its
+/// own (`:227-229`), and none on a disabled item (`:322`). Pass it as
+/// `item.hover(|_| geometry::accordion_hover(n))`.
+#[must_use]
+pub fn accordion_hover(n: Native<'_>) -> StyleRefinement {
+    match n.resolved.expander.hover_background {
+        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
+        None => StyleRefinement::default(),
+    }
 }
 
 /// The metrics `Checkbox` and `Radio` share; platform-facts §2.5 defines radio
@@ -1732,6 +1773,39 @@ mod tests {
         assert!(stated_disabled > 0, "no preset states a disabled fill");
     }
 
+    /// `accordion_hover` is `expander.hover_background` where the theme
+    /// states one, and nothing where it does not: an unset soft hover is the
+    /// row at rest.
+    #[test]
+    fn accordion_hover_is_the_stated_hover_or_nothing() {
+        let (mut stated, mut unstated) = (0usize, 0usize);
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let out = accordion_hover(Native::unscaled(&r));
+                match r.expander.hover_background {
+                    Some(fill) => {
+                        stated += 1;
+                        assert_eq!(
+                            out,
+                            StyleRefinement::default().bg(rgba_to_hsla(fill)),
+                            "{at}"
+                        );
+                    }
+                    None => {
+                        unstated += 1;
+                        assert_eq!(out, StyleRefinement::default(), "{at}");
+                    }
+                }
+            }
+        }
+        assert!(
+            stated > 0 && unstated > 0,
+            "both arms must be exercised ({stated} stated, {unstated} unstated)"
+        );
+    }
+
     /// `combo_box_fill` is `combo_box.background_color`, or for a disabled
     /// trigger `combo_box.disabled_background` (the enabled fill where none
     /// is stated) and `combo_box.disabled_text_color`, faded by
@@ -2073,7 +2147,7 @@ mod tests {
     /// reaches the text *and* upstream's state colours still win afterwards:
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
-    /// no colour on that element at all. Eight are checked here, over every
+    /// no colour on that element at all. Nine are checked here, over every
     /// preset in both modes, not just the `CASES` names; [`input`] and
     /// [`text_area`] in `a_field_draws_its_text_in_the_platforms_input_colour`.
     ///
@@ -2082,8 +2156,8 @@ mod tests {
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other five -- `list_item`, `radio`, `select`, `title_bar`,
-    /// `dialog_title` -- get no
+    /// The other six -- `list_item`, `radio`, `select`, `title_bar`,
+    /// `dialog_title`, `accordion_title` -- get no
     /// such `assert_ne!`, and deliberately: their native font colour equals
     /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
     /// select is the exception, its `combo_box.font.color` the accent), because
@@ -2092,7 +2166,8 @@ mod tests {
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child
-    /// afterwards, and it labels the title bar and a dialog's title with
+    /// afterwards, an open accordion title with `foreground` and no disabled
+    /// colour at all, and it labels the title bar and a dialog's title with
     /// nothing at all (`title_bar.rs:331-346`, `dialog/title.rs:39-46`) -- so
     /// the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
@@ -2175,6 +2250,11 @@ mod tests {
                     dialog_title(n).text.color,
                     Some(rgba_to_hsla(r.dialog.title_font.color)),
                     "{at}: dialog title text"
+                );
+                assert_eq!(
+                    accordion_title(n).text.color,
+                    Some(rgba_to_hsla(r.expander.font.color)),
+                    "{at}: accordion title text"
                 );
 
                 // The two the route is blocked for; the guard below says why.
@@ -2400,6 +2480,14 @@ mod tests {
             assert_eq!(
                 accordion_title(n).size.height,
                 len(r.expander.header_height)
+            );
+            assert_eq!(
+                accordion_title(n).text.color,
+                Some(rgba_to_hsla(r.expander.font.color))
+            );
+            assert_eq!(
+                accordion(n),
+                StyleRefinement::default().border_color(rgba_to_hsla(r.expander.border.color))
             );
         });
         stated.assert_each_compared();

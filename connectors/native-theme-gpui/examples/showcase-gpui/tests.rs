@@ -6470,7 +6470,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Marker spinner",
             feedback::marker(&t, MarkerKind::Spinner, "text", false, None),
         ),
-        ("Accordion", layout::accordion(&t, false, 3)),
+        ("Accordion", layout::accordion(&t, false, 3, false)),
         ("Carousel", layout::carousel(&t, false)),
         (
             "Breadcrumb",

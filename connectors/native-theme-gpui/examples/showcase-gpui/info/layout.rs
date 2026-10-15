@@ -192,11 +192,13 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
     .instance("title", title.to_string())
 }
 
-/// The `Accordion`, drawn while gpui's `reduce_motion` is as given. Its
-/// title rows' geometry line is recorded where `demo::accordion` applies
-/// the builder.
-pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
-    WidgetInfo::new("Accordion")
+/// The `Accordion`, drawn while gpui's `reduce_motion` is as given. `styled`
+/// is whether a native theme is installed, so whether `geometry::accordion`
+/// coloured its edges and `geometry::accordion_title` its titles, whose
+/// geometry lines -- recorded where `demo::accordion` applies the builders --
+/// then name the colours.
+pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Accordion")
         .not_themeable(
             "own icons",
             super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
@@ -206,8 +208,11 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "accordion",
             t.accordion,
             "gpui-component/accordion.rs:378",
-        ))
-        .color(claim(
+        ));
+    let info = if styled {
+        info
+    } else {
+        info.color(claim(
             "border",
             "border",
             t.border,
@@ -234,7 +239,8 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             t.foreground,
             "showcase",
         ))
-        .color(claim(
+    };
+    info.color(claim(
             "chevron",
             "muted_foreground",
             t.muted_foreground,
@@ -244,7 +250,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "border-radius",
             format!("radius_lg: {}px", t.radius_lg.as_f32()),
         )
-        .not_themeable("padding", "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height")
+        .not_themeable("padding", "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour")
         .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver -- Tier U")
         .not_themeable("animation", "reads the theme's spring_control (accordion.rs, AccordionItem). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
         .instance("animation", if reduce_motion {

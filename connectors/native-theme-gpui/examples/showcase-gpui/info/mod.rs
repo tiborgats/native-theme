@@ -250,7 +250,18 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "group_box_content",
         "the card.border.padding sides the theme states, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)",
     ),
-    ("accordion_title", "expander.header_height"),
+    (
+        "accordion_title",
+        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (accordion.rs, AccordionItem::render)",
+    ),
+    (
+        "accordion",
+        "expander.border.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (accordion.rs, RenderOnce for Accordion and AccordionItem::render); where neither is drawn, nothing",
+    ),
+    (
+        "accordion_hover",
+        "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (accordion.rs, AccordionItem::hover)",
+    ),
     (
         "checkbox",
         "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (checkbox.rs, RenderOnce for Checkbox)",

@@ -274,14 +274,14 @@ A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
 element with a token of its own before applying the refinement and re-applies
 its state colours after it or on a child, or upstream sets no colour on that
-element at all. Ten do. Five displace a visibly different colour:
+element at all. Eleven do. Five displace a visibly different colour:
 `status_bar` and `dialog_description` displace upstream's `muted_foreground`,
 `tooltip` displaces `popover_foreground`, and `input` and `text_area` the
 window's `foreground`, which a field's text inherits and the macOS presets'
-`input.font.color` differs from. Three displace `foreground`:
-`list_item`, `radio` and `select`. `title_bar` and `dialog_title` displace
-nothing — upstream paints the bar's fill and border and sets no text colour on
-either. Those five change no
+`input.font.color` differs from. Four displace `foreground`:
+`list_item`, `radio`, `select` and `accordion_title`. `title_bar` and
+`dialog_title` displace nothing — upstream paints the bar's fill and border
+and sets no text colour on either. Those six change no
 pixel under any bundled preset — a widget that states no `font.color` inherits
 the window's, and `foreground` is fed from that same field — but they carry it
 so that a source which *does* state, say, a list row colour, or the title bar
@@ -325,7 +325,9 @@ test over every preset and mode says so.
 | `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding — the header's text is drawn in the container's font, which `table` sets | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
-| `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
+| `accordion_title` | `expander.header_height`, `expander.font.color` | `AccordionItem::title_style` |
+| `accordion` | `expander.border.color` | `Accordion` and each `AccordionItem`: the colour of the card a bordered Accordion draws and of the line under each item but the last |
+| `accordion_hover` | `expander.hover_background` (where stated) | `AccordionItem::hover`, as `item.hover(\|_\| geometry::accordion_hover(n))`; nothing where the theme states no hover, so the row stays at rest |
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform), `defaults.line_height` on the row (the label column keeps upstream's 1.25) | `Checkbox`, `Radio` |
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `.color`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font`, `defaults.line_height` | `TitleBar` |
