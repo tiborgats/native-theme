@@ -550,17 +550,22 @@ run_check "cargo fmt (all crates)" cargo fmt --all
 # Section: clippy
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "clippy (-D warnings)"
+# The gpui connector with `native` and `watch` on top of its defaults, so
+# `watch.rs` and the showcase's `watch` code are linted too; each is additive,
+# and `cargo check` above builds the defaults alone.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
+        run_check_soft "clippy ($crate, native, watch)" \
+            cargo clippy -p "$crate" --all-targets --features native,watch -- -D warnings
     else
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
 done
 # The gpui connector on GPUI Fast (its `gpui-fast` feature), which the loop's
-# default features leave off. Soft, as the connector's default clippy.
-run_check_soft "clippy (native-theme-gpui, gpui-fast)" \
-    cargo clippy -p native-theme-gpui --all-targets --features gpui-fast -- -D warnings
+# features leave off, with `native` and `watch` as in the loop. Soft, as the
+# connector's default clippy.
+run_check_soft "clippy (native-theme-gpui, gpui-fast, native, watch)" \
+    cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: strict panic lints (library code only)
@@ -610,10 +615,11 @@ run_check "strict-panic (native-theme-build)" \
 # `watch.rs` are linted too; nothing in the library is compiled only without one.
 run_check "strict-panic (native-theme-iced, iced_aw, watch, native)" \
     bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
-run_check_soft "strict-panic (native-theme-gpui)" \
-    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
-run_check_soft "strict-panic (native-theme-gpui, gpui-fast)" \
-    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
+# The gpui connector with `native` and `watch` too, so `watch.rs` is linted.
+run_check_soft "strict-panic (native-theme-gpui, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
+run_check_soft "strict-panic (native-theme-gpui, gpui-fast, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
 run_check "strict-panic (native-theme-egui)" \
     bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
 run_check "strict-panic (native-theme-egui-widgets)" \
@@ -627,9 +633,12 @@ run_check "strict-panic (native-theme-os-probe)" \
 # Section: tests
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Tests"
+# The gpui connector with `native` and `watch` on top of its defaults:
+# `on_theme_change`'s tests (they start no OS watcher) and the showcase's
+# `watch` code. Each is additive, so the one leg covers the defaults too.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_tests_soft "test ($crate)" cargo test -p "$crate"
+        run_tests_soft "test ($crate, native, watch)" cargo test -p "$crate" --features native,watch
     else
         run_tests "test ($crate)" cargo test -p "$crate"
     fi
@@ -639,15 +648,16 @@ done
 # compile without it. Same soft class as the connector's default test.
 run_tests_soft "test (native-theme-gpui, no features)" \
     cargo test -p native-theme-gpui --lib --no-default-features
-# The gpui connector on GPUI Fast: a second GPUI core and platform layer to
-# build, so the per-commit subset leaves it to the full run and CI. Doctests
-# excluded: each is a crate of its own that names gpui-pre as `gpui`.
+# The gpui connector on GPUI Fast, with `native` and `watch` as above: a
+# second GPUI core and platform layer to build, so the per-commit subset
+# leaves it to the full run and CI. Doctests excluded: each is a crate of its
+# own that names gpui-pre as `gpui`.
 if [[ $COMMIT_MODE ]]; then
-    printf "${DIM}test (native-theme-gpui, gpui-fast)${NC}\n"
-    print_skipped "test (native-theme-gpui, gpui-fast)"
+    printf "${DIM}test (native-theme-gpui, gpui-fast, native, watch)${NC}\n"
+    print_skipped "test (native-theme-gpui, gpui-fast, native, watch)"
 else
-    run_tests_soft "test (native-theme-gpui, gpui-fast)" \
-        cargo test -p native-theme-gpui --features gpui-fast --all-targets
+    run_tests_soft "test (native-theme-gpui, gpui-fast, native, watch)" \
+        cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
 fi
 # The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
 # only under `portal` + `watch`, which the default features leave off; the

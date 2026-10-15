@@ -39,13 +39,14 @@ installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
 (`native-theme` with `system-icons` alone, and with all features
 under `RUSTFLAGS="-D warnings"`, and for x86_64-apple-darwin `native-theme-egui`
 with all targets and features), `cargo fmt --all` (formats in place; CI uses
-`--check`), per-crate `cargo clippy --all-targets -- -D warnings` (and
-`native-theme-gpui` with `gpui-fast`), the strict
+`--check`), per-crate `cargo clippy --all-targets -- -D warnings`
+(`native-theme-gpui` with `native,watch`, and with `gpui-fast,native,watch`), the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
-and the rest of the type-aware set; `native-theme-gpui` also with `gpui-fast`),
-per-crate `cargo test` (and `native-theme`
+and the rest of the type-aware set; `native-theme-gpui` with `native,watch` and
+with `gpui-fast,native,watch`),
+per-crate `cargo test` (`native-theme-gpui` with `native,watch`, and `native-theme`
 with `portal,watch` and with `system-fonts`), the gpui connector's tests with no
-default features and on GPUI Fast (`--features gpui-fast --all-targets`; the
+default features and on GPUI Fast (`--features gpui-fast,native,watch --all-targets`; the
 `--all-targets` leaves the doctests out, since each is a crate of its own that
 names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
 iced, egui and egui-widgets crates' other configurations (tests with no default features and, for iced, with
@@ -101,7 +102,7 @@ cargo fmt --all --check
 # Lint each crate (CI runs clippy per-crate, not workspace-wide)
 cargo clippy -p native-theme --all-targets
 cargo clippy -p native-theme-build --all-targets
-cargo clippy -p native-theme-gpui --all-targets
+cargo clippy -p native-theme-gpui --all-targets --features native,watch
 cargo clippy -p native-theme-iced --all-targets
 cargo clippy -p native-theme-egui --all-targets
 cargo clippy -p native-theme-egui-widgets --all-targets

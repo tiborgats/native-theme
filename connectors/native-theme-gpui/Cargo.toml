@@ -25,7 +25,7 @@ description = "gpui toolkit connector for native-theme"
 # Every feature but `gpui-fast` (`all-features` would turn it on): the page
 # documents the crate on its default core, gpui-pre. src/compat.rs holds the
 # list to the [features] table.
-features = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
+features = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts", "native", "watch"]
 
 [features]
 default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
@@ -46,6 +46,11 @@ system-fonts = ["native-theme/system-fonts"]
 # only weakly (`gpui-component?/gpui-fast`), with gpui-kit's `component`
 # feature, which this crate leaves off, so it is named here.
 gpui-fast = ["gpui-kit/gpui-fast", "gpui-component/gpui-fast"]
+# The OS readers, off by default as in native-theme: without one,
+# `from_system()` is the platform preset on Linux and an error on macOS and
+# Windows. native-theme's finer `kde`, `portal`, `macos` and `windows` pick one.
+native = ["native-theme/native"]
+watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 
 [dependencies]
 # GPUI under the package name gpui-component uses, so both edges unify.
@@ -77,15 +82,10 @@ gpui-kit = { version = "0.7.3", default-features = false }
 # encodes and decodes nothing itself.
 image = { version = "0.25.10", default-features = false }
 native-theme = { workspace = true }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-native-theme = { workspace = true, features = ["linux"] }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-native-theme = { workspace = true, features = ["macos"] }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-native-theme = { workspace = true, features = ["windows"] }
+# `on_theme_change`'s channel from the watcher's thread to the task that runs
+# on gpui's foreground. Already in Cargo.lock as gpui-pre's dependency
+# (`futures = "0.3.34"`); `std` holds the `mpsc` channel.
+futures = { version = "0.3.34", optional = true, default-features = false, features = ["std"] }
 
 [dev-dependencies]
 # The showcase uses the facade an application would: application(), init(),
@@ -93,7 +93,9 @@ native-theme = { workspace = true, features = ["windows"] }
 # tree-sitter-rust: the grammar for the showcase's code editor section.
 # test-support: `#[gpui::test]` and TestAppContext through the alias.
 gpui-kit = { version = "0.7.3", features = ["tree-sitter-rust", "test-support"] }
-native-theme = { workspace = true, features = ["watch"] }
+# The OS readers and the watcher, so the showcase, tests/seams.rs and every
+# test build read the OS theme without the `native` feature named.
+native-theme = { workspace = true, features = ["native", "watch"] }
 # Field-by-field completeness check of ThemeColor via its Serialize impl,
 # and the showcase's layout dump (`--dump-layout`).
 serde_json = "1.0.151"

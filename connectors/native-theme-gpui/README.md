@@ -99,17 +99,18 @@ the CHANGELOG.
 
 ## Quick start
 
+Add the crate to your `Cargo.toml`, with the OS readers (`native`):
+
 ```toml
 [dependencies]
-native-theme = "0.6"
-native-theme-gpui = "0.6"
+native-theme-gpui = { version = "0.6", features = ["native"] }
 gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
 gpui_kit::application().run(|cx| {
     gpui_kit::init(cx);
-    match native_theme::SystemTheme::from_system() {
+    match native_theme_gpui::SystemTheme::from_system() {
         Ok(sys) => native_theme_gpui::apply_system_theme(&sys, cx),
         Err(_) => {
             let prefs = native_theme_gpui::AccessibilityPreferences::from_system();
@@ -142,9 +143,9 @@ theme to upstream's default.
 ### Light and dark under a preset
 
 ```rust,ignore
-use native_theme_gpui::{apply, from_preset};
+use native_theme_gpui::{AccessibilityPreferences, apply, from_preset};
 
-let prefs = native_theme::detect::accessibility_preferences();
+let prefs = AccessibilityPreferences::from_system();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);
@@ -460,7 +461,7 @@ gpui-component 0.7.0, whose own switch gained one).
 
 The first six are on by default; `default-features = false` is the way to
 narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
-(see [Backends](#backends)).
+(see [Backends](#backends)). `native` and `watch` are off, as in native-theme.
 
 | Feature | Enables |
 |---|---|
@@ -471,6 +472,13 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
 | `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+| `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
+| `watch` | `on_theme_change`, which runs a closure on gpui's foreground when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
+
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` (opt-in) watches with a reader feature only.
 
 Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
 gpui the SVG bytes (colorized first when a colour is given) as an
@@ -496,6 +504,58 @@ accent_color = "#ff6600"
 let customised = sys.with_overlay(&overlay)?;
 apply_system_theme(&customised, cx);
 ```
+
+### Runtime theme change
+
+With the `watch` feature, `on_theme_change(cx, f)` runs `f` on gpui's
+foreground, with the `App`, each time the OS theme changes, for as long as
+the returned `ThemeSubscription` is held. In `f`, clear native-theme's
+detection caches, read the theme again and apply it. The caches hold the font
+DPI, dark mode, the icon theme and the accessibility preferences, so a
+re-read without `invalidate_caches()` gets the old ones. Naming
+`native_theme::detect` needs native-theme itself:
+
+```toml
+[dependencies]
+native-theme = "0.6"
+native-theme-gpui = { version = "0.6", features = ["native", "watch"] }
+```
+
+```rust,ignore
+use native_theme_gpui::{SystemTheme, ThemeSubscription, apply_system_theme, on_theme_change};
+
+struct MyView {
+    // The watcher stops when this is dropped.
+    _theme_watcher: Option<ThemeSubscription>,
+}
+
+// In the view's constructor, with `cx: &mut Context<MyView>`:
+// a watcher that cannot start (a desktop with none) returns its error, and
+// `ok()` drops it.
+let _theme_watcher = on_theme_change(cx, |_event, cx| {
+    native_theme::detect::invalidate_caches();
+    if let Ok(sys) = SystemTheme::from_system() {
+        apply_system_theme(&sys, cx);
+    }
+})
+.ok();
+```
+
+Read again with the entry point the application used: one that pinned a
+preset with `SystemTheme::from_system_with_preset` reads with it again, or
+`from_system()` picks the running OS version's preset:
+
+```rust,ignore
+let sys = SystemTheme::from_system_with_preset("macos-monterey")?;
+apply_system_theme(&sys, cx);
+```
+
+`apply_system_theme` stores both variants, so gpui-component's
+`Theme::sync_system_appearance` keeps switching between the new theme's light
+and dark palettes after it. KDE Plasma, GNOME and Budgie, macOS and Windows
+are watched; on another Linux desktop, or without a reader feature,
+`on_theme_change` returns `Error::WatchUnavailable`, and
+`Error::ReaderFailed` where the watcher cannot start.
 
 ### Custom icons
 
@@ -629,6 +689,8 @@ dependency wanting a later snapshot.
 
 ```sh
 cargo run -p native-theme-gpui --example showcase-gpui
+# following the OS theme's changes, through `on_theme_change`:
+cargo run -p native-theme-gpui --example showcase-gpui --features watch
 ```
 
 Displays every gpui-component widget themed with native-theme presets, with

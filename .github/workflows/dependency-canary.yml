@@ -89,7 +89,7 @@ jobs:
           cargo clippy -p native-theme-iced --all-targets
           cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
           cargo clippy -p native-theme-gpui --all-targets
-          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
+          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
           cargo clippy -p native-theme-egui --all-targets
           cargo clippy -p native-theme-egui --all-targets --all-features
           cargo clippy -p native-theme-egui-widgets --all-targets
@@ -105,7 +105,8 @@ jobs:
           cargo test -p native-theme-iced --features iced_aw,watch,native
           cargo test -p native-theme-gpui
           cargo test -p native-theme-gpui --lib --no-default-features
-          cargo test -p native-theme-gpui --features gpui-fast --all-targets
+          cargo test -p native-theme-gpui --features native,watch
+          cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
           cargo test -p native-theme-egui
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features

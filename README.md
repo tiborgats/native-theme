@@ -45,7 +45,7 @@ and egui connectors need Rust 1.95.
 ## See it in action
 
 - **gpui** — full widget gallery with live theme switching
-  - Run: `cargo run -p native-theme-gpui --example showcase-gpui`
+  - Run: `cargo run -p native-theme-gpui --example showcase-gpui`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-gpui/README.md`](connectors/native-theme-gpui/README.md#gallery)
 - **iced** — full widget gallery with live theme switching
   - Run: `cargo run -p native-theme-iced --example showcase-iced`; add `--features watch` to have it follow the OS theme's changes

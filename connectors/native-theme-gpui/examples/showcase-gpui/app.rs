@@ -33,8 +33,6 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::num::NonZeroU32;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use native_theme::detect::system_is_dark;
@@ -487,12 +485,12 @@ pub(crate) struct Showcase {
     /// content reports (spec §2.5); `None` once a theme loads.
     pub(crate) error_message: Option<String>,
 
-    // Theme watcher (runtime dark/light toggle detection)
-    /// Flag set by the ThemeSubscription background thread when the OS theme changes.
-    pub(crate) theme_change_flag: Arc<AtomicBool>,
-    /// RAII guard keeping the theme watcher background thread alive.
-    pub(crate) _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
-    /// Set by the watcher polling task; checked in render() where window access is available.
+    /// The OS theme watcher (`native_theme_gpui::on_theme_change`), which
+    /// stops when this is dropped.
+    #[cfg(feature = "watch")]
+    pub(crate) _theme_watcher: Option<native_theme_gpui::ThemeSubscription>,
+    /// Set when the OS theme changed under the System colour mode; render()
+    /// reads the theme again, where the window is at hand.
     pub(crate) pending_system_theme_change: bool,
 }
 
@@ -1512,20 +1510,25 @@ impl Showcase {
             this.focus_handle.focus(window, cx)
         });
 
-        // Start theme watcher for runtime dark/light toggle detection.
-        // Skip in screenshot mode — the watcher's background thread cleanup
-        // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
-        // Skip under `cargo test` too: the watcher puts a file watch on the
-        // desktop's own configuration, and the self-tests below build this
-        // view for real. Nothing they assert depends on it.
-        let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let no_watcher = cfg!(test) || std::env::args().any(|a| a == "--screenshot");
-        let _theme_watcher = if no_watcher {
+        // Follow the OS theme while the colour mode is System (feature
+        // `watch`). Skip in screenshot mode — the watcher's background thread
+        // cleanup races with the Cocoa runtime on macOS CI, causing SIGTRAP on
+        // exit. Skip under `cargo test` too: the watcher puts a file watch on
+        // the desktop's own configuration, and the self-tests below build
+        // this view for real. Nothing they assert depends on it.
+        #[cfg(feature = "watch")]
+        let _theme_watcher = if cfg!(test) || std::env::args().any(|a| a == "--screenshot") {
             None
         } else {
-            let flag_clone = theme_change_flag.clone();
-            native_theme::watch::on_theme_change(move |_event| {
-                flag_clone.store(true, Ordering::Release);
+            let showcase = cx.weak_entity();
+            native_theme_gpui::on_theme_change(cx, move |_event, cx| {
+                // Gone once the window closed; nothing to follow then.
+                let _ = showcase.update(cx, |this, cx| {
+                    if matches!(this.color_mode, AppColorMode::System) {
+                        this.pending_system_theme_change = true;
+                        cx.notify();
+                    }
+                });
             })
             .ok()
         };
@@ -1643,14 +1646,13 @@ impl Showcase {
             animated_spin_sources: Vec::new(),
             animation_timer: None,
             error_message: initial_error,
-            theme_change_flag,
+            #[cfg(feature = "watch")]
             _theme_watcher,
             pending_system_theme_change: false,
         };
         showcase.rebuild_icon_caches(fg, window, cx);
         showcase.rebuild_animation_caches(window, cx);
         showcase.start_animation_timer(cx);
-        showcase.start_theme_watcher(cx);
         showcase
     }
 
@@ -1841,33 +1843,6 @@ impl Showcase {
         default_label(&self.default_preset)
     }
 
-    /// Spawn a background task that polls the theme change flag and triggers
-    /// a theme rebuild when the OS color scheme changes at runtime.
-    fn start_theme_watcher(&self, cx: &mut Context<Self>) {
-        if self._theme_watcher.is_none() {
-            return;
-        }
-        let flag = self.theme_change_flag.clone();
-        cx.spawn(async move |this, cx| {
-            loop {
-                cx.background_executor()
-                    .timer(Duration::from_millis(500))
-                    .await;
-                if flag.swap(false, Ordering::AcqRel) {
-                    let Ok(()) = this.update(cx, |this, cx| {
-                        if matches!(this.color_mode, AppColorMode::System) {
-                            this.pending_system_theme_change = true;
-                            cx.notify();
-                        }
-                    }) else {
-                        break;
-                    };
-                }
-            }
-        })
-        .detach();
-    }
-
     /// Install `mode`: the current theme again, in that mode. Where that
     /// fails with a native theme installed, the window keeps the mode it
     /// was drawn in, and so does the colour-mode Select.
@@ -2055,8 +2030,8 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Apply deferred system theme change (set by the watcher polling task).
-        // Done here because apply_theme_by_name needs window access.
+        // Apply a deferred system theme change (set by the theme watcher's
+        // callback). Done here because apply_theme_by_name needs window access.
         if self.pending_system_theme_change {
             self.pending_system_theme_change = false;
             self.reload_system_theme(window, cx);

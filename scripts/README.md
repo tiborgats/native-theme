@@ -220,11 +220,12 @@ The upstream versions each connector has been verified against, recorded in
   iced_aw, iced_core, iced_test, iced_widget; or the egui release train —
   ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest,
   emath, epaint, epaint_default_fonts, kittest) and that connector's gates on
-  the result with `--locked`: tests (for gpui also `--features gpui-fast
-  --all-targets`; for iced also `--no-default-features` and
+  the result with `--locked`: tests (for gpui with `--features native,watch`
+  and `--features gpui-fast,native,watch --all-targets`; for iced also `--no-default-features` and
   `--features iced_aw`; for egui also `--no-default-features` and
-  `--all-features`), clippy with `-D warnings` (for iced and egui with
-  `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for
+  `--all-features`), clippy with `-D warnings` (for gpui with
+  `--features native,watch`, for iced and egui with `--all-features`),
+  documentation with `RUSTDOCFLAGS="-D warnings"` (for
   iced and egui also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
   versions the lockfile resolved, the commit and a sources hash into the
   stamp and rewrite the README's Verified line between its

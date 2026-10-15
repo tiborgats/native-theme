@@ -122,7 +122,8 @@
 //! # Features
 //!
 //! The first six are on by default; `gpui-fast` is off, because it changes the
-//! GPUI core rather than adding to it.
+//! GPUI core rather than adding to it, and `native` and `watch` are off, as in
+//! native-theme.
 //!
 //! | Feature | Enables |
 //! |---------|---------|
@@ -133,6 +134,8 @@
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
 //! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+//! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
+//! | `watch` | `on_theme_change`, a closure run on gpui's foreground when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! The crate names GPUI through gpui-kit, so it is built on whichever core
 //! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
@@ -143,6 +146,31 @@
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
 //! paints nothing the first time it comes up and is rasterized at a size gpui
 //! chooses. [`icons::to_image_source`] documents it.
+//!
+//! # Runtime theme change
+//!
+//! With the `watch` feature and a reader feature (`native`),
+//! `on_theme_change(cx, f)` runs `f` on gpui's foreground, with the `App`,
+//! each time the OS theme changes, for as long as the `ThemeSubscription` it
+//! returns is held. In `f`, call `native_theme::detect::invalidate_caches()`,
+//! read the theme again with the entry point the application used
+//! ([`SystemTheme::from_system()`], or
+//! [`SystemTheme::from_system_with_preset`] for a pinned preset), and
+//! [`apply_system_theme`] it; gpui-component's `Theme::sync_system_appearance`
+//! keeps switching between its light and dark palettes after that:
+//!
+//! ```rust,ignore
+//! use native_theme_gpui::{SystemTheme, apply_system_theme, on_theme_change};
+//!
+//! // Held while the application follows the OS theme; dropping it stops
+//! // the watcher.
+//! let watcher = on_theme_change(cx, |_event, cx| {
+//!     native_theme::detect::invalidate_caches();
+//!     if let Ok(sys) = SystemTheme::from_system() {
+//!         apply_system_theme(&sys, cx);
+//!     }
+//! })?;
+//! ```
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -166,8 +194,13 @@ pub mod icons;
 #[cfg(test)]
 mod showcase;
 pub mod variants;
+#[cfg(feature = "watch")]
+mod watch;
 #[cfg(feature = "widgets")]
 pub mod widgets;
+
+#[cfg(feature = "watch")]
+pub use watch::on_theme_change;
 
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.
@@ -178,6 +211,8 @@ pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, Tr
 pub use native_theme::theme::{
     ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
 };
+#[cfg(feature = "watch")]
+pub use native_theme::watch::{ThemeChangeEvent, ThemeSubscription};
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
@@ -400,7 +435,9 @@ pub struct Loaded {
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read (e.g., unsupported platform,
-/// missing desktop environment).
+/// missing desktop environment). Without a reader feature (`native`, or
+/// native-theme's `kde`, `portal`, `macos` or `windows`) the theme is the
+/// platform preset on Linux and an error on macOS and Windows.
 ///
 /// # Examples
 ///

@@ -289,6 +289,13 @@ the file was pruned on 2026-10-11, not reordered.
       (`connectors/native-theme-egui/src/watch.rs:98-101`), so a pinned
       preset needs the application's own re-read with
       `from_system_with_preset`, or a name the watcher keeps.
+      For gpui, settled as for iced (M6 T3, 2026-10-15): `on_theme_change(cx,
+      f)` (feature `watch`) only signals, running `f` on gpui's foreground,
+      and the README's and crate docs' *Runtime theme change* recipe re-reads
+      in `f` with the entry point the application used:
+      `SystemTheme::from_system()`, or
+      `SystemTheme::from_system_with_preset(name)` for a pinned preset, then
+      `apply_system_theme`. egui stays open (M7).
 
 ### windows-11: the disabled fills are fully transparent
 
@@ -3162,6 +3169,13 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       both, an off-by-default `native` in place of the per-target readers
       means a default build no longer reads the OS, a change their
       CHANGELOGs state.
+      gpui done (M6 T3, 2026-10-15): `native = ["native-theme/native"]` and
+      `watch = ["native-theme/watch", "dep:futures"]` in place of the
+      per-target reader lines, the dev-dependencies' native-theme with
+      `native` and `watch`, the README's Quick start, Features table and
+      sentence, the CHANGELOG's *Breaking Changes*; `check_release.sh`, CI,
+      the crates.io workflow, the canary and `update_compatibility.sh` build
+      the connector with `native,watch`. egui stays (M7).
 
 ### READMEs: the dependency-version check beyond iced
 

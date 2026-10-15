@@ -233,9 +233,11 @@ lock_version() {
 }
 
 gates_gpui() {
-    run_gate "tests" cargo test -p native-theme-gpui --locked
-    run_gate "tests (gpui-fast)" cargo test -p native-theme-gpui --locked --features gpui-fast --all-targets
-    run_gate "clippy" cargo clippy -p native-theme-gpui --all-targets --locked -- -D warnings
+    run_gate "tests (native, watch)" cargo test -p native-theme-gpui --locked --features native,watch
+    run_gate "tests (gpui-fast, native, watch)" \
+        cargo test -p native-theme-gpui --locked --features gpui-fast,native,watch --all-targets
+    run_gate "clippy (native, watch)" \
+        cargo clippy -p native-theme-gpui --all-targets --locked --features native,watch -- -D warnings
     run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-gpui --no-deps --locked
     run_gate "widget coverage" python3 scripts/check_widget_coverage.py

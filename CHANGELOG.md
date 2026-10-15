@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-iced**: `AnimatedSvgHandles` is `#[non_exhaustive]`, as the gpui connector's `AnimatedImageSources` is.
 - **native-theme-gpui**: `is_dark(resolved)` is gone: it was a second name for `is_dark_resolved(resolved)`, which stays for a caller holding only a `ResolvedTheme`.
 - **native-theme-gpui**: `ActiveNativeTheme::native()`: `cx.native()` gives the `Native` view the `geometry` builders take in one call, as `cx.theme()` gives gpui-component's theme (it was `cx.native_theme().and_then(|t| t.native(cx))`). It is a required method: a type outside the crate that implements `ActiveNativeTheme` must add it (the trait is implemented for `App`).
+- **native-theme-gpui**: a default build no longer reads the OS theme. The connector turned on native-theme's `linux`, `macos` or `windows` reader for the target it was built for; it now forwards them as the `native` feature, off by default as in native-theme and the iced connector, so without it `from_system()`, and the `SystemTheme::from_system()` whose result `apply_system_theme` takes, give the platform preset on Linux and an error on macOS and Windows. Add `features = ["native"]` (the README's Quick start does), or name native-theme's `kde`, `portal`, `macos` or `windows` for one platform.
 
 ### Added
 
@@ -84,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-iced**: `tooltip_show_delay(&resolved)`, a `Duration` for `Tooltip::delay`, and `list_header_height(&resolved)`, a table header's height. `dialog.entrance` has no receiver: iced 0.14 has no dialog widget.
 - **Showcases**: all three apply the new values: their tooltips wait the theme's delay and their tables' headers take `list.header_height` (egui's Theme Map table and iced's Layout table among them), gpui's dialogs open with the theme's entrance, and Widget Info prints a `_ms` value with " ms".
 - **native-theme-gpui**: `Native` and `NativeTheme` implement `Debug`.
+- **native-theme-gpui**: the `native` and `watch` features, off by default as in native-theme. `native` turns on `native-theme/native`, the OS readers (see *Breaking Changes*); `watch` turns on `native-theme/watch` and an optional `futures` 0.3.34, already in Cargo.lock through gpui-pre.
+- **native-theme-gpui**: `on_theme_change(cx, f)` (feature `watch`) runs `f(event, &mut App)` on gpui's foreground each time the OS theme changes: native-theme's watcher sends each event from its thread through a channel to a task spawned with `App::spawn`, and the returned `ThemeSubscription` keeps the watcher running until it is dropped; a watcher that cannot start returns its error at once. `ThemeChangeEvent` and `ThemeSubscription` are re-exported at the crate root with it. The README and the crate docs have a *Runtime theme change* recipe: clear the detection caches, read again with the entry point the application used (`SystemTheme::from_system()`, or `SystemTheme::from_system_with_preset` for a pinned preset), then `apply_system_theme`, after which `Theme::sync_system_appearance` keeps switching between the new light and dark palettes. The showcase follows the OS theme through it when built with `--features watch`, in place of its 500 ms poll of a flag the watcher set.
 
 ### Changed
 

@@ -63,7 +63,7 @@ jobs:
           RUSTFLAGS: -Dwarnings
         run: |
           cargo clippy -p native-theme-gpui --all-targets
-          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
+          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
 
       - name: Test native-theme-derive
         run: cargo test -p native-theme-derive
@@ -84,7 +84,8 @@ jobs:
         run: |
           cargo test -p native-theme-gpui
           cargo test -p native-theme-gpui --lib --no-default-features
-          cargo test -p native-theme-gpui --features gpui-fast --all-targets
+          cargo test -p native-theme-gpui --features native,watch
+          cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
 
       - name: Test native-theme-egui
         run: |

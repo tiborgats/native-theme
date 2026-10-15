@@ -46,9 +46,9 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p ${{ matrix.package }} --all-targets
-      - name: Clippy (gpui connector, gpui-fast)
+      - name: Clippy (gpui connector, gpui-fast, native, watch)
         if: matrix.package == 'native-theme-gpui'
-        run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast
+        run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
       - name: Clippy (iced connector, iced_aw, watch, native)
         if: matrix.package == 'native-theme-iced'
         run: cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
@@ -90,14 +90,14 @@ jobs:
       # Soft, as in scripts/check_release.sh: the step's failure shows on the
       # run without failing the job.
       # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
-      - name: Strict panic lints (gpui connector)
+      - name: Strict panic lints (gpui connector, native, watch)
         if: matrix.package == 'native-theme-gpui'
         continue-on-error: true
-        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib
-      - name: Strict panic lints (gpui connector, gpui-fast)
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
+      - name: Strict panic lints (gpui connector, gpui-fast, native, watch)
         if: matrix.package == 'native-theme-gpui'
         continue-on-error: true
-        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
@@ -232,11 +232,16 @@ jobs:
       - name: Test the gpui connector without default features
         if: matrix.package == 'native-theme-gpui'
         run: cargo test -p native-theme-gpui --lib --no-default-features
-      # On GPUI Fast. Doctests excluded: each is a crate of its own that names
-      # gpui-pre as `gpui`, not GPUI through gpui-kit.
+      # `on_theme_change`'s tests and the showcase's `watch` code; the tests
+      # start no OS watcher.
+      - name: Test the gpui connector with native and watch
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo test -p native-theme-gpui --features native,watch
+      # On GPUI Fast, with native and watch. Doctests excluded: each is a
+      # crate of its own that names gpui-pre as `gpui`, not GPUI through gpui-kit.
       - name: Test the gpui connector on GPUI Fast
         if: matrix.package == 'native-theme-gpui'
-        run: cargo test -p native-theme-gpui --features gpui-fast --all-targets
+        run: cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
       # Reads the toolkits' sources through `cargo metadata` and fails when an
       # upstream release adds a widget that no showcase renders or
       # docs/showcase-exceptions.toml excepts. Runs here because this leg already

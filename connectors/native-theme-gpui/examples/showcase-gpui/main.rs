@@ -12,6 +12,13 @@
 //! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
 //!
+//! To have it follow the OS theme's changes while its colour mode is System,
+//! add the `watch` feature, which `native_theme_gpui::on_theme_change` needs:
+//!
+//! ```sh
+//! cargo run -p native-theme-gpui --example showcase-gpui --features watch
+//! ```
+//!
 //! # What to look for
 //!
 //! - The side panel's theme settings switch theme presets, color modes and
