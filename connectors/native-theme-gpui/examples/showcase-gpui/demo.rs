@@ -6104,8 +6104,8 @@ pub(crate) fn group_box(
 
 /// A card: a Fill `GroupBox` with no title, `width` wide, around the text
 /// `text`, whose Label reports itself as `text_id`. Its content is refined
-/// by `geometry::group_box_content` and filled with `card.background_color`,
-/// which the content style lays over the Fill variant's `group_box` token
+/// by `geometry::group_box_content`, which fills it with
+/// `card.background_color` over the Fill variant's `group_box` token
 /// (group_box.rs, `RenderOnce for GroupBox`).
 pub(crate) fn card(
     ui: &Entity<InfoRegistry>,
@@ -6160,11 +6160,6 @@ pub(crate) fn card(
             }
         }
         _ => content_style,
-    };
-    let fill = native_color(cx, |n| n.resolved.card.background_color);
-    let content_style = match fill {
-        Some(fill) => content_style.bg(fill),
-        None => content_style,
     };
     GroupBox::new()
         .with_variant(GroupBoxVariant::Fill)

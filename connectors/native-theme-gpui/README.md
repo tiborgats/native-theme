@@ -324,7 +324,7 @@ test over every preset and mode says so.
 | `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::with_size`; with `table` on the container for the cell text |
 | `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding — the header's text is drawn in the container's font, which `table` sets | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
-| `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
+| `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `card.background_color` | `GroupBox::content_style`: the content surface is the platform's card, filled and edged, whichever variant the box is |
 | `accordion_title` | `expander.header_height`, `expander.font.color` | `AccordionItem::title_style` |
 | `accordion` | `expander.border.color` | `Accordion` and each `AccordionItem`: the colour of the card a bordered Accordion draws and of the line under each item but the last |
 | `accordion_hover` | `expander.hover_background` (where stated) | `AccordionItem::hover`, as `item.hover(\|_\| geometry::accordion_hover(n))`; nothing where the theme states no hover, so the row stays at rest |

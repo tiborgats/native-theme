@@ -147,9 +147,11 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
             t.group_box_foreground,
             "gpui-component/group_box.rs:173",
         ));
-    // (fill, edge) per variant (group_box.rs:143-147).
+    // (fill, edge) per variant (group_box.rs:143-147); refined, the content
+    // is filled and edged as a card on every variant.
     let info = match kind {
         GroupBoxKind::Normal => info,
+        GroupBoxKind::Fill if styled => info,
         GroupBoxKind::Fill => info.color(claim(
             "bg",
             "group_box",
@@ -165,10 +167,15 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
         )),
     };
     let info = match (kind, styled) {
-        (_, true) => info.config(
-            "edge",
-            "card.border.color at card.border.line_width, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own",
-        ),
+        (_, true) => info
+            .config(
+                "edge",
+                "card.border.color at card.border.line_width, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own",
+            )
+            .config(
+                "fill",
+                "card.background_color, on every variant: geometry::group_box_content sets it on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over a Fill's group_box token, and on a Normal or Outline box, which paints no fill of its own",
+            ),
         (GroupBoxKind::Outline, false) => info
             .config("border-radius", format!("radius: {}px", t.radius.as_f32())),
         (GroupBoxKind::Normal | GroupBoxKind::Fill, false) => info
@@ -179,11 +186,11 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
             ),
     };
     let info = match kind {
-        GroupBoxKind::Normal => info.not_themeable(
+        GroupBoxKind::Normal if !styled => info.not_themeable(
             "fill",
             "none: the Normal variant paints no background (group_box.rs, GroupBox)",
         ),
-        GroupBoxKind::Fill | GroupBoxKind::Outline => info,
+        GroupBoxKind::Normal | GroupBoxKind::Fill | GroupBoxKind::Outline => info,
     };
     info.not_themeable(
         "gaps",
@@ -382,14 +389,8 @@ pub fn card(
             "gpui-component/group_box.rs:173",
         ));
     let info = match native {
-        Some(r) => info
-            .color(claim(
-                "fill",
-                "background_color",
-                stated(r.card.background_color),
-                "showcase",
-            ))
-            .config("edge", "card.border.color at card.border.line_width, with card.border's radius and stated padding sides: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox)"),
+        Some(_) => info
+            .config("edge", "card.background_color, and card.border.color at card.border.line_width, with card.border's radius and stated padding sides: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- the fill over the Fill variant's group_box token"),
         None => info.color(claim(
             "fill",
             "group_box",
