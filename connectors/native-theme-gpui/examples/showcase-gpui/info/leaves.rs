@@ -434,7 +434,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.background_color",
-        "gpui: widgets::Checkbox's unchecked fill and hover where theirs are unstated (CheckboxLook)",
+        "gpui: widgets::Checkbox's unchecked fill where unchecked_background is unstated (CheckboxLook)",
     ),
     (
         "",
@@ -509,7 +509,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.hover_background",
-        "gpui: over the unchecked fill under the pointer (CheckboxLook)",
+        "gpui: over the unchecked fill under the pointer; unset, the fill at rest (CheckboxLook)",
     ),
     (
         "",

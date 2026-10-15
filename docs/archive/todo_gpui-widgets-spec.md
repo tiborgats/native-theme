@@ -119,6 +119,11 @@ Superseded (M6 T11, 2026-10-15): the label row's `checkbox.font` reaches the
 label in its family and style too (M6-21); the label took the window's
 family, upright.
 
+Superseded (M6 T11, 2026-10-15): the "fill, hovered unchecked" row's `None`
+is the unchecked fill at rest, not `background_color` over it (M6-22, the
+gpui twin of iced's M5-07), as §1.3's "a `None` soft option copies the base
+colour it would cover" says.
+
 Not drawn: `border.shadow_enabled` (the model states no shadow geometry).
 Kept: the ring on the whole row while focused, the
 row's `radius * 0.5` rounding that ring follows (GC `checkbox.rs:280-283`).

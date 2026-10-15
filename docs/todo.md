@@ -840,6 +840,8 @@ model, the platform presets and the three connectors
       fill", which cites no source, now laid over the translucent fill
       where `blend` showed the fill alone). The switch and the
       slider leave an unset hover at rest; the checkbox's is M6-22 (M6 T11).
+      gpui (M6 T11, 2026-10-15): the checkbox's and the radio's unset hover
+      is the box at rest too (M6-22).
       Fix round 1 (2026-10-15): over the window that composite lands within
       one 8-bit level of `ControlAltFillColorTertiary`, the brush
       *Checkbox: a checked checkbox's hover appearance* names for

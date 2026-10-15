@@ -593,30 +593,42 @@ fn native_indicator(
             "fill",
             "disabled_background",
             stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:126",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         )),
         (true, false) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
-            "native-theme-gpui/widgets/checkbox.rs:122",
+            "native-theme-gpui/widgets/checkbox.rs:124",
         )),
         (false, false) => {
             let info = info.color(claim(
                 "fill",
                 "unchecked_background",
                 stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:120",
+                "native-theme-gpui/widgets/checkbox.rs:122",
             ));
             if disabled {
                 info
             } else {
-                info.color(claim(
-                    "hover layer, over the fill",
-                    "hover_background",
-                    stated(k.hover_background.unwrap_or(k.background_color)),
-                    "native-theme-gpui/widgets/checkbox.rs:133",
-                ))
+                // An unset hover is the box at rest (CheckboxLook::of), so
+                // the swatch is the fill, not a layer of it.
+                info.color(if k.hover_background.is_some() {
+                    claim(
+                        "hover layer, over the fill",
+                        "hover_background",
+                        k.hover_background
+                            .map_or(stated(k.background_color), stated),
+                        "native-theme-gpui/widgets/checkbox.rs:133",
+                    )
+                } else {
+                    claim(
+                        "hover, none stated: the fill at rest",
+                        "unchecked_background",
+                        stated(k.unchecked_background.unwrap_or(k.background_color)),
+                        "native-theme-gpui/widgets/checkbox.rs:122",
+                    )
+                })
             }
         }
     };
@@ -693,7 +705,7 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             stated(k.unchecked_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:120",
+            "native-theme-gpui/widgets/checkbox.rs:122",
         ))
         .color(claim(
             "unselected border",
@@ -701,12 +713,22 @@ pub fn native_radio_column(
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
             "native-theme-gpui/widgets/checkbox.rs:139",
         ))
-        .color(claim(
-            "hover layer, over an unselected fill",
-            "hover_background",
-            stated(k.hover_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:133",
-        ))
+        .color(if k.hover_background.is_some() {
+            claim(
+                "hover layer, over an unselected fill",
+                "hover_background",
+                k.hover_background
+                    .map_or(stated(k.background_color), stated),
+                "native-theme-gpui/widgets/checkbox.rs:133",
+            )
+        } else {
+            claim(
+                "hover, none stated: an unselected fill at rest",
+                "unchecked_background",
+                stated(k.unchecked_background.unwrap_or(k.background_color)),
+                "native-theme-gpui/widgets/checkbox.rs:122",
+            )
+        })
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));
     let info = match k.radio_dot_diameter {

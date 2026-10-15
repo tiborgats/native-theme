@@ -43,8 +43,9 @@ pub struct CheckboxLook {
     /// The indicator's fill in this state.
     pub fill: Hsla,
     /// The fill while the pointer is over the control: `hover_background`
-    /// composited over the unchecked fill, and only for an enabled, unchecked
-    /// control -- the model states no hover for a checked one.
+    /// composited over the unchecked fill, or that fill at rest where the
+    /// theme states no hover, and only for an enabled, unchecked control --
+    /// the model states no hover for a checked one.
     pub hover_fill: Option<Hsla>,
     /// The indicator's border colour in this state.
     pub border: Hsla,
@@ -80,15 +81,16 @@ impl CheckboxLook {
     ///
     /// The reading of `CheckboxTheme` is the iced connector's
     /// (`native-theme-iced` `styles::checkbox`), so the two draw one control:
-    /// both soft fills copy `background_color` when unstated; a checked box is
-    /// bordered in `border.color`, an unchecked one in
-    /// `unchecked_border_color`; `disabled_background` replaces the fill in
-    /// either state, and there the mark takes `disabled_text_color`, because
-    /// `indicator_color` is the colour stated for a foreground on the accent
-    /// the disabled fill no longer shows. Where no disabled fill is stated the
-    /// platform dims by opacity alone, and a disabled box is its enabled self.
-    /// Either way a disabled control is faded by `checkbox.disabled_opacity`
-    /// (docs/platform-facts.md §2.1.6).
+    /// an unstated unchecked fill copies `background_color`, and an unstated
+    /// hover leaves that fill at rest; a checked box is bordered in
+    /// `border.color`, an unchecked one in `unchecked_border_color`;
+    /// `disabled_background` replaces the fill in either state, and there the
+    /// mark takes `disabled_text_color`, because `indicator_color` is the
+    /// colour stated for a foreground on the accent the disabled fill no longer
+    /// shows. Where no disabled fill is stated the platform dims by opacity
+    /// alone, and a disabled box is its enabled self. Either way a disabled
+    /// control is faded by `checkbox.disabled_opacity` (docs/platform-facts.md
+    /// §2.1.6).
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         Self::sized(
@@ -128,10 +130,8 @@ impl CheckboxLook {
             _ => enabled_fill,
         };
         let hover_fill = (!checked && !disabled).then(|| {
-            over(
-                unchecked,
-                color(c.hover_background.unwrap_or(c.background_color)),
-            )
+            c.hover_background
+                .map_or(unchecked, |hover| over(unchecked, color(hover)))
         });
         let border = if checked {
             color(c.border.color)

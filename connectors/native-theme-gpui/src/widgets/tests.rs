@@ -69,10 +69,10 @@ fn a_checkbox_paints_checkbox_theme() {
         );
         assert_eq!(
             idle.hover_fill,
-            Some(over(
-                unchecked,
-                c(k.hover_background.unwrap_or(k.background_color))
-            )),
+            Some(
+                k.hover_background
+                    .map_or(unchecked, |hover| over(unchecked, c(hover)))
+            ),
             "{preset}"
         );
         assert_eq!(idle.mark, c(k.indicator_color), "{preset}");
@@ -104,6 +104,25 @@ fn a_checkbox_paints_checkbox_theme() {
         assert_eq!(disabled.hover_fill, None, "{preset}");
         assert_eq!(disabled.opacity, k.disabled_opacity, "{preset}");
         assert_eq!(idle.opacity, 1., "{preset}");
+    }
+}
+
+/// M6-22, the twin of M5-07: a theme that states `unchecked_background` and
+/// no `hover_background` leaves the hovered box at rest, where the
+/// `background_color` it would otherwise lay over it is another colour.
+#[test]
+fn an_unset_checkbox_hover_is_the_box_at_rest() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    let fill = native_theme::color::Rgba::new(0x12, 0x34, 0x56, 0x80);
+    assert_ne!(fill, r.checkbox.background_color);
+    r.checkbox.unchecked_background = Some(fill);
+    r.checkbox.hover_background = None;
+    for look in [
+        CheckboxLook::of(&r, false, false).expect("finite"),
+        CheckboxLook::radio(&r, false, false).expect("finite"),
+    ] {
+        assert_eq!(look.fill, c(fill));
+        assert_eq!(look.hover_fill, Some(look.fill));
     }
 }
 
