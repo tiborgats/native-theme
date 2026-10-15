@@ -50,7 +50,7 @@ default features and on GPUI Fast (`--features gpui-fast,native,watch --all-targ
 `--all-targets` leaves the doctests out, since each is a crate of its own that
 names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
 iced, egui and egui-widgets crates' other configurations (tests with no default features and, for iced, with
-`iced_aw`, for egui and egui-widgets with all features; clippy with `iced_aw`,
+`iced_aw,watch,native`, for egui and egui-widgets with all features; clippy with `iced_aw,watch,native`,
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
 `cargo build --examples` for the crates that have examples, the widget-coverage
