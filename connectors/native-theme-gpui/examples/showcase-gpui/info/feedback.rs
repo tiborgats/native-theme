@@ -141,9 +141,10 @@ pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
     )
 }
 
-/// A `Progress` bar at `value` percent, labelled `label` beside it, drawn
-/// while gpui's `reduce_motion` is as given.
-pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> WidgetInfo {
+/// A `Progress` bar at `value` percent, or loading where `value` is `None`,
+/// labelled `label` beside it, drawn while gpui's `reduce_motion` is as
+/// given.
+pub fn progress(t: &Theme, label: &str, value: Option<f32>, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Progress")
         .color(claim(
             "bar",
@@ -158,6 +159,14 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
             "gpui-component/progress/progress.rs:86",
         ))
         .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's");
+    let Some(value) = value else {
+        return loading(
+            info,
+            reduce_motion,
+            "progress/progress.rs, Progress::render",
+        )
+        .instance("label", label.to_string());
+    };
     let info = if reduce_motion {
         info.instance("reduced motion", "on, so a change of value jumps to it, unanimated (gpui-base/motion.rs, transition_with_status)")
     } else {
@@ -167,12 +176,31 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
         .instance("label", label.to_string())
 }
 
-/// A theme-drawn `widgets::ProgressBar` at `value` (spec §2.5 of
-/// docs/archive/todo_gpui-widgets-spec.md).
+/// A loading bar's motion, `source` the upstream code that runs it: the
+/// sweep, or under reduced motion the still fill.
+fn loading(info: WidgetInfo, reduce_motion: bool, source: &str) -> WidgetInfo {
+    let info = info
+        .variant("loading")
+        .instance("value", "none: indeterminate, so a screen reader is given no value (gpui-base progress.rs, Progress::indeterminate)");
+    if reduce_motion {
+        info.instance("reduced motion", format!("on, so the fill stands still in the middle of the track, 0.325 of it in from either end ({source})"))
+    } else {
+        info.instance("motion", format!("the fill sweeps the track once a second, eased in and out ({source}, \"progress-loading\")"))
+    }
+}
+
+/// A theme-drawn `widgets::ProgressBar` at `value`, or loading where `value`
+/// is `None` (spec §2.5 of docs/archive/todo_gpui-widgets-spec.md), drawn
+/// while gpui's `reduce_motion` is as given.
 #[cfg(feature = "widgets")]
-pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo {
+pub fn native_progress(
+    r: &ResolvedTheme,
+    label: &str,
+    value: Option<f32>,
+    reduce_motion: bool,
+) -> WidgetInfo {
     let p = &r.progress_bar;
-    WidgetInfo::new("ProgressBar")
+    let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
         .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:78"))
         .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:77"))
@@ -180,9 +208,16 @@ pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
-        .not_themeable("animation", "gpui-component's eased transition to a new value (progress/progress.rs, Progress): native-theme models no motion")
-        .instance("value", format!("{value}%"))
-        .instance("label", label.to_string())
+        .not_themeable("animation", "gpui-component's eased transition to a new value, and a loading bar's sweep (progress/progress.rs, Progress): native-theme models no motion");
+    let info = match value {
+        Some(value) => info.instance("value", format!("{value}%")),
+        None => loading(
+            info,
+            reduce_motion,
+            "native-theme-gpui widgets/progress.rs, after gpui-component's progress/progress.rs",
+        ),
+    };
+    info.instance("label", label.to_string())
 }
 
 /// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind`, drawn while

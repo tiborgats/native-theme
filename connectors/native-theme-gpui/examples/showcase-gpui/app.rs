@@ -371,6 +371,9 @@ pub(crate) struct Showcase {
     pub(crate) form_name_state: Entity<InputState>,
     pub(crate) form_email_state: Entity<InputState>,
     pub(crate) slider_state: Entity<SliderState>,
+    /// The Inputs page's range slider, and its vertical one.
+    pub(crate) range_slider_state: Entity<SliderState>,
+    pub(crate) vertical_slider_state: Entity<SliderState>,
     pub(crate) otp_state: Entity<OtpState>,
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     /// The Inputs page's ColorSelect, empty until a colour is picked.
@@ -1194,6 +1197,9 @@ impl Showcase {
         )
         .detach();
 
+        let range_slider_state = cx.new(|_cx| SliderState::new().default_value(20.0..80.0));
+        let vertical_slider_state = cx.new(|_cx| SliderState::new().default_value(40.0));
+
         // Apply the initial OS Theme via native-theme pipeline.
         let is_dark = color_mode.is_dark();
         let (
@@ -1597,6 +1603,8 @@ impl Showcase {
             form_name_state,
             form_email_state,
             slider_state,
+            range_slider_state,
+            vertical_slider_state,
             otp_state,
             color_picker_state,
             color_select_state,

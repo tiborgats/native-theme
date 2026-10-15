@@ -487,8 +487,8 @@ pub fn switch(
 }
 
 /// A `Slider`.
-pub fn slider(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Slider")
+pub fn slider(t: &Theme, vertical: bool, range: bool) -> WidgetInfo {
+    slider_shape(WidgetInfo::new("Slider"), vertical, range)
         .color(claim(
             "track",
             "slider_bar",
@@ -509,6 +509,26 @@ pub fn slider(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (slider.rs, Slider::render)")
         .not_themeable("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (slider.rs, Slider::render)")
+}
+
+/// A slider's variant: a range state's two thumbs, a vertical one's axis.
+fn slider_shape(info: WidgetInfo, vertical: bool, range: bool) -> WidgetInfo {
+    let info = match (vertical, range) {
+        (true, true) => info.variant("vertical range"),
+        (true, false) => info.variant("vertical"),
+        (false, true) => info.variant("range"),
+        (false, false) => info,
+    };
+    let info = if range {
+        info.instance("range", "a thumb at each end of the range and the fill between them; a press moves the nearer thumb (gpui-base slider.rs, SliderTrack)")
+    } else {
+        info
+    };
+    if vertical {
+        info.instance("axis", "vertical: the minimum at the bottom, as gpui-base maps the pointer (slider.rs, SliderState::update_value_by_position)")
+    } else {
+        info
+    }
 }
 
 /// Where the theme-drawn widgets read what they paint.
@@ -884,9 +904,9 @@ pub fn native_switch(
 
 /// A theme-drawn `widgets::Slider` (spec §2.4).
 #[cfg(feature = "widgets")]
-pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
+pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetInfo {
     let s = &r.slider;
-    WidgetInfo::new("Slider")
+    let info = slider_shape(WidgetInfo::new("Slider"), vertical, range)
         .config("drawn by", DRAWN_BY)
         .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:76"))
         .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:76"))
@@ -900,8 +920,20 @@ pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
         .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")
-        .not_themeable("rail radius", "a pill, gpui-component's radius_full (slider.rs, Slider::render); SliderTheme states no rail radius")
-        .instance("keyboard", "Left/Down and Right/Up step it, Home and End go to the ends")
+        .not_themeable("rail radius", "a pill, gpui-component's radius_full (slider.rs, Slider::render); SliderTheme states no rail radius");
+    let info = if vertical {
+        info.not_themeable("length", "the caller's height; gpui-component's 120px where none is given (slider.rs, Slider::render): SliderTheme states no length")
+    } else {
+        info
+    };
+    if range {
+        info.instance("keyboard", "Left/Down and Right/Up step the range's end, Home takes it down to the start, End to the maximum; the start stays")
+    } else {
+        info.instance(
+            "keyboard",
+            "Left/Down and Right/Up step it, Home and End go to the ends",
+        )
+    }
 }
 
 pub fn rating(t: &Theme, value: usize, disabled: bool) -> WidgetInfo {

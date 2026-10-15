@@ -3829,27 +3829,45 @@ pub(crate) fn switch(
         .debug_selector(move || id.into())
 }
 
-/// A `Slider` over `state`, `width` wide.
+/// A `Slider` over `state` along `axis`, `length` long: its width, or a
+/// vertical one's height. A range state draws a thumb at each end.
 pub(crate) fn slider(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     state: &Entity<SliderState>,
-    width: Pixels,
+    axis: Axis,
+    length: Pixels,
 ) -> Stateful<Div> {
+    let vertical = axis == Axis::Vertical;
+    let range = state.read(cx).value().is_range();
     #[cfg(feature = "widgets")]
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::Slider::new(state)
-            .w(width)
+            .axis(axis)
+            .map(|slider| {
+                if vertical {
+                    slider.h(length)
+                } else {
+                    slider.w(length)
+                }
+            })
             .when_some(elements::part_observer(ui, id), |slider, observer| {
                 slider.on_part_bounds(observer)
             })
-            .info(ui, id, info::inputs::native_slider(r))
+            .info(ui, id, info::inputs::native_slider(r, vertical, range))
             .debug_selector(move || id.into());
     }
     Slider::new(state)
-        .w(width)
-        .info(ui, id, info::inputs::slider(cx.theme()))
+        .when(vertical, |slider| slider.vertical())
+        .map(|slider| {
+            if vertical {
+                slider.h(length)
+            } else {
+                slider.w(length)
+            }
+        })
+        .info(ui, id, info::inputs::slider(cx.theme(), vertical, range))
         .debug_selector(move || id.into())
 }
 
@@ -4887,29 +4905,37 @@ pub(crate) fn severity_alert(
         .debug_selector(move || id.into())
 }
 
-/// A `Progress` bar at `value` percent, refined by `geometry::progress`;
-/// `label` names it in its info, as the page's label beside it does.
+/// A `Progress` bar at `value` percent, or loading (indeterminate) where
+/// `value` is `None`, refined by `geometry::progress`; `label` names it in
+/// its info, as the page's label beside it does.
 pub(crate) fn progress(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     label: &'static str,
-    value: f32,
+    value: Option<f32>,
 ) -> Stateful<Div> {
     #[cfg(feature = "widgets")]
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::ProgressBar::new(id)
-            .value(value)
+            .value(value.unwrap_or_default())
+            .loading(value.is_none())
             .accessibility_label(label)
             .when_some(elements::part_observer(ui, id), |bar, observer| {
                 bar.on_part_bounds(observer)
             })
-            .info(ui, id, info::feedback::native_progress(r, label, value))
+            .info(
+                ui,
+                id,
+                info::feedback::native_progress(r, label, value, cx.reduce_motion()),
+            )
             .debug_selector(move || id.into());
     }
     let mut bar_info = info::feedback::progress(cx.theme(), label, value, cx.reduce_motion());
     native_info(
-        Progress::new(id).value(value),
+        Progress::new(id)
+            .value(value.unwrap_or_default())
+            .loading(value.is_none()),
         cx,
         geometry::progress,
         "progress",

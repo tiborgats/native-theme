@@ -12,8 +12,8 @@
 //! record where they were laid out (`crate::elements`).
 
 use gpui::{
-    AnyElement, AvailableSpace, Context, IntoElement, ParentElement, Pixels, Styled, Window, div,
-    prelude::*, px, size,
+    AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
+    div, prelude::*, px, size,
 };
 use gpui_component::{h_flex, v_flex};
 
@@ -501,8 +501,15 @@ impl Showcase {
             group(
                 slider,
                 vec![
-                    demo::slider(ui, cx, "basic-slider", &self.basic_slider_state, width)
-                        .into_any_element(),
+                    demo::slider(
+                        ui,
+                        cx,
+                        "basic-slider",
+                        &self.basic_slider_state,
+                        Axis::Horizontal,
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
         ];
@@ -586,7 +593,7 @@ impl Showcase {
                         cx,
                         "basic-progress",
                         "Progress bar",
-                        BASIC_PROGRESS,
+                        Some(BASIC_PROGRESS),
                     ))
                     .into_any_element(),
             ],
