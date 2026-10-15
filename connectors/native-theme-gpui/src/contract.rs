@@ -2142,3 +2142,367 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     );
     Ok(())
 }
+
+/// Every leaf of a serialised `ResolvedTheme`, under its dotted path, with its
+/// value: the walk descends into objects and keeps everything else, a `null`
+/// (an unstated soft option) included. iced's `leaf_values`
+/// (`native-theme-iced/src/contract.rs`) is the same walk.
+fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
+    fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, child) in map {
+                    let path = if prefix.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{prefix}.{key}")
+                    };
+                    walk(&path, child, out);
+                }
+            }
+            _ => out.push((prefix.to_owned(), value.clone())),
+        }
+    }
+    let mut out = Vec::new();
+    walk("", value, &mut out);
+    out
+}
+
+/// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
+/// theme; `None` where the leaf already holds it or does not take a colour.
+fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
+    let pointer = format!("/{}", leaf.replace('.', "/"));
+    let value = serde_json::Value::String(hex.to_owned());
+    if json.pointer(&pointer)? == &value {
+        return None;
+    }
+    let mut b = json.clone();
+    *b.pointer_mut(&pointer)? = value;
+    serde_json::from_value(b).ok()
+}
+
+/// The colour leaves of one serialised theme: a leaf whose value is a colour,
+/// or a `null` a colour splices into -- an `Option<Rgba>` the theme leaves
+/// unstated.
+fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
+    leaf_values(json)
+        .into_iter()
+        .filter(|(leaf, value)| match value {
+            serde_json::Value::String(s) => s.starts_with('#') && s.parse::<Rgba>().is_ok(),
+            serde_json::Value::Null => spliced_colour(json, leaf, "#123456").is_some(),
+            _ => false,
+        })
+        .map(|(leaf, _)| leaf)
+        .collect()
+}
+
+/// An opaque colour whose red, green and blue appear in no colour of `json`,
+/// so that no sink can show it by passing another leaf through: counting up
+/// from `#13579b` in the red channel.
+fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
+    let taken: std::collections::BTreeSet<(u8, u8, u8)> = leaf_values(json)
+        .into_iter()
+        .filter_map(|(_, value)| value.as_str().and_then(|s| s.parse::<Rgba>().ok()))
+        .map(|c| (c.r, c.g, c.b))
+        .collect();
+    (0x13..=u8::MAX)
+        .map(|red| (red, 0x57, 0x9b))
+        .find(|rgb| !taken.contains(rgb))
+        .unwrap_or((0x13, 0x57, 0x9b))
+}
+
+/// A `geometry` builder that returns a refinement.
+type Refinement = fn(crate::Native<'_>) -> gpui::StyleRefinement;
+
+/// What the connector builds from one theme, without a window, as text keyed
+/// by sink: every `ThemeColor` field `to_theme_color` writes, every field of
+/// the `base_palette` `apply`'s observer copies back, every
+/// `ScrollbarGeometry` field and the `ResizableTheme` the base layer
+/// installs, every `geometry` builder that takes a `Native`, and, with
+/// `widgets`, each Look in each of its states, as built and as drawn over
+/// the default backdrop, `defaults.background_color`.
+fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String, String> {
+    let mut out = std::collections::BTreeMap::new();
+    let mut fields = |prefix: &str, tc: ThemeColor| {
+        if let Some(map) = serde_json::to_value(tc)
+            .ok()
+            .as_ref()
+            .and_then(serde_json::Value::as_object)
+        {
+            for (field, value) in map {
+                out.insert(format!("{prefix}.{field}"), value.to_string());
+            }
+        }
+    };
+    fields("ThemeColor", to_theme_color(r, is_dark, false));
+    fields("base_palette", crate::colors::base_palette(r, is_dark));
+
+    let g = crate::base_layer::scrollbar_geometry(r);
+    let show = |v: &dyn std::fmt::Debug| format!("{v:?}");
+    for (field, value) in [
+        ("track_width", show(&g.track_width)),
+        ("thumb_width", show(&g.thumb_width)),
+        ("thumb_inset", show(&g.thumb_inset)),
+        ("thumb_radius", show(&g.thumb_radius)),
+        ("min_thumb_length", show(&g.min_thumb_length)),
+        ("track", show(&g.track)),
+        ("track_active_border", show(&g.track_active_border)),
+        ("thumb", show(&g.thumb)),
+        ("thumb_hover", show(&g.thumb_hover)),
+        ("thumb_active", show(&g.thumb_active)),
+    ] {
+        out.insert(format!("ScrollbarGeometry.{field}"), value);
+    }
+    let resizable = crate::base_layer::resizable_theme(r);
+    out.insert(
+        "ResizableTheme.handle".to_owned(),
+        format!("{:?}", resizable.handle),
+    );
+    out.insert(
+        "ResizableTheme.active_handle".to_owned(),
+        format!("{:?}", resizable.active_handle),
+    );
+
+    use crate::geometry as gm;
+    let n = crate::Native::unscaled(r);
+    let refinements: &[(&str, Refinement)] = &[
+        ("button", gm::button),
+        ("button_label", gm::button_label),
+        ("toggle", gm::toggle),
+        ("input", gm::input),
+        ("text_area", gm::text_area),
+        ("menu_item", gm::menu_item),
+        ("list_item", gm::list_item),
+        ("tooltip", gm::tooltip),
+        ("tooltip_content", gm::tooltip_content),
+        ("popover", gm::popover),
+        ("status_bar", gm::status_bar),
+        ("dialog", gm::dialog),
+        ("input_group_button", gm::input_group_button),
+        ("dialog_footer", gm::dialog_footer),
+        ("dialog_title", gm::dialog_title),
+        ("dialog_description", gm::dialog_description),
+        ("list", gm::list),
+        ("table", gm::table),
+        ("progress", gm::progress),
+        ("group_box_content", gm::group_box_content),
+        ("accordion_title", gm::accordion_title),
+        ("checkbox", gm::checkbox),
+        ("radio", gm::radio),
+        ("select", gm::select),
+        ("combobox", gm::combobox),
+        ("title_bar", gm::title_bar),
+        ("toolbar", gm::toolbar),
+        ("scrollbar_gutter", gm::scrollbar_gutter),
+        ("input_height", gm::input_height),
+        ("button_disabled", gm::button_disabled),
+        ("button_checked", gm::button_checked),
+        ("link", gm::link),
+        ("input_fill(false)", |n| gm::input_fill(n, false)),
+        ("input_fill(true)", |n| gm::input_fill(n, true)),
+    ];
+    for (name, builder) in refinements {
+        out.insert(format!("geometry::{name}"), format!("{:?}", builder(n)));
+    }
+    for (name, value) in [
+        ("dialog_entrance", show(&gm::dialog_entrance(n))),
+        ("spinner_size", show(&gm::spinner_size(n))),
+        ("data_table_size", show(&gm::data_table_size(n))),
+        ("list_header_height", show(&gm::list_header_height(n))),
+        ("icon_size_toolbar", show(&gm::icon_size_toolbar(n))),
+        ("icon_size_small", show(&gm::icon_size_small(n))),
+        ("icon_size_large", show(&gm::icon_size_large(n))),
+        ("icon_size_dialog", show(&gm::icon_size_dialog(n))),
+        ("icon_size_panel", show(&gm::icon_size_panel(n))),
+        ("dialog_max_width", show(&gm::dialog_max_width(n))),
+    ] {
+        out.insert(format!("geometry::{name}"), value);
+    }
+
+    #[cfg(feature = "widgets")]
+    {
+        use crate::widgets::{
+            CheckboxLook, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook, SwitchLook,
+            TabLook,
+        };
+        let ground = rgba_to_hsla(r.defaults.background_color);
+        for checked in [false, true] {
+            for disabled in [false, true] {
+                let state = format!("({checked}, {disabled})");
+                let checkbox = CheckboxLook::of(r, checked, disabled);
+                let radio = CheckboxLook::radio(r, checked, disabled);
+                let switch = SwitchLook::of(r, checked, disabled);
+                out.insert(format!("CheckboxLook::of{state}"), format!("{checkbox:?}"));
+                out.insert(
+                    format!("CheckboxLook::of{state} drawn"),
+                    format!("{:?}", checkbox.map(|l| l.faded_over(ground))),
+                );
+                out.insert(format!("CheckboxLook::radio{state}"), format!("{radio:?}"));
+                out.insert(
+                    format!("CheckboxLook::radio{state} drawn"),
+                    format!("{:?}", radio.map(|l| l.faded_over(ground))),
+                );
+                out.insert(format!("SwitchLook::of{state}"), format!("{switch:?}"));
+                out.insert(
+                    format!("SwitchLook::of{state} drawn"),
+                    format!("{:?}", switch.map(|l| l.faded_over(ground))),
+                );
+            }
+        }
+        for disabled in [false, true] {
+            let slider = SliderLook::of(r, disabled);
+            out.insert(format!("SliderLook::of({disabled})"), format!("{slider:?}"));
+            out.insert(
+                format!("SliderLook::of({disabled}) drawn"),
+                format!("{:?}", slider.map(|l| l.faded_over(ground))),
+            );
+        }
+        out.insert(
+            "ProgressBarLook::of".to_owned(),
+            format!("{:?}", ProgressBarLook::of(r)),
+        );
+        out.insert(
+            "SeparatorLook::of".to_owned(),
+            format!("{:?}", SeparatorLook::of(r)),
+        );
+        out.insert(
+            "SpinnerLook::of".to_owned(),
+            format!("{:?}", SpinnerLook::of(r)),
+        );
+        out.insert("TabLook::of".to_owned(), format!("{:?}", TabLook::of(r)));
+    }
+    out
+}
+
+/// M1-T7-03's dry run, gpui's half (M6 T16a): which sinks each colour leaf
+/// of `ResolvedTheme` reaches.
+///
+/// iced's method (`native-theme-iced/src/contract.rs`,
+/// `every_colour_leaf_reaches_a_row_or_is_named`) with gpui's sinks
+/// ([`sinks`]). Each of the 34 preset/mode combinations is a base. Every
+/// colour leaf of the serialised theme -- a colour, or an unstated
+/// `Option<Rgba>` a colour splices into -- is spliced in turn with three
+/// values -- the leaf's value in another preset of the same mode, and an
+/// opaque and a half-transparent sentinel no colour of the base shares its
+/// channels with -- and the sinks are read again: a leaf *reaches* a sink
+/// when the sink's text moves, in at least one base.
+///
+/// Prints, asserts nothing. For each leaf no sink reads it also prints
+/// whether `NO_RECEIVER` names it and the reached leaves it equals in every
+/// combination. `cargo test -p native-theme-gpui --lib colour_leaf_dry_run
+/// -- --ignored --nocapture`.
+#[test]
+#[ignore = "M1-T7-03 dry run: prints the colour-leaf map, asserts nothing"]
+fn colour_leaf_dry_run() -> crate::Result<()> {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let started = std::time::Instant::now();
+    let combinations = combinations()?;
+    let jsons: Vec<serde_json::Value> = combinations
+        .iter()
+        .filter_map(|c| serde_json::to_value(&c.resolved).ok())
+        .collect();
+    assert_eq!(
+        jsons.len(),
+        combinations.len(),
+        "every ResolvedTheme serialises"
+    );
+
+    let mut leaves: BTreeSet<String> = BTreeSet::new();
+    for json in &jsons {
+        leaves.extend(colour_leaves(json));
+    }
+
+    #[derive(Default)]
+    struct Reach {
+        sinks: BTreeSet<String>,
+        bases: BTreeSet<String>,
+        splices: usize,
+    }
+    let mut reach: BTreeMap<String, Reach> = leaves
+        .iter()
+        .map(|l| (l.clone(), Reach::default()))
+        .collect();
+
+    let n = combinations.len();
+    for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
+        let base = sinks(&c.resolved, c.is_dark);
+        let donor = (1..n)
+            .map(|k| (i + 2 * k) % n)
+            .find(|&j| combinations.get(j).is_some_and(|d| d.is_dark == c.is_dark))
+            .and_then(|j| jsons.get(j));
+        let (red, green, blue) = sentinel_rgb(json);
+        let sentinels = [
+            format!("#{red:02x}{green:02x}{blue:02x}"),
+            format!("#{red:02x}{green:02x}{blue:02x}80"),
+        ];
+        for leaf in &leaves {
+            let pointer = format!("/{}", leaf.replace('.', "/"));
+            let from_donor = donor
+                .and_then(|d| d.pointer(&pointer))
+                .and_then(|v| v.as_str())
+                .map(str::to_owned);
+            let entry = reach.entry(leaf.clone()).or_default();
+            for hex in from_donor.iter().chain(&sentinels) {
+                let Some(r) = spliced_colour(json, leaf, hex) else {
+                    continue;
+                };
+                entry.splices += 1;
+                let after = sinks(&r, c.is_dark);
+                let moved: Vec<String> = base
+                    .iter()
+                    .filter(|(name, value)| after.get(*name) != Some(*value))
+                    .map(|(name, _)| name.clone())
+                    .collect();
+                if !moved.is_empty() {
+                    entry.bases.insert(c.label());
+                }
+                entry.sinks.extend(moved);
+            }
+        }
+    }
+
+    let elapsed = started.elapsed();
+    let reached = reach.values().filter(|x| !x.sinks.is_empty()).count();
+    println!(
+        "colour leaves: {}, reaching a sink: {reached}, unmapped: {}, run time {elapsed:.2?}",
+        reach.len(),
+        reach.len() - reached
+    );
+    println!("\n## Reached");
+    for (leaf, x) in reach.iter().filter(|(_, x)| !x.sinks.is_empty()) {
+        println!(
+            "{leaf} -> {} sinks, {} bases: {}",
+            x.sinks.len(),
+            x.bases.len(),
+            x.sinks.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+    }
+    println!("\n## Unmapped");
+    let value_in = |json: &serde_json::Value, leaf: &str| {
+        json.pointer(&format!("/{}", leaf.replace('.', "/")))
+            .cloned()
+    };
+    for (leaf, x) in reach.iter().filter(|(_, x)| x.sinks.is_empty()) {
+        let no_receiver = NO_RECEIVER.iter().any(|u| u.field == leaf);
+        // The reached leaves this one equals in every combination: what it
+        // carries where a sink would read it today.
+        let twins: Vec<&str> = reach
+            .iter()
+            .filter(|(other, y)| {
+                !y.sinks.is_empty()
+                    && jsons
+                        .iter()
+                        .all(|json| value_in(json, leaf) == value_in(json, other))
+            })
+            .map(|(other, _)| other.as_str())
+            .collect();
+        println!(
+            "{leaf} ({} splices){}: equal everywhere to [{}]",
+            x.splices,
+            if no_receiver { " NO_RECEIVER" } else { "" },
+            twins.join(", ")
+        );
+    }
+    Ok(())
+}
