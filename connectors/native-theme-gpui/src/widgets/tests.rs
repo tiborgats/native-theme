@@ -237,6 +237,59 @@ fn a_disabled_checkbox_fades_as_one_over_its_backdrop() {
     );
 }
 
+/// M6-19: the slider by the same rule, the rail over the window, the fill
+/// over the rail, the outline and the thumb over the fill, each faded over
+/// the window: the fill comes out opaque, and the opacity is then 1.
+#[test]
+fn a_disabled_slider_fades_as_one_over_its_backdrop() {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let r = resolved("adwaita", mode);
+        let s = &r.slider;
+        let a = s.disabled_opacity;
+        assert!(
+            a < 1.,
+            "{mode:?}: adwaita dims a disabled slider by opacity"
+        );
+        let ground = c(r.defaults.background_color);
+        let track = c(s.disabled_track_color.unwrap_or(s.track_color));
+        let fill = c(s.disabled_fill_color.unwrap_or(s.fill_color));
+        let thumb = c(s.disabled_thumb_color.unwrap_or(s.thumb_color));
+        let rail = over(ground, track);
+        let filled = over(rail, fill);
+        let look = SliderLook::of(&r, true).map(|l| l.faded_over(ground));
+        assert_eq!(look.map(|l| l.opacity), Some(1.), "{mode:?}");
+        assert_eq!(
+            look.map(|l| l.fill),
+            Some(faded(ground, rail, fill, a)),
+            "{mode:?}: the fill over the rail"
+        );
+        assert_eq!(look.map(|l| l.fill.a), Some(1.), "{mode:?}: opaque");
+        assert_eq!(
+            look.map(|l| l.track),
+            Some(faded(ground, ground, track, a)),
+            "{mode:?}: the rail over the window"
+        );
+        assert_eq!(
+            look.map(|l| l.thumb_color),
+            Some(faded(ground, filled, thumb, a)),
+            "{mode:?}: the thumb over the fill"
+        );
+        assert_eq!(
+            look.map(|l| l.outline),
+            SliderLook::of(&r, true).map(|l| faded(ground, filled, l.outline, a)),
+            "{mode:?}: the outline over the fill"
+        );
+    }
+    // An enabled slider, or one the platform dims by colour alone, is as it
+    // was.
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let ground = c(r.defaults.background_color);
+    let look = SliderLook::of(&r, true);
+    assert_eq!(look.map(|l| l.faded_over(ground)), look);
+    let enabled = SliderLook::of(&resolved("adwaita", ColorMode::Light), false);
+    assert_eq!(enabled.map(|l| l.faded_over(ground)), enabled);
+}
+
 #[test]
 fn a_switch_paints_switch_theme() {
     for (preset, mode) in PRESETS {
@@ -1179,6 +1232,64 @@ fn a_slider_follows_the_pointer_over_its_travel(cx: &mut TestAppContext) {
         Modifiers::default(),
     );
     assert_eq!(slider_value(cx, &state), 100.);
+}
+
+/// The solid fill of the quad painted at `b`, given in window pixels.
+fn painted_fill(cx: &mut VisualTestContext, b: Bounds<Pixels>) -> Option<gpui::Hsla> {
+    cx.update(|window, _| {
+        let b = b.scale(window.scale_factor());
+        window
+            .painted_quads()
+            .iter()
+            .find(|q| q.bounds == b && !q.background.is_transparent())
+            .and_then(|q| q.background.as_solid())
+    })
+}
+
+/// M6-19: a disabled adwaita slider is drawn faded as one widget over the
+/// window, as libadwaita's whole-widget `filter: Opacity(..)` fades it
+/// (docs/platform-facts.md §2.1.6): its fill is the fill over the rail over
+/// the window, faded by `disabled_opacity` over the window, and opaque, where
+/// fading each quad on its own let the rail show through the fill.
+#[gpui::test]
+fn a_disabled_slider_is_painted_faded_as_one(cx: &mut TestAppContext) {
+    let state = cx.new(|_| SliderState::new().min(0.).max(100.).default_value(50.));
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("adwaita", ColorMode::Light)),
+        Box::new(move |_, _| {
+            Slider::new(&s)
+                .disabled(true)
+                .w(px(140.))
+                .into_any_element()
+        }),
+    );
+    let r = resolved("adwaita", ColorMode::Light);
+    let sl = &r.slider;
+    let a = sl.disabled_opacity;
+    assert!(a < 1., "adwaita dims a disabled slider by opacity");
+    let ground = c(r.defaults.background_color);
+    let track = c(sl.disabled_track_color.unwrap_or(sl.track_color));
+    let fill = c(sl.disabled_fill_color.unwrap_or(sl.fill_color));
+    let rail = over(ground, track);
+    let want_fill = faded(ground, rail, fill, a);
+    assert_eq!(want_fill.a, 1., "the fill is opaque over an opaque window");
+    let (fill_at, rail_at) = (
+        bounds(cx, "native-slider-fill"),
+        bounds(cx, "native-slider-rail"),
+    );
+    assert_eq!(
+        painted_fill(cx, fill_at),
+        Some(want_fill),
+        "the fill over the rail, faded over the window"
+    );
+    assert_eq!(
+        painted_fill(cx, rail_at),
+        Some(faded(ground, ground, track, a)),
+        "the rail faded over the window"
+    );
+    drop(state);
 }
 
 #[gpui::test]

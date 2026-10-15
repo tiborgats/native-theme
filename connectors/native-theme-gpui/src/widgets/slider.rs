@@ -12,7 +12,7 @@ use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, over, part_bounds};
+use super::{Part, PartBounds, color, faded, length, over, part_bounds};
 use crate::ActiveNativeTheme;
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
@@ -90,6 +90,32 @@ impl SliderLook {
             opacity: super::disabled_opacity(disabled, s.disabled_opacity),
         })
     }
+
+    /// This look faded as one control over `ground`, the colour it is drawn
+    /// on: where [`opacity`](Self::opacity) is below 1, the rail composited
+    /// over `ground`, the fill over the rail, the outline and the thumb over
+    /// the fill, each faded by it over `ground`, the opacity then 1. As
+    /// libadwaita fades a disabled scale, `filter: Opacity(..)` on the whole
+    /// widget (docs/platform-facts.md §2.1.6), so the rail does not show
+    /// through the fill nor the fill through the thumb, as fading each part
+    /// on its own would show them.
+    #[must_use]
+    pub fn faded_over(self, ground: Hsla) -> Self {
+        if self.opacity >= 1. {
+            return self;
+        }
+        let a = self.opacity;
+        let rail = over(ground, self.track);
+        let fill = over(rail, self.fill);
+        Self {
+            track: faded(ground, ground, self.track, a),
+            fill: faded(ground, rail, self.fill, a),
+            outline: faded(ground, fill, self.outline, a),
+            thumb_color: faded(ground, fill, self.thumb_color, a),
+            opacity: 1.,
+            ..self
+        }
+    }
 }
 
 /// A horizontal slider over a gpui-base `SliderState` whose rail, fill and
@@ -111,6 +137,7 @@ pub struct Slider {
     disabled: bool,
     style: StyleRefinement,
     observer: Option<PartBounds>,
+    backdrop: Option<Hsla>,
 }
 
 impl Slider {
@@ -122,6 +149,7 @@ impl Slider {
             disabled: false,
             style: StyleRefinement::default(),
             observer: None,
+            backdrop: None,
         }
     }
 
@@ -129,6 +157,15 @@ impl Slider {
     #[must_use]
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    /// The colour under the slider, which a disabled one is faded over as
+    /// one control ([`SliderLook::faded_over`]); the window's,
+    /// `defaults.background_color`, where not given.
+    #[must_use]
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.backdrop = Some(backdrop);
         self
     }
 
@@ -197,6 +234,10 @@ impl RenderOnce for Slider {
         let Some(look) = SliderLook::of(n.resolved, self.disabled) else {
             return self.fallback();
         };
+        let look = look.faded_over(
+            self.backdrop
+                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
+        );
         let disabled = self.disabled;
         let observer = self.observer.as_ref();
         let state = self.state.clone();
