@@ -16,17 +16,20 @@ use crate::convert::{
 use crate::{AccessibilityPreferences, Role, TextRole};
 
 /// A text size from the theme times the user's text-scaling factor,
-/// [`AccessibilityPreferences::scaled`]: a factor that is not finite and positive is ignored,
-/// and a size whose product with the factor is not a normal positive number is returned as it
-/// is. `native_theme_iced::scaled_text_size` and `native_theme_gpui::scaled_text_size` call the
-/// same method.
+/// [`AccessibilityPreferences::text_scale_factor`]: a factor that is not finite and positive is
+/// ignored. The product is returned as it is, even where it is not a positive normal `f32` (a
+/// finite factor that overflows it to `+∞`): every size the atlas writes then takes §8.5's
+/// rule, egui's own size for the slot with a `Note::ValueSanitised`, and the font accessors
+/// egui's own size. `native_theme_iced::scaled_text_size` and
+/// `native_theme_gpui::scaled_text_size` go through [`AccessibilityPreferences::scaled`]
+/// instead, which returns such a size unscaled.
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a
 /// `&SystemTheme`, so the preset path can pass [`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility).
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    prefs.scaled(size)
+    size * prefs.text_scale_factor()
 }
 
 /// egui's own size for a stock `TextStyle` slot (`egui/src/style.rs:1414-1424`); `None` only

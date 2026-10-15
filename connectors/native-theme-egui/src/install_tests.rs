@@ -2583,7 +2583,7 @@ mod t13_accessibility {
         }
     }
 
-    /// T13 (d): the three connectors' `scaled_text_size` are one function in three places (§4.7);
+    /// T13 (d): the three connectors' `scaled_text_size` agree on a degenerate factor (§4.7);
     /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:1999-2011`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
@@ -2595,6 +2595,41 @@ mod t13_accessibility {
         let mut prefs = AccessibilityPreferences::default();
         prefs.text_scaling_factor = 1.5;
         assert_eq!(scaled_text_size(12.0, &prefs), 18.0);
+    }
+
+    /// T13 (d), the other end: a finite factor whose product overflows `f32` is §8.6's product,
+    /// so §8.5's rule gives the slot egui's own size and reports the leaf.
+    #[test]
+    fn t13d_an_overflowing_factor_gives_egui_its_own_size_with_a_note() {
+        let t = resolved("kde-breeze", ColorMode::Light);
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = f32::MAX;
+        assert!((t.defaults.font.size * f32::MAX).is_infinite());
+        let atlas = ThemeAtlas::builder("t13d", &t, &t)
+            .accessibility(&prefs)
+            .build();
+        assert!(
+            atlas.notes().contains(&crate::Note::ValueSanitised {
+                path: "defaults.font.size"
+            }),
+            "{:?}",
+            atlas.notes()
+        );
+        let stock = egui::Style::default()
+            .text_styles
+            .get(&TextStyle::Body)
+            .map(|f| f.size);
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let body = atlas
+                .scheme(theme)
+                .base
+                .text_styles
+                .get(&TextStyle::Body)
+                .map(|f| f.size);
+            assert_eq!(body, stock, "{theme:?}");
+        }
+        assert_eq!(Some(crate::font_size(&t, &prefs)), stock);
+        assert!(scaled_text_size(t.defaults.font.size, &prefs).is_infinite());
     }
 
     /// T16: the patch is applied last, to every style (§4.3). The first half proves "every" with a
