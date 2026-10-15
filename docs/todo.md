@@ -1751,6 +1751,15 @@ model, the platform presets and the three connectors
       it, while the width already has `Dialog::max_w`
 - [ ] [upstream] a styled `Theme` scrollbar-style override honoured by `base_theme()`
       (would make the connector's re-apply observer unnecessary)
+- [ ] [upstream] a scrollbar thumb inset per axis. gpui-base takes one inset for both
+      directions and draws the thumb `2 × inset` shorter than its clamped
+      length (gpui-base 0.7.3 `scrollbar.rs:1211-1216`); the connector centres
+      the thumb with `(groove_width − thumb_width) / 2` and pays for the two
+      insets in `min_length` (`base_layer::scrollbar_styles`), so the drawn
+      thumb is at least `scrollbar.min_thumb_length`, but a proportional thumb
+      is still `2 × inset` shorter than its share of the track (13 px on
+      kde-breeze, 11 px on windows-11). A cross-axis inset alone would centre
+      the thumb without shortening it.
 - [ ] [upstream] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
 - [ ] [upstream] `Theme.shadow` honoured beyond `Button`; `tokens.shadow` consumed
 - [ ] [upstream] `Size::Size` honoured by `Checkbox` and `Switch`

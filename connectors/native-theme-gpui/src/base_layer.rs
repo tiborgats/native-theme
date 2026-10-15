@@ -40,12 +40,17 @@ pub struct ScrollbarGeometry {
     /// (gpui-base `src/scrollbar.rs:1200-1231`, painted at `:1505-1530`: 0.6.4
     /// moved the arithmetic into a private `ThumbGeometry`, which subtracts
     /// `2 × inset` from the thumb length and clamps the inset to half of it).
+    /// [`scrollbar_styles`] therefore passes `min_thumb_length + 2 × inset` as
+    /// the thumb's minimum, so the drawn thumb is at least the stated one; a
+    /// proportional thumb still loses `2 × inset` along the axis, which the
+    /// one inset gpui-base takes for both directions cannot avoid.
     pub thumb_inset: Pixels,
     /// `defaults.border.corner_radius.max(0)`, mirroring upstream's projection
     /// (gpui-component `src/theme/mod.rs:419-439`); the theme has no
     /// scrollbar radius and platform-facts records none.
     pub thumb_radius: Pixels,
-    /// `scrollbar.min_thumb_length`.
+    /// `scrollbar.min_thumb_length`, the drawn thumb's minimum length along
+    /// the axis (see `thumb_inset` for what gpui-base is given).
     pub min_thumb_length: Pixels,
     /// `scrollbar.track_color`, all three track states (upstream uses one colour).
     pub track: Hsla,
@@ -98,22 +103,30 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
                 .width(g.thumb_width)
                 .inset(g.thumb_inset)
                 .radius(g.thumb_radius)
-                .min_length(g.min_thumb_length)
+                .min_length(thumb_min_length(g))
         })
         .thumb_hover(|s| {
             s.bg(g.thumb_hover)
                 .width(g.thumb_width)
                 .inset(g.thumb_inset)
                 .radius(g.thumb_radius)
-                .min_length(g.min_thumb_length)
+                .min_length(thumb_min_length(g))
         })
         .thumb_active(|s| {
             s.bg(g.thumb_active)
                 .width(g.thumb_width)
                 .inset(g.thumb_inset)
                 .radius(g.thumb_radius)
-                .min_length(g.min_thumb_length)
+                .min_length(thumb_min_length(g))
         })
+}
+
+/// The `min_length` gpui-base takes for the thumb: `min_thumb_length` and the
+/// inset at both ends, which gpui-base takes off the clamped length
+/// (`src/scrollbar.rs:1211-1216`), so the drawn thumb is at least the stated
+/// minimum.
+fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
+    px(f32::from(g.min_thumb_length) + 2.0 * f32::from(g.thumb_inset))
 }
 
 /// Resize-handle colours from the splitter (spec §8.3). Upstream projects
@@ -226,6 +239,28 @@ mod tests {
         let t = resizable_theme(&r);
         assert_eq!(t.handle, Some(rgba_to_hsla(r.splitter.divider_color)));
         assert_eq!(t.active_handle, Some(rgba_to_hsla(r.splitter.hover_color)));
+    }
+
+    /// gpui-base clamps the thumb's length to `min_length` and then draws it
+    /// `2 × inset` shorter (`src/scrollbar.rs:1211-1216`), so the drawn
+    /// minimum is the stated one only when `min_length` pays for both insets.
+    #[test]
+    fn the_drawn_thumb_is_at_least_the_stated_minimum() {
+        for preset in ["kde-breeze", "windows-11"] {
+            let r = resolved(preset, ColorMode::Light);
+            let sb = &r.scrollbar;
+            let g = scrollbar_geometry(&r);
+            assert_eq!(
+                thumb_min_length(&g),
+                px(sb.min_thumb_length + (sb.groove_width - sb.thumb_width)),
+                "{preset}"
+            );
+            assert_eq!(
+                thumb_min_length(&g) - g.thumb_inset * 2.0,
+                px(sb.min_thumb_length),
+                "{preset}"
+            );
+        }
     }
 
     /// `ScrollbarStyles` is opaque (private fields, `Clone + Default` only);
