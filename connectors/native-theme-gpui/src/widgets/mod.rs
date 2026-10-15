@@ -187,6 +187,16 @@ fn length(v: f32) -> Option<Pixels> {
     (v.is_finite() && v >= 0.0).then(|| px(v))
 }
 
+/// A stated font style as gpui's of the same name.
+fn font_style(style: native_theme::theme::FontStyle) -> gpui::FontStyle {
+    use native_theme::theme::FontStyle;
+    match style {
+        FontStyle::Normal => gpui::FontStyle::Normal,
+        FontStyle::Italic => gpui::FontStyle::Italic,
+        FontStyle::Oblique => gpui::FontStyle::Oblique,
+    }
+}
+
 /// A font size the text-scaling factor scales, as the `geometry` builders
 /// scale theirs.
 fn text_size(size: f32, n: Native<'_>) -> Pixels {

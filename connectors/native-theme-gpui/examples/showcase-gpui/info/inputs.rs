@@ -559,7 +559,7 @@ pub fn native_checkbox(
         .config("indicator", format!("checkbox.indicator_width: {}px square", k.indicator_width))
         .config("corner radius", format!("checkbox.border.corner_radius: {}px", k.border.corner_radius))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap))
-        .config("label font", format!("checkbox.font: {}px, weight {}", k.font.size, k.font.weight))
+        .config("label font", format!("checkbox.font: {}, {}px, weight {}, {:?}", k.font.family, k.font.size, k.font.weight, k.font.style))
         .not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), filling the box inside its border"))
         .instance("label", label);
     if disabled {

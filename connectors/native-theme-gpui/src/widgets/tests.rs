@@ -18,7 +18,7 @@ use gpui::{
     Window, div, point, px,
 };
 use gpui_base::slider::SliderState;
-use native_theme::theme::{ColorMode, ResolvedTheme, TabIndicatorSide, Theme};
+use native_theme::theme::{ColorMode, FontStyle, ResolvedTheme, TabIndicatorSide, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
 
 use super::*;
@@ -711,6 +711,31 @@ fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
     assert_eq!(line.size.width, px(200.));
     let look = SeparatorLook::of(&r).expect("finite");
     assert_eq!(look.color, c(r.separator.line_color));
+}
+
+/// M6-21: a checkbox's or a radio's label is drawn in `checkbox.font`'s
+/// family and style, as in its size and weight, where the theme states
+/// them; a style is gpui's of the same name.
+#[test]
+fn the_checkbox_label_takes_the_stated_family_and_style() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.checkbox.font.family = "Noto Serif".into();
+    for (style, drawn) in [
+        (FontStyle::Normal, gpui::FontStyle::Normal),
+        (FontStyle::Italic, gpui::FontStyle::Italic),
+        (FontStyle::Oblique, gpui::FontStyle::Oblique),
+    ] {
+        r.checkbox.font.style = style;
+        let mut label = checkbox::label_text(crate::Native::unscaled(&r));
+        let text = label.text_style();
+        assert_eq!(
+            text.font_family,
+            Some(crate::font_family(&r.checkbox.font.family)),
+            "{style:?}"
+        );
+        assert_eq!(text.font_style, Some(drawn), "{style:?}");
+        assert_eq!(text.font_size, Some(px(r.checkbox.font.size).into()));
+    }
 }
 
 #[test]

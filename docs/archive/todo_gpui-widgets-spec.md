@@ -115,6 +115,10 @@ theme's `motion_tokens`), which gpui holds still under reduced motion
 
 A disabled row is faded by `checkbox.disabled_opacity` (§1.3).
 
+Superseded (M6 T11, 2026-10-15): the label row's `checkbox.font` reaches the
+label in its family and style too (M6-21); the label took the window's
+family, upright.
+
 Not drawn: `border.shadow_enabled` (the model states no shadow geometry).
 Kept: the ring on the whole row while focused, the
 row's `radius * 0.5` rounding that ring follows (GC `checkbox.rs:280-283`).

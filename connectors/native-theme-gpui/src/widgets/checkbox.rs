@@ -16,8 +16,8 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, color, faded, font_style, length, over, part_bounds, text_size};
+use crate::{ActiveNativeTheme, Native};
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -256,13 +256,8 @@ impl Parts {
             self.backdrop
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
         );
-        let font = &n.resolved.checkbox.font;
-        let font = (
-            text_size(font.size, n),
-            FontWeight(f32::from(font.weight)),
-            n.resolved.defaults.line_height,
-        );
-        let (indicator, label) = indicator_and_label(&self, &look, round, font, window, cx);
+        let text = label_text(n);
+        let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
@@ -373,13 +368,27 @@ fn stroked_check_bounds(size: f32, stroke: f32) -> (f32, f32, f32, f32) {
     )
 }
 
+/// The text of a checkbox's or a radio's label: `checkbox.font`'s family,
+/// size, weight and style, on the platform's line height
+/// (`defaults.line_height`).
+pub(super) fn label_text(n: Native<'_>) -> gpui::Div {
+    let font = &n.resolved.checkbox.font;
+    let mut text = div()
+        .font_family(crate::font_family(&font.family))
+        .text_size(text_size(font.size, n))
+        .font_weight(FontWeight(f32::from(font.weight)))
+        .line_height(relative(n.resolved.defaults.line_height));
+    text.text_style().font_style = Some(font_style(font.style));
+    text
+}
+
 /// The indicator box, its mark and the label of a checkbox or radio in
-/// `look`, round when `round`.
+/// `look`, round when `round`, the label in `text`.
 fn indicator_and_label(
     parts: &Parts,
     look: &CheckboxLook,
     round: bool,
-    font: (Pixels, FontWeight, f32),
+    text: gpui::Div,
     window: &mut Window,
     cx: &mut App,
 ) -> (AnyElement, Option<AnyElement>) {
@@ -487,13 +496,8 @@ fn indicator_and_label(
     .child(mark)
     .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
     .into_any_element();
-    let (size, weight, line_height) = font;
     let label = parts.label.clone().map(|label| {
-        div()
-            .relative()
-            .text_size(size)
-            .font_weight(weight)
-            .line_height(relative(line_height))
+        text.relative()
             .text_color(look.label)
             .debug_selector(|| "native-checkbox-label".into())
             .child(label)

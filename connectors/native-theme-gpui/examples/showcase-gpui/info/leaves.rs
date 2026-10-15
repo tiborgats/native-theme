@@ -499,7 +499,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.font",
-        "gpui: the label's size and weight (widgets::Checkbox); family: the window's",
+        "gpui: the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
     ),
     (
         "",
