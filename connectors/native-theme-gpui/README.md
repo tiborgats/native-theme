@@ -615,34 +615,56 @@ module documentation has the same recipe as a compiled example.
 
 ### Animated spinners
 
+The theme-drawn `widgets::Spinner` draws the icon set's indicator itself (see
+[Theme-drawn widgets](#theme-drawn-widgets)). To draw one of your own, load the
+indicator of the theme's set and convert it, coloured as that set is coloured:
+
 ```rust,ignore
-use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use gpui::{IntoElement, Styled, px};
+use gpui_component::ActiveTheme;
 use native_theme::detect::prefers_reduced_motion;
-use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 
 let loaded = native_theme_gpui::from_system()?;
+// The text colour: a Material or Lucide frame is tinted it, and a freedesktop
+// frame's `currentColor` takes it where the frame sets no colour of its own.
+let text = cx.theme().foreground;
+let diameter = px(loaded.resolved.spinner.diameter);
 if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
-    if prefers_reduced_motion() {
-        let static_icon = to_image_source(anim.first_frame(), None, None);
-    } else {
-        match &anim {
-            AnimatedIcon::Frames(_) => {
-                // Cache this — do not call on every frame tick.
-                let sources = animated_frames_to_image_sources(&anim, None, None);
-            }
-            AnimatedIcon::Transform(_) => {
-                // The icon carries its SVG and its period.
-                if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
-                    (anim.icon(), anim.animation())
-                {
-                    let element = with_spin_animation(gpui::svg().data(bytes), "loading", *duration_ms);
-                }
-            }
-            _ => {}
+    match &anim {
+        AnimatedIcon::Frames(_) => {
+            // Cache this — do not call on every frame tick. Under reduced
+            // motion, show the first frame and stand still.
+            let frames =
+                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(text), None);
         }
+        AnimatedIcon::Transform(_) => {
+            // The icon carries its SVG and its period; the SVG element draws
+            // the icon's shape in its text colour.
+            if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
+                (anim.icon(), anim.animation())
+            {
+                let icon = gpui::svg().data(bytes).size(diameter).text_color(text);
+                let element = if prefers_reduced_motion() {
+                    icon.into_any_element()
+                } else {
+                    with_spin_animation(icon, "loading", *duration_ms).into_any_element()
+                };
+            }
+        }
+        _ => {}
     }
 }
 ```
+
+`animated_frames_to_image_sources_for` colours each frame as its set does:
+it tints a Material or Lucide frame through the monochrome colouriser, fills
+a freedesktop frame's `currentColor` only where the document sets no `color`
+of its own (Breeze's `process-working` keeps its stylesheet's), and draws an
+SF Symbols or Segoe Fluent frame, and any RGBA frame, as it is.
+`animated_frames_to_image_sources(&anim, color, size)` puts every SVG frame
+through the monochrome colouriser, which suits a bundled set's frames only.
 
 With `svg-rasterize` (see [Features](#features)), every `ImageSource` the
 `icons` module builds is an `ImageSource::Render`: an image gpui draws from as
