@@ -479,8 +479,12 @@ fi
 # (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
 # native-theme has no default features, so on Linux the tests of its
 # feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
-# the watchers) are linted and run only by the clippy and test legs below that
-# name this set; the strict panic lints name it for the library.
+# the watchers) are run only by the test legs below that name this set. The
+# clippy leg below that names it is the only lint of the Linux-only ones (kde,
+# gnome, freedesktop, the KDE and GNOME watchers); the cross-target
+# `--all-features` clippy runs also lint the tests that are not Linux-only
+# (the rasterizer's and the spinners', for two). The strict panic lints name
+# the set for the library.
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -690,10 +694,15 @@ run_tests "test (native-theme, Linux features)" \
     cargo test -p native-theme --features "$NT_FEATURES"
 # The freedesktop stem index against freedesktop-icons' unfiltered lookup over
 # the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
-# (~30-50 s), so the per-commit subset leaves it to the full run.
+# (~30-50 s), so the per-commit subset leaves it to the full run. On a host
+# with none of breeze, breeze-dark and Adwaita installed it checks nothing and
+# passes (it prints "skipped" to its captured output). The freedesktop module
+# exists on Linux only, where elsewhere the filter would match no test.
 if [[ $COMMIT_MODE ]]; then
     printf "${DIM}test (native-theme, Linux features, stem index)${NC}\n"
     print_skipped "test (native-theme, Linux features, stem index)"
+elif [ "$(uname -s)" != "Linux" ]; then
+    print_info "skipped test (native-theme, Linux features, stem index): the freedesktop module is Linux-only"
 else
     run_tests "test (native-theme, Linux features, stem index)" \
         cargo test -p native-theme --features "$NT_FEATURES" --lib -- --ignored \

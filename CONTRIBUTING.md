@@ -50,7 +50,8 @@ per-crate `cargo test` (`native-theme-gpui` with `native,watch`, and `native-the
 also with its Linux features, where the tests that need an installed Breeze or
 Adwaita theme run on a host that has them; a test leg that passes no test
 fails, except the OS probe's while its test list is empty), `native-theme`'s ignored stem-index test (`--ignored`, ~30-50 s,
-against the installed Breeze and Adwaita themes), the gpui connector's tests with no
+on Linux, against the installed Breeze and Adwaita themes; on a host with none
+of them it checks nothing and passes), the gpui connector's tests with no
 default features and on GPUI Fast (`--features gpui-fast,native,watch --all-targets`; the
 `--all-targets` leaves the doctests out, since each is a crate of its own that
 names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
@@ -89,9 +90,11 @@ not passed.
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
 On Linux it tests `native-theme` with no features and with all its Linux
-features at once; CI also runs the Linux features one leg at a time. What the
-script leaves to CI is the macOS and Windows test legs: it checks and lints
-those targets where they are installed, but cannot run their tests.
+features at once. CI also runs the Linux features one leg at a time, which
+builds code no local leg builds (the reader choice's `kde`-without-`portal`
+arm, for one), and the macOS and Windows test legs: the script checks and
+lints those targets where they are installed, but cannot run their tests.
+Both are left to CI.
 
 A scheduled workflow, `dependency-canary.yml`, runs nightly at 18:10 UTC
 (and on demand from the Actions tab) with every dependency updated on a
