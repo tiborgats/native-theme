@@ -1209,7 +1209,8 @@ pub(crate) fn component_toolbar(
             group.content(toolbar_item(ui, cx, set, item))
         })
     };
-    let mut toolbar_info = info::buttons::toolbar(item_gap);
+    let native = cx.native();
+    let mut toolbar_info = info::buttons::toolbar(item_gap, native.as_ref().map(|n| n.resolved));
     let toolbar = native_info(
         Toolbar::new("buttons-toolbar-row"),
         cx,

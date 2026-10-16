@@ -262,24 +262,32 @@ fn popover_surface(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
             "showcase",
         ));
     match native {
-        Some(r) => info
-            .not_themeable(
+        Some(r) => {
+            let info = info.not_themeable(
                 "corner radius",
                 "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
-            )
-            .color(claim(
-                "edge",
-                "color",
-                stated(r.popover.border.color),
-                "showcase",
-            ))
-            .config(
-                "edge",
-                format!(
-                    "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component styled.rs, popover_style)",
-                    px_text(r.popover.border.line_width)
-                ),
-            ),
+            );
+            if r.popover.border.line_width > 0.0 {
+                info.color(claim(
+                    "edge",
+                    "color",
+                    stated(r.popover.border.color),
+                    "showcase",
+                ))
+                .config(
+                    "edge",
+                    format!(
+                        "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component styled.rs, popover_style)",
+                        px_text(r.popover.border.line_width)
+                    ),
+                )
+            } else {
+                info.config(
+                    "edge",
+                    "none of the theme's: popover.border.line_width is 0, so geometry::popover draws no border, and the edge is popover_style's ring alone (gpui-component styled.rs, popover_style)",
+                )
+            }
+        }
         None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
     }
 }

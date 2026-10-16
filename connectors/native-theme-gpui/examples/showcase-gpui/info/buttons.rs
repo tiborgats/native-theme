@@ -1,6 +1,7 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
+use native_theme_gpui::ResolvedTheme;
 
 use super::{
     ColorClaim, WidgetInfo,
@@ -754,31 +755,52 @@ pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component's own
 /// at its default Small Size, refined by `geometry::toolbar`, whose line
 /// `demo::component_toolbar` records; `item_gap` is the `toolbar.item_gap`
-/// the theme states. Its Buttons report themselves (`toolbar_item`).
-pub fn toolbar(item_gap: Option<f32>) -> WidgetInfo {
+/// the theme states, and `native` the theme the builder refined it from,
+/// where a native theme is installed. Its Buttons report themselves
+/// (`toolbar_item`).
+pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let group_gap = match item_gap {
         Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
         None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
     };
-    WidgetInfo::new("Toolbar")
+    let info = WidgetInfo::new("Toolbar")
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
             "h_8, p_1, gap_1 and text_sm at its default Small Size (toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
         )
         .not_themeable(
-            "fill",
-            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar); geometry::toolbar fills it with toolbar.background_color",
-        )
-        .config(
-            "edge",
-            "none of its own (toolbar.rs, RenderOnce for Toolbar); geometry::toolbar draws the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, inside the bar, and none at a width of 0",
-        )
-        .not_themeable(
             "items",
             "added with content(), not child(): child() would make a Button a compact ghost and wrap it in an input_h box, 1.5 rem at Small (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar; sizing.rs, input_h)",
-        )
-        .instance("group gap", group_gap)
+        );
+    let info = match native {
+        Some(_) => info.config(
+            "fill",
+            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar)",
+        ),
+        None => info.not_themeable(
+            "fill",
+            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar)",
+        ),
+    };
+    let info = match native {
+        Some(r) if r.toolbar.border.line_width > 0.0 => info.config(
+            "edge",
+            format!(
+                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (toolbar.rs, RenderOnce for Toolbar)",
+                px_text(r.toolbar.border.line_width)
+            ),
+        ),
+        Some(_) => info.config(
+            "edge",
+            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (toolbar.rs, RenderOnce for Toolbar)",
+        ),
+        None => info.not_themeable(
+            "edge",
+            "none of its own (toolbar.rs, RenderOnce for Toolbar)",
+        ),
+    };
+    info.instance("group gap", group_gap)
         .instance(
             "groups",
             "Edit (Undo2, Redo2, Copy) and View (Search, Maximize, Settings), each a ToolbarGroup with its accessible label, a vertical Separator between them; each Button reports itself",
