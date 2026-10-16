@@ -633,7 +633,7 @@ fn collect_floats(v: &toml::Value, path: &str, out: &mut Vec<String>) {
 }
 
 /// Every `f32` leaf of `t`, as a TOML path. A colour is a string
-/// (`native-theme/src/color.rs:301-303`) and a weight an integer, so only the theme's `f32`s
+/// (`native-theme/src/color.rs:306-310`) and a weight an integer, so only the theme's `f32`s
 /// are floats; an `Option<f32>` that is `None` is absent.
 fn float_leaves(t: &ResolvedTheme) -> Vec<String> {
     let mut out = Vec::new();

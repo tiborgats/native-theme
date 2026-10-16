@@ -219,7 +219,7 @@ fn the_showcase_opens_on_the_basic_page() {
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,
 /// `connectors/native-theme-iced/examples/showcase-iced.rs:14089`). Following is
 /// `default_icon_choice` of what the atlas reports per scheme — `breeze`, then
-/// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:886`),
+/// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:1436-1455`),
 /// which then keeps following.
 #[test]
 fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
@@ -331,7 +331,7 @@ fn interactive_controls_respond() {
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
         .click();
     harness.run_steps(SETTLE);
-    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:805-815`).
+    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:1353-1363`).
     // The list holds every installed freedesktop theme before the bundled sets, so the row may
     // lie below the popup's fold: scroll it into view first (`egui_kittest/src/node.rs:152`).
     harness.get_by_label("Material (bundled)").scroll_to_me();

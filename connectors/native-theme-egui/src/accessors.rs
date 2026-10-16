@@ -571,7 +571,7 @@ pub fn font_family(t: &ResolvedTheme) -> &str {
 /// [`scaled_text_size`] of `defaults.font.size` — the `TextStyle::Body` size the atlas
 /// installs, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (spec §8.5). Same signature as `native_theme_iced::font_size`
-/// (`connectors/native-theme-iced/src/lib.rs:1114-1119`).
+/// (`connectors/native-theme-iced/src/lib.rs:1148-1153`).
 #[must_use]
 pub fn font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(

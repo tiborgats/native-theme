@@ -324,10 +324,10 @@ impl ThemeAtlas {
     }
 
     /// The theme's icon set, so icon code — a spinner drawing the set's animated indicator
-    /// (`native_theme::icons::load_icon_indicator(set)` for a bundled set; for
+    /// (`native_theme::icons::load_icon_indicator(set, None)` for a bundled set; for
     /// `IconSet::Freedesktop`, `FreedesktopLoader::load_indicator(atlas.icon_theme(ctx.theme()))`,
-    /// because `load_icon_indicator` asks for the system's theme there,
-    /// `native-theme/src/icons.rs:560`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
+    /// because `load_icon_indicator` with no theme asks for the system's there,
+    /// `native-theme/src/icons.rs:734`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
     /// with no second input. On the [`from_preset`](crate::from_preset) path it is `Resolved::icon_set`
     /// (`native-theme/src/model/resolved.rs:263`), which native-theme already falls back to
     /// `system_icon_set()` when the preset states none; on the [`from_system`](crate::from_system) /
@@ -692,7 +692,7 @@ impl<'a> Builder<'a> {
     /// Applied wherever egui has a sink, as the sibling connectors apply them: gpui scales its
     /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:217`, `:219`)
     /// and forwards reduced motion to gpui (`:854`); iced scales through `font_size` and
-    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1114-1119`, `:1169-1174`).
+    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1148-1153`, `:1194-1199`).
     ///
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
     ///   and each `Style::override_font_id` size, in the base styles and in every role style —
