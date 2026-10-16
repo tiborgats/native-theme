@@ -19,8 +19,9 @@ pub(crate) fn open<R>(
     open_selected(ui, role, false, enabled, add)
 }
 
-/// [`open`], with the `Selected` variant for an enabled control that is `selected`: the
-/// checked appearance of a `Checkbox` or `RadioButton` (the connector's `RoleVariant`).
+/// [`open`], with the `Selected` variant for an enabled control that is `selected`, the
+/// checked appearance of a `Checkbox` or `RadioButton` (the connector's `RoleVariant`), and
+/// `SelectedDisabled` for a disabled one.
 pub(crate) fn open_selected<R>(
     ui: &mut egui::Ui,
     role: Role,
@@ -46,7 +47,8 @@ pub(crate) fn open_faded<R>(
     // disabled here.
     let outer = ui.is_enabled();
     let variant = match (enabled && outer, selected) {
-        (false, _) => RoleVariant::Disabled,
+        (false, true) => RoleVariant::SelectedDisabled,
+        (false, false) => RoleVariant::Disabled,
         (true, true) => RoleVariant::Selected,
         (true, false) => RoleVariant::Normal,
     };

@@ -862,6 +862,36 @@ fn a_disabled_widget_fades_by_its_disabled_opacity() {
     );
 }
 
+/// adwaita light, the opacity-only platform (`disabled_opacity` 0.5, no disabled colour).
+fn adwaita() -> ResolvedTheme {
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    assert_eq!(t.defaults.disabled_opacity, 0.5);
+    t
+}
+
+/// The disabled rule on a checked radio button: adwaita states no `checkbox.disabled_background`,
+/// so a disabled checked radio is its checked self, the checked fill with its
+/// `indicator_color` dot, faded as one over the window, not the unchecked circle.
+#[test]
+fn a_disabled_checked_radio_is_its_checked_self_faded() {
+    let t = adwaita();
+    assert_eq!(t.checkbox.disabled_background, None);
+    assert_eq!(t.checkbox.disabled_opacity, 0.5);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let fill = ground.blend(to_color32(t.checkbox.checked_background));
+    let (out, _) = click(&ctx, |ui| {
+        ui.add(RadioButton::new(true, "Radio").enabled(false))
+    });
+    let shapes = circles(&out);
+    let circle = ground.lerp_to_gamma(fill, 0.5);
+    assert!(shapes.iter().any(|c| c.fill == circle), "{shapes:#?}");
+    let dot = ground.lerp_to_gamma(fill.blend(to_color32(t.checkbox.indicator_color)), 0.5);
+    assert!(shapes.iter().any(|c| c.fill == dot), "{shapes:#?}");
+}
+
 /// The progress bar is outlined as `progress_bar.border` states: kde-breeze's 1px in the
 /// window text at 20 % inside the bar, adwaita's width 0 not at all.
 #[test]

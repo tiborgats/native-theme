@@ -12,9 +12,10 @@ use native_theme_egui::egui;
 /// fill, the text over `ground` -- and faded by `disabled_alpha` over `ground`; `ui` is then
 /// disabled, and its painter keeps the opacity it had.
 ///
-/// Call it inside a role scope's `Disabled` cell, in place of `Ui::disable`, for a widget egui
-/// paints from those cells (a `Checkbox`, a `RadioButton`). Where `disabled_alpha` is 1 the
-/// platform dims by colour alone, and it is `Ui::disable`: the colours stay as stated.
+/// Call it inside a role scope's `Disabled` or `SelectedDisabled` cell, in place of
+/// `Ui::disable`, for a widget egui paints from those cells (a `Checkbox`, a `RadioButton`).
+/// Where `disabled_alpha` is 1 the platform dims by colour alone, and it is `Ui::disable`: the
+/// colours stay as stated.
 pub fn fade_as_one(ui: &mut egui::Ui, ground: egui::Color32) {
     let alpha = ui.visuals().disabled_alpha();
     if alpha >= 1.0 {

@@ -73,6 +73,9 @@
 //! ([`fade::fade_as_one`]): its thumb or dot keeps its colour on the track or
 //! circle, and the whole fades, as libadwaita's `filter: Opacity(..)` does,
 //! where egui's per-shape fade would show the thumb through the faded track.
+//! A checked radio button opens the connector's `SelectedDisabled` scope: where
+//! the theme states no `checkbox.disabled_background` it is its checked self,
+//! the checked fill and its dot, faded.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
