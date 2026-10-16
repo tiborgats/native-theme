@@ -139,8 +139,9 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 // compile error.
 //
 // For runtime-set dispatch (common in connector code), use the free
-// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color, size)`
-// and `load_icon_indicator(set, theme)` at the bottom of this section.
+// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color, size)`,
+// `load_custom_icon_in(provider, set, icon_theme, color, size)` and
+// `load_icon_indicator(set, theme)` at the bottom of this section.
 
 /// Loader for freedesktop.org icon themes (GTK / Linux).
 ///
@@ -740,10 +741,11 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// `current-color-scheme`) keeps that colour, as it is not yet rewritten from
 /// the theme as KDE's own icon loader does, and a full-colour icon keeps its
 /// palette. `None` leaves each icon in the colour it loads in. A freedesktop
-/// icon comes from the system's icon theme;
-/// [`SystemTheme::icon`](crate::SystemTheme::icon) takes the theme's own. A
-/// provider's own SVG is coloured as a monochrome icon, so give a colour only
-/// for monochrome icons; with `None` a full-colour SVG is returned unchanged.
+/// icon comes from the system's icon theme; [`load_custom_icon_in`] takes
+/// another, and [`SystemTheme::icon`](crate::SystemTheme::icon) the theme's
+/// own. A provider's own SVG is coloured as a monochrome icon, so give a
+/// colour only for monochrome icons; with `None` a full-colour SVG is
+/// returned unchanged.
 ///
 /// `size` reaches each system set's loader as that loader takes it: the
 /// pixel size a freedesktop icon is looked up at
@@ -762,10 +764,32 @@ pub fn load_custom_icon(
     color: Option<Rgba>,
     size: Option<u32>,
 ) -> Option<IconData> {
-    load_provider_icon(provider, set, None, color, size)
+    load_custom_icon_in(provider, set, None, color, size)
 }
 
-/// The runtime-set load behind [`load_custom_icon`] and
+/// [`load_custom_icon`], with a freedesktop icon looked up in `icon_theme`
+/// ([`FreedesktopLoader::theme`]) where it is `Some`, the system's icon
+/// theme where it is `None`.
+///
+/// For the icon theme the application's theme names
+/// ([`SystemTheme::icon_theme_for`](crate::SystemTheme::icon_theme_for),
+/// [`Resolved::icon_theme`](crate::Resolved::icon_theme)), so a provider's
+/// icon comes from the same icon theme as the role icons beside it. An
+/// icon the theme and the themes it inherits from lack is the provider's
+/// own SVG, or `None`; no other theme is searched. The other sets have no
+/// themes and do not use it.
+#[must_use]
+pub fn load_custom_icon_in(
+    provider: &(impl IconProvider + ?Sized),
+    set: IconSet,
+    icon_theme: Option<&str>,
+    color: Option<Rgba>,
+    size: Option<u32>,
+) -> Option<IconData> {
+    load_provider_icon(provider, set, icon_theme, color, size)
+}
+
+/// The runtime-set load behind
 /// [`SystemTheme::icon`](crate::SystemTheme::icon): `id` from `set` in
 /// `color` at `size`, a freedesktop icon from `theme` (the system's where
 /// `None`).
@@ -1953,6 +1977,47 @@ mod runtime_set_icon_tests {
             let svg = svg_text(load_custom_icon(&SvgOnlyProvider, set, Some(COLOR), None).unwrap());
             assert!(svg.contains("fill=\"#123456\""), "{set:?}: {svg}");
         }
+    }
+
+    /// A freedesktop icon is looked up in the icon theme given and no
+    /// other: in one that is not installed the provider's name finds
+    /// nothing, and its own SVG, where it has one, is the icon.
+    #[test]
+    fn a_custom_icon_is_looked_up_in_the_icon_theme_given() {
+        #[derive(Debug)]
+        struct Named(Option<&'static [u8]>);
+        impl IconProvider for Named {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                Some("edit-copy")
+            }
+            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+                self.0.map(Cow::Borrowed)
+            }
+        }
+        let missing = Some("native-theme-no-such-theme");
+        assert!(
+            load_custom_icon_in(&Named(None), IconSet::Freedesktop, missing, None, None).is_none()
+        );
+        let own = b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>";
+        assert_eq!(
+            load_custom_icon_in(&Named(Some(own)), IconSet::Freedesktop, missing, None, None),
+            Some(IconData::Svg(Cow::Borrowed(own)))
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn a_themeless_set_ignores_the_icon_theme() {
+        assert_eq!(
+            load_custom_icon_in(
+                &IconRole::ActionCopy,
+                IconSet::Material,
+                Some("breeze"),
+                Some(COLOR),
+                None
+            ),
+            load_custom_icon(&IconRole::ActionCopy, IconSet::Material, Some(COLOR), None)
+        );
     }
 
     #[test]
