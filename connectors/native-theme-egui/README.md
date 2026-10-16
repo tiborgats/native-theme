@@ -267,8 +267,13 @@ Install `egui_extras`' image loaders with its `svg` feature
 final bytes, so it changes whenever the pixels do: the tint is baked into a
 bundled monochrome icon's bytes, and a freedesktop icon that leaves its colour
 to `currentColor` is drawn in the theme's text colour. An icon no theme holds
-is `None`; nothing is substituted. `install` releases the icons this crate
-cached (`icons::forget_icons`) and leaves the application's own images alone.
+is `None`; nothing is substituted. Installing another atlas, and
+`ThemeAtlas::clear`, release the icons this crate cached
+(`icons::forget_icons`) and leave the application's own images alone; a raster
+icon's texture is freed then, so call `to_image_source` in each pass rather
+than keeping its result (the texture is cached, a pass uploads nothing new).
+Installing the installed atlas again restores its base styles and does nothing
+else: no fonts, no icons, no repaint.
 
 ## Runtime theme change
 

@@ -511,6 +511,15 @@ impl ThemeAtlas {
     /// after the install stay as it set them; [`ThemeAtlas::clear`] then `install` runs the
     /// whole sequence.
     ///
+    /// **An icon lives until another atlas is installed.** Installing another atlas, and
+    /// [`ThemeAtlas::clear`], forget the icons this crate cached
+    /// ([`icons::forget_icons`](crate::icons::forget_icons)): the texture a raster icon's
+    /// `ImageSource::Texture` from [`icons::to_image_source`](crate::icons::to_image_source)
+    /// names is freed then, and an SVG icon's `ImageSource::Bytes` keeps the previous colour.
+    /// Call `to_image_source` or [`icons::to_image`](crate::icons::to_image) in each pass rather
+    /// than keeping the result: the crate caches the texture, so a pass that finds it uploads
+    /// nothing.
+    ///
     /// **The colour-scheme choice stays egui's.** `install` never touches
     /// `Options::theme_preference`, which is serde-persisted (`egui/src/memory/mod.rs:206`
     /// has no `serde(skip)`), so the user's in-app Light/Dark choice survives a restart.

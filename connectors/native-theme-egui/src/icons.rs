@@ -312,6 +312,12 @@ pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
 /// `ImageSource::Texture(SizedTexture::from_handle(&handle))` (`egui/src/load.rs:473`). The
 /// cache is read in one `ctx.data_mut`, the texture uploaded outside it, and inserted in a
 /// second one, because `load_texture` itself takes the `Context` lock (§10.3).
+///
+/// **The texture is freed at the next install of another atlas**, and by
+/// [`crate::ThemeAtlas::clear`]: both call [`forget_icons`], which removes the stored handle, so
+/// a kept `ImageSource::Texture` names a freed texture afterwards, and a kept
+/// `ImageSource::Bytes` keeps the previous colour. Call this, or [`to_image`], in each pass
+/// rather than keeping its result: the stored handle is reused, so a pass uploads nothing new.
 #[must_use]
 pub fn to_image_source(
     ctx: &egui::Context,
