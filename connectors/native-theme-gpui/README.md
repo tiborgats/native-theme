@@ -608,9 +608,11 @@ For app-specific icons generated via [`native-theme-build`](https://crates.io/cr
 
 ```rust,ignore
 use native_theme_gpui::icons::custom_icon_to_image_source;
-use native_theme::theme::IconSet;
 
-let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material, None, None);
+// `loaded` from `from_system()`: a freedesktop icon comes from the icon theme
+// the spinner and the role icons come from.
+let (set, icon_theme) = (loaded.icon_set, loaded.icon_theme.as_deref());
+let handle = custom_icon_to_image_source(&AppIcon::PlayPause, set, icon_theme, None, None);
 ```
 
 ### Role icons

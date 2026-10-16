@@ -78,7 +78,7 @@ use gpui::{
 use gpui_component::IconName;
 use native_theme::icons::{
     AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, fill_current_color,
-    load_custom_icon, load_icon,
+    load_custom_icon_in, load_icon,
 };
 use native_theme::theme::IconSet;
 use std::borrow::Cow;
@@ -789,9 +789,9 @@ pub fn into_image_source(
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Loads the provider's icon for `icon_set` through [`load_custom_icon`] in
+/// Loads the provider's icon for `icon_set` through [`load_custom_icon_in`] in
 /// `color` at `size`, then converts it with [`into_image_source()`] with no
-/// colour of its own. [`load_custom_icon`] colours each set its own way: an
+/// colour of its own. [`load_custom_icon_in`] colours each set its own way: an
 /// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
 /// or the provider's own SVG, goes through the monochrome colouriser, and a
 /// freedesktop icon is coloured where its foreground is left to the caller (a
@@ -800,11 +800,16 @@ pub fn into_image_source(
 /// `current-color-scheme`) keeps that colour and a full-colour one its own
 /// palette. `size`, clamped to `1..=`
 /// [`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE) (512) by
-/// [`load_custom_icon`] as for an SVG, reaches the system sets' loaders too: a
+/// [`load_custom_icon_in`] as for an SVG, reaches the system sets' loaders too: a
 /// freedesktop icon is looked up at it, so a PNG one comes back from the
 /// theme's directory nearest it, an SF Symbol is configured at it in points
 /// and a Segoe glyph drawn at it in pixels, and the RGBA they return is
 /// handed to gpui at its own size.
+///
+/// A freedesktop icon is looked up in `icon_theme`, the system's icon theme
+/// where it is `None`: pass [`Loaded::icon_theme`](crate::Loaded::icon_theme),
+/// so the icon comes from the icon theme the role icons and the `Spinner`
+/// beside it come from.
 ///
 /// Returns `None` if the provider has no icon for the given set or if
 /// conversion fails.
@@ -815,10 +820,11 @@ pub fn into_image_source(
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    icon_theme: Option<&str>,
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
+    let data = load_custom_icon_in(provider, icon_set, icon_theme, color.map(to_rgba), size)?;
     into_image_source(data, None, size)
 }
 
@@ -974,17 +980,24 @@ pub fn animated_frames_to_image_sources(
 /// `Transform` animation or if any frame fails to convert, and the result is
 /// for caching, not for every frame tick.
 ///
+/// The frames are converted, not loaded: a freedesktop indicator the
+/// application loads itself comes from the icon theme it passes to
+/// [`load_icon_indicator(set, theme)`](native_theme::icons::load_icon_indicator),
+/// [`Loaded::icon_theme`](crate::Loaded::icon_theme) for the one the role
+/// icons and the `Spinner` come from.
+///
 /// # Examples
 ///
 /// ```no_run
 /// use native_theme::icons::load_icon_indicator;
-/// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::animated_frames_to_image_sources_for;
 ///
 /// # let text_color = gpui::black();
-/// let set = IconSet::Freedesktop;
-/// let frames = load_icon_indicator(set, None)
+/// let loaded = native_theme_gpui::from_system()?;
+/// let set = loaded.icon_set;
+/// let frames = load_icon_indicator(set, loaded.icon_theme.as_deref())
 ///     .and_then(|anim| animated_frames_to_image_sources_for(set, &anim, Some(text_color), None));
+/// # Ok::<(), native_theme::Error>(())
 /// ```
 #[must_use]
 pub fn animated_frames_to_image_sources_for(
@@ -2001,6 +2014,7 @@ mod tests {
             native_theme::theme::IconSet::Material,
             None,
             None,
+            None,
         );
         assert!(result.is_some());
     }
@@ -2010,6 +2024,7 @@ mod tests {
         let result = custom_icon_to_image_source(
             &EmptyProvider,
             native_theme::theme::IconSet::Material,
+            None,
             None,
             None,
         );
@@ -2027,6 +2042,7 @@ mod tests {
         let result = custom_icon_to_image_source(
             &TestCustomIcon,
             native_theme::theme::IconSet::Material,
+            None,
             Some(color),
             None,
         );
@@ -2039,6 +2055,7 @@ mod tests {
         let result = custom_icon_to_image_source(
             &*boxed,
             native_theme::theme::IconSet::Material,
+            None,
             None,
             None,
         );
@@ -2094,6 +2111,7 @@ mod tests {
             let loaded = custom_icon_to_image_source(
                 &FolderProvider,
                 native_theme::theme::IconSet::Freedesktop,
+                None,
                 Some(red),
                 Some(32),
             )
@@ -2140,6 +2158,7 @@ mod tests {
             let loaded = custom_icon_to_image_source(
                 &FolderProvider,
                 native_theme::theme::IconSet::Freedesktop,
+                None,
                 Some(red),
                 Some(16),
             )
@@ -2269,6 +2288,7 @@ mod tests {
                     &FolderProvider,
                     native_theme::theme::IconSet::Freedesktop,
                     None,
+                    None,
                     Some(size),
                 )
                 .ok_or("the fixture theme has no folder")?;
@@ -2319,6 +2339,7 @@ mod tests {
                 &FolderProvider,
                 native_theme::theme::IconSet::Freedesktop,
                 None,
+                None,
                 Some(99_999),
             )
             .ok_or("the fixture theme has no folder")?;
@@ -2339,6 +2360,67 @@ mod tests {
                 icons,
                 "sized",
                 &[(512, "folder.png", &at_512), (1024, "folder.png", &at_1024)],
+            )
+        })?;
+        Ok(())
+    }
+
+    /// A freedesktop icon is looked up in the icon theme given, not the
+    /// system's: the child's `kdeglobals` names `Other`, which has a folder
+    /// of its own, and the provider's `folder` loaded with
+    /// `icon_theme = Some("Fixture")` is `Fixture`'s raster. The themes are
+    /// fixtures in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn custom_icon_to_image_source_looks_a_freedesktop_icon_up_in_the_icon_theme_given()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::custom_icon_to_image_source_looks_a_freedesktop_icon_up_in_the_icon_theme_given";
+        const FIXTURE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#ff0000" d="M1 1h14v14H1z"/></svg>"##;
+        const OTHER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#0000ff" d="M2 2h12v12H2z"/></svg>"##;
+        if crate::icon_fixture::in_child() {
+            let raster = |svg: &'static str| {
+                to_image_source(
+                    &IconData::Svg(std::borrow::Cow::Borrowed(svg.as_bytes())),
+                    None,
+                    Some(16),
+                )
+                .map(rendered)
+                .ok_or("the SVG does not rasterize")
+            };
+            let loaded = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some("Fixture"),
+                None,
+                Some(16),
+            )
+            .map(rendered)
+            .ok_or("the fixture theme has no folder")?;
+            let (fixture, other) = (raster(FIXTURE)?, raster(OTHER)?);
+            assert!(
+                fixture.as_bytes(0) != other.as_bytes(0),
+                "the two folders draw alike"
+            );
+            assert!(
+                loaded.as_bytes(0) == fixture.as_bytes(0),
+                "the folder is not Fixture's"
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, Child::kde("Other"), |icons| {
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "Fixture",
+                &[(16, "folder.svg", FIXTURE.as_bytes())],
+            )?;
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "Other",
+                &[(16, "folder.svg", OTHER.as_bytes())],
             )
         })?;
         Ok(())
