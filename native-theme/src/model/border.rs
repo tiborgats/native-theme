@@ -610,7 +610,8 @@ mod tests {
         assert_eq!(padding.top, Some(f32::MAX));
         assert_eq!(padding.right, Some(f32::MAX));
         assert_eq!((padding.bottom, padding.left), (None, None));
-        let side = bordered(1.0, [Some(f32::INFINITY), Some(f32::NAN), None, None]).padding_outside();
+        let side =
+            bordered(1.0, [Some(f32::INFINITY), Some(f32::NAN), None, None]).padding_outside();
         assert_eq!(side.top, Some(f32::INFINITY));
         assert!(side.right.is_some_and(f32::is_nan));
     }

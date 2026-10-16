@@ -190,7 +190,11 @@ mod tests {
             let Ok(IconData::Rgba(rgba)) = rasterize_svg(VALID_SVG, size) else {
                 panic!("asked for {size}: no raster");
             };
-            assert_eq!((rgba.width(), rgba.height()), (side, side), "asked for {size}");
+            assert_eq!(
+                (rgba.width(), rgba.height()),
+                (side, side),
+                "asked for {size}"
+            );
         }
     }
 

@@ -9600,9 +9600,10 @@ fn slider_info(resolved: &ResolvedTheme) -> String {
             (
                 "hovered handle",
                 "slider.thumb_hover_color",
-                sl.thumb_hover_color.map_or(to_color(sl.thumb_color), |hover| {
-                    styles::composite_over(to_color(hover), to_color(sl.thumb_color))
-                }),
+                sl.thumb_hover_color
+                    .map_or(to_color(sl.thumb_color), |hover| {
+                        styles::composite_over(to_color(hover), to_color(sl.thumb_color))
+                    }),
             ),
         ],
         &[("rail width", &rail_s), ("thumb diameter", &thumb_s)],
