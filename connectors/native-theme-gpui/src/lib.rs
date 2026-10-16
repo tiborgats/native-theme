@@ -93,10 +93,10 @@
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
-//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
+//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
-//! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's size, weight and colour via `geometry::status_bar` |
+//! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
@@ -712,6 +712,16 @@ pub fn font_family(family: &std::sync::Arc<str>) -> SharedString {
     match substituted_family(family) {
         Some(substitute) => SharedString::from(substitute),
         None => alias,
+    }
+}
+
+/// A theme's font style as gpui's, for the `geometry` builders and the
+/// widgets' labels alike.
+pub(crate) fn font_style(style: native_theme::theme::FontStyle) -> gpui::FontStyle {
+    match style {
+        native_theme::theme::FontStyle::Normal => gpui::FontStyle::Normal,
+        native_theme::theme::FontStyle::Italic => gpui::FontStyle::Italic,
+        native_theme::theme::FontStyle::Oblique => gpui::FontStyle::Oblique,
     }
 }
 

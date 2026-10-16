@@ -20,7 +20,8 @@
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
 //! do not (spec §3.4). Every builder that sets a text size also sets the
-//! platform's `defaults.line_height`. Every value is a `ResolvedTheme` field or the one
+//! platform's `defaults.line_height` and the font's family, weight and style.
+//! Every value is a `ResolvedTheme` field or the one
 //! derivation in spec §9.4 (`scaled_text_size`), with two conversions the
 //! receiving widget forces: [`tooltip_content`] turns the platform's outer
 //! tooltip width into the inner box its text wraps in, and
@@ -119,8 +120,14 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
     FontWeight(f32::from(font.weight))
 }
 
-/// Text size and weight from a font spec, at the platform's
+/// Family, text size, weight and style from a font spec, at the platform's
 /// `defaults.line_height`.
+///
+/// The family goes through [`crate::font_family`], the path the installed
+/// theme's own `font_family` takes, so a widget whose font is the window's
+/// gets the very family the window cascades; a family of its own (the KDE
+/// reader states one for `menu.font`, `toolbar.font` and
+/// `window.title_bar_font`) arrives in its place.
 ///
 /// The line height goes wherever a text size does: gpui's own default is the
 /// golden ratio (gpui-pre `src/style.rs:494`), which upstream leaves in place
@@ -129,7 +136,11 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
 /// refinement (`src/dialog/title.rs:44` → `:45`), so wrapped text would
 /// otherwise be spaced by a metric of gpui's or upstream's own.
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
-    with_line_height(r.text_size(scaled_text_size(font, n)), n).font_weight(weight_of(font))
+    let mut r = with_line_height(r.text_size(scaled_text_size(font, n)), n)
+        .font_family(crate::font_family(&font.family))
+        .font_weight(weight_of(font));
+    r.text_style().font_style = Some(crate::font_style(font.style));
+    r
 }
 
 /// The platform's `defaults.line_height` alone: [`with_text`]'s, for the two
@@ -139,7 +150,7 @@ fn with_line_height(r: StyleRefinement, n: Native<'_>) -> StyleRefinement {
     r.line_height(relative(n.resolved.defaults.line_height))
 }
 
-/// Text size, weight and colour from a font spec.
+/// Family, text size, weight, style and colour from a font spec.
 ///
 /// For the widgets upstream labels with a token of its own *before* applying
 /// the caller's refinement, on the very element the refinement lands on, and
@@ -233,7 +244,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 }
 
 /// The text of a `Button`'s label, passed as the button's child: `button.font`'s
-/// size and weight, and the platform's line height.
+/// family, size, weight and style, and the platform's line height.
 ///
 /// gpui-component sets the label's size from the `Size` enum on the content
 /// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
@@ -271,7 +282,8 @@ pub fn button_label(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `Toggle` (`src/button/toggle.rs:182-187` → `:222`): [`button_label`]'s
-/// text — `button.font`'s size and weight and the platform's line height.
+/// text — `button.font`'s family, size, weight and style and the platform's
+/// line height.
 ///
 /// gpui-component sets `text_sm` on a `Size::Medium` Toggle's root before
 /// the caller's refinement (0.875 of the platform font since 0.7.1), so this
@@ -1306,7 +1318,7 @@ pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
-/// text size and weight.
+/// font: its family, size, weight and style.
 ///
 /// Upstream underlines a link at rest (`text_decoration_1`, `link.rs:77-78`)
 /// before the caller's refinement (`:90`). Where the platform draws its links
@@ -1511,15 +1523,17 @@ mod tests {
         }
     }
 
-    /// A text size, weight and the platform's line height, which every builder
-    /// that sets a text size carries.
+    /// A family, text size, weight, style and the platform's line height,
+    /// which every builder that sets a text size carries.
     fn assert_text(out: &StyleRefinement, r: &ResolvedTheme, font: &ResolvedFontSpec, s: f32) {
+        assert_eq!(out.text.font_family, Some(crate::font_family(&font.family)));
         assert_eq!(out.text.font_size, abs(font.size * s));
         assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
         assert_eq!(
             out.text.font_weight,
             Some(FontWeight(f32::from(font.weight)))
         );
+        assert_eq!(out.text.font_style, Some(crate::font_style(font.style)));
     }
 
     #[test]
@@ -2110,7 +2124,7 @@ mod tests {
         );
     }
 
-    /// `link` carries the link's text size and weight, and removes upstream's
+    /// `link` carries the link's font, and removes upstream's
     /// resting underline exactly where `link.underline_enabled` is false
     /// (material-3 states it false, the others true).
     #[test]
@@ -3011,6 +3025,42 @@ mod tests {
                 laid_out,
                 "at s = {s}: {:?}",
                 out.size.height
+            );
+        }
+    }
+
+    /// The KDE reader states a family and a style for `menu.font`,
+    /// `toolbar.font` and `window.title_bar_font` (native-theme
+    /// `src/kde/fonts.rs`), whose only receivers are [`menu_item`],
+    /// [`toolbar`] and [`title_bar`]: each carries both, the family through
+    /// the path the installed theme's own takes.
+    #[test]
+    fn the_builders_carry_a_stated_family_and_style() {
+        let family: std::sync::Arc<str> = std::sync::Arc::from("Noto Serif");
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        for font in [
+            &mut r.menu.font,
+            &mut r.toolbar.font,
+            &mut r.window.title_bar_font,
+        ] {
+            font.family = family.clone();
+            font.style = native_theme::theme::FontStyle::Italic;
+        }
+        let n = Native::unscaled(&r);
+        for (what, out) in [
+            ("menu_item", menu_item(n)),
+            ("toolbar", toolbar(n)),
+            ("title_bar", title_bar(n)),
+        ] {
+            assert_eq!(
+                out.text.font_family,
+                Some(crate::font_family(&family)),
+                "{what}: family"
+            );
+            assert_eq!(
+                out.text.font_style,
+                Some(gpui::FontStyle::Italic),
+                "{what}: style"
             );
         }
     }

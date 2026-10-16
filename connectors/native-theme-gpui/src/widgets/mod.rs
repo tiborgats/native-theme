@@ -102,7 +102,7 @@ use gpui::{
     relative,
 };
 use native_theme::color::Rgba;
-use native_theme::theme::{FontStyle, ResolvedFontSpec};
+use native_theme::theme::ResolvedFontSpec;
 
 use crate::Native;
 use crate::colors::over;
@@ -200,11 +200,7 @@ fn font_text(font: &ResolvedFontSpec, n: Native<'_>) -> gpui::Div {
         .text_size(text_size(font.size, n))
         .font_weight(FontWeight(f32::from(font.weight)))
         .line_height(relative(n.resolved.defaults.line_height));
-    text.text_style().font_style = Some(match font.style {
-        FontStyle::Normal => gpui::FontStyle::Normal,
-        FontStyle::Italic => gpui::FontStyle::Italic,
-        FontStyle::Oblique => gpui::FontStyle::Oblique,
-    });
+    text.text_style().font_style = Some(crate::font_style(font.style));
     text
 }
 

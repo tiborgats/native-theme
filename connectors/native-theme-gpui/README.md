@@ -30,7 +30,7 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
-  the native heights, paddings, radii, borders and text sizes for the widgets
+  the native heights, paddings, radii, borders and fonts for the widgets
   where gpui-component applies the caller's style after its own — and the
   native colours for the widgets whose text, fill or edge would otherwise be
   left to a token of upstream's.
@@ -248,7 +248,10 @@ Text sizes carry the accessibility text-scaling factor; widths, paddings,
 radii and icon sizes do not (that is what the platform toolkit does). Every
 builder that sets a text size also sets the platform's `defaults.line_height`,
 so wrapped text in a tooltip or a dialog is spaced by the platform's metric,
-not gpui's default (the golden ratio) or a dialog title's 1.25.
+not gpui's default (the golden ratio) or a dialog title's 1.25, and the font's
+family (through `font_family`, as the installed theme's own) and style, so a
+family or a slant the platform states for a menu, a toolbar or a title bar —
+the KDE reader states all three — arrives.
 
 Padding is per side, and a builder sets only the sides the theme states: an
 unstated side leaves the widget's own padding in place.
@@ -289,7 +292,7 @@ so that a source which *does* state, say, a list row colour, or the title bar
 colour the KDE reader takes from `[WM] activeForeground`, is honoured instead
 of silently overridden.
 
-The remaining builders set size and weight only and leave the colour to the
+The remaining builders set the font alone and leave the colour to the
 token. `checkbox` and `combobox` are the near misses: upstream paints both from
 `foreground`, but a `Checkbox` label is re-coloured by its own wrapper and both
 apply their disabled colour *before* the refinement, so a carried colour would
@@ -300,8 +303,8 @@ test over every preset and mode says so.
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element — `button_label` reaches it on a child label; the outline/ghost/link/text variants take the native border too) |
-| `button_label` | `button.font` size and weight, `defaults.line_height` | the label passed as a `Button`'s child |
-| `toggle` | `button.font` size and weight, `defaults.line_height` | `Toggle` |
+| `button_label` | `button.font`, `defaults.line_height` | the label passed as a `Button`'s child |
+| `toggle` | `button.font`, `defaults.line_height` | `Toggle` |
 | `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:267-288`, `input/number_input.rs:158-165`, `input/input.rs:784-786`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
@@ -309,7 +312,7 @@ test over every preset and mode says so.
 | `combo_box_fill(n, disabled)` | `combo_box.background_color`; disabled, `combo_box.disabled_background` (or `combo_box.background_color` where it is not stated), `combo_box.disabled_text_color` and `combo_box.disabled_opacity` | `Select`, `Combobox`, after `select` or `combobox`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a trigger as it fills an `Input`. The disabled text colour reaches a `Combobox`'s selected text; a `Select`'s title mutes itself when disabled |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
-| `link` | `link.underline_enabled`, `link.font` size and weight, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
+| `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
 | `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's |

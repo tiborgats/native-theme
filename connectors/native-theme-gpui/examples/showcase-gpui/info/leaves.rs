@@ -351,7 +351,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.font",
-        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s size and weight (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
+        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
     ),
     (
         "",
@@ -550,7 +550,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font",
-        "gpui: geometry::combobox's size and weight; family: the window's",
+        "gpui: geometry::combobox's family, size, weight and style",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -616,7 +616,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.font",
-        "gpui: geometry::select's size and weight; family: the window's",
+        "gpui: geometry::select's family, size, weight and style",
     ),
     (
         "",
@@ -1104,12 +1104,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.text_area",
         "input.font",
-        "gpui: geometry::text_area's size and weight; family: the window's",
+        "gpui: geometry::text_area's family, size, weight and style",
     ),
     (
         "",
         "input.font",
-        "gpui: geometry::input's size and weight; family: the window's",
+        "gpui: geometry::input's family, size, weight and style",
     ),
     (
         "",
@@ -1241,7 +1241,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.font",
-        "gpui: geometry::link's size and weight; family: the window's",
+        "gpui: geometry::link's family, size, weight and style",
     ),
     (
         "",
@@ -1423,7 +1423,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's size and weight; family: the window's",
+        "gpui: geometry::list_item's family, size, weight and style",
     ),
     (
         "",
@@ -1909,7 +1909,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.font",
-        "gpui: geometry::status_bar's size and weight; family: the window's",
+        "gpui: geometry::status_bar's family, size, weight and style",
     ),
     (
         "",
@@ -2207,7 +2207,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "toolbar.font",
-        "gpui: geometry::toolbar's size, weight and colour on the row; no text is drawn in it",
+        "gpui: geometry::toolbar's family, size, weight, style and colour on the row; no text is drawn in it",
     ),
     (
         "",
@@ -2268,7 +2268,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.font",
-        "gpui: geometry::tooltip's size and weight; family: the window's",
+        "gpui: geometry::tooltip's family, size, weight and style",
     ),
     (
         "",
