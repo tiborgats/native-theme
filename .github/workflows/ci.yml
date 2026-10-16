@@ -259,7 +259,8 @@ jobs:
           python3 --version
           python3 scripts/check_widget_coverage.py
       # Fails on a connector accessor named unlike the `ResolvedTheme` leaf it
-      # reads, or absent from a sibling connector, unless
+      # reads, or a function absent from a sibling connector or present there
+      # under another signature, unless
       # scripts/connector_parity_exceptions.toml lists it. Reads sources only.
       - name: Connector parity
         if: matrix.package == 'native-theme-iced'

@@ -815,11 +815,12 @@ done
 # dependency canary run the same script.
 #
 # scripts/check_connector_parity.py, under the same floor, reads the three
-# connectors' crate-root functions and fails on an accessor named unlike the
-# `ResolvedTheme` leaf it reads, or present in one connector and absent from
-# a sibling, unless scripts/connector_parity_exceptions.toml lists it with its
-# reason, or on a stale exception. Its self-test plants each violation in a
-# synthetic tree.
+# connectors' crate-root functions and those of the public modules they
+# share, and fails on an accessor named unlike the `ResolvedTheme` leaf it
+# reads, or a function of any class present in one connector and absent from
+# a sibling or present there under another signature, unless
+# scripts/connector_parity_exceptions.toml lists it with its reason, or on a
+# stale exception. Its self-test plants each violation in a synthetic tree.
 #
 # scripts/check_readme_versions.py, under the same floor, fails on a
 # `native-theme` or `native-theme-*` dependency a README states in a `toml`
@@ -838,7 +839,7 @@ if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)';
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
     python3 scripts/check_widget_coverage.py
-run_check "connector parity: accessor names (iced · gpui · egui)" \
+run_check "connector parity: names and signatures (iced · gpui · egui)" \
     python3 scripts/check_connector_parity.py
 run_check "connector parity: self-test" \
     python3 scripts/check_connector_parity.py --self-test

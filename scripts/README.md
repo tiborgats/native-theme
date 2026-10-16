@@ -360,23 +360,31 @@ python3 scripts/check_widget_coverage.py
 
 ## check_connector_parity.py
 
-Checks that the iced, gpui and egui connectors name their accessors after the
-model's fields. Lists each connector's crate-root `pub fn`s (its `lib.rs`'s
-own and those a `pub use` there re-exports from one of its modules) and the
-`ResolvedTheme` leaves each reads (the leaf and group types come from the core
-crate's model sources), and requires every one-field accessor to be named
-after its leaf's path, without the leading `defaults.` and a unit suffix
-(`defaults.border.corner_radius` is `border_corner_radius`), and to be present
-in every connector, unless `scripts/connector_parity_exceptions.toml` lists it
-with its reason (`absent` where a connector has no function of that name,
-`unlike` where it has one that is not the accessor). A function it cannot classify needs an exception too, and it
-prints how many functions it put in each class. Exits 0 when clean, 1 on a
+Checks that the iced, gpui and egui connectors offer the same functions under
+the model's names. Lists each connector's crate-root `pub fn`s (its `lib.rs`'s
+own and those a `pub use` there re-exports from one of its modules) and those
+of each public module a sibling also declares (`icons`, compared as
+`icons::name`), with their parameters and the `ResolvedTheme` leaves each
+reads (the leaf and group types come from the core crate's model sources).
+It requires every one-field accessor to be named after its leaf's path,
+without the leading `defaults.` and a unit suffix
+(`defaults.border.corner_radius` is `border_corner_radius`), and every
+function of every class to be in every connector, under one signature (the
+parameter types, a toolkit's own type read as `_`), unless
+`scripts/connector_parity_exceptions.toml` lists it with its reason (`absent`
+where a connector has no function of that name, `unlike` where it has one
+under another signature or meaning; an entry may list several connectors and
+names). A function it cannot classify needs an exception too. It prints how
+many functions it put in each class and the names each class holds, per
+connector, and the public modules no sibling declares, which it lists and does
+not compare (the toolkits' own style builders and conversions). Exits 0 when clean, 1 on a
 violation or a stale exception, 2 on an input it cannot read (a field the
 model lacks, a `Resolved*` type no model source declares, a connector with
 no one-field accessor found, a malformed exception file). `--self-test` runs its built-in
-scenarios, a planted violation of each rule among them; `--root DIR` reads a
-scratch copy of the tree instead, to try a change; `-v` lists every function
-with its class. `scripts/check_release.sh` (in the `--commit` subset too) runs
+scenarios, a planted violation of each rule among them and an absent
+function of each class; `--root DIR` reads a scratch copy of the tree
+instead, to try a change; `-v` lists every function with its class and
+signature. `scripts/check_release.sh` (in the `--commit` subset too) runs
 the check and the self-test; `ci.yml`, `publish.yml` and `dependency-canary.yml`
 run the check.
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Check that the connectors' accessors are named after the model's fields.
+"""Check that the connectors offer the same functions, under the model's names.
 
 The iced, gpui and egui connectors each offer free functions that read a
 value of a `ResolvedTheme`. A value documented once in
 docs/platform-facts.md should be found under one name in all three, the
-model's own, so this script lists each connector's `pub fn` names and the
-leaves each reads, and fails on an accessor named unlike its leaf or present
-in one connector and absent from a sibling, unless
+model's own, and a function one connector offers should be in its siblings
+too, under one signature. So this script lists each connector's `pub fn`s,
+their parameters and the leaves each reads, and fails on an accessor named
+unlike its leaf, or a function present in one connector and absent from a
+sibling or present there under another signature, unless
 scripts/connector_parity_exceptions.toml lists it with its reason.
 
 Run from the repository root:
@@ -14,45 +16,62 @@ Run from the repository root:
     python3 scripts/check_connector_parity.py
     python3 scripts/check_connector_parity.py --self-test
 
-Exit 0 when every accessor passes or is excepted and no exception is stale,
+Exit 0 when every function passes or is excepted and no exception is stale,
 1 on a violation or a stale exception, 2 on an input it cannot read (a model
 field the type model lacks, a `Resolved*` type no model source declares, a
 connector in which it finds no one-field accessor, a malformed exception
-file).
+file). It prints how many functions each class holds per connector, the
+names each class holds, and the public modules it does not compare.
 
 The naming rule
 ---------------
-A one-field accessor -- a public free function whose result comes from
-exactly one `ResolvedTheme` leaf (possibly converted to the toolkit's type or
-unit, or scaled by the text-scaling factor) -- is named after that leaf's
-path: drop the leading `defaults.`, join the remaining segments with `_`, and
-drop a trailing unit suffix (`_px`, `_ms`, `_pt`), since the accessor returns
-the toolkit's type. `defaults.info_text_color` is `info_text_color`,
-`scrollbar.groove_width` is `scrollbar_groove_width`, `tooltip.show_delay_ms`
-is `tooltip_show_delay`.
+A one-field accessor at the crate root -- a public free function whose result
+comes from exactly one `ResolvedTheme` leaf (possibly converted to the
+toolkit's type or unit, or scaled by the text-scaling factor) -- is named
+after that leaf's path: drop the leading `defaults.`, join the remaining
+segments with `_`, and drop a trailing unit suffix (`_px`, `_ms`, `_pt`),
+since the accessor returns the toolkit's type. `defaults.info_text_color` is
+`info_text_color`, `scrollbar.groove_width` is `scrollbar_groove_width`,
+`tooltip.show_delay_ms` is `tooltip_show_delay`.
 
 The sibling rule
 ----------------
-A one-field accessor present in one connector and absent from a sibling fails
-unless the exception list names the sibling and the accessor with the reason
-the sibling has none: `kind = "absent"` where the sibling has no function of
-that name, `kind = "unlike"` where it has one that is not that accessor (a
-different signature or meaning, gpui's `font_family(&Arc<str>)` beside iced's
-and egui's `font_family(resolved)`).
+Every function compared, of every class, is held to it. A one-field accessor
+named after its leaf stands for that leaf: a sibling has it, or the exception
+list names the sibling and the accessor with the reason the sibling has none,
+`kind = "absent"` where the sibling has no function of that name and
+`kind = "unlike"` where it has one that is not that accessor (gpui's
+`font_family(&Arc<str>)` beside iced's and egui's `font_family(resolved)`).
+Any other function -- `outside`, `inputs`, `group`, `multi`, `undecided`, or a
+one-field one the naming rule excepts -- stands for its name: each sibling has
+a function of that name with the same signature, or is excepted, `absent`
+where it has none, `unlike` where its signature differs. The signature is the
+parameter types, without paths and lifetimes, a type the core crate does not
+declare and std does not name read as `_`: a toolkit's own type (`Hsla`,
+`iced_core::Color`, `egui::Ui`) is what a sibling takes in its place by
+construction, and the return type is the toolkit's for the same reason. Where
+the connectors that have the function disagree, the signature most of them
+share is the reference, on a tie the first connector's in `CONNECTORS` order,
+and each other one needs `unlike`.
 
 What is scanned
 ---------------
-The functions at the crate root, where the accessors live: every `pub fn` at
-column 0 of each connector's `src/lib.rs`, and every one a column-0
-`pub use <module>::{..};` (or `pub use <module>::<name>;`, `as` renames and
-`*` too) of `lib.rs` re-exports from a module the same `lib.rs` declares
-(`src/<module>.rs` or `src/<module>/mod.rs`), so egui's `accessors.rs` and
-`ext.rs` and a module a later re-export names are read without a list here.
-A `pub use` of a local module the script cannot follow (a nested path or
-group) is an input error. Methods, private functions and the modules that are
-not re-exported (`styles`, `geometry`, `palette`, ...) are style builders and
-conversions, not accessors. Comments and string literals are blanked before any match, so a doc
-comment naming a leaf reads nothing.
+The functions at the crate root: every `pub fn` at column 0 of each
+connector's `src/lib.rs`, and every one a column-0 `pub use <module>::{..};`
+(or `pub use <module>::<name>;`, `as` renames and `*` too) of `lib.rs`
+re-exports from a module the same `lib.rs` declares (`src/<module>.rs` or
+`src/<module>/mod.rs`), so egui's `accessors.rs` and `ext.rs` and a module a
+later re-export names are read without a list here. A `pub use` of a local
+module the script cannot follow (a nested path or group) is an input error.
+
+And the column-0 `pub fn`s of each `pub mod` (not `pub(crate)`) of `lib.rs`
+that a sibling also declares (`icons`, in all three), compared as
+`module::name`: a module of one name has one job in every connector. A public
+module no sibling declares (iced's `styles`, gpui's `geometry`, egui's
+`convert`, ...) holds the toolkit's own style builders and conversions, which
+no sibling can share; it is listed with its function count, not compared.
+Methods and private functions are not read. Comments and string literals are
+blanked before any match, so a doc comment naming a leaf reads nothing.
 
 Deciding "one leaf"
 -------------------
@@ -62,7 +81,8 @@ structs of model/widgets/mod.rs, whose `#[theme(nested, resolved_type = ...)]`
 fields are the nested structs of the generated `Resolved*Theme`. A path that
 ends on a struct is a group, any other a leaf, and a path the model does not
 have is an input error, so a renamed model field cannot leave the script
-matching nothing.
+matching nothing. The type names a signature keeps are every `pub struct`,
+`enum`, `trait` and `type` of native-theme/src.
 
 A function is classified by its parameters and its body:
 
@@ -78,22 +98,22 @@ A function is classified by its parameters and its body:
 
 A body's leaves are the `<theme>.<path>` chains on the theme parameter and on
 the locals bound to one of its groups (`let c = &resolved.combo_box;`); a
-chain ends at a method call or at its leaf. Only one-field accessors are held
-to the two rules. An undecided function, and a one-field function the rule
-does not fit (a widget builder that reads one leaf, a derived flag), needs an
-exception entry (`kind = "undecided"`, `kind = "name"`); nothing is silently
-skipped, and the script prints how many functions it classified each way.
+chain ends at a method call or at its leaf. An undecided function at the
+crate root, and a one-field one the naming rule does not fit (a widget
+builder that reads one leaf, a derived flag), needs an exception entry
+(`kind = "undecided"`, `kind = "name"`); nothing is silently skipped.
 
 Exceptions
 ----------
-scripts/connector_parity_exceptions.toml, one `[[exception]]` per
-(connector, name) with `kind` and a non-empty `reason`. An exception is stale,
-and fails the check, when its function no longer exists, or when it no longer
-needs one: a `name` exception whose function is no longer a misnamed one-field
-accessor, an `undecided` one whose function is now decided, an `absent` one
-whose accessor the connector now has or no sibling has any more, or whose
-function of that name the connector now has (or no longer has) where the
-other kind fits, `unlike` for `absent` and the reverse.
+scripts/connector_parity_exceptions.toml, `[[exception]]` entries with
+`connector`, `name` (each a string or a list of them), `kind` and a non-empty
+`reason`; an entry stands for every (connector, name) pair it lists, and a
+pair has one entry. An exception is stale, and fails the check, when its
+function no longer exists, or when it no longer needs one: a `name` exception
+whose function is no longer a misnamed one-field accessor, an `undecided` one
+whose function is now decided, an `absent` or `unlike` one whose function the
+connector now has as its siblings do, or no sibling has any more, or where
+the other kind fits, `unlike` for `absent` and the reverse.
 """
 
 import argparse
@@ -119,6 +139,8 @@ CONNECTORS = {
     "gpui": "connectors/native-theme-gpui/src/lib.rs",
     "egui": "connectors/native-theme-egui/src/lib.rs",
 }
+
+CORE_SOURCES = "native-theme/src"
 
 ROOT_TYPE = "ResolvedTheme"
 UNIT_SUFFIXES = ("_px", "_ms", "_pt")
@@ -322,17 +344,62 @@ FN_RE = re.compile(r"^pub (?:const )?fn (\w+)", re.M)
 
 
 class Fn:
-    def __init__(self, name, line, cls, leaves, groups, detail=""):
+    def __init__(self, name, line, cls, leaves, groups, detail="", ptypes=(), module=None):
         self.name = name
         self.line = line
         self.cls = cls
         self.leaves = leaves
         self.groups = groups
         self.detail = detail
+        self.ptypes = tuple(ptypes)
+        self.module = module
 
     @property
     def leaf(self):
         return next(iter(self.leaves)) if len(self.leaves) == 1 else None
+
+    @property
+    def key(self):
+        """The path the function is reached by: `name` at the crate root,
+        `module::name` in a public module."""
+        return f"{self.module}::{self.name}" if self.module else self.name
+
+
+# Types a parameter keeps in a signature beside the core crate's own: the
+# primitives and the std types the connectors' signatures name. Any other
+# type is a toolkit's (`Hsla`, `iced_core::Color`, `egui::Ui`) and reads as
+# `_`, since a sibling takes its own toolkit's type there by construction.
+STD_TYPES = frozenset("""
+    bool char str String f32 f64 i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128
+    usize Option Result Vec Box Arc Rc Cow Duration Instant NonZeroU32 Path
+    PathBuf Fn FnMut FnOnce Into AsRef Sized
+""".split())
+
+CORE_TYPE_RE = re.compile(r"^\s*pub (?:struct|enum|trait|type) (\w+)", re.M)
+
+
+def core_types(sources):
+    """The type names the core crate's sources declare `pub`."""
+    return {m.group(1) for source in sources for m in CORE_TYPE_RE.finditer(blank(source))}
+
+
+def signature(f, shared):
+    """`f`'s parameter types, each with its paths and lifetimes dropped and
+    every type outside `shared` and `STD_TYPES` read as `_`."""
+    parts = []
+    for text in f.ptypes:
+        text = re.sub(r"\s*\+\s*'\w+|'\w+\s*,\s*|'\w+\s*", "", text)
+        text = re.sub(r"\b(?:\w+\s*::\s*)+", "", text)
+        text = re.sub(
+            r"\b[A-Za-z_]\w*\b",
+            lambda m: m.group(0) if m.group(0) in shared or m.group(0) in STD_TYPES
+            or m.group(0) in ("mut", "dyn", "impl") else "_",
+            text,
+        )
+        text = re.sub(r"\s+", " ", text).strip()
+        text = re.sub(r"\s*([&<>,()\[\]])\s*", r"\1", text).replace(",", ", ")
+        parts.append(text)
+    return "(" + ", ".join(parts) + ")"
 
 
 def is_theme_type(text):
@@ -407,8 +474,9 @@ def classify_body(model, body, root, label):
     return leaves, groups, escapes
 
 
-def scan(model, source, label):
-    """The crate-root `pub fn`s of one source file, classified."""
+def scan(model, source, label, module=None):
+    """The column-0 `pub fn`s of one source file, classified; `module` names
+    the public module they are reached through, None at the crate root."""
     text = blank(source)
     fns = []
     for m in FN_RE.finditer(text):
@@ -431,12 +499,14 @@ def scan(model, source, label):
             params.append((pname.strip().removeprefix("mut ").strip(), ptype.strip()))
         theme = [p for p, t in params if is_theme_type(t)]
         others = [p for p, t in params if not is_theme_type(t) and not is_prefs_type(t)]
+        ptypes = [t for _, t in params]
         where = f"{label}:{line} `{name}`"
         if not theme:
-            fns.append(Fn(name, line, "outside", set(), set()))
+            fns.append(Fn(name, line, "outside", set(), set(), ptypes=ptypes, module=module))
             continue
         if len(theme) > 1 or others:
-            fns.append(Fn(name, line, "inputs", set(), set(), ", ".join(others)))
+            fns.append(Fn(name, line, "inputs", set(), set(), ", ".join(others),
+                          ptypes=ptypes, module=module))
             continue
         leaves, groups, escapes = classify_body(
             model, text[body_open + 1 : body_close - 1], theme[0], where
@@ -449,20 +519,20 @@ def scan(model, source, label):
             cls = "undecided"
         else:
             cls = "one-field"
-        fns.append(Fn(name, line, cls, leaves, groups))
+        fns.append(Fn(name, line, cls, leaves, groups, ptypes=ptypes, module=module))
     return fns
 
 
 def merge(fns):
-    """{name: Fn}; a name defined twice (cfg variants) must classify alike."""
+    """{key: Fn}; a name defined twice (cfg variants) must classify alike."""
     out = {}
     for f in fns:
-        seen = out.get(f.name)
+        seen = out.get(f.key)
         if seen is None:
-            out[f.name] = f
-        elif (seen.cls, seen.leaves) != (f.cls, f.leaves):
-            out[f.name] = Fn(f.name, seen.line, "undecided", set(), set(),
-                             "defined twice, read differently")
+            out[f.key] = f
+        elif (seen.cls, seen.leaves, seen.ptypes) != (f.cls, f.leaves, f.ptypes):
+            out[f.key] = Fn(f.name, seen.line, "undecided", set(), set(),
+                            "defined twice, read differently", f.ptypes, f.module)
     return out
 
 
@@ -493,20 +563,40 @@ def crate_root_fns(model, lib_rel, read_rel):
             if parsed is None:
                 raise Failure(f"{where}: cannot follow `pub use {module}::{item.strip()}`")
             wanted[parsed.group(1)] = parsed.group(2) or parsed.group(1)
-        rels = [os.path.join(src, module + ".rs"), os.path.join(src, module, "mod.rs")]
-        for rel in rels:
-            try:
-                module_source = read_rel(rel)
-            except Failure:
-                continue
-            for f in scan(model, module_source, rel):
-                if "*" in wanted or f.name in wanted:
-                    f.name = wanted.get(f.name, f.name)
-                    fns.append(f)
-            break
-        else:
-            raise Failure(f"{where}: no source for module `{module}` ({' or '.join(rels)})")
+        rel, module_source = module_file(src, module, read_rel, where)
+        for f in scan(model, module_source, rel):
+            if "*" in wanted or f.name in wanted:
+                f.name = wanted.get(f.name, f.name)
+                fns.append(f)
     return fns
+
+
+def module_file(src, module, read_rel, where):
+    """(path, source) of the module `module` a `lib.rs` in `src` declares."""
+    rels = [os.path.join(src, module + ".rs"), os.path.join(src, module, "mod.rs")]
+    for rel in rels:
+        try:
+            return rel, read_rel(rel)
+        except Failure:
+            continue
+    raise Failure(f"{where}: no source for module `{module}` ({' or '.join(rels)})")
+
+
+PUB_MOD_RE = re.compile(r"^pub mod (\w+)\s*;", re.M)
+
+
+def public_modules(model, lib_rel, read_rel):
+    """{module: [Fn]}: the column-0 `pub fn`s of each module the crate whose
+    `lib.rs` is `lib_rel` declares `pub mod` (not `pub(crate)`)."""
+    text = blank(read_rel(lib_rel))
+    src = os.path.dirname(lib_rel)
+    out = {}
+    for m in PUB_MOD_RE.finditer(text):
+        module = m.group(1)
+        where = f"{lib_rel}:{text.count(chr(10), 0, m.start()) + 1}"
+        rel, source = module_file(src, module, read_rel, where)
+        out[module] = scan(model, source, rel, module)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -519,28 +609,62 @@ def load_exceptions(text, label):
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as error:
         raise Failure(f"{label}: {error}")
+    def strings(value):
+        """`value` as a list of non-empty strings: one string, or a list."""
+        items = [value] if isinstance(value, str) else value
+        if not isinstance(items, list) or not items or not all(
+            isinstance(s, str) and s.strip() for s in items
+        ):
+            return None
+        return items
+
     entries = {}
     for i, e in enumerate(data.get("exception", [])):
         where = f"{label}: exception {i + 1}"
-        for key in ("connector", "name", "kind", "reason"):
+        for key in ("kind", "reason"):
             if not isinstance(e.get(key), str) or not e[key].strip():
                 raise Failure(f"{where}: `{key}` must be a non-empty string")
+        connectors, names = strings(e.get("connector")), strings(e.get("name"))
+        for key, value in (("connector", connectors), ("name", names)):
+            if value is None:
+                raise Failure(f"{where}: `{key}` must be a non-empty string, "
+                              "or a non-empty list of them")
         extra = set(e) - {"connector", "name", "kind", "reason"}
         if extra:
             raise Failure(f"{where}: unknown key(s) {', '.join(sorted(extra))}")
-        if e["connector"] not in CONNECTORS:
-            raise Failure(f"{where}: unknown connector `{e['connector']}`")
+        for connector in connectors:
+            if connector not in CONNECTORS:
+                raise Failure(f"{where}: unknown connector `{connector}`")
         if e["kind"] not in KINDS:
             raise Failure(f"{where}: kind must be one of {', '.join(KINDS)}")
-        key = (e["connector"], e["name"])
-        if key in entries:
-            raise Failure(f"{where}: a second entry for {key[0]} `{key[1]}`")
-        entries[key] = e
+        for connector in connectors:
+            for name in names:
+                key = (connector, name)
+                if key in entries:
+                    raise Failure(f"{where}: a second entry for {key[0]} `{key[1]}`")
+                entries[key] = {"connector": connector, "name": name,
+                                "kind": e["kind"], "reason": e["reason"]}
     return entries
 
 
-def check(connectors, exceptions):
-    """(report lines, violations, stale) for {connector: {name: Fn}}."""
+def reference_signature(have, shared):
+    """The signature the connectors in `have` ({connector: Fn}) are held to:
+    the one most of them share, on a tie the first connector's in
+    `CONNECTORS` order."""
+    sigs = {c: signature(f, shared) for c, f in have.items()}
+    order = [c for c in CONNECTORS if c in sigs] + [c for c in sigs if c not in CONNECTORS]
+    counts = {}
+    for c in order:
+        counts[sigs[c]] = counts.get(sigs[c], 0) + 1
+    best = max(counts.values())
+    return next(sigs[c] for c in order if counts[sigs[c]] == best), sigs
+
+
+def check(connectors, exceptions, shared=frozenset()):
+    """(report lines, violations, stale) for {connector: {key: Fn}}.
+
+    `shared` names the core crate's types, which a signature keeps.
+    """
     report, violations, stale = [], [], []
     used = set()
 
@@ -558,6 +682,8 @@ def check(connectors, exceptions):
         named = held.setdefault(connector, {})
         for f in fns.values():
             counts[f.cls] += 1
+            if f.module is not None:
+                continue
             if f.cls == "undecided" and not excepted(connector, f.name, "undecided"):
                 violations.append(
                     f"{connector}: `{f.name}` (line {f.line}) is undecided "
@@ -581,38 +707,58 @@ def check(connectors, exceptions):
             + "   ".join(f"{c} {counts[c]:2d}" for c in CLASSES)
         )
 
+    # The sibling rule: (connector, key) -> (kind, what) for each connector
+    # that lacks a sibling's function, or has it under another signature.
+    needs = {}
     every = {}
     for connector, named in held.items():
         for name, f in named.items():
             every.setdefault(name, {})[connector] = f
     for name in sorted(every):
+        offered = ", ".join(sorted(every[name]))
+        leaf = next(iter(every[name].values())).leaf
         for connector, fns in connectors.items():
             if connector in every[name]:
                 continue
             other = fns.get(name)
-            if not excepted(connector, name, "absent" if other is None else "unlike"):
-                others = ", ".join(sorted(every[name]))
-                leaf = next(iter(every[name].values())).leaf
-                if other is None:
-                    what = f"no `{name}` (`{leaf}`), which {others} offer(s)"
-                else:
-                    what = (f"`{name}` (line {other.line}) is {other.cls}, not the "
-                            f"accessor of `{leaf}` that {others} offer(s)")
-                violations.append(f"{connector}: {what}; add it or except it with its reason")
+            if other is None:
+                needs[(connector, name)] = (
+                    "absent", f"no `{name}` (`{leaf}`), which {offered} offer(s)")
+            else:
+                needs[(connector, name)] = (
+                    "unlike", f"`{name}` (line {other.line}) is {other.cls}, not the "
+                    f"accessor of `{leaf}` that {offered} offer(s)")
+    keys = sorted({k for fns in connectors.values() for k in fns} - set(every))
+    for key in keys:
+        have = {c: fns[key] for c, fns in connectors.items() if key in fns}
+        ref, sigs = reference_signature(have, shared)
+        holders = ", ".join(c for c in have if sigs[c] == ref)
+        cls = next(f.cls for c, f in have.items() if sigs[c] == ref)
+        for connector in connectors:
+            if connector not in have:
+                needs[(connector, key)] = (
+                    "absent", f"no `{key}`, the {cls} function `{key}{ref}` {holders} offer(s)")
+            elif sigs[connector] != ref:
+                needs[(connector, key)] = (
+                    "unlike", f"`{key}{sigs[connector]}` (line {have[connector].line}) is "
+                    f"not the `{key}{ref}` {holders} offer(s)")
+    for (connector, key), (kind, what) in sorted(needs.items()):
+        if not excepted(connector, key, kind):
+            violations.append(f"{connector}: {what}; add it or except it with its reason")
 
     for (connector, name), e in sorted(exceptions.items()):
         if (connector, name) in used:
             continue
         fns = connectors.get(connector, {})
         if e["kind"] in ("absent", "unlike"):
-            if name not in every:
-                why = "no connector offers it"
-            elif connector in every[name]:
-                why = "the connector offers it"
-            elif e["kind"] == "absent":
-                why = "the connector has a function of that name: kind `unlike`"
+            need = needs.get((connector, name))
+            if need is not None:
+                why = f"the connector has {'no' if need[0] == 'absent' else 'a'} " \
+                      f"function of that name: kind `{need[0]}`"
+            elif not any(name in other for c, other in connectors.items() if c != connector):
+                why = "no sibling offers it"
             else:
-                why = "the connector has no function of that name: kind `absent`"
+                why = "the connector offers it as its siblings do"
             stale.append(f"{connector}: `{name}` excepted as {e['kind']}, but {why}")
         elif name not in fns:
             stale.append(f"{connector}: `{name}` excepted ({e['kind']}), "
@@ -622,6 +768,8 @@ def check(connectors, exceptions):
                          f"but it is `{fns[name].cls}` and needs no exception")
     report.append(
         f"one-field accessors named after their leaf: {len(every)} distinct; "
+        f"other functions compared by name and signature: {len(keys)}; "
+        f"sibling differences {len(needs)}; "
         f"exceptions {len(exceptions)} ({len(used)} in use)"
     )
     return report, violations, stale
@@ -635,20 +783,72 @@ def read(path):
         raise Failure(f"cannot read {path}: {error}")
 
 
+def gather(model, read_rel, libs=CONNECTORS):
+    """({connector: {key: Fn}}, {connector: {module: [Fn]}}): the functions
+    compared, the crate root's and those of each public module a sibling
+    publishes too, and the public modules no sibling publishes."""
+    roots, modules = {}, {}
+    for connector, lib in libs.items():
+        roots[connector] = crate_root_fns(model, lib, read_rel)
+        modules[connector] = public_modules(model, lib, read_rel)
+    publishers = {}
+    for connector, mods in modules.items():
+        for module in mods:
+            publishers.setdefault(module, set()).add(connector)
+    connectors, unshared = {}, {}
+    for connector in libs:
+        fns = list(roots[connector])
+        for module, module_fns in modules[connector].items():
+            if len(publishers[module]) > 1:
+                fns += module_fns
+            else:
+                unshared.setdefault(connector, {})[module] = module_fns
+        connectors[connector] = merge(fns)
+    return connectors, unshared
+
+
+def class_lines(connectors):
+    """What each class holds, per connector: one line per non-empty class."""
+    lines = []
+    for connector, fns in connectors.items():
+        for cls in CLASSES:
+            names = sorted(k for k, f in fns.items() if f.cls == cls)
+            if names:
+                lines.append(f"  {connector:5s} {cls:9s} {', '.join(names)}")
+    return lines
+
+
+def core_sources(root):
+    src = os.path.join(root, CORE_SOURCES)
+    for base, _, files in sorted(os.walk(src)):
+        for name in sorted(files):
+            if name.endswith(".rs"):
+                yield read(os.path.join(base, name))
+
+
 def run(root, exceptions_path, verbose):
     model = parse_model(read(os.path.join(root, p)) for p in MODEL_FILES)
-    connectors = {
-        connector: merge(crate_root_fns(model, lib, lambda rel: read(os.path.join(root, rel))))
-        for connector, lib in CONNECTORS.items()
-    }
+    shared = core_types(core_sources(root))
+    connectors, unshared = gather(model, lambda rel: read(os.path.join(root, rel)))
     exceptions = load_exceptions(read(exceptions_path), os.path.relpath(exceptions_path, root))
-    report, violations, stale = check(connectors, exceptions)
+    report, violations, stale = check(connectors, exceptions, shared)
     if verbose:
         for connector, fns in connectors.items():
-            for f in sorted(fns.values(), key=lambda f: f.line):
+            for f in sorted(fns.values(), key=lambda f: (f.module or "", f.line)):
                 what = ", ".join(sorted(f.leaves | f.groups)) or f.detail
-                print(f"  {connector} {f.cls:9s} {f.name}  {what}")
+                print(f"  {connector} {f.cls:9s} {f.key}{signature(f, shared)}  {what}")
     print("\n".join(report))
+    print("\nWhat each class holds (a public module's functions as `module::name`):")
+    print("\n".join(class_lines(connectors)))
+    print("\nPublic modules no sibling publishes, not compared (each toolkit's own "
+          "style builders and conversions):")
+    for connector, mods in unshared.items():
+        print(f"  {connector:5s} " + ", ".join(
+            f"{module} ({len(fns)} pub fn)" for module, fns in sorted(mods.items())))
+        if verbose:
+            for module, fns in sorted(mods.items()):
+                for f in fns:
+                    print(f"        {f.key}{signature(f, shared)}")
     if stale:
         print("\nStale exceptions:")
         print("\n".join("  " + line for line in stale))
@@ -657,7 +857,8 @@ def run(root, exceptions_path, verbose):
         print("\n".join("  " + line for line in violations))
     if violations or stale:
         return 1
-    print("\nEvery accessor is named after its leaf, in every connector or excepted.")
+    print("\nEvery accessor is named after its leaf, and every function is in every "
+          "connector under one signature, or excepted.")
     return 0
 
 
@@ -734,6 +935,13 @@ pub fn font(resolved: &ResolvedTheme) -> &ResolvedFontSpec {
 }
 pub fn to_weight(css: u16) -> Weight {
     Weight::from(css)
+}
+'''
+
+# A function that passes the theme on whole: undecided.
+ESCAPING = '''
+pub fn is_dark(resolved: &ResolvedTheme) -> bool {
+    is_dark_resolved(resolved)
 }
 '''
 
@@ -826,6 +1034,104 @@ def self_test():
     expect("an unlike exception where the sibling lacks the name is stale",
            any("kind `absent`" in line for line in stale), True)
 
+    # the sibling rule holds every class: a function of each class that one
+    # connector lacks fails, passes excepted, and its exception goes stale
+    # once the connector has it again
+    every_class = connectors(SELF_ICED + ESCAPING)
+    undecided = {(c, "is_dark"): {"kind": "undecided", "reason": "x"} for c in every_class}
+    expect("every class is in the fixture",
+           sorted({f.cls for f in every_class["iced"].values()}), sorted(CLASSES))
+    for name, cls in (("swatch", "multi"), ("padded", "inputs"), ("font", "group"),
+                      ("to_weight", "outside"), ("is_dark", "undecided")):
+        expect(f"the fixture's `{name}` is {cls}", every_class["iced"][name].cls, cls)
+        lacking = dict(every_class)
+        lacking["egui"] = {n: f for n, f in every_class["egui"].items() if n != name}
+        _, violations, _ = check(lacking, undecided)
+        expect(f"a {cls} function absent from a sibling fails",
+               [v for v in violations if v.startswith(f"egui: no `{name}`")] != [], True)
+        absent = undecided | {("egui", name): {"kind": "absent", "reason": "x"}}
+        _, violations, stale = check(lacking, absent)
+        expect(f"an excepted absent {cls} function passes", (violations, stale), ([], []))
+        _, _, stale = check(every_class, absent)
+        expect(f"an absent exception for a {cls} function the sibling has is stale",
+               any(line.startswith(f"egui: `{name}` excepted as absent") for line in stale), True)
+
+    # a sibling with the function under another signature: the odd one out,
+    # and on a tie the later connector in CONNECTORS order, is `unlike`
+    changed = SELF_ICED.replace("extra: f32)", "extra: f32, more: bool)")
+    unlike_sig = dict(clean)
+    unlike_sig["gpui"] = merge(scan(model, changed, "gpui"))
+    _, violations, _ = check(unlike_sig, {})
+    expect("a sibling with another signature fails", [v for v in violations if "padded" in v], [
+        "gpui: `padded(&_, f32, bool)` (line 25) is not the `padded(&_, f32)` iced, egui "
+        "offer(s); add it or except it with its reason"])
+    _, violations, stale = check(unlike_sig, {("gpui", "padded"): {"kind": "unlike", "reason": "x"}})
+    expect("an excepted signature passes", (violations, stale), ([], []))
+    _, _, stale = check(unlike_sig, {("gpui", "padded"): {"kind": "absent", "reason": "x"}})
+    expect("an absent exception where the sibling has another signature is stale",
+           any("kind `unlike`" in line for line in stale), True)
+    tie = dict(unlike_sig)
+    tie["egui"] = {n: f for n, f in clean["egui"].items() if n != "padded"}
+    _, violations, _ = check(tie, {})
+    expect("on a tie the later connector is the unlike one",
+           sorted(v.split(":")[0] for v in violations if "padded" in v), ["egui", "gpui"])
+    expect("on a tie the earlier connector's signature is the reference",
+           any(v.startswith("gpui: `padded(&_, f32, bool)`") for v in violations), True)
+
+    # a signature keeps the core crate's types and std's, and reads a
+    # toolkit's type, a path and a lifetime away
+    f = Fn("f", 1, "outside", set(), set(),
+           ptypes=["&'a iced_core::Color", "Option<&str>", "&mut egui::Ui",
+                   "native_theme::theme::IconSet", "impl Into<ElementId> + 'static"])
+    expect("signature", signature(f, {"IconSet"}),
+           "(&_, Option<&str>, &mut _, IconSet, impl Into<_>)")
+    expect("core_types", sorted(core_types(["pub struct A;\npub(crate) struct B;\n"
+                                            "pub enum C {}\n// pub struct D;\npub trait E {}"])),
+           ["A", "C", "E"])
+
+    # an exception entry takes a list of connectors and of names
+    listed = load_exceptions('[[exception]]\nconnector = ["iced", "egui"]\n'
+                             'name = ["a", "b"]\nkind = "absent"\nreason = "x"\n', "t")
+    expect("a listed entry stands for every pair", sorted(listed),
+           [("egui", "a"), ("egui", "b"), ("iced", "a"), ("iced", "b")])
+    for planted, label in (
+        ('connector = ["iced", "iced"]\nname = "a"', "a pair listed twice"),
+        ('connector = []\nname = "a"', "an empty list"),
+        ('connector = "iced"\nname = ["a", 1]', "a list holding a non-string"),
+    ):
+        try:
+            load_exceptions(f'[[exception]]\n{planted}\nkind = "absent"\nreason = "x"\n', "t")
+            failures.append(f"{label}: no error")
+        except Failure:
+            pass
+
+    # public modules: one a sibling publishes too is compared by its path,
+    # one no sibling publishes is listed, a `pub(crate)` one is not read
+    modules = {
+        "iced/src/lib.rs": "pub mod icons;\npub mod styles;\npub(crate) mod inner;\n" + SELF_ICED,
+        "iced/src/icons.rs": "pub fn to_handle(data: &IconData) -> Handle { todo() }",
+        "iced/src/styles.rs": "pub fn button(r: &ResolvedTheme) -> Style { r.defaults.border.color }",
+        "gpui/src/lib.rs": "pub mod icons;\n" + SELF_ICED,
+        "gpui/src/icons/mod.rs": "pub fn to_handle(data: &IconData) -> Source { todo() }",
+        "egui/src/lib.rs": SELF_ICED,
+    }
+
+    def read_modules(rel):
+        if rel not in modules:
+            raise Failure(f"cannot read {rel}")
+        return modules[rel]
+
+    libs = {c: f"{c}/src/lib.rs" for c in ("iced", "gpui", "egui")}
+    gathered, unshared = gather(model, read_modules, libs)
+    expect("a shared module's function is compared by its path",
+           [c for c in libs if "icons::to_handle" in gathered[c]], ["iced", "gpui"])
+    expect("a module no sibling publishes is listed, not compared",
+           ({c: sorted(m) for c, m in unshared.items()}, "styles::button" in gathered["iced"]),
+           ({"iced": ["styles"]}, False))
+    _, violations, _ = check(gathered, {})
+    expect("a shared module's function absent from a sibling fails",
+           any(v.startswith("egui: no `icons::to_handle`") for v in violations), True)
+
     # the crate root: lib.rs's own functions and those it re-exports
     tree = {
         "src/lib.rs": """
@@ -864,11 +1170,7 @@ pub fn to_weight(css: u16) -> Weight { Weight::from(css) }
         tree["src/lib.rs"] = tree["src/lib.rs"].removesuffix(planted)
 
     # undecided: the theme passed on whole
-    escaping = connectors(SELF_ICED + '''
-pub fn is_dark(resolved: &ResolvedTheme) -> bool {
-    is_dark_resolved(resolved)
-}
-''')
+    escaping = connectors(SELF_ICED + ESCAPING)
     expect("an escaping function is undecided", escaping["iced"]["is_dark"].cls, "undecided")
     _, violations, _ = check(escaping, {})
     expect("an undecided function without an exception fails",

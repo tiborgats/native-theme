@@ -1,18 +1,25 @@
-# Exceptions to scripts/check_connector_parity.py's two rules, one entry per
-# (connector, name), each with the reason the rule does not fit. The script's
-# docstring states the rules; an entry that no longer matches what it excepts
-# is stale and fails the check.
+# Exceptions to scripts/check_connector_parity.py's two rules, each with the
+# reason the rule does not fit. `connector` and `name` each take a string or a
+# list; an entry stands for every (connector, name) pair they make, and a pair
+# has one entry. A function of a public module the connectors share is named
+# by its path (`icons::to_image_source`). The script's docstring states the
+# rules; an entry that no longer matches what it excepts is stale and fails
+# the check.
 #
 #   kind = "name"       a one-field function the naming rule does not fit:
 #                       it returns something other than the leaf's value
 #   kind = "undecided"  a function the script cannot classify: it passes the
 #                       theme on whole
-#   kind = "absent"     the connector has no accessor that a sibling has
-#   kind = "unlike"     the connector has a function of the accessor's name
-#                       that is not it: another signature or meaning
+#   kind = "absent"     the connector has no function that a sibling has
+#   kind = "unlike"     the connector has a function of that name that is not
+#                       the sibling's: another signature or meaning
 #
-# Paths without a crate are the connector's own (`src/...`); upstream code is
-# cited at the version the workspace builds against.
+# Paths without a crate are the connector's own (`src/...`), a sibling's are
+# written from the repository root; upstream code is cited at the version the
+# workspace builds against. "The egui spec" is
+# docs/archive/todo_v0.6.0_egui-connector-spec.md, whose §4.7 *Sibling parity*
+# table gives egui's counterpart of each sibling item, or the reason there is
+# none.
 
 # ── name ────────────────────────────────────────────────────────────────────
 
@@ -244,3 +251,419 @@ connector = "egui"
 name = "selection_text_color"
 kind = "absent"
 reason = "the atlas writes it to `visuals.selection.stroke.color` (src/style/base.rs; src/mapping.md, `defaults.selection_text_color`: DIRECT)"
+
+# ════════════════════════════════════════════════════════════════════════════
+# The other functions: present in one connector and absent from a sibling, or
+# present under another signature (M8 Step 6 ruling on M8-04 and M8-05).
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── installing a theme, and watching the OS ─────────────────────────────────
+
+[[exception]]
+connector = ["iced", "egui"]
+name = ["apply", "apply_system_theme"]
+kind = "absent"
+reason = "gpui-component draws every widget from one global `Theme`, which `apply` writes with the native base-layer overrides and keeps installed across upstream rebuilds (connectors/native-theme-gpui/src/lib.rs, `apply`'s doc). iced has no theme global: its application hands iced the `Theme` value `to_theme` and `from_system` return. egui installs an atlas with `ThemeAtlas::install(ctx)`, and the OS theme with `sys.to_egui_atlas().install(ctx)`, two calls (the egui spec §4.7, `apply` and `apply_system_theme`)"
+
+[[exception]]
+connector = "iced"
+name = "apply_accessibility"
+kind = "absent"
+reason = "an iced `Theme` is a palette with no text size, so a change of the preferences changes nothing in it (src/lib.rs, *Accessibility*, and docs/archive/todo_closed.md, the item `to_theme` takes no `AccessibilityPreferences`): the application scales its own text sizes through `scaled_text_size`, which takes the preferences on each call"
+
+[[exception]]
+connector = "egui"
+name = "apply_accessibility"
+kind = "absent"
+reason = "the atlas's role styles are immutable `Arc`s, so the preferences are a build input, not an in-place rescale: the application rebuilds with `Builder::accessibility` and installs (the egui spec §4.7, `apply_accessibility`; §3.4)"
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = "theme_changes"
+kind = "absent"
+reason = "each connector delivers the OS theme's changes in its toolkit's idiom: iced's is a `Subscription`, the application's own channel for an outside event (ruling M5-03, docs/todo_code-review-findings.md:9212); gpui's is `on_theme_change`, a channel drained by a task on gpui's foreground (the M6 ruling, :9637); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread and wakes egui with `request_repaint` (the egui spec §10.2)"
+
+[[exception]]
+connector = ["iced", "egui"]
+name = "on_theme_change"
+kind = "absent"
+reason = "each connector delivers the OS theme's changes in its toolkit's idiom: gpui's is a channel drained by a task on gpui's foreground, with `&mut Window` and `&mut App` (the M6 ruling, docs/todo_code-review-findings.md:9637); iced's is `theme_changes`, a `Subscription` (ruling M5-03, :9212); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread (the egui spec §10.2)"
+
+# ── building a theme ────────────────────────────────────────────────────────
+
+[[exception]]
+connector = "gpui"
+name = "to_theme"
+kind = "unlike"
+reason = "gpui-component's `Theme` carries the mode and the font sizes: `to_theme` takes `is_dark` for its `mode` (the ruling on docs/todo.md:3380 keeps it: a `ColorMode` in its place is a break outside the 2026-10-16 answers, and buys nothing while `Loaded` carries `mode`) and the preferences, since it writes `font_size`, the window rem, scaled by the text-scaling factor (src/lib.rs, *What each flag does*). iced's `Theme` is a palette with no text size, and egui's `to_theme` builds with `AccessibilityPreferences::default()`, any other input going through `ThemeAtlas::builder` (connectors/native-theme-egui/src/ext.rs, `to_theme`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "from_preset"
+kind = "unlike"
+reason = "it takes no `AccessibilityPreferences`: an iced `Theme` is a palette with no text size, so the preferences have nothing in it to act on (src/lib.rs, *Accessibility*; docs/archive/todo_closed.md, the item `to_theme` takes no `AccessibilityPreferences`); gpui's scales the theme's font sizes and egui's the atlas's text styles"
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = "to_theme_in"
+kind = "absent"
+reason = "the public mode-taking builder is iced's alone (the ruling on docs/todo.md:3380): iced's `to_theme` leaves the light/dark flag to iced's lightness guess, and `to_theme_in` takes the mode instead. gpui's `to_theme` already takes the mode as `is_dark`, and egui needs nothing: its builder holds both variants and the OS mode (`Builder::os_mode`)"
+
+[[exception]]
+connector = ["iced", "egui"]
+name = "is_dark_resolved"
+kind = "absent"
+reason = "a `< 0.5` lightness guess for a caller of gpui's `to_theme` that has no dark-mode flag to pass as `is_dark` (connectors/native-theme-gpui/src/lib.rs, `is_dark_resolved`'s doc). iced's `to_theme` needs no flag (iced makes the guess itself) and `to_theme_in` takes the mode; egui uses `sys.mode.is_dark()` (the egui spec §4.7, `is_dark_resolved`; §4.6)"
+
+# ── composites ──────────────────────────────────────────────────────────────
+
+[[exception]]
+connector = "iced"
+name = "layer_over"
+kind = "absent"
+reason = "iced's public composite is `styles::composite_over(layer, base)`, beside the style functions that composite a stated hover, and both call native-theme's `color::composite_over`; gpui's released `layer_over(base, layer)` keeps its name and argument order, since renaming it is a break outside the 2026-10-16 answers (the M8-06 ruling)"
+
+[[exception]]
+connector = "egui"
+name = "layer_over"
+kind = "absent"
+reason = "egui's public composite is `convert::composite_over(layer, idle)`, ecolor's premultiplied `u8` blend, with which the atlas lays a stated hover or pressed fill over the idle fill (the egui spec §6.1, M7's hover ruling), not native-theme's straight-alpha `f32` one that gpui's `layer_over` and iced's `styles::composite_over` call (the M8-06 ruling)"
+
+# ── group accessors ─────────────────────────────────────────────────────────
+
+[[exception]]
+connector = "egui"
+name = "icon_sizes"
+kind = "absent"
+reason = "egui's is `icons::icon_size(theme, IconContext)`, one size per context instead of the struct (the egui spec §4.7, `icon_sizes`; the M8-04/M8-05 ruling): `IconContext`'s five variants are `ResolvedIconSizes`' five fields"
+
+[[exception]]
+connector = "egui"
+name = "text_scale"
+kind = "absent"
+reason = "egui's are `text_role_font`, `text_role_line_height` and `text_role_weight`, one accessor per property keyed by `TextRole`, each already text-scaled (the egui spec §4.7, `text_scale`; the M8-04/M8-05 ruling)"
+
+[[exception]]
+connector = "iced"
+name = "text_scale"
+kind = "absent"
+reason = "iced draws a text-scale role as it draws any stated font: the application reads the role's leaves, `resolved.text_scale.caption.size` and its weight, and scales the size with `scaled_text_size` (src/lib.rs, `scaled_text_size`'s and `font_size`'s docs; README.md, *Text scaling*), so no accessor hands the group over whole"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["text_role_font", "text_role_line_height", "text_role_weight"]
+kind = "absent"
+reason = "egui's `FontId` carries no weight and egui installs one face per family, so a text-scale role's font, line height and weight reach a call site through these, keyed by `TextRole` (connectors/native-theme-egui/src/accessors.rs, `role_font_weight`'s doc; the egui spec §4.7, `text_scale`, §4.9). gpui returns the four roles whole (`text_scale`), and iced's application reads the role's leaves and scales the size with `scaled_text_size`"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = "icons::icon_size"
+kind = "absent"
+reason = "iced and gpui hand over the five sizes whole, `icon_sizes(&resolved)`; egui's one size per `IconContext` is its form of that group (the egui spec §4.7, `icon_sizes`; the M8-04/M8-05 ruling)"
+
+# ── iced: per-widget geometry, which iced takes per call ────────────────────
+# iced's widgets take their geometry through inline configuration, not
+# through the theme (connectors/native-theme-iced/src/lib.rs, the paragraph
+# on per-widget geometry), so the connector hands each value over. gpui's
+# geometry reaches the widgets through the `geometry` builders and the
+# connector's own `widgets` (connectors/native-theme-gpui/src/lib.rs,
+# *Per-widget geometry*, *Limits*); egui's through the role styles, or a leaf
+# the application reads (src/mapping.md: DERIVED → T18(a)).
+
+[[exception]]
+connector = "gpui"
+name = ["at_least", "button_content_min_size"]
+kind = "absent"
+reason = "iced's size setters take the extent with no minimum form, so a button's minimum is a floor under its label (connectors/native-theme-iced/src/lib.rs, `at_least`'s doc); gpui's `geometry::button` sets `min_w(button.min_width)` and the control-height rule for `button.min_height` on the button itself (src/geometry.rs, `button`, `with_height_rule`)"
+
+[[exception]]
+connector = "egui"
+name = ["at_least", "button_content_min_size"]
+kind = "absent"
+reason = "iced's size setters take the extent with no minimum form, so a button's minimum is a floor under its label (connectors/native-theme-iced/src/lib.rs, `at_least`'s doc); egui's button takes `button.min_height` from the role style's `spacing.interact_size.y`, and the application reads `button.min_width` itself (src/mapping.md, both rows)"
+
+[[exception]]
+connector = "gpui"
+name = ["button_padding", "input_padding", "text_area_padding", "combo_box_padding"]
+kind = "absent"
+reason = "iced's widgets take their padding per call (`Button::padding`, `TextInput::padding`, `TextEditor::padding`, `PickList::padding`), so the connector hands it over; gpui's `geometry::button`, `input`, `text_area`, `select` and `combobox` builders set each widget's padding (src/geometry.rs; src/lib.rs, *Theme Field Coverage*)"
+
+[[exception]]
+connector = "egui"
+name = ["button_padding", "combo_box_padding"]
+kind = "absent"
+reason = "the atlas writes `button.border.padding` to `spacing.button_padding` in the base style and the `Role::Button` style, and `combo_box.border.padding` to the `Role::ComboBox` style's (src/mapping.md, both rows; the egui spec §4.7, `button_padding`), where egui's button and combo box read it"
+
+[[exception]]
+connector = "egui"
+name = ["input_padding", "text_area_padding"]
+kind = "absent"
+reason = "egui's are `input_margin` and `text_area_margin`, named after their receiver, `TextEdit::margin`, which takes the field's inner padding per call (the egui spec §4.7, `input_padding`)"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["input_margin", "text_area_margin"]
+kind = "absent"
+reason = "an egui `TextEdit` takes its inner padding per call through `TextEdit::margin`, an egui `Margin` (connectors/native-theme-egui/src/accessors.rs, `input_margin`'s doc); iced's are `input_padding` and `text_area_padding`, named after iced's `padding` setters, and gpui's `geometry::input` and `text_area` set the padding"
+
+[[exception]]
+connector = "gpui"
+name = "control_line_height"
+kind = "absent"
+reason = "iced lays a single-line control out one text line plus its padding tall, with no minimum-height setter, so the minimum reaches it as a line height (connectors/native-theme-iced/src/lib.rs, `control_line_height`'s doc); gpui's geometry builders set the control's height, or its minimum above a text-scaling factor of 1 (src/geometry.rs, `with_height_rule`)"
+
+[[exception]]
+connector = "egui"
+name = "control_line_height"
+kind = "absent"
+reason = "iced lays a single-line control out one text line plus its padding tall, with no minimum-height setter, so the minimum reaches it as a line height (connectors/native-theme-iced/src/lib.rs, `control_line_height`'s doc); egui's combo box and button take their minimum height from the role style's `spacing.interact_size.y`, and the application reads `input.min_height` itself (src/mapping.md)"
+
+[[exception]]
+connector = "gpui"
+name = ["padding_or", "stated_padding", "padding_inside_border"]
+kind = "absent"
+reason = "iced takes a widget's padding per call and paints its border over the padding, inside the same bounds, so the connector adds the line width and fills an unstated side from a default the application names (connectors/native-theme-iced/src/lib.rs, `padding_inside_border`'s and `padding_or`'s docs); gpui's geometry builders apply a stated padding and the border themselves, in one refinement (src/geometry.rs, `button`: `with_padding(..)`, `.border(..)`)"
+
+[[exception]]
+connector = "egui"
+name = ["padding_or", "stated_padding"]
+kind = "absent"
+reason = "egui's padding sinks are per side or per axis and an unstated side keeps egui's own, through `convert::to_margin`; no egui call site takes an all-or-nothing padding, which is what `stated_padding` returns (the egui spec §4.7, `padding_or`, `stated_padding`)"
+
+[[exception]]
+connector = "egui"
+name = "padding_inside_border"
+kind = "absent"
+reason = "a `TextEdit` paints its stroke inside its margin, so `input_margin` and `text_area_margin` add the border's line width to each stated side themselves (src/accessors.rs, `input_margin`'s doc), and the role styles' paddings are the atlas's (src/mapping.md); no egui call site takes a widget border's padding"
+
+[[exception]]
+connector = "gpui"
+name = ["switch", "switch_over", "radio"]
+kind = "absent"
+reason = "iced's `Toggler` lays its track out twice its height with no width setter, and its radio draws its dot at half the circle with no size for it, so the connector builds both (connectors/native-theme-iced/src/lib.rs, `switch`'s and `radio`'s docs); gpui's `widgets` module draws a `Switch` and a `Radio` of its own, every part from the theme (src/widgets/mod.rs; src/lib.rs, *Limits*), and `geometry::radio` refines gpui-component's"
+
+[[exception]]
+connector = "egui"
+name = ["switch", "switch_over", "radio"]
+kind = "absent"
+reason = "iced's `Toggler` lays its track out twice its height with no width setter, and its radio draws its dot at half the circle with no size for it, so the connector builds both (connectors/native-theme-iced/src/lib.rs, `switch`'s and `radio`'s docs); egui's are native-theme-egui-widgets' `Switch` and `RadioButton` (src/mapping.md: `switch.thumb_diameter`, `checkbox.radio_dot_diameter`, `checkbox.radio_indicator_width`, UNMAPPABLE `widgets-crate`)"
+
+[[exception]]
+connector = "gpui"
+name = ["tab_indicator", "tab_indicator_line"]
+kind = "absent"
+reason = "iced's tab is a widget the application builds, so the connector lays the line over it, or over the active tab's place in a tab bar that takes no per-tab content (connectors/native-theme-iced/src/lib.rs, `tab_indicator`'s and `tab_indicator_line`'s docs); gpui's `widgets::TabBar` draws the line along the selected tab itself (src/widgets/tab_bar.rs, `TabIndicator`)"
+
+[[exception]]
+connector = "egui"
+name = ["tab_indicator", "tab_indicator_line"]
+kind = "absent"
+reason = "iced's helpers lay the indicator over a tab built from iced widgets (connectors/native-theme-iced/src/lib.rs, `tab_indicator`'s doc); an egui application that draws a tab bar reads `tab.active_indicator_color`, `_width` and `_side` itself from `ThemeAtlas::resolved_for` (src/mapping.md: DERIVED → T18(a))"
+
+[[exception]]
+connector = "gpui"
+name = "pick_list_handle"
+kind = "absent"
+reason = "a widget part iced takes per call, `PickList::handle` (connectors/native-theme-iced/src/lib.rs, `pick_list_handle`'s doc); gpui-component's `Select` draws its own caret, sized inside the trigger, which no style reaches (examples/showcase-gpui/info/leaves.rs, `combo_box.arrow_icon_size_px`: gpui-component `select.rs:599-600`)"
+
+[[exception]]
+connector = "egui"
+name = "pick_list_handle"
+kind = "absent"
+reason = "a widget part iced takes per call, `PickList::handle` (connectors/native-theme-iced/src/lib.rs, `pick_list_handle`'s doc); the atlas sizes egui's own combo-box chevron through the `Role::ComboBox` style's `spacing.icon_width` (src/mapping.md, `combo_box.arrow_icon_size`: SCOPED)"
+
+[[exception]]
+connector = "gpui"
+name = "expander_arrow_color"
+kind = "absent"
+reason = "iced has no expander, so the arrow is the application's own drawing, in this colour (connectors/native-theme-iced/src/lib.rs, `expander_arrow_color`'s doc); gpui-component's `Accordion` draws its chevron in `muted_foreground`, with no style hook (src/contract.rs, `expander.arrow_color`: `accordion.rs:327-331`)"
+
+[[exception]]
+connector = "egui"
+name = "expander_arrow_color"
+kind = "absent"
+reason = "iced has no expander, so the arrow is the application's own drawing, in this colour (connectors/native-theme-iced/src/lib.rs, `expander_arrow_color`'s doc); egui's `CollapsingHeader::icon` takes a painter, which `expander_icon` is: egui's own arrow in `expander.arrow_color`"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = "expander_icon"
+kind = "absent"
+reason = "egui's `CollapsingHeader::icon` takes a painting closure, which this is: egui's own arrow painted in `expander.arrow_color` (connectors/native-theme-egui/src/accessors.rs, `expander_icon`'s doc). iced has no expander, and the application draws the arrow in `expander_arrow_color`; gpui-component's `Accordion` draws its chevron in `muted_foreground`, with no style hook (connectors/native-theme-gpui/src/contract.rs, `expander.arrow_color`)"
+
+# ── iced: fonts ─────────────────────────────────────────────────────────────
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = "font"
+kind = "absent"
+reason = "iced's styles carry no font, so a widget's stated font reaches the widget only as an iced `Font` the application sets (the ruling on docs/todo.md:3590). gpui's `geometry` builders set each stated font's family, weight and style on the element (connectors/native-theme-gpui/src/lib.rs, *Theme Field Coverage*); egui installs one face per family in the atlas's `FontDefinitions`, and a call site takes a role's weight and slant through `role_font_weight` and `role_font_is_italic` (the egui spec §4.9)"
+
+[[exception]]
+connector = "gpui"
+name = "system_font_family"
+kind = "absent"
+reason = "iced draws through its own font database, so the family it is given must be the one fontdb filed the face under (connectors/native-theme-iced/src/lib.rs, `system_font_family`'s doc); gpui's is `font_family(&Arc<str>)`, which turns a family into the name gpui is asked to draw"
+
+[[exception]]
+connector = "egui"
+name = "system_font_family"
+kind = "absent"
+reason = "iced draws through its own font database, so the family it is given must be the one fontdb filed the face under (connectors/native-theme-iced/src/lib.rs, `system_font_family`'s doc); egui draws no family by name: the atlas installs the face's bytes under `FontFamily::Proportional` or `Monospace`, through `fonts::FontPlan::from_system` (the egui spec §4.9)"
+
+[[exception]]
+connector = "gpui"
+name = "to_iced_weight"
+kind = "absent"
+reason = "iced's `Weight` is an enum of the nine standard weights, so a CSS weight is rounded into it (connectors/native-theme-iced/src/lib.rs, `to_iced_weight`'s doc); gpui's `FontWeight` takes any CSS weight as it is, `FontWeight(f32::from(weight))`, which the `geometry` builders set (src/geometry.rs, `weight_of`), and `font_weight` returns the CSS weight"
+
+[[exception]]
+connector = "egui"
+name = "to_iced_weight"
+kind = "absent"
+reason = "egui takes a weight as a `wght` variation coordinate, not an enum: `fonts::weight_coords` (the egui spec §4.7, `to_iced_weight`; §4.9)"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["role_font_weight", "role_font_is_italic"]
+kind = "absent"
+reason = "egui's `FontId` carries no weight and egui installs one face per family, so a role's weight and slant reach a call site through these, as `RichText::variation` and `RichText::italics` (connectors/native-theme-egui/src/accessors.rs, both docs). An iced `Font` carries its weight and style (`font`), and gpui's `geometry` builders set each stated font's weight and style"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["window_title_bar_font", "window_title_bar_text_color"]
+kind = "absent"
+reason = "egui lays a `Window`'s title out outside the application's closure, so no role scope reaches it, and does not tell the title which state its window is in: the application passes the title these (connectors/native-theme-egui/src/accessors.rs, both docs; the egui spec §5.2). iced takes no font or colour for the window frame (`decorations: bool`, connectors/native-theme-iced/src/lib.rs, the theme values that reach no receiver); gpui's `geometry::title_bar` and `title_bar_inactive` set both"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = "list_header_font"
+kind = "absent"
+reason = "an egui `FontId` for `RichText::font`, the size scaled and egui's own where degenerate (connectors/native-theme-egui/src/accessors.rs, `list_header_font`'s doc); iced's application builds the header's `Font` with `font(&resolved.list.header_font)` and its size with `scaled_text_size`, as for any stated font; in gpui `list.header_font` reaches only the header's text colour, `ThemeColor::table_head_foreground`, since gpui-component's header cell sets no text size and inherits the one `geometry::table` sets (connectors/native-theme-gpui/src/geometry.rs, `list_header_height`'s doc)"
+
+# ── egui: frames, focus rings, popups ───────────────────────────────────────
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["input_frame", "text_area_frame"]
+kind = "absent"
+reason = "egui's `TextEdit::frame` paints the frame it is handed as given, and egui's own takes a focused field's stroke from the selection colour, so the connector builds the field's frame (connectors/native-theme-egui/src/accessors.rs, `input_frame`'s doc). iced's text input and editor take a `Style` per status from `styles::text_input` and `styles::text_editor`; gpui's from `geometry::input`, `text_area` and `input_fill`"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = "register_focus_shape"
+kind = "absent"
+reason = "the egui connector's install plugin paints every focus ring itself, round the widget's rect, so a widget of another shape tells it the outline (connectors/native-theme-egui/src/plugin.rs, `register_focus_shape`'s doc; the egui spec §6.18). iced draws no focus ring (a focused widget shows its `Focused` style's border), and gpui-component draws its own from the styled `Theme`'s `focus_ring`"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = "role_modifier"
+kind = "absent"
+reason = "egui's popups and menus lay out in a `Ui` of their own, outside the role scope, and take their style as a `StyleModifier` (`Popup::style`, `MenuConfig::style`, `MenuBar::style`, `ComboBox::popup_style`); this one is the installed atlas's for a call site that holds a `Ui`, and a free function because it returns `None` without an atlas (the ruling on docs/todo.md:3604; connectors/native-theme-egui/src/ext.rs, its doc). iced styles a menu per widget (`styles::menu`), and gpui-component's popups read the global `Theme`"
+
+# ── icons: one conversion per toolkit type ──────────────────────────────────
+# Each connector converts an `IconData` into its toolkit's image type and is
+# named after it: iced has two widgets, `Image` with an `image::Handle` and
+# `Svg` with an `svg::Handle`, whose `Svg` cannot draw raster data
+# (connectors/native-theme-iced/src/icons.rs, `animated_frames_to_svg_handles`'
+# doc); gpui draws both kinds through one `ImageSource`
+# (connectors/native-theme-gpui/src/icons.rs, `to_image_source`); egui takes
+# one `ImageSource` for both and caches it by URI in the `Context` (the egui
+# spec §4.7, mod `icons`; §9.2).
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = ["icons::to_image_handle", "icons::to_svg_handle", "icons::custom_icon_to_image_handle", "icons::custom_icon_to_svg_handle", "icons::animated_frames_to_svg_handles"]
+kind = "absent"
+reason = "named after iced's two handle types, one per iced widget (`image::Handle` for `Image`, `svg::Handle` for `Svg`, which cannot draw raster data); gpui's and egui's counterparts are `to_image_source`, `custom_icon_to_image_source` and, for frames, gpui's `animated_frames_to_image_sources` and egui's `animated_frame_index`, since each draws both kinds through one `ImageSource` (the egui spec §4.7, mod `icons`)"
+
+[[exception]]
+connector = "gpui"
+name = ["icons::into_image_handle", "icons::into_svg_handle"]
+kind = "absent"
+reason = "named after iced's two handle types, one per iced widget; gpui's consuming conversion is `into_image_source`, one for both kinds"
+
+[[exception]]
+connector = "egui"
+name = ["icons::into_image_handle", "icons::into_svg_handle", "icons::into_image_source"]
+kind = "absent"
+reason = "egui takes one `ImageSource` for both payload kinds and caches by URI, so there is no by-value `into_*` pair: a frame or an icon is converted when drawn, under the URI its bytes hash to (the egui spec §4.7, mod `icons`; §9.2)"
+
+[[exception]]
+connector = "iced"
+name = ["icons::to_image_source", "icons::into_image_source", "icons::custom_icon_to_image_source", "icons::animated_frames_to_image_sources"]
+kind = "absent"
+reason = "named after gpui's and egui's one `ImageSource`; iced has a widget per kind and so a conversion per handle type: `to_image_handle` and `to_svg_handle`, `into_image_handle` and `into_svg_handle`, `custom_icon_to_image_handle` and `custom_icon_to_svg_handle` (with gpui's parameters, the M8-02 ruling), and `animated_frames_to_svg_handles`"
+
+[[exception]]
+connector = "egui"
+name = "icons::to_image_source"
+kind = "unlike"
+reason = "egui's takes the `Context` and an `IconKey`: it registers the icon's URI in the `Context` for `forget_icons`, and the key carries the tint and the size that gpui's takes as arguments, and the set, by which a freedesktop icon is coloured apart from a bundled one (the egui spec §4.7, mod `icons`; §9.2; src/icons.rs, `to_image_source`'s doc)"
+
+[[exception]]
+connector = "egui"
+name = "icons::custom_icon_to_image_source"
+kind = "unlike"
+reason = "egui's takes the `Context`, the provider and an `IconKey`: the key carries the set, the icon theme, the size and the tint that gpui's takes as arguments, and the loaded icon is cached in the `Context` under its URI until `forget_icons` (the egui spec §4.7, mod `icons`; src/icons.rs, `custom_icon_to_image_source`'s and `forget_icons`' docs)"
+
+[[exception]]
+connector = ["iced", "egui"]
+name = ["icons::icon_name", "icons::lucide_name_for_gpui_icon", "icons::material_name_for_gpui_icon", "icons::freedesktop_name_for_gpui_icon", "icons::freedesktop_name_candidates", "icons::bundled_icon_to_image_source"]
+kind = "absent"
+reason = "they translate gpui-component's `IconName`, the icon vocabulary its widgets draw (`Icon::new`); iced and egui have no icon vocabulary of their own, so a bundled icon is an `IconData` like any other and takes the same call (the egui spec §4.7, mod `icons`)"
+
+[[exception]]
+connector = "egui"
+name = ["icons::bundled_svg_to_image_source", "icons::animated_frames_to_image_sources", "icons::animated_frames_to_image_sources_for"]
+kind = "absent"
+reason = "a bundled icon is an `IconData` like any other, so it takes `to_image_source`; and egui keeps no pre-built frame vector: a frame is converted when drawn, under the URI its bytes hash to, coloured as its key's set colours it (the egui spec §4.7, mod `icons`; §9.2; src/icons.rs, `to_image_source`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "icons::bundled_svg_to_image_source"
+kind = "absent"
+reason = "AWAITING A RULING (M8 T9): gpui's convenience for SVG bytes that skips the `IconData` (connectors/native-theme-gpui/src/icons.rs, its doc); no ruling or doc records why iced has no `svg::Handle` twin. iced's `to_svg_handle` takes the bytes as `IconData::Svg`"
+
+[[exception]]
+connector = "iced"
+name = "icons::animated_frames_to_image_sources_for"
+kind = "absent"
+reason = "AWAITING A RULING (M8 T9): gpui's per-set colouring of an indicator's frames (M6-14, e7e3f809), whose freedesktop arm keeps a theme's own stylesheet colour; iced's `Spinner` colours its set's indicator itself (src/spinner.rs), but no ruling or doc records why iced has no public per-set twin of `animated_frames_to_svg_handles`"
+
+[[exception]]
+connector = ["gpui", "iced"]
+name = ["icons::to_image", "icons::custom_icon_to_image"]
+kind = "absent"
+reason = "egui's `to_image_source` and `custom_icon_to_image_source` wrapped in an `egui::Image` with the key's alt text, which feeds egui's `WidgetInfo` label (connectors/native-theme-egui/src/icons.rs, `to_image`'s doc); an iced or gpui application builds the toolkit's element from the handle itself (`svg(h)`, `image(h)`, connectors/native-theme-iced/README.md; `img(source)`, connectors/native-theme-gpui/README.md)"
+
+[[exception]]
+connector = ["gpui", "iced"]
+name = "icons::to_color_image"
+kind = "absent"
+reason = "egui's RGBA image type, `egui::ColorImage` (connectors/native-theme-egui/src/icons.rs, `to_color_image`'s doc); iced's RGBA conversion is `to_image_handle`, gpui's `to_image_source`"
+
+[[exception]]
+connector = ["gpui", "iced"]
+name = ["icons::uri", "icons::forget_icons"]
+kind = "absent"
+reason = "egui caches an icon by URI in the `Context`, the loader caches and the stored textures, which `forget_icons` releases (the egui spec §9.2; connectors/native-theme-egui/src/icons.rs, `forget_icons`' doc); iced's handles and gpui's `ImageSource`s are values the application holds and drops, and neither connector keeps an icon cache"
+
+# ── icons: animation, in each toolkit's idiom ───────────────────────────────
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = "icons::spin_rotation_radians"
+kind = "absent"
+reason = "an iced application keeps the time itself (a subscription tick) and hands `Svg::rotation` an angle, which this computes (src/icons.rs, its doc); gpui's `with_spin_animation` wraps the element in gpui's own animation, so its application needs no angle, and egui's `spin_angle` reads the `Context`'s clock and repaints (the egui spec §4.7, mod `icons`; §9.4)"
+
+[[exception]]
+connector = ["iced", "egui"]
+name = "icons::with_spin_animation"
+kind = "absent"
+reason = "gpui animates an element itself: this wraps an `Svg` in gpui's animation, spinning over `duration_ms` (src/icons.rs, its doc). iced's application rotates an `Svg` by the angle `spin_rotation_radians` gives, and egui's an `Image` by `spin_angle`'s (the egui spec §4.7, mod `icons`; §9.4)"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["icons::spin_angle", "icons::animated_frame_index"]
+kind = "absent"
+reason = "egui repaints on demand, so these read the `Context`'s clock and schedule the next repaint at the next frame or every frame (the egui spec §9.4; connectors/native-theme-egui/src/icons.rs, both docs). iced's application keeps the time with a subscription and indexes the frames `animated_frames_to_svg_handles` built, or rotates by `spin_rotation_radians` (connectors/native-theme-iced/src/icons.rs, their docs); gpui's spins with `with_spin_animation` and indexes the frames `animated_frames_to_image_sources` built"
