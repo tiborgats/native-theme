@@ -92,7 +92,7 @@
 //! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
-//! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
+//! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, and `font`, the whole iced `Font` of one, through `native-theme/system-fonts` |
 //! | `advanced-shaping` | yes | kerned text in the whole application: `iced_core`'s `advanced-shaping`, which makes `Shaping::Advanced` every text's default (see [Kerning](#kerning)) |
 //! | `native` | no | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
 //! | `watch` | no | `theme_changes`, the OS theme's changes as an iced `Subscription`, through `native-theme/watch` and `iced_futures` (see [Runtime theme change](#runtime-theme-change)) |
@@ -157,33 +157,35 @@
 //!
 //! # Font Configuration
 //!
-//! A font in the resolved theme is a family, a size and a CSS weight. iced's
-//! `Family::Name` takes a `&'static str` (`iced_core` 0.14 `font.rs:46`)
-//! while a family name is an `Arc<str>`, so leak each distinct family once
-//! and reuse it; `intern_font_family` gives one `Arc<str>` per name to key
-//! that by. [`to_iced_weight`] turns the weight into iced's:
+//! A font in the resolved theme is a family, a size, a CSS weight and a
+//! style. With `system-fonts`, `font` makes the iced `Font` of one: the
+//! family iced's font database holds for it (`system_font_family`), its
+//! weight ([`to_iced_weight`]) and its style. iced's `Family::Name` takes a
+//! `&'static str` (`iced_core` 0.14 `font.rs:46`) while a family name is an
+//! `Arc<str>`, so `font` leaks each distinct family once and reuses it.
+//! Without the feature, do the same with the stated family;
+//! `intern_font_family` gives one `Arc<str>` per name to key that by:
 //!
 //! ```rust,no_run
-//! use native_theme::theme::intern_font_family;
-//! use std::collections::HashMap;
-//! use std::sync::Arc;
-//!
 //! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
-//! let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
 //! let spec = &resolved.defaults.font;
-//! // The family iced's font database holds for the face: on macOS the
-//! // system UI font, stated "SF Pro", is filed as `.SF NS`.
 //! #[cfg(feature = "system-fonts")]
-//! let family_name: Arc<str> = native_theme_iced::system_font_family(spec);
+//! let font = native_theme_iced::font(spec);
 //! #[cfg(not(feature = "system-fonts"))]
-//! let family_name: Arc<str> = spec.family.clone();
-//! let family: &'static str = *families
-//!     .entry(intern_font_family(&family_name))
-//!     .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
-//! let font = iced_core::Font {
-//!     family: iced_core::font::Family::Name(family),
-//!     weight: native_theme_iced::to_iced_weight(spec.weight),
-//!     ..iced_core::Font::DEFAULT
+//! let font = {
+//!     use native_theme::theme::intern_font_family;
+//!     use std::collections::HashMap;
+//!     use std::sync::Arc;
+//!
+//!     let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
+//!     let family: &'static str = *families
+//!         .entry(intern_font_family(&spec.family))
+//!         .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
+//!     iced_core::Font {
+//!         family: iced_core::font::Family::Name(family),
+//!         weight: native_theme_iced::to_iced_weight(spec.weight),
+//!         ..iced_core::Font::DEFAULT
+//!     }
 //! };
 //! # let _ = font;
 //! # Ok::<(), native_theme::error::Error>(())
@@ -1265,6 +1267,55 @@ fn drawn_family(
         .map_or_else(|| spec.family.clone(), |face| face.family)
 }
 
+/// The iced `Font` a theme font is drawn in: the family
+/// [`system_font_family`] gives for it, the weight [`to_iced_weight`] makes
+/// of its CSS weight, and its style; iced's normal stretch, as the model
+/// states none. iced's styles carry no font, so this is how a widget's
+/// stated font (`button.font`, `input.font`, `menu.font`, …) reaches the
+/// widget, through its `font` (`Text::font`, `text_input`'s `font`, …), as
+/// the gpui connector's `geometry` builders carry each stated font's.
+///
+/// iced's `Family::Name` takes a `&'static str` (`iced_core` 0.14
+/// `font.rs:46`), so the family's name is leaked the first time the process
+/// asks for it and kept for the process, and every later call for that
+/// family is given the same one: the names leaked are the distinct families
+/// the themes drawn state, and their substitutes. Each call selects a face as
+/// `system_font_family` does, so build a theme's fonts when the theme
+/// changes, not per frame.
+#[cfg(feature = "system-fonts")]
+#[must_use]
+pub fn font(spec: &native_theme::theme::ResolvedFontSpec) -> iced_core::Font {
+    use iced_core::font::Style;
+    use native_theme::theme::FontStyle;
+    iced_core::Font {
+        family: iced_core::font::Family::Name(leaked_family(&system_font_family(spec))),
+        weight: to_iced_weight(spec.weight),
+        style: match spec.style {
+            FontStyle::Normal => Style::Normal,
+            FontStyle::Italic => Style::Italic,
+            FontStyle::Oblique => Style::Oblique,
+        },
+        ..iced_core::Font::DEFAULT
+    }
+}
+
+/// `family` as a `&'static str`: leaked the first time the process asks for
+/// it, and the same one every time after.
+#[cfg(feature = "system-fonts")]
+fn leaked_family(family: &str) -> &'static str {
+    static LEAKED: std::sync::Mutex<std::collections::BTreeSet<&'static str>> =
+        std::sync::Mutex::new(std::collections::BTreeSet::new());
+    let mut leaked = LEAKED
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(&name) = leaked.get(family) {
+        return name;
+    }
+    let name: &'static str = Box::leak(family.to_owned().into_boxed_str());
+    leaked.insert(name);
+    name
+}
+
 /// Returns the monospace font size in logical pixels, scaled by the user's
 /// text-scaling preference.
 ///
@@ -1533,6 +1584,42 @@ mod tests {
             .as_ref(),
             "native-theme-no-such-family-7f3c1a"
         );
+    }
+
+    /// `font` carries a theme font's family, as `system_font_family` gives
+    /// it, its weight and its style, and leaks the family's name once: a
+    /// second call for the family is given the same `&'static str`.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn font_carries_the_spec_and_leaks_one_name_per_family() {
+        use iced_core::font::{Family, Style};
+        let name = |font: iced_core::Font| match font.family {
+            Family::Name(name) => name,
+            other => panic!("a generic family, {other:?}"),
+        };
+        let resolved = make_resolved_preset("adwaita", false);
+        let mut spec = resolved.button.font.clone();
+        spec.style = native_theme::theme::FontStyle::Italic;
+        let built = font(&spec);
+        assert_eq!(name(built), system_font_family(&spec).as_ref());
+        assert_eq!(built.weight, to_iced_weight(spec.weight));
+        assert_eq!(built.style, Style::Italic);
+        assert_eq!(built.stretch, iced_core::Font::DEFAULT.stretch);
+        assert!(
+            std::ptr::eq(name(built), name(font(&spec))),
+            "the family's name is leaked once"
+        );
+        let bolder = native_theme::theme::ResolvedFontSpec {
+            weight: 700,
+            style: native_theme::theme::FontStyle::Normal,
+            ..spec.clone()
+        };
+        if system_font_family(&bolder) == system_font_family(&spec) {
+            assert!(
+                std::ptr::eq(name(built), name(font(&bolder))),
+                "another face of the family takes the same name"
+            );
+        }
     }
 
     /// A stated family the system lacks comes back as the family of the face

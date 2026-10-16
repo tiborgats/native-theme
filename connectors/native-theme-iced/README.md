@@ -257,7 +257,8 @@ features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
 system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
 one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
 match on Linux, asked once per family and kept for the process: the first ask is one
-`fc-match` process, about 12.5 ms, with a 2 s timeout). `advanced-shaping` (default)
+`fc-match` process, about 12.5 ms, with a 2 s timeout), and `font`, the whole `iced::Font`
+of a theme font. `advanced-shaping` (default)
 kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
 `default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
 is the way to narrow.
@@ -291,8 +292,8 @@ Full helper list: `button_padding`, `input_padding`, `text_area_padding`
 `tooltip_show_delay` (for `Tooltip::delay`), `list_header_height` (a
 table header's height),
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
-`mono_font_size`, `mono_font_weight`, `system_font_family` (feature
-`system-fonts`), `scaled_text_size`,
+`mono_font_size`, `mono_font_weight`, `system_font_family` and `font`
+(feature `system-fonts`), `scaled_text_size`,
 `line_height`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `expander_arrow_color`,
@@ -410,11 +411,23 @@ are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
 `combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
 `TabBar`, `Tabs` and `Sidebar`.
 
-Build each `iced::Font` from the theme font's family and weight. iced's
-`Family::Name` takes a `&'static str` (`iced_core` 0.14 `font.rs:46`), so
-leak each distinct family name once and reuse it, keyed by the `Arc<str>`
-`native_theme::theme::intern_font_family` gives per name; `to_iced_weight`
-turns the CSS weight into iced's `Weight`:
+Build each `iced::Font` from the theme font with `font` (feature `system-fonts`,
+default): the family iced's font database holds for it (`system_font_family`),
+its weight (`to_iced_weight`) and its style. iced's `Family::Name` takes a
+`&'static str` (`iced_core` 0.14 `font.rs:46`), so `font` leaks each distinct
+family name once and gives every later call for it the same one. It selects a
+face each call, so build the fonts when the theme changes:
+
+```rust,ignore
+// On a theme change:
+let button_font = native_theme_iced::font(&resolved.button.font);
+// In your view, sized as above:
+button(text("OK").font(button_font).size(button_size))
+```
+
+Without `system-fonts`, leak each distinct stated family once and reuse it,
+keyed by the `Arc<str>` `native_theme::theme::intern_font_family` gives per
+name:
 
 ```rust,ignore
 let family: &'static str = *families // HashMap<Arc<str>, &'static str>

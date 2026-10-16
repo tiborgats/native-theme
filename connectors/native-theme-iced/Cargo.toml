@@ -37,7 +37,7 @@ material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
-system-fonts = ["native-theme/system-fonts"]  # enables `system_font_family`
+system-fonts = ["native-theme/system-fonts"]  # enables `system_font_family` and `font`
 
 # The OS readers, off by default as in native-theme: without one,
 # `from_system()` is the platform preset on Linux and an error on macOS and
