@@ -342,8 +342,16 @@ pub use theme::{ColorMode, Resolved, ResolvedTheme, Theme};
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct AccessibilityPreferences {
-    /// Text scaling factor (1.0 = no scaling). Multiply font sizes by
-    /// this factor when honoring the user's preference for larger text.
+    /// Text scaling factor (1.0 = no scaling): the factor of the user's
+    /// preference for larger text that the toolkit has not applied. Multiply
+    /// font sizes by it ([`scaled`](Self::scaled)) to honour the preference.
+    /// Where the toolkit's own scale factor carries the preference, it is
+    /// 1.0: on a GNOME or Budgie X11 session, where winit and gpui take their
+    /// scale factor from the `Xft.dpi` gnome-settings-daemon writes as
+    /// 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon
+    /// 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
+    /// `:797-798`; winit 0.30.13 `src/platform_impl/linux/x11/util/randr.rs:41-53`,
+    /// `:145-146`; gpui-pre-linux 0.3.9 `src/linux/x11/client.rs:2671-2678`).
     pub text_scaling_factor: f32,
     /// Whether the user has requested reduced motion.
     pub reduce_motion: bool,
@@ -386,9 +394,10 @@ impl AccessibilityPreferences {
         pollster::block_on(pipeline::reader_accessibility())
     }
 
-    /// The text-scaling multiplier: [`text_scaling_factor`](Self::text_scaling_factor)
-    /// when it is finite and positive, else `1.0`, so a factor no platform
-    /// could mean (NaN, zero, negative, infinite) leaves text at its size.
+    /// The text-scaling multiplier the toolkit has not applied:
+    /// [`text_scaling_factor`](Self::text_scaling_factor) when it is finite
+    /// and positive, else `1.0`, so a factor no platform could mean (NaN,
+    /// zero, negative, infinite) leaves text at its size.
     #[must_use]
     pub fn text_scale_factor(&self) -> f32 {
         let s = self.text_scaling_factor;

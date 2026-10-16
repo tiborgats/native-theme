@@ -28,6 +28,11 @@
 //! - `org.gnome.desktop.wm.preferences titlebar-font`: the title bar font.
 //! - `org.gnome.desktop.a11y.interface high-contrast`: high contrast, where
 //!   the portal reports none.
+//!
+//! # Sources not watched
+//!
+//! - `$XDG_SESSION_TYPE`: the session type, which decides whether the
+//!   text-scaling factor is reported (`GnomeReader`), fixed for a session.
 
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};
@@ -382,6 +387,9 @@ pub(crate) struct GnomePortalData {
     pub(crate) titlebar_font: Option<String>,
     /// Text scaling factor (e.g. 1.0, 1.25).
     pub(crate) text_scaling_factor: Option<f32>,
+    /// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …), as
+    /// [`crate::detect::session_type`] reads it. None = not set.
+    pub(crate) session_type: Option<String>,
     /// Whether overlay scrollbars are enabled. None = not provided.
     pub(crate) overlay_scrolling: Option<bool>,
     /// Icon theme name (e.g. "Adwaita", "Papirus").
@@ -466,10 +474,32 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     variant
 }
 
+/// Whether on a session of `session_type` the toolkit's own scale factor
+/// carries GNOME's text-scaling factor: an X11 session only.
+/// gnome-settings-daemon 51.0 writes the XSETTINGS `Xft/DPI` and the
+/// `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale
+/// (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
+/// `:797-798`), and on X11 winit 0.30.13 takes its scale factor from that
+/// DPI over 96, XSETTINGS first (`src/platform_impl/linux/x11/util/randr.rs:41-53`,
+/// `:145-146`), as gpui-pre-linux 0.3.9 does from `Xft.dpi`
+/// (`src/linux/x11/client.rs:2671-2678`). Neither crate's Wayland backend
+/// reads `Xft.dpi` or XSETTINGS (only their `x11` modules do), so a native
+/// Wayland client's scale factor does not carry the text-scaling factor.
+fn toolkit_scale_carries_text_scale(session_type: Option<&str>) -> bool {
+    session_type == Some("x11")
+}
+
 /// Build a GNOME ReaderResult from pre-read portal + gsettings data: the
 /// sparse OS variant, which the pipeline merges over the Adwaita preset.
+/// On an X11 session the text-scaling factor is reported as none
+/// ([`toolkit_scale_carries_text_scale`]), since the toolkit applied it.
 /// Zero I/O.
 fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
+    let mut accessibility = accessibility_from_gnome_data(data);
+    if toolkit_scale_carries_text_scale(data.session_type.as_deref()) {
+        accessibility.text_scaling_factor =
+            crate::AccessibilityPreferences::DEFAULT.text_scaling_factor;
+    }
     crate::ReaderResult {
         output: crate::ReaderOutput::Single {
             mode: Box::new(build_gnome_variant_pure(data)),
@@ -479,18 +509,19 @@ fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
         icon_set: None,
         layout: crate::LayoutTheme::default(),
         font_dpi: Some(crate::detect::GNOME_FONT_DPI),
-        accessibility: accessibility_from_gnome_data(data),
+        accessibility,
     }
 }
 
 /// Build a ReaderResult from what the portal answered (`None` for a setting
-/// it did not give) and the gsettings values `gsetting` reads, one read per
-/// key.
+/// it did not give), the session type ([`crate::detect::session_type`]) and
+/// the gsettings values `gsetting` reads, one read per key.
 pub(crate) fn build_theme(
     scheme: Option<ColorScheme>,
     accent: Option<Color>,
     contrast: Contrast,
     reduced_motion: Option<ReducedMotion>,
+    session_type: Option<String>,
     mut gsetting: impl FnMut(&str, &str) -> Option<String>,
 ) -> crate::ReaderResult {
     let portal_dark = scheme.map(|scheme| matches!(scheme, ColorScheme::PreferDark));
@@ -510,6 +541,7 @@ pub(crate) fn build_theme(
         titlebar_font: gsetting("org.gnome.desktop.wm.preferences", "titlebar-font"),
         text_scaling_factor: gsetting("org.gnome.desktop.interface", "text-scaling-factor")
             .and_then(|s| s.parse::<f32>().ok()),
+        session_type,
         overlay_scrolling: flag(gsetting("org.gnome.desktop.interface", "overlay-scrolling")),
         icon_theme: gsetting("org.gnome.desktop.interface", "icon-theme"),
         gsettings_high_contrast: flag(gsetting(
@@ -552,6 +584,16 @@ pub(crate) async fn portal_reduce_motion() -> Option<bool> {
 /// where gsettings has it, and otherwise to the preset. The gsettings reads
 /// share one [`GSETTINGS_DEADLINE`].
 ///
+/// The text-scaling factor is reported where the toolkit has not applied it:
+/// on a Wayland session. On an X11 session (`$XDG_SESSION_TYPE`,
+/// [`crate::detect::session_type`]) the reader reports 1.0: winit and gpui
+/// take their X11 scale factor from the `Xft.dpi` gnome-settings-daemon
+/// writes with the factor in it, so the connectors' text scaling would apply
+/// it a second time ([`toolkit_scale_carries_text_scale`] cites the
+/// sources). An X11 client through Xwayland on a Wayland session gets that
+/// `Xft.dpi` too and draws the factor twice; the reader cannot see a
+/// client's backend (docs/todo.md, *Font DPI*).
+///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
 /// by [`pipeline::select_reader`]; external consumers should use
 /// [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
@@ -583,6 +625,7 @@ impl crate::reader::ThemeReader for GnomeReader {
             accent,
             contrast,
             reduced_motion,
+            crate::detect::session_type(),
             |schema, key| {
                 read_gsetting(
                     schema,
@@ -1009,6 +1052,7 @@ mod tests {
             None,
             Contrast::NoPreference,
             None,
+            None,
             no_gsettings,
         );
         assert_eq!(result.name, "GNOME");
@@ -1025,6 +1069,7 @@ mod tests {
             None,
             Contrast::NoPreference,
             None,
+            None,
             no_gsettings,
         );
         assert_eq!(result.name, "GNOME");
@@ -1040,6 +1085,7 @@ mod tests {
             Some(ColorScheme::NoPreference),
             None,
             Contrast::NoPreference,
+            None,
             None,
             no_gsettings,
         );
@@ -1059,6 +1105,7 @@ mod tests {
             Some(ColorScheme::NoPreference),
             Some(accent),
             Contrast::NoPreference,
+            None,
             None,
             no_gsettings,
         );
@@ -1080,6 +1127,7 @@ mod tests {
             None,
             Contrast::High,
             None,
+            None,
             no_gsettings,
         );
 
@@ -1093,6 +1141,7 @@ mod tests {
             Some(ColorScheme::NoPreference),
             None,
             Contrast::NoPreference,
+            None,
             None,
             no_gsettings,
         );
@@ -1115,6 +1164,7 @@ mod tests {
             None,
             Contrast::NoPreference,
             None,
+            None,
             gsettings_color_scheme("prefer-dark"),
         );
         assert!(matches!(
@@ -1125,6 +1175,7 @@ mod tests {
             None,
             None,
             Contrast::NoPreference,
+            None,
             None,
             gsettings_color_scheme("default"),
         );
@@ -1141,6 +1192,7 @@ mod tests {
             None,
             Contrast::NoPreference,
             None,
+            None,
             gsettings_color_scheme("prefer-dark"),
         );
         assert!(matches!(
@@ -1153,10 +1205,17 @@ mod tests {
     fn one_gsettings_read_per_key() {
         for (scheme, reads) in [(None, 9), (Some(ColorScheme::PreferDark), 8)] {
             let mut keys = Vec::new();
-            let result = build_theme(scheme, None, Contrast::NoPreference, None, |schema, key| {
-                keys.push(format!("{schema} {key}"));
-                (key == "icon-theme").then(|| "Papirus".to_string())
-            });
+            let result = build_theme(
+                scheme,
+                None,
+                Contrast::NoPreference,
+                None,
+                None,
+                |schema, key| {
+                    keys.push(format!("{schema} {key}"));
+                    (key == "icon-theme").then(|| "Papirus".to_string())
+                },
+            );
             assert_eq!(keys.len(), reads, "{keys:?}");
             keys.sort();
             keys.dedup();
@@ -1193,6 +1252,7 @@ mod tests {
             monospace_font_name: Some("Source Code Pro 10".to_string()),
             titlebar_font: Some("Cantarell Bold 11".to_string()),
             text_scaling_factor: Some(1.0),
+            session_type: None,
             overlay_scrolling: Some(true),
             icon_theme: Some("Adwaita".to_string()),
             gsettings_high_contrast: None,
@@ -1202,19 +1262,70 @@ mod tests {
     /// gnome-settings-daemon writes `Xft.dpi` as 96 × text-scaling-factor × the
     /// X11 UI scale (gnome-settings-daemon 51.0
     /// `plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`,
-    /// `:797-798`), and the reader reports the factor itself, which the
-    /// connectors apply: the factor reaches a drawn size once, as GTK's
-    /// 96 × factor does (GTK 4.24.1 `gdk/wayland/gdksettings-wayland.c:166-168`).
+    /// `:797-798`), and on a Wayland session the reader reports the factor
+    /// itself, which the connectors apply: the factor reaches a drawn size
+    /// once, as GTK's 96 × factor does (GTK 4.24.1
+    /// `gdk/wayland/gdksettings-wayland.c:166-168`).
     #[test]
     fn text_scale_reaches_the_font_size_once() {
         let mut data = default_gnome_data();
         data.text_scaling_factor = Some(1.5);
+        data.session_type = Some("wayland".to_string());
         let reader = build_gnome_spec_pure(&data);
         assert_eq!(reader.font_dpi, Some(96.0));
         let sys = crate::pipeline::run_pipeline(reader, "adwaita").unwrap();
         // Cantarell 11 pt at 96 DPI is 14.67 px; times 1.5 it is 22 px.
         let drawn = sys.accessibility.scaled(sys.light.defaults.font.size);
         assert!((drawn - 22.0).abs() < 0.01, "drawn at {drawn} px");
+    }
+
+    /// On an X11 session the toolkit's scale factor, `Xft.dpi` over 96,
+    /// carries the text-scaling factor already, so the reader reports none.
+    #[test]
+    fn an_x11_session_reports_no_text_scale() {
+        let mut data = default_gnome_data();
+        data.text_scaling_factor = Some(1.5);
+        data.session_type = Some("x11".to_string());
+        let result = build_gnome_spec_pure(&data);
+        assert_eq!(result.accessibility.text_scaling_factor, 1.0);
+        assert_eq!(result.accessibility.text_scale_factor(), 1.0);
+    }
+
+    /// Off X11 no toolkit scale factor carries the text-scaling factor, so
+    /// the reader reports it: on a Wayland session, and where the session
+    /// type is not set.
+    #[test]
+    fn a_session_off_x11_reports_the_text_scale() {
+        for session_type in [Some("wayland"), None] {
+            let mut data = default_gnome_data();
+            data.text_scaling_factor = Some(1.5);
+            data.session_type = session_type.map(str::to_string);
+            let result = build_gnome_spec_pure(&data);
+            assert_eq!(
+                result.accessibility.text_scaling_factor, 1.5,
+                "{session_type:?}"
+            );
+        }
+    }
+
+    /// The reader passes the session type it is given to the X11 rule.
+    #[test]
+    fn build_theme_reads_the_session_type_it_is_given() {
+        let scale = |_: &str, key: &str| (key == "text-scaling-factor").then(|| "1.5".to_string());
+        let factor = |session_type: Option<&str>| {
+            build_theme(
+                None,
+                None,
+                Contrast::NoPreference,
+                None,
+                session_type.map(str::to_string),
+                scale,
+            )
+            .accessibility
+            .text_scaling_factor
+        };
+        assert_eq!(factor(Some("x11")), 1.0);
+        assert_eq!(factor(Some("wayland")), 1.5);
     }
 
     #[test]
@@ -1315,9 +1426,16 @@ mod tests {
         let animations_off =
             |_: &str, key: &str| (key == "enable-animations").then(|| "false".to_string());
         let read = |portal| {
-            build_theme(None, None, Contrast::NoPreference, portal, animations_off)
-                .accessibility
-                .reduce_motion
+            build_theme(
+                None,
+                None,
+                Contrast::NoPreference,
+                portal,
+                None,
+                animations_off,
+            )
+            .accessibility
+            .reduce_motion
         };
         assert!(read(None));
         assert!(!read(Some(ReducedMotion::NoPreference)));

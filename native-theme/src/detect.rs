@@ -598,9 +598,10 @@ mod xrandr_dpi_tests {
 /// `plugins/xsettings/gsd-xsettings-manager.c:243`, `:583-595`; GTK 4.24.1
 /// `gdk/wayland/gdksettings-wayland.c:166-168`). The factor reaches
 /// [`AccessibilityPreferences::text_scaling_factor`](crate::AccessibilityPreferences::text_scaling_factor),
-/// which the connectors apply, so the font DPI leaves it out. `Xft.dpi` is not
-/// read on GNOME: gnome-settings-daemon sets it to 96 × factor × the X11 UI
-/// scale (`:665-668`, `:797-798`).
+/// which the connectors apply, on a Wayland session, and the toolkit's
+/// `Xft.dpi` scale factor on an X11 one, so the font DPI leaves it out.
+/// `Xft.dpi` is not read on GNOME: gnome-settings-daemon sets it to
+/// 96 × factor × the X11 UI scale (`:665-668`, `:797-798`).
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub(crate) const GNOME_FONT_DPI: f32 = 96.0;
 
@@ -675,7 +676,7 @@ fn detect_system_font_dpi() -> f32 {
 }
 
 /// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …).
-#[cfg(all(target_os = "linux", feature = "kde"))]
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 pub(crate) fn session_type() -> Option<String> {
     std::env::var("XDG_SESSION_TYPE").ok()
 }

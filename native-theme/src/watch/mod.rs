@@ -728,6 +728,7 @@ mod tests {
             None,
             ashpd::desktop::settings::Contrast::default(),
             None,
+            None,
             |schema, key| {
                 read.push(format!("{schema} {key}"));
                 None
