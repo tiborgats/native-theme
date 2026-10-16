@@ -541,11 +541,15 @@ The code it generates names `native_theme::` paths, so the application
 depends on native-theme itself, as in [Runtime theme change](#runtime-theme-change):
 
 ```rust,ignore
-use native_theme_iced::IconSet;
 use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
 
-let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material, None);
-let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, None);
+// `loaded` from `from_system()`: a freedesktop icon comes from the icon theme
+// the spinner and the role icons come from. The last argument is the size the
+// system set's loader takes (at most `native_theme::icons::MAX_ICON_SIZE`),
+// `None` for its default.
+let (set, icon_theme) = (loaded.icon_set, loaded.icon_theme.as_deref());
+let image = custom_icon_to_image_handle(&AppIcon::PlayPause, set, icon_theme, None, None);
+let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, set, icon_theme, None, None);
 ```
 
 ### Role icons

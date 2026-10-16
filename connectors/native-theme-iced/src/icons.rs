@@ -32,7 +32,7 @@
 use std::borrow::Cow;
 
 use native_theme::icons::{
-    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, load_custom_icon,
+    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, load_custom_icon_in,
 };
 
 /// Converted animation frames with timing metadata.
@@ -83,39 +83,56 @@ pub fn to_svg_handle(
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
 /// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). The icon is
-/// loaded through [`load_custom_icon`] in `color`: an SF Symbol or a Segoe glyph
+/// loaded through [`load_custom_icon_in`] in `color`: an SF Symbol or a Segoe glyph
 /// arrives as RGBA in that colour instead of its fixed black or white.
+///
+/// A freedesktop icon is looked up in `icon_theme`, the system's icon theme
+/// where it is `None`: pass [`Loaded::icon_theme`](crate::Loaded::icon_theme),
+/// so the icon comes from the icon theme the role icons and the `Spinner`
+/// beside it come from. `size` is the size the
+/// system set's loader draws or looks the icon up at, clamped to
+/// `1..=`[`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE); `None` keeps
+/// each loader's default (see [`load_custom_icon_in`]).
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    icon_theme: Option<&str>,
     color: Option<iced_core::Color>,
+    size: Option<u32>,
 ) -> Option<iced_core::image::Handle> {
-    into_image_handle(load_custom_icon(
+    into_image_handle(load_custom_icon_in(
         provider,
         icon_set,
+        icon_theme,
         color.map(to_rgba),
-        None,
+        size,
     )?)
 }
 
 /// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is RGBA. The icon is loaded through [`load_custom_icon`], which colours
+/// icon is RGBA. The icon is loaded through [`load_custom_icon_in`], which colours
 /// each set its own way: a Material or Lucide icon, or the provider's own SVG,
 /// through the monochrome colouriser, a freedesktop icon only where its
 /// foreground is left to the caller (a symbolic icon's placeholders, a
 /// `currentColor` the icon sets no `color` for), so a full-colour one keeps
 /// its own palette and one whose stylesheet sets its colour keeps that.
+///
+/// `icon_theme` and `size` are [`custom_icon_to_image_handle()`]'s: the icon
+/// theme a freedesktop icon is looked up in, and the size it is looked up at,
+/// at most [`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE).
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    icon_theme: Option<&str>,
     color: Option<iced_core::Color>,
+    size: Option<u32>,
 ) -> Option<iced_core::svg::Handle> {
     into_svg_handle(
-        load_custom_icon(provider, icon_set, color.map(to_rgba), None)?,
+        load_custom_icon_in(provider, icon_set, icon_theme, color.map(to_rgba), size)?,
         None,
     )
 }
@@ -386,6 +403,8 @@ mod tests {
             &TestSvgProvider,
             native_theme::theme::IconSet::Material,
             None,
+            None,
+            None,
         );
         assert!(result.is_none());
     }
@@ -395,6 +414,8 @@ mod tests {
         let result = custom_icon_to_svg_handle(
             &TestSvgProvider,
             native_theme::theme::IconSet::Material,
+            None,
+            None,
             None,
         );
         assert!(result.is_some());
@@ -406,7 +427,9 @@ mod tests {
         let result = custom_icon_to_svg_handle(
             &TestSvgProvider,
             native_theme::theme::IconSet::Material,
+            None,
             Some(color),
+            None,
         );
         assert!(result.is_some());
     }
@@ -417,22 +440,34 @@ mod tests {
             &EmptyProvider,
             native_theme::theme::IconSet::Material,
             None,
+            None,
+            None,
         );
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
-        let result =
-            custom_icon_to_svg_handle(&EmptyProvider, native_theme::theme::IconSet::Material, None);
+        let result = custom_icon_to_svg_handle(
+            &EmptyProvider,
+            native_theme::theme::IconSet::Material,
+            None,
+            None,
+            None,
+        );
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_helpers_accept_dyn_provider() {
         let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestSvgProvider);
-        let result =
-            custom_icon_to_svg_handle(&*boxed, native_theme::theme::IconSet::Material, None);
+        let result = custom_icon_to_svg_handle(
+            &*boxed,
+            native_theme::theme::IconSet::Material,
+            None,
+            None,
+            None,
+        );
         assert!(result.is_some());
     }
 
@@ -477,7 +512,9 @@ mod tests {
             let handle = custom_icon_to_svg_handle(
                 &FolderProvider,
                 native_theme::theme::IconSet::Freedesktop,
+                None,
                 Some(red),
+                None,
             )
             .expect("the fixture theme has the folder");
             let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
@@ -495,6 +532,79 @@ mod tests {
                 icons,
                 "full-colour",
                 &[("folder", FULL_COLOUR_FOLDER)],
+            )
+        })
+    }
+
+    /// A freedesktop icon is looked up in the icon theme given, not the
+    /// system's: the child's `kdeglobals` names `Other`, which has a folder
+    /// of its own, and the provider's `folder` loaded with
+    /// `icon_theme = Some("Fixture")` is `Fixture`'s. The themes are fixtures
+    /// in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_svg_handle_looks_a_freedesktop_icon_up_in_the_icon_theme_given()
+    -> std::io::Result<()> {
+        const NAME: &str = "icons::tests::custom_icon_to_svg_handle_looks_a_freedesktop_icon_up_in_the_icon_theme_given";
+        const FIXTURE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 1h14v14H1z"/></svg>"#;
+        const OTHER: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let handle = custom_icon_to_svg_handle(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some("Fixture"),
+                None,
+                None,
+            )
+            .expect("the fixture theme has the folder");
+            assert_eq!(svg_text(&handle), FIXTURE);
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, Child::kde("Other"), |icons| {
+            crate::icon_fixture::write_scalable_theme(icons, "Fixture", &[("folder", FIXTURE)])?;
+            crate::icon_fixture::write_scalable_theme(icons, "Other", &[("folder", OTHER)])
+        })
+    }
+
+    /// The size given reaches the freedesktop lookup, clamped to
+    /// `1..=MAX_ICON_SIZE` by native-theme's loader: at 64 the icon comes
+    /// from the theme's 64 directory, not the 16 one nearest the loader's
+    /// default 24, and at 99 999 from its 512 one, not its 1024 one. The theme is a fixture in a child process
+    /// ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_svg_handle_looks_a_freedesktop_icon_up_at_the_size_given()
+    -> std::io::Result<()> {
+        const NAME: &str =
+            "icons::tests::custom_icon_to_svg_handle_looks_a_freedesktop_icon_up_at_the_size_given";
+        let svg = |size: u32| {
+            format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}"/>"#)
+        };
+        if crate::icon_fixture::in_child() {
+            for (asked, found) in [(64, 64), (99_999, 512)] {
+                let handle = custom_icon_to_svg_handle(
+                    &FolderProvider,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some("sized"),
+                    None,
+                    Some(asked),
+                )
+                .expect("the fixture theme has the folder");
+                assert_eq!(svg_text(&handle), svg(found), "asked for {asked}");
+            }
+            return Ok(());
+        }
+        let (at_16, at_64, at_512, at_1024) = (svg(16), svg(64), svg(512), svg(1024));
+        crate::icon_fixture::run(NAME, Child::kde("sized"), |icons| {
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "sized",
+                &[
+                    (16, "folder.svg", at_16.as_bytes()),
+                    (64, "folder.svg", at_64.as_bytes()),
+                    (512, "folder.svg", at_512.as_bytes()),
+                    (1024, "folder.svg", at_1024.as_bytes()),
+                ],
             )
         })
     }
