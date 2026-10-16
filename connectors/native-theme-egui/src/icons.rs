@@ -1468,7 +1468,18 @@ mod tests {
         let role = IconRole::DialogWarning;
         let key = IconKey::role(role, IconSet::Lucide).size(16.0);
         assert!(custom_icon_to_image(&ctx, &role, &key).is_some());
-        // SF Symbols has no open folder (`native-theme/src/model/icons.rs:571`).
+        // The alt text is the role's name: the image's `WidgetInfo.label`
+        // (`egui/src/widgets/image.rs:408`), which AccessKit reports.
+        use egui_kittest::kittest::Queryable as _;
+        let harness = egui_kittest::Harness::new_ui(|ui| {
+            if let Some(image) = custom_icon_to_image(ui.ctx(), &role, &key) {
+                ui.add(image);
+            }
+        });
+        let _ = harness.get_by_label(role.name());
+        // SF Symbols has no open folder (`native-theme/src/model/icons.rs:571`) and the role
+        // has no bundled SVG for it, so this is `None` on every platform, macOS included: no
+        // name reaches the SF Symbols loader and no SVG of the provider's own is left.
         let lacking = IconRole::FolderOpen;
         let key = IconKey::role(lacking, IconSet::SfSymbols);
         assert!(custom_icon_to_image(&ctx, &lacking, &key).is_none());
