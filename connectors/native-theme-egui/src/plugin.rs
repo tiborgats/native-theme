@@ -389,6 +389,14 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// viewport — a rebuilt atlas after the desktop switched — the command is appended, because
     /// egui sends again only when the *preference* changes (§10.3).
     ///
+    /// The inverse, under the same two conditions, once the atlas has no OS mode (a preset, or
+    /// after [`ThemeAtlas::clear`]): a viewport this hook last told an explicit scheme gets
+    /// `SetTheme(SystemTheme::SystemDefault)` once — the command egui believes it sent and will
+    /// not send again — unless egui's own already rides in the output, and its `last_sent`
+    /// entry is dropped, so the window and egui agree and the plugin is inert (M7-02). Not
+    /// `SetTheme(ctx.theme())`: a preset pins its scheme through `Context::set_theme`, which
+    /// egui's `sync_window_theme` sends itself.
+    ///
     /// The `filled` map is read, never emptied: an immediate viewport runs its whole pass, hooks
     /// included, inside its parent's, and the parent's commands reach the outermost pass's
     /// output (`egui/src/context.rs:2799-2811`); `input_hook` overwrites each viewport's entry
@@ -406,9 +414,6 @@ impl egui::plugin::Plugin for NativeThemePlugin {
             cap_text_sizes(ctx, &atlas, max_texture_side, pixels_per_point);
         }
         let filled = &self.filled;
-        let Some(mode) = os_mode(ctx) else {
-            return;
-        };
         let (sync, follows_os) = ctx.options(|o| {
             (
                 o.sync_window_theme,
@@ -418,6 +423,17 @@ impl egui::plugin::Plugin for NativeThemePlugin {
         if !sync || !follows_os {
             return;
         }
+        let Some(mode) = os_mode(ctx) else {
+            let system_default = egui::ViewportCommand::SetTheme(egui::SystemTheme::SystemDefault);
+            for (viewport, out) in output.viewport_output.iter_mut() {
+                if self.last_sent.remove(viewport).is_some()
+                    && !out.commands.contains(&system_default)
+                {
+                    out.commands.push(system_default.clone());
+                }
+            }
+            return;
+        };
         let want = if mode.is_dark() {
             egui::SystemTheme::Dark
         } else {

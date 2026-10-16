@@ -882,6 +882,71 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
     }
 }
 
+/// M7-02: once an atlas with an OS mode has told the title bar its scheme, an atlas with none
+/// (a preset) or `ThemeAtlas::clear` hands the window back to egui's own `SystemDefault`, once,
+/// so the title bar follows the scheme egui draws in.
+#[test]
+fn an_atlas_without_an_os_mode_restores_egui_s_window_theme() {
+    use egui::{SystemTheme, Theme};
+
+    type Leave = fn(&egui::Context);
+    let leave: [(&str, Leave); 2] = [
+        ("a preset atlas", |ctx| {
+            preset_atlas("kde-breeze").install(ctx)
+        }),
+        ("clear", ThemeAtlas::clear),
+    ];
+    for (name, leave) in leave {
+        let ctx = bare_context();
+        preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Light, vec![SystemTheme::Light]),
+            "{name}: the OS mode told the title bar"
+        );
+        leave(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Dark, vec![SystemTheme::SystemDefault]),
+            "{name}: egui's fallback theme, and the window back on egui's own command"
+        );
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Dark, vec![]),
+            "{name}: sent once"
+        );
+        preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Light, vec![SystemTheme::Light]),
+            "{name}: an atlas with an OS mode again tells the title bar again"
+        );
+    }
+
+    // A pinned preference: egui's own command reached the window, and the plugin sends none.
+    let ctx = bare_context();
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    let _ = pass_theme(&ctx, with_system_theme(None));
+    ctx.set_theme(Theme::Dark);
+    preset_atlas("kde-breeze").install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "pinned: egui's command alone"
+    );
+    // Back to `System`: egui sends `SystemDefault` itself, and the plugin adds no second one.
+    ctx.set_theme(egui::ThemePreference::System);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::SystemDefault]),
+        "System again: egui's own command, once"
+    );
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![])
+    );
+}
+
 /// After `ThemeAtlas::clear` the install plugin is inert: it fills no colour scheme, rewrites
 /// no title-bar command and paints no focus ring.
 #[test]

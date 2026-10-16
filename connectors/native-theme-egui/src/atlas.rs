@@ -561,7 +561,9 @@ impl ThemeAtlas {
 
     /// Remove the atlas from `Context` data (`IdTypeMap::remove`,
     /// `egui/src/util/id_type_map.rs:572`). The install plugin then finds nothing and does
-    /// nothing, and [`NativeThemeUiExt`](crate::NativeThemeUiExt) degrades as it does when nothing was installed. The
+    /// nothing, except that a window it told the OS mode's scheme gets egui's own
+    /// `SetTheme(SystemTheme::SystemDefault)` back once at the next pass's end, and
+    /// [`NativeThemeUiExt`](crate::NativeThemeUiExt) degrades as it does when nothing was installed. The
     /// `Style`s already written into `Options` are left alone; call
     /// `ctx.set_style_of(t, t.default_style())` (`egui/src/memory/theme.rs:24-29`) for each
     /// `egui::Theme` `t`, and `ctx.set_fonts(egui::FontDefinitions::default())` if the atlas
