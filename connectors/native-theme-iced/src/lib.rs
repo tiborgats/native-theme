@@ -1415,20 +1415,30 @@ mod tests {
     /// A stated `slider.thumb_hover_color` is a layer over the thumb (C17), as
     /// the gpui connector's `SliderLook` lays it: a translucent one is
     /// composited, not emitted as given. Every bundled hover is opaque, so the
-    /// layer here is set by hand.
+    /// layer here is set by hand: black at `0x40`, over adwaita's opaque thumb,
+    /// is the plain mix `thumb × (1 − a)` per channel, opaque, written out
+    /// here rather than taken from the composite under test.
     #[cfg(feature = "widgets")]
     #[test]
     fn a_hovered_slider_handle_lays_the_hover_over_the_thumb() {
         use iced_widget::slider::Status;
         let mut r = make_resolved_preset("adwaita", false);
-        let hover = native_theme::color::Rgba::new(0, 0, 0, 0x40);
-        r.slider.thumb_hover_color = Some(hover);
+        r.slider.thumb_hover_color = Some(native_theme::color::Rgba::new(0, 0, 0, 0x40));
+        let thumb = palette::to_color(r.slider.thumb_color);
+        assert_eq!(thumb.a, 1.0, "precondition: adwaita's thumb is opaque");
         let theme = to_theme(&r, "adwaita");
-        let style = styles::slider(&r)(&theme, Status::Hovered);
-        let to_color = palette::to_color;
-        let want = styles::composite_over(to_color(hover), to_color(r.slider.thumb_color));
-        assert_ne!(want, to_color(hover));
-        assert_eq!(style.handle.background, iced_core::Background::Color(want));
+        let iced_core::Background::Color(got) = styles::slider(&r)(&theme, Status::Hovered)
+            .handle
+            .background
+        else {
+            panic!("the hovered handle is not a colour");
+        };
+        let a = f32::from(0x40_u8) / 255.0;
+        let mix = |c: f32| c * (1.0 - a);
+        let want = [mix(thumb.r), mix(thumb.g), mix(thumb.b), 1.0];
+        for (got, want) in [got.r, got.g, got.b, got.a].into_iter().zip(want) {
+            assert!((got - want).abs() < 1e-6, "{got:?} against {want:?}");
+        }
     }
 
     /// docs/platform-facts.md §2.1.6: libadwaita fades a disabled switch as
