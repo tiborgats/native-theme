@@ -674,7 +674,10 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 /// (`resolved.text_scale.caption.size`, …) or a widget font set by hand. The
 /// factor applies to every text size alike. A factor that is not finite and
 /// positive is ignored, and a size whose product with the factor is not a
-/// normal positive number is returned as it is.
+/// normal positive number is returned as it is
+/// ([`AccessibilityPreferences::scaled`]). `native_theme_egui::scaled_text_size`
+/// returns that product as it is, by the egui connector's spec, §8.6, and the
+/// egui atlas writes egui's own size in its place, with a `Note::ValueSanitised`.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
     prefs.scaled(size)

@@ -18,11 +18,14 @@ use crate::{AccessibilityPreferences, Role, TextRole};
 /// A text size from the theme times the user's text-scaling factor,
 /// [`AccessibilityPreferences::text_scale_factor`]: a factor that is not finite and positive is
 /// ignored. The product is returned as it is, even where it is not a positive normal `f32` (a
-/// finite factor that overflows it to `+∞`): every size the atlas writes then takes spec §8.5's
-/// rule, egui's own size for the slot with a `Note::ValueSanitised`, and the font accessors
-/// egui's own size. `native_theme_iced::scaled_text_size` and
+/// finite factor that overflows it to `+∞`, or one that makes it subnormal or zero): spec §8.6
+/// defines this function as the plain product, and every size the atlas writes through it then
+/// takes spec §8.5's rule, egui's own size for the slot with a `Note::ValueSanitised`, and the
+/// font accessors egui's own size. `native_theme_iced::scaled_text_size` and
 /// `native_theme_gpui::scaled_text_size` go through [`AccessibilityPreferences::scaled`]
-/// instead, which returns such a size unscaled.
+/// instead, which returns such a size unscaled: those connectors report no sanitised value, so
+/// they keep the theme's size in that one place, where this atlas needs the product itself to
+/// see the degenerate size and report it.
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a

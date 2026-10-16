@@ -1265,7 +1265,10 @@ pub fn mono_font_size(
 /// size (`resolved.text_scale.caption.size`, …) are the theme's own sizes,
 /// unscaled, as `defaults.font.size` is. A factor that is not finite and
 /// positive is ignored, and a size whose product with the factor is not a
-/// normal positive number is returned as it is.
+/// normal positive number is returned as it is
+/// ([`AccessibilityPreferences::scaled`]). `native_theme_egui::scaled_text_size`
+/// returns that product as it is, by the egui connector's spec, §8.6, and the
+/// egui atlas writes egui's own size in its place, with a `Note::ValueSanitised`.
 ///
 /// # Example
 ///
