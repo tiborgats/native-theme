@@ -115,7 +115,10 @@ impl IconKey {
     /// ([`SfSymbolsLoader::size`](native_theme::icons::SfSymbolsLoader::size)) and a Segoe
     /// glyph's pixel size
     /// ([`SegoeFluentLoader::size`](native_theme::icons::SegoeFluentLoader::size)). A size of 0
-    /// is asked for as 1, as those two load nothing at 0; a Material or Lucide icon is
+    /// is asked for as 1, as those two load nothing at 0. A size those two do not accept
+    /// above that, one whose `size² × 4` raster bytes exceed their 64 MiB decode bound, gives
+    /// `None`, and so does a raster with a side above `max_texture_side`: egui refuses an
+    /// oversized raster rather than resampling it (§9.3). A Material or Lucide icon is
     /// scalable and loads the same at every size. Stored as a private `u32` — the type the
     /// three loaders take — computed as `(if points > 0.0 { points.round() } else { 0.0 }) as
     /// u32`, which is total over every `f32`: `NaN`, `-0.0` and every negative fold to the
@@ -291,8 +294,10 @@ pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
 /// with the `#rrggbb` of the tint, else of `defaults.text_color` of the installed atlas's
 /// `ResolvedTheme` for `ctx.theme()` (`native_theme::icons::fill_current_color`; the bytes
 /// as they are where no atlas is installed); a full-colour icon, and one whose stylesheet
-/// sets its `color`, untouched (§9.2). Load a freedesktop icon for it with
-/// `FreedesktopLoader::color` in the same colour (§9.2). `IconData::Rgba` →
+/// sets its `color`, untouched (§9.2). A freedesktop icon the application loads itself is
+/// best loaded with `FreedesktopLoader::color` in the same colour, so a symbolic icon's
+/// placeholders take it too (§9.2); [`custom_icon_to_image_source`] loads a provider's icon
+/// that way and passes it through no colouring here. `IconData::Rgba` →
 /// `ImageSource::Texture`, uploaded once via `Context::load_texture`
 /// (`egui/src/context.rs:2390`) under the same URI and reused afterwards. `None` for an
 /// image with a side above `max_texture_side` — rejected, never resampled (§9.3) — and for
@@ -387,8 +392,12 @@ pub fn to_image(
 /// freedesktop icon takes it where its foreground is left to the caller (a symbolic icon's
 /// placeholders, a `currentColor` the document sets no `color` for); one whose own
 /// stylesheet sets its colour (Breeze's `current-color-scheme`) and a full-colour one keep
-/// theirs. The provider's own SVG for a system set is coloured in it too, on every platform
-/// (an SF Symbol's on Linux and Windows as well). A Material or Lucide icon, and the
+/// theirs. The provider's own SVG for a system set, freedesktop included, is coloured in it
+/// too, as a monochrome icon (`native_theme::icons::colorize_monochrome_svg`, an implicit or
+/// black fill as well as a `currentColor`), on every platform (an SF Symbol's on Linux and
+/// Windows as well), so give a system set a monochrome SVG. A size a system set's loader
+/// does not accept, and a raster with a side above `max_texture_side`, give `None`, never a
+/// resampled raster (§9.3; [`IconKey::size`]). A Material or Lucide icon, and the
 /// provider's own SVG for one, take the tint alone and are untouched without one
 /// ([`IconKey::tint`]). The loaded bytes are keyed as [`to_image_source`] keys an icon, with
 /// no second colouring pass, so the provider's bytes are what the URI's hash covers. `None`
@@ -517,7 +526,9 @@ mod tests {
 
     /// A `currentColor` icon that sets no `color` of its own (§9.2).
     const PLAIN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
-    /// Breeze's convention: a stylesheet sets `color` per class.
+    /// Breeze's convention: a stylesheet sets `color` per class. Only the `material-icons`
+    /// tests use it.
+    #[cfg(feature = "material-icons")]
     const BREEZE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><path class="ColorScheme-Text" fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
     /// A full-colour icon: no `currentColor`, no placeholder. Only the `material-icons` tests
     /// use it.
@@ -525,7 +536,11 @@ mod tests {
     const FULL_COLOUR: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
 
     /// `#rrggbb` of a colour, as `native_theme::icons::fill_current_color` writes it (the alpha
-    /// is discarded).
+    /// is discarded). Only the `material-icons` tests and the freedesktop fixture tests use it.
+    #[cfg(any(
+        feature = "material-icons",
+        all(target_os = "linux", feature = "system-icons")
+    ))]
     fn hex_rgb(c: Rgba) -> String {
         format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b)
     }
@@ -840,10 +855,13 @@ mod tests {
         assert!(custom_icon_to_image_source(&ctx, &provider, &bundled).is_none());
     }
 
-    /// A provider's own SVG for a system set the platform cannot load is the icon, in the
-    /// colour [`custom_icon_to_image_source`] loads a system set in: the text colour of the
-    /// installed atlas, else the tint. A bundled set's is untouched without a tint, as
-    /// [`IconKey::tint`] says, and coloured with one.
+    /// A provider's own SVG for a system set it names no icon in, or that the platform cannot
+    /// load, is the icon, coloured as a monochrome icon (`colorize_monochrome_svg`, which fills
+    /// this SVG's implicit black) in the colour [`custom_icon_to_image_source`] loads a system
+    /// set in: the text colour of the installed atlas, else the tint. That holds for a
+    /// freedesktop key too, where only a `currentColor` the SVG set no colour for used to be
+    /// filled. A bundled set's is untouched without a tint, as [`IconKey::tint`] says, and
+    /// coloured with one.
     #[test]
     fn a_providers_own_svg_takes_the_colour_its_set_loads_in() {
         const MONOCHROME: &[u8] =
@@ -864,10 +882,11 @@ mod tests {
                 .unwrap_or_else(|| panic!("{key:?} loaded nothing"));
             bytes_of(&source).1
         };
-        // On a platform without the set's loader the provider's SVG is the icon: SF Symbols
+        // The provider names no freedesktop icon, so its SVG is the icon on every platform; on
+        // a platform without the set's loader the provider's SVG is the icon too: SF Symbols
         // load on macOS only, Segoe glyphs on Windows only (`SfSymbolsLoader::load`,
         // `SegoeFluentLoader::load`).
-        let mut system_sets = Vec::new();
+        let mut system_sets = vec![IconSet::Freedesktop];
         if !cfg!(all(target_os = "macos", feature = "system-icons")) {
             system_sets.push(IconSet::SfSymbols);
         }
@@ -1040,9 +1059,10 @@ mod tests {
     }
 
     /// A custom freedesktop icon is looked up at the key's size ([`IconKey::size`]): the
-    /// theme's directory of that size is the one it comes from. The theme is a fixture in a
-    /// child process ([`crate::icon_fixture`]) with a `folder` in a 16 and in a 64 directory,
-    /// each its own.
+    /// theme's directory of that size is the one it comes from, and a key's 0 is looked up
+    /// at 1. The theme is a fixture in a child process ([`crate::icon_fixture`]) with a
+    /// `folder` in a 16 and in a 64 directory, in a 0 directory, which a lookup at 0 matches,
+    /// and in a scalable directory from 1 to 8, which a lookup at 1 matches, each its own.
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
     fn a_custom_icon_is_looked_up_at_the_keys_size() -> Result<(), Box<dyn std::error::Error>> {
@@ -1065,6 +1085,16 @@ mod tests {
                     "asked for {size}"
                 );
             }
+            for points in [0.0, -3.0, f32::NAN] {
+                let key = IconKey::name("folder", IconSet::Freedesktop).size(points);
+                let source = custom_icon_to_image_source(&ctx, &named("folder"), &key)
+                    .ok_or("the fixture theme has no folder")?;
+                assert_eq!(
+                    String::from_utf8_lossy(&bytes_of(&source).1),
+                    svg(1),
+                    "asked for {points}"
+                );
+            }
             return Ok(());
         }
         crate::icon_fixture::run(NAME, "sized", |icons| {
@@ -1072,12 +1102,14 @@ mod tests {
             std::fs::create_dir_all(&theme)?;
             std::fs::write(
                 theme.join("index.theme"),
-                "[Icon Theme]\nName=sized\nDirectories=16/places,64/places\n\n\
+                "[Icon Theme]\nName=sized\nDirectories=0/places,scalable/places,16/places,64/places\n\n\
+                 [0/places]\nSize=0\nType=Fixed\n\n\
+                 [scalable/places]\nSize=1\nType=Scalable\nMinSize=1\nMaxSize=8\n\n\
                  [16/places]\nSize=16\nType=Fixed\n\n\
                  [64/places]\nSize=64\nType=Fixed\n",
             )?;
-            for size in [16, 64] {
-                let dir = theme.join(format!("{size}/places"));
+            for (dir, size) in [("0", 0), ("scalable", 1), ("16", 16), ("64", 64)] {
+                let dir = theme.join(format!("{dir}/places"));
                 std::fs::create_dir_all(&dir)?;
                 std::fs::write(dir.join("folder.svg"), svg(size))?;
             }
