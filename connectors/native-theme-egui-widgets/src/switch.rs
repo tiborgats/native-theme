@@ -39,8 +39,8 @@ use crate::scope;
 ///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
 ///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` as one widget over
 ///   the backdrop (the crate's *Disabled*): the thumb on the track, the pair over
-///   [`Switch::backdrop`]; under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s
-///   `disabled_alpha`.
+///   [`Switch::backdrop`]. Under `ui.add_enabled(false, ..)` it is faded as one by the
+///   calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
 ///
 /// The focus ring surrounds the track (`register_focus_shape`). AccessKit sees a
 /// `Role::Switch`, toggled as the value is.
@@ -124,8 +124,9 @@ struct Paint {
     sw: ResolvedSwitchTheme,
     text: Rgba,
     disabled_text: Rgba,
-    /// The colour a switch disabled by its own `.enabled(false)` is faded over as one widget;
-    /// `None` where it is enabled, or its calling `Ui` faded it already.
+    /// The colour a disabled switch is faded over as one widget, by its own `.enabled(false)`
+    /// or under a disabled calling `Ui`; `None` where it is enabled, or nothing is to be faded
+    /// as one (`crate::fade::outer_fade`).
     ground: Option<egui::Color32>,
 }
 
@@ -137,8 +138,9 @@ impl egui::Widget for Switch<'_> {
             enabled,
             backdrop,
         } = self;
-        // Faded here, as one widget, only where the calling `Ui` has not faded it already.
-        let own_fade = !enabled && ui.is_enabled();
+        // Faded as one where disabled here, or under a disabled calling `Ui` whose fade it
+        // takes back.
+        let as_one = (!enabled && ui.is_enabled()) || crate::fade::outer_fade(ui).is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let t = atlas.resolved_for(ui.ctx().theme());
             Geometry::of(&t.switch).map(|geometry| Paint {
@@ -146,7 +148,7 @@ impl egui::Widget for Switch<'_> {
                 sw: t.switch.clone(),
                 text: t.defaults.font.color,
                 disabled_text: t.defaults.disabled_text_color,
-                ground: own_fade
+                ground: as_one
                     .then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color))),
             })
         });

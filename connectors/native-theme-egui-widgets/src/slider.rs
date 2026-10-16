@@ -42,7 +42,10 @@ const KEY_STEP: f32 = 1.0;
 ///   libadwaita fades the whole widget (the crate's *Disabled*): the rail over the backdrop,
 ///   the trailing fill over the rail, the knob and its outline over the fill, each faded over
 ///   the backdrop and painted at the opacity the `Ui` had, so no part shows another through
-///   it. Under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s `disabled_alpha`.
+///   it. The knob and its outline are taken over the fill throughout, which is exact for an
+///   opaque knob (every bundled preset's `thumb_color` is opaque); a translucent one would show
+///   the rail beyond the fill's end. Under `ui.add_enabled(false, ..)` it is faded as one by
+///   the calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
 ///
 /// Interaction is egui's on a linear range: it senses `Sense::drag()` (`:655`); a drag sets
 /// the value from the pointer (`:666-678`); while focused, the arrow keys along the rail move
@@ -96,10 +99,10 @@ impl<'a> Slider<'a> {
     }
 }
 
-/// How a slider disabled by its own `.enabled(false)` is faded as one widget: over `ground`,
-/// by the scope's `disabled_alpha`, below 1, its knob's outline the `Disabled` cell's before
-/// the fade, the stroke of a disabled response's `inactive` state (egui hovers no disabled
-/// widget, `egui/src/context.rs:1496-1500`; `egui/src/style.rs:1273-1283`).
+/// How a disabled slider is faded as one widget: over `ground`, by the scope's
+/// `disabled_alpha` once faded, below 1, its knob's outline the `Disabled` cell's before the
+/// fade, the stroke of a disabled response's `inactive` state (egui hovers no disabled widget,
+/// `egui/src/context.rs:1496-1500`; `egui/src/style.rs:1273-1283`).
 #[derive(Clone, Copy)]
 struct Fade {
     ground: egui::Color32,
@@ -108,19 +111,20 @@ struct Fade {
 }
 
 impl Fade {
-    /// The fade of the slider scope `ui` over `ground`; `None` where `disabled_alpha` is 1, a
-    /// platform that dims by colour alone, whose colours are painted as stated.
-    fn of(ui: &egui::Ui, ground: egui::Color32) -> Option<Self> {
-        let visuals = ui.visuals();
-        let alpha = visuals.disabled_alpha();
+    /// The fade of the faded slider scope `ui` over `ground`, its knob's `outline` read before
+    /// the fade; `None` where `disabled_alpha` is 1, a platform that dims by colour alone,
+    /// whose colours are painted as stated.
+    fn of(ui: &egui::Ui, ground: egui::Color32, outline: egui::Stroke) -> Option<Self> {
+        let alpha = ui.visuals().disabled_alpha();
         (alpha < 1.0).then_some(Self {
             ground,
             alpha,
-            outline: visuals.widgets.inactive.fg_stroke,
+            outline,
         })
     }
 
-    /// `colour` over `under`, faded over the ground.
+    /// `colour` over `under`, faded over the ground: exact for an opaque `colour`, and for a
+    /// translucent one where `under` is what lies beneath it.
     fn over(&self, under: egui::Color32, colour: egui::Color32) -> egui::Color32 {
         crate::fade::faded(self.ground, under.blend(colour), self.alpha)
     }
@@ -154,12 +158,14 @@ impl egui::Widget for Slider<'_> {
             enabled,
             backdrop,
         } = self;
-        // Faded here, as one widget, only where the calling `Ui` has not faded it already.
-        let own_fade = !enabled && ui.is_enabled();
+        // Faded as one where disabled here, or under a disabled calling `Ui` whose fade it
+        // takes back.
+        let under = crate::fade::outer_fade(ui);
+        let as_one = (!enabled && ui.is_enabled()) || under.is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let t = atlas.resolved_for(ui.ctx().theme());
-            let ground = own_fade
-                .then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color)));
+            let ground =
+                as_one.then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color)));
             Geometry::of(&t.slider, width).map(|g| (g, t.slider.clone(), ground))
         });
         let Some((geometry, sl, ground)) = paint else {
@@ -182,11 +188,15 @@ impl egui::Widget for Slider<'_> {
             None => slider_ui(ui, value, &range, None, geometry, &sl, fade),
         };
         match ground {
-            // `scope::open_faded`'s own-fade arm, with the knob's outline read before the fade.
+            // `scope::open_faded`'s fading arms, with the knob's outline read before the fade.
             Some(ground) => {
                 ui.native_scope(Role::Slider, RoleVariant::Disabled, |ui| {
-                    let fade = Fade::of(ui, ground);
-                    crate::fade::fade_as_one(ui, ground);
+                    let outline = ui.visuals().widgets.inactive.fg_stroke;
+                    match under {
+                        Some(under) => crate::fade::fade_as_one_under(ui, ground, under),
+                        None => crate::fade::fade_as_one(ui, ground),
+                    }
+                    let fade = Fade::of(ui, ground, outline);
                     add(ui, fade)
                 })
                 .inner

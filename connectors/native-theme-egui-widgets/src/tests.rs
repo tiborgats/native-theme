@@ -821,7 +821,8 @@ fn a_disabled_widget_paints_its_disabled_leaves() {
 /// self faded as one widget over the window, as libadwaita's `filter: Opacity(..)` fades it:
 /// the white thumb stays white on the track and the pair fades over the window (light
 /// #fcfcfd, where fading each shape on its own gave #cbdff7). A disabled calling `Ui`
-/// disables the widget as `.enabled(false)` does, with the calling `Ui`'s own fade.
+/// disables the widget as `.enabled(false)` does, and fades it as one by its own
+/// `disabled_alpha`.
 #[test]
 fn a_disabled_widget_fades_by_its_disabled_opacity() {
     let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
@@ -849,17 +850,17 @@ fn a_disabled_widget_fades_by_its_disabled_opacity() {
             .all(|(got, want)| got.abs_diff(want) <= 1),
         "{thumb:?}"
     );
-    let track = to_color32(t.switch.checked_background).gamma_multiply(0.5);
     let (out, r) = click(&ctx, |ui| {
         ui.add_enabled_ui(false, |ui| ui.add(Switch::new(&mut on)))
             .inner
     });
     assert!(on && !r.changed());
     assert!(
-        rects(&out).iter().any(|s| s.fill == track),
+        rects(&out).iter().any(|s| s.fill == as_one),
         "{:#?}",
         rects(&out)
     );
+    assert!(circles(&out).iter().any(|c| c.fill == thumb));
 }
 
 /// adwaita light, the opacity-only platform (`disabled_opacity` 0.5, no disabled colour).
@@ -882,14 +883,45 @@ fn a_disabled_checked_radio_is_its_checked_self_faded() {
     let ctx = installed(&t, &AccessibilityPreferences::default());
     let ground = to_color32(t.defaults.background_color);
     let fill = ground.blend(to_color32(t.checkbox.checked_background));
-    let (out, _) = click(&ctx, |ui| {
-        ui.add(RadioButton::new(true, "Radio").enabled(false))
-    });
-    let shapes = circles(&out);
     let circle = ground.lerp_to_gamma(fill, 0.5);
-    assert!(shapes.iter().any(|c| c.fill == circle), "{shapes:#?}");
     let dot = ground.lerp_to_gamma(fill.blend(to_color32(t.checkbox.indicator_color)), 0.5);
-    assert!(shapes.iter().any(|c| c.fill == dot), "{shapes:#?}");
+    // Disabled by its own `.enabled(false)`, and under a disabled `Ui`, whose `disabled_alpha`
+    // (`defaults.disabled_opacity`, 0.5) it is faded by.
+    type Add = Box<dyn Fn(&mut egui::Ui) -> egui::Response>;
+    let ways: [Add; 2] = [
+        Box::new(|ui| ui.add(RadioButton::new(true, "Radio").enabled(false))),
+        Box::new(|ui| ui.add_enabled(false, RadioButton::new(true, "Radio"))),
+    ];
+    for add in &ways {
+        let (out, _) = click(&ctx, add);
+        let shapes = circles(&out);
+        assert!(shapes.iter().any(|c| c.fill == circle), "{shapes:#?}");
+        assert!(shapes.iter().any(|c| c.fill == dot), "{shapes:#?}");
+    }
+
+    // kde-breeze dims by colour (`disabled_opacity` 1) and states a disabled fill: the circle
+    // takes it and the dot the disabled text colour, painted as stated.
+    let t = kde();
+    assert_eq!(t.checkbox.disabled_opacity, 1.0);
+    let stated = t
+        .checkbox
+        .disabled_background
+        .expect("kde-breeze states it");
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    for add in &ways {
+        let (out, _) = click(&ctx, add);
+        let shapes = circles(&out);
+        assert!(
+            shapes.iter().any(|c| c.fill == to_color32(stated)),
+            "{shapes:#?}"
+        );
+        assert!(
+            shapes
+                .iter()
+                .any(|c| c.fill == to_color32(t.checkbox.disabled_text_color)),
+            "{shapes:#?}"
+        );
+    }
 }
 
 /// A disabled slider is faded as one over its backdrop, as libadwaita fades the whole widget:
@@ -906,22 +938,42 @@ fn a_disabled_slider_fades_as_one() {
     let ground = to_color32(t.defaults.background_color);
     let rail = ground.blend(to_color32(sl.track_color));
     let fill = rail.blend(to_color32(sl.fill_color));
-    let (out, _) = click(&ctx, |ui| {
-        ui.add(Slider::new(&mut 40.0, 0.0..=100.0).enabled(false))
-    });
-    let all = rects(&out);
-    for want in [
-        ground.lerp_to_gamma(rail, 0.5),
-        ground.lerp_to_gamma(fill, 0.5),
-    ] {
-        assert!(all.iter().any(|s| s.fill == want), "{want:?} in {all:#?}");
-    }
     let knob = ground.lerp_to_gamma(fill.blend(to_color32(sl.thumb_color)), 0.5);
-    assert!(
-        circles(&out).iter().any(|c| c.fill == knob),
-        "{:#?}",
-        circles(&out)
-    );
+    // The knob's outline: the slider's `Disabled` cell's `inactive` stroke, over the fill.
+    let mut outline = egui::Stroke::NONE;
+    let _ = response(&ctx, at(0.0), |ui| {
+        use native_theme_egui::NativeThemeUiExt as _;
+        ui.native_scope(
+            native_theme_egui::Role::Slider,
+            native_theme_egui::RoleVariant::Disabled,
+            |ui| outline = ui.visuals().widgets.inactive.fg_stroke,
+        )
+        .response
+    });
+    assert!(outline.width > 0.0);
+    let ring = ground.lerp_to_gamma(fill.blend(outline.color), 0.5);
+    // Disabled by its own `.enabled(false)`, and under a disabled `Ui`, whose `disabled_alpha`
+    // (`defaults.disabled_opacity`, 0.5) it is faded by.
+    type Add = Box<dyn Fn(&mut egui::Ui) -> egui::Response>;
+    let ways: [Add; 2] = [
+        Box::new(|ui| ui.add(Slider::new(&mut 40.0, 0.0..=100.0).enabled(false))),
+        Box::new(|ui| ui.add_enabled(false, Slider::new(&mut 40.0, 0.0..=100.0))),
+    ];
+    for add in &ways {
+        let (out, _) = click(&ctx, add);
+        let all = rects(&out);
+        for want in [
+            ground.lerp_to_gamma(rail, 0.5),
+            ground.lerp_to_gamma(fill, 0.5),
+        ] {
+            assert!(all.iter().any(|s| s.fill == want), "{want:?} in {all:#?}");
+        }
+        let disc = circles(&out)
+            .into_iter()
+            .find(|c| c.fill == knob)
+            .unwrap_or_else(|| panic!("{:#?}", circles(&out)));
+        assert_eq!(disc.stroke, egui::Stroke::new(outline.width, ring));
+    }
 
     // A backdrop of the caller's is the ground instead.
     let card = to_color32(t.card.background_color);
@@ -990,6 +1042,29 @@ fn a_disabled_segmented_control_fades_as_one() {
     assert_eq!(
         fill_of(&out, &control, "outline"),
         ground.lerp_to_gamma(outline, alpha)
+    );
+    // The labels, each over its segment: the unselected one in the scope's text colour, the
+    // selected one in the selection's.
+    let label = |text: &str| {
+        flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.text() == text => Some(t.fallback_color),
+                _ => None,
+            })
+            .unwrap()
+    };
+    let text = v
+        .override_text_color
+        .unwrap_or(v.widgets.inactive.fg_stroke.color);
+    assert_eq!(
+        label("Week"),
+        ground.lerp_to_gamma(outline.blend(segment).blend(text), alpha)
+    );
+    let selected = outline.blend(v.selection.bg_fill);
+    assert_eq!(
+        label("Day"),
+        ground.lerp_to_gamma(selected.blend(v.selection.stroke.color), alpha)
     );
 
     // A backdrop of the caller's is the ground instead.

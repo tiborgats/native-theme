@@ -53,7 +53,9 @@ use crate::parts::Parts;
 /// backdrop and painted at the opacity the calling `Ui` had before egui faded it
 /// (`Ui::disable` multiplies the painter's opacity by `disabled_alpha`,
 /// `egui/src/ui.rs:497-502`, `:1588-1592`), so the outline's colour does not show through a
-/// segment. Where `disabled_alpha` is 1 the colours are as stated.
+/// segment. Only that one level of disabling is taken back: a `Ui` disabled twice (a nested
+/// `add_enabled_ui(false, ..)`), or restyled after it was disabled, keeps the rest of its
+/// fade. Where `disabled_alpha` is 1 the colours are as stated.
 ///
 /// With no atlas installed, it adds the same buttons in the calling `Ui`'s style, in a row
 /// with no outline.
@@ -109,16 +111,15 @@ impl egui::Widget for SegmentedControl<'_> {
             let unstated = padding.top.is_none() && padding.bottom.is_none();
             // The fade a disabled calling `Ui` gave the painter, which the control takes back to
             // fade itself as one.
-            let alpha = ui.visuals().disabled_alpha();
-            let fade = (!ui.is_enabled() && alpha > 0.0 && alpha < 1.0).then(|| {
+            let fade = crate::fade::outer_fade(ui).map(|under| {
                 let ground = backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color));
-                (ground, alpha, ui.opacity() / alpha)
+                (ground, under)
             });
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {
                 if unstated {
                     fit_height(ui, &segments);
                 }
-                if let Some((ground, alpha, opacity)) = fade {
+                if let Some((ground, (alpha, opacity))) = fade {
                     fade_as_one(ui.visuals_mut(), ground, alpha);
                     ui.set_opacity(opacity);
                 }
