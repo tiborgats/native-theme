@@ -51,6 +51,7 @@ pub struct Expander {
 
 /// What [`Expander::show`] returns: the header's response, and the body's value where the
 /// body was shown.
+#[non_exhaustive]
 pub struct ExpanderResponse<R> {
     /// The header's response: `clicked()` on the frame it toggles the body.
     pub header_response: egui::Response,
