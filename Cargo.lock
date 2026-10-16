@@ -5784,6 +5784,7 @@ dependencies = [
  "freedesktop-icons",
  "inventory",
  "native-theme-derive",
+ "native-theme-test-fixtures",
  "notify",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
@@ -5837,6 +5838,7 @@ dependencies = [
  "muda",
  "native-theme",
  "native-theme-egui-widgets",
+ "native-theme-test-fixtures",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "serde_json",
@@ -5865,6 +5867,7 @@ dependencies = [
  "gpui-pre",
  "image",
  "native-theme",
+ "native-theme-test-fixtures",
  "objc2 0.6.4",
  "serde_json",
  "toml 1.1.5+spec-1.1.0",
@@ -5883,6 +5886,7 @@ dependencies = [
  "iced_widget",
  "image",
  "native-theme",
+ "native-theme-test-fixtures",
  "objc2 0.6.4",
  "serde_json",
  "toml 1.1.5+spec-1.1.0",
@@ -5900,6 +5904,10 @@ dependencies = [
  "toml 1.1.5+spec-1.1.0",
  "windows 0.62.2",
 ]
+
+[[package]]
+name = "native-theme-test-fixtures"
+version = "0.0.0"
 
 [[package]]
 name = "ndk"

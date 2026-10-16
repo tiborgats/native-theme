@@ -704,6 +704,8 @@ mod tests {
     // `IconRole`, `IconSet`, `AnimatedIcon`, `TransformAnimation`, `ThemeAtlas` and `IconData`
     // come with the glob: `icons.rs` imports or re-exports each.
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
 
     /// A `currentColor` icon that sets no `color` of its own (§9.2).
     const PLAIN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
@@ -1108,29 +1110,6 @@ mod tests {
         }
     }
 
-    /// Writes the theme `name` into `icons`, its one scalable directory holding each
-    /// `(icon, svg)` as `<icon>.svg`.
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    fn write_scalable_theme(
-        icons: &std::path::Path,
-        name: &str,
-        files: &[(&str, &str)],
-    ) -> std::io::Result<()> {
-        let theme = icons.join(name);
-        std::fs::create_dir_all(theme.join("places"))?;
-        std::fs::write(
-            theme.join("index.theme"),
-            format!(
-                "[Icon Theme]\nName={name}\nDirectories=places\n\n\
-                 [places]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
-            ),
-        )?;
-        for (icon, svg) in files {
-            std::fs::write(theme.join(format!("places/{icon}.svg")), svg)?;
-        }
-        Ok(())
-    }
-
     /// A freedesktop icon whose own stylesheet sets the `color` its `currentColor` takes
     /// (Breeze's `current-color-scheme`) keeps that colour, and a full-colour one its palette,
     /// tint or not; one whose `currentColor` nothing in it resolves takes the tint, else the
@@ -1173,8 +1152,8 @@ mod tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "colours", |icons| {
-            write_scalable_theme(
+        crate::icon_fixture::run(NAME, Child::kde("colours"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
                 icons,
                 "colours",
                 &[
@@ -1223,9 +1202,9 @@ mod tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "system", |icons| {
-            write_scalable_theme(icons, "system", &[("folder", SYSTEM)])?;
-            write_scalable_theme(
+        crate::icon_fixture::run(NAME, Child::kde("system"), |icons| {
+            crate::icon_fixture::write_scalable_theme(icons, "system", &[("folder", SYSTEM)])?;
+            crate::icon_fixture::write_scalable_theme(
                 icons,
                 "chosen",
                 &[("folder", CHOSEN), ("only-chosen", CHOSEN)],
@@ -1254,7 +1233,7 @@ mod tests {
             };
             let key = IconKey::name("folder", IconSet::Freedesktop);
             assert_eq!(loaded(&key)?, FIRST);
-            std::fs::write(icons.join("kept/places/folder.svg"), SECOND)?;
+            std::fs::write(icons.join("kept/scalable/folder.svg"), SECOND)?;
             assert_eq!(loaded(&key)?, FIRST, "the loaded icon is kept");
             let tinted = key.clone().tint(egui::Color32::from_rgb(0x12, 0x34, 0x56));
             assert_eq!(loaded(&tinted)?, SECOND, "another colour is loaded");
@@ -1262,8 +1241,8 @@ mod tests {
             assert_eq!(loaded(&key)?, SECOND, "forget_icons drops the loaded icons");
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "kept", |icons| {
-            write_scalable_theme(icons, "kept", &[("folder", FIRST)])
+        crate::icon_fixture::run(NAME, Child::kde("kept"), |icons| {
+            crate::icon_fixture::write_scalable_theme(icons, "kept", &[("folder", FIRST)])
         })?;
         Ok(())
     }
@@ -1293,9 +1272,9 @@ mod tests {
             assert_eq!(loaded()?, AFTER, "the system's new icon theme");
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "before", |icons| {
-            write_scalable_theme(icons, "before", &[("folder", BEFORE)])?;
-            write_scalable_theme(icons, "after", &[("folder", AFTER)])
+        crate::icon_fixture::run(NAME, Child::kde("before"), |icons| {
+            crate::icon_fixture::write_scalable_theme(icons, "before", &[("folder", BEFORE)])?;
+            crate::icon_fixture::write_scalable_theme(icons, "after", &[("folder", AFTER)])
         })?;
         Ok(())
     }
@@ -1324,8 +1303,12 @@ mod tests {
             }
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "names", |icons| {
-            write_scalable_theme(icons, "names", &[("first", FIRST), ("second", SECOND)])
+        crate::icon_fixture::run(NAME, Child::kde("names"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "names",
+                &[("first", FIRST), ("second", SECOND)],
+            )
         })?;
         Ok(())
     }
@@ -1369,7 +1352,7 @@ mod tests {
             }
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "sized", |icons| {
+        crate::icon_fixture::run(NAME, Child::kde("sized"), |icons| {
             let theme = icons.join("sized");
             std::fs::create_dir_all(&theme)?;
             std::fs::write(

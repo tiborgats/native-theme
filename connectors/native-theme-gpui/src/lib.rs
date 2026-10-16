@@ -211,8 +211,9 @@ pub(crate) mod config;
 mod contract;
 pub(crate) mod derive;
 pub mod geometry;
-#[cfg(test)]
-mod icon_fixture;
+// The freedesktop icon-theme fixture the tests run in a child process.
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+use native_theme_test_fixtures as icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod showcase;

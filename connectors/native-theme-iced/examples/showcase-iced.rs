@@ -17095,84 +17095,6 @@ thing(0);
         source[..at].lines().count().max(1)
     }
 
-    /// Names the fixture's root in the child process `in_fixture` starts.
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    const FIXTURE_ROOT: &str = "NATIVE_THEME_ICED_SHOWCASE_ICON_FIXTURE";
-
-    /// Runs the test `name` again in a child process whose only icon
-    /// themes are those `write` puts in the icons dir it is given, on
-    /// `desktop` (its `XDG_CURRENT_DESKTOP`), and asserts that it passed
-    /// there: the icon dirs are read once per process, so a fixture theme
-    /// needs a process of its own, as the connector's own `icon_fixture`
-    /// tests start one.
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    fn in_fixture(
-        name: &str,
-        desktop: &str,
-        write: impl FnOnce(&std::path::Path) -> std::io::Result<()>,
-    ) -> std::io::Result<()> {
-        /// Removes the fixture's directory however the test ends.
-        struct RemoveOnDrop(std::path::PathBuf);
-        impl Drop for RemoveOnDrop {
-            fn drop(&mut self) {
-                let _ = std::fs::remove_dir_all(&self.0);
-            }
-        }
-        let guard = RemoveOnDrop(std::env::temp_dir().join(format!(
-            "native-theme-iced-showcase-icon-fixture-{}-{}-{desktop}",
-            std::process::id(),
-            name.replace("::", "-")
-        )));
-        let root = &guard.0;
-        let _ = std::fs::remove_dir_all(root);
-        let icons = root.join("share/icons");
-        std::fs::create_dir_all(&icons)?;
-        std::fs::create_dir_all(root.join("home/.config"))?;
-        write(&icons)?;
-        let output = std::process::Command::new(std::env::current_exe()?)
-            .args(["--exact", name, "--nocapture", "--test-threads=1"])
-            .env(FIXTURE_ROOT, root)
-            .env("HOME", root.join("home"))
-            .env("XDG_DATA_HOME", root.join("home/.local/share"))
-            .env("XDG_DATA_DIRS", root.join("share"))
-            .env("XDG_CONFIG_HOME", root.join("home/.config"))
-            .env("XDG_CONFIG_DIRS", root.join("etc/xdg"))
-            .env("XDG_CURRENT_DESKTOP", desktop)
-            .output()?;
-        drop(guard);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(
-            output.status.success() && stdout.contains("1 passed"),
-            "{stdout}{stderr}"
-        );
-        Ok(())
-    }
-
-    /// Writes the theme `name` into `icons_dir`, its one scalable
-    /// directory holding each of `icons` as `<icon>.svg`.
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    fn write_scalable_theme(
-        icons_dir: &std::path::Path,
-        name: &str,
-        icons: &[&str],
-    ) -> std::io::Result<()> {
-        const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
-        let theme = icons_dir.join(name);
-        std::fs::create_dir_all(theme.join("actions"))?;
-        std::fs::write(
-            theme.join("index.theme"),
-            format!(
-                "[Icon Theme]\nName={name}\nDirectories=actions\n\n\
-                 [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
-            ),
-        )?;
-        for icon in icons {
-            std::fs::write(theme.join(format!("actions/{icon}.svg")), SVG)?;
-        }
-        Ok(())
-    }
-
     /// The side-panel toggle's freedesktop icon loads from the icon theme
     /// chosen under whichever name that theme has, on any desktop:
     /// Adwaita's `sidebar-show-symbolic` (`gtk-names`) and Breeze's
@@ -17183,7 +17105,7 @@ thing(0);
     #[test]
     fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<()> {
         const NAME: &str = "tests::the_panel_icon_loads_from_a_theme_of_either_convention";
-        if std::env::var_os(FIXTURE_ROOT).is_some() {
+        if native_theme_test_fixtures::in_child() {
             let (_, resolved) =
                 native_theme_iced::from_preset("adwaita", false).expect("adwaita resolves");
             let loaded: Vec<(&str, bool)> = ["gtk-names", "breeze-names"]
@@ -17202,10 +17124,23 @@ thing(0);
             );
             return Ok(());
         }
+        const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
         for desktop in ["sway", "GNOME"] {
-            in_fixture(NAME, desktop, |icons| {
-                write_scalable_theme(icons, "gtk-names", &["sidebar-show-symbolic"])?;
-                write_scalable_theme(icons, "breeze-names", &["sidebar-expand-left"])
+            let child = native_theme_test_fixtures::Child {
+                desktop,
+                icon_theme: None,
+            };
+            native_theme_test_fixtures::run(NAME, child, |icons| {
+                native_theme_test_fixtures::write_scalable_theme(
+                    icons,
+                    "gtk-names",
+                    &[("sidebar-show-symbolic", SVG)],
+                )?;
+                native_theme_test_fixtures::write_scalable_theme(
+                    icons,
+                    "breeze-names",
+                    &[("sidebar-expand-left", SVG)],
+                )
             })?;
         }
         Ok(())

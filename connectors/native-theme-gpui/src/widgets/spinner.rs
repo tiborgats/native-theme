@@ -551,6 +551,8 @@ impl RenderOnce for Spinner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
 
     #[test]
     fn the_arc_keeps_its_sweep_at_every_moment_of_its_turn() {
@@ -699,7 +701,7 @@ mod tests {
             assert_eq!(other.icon_theme, None);
             return;
         }
-        let ran = crate::icon_fixture::run(NAME, "first", |icons| {
+        let ran = crate::icon_fixture::run(NAME, Child::kde("first"), |icons| {
             crate::icon_fixture::write_indicator_theme(icons, "first", TWO)?;
             crate::icon_fixture::write_indicator_theme(icons, "second", THREE)
         });

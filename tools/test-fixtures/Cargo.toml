@@ -1,0 +1,9 @@
+[package]
+name = "native-theme-test-fixtures"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+description = "Dev-only freedesktop icon-theme fixtures for the workspace's tests: a test run again in a child process whose icon dirs hold a fixture theme"

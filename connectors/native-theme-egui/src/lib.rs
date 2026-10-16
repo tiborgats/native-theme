@@ -141,8 +141,9 @@ mod contract;
 pub mod convert;
 mod ext;
 pub mod fonts;
-#[cfg(test)]
-mod icon_fixture;
+// The freedesktop icon-theme fixture the tests run in a child process.
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+use native_theme_test_fixtures as icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;

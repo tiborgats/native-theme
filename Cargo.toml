@@ -8,6 +8,7 @@ members = [
     "connectors/native-theme-egui",
     "connectors/native-theme-egui-widgets",
     "tools/os-probe",
+    "tools/test-fixtures",
 ]
 resolver = "3"
 

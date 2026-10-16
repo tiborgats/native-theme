@@ -308,6 +308,8 @@ where
 )]
 mod tests {
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
 
     #[test]
     fn frames_loop_one_per_frame_duration() {
@@ -356,7 +358,8 @@ mod tests {
     /// child process ([`crate::icon_fixture`]).
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
-    fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour() -> native_theme::Result<()> {
+    fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
         const NAME: &str =
             "spinner::tests::a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour";
         if crate::icon_fixture::in_child() {
@@ -375,7 +378,7 @@ mod tests {
             let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
                 panic!("the frame is not in memory");
             };
-            let svg = std::str::from_utf8(bytes).unwrap();
+            let svg = std::str::from_utf8(bytes)?;
             let c = resolved.defaults.text_color;
             let hex = format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b);
             assert!(
@@ -386,21 +389,16 @@ mod tests {
         }
         // The system's icon theme is one that does not exist, so only the
         // theme the test names holds the indicator.
-        crate::icon_fixture::run(NAME, "no-such-icon-theme", |icons| {
-            let theme = icons.join("symbolic-only");
-            std::fs::create_dir_all(theme.join("actions")).unwrap();
-            std::fs::write(
-                theme.join("index.theme"),
-                "[Icon Theme]\nName=symbolic-only\nDirectories=actions\n\n\
-                 [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+        crate::icon_fixture::run(NAME, Child::kde("no-such-icon-theme"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "symbolic-only",
+                &[(
+                    "process-working-symbolic",
+                    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
+                )],
             )
-            .unwrap();
-            std::fs::write(
-                theme.join("actions/process-working-symbolic.svg"),
-                r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
-            )
-            .unwrap();
-        });
+        })?;
         Ok(())
     }
 

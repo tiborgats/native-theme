@@ -275,6 +275,8 @@ fn to_rgba(color: iced_core::Color) -> native_theme::Rgba {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
     use native_theme::icons::IconData;
 
     #[test]
@@ -464,7 +466,8 @@ mod tests {
     /// The theme is a fixture in a child process ([`crate::icon_fixture`]).
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
-    fn custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is() {
+    fn custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is()
+    -> std::io::Result<()> {
         const NAME: &str = "icons::tests::custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is";
         if crate::icon_fixture::in_child() {
             let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
@@ -482,19 +485,15 @@ mod tests {
                 FULL_COLOUR_FOLDER,
                 "the full-colour icon was recoloured"
             );
-            return;
+            return Ok(());
         }
-        crate::icon_fixture::run(NAME, "full-colour", |icons| {
-            let theme = icons.join("full-colour");
-            std::fs::create_dir_all(theme.join("places")).unwrap();
-            std::fs::write(
-                theme.join("index.theme"),
-                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
-                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+        crate::icon_fixture::run(NAME, Child::kde("full-colour"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "full-colour",
+                &[("folder", FULL_COLOUR_FOLDER)],
             )
-            .unwrap();
-            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER).unwrap();
-        });
+        })
     }
 
     // --- animated icon tests ---

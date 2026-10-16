@@ -369,7 +369,7 @@ fi
 # panic-prone lint set using type-aware analysis.
 PANIC_FOUND=0
 PANIC_HITS_ALL=""
-for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src tools/os-probe/src; do
+for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src tools/os-probe/src tools/test-fixtures/src; do
     if [ -d "$src_dir" ]; then
         HITS=$(python3 -c "
 import sys, re, glob, os
@@ -662,6 +662,10 @@ run_check "strict-panic (native-theme-egui-widgets)" \
 # Windows code is held by the cross-target clippy runs above.
 run_check "strict-panic (native-theme-os-probe)" \
     bash scripts/check_strict_panic.sh -p native-theme-os-probe --bins
+# The test fixtures (tools/test-fixtures, never published) return each
+# failure as an error, so a test fails on its own `?`.
+run_check "strict-panic (native-theme-test-fixtures)" \
+    bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests

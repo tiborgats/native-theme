@@ -1179,6 +1179,8 @@ fn to_rgba(color: Hsla) -> native_theme::Rgba {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
 
     /// Every `IconName`, once. The macro writes the list and, from the same
     /// identifiers, a `match` with no wildcard arm, so a variant upstream adds
@@ -2108,15 +2110,12 @@ mod tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "full-colour", |icons| {
-            let theme = icons.join("full-colour");
-            std::fs::create_dir_all(theme.join("places"))?;
-            std::fs::write(
-                theme.join("index.theme"),
-                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
-                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
-            )?;
-            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER)
+        crate::icon_fixture::run(NAME, Child::kde("full-colour"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "full-colour",
+                &[("folder", FULL_COLOUR_FOLDER)],
+            )
         })?;
         Ok(())
     }
@@ -2158,15 +2157,12 @@ mod tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "bare-current-color", |icons| {
-            let theme = icons.join("bare-current-color");
-            std::fs::create_dir_all(theme.join("places"))?;
-            std::fs::write(
-                theme.join("index.theme"),
-                "[Icon Theme]\nName=bare-current-color\nDirectories=places\n\n\
-                 [places]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
-            )?;
-            std::fs::write(theme.join("places/folder.svg"), BARE)
+        crate::icon_fixture::run(NAME, Child::kde("bare-current-color"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "bare-current-color",
+                &[("folder", BARE)],
+            )
         })?;
         Ok(())
     }
@@ -2248,7 +2244,7 @@ mod tests {
             }
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "styled", |icons| {
+        crate::icon_fixture::run(NAME, Child::kde("styled"), |icons| {
             crate::icon_fixture::write_indicator_theme(icons, "styled", STYLED)?;
             crate::icon_fixture::write_indicator_theme(icons, "bare", BARE)
         })?;
@@ -2285,7 +2281,7 @@ mod tests {
             }
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "raster-only", |icons| {
+        crate::icon_fixture::run(NAME, Child::kde("raster-only"), |icons| {
             let theme = icons.join("raster-only");
             std::fs::create_dir_all(&theme)?;
             std::fs::write(
@@ -2495,6 +2491,8 @@ mod tests {
 mod freedesktop_mapping_tests {
     use super::tests::ALL_ICON_NAMES;
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
     use native_theme::detect::LinuxDesktop;
     #[cfg(feature = "system-icons")]
     use native_theme::icons::FreedesktopLoader;
@@ -2948,7 +2946,7 @@ mod freedesktop_mapping_tests {
             );
             return Ok(());
         }
-        crate::icon_fixture::run(NAME, "gtk-only", |icons| {
+        crate::icon_fixture::run(NAME, Child::kde("gtk-only"), |icons| {
             let theme = |name: &str,
                          inherits: &str,
                          section: &str|
