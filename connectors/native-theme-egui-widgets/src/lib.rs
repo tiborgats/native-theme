@@ -67,12 +67,13 @@
 //! colours of its own on GNOME. Under `ui.add_enabled(false, w)` the fade is
 //! the calling `Ui`'s, which egui applied before the widget's scope opened.
 //!
-//! A [`switch::Switch`] or [`radio_button::RadioButton`] built with
-//! `.enabled(false)` is faded as one widget over its backdrop, the window's
-//! `defaults.background_color` unless `.backdrop(..)` names another
-//! ([`fade::fade_as_one`]): its thumb or dot keeps its colour on the track or
-//! circle, and the whole fades, as libadwaita's `filter: Opacity(..)` does,
-//! where egui's per-shape fade would show the thumb through the faded track.
+//! A [`switch::Switch`], [`radio_button::RadioButton`] or [`slider::Slider`]
+//! built with `.enabled(false)` is faded as one widget over its backdrop, the
+//! window's `defaults.background_color` unless `.backdrop(..)` names another
+//! ([`fade::fade_as_one`]): its thumb, dot or knob keeps its colour on the
+//! track, circle or fill, and the whole fades, as libadwaita's
+//! `filter: Opacity(..)` does, where egui's per-shape fade would show the
+//! thumb through the faded track.
 //! A checked radio button opens the connector's `SelectedDisabled` scope: where
 //! the theme states no `checkbox.disabled_background` it is its checked self,
 //! the checked fill and its dot, faded.

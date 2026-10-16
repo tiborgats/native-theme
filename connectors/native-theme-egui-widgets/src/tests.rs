@@ -892,6 +892,55 @@ fn a_disabled_checked_radio_is_its_checked_self_faded() {
     assert!(shapes.iter().any(|c| c.fill == dot), "{shapes:#?}");
 }
 
+/// A disabled slider is faded as one over its backdrop, as libadwaita fades the whole widget:
+/// the rail over the window, the trailing fill over the rail, the knob over the fill, each
+/// faded by `slider.disabled_opacity` over the window and painted at opacity 1, so no shape
+/// shows another through it.
+#[test]
+fn a_disabled_slider_fades_as_one() {
+    let t = adwaita();
+    let sl = &t.slider;
+    assert_eq!(sl.disabled_opacity, 0.5);
+    assert_eq!(sl.disabled_fill_color, None);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let rail = ground.blend(to_color32(sl.track_color));
+    let fill = rail.blend(to_color32(sl.fill_color));
+    let (out, _) = click(&ctx, |ui| {
+        ui.add(Slider::new(&mut 40.0, 0.0..=100.0).enabled(false))
+    });
+    let all = rects(&out);
+    for want in [
+        ground.lerp_to_gamma(rail, 0.5),
+        ground.lerp_to_gamma(fill, 0.5),
+    ] {
+        assert!(all.iter().any(|s| s.fill == want), "{want:?} in {all:#?}");
+    }
+    let knob = ground.lerp_to_gamma(fill.blend(to_color32(sl.thumb_color)), 0.5);
+    assert!(
+        circles(&out).iter().any(|c| c.fill == knob),
+        "{:#?}",
+        circles(&out)
+    );
+
+    // A backdrop of the caller's is the ground instead.
+    let card = to_color32(t.card.background_color);
+    assert_ne!(card, ground);
+    let rail = card.blend(to_color32(sl.track_color));
+    let (out, _) = click(&ctx, |ui| {
+        ui.add(
+            Slider::new(&mut 40.0, 0.0..=100.0)
+                .enabled(false)
+                .backdrop(card),
+        )
+    });
+    assert!(
+        rects(&out)
+            .iter()
+            .any(|s| s.fill == card.lerp_to_gamma(rail, 0.5))
+    );
+}
+
 /// The progress bar is outlined as `progress_bar.border` states: kde-breeze's 1px in the
 /// window text at 20 % inside the bar, adwaita's width 0 not at all.
 #[test]
