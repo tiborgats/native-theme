@@ -2956,3 +2956,31 @@ fn an_immediate_viewport_leaves_its_parent_the_parents_cap() {
     assert!(child > parent, "{child} > {parent}");
     assert_eq!(after, Some(parent));
 }
+
+/// M7-04: a pass whose sizes all lie under the cap writes no style: both base styles are the
+/// same `Arc` before and after it.
+#[test]
+fn a_pass_under_the_cap_writes_no_style() {
+    let t = resolved("kde-breeze", ColorMode::Light);
+    let atlas = ThemeAtlas::builder("breeze", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |_| {});
+    let cap = atlas.text_size_cap().expect("derived");
+    let before = [egui::Theme::Light, egui::Theme::Dark].map(|t| ctx.style_of(t));
+    for style in &before {
+        assert!(style.text_styles.values().all(|f| f.size <= cap));
+    }
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    for (theme, before) in [egui::Theme::Light, egui::Theme::Dark]
+        .into_iter()
+        .zip(&before)
+    {
+        assert!(
+            std::sync::Arc::ptr_eq(&ctx.style_of(theme), before),
+            "{theme:?}"
+        );
+    }
+}

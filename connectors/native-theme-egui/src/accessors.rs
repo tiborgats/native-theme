@@ -30,9 +30,10 @@ use crate::{AccessibilityPreferences, Role, TextRole};
 ///
 /// The product has no upper bound here; the one that matters is the GPU's and the monitor's.
 /// epaint panics on a glyph wider than its font atlas (`epaint/src/texture_atlas.rs:226-231`),
-/// so every size the atlas hands egui is lowered, before each pass, to
-/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap), derived from that pass's
-/// `max_texture_side` and `pixels_per_point`; a size from here that the application hands
+/// so every size the atlas hands egui is lowered to
+/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap), derived from the pass's
+/// `max_texture_side` and `pixels_per_point`: the base styles' at install and before each
+/// pass, a role style's when it is handed over; a size from here that the application hands
 /// egui itself is its own to clamp to that cap.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
