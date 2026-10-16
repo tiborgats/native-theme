@@ -74,6 +74,7 @@ use native_theme_iced::{
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
+use std::num::NonZeroU32;
 use std::sync::{Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
@@ -1450,13 +1451,13 @@ fn build_animation_caches(
     freedesktop_theme: Option<&str>,
     text_color: native_theme::Rgba,
 ) -> (
-    Vec<(String, FrameHandles)>,                // animated_frames
-    Vec<usize>,                                 // animated_frame_indices
-    Vec<Duration>,                              // animated_frame_elapsed
-    Vec<(String, iced_core::svg::Handle, u32)>, // animated_spins
-    Instant,                                    // animation_start
-    bool,                                       // reduced_motion
-    Vec<(String, iced_core::svg::Handle)>,      // animated_static
+    Vec<(String, FrameHandles)>,                       // animated_frames
+    Vec<usize>,                                        // animated_frame_indices
+    Vec<Duration>,                                     // animated_frame_elapsed
+    Vec<(String, iced_core::svg::Handle, NonZeroU32)>, // animated_spins
+    Instant,                                           // animation_start
+    bool,                                              // reduced_motion
+    Vec<(String, iced_core::svg::Handle)>,             // animated_static
 ) {
     let mut animated_frames = Vec::new();
     let mut animated_spins = Vec::new();
@@ -1488,7 +1489,7 @@ fn build_animation_caches(
                     if let TransformAnimation::Spin { duration_ms } = data.animation()
                         && let Some(handle) = handle_of(data.icon())
                     {
-                        animated_spins.push((set_name.clone(), handle, duration_ms.get()));
+                        animated_spins.push((set_name.clone(), handle, *duration_ms));
                     }
                 }
                 _ => {} // Future AnimatedIcon variants
@@ -1679,7 +1680,7 @@ struct State {
     /// Elapsed time tracker per frame-based animation (for correct per-animation timing).
     animated_frame_elapsed: Vec<Duration>,
     /// Cached SVG handle + duration for transform (spin) animations: (set_name, handle, duration_ms).
-    animated_spins: Vec<(String, iced_core::svg::Handle, u32)>,
+    animated_spins: Vec<(String, iced_core::svg::Handle, NonZeroU32)>,
     /// Start time for spin animations (used with spin_rotation_radians).
     animation_start: Instant,
     /// Whether reduced motion is active (cached at init).

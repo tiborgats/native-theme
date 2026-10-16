@@ -620,14 +620,14 @@ if let Some(anim) = MaterialLoader::load_indicator() {
             AnimatedIcon::Frames(_) => {
                 // Cache this — do not call on every frame tick.
                 if let Some(h) = animated_frames_to_svg_handles(&anim, None) {
-                    // Use iced::time::every(Duration::from_millis(h.frame_duration_ms as u64))
+                    // Use iced::time::every(Duration::from_millis(u64::from(h.frame_duration_ms.get())))
                     // to drive: frame_index = (frame_index + 1) % h.handles.len();
                     // In view: Svg::new(h.handles[frame_index].clone())
                 }
             }
             AnimatedIcon::Transform(_) => {
-                if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() {
-                    let _angle = spin_rotation_radians(elapsed, duration_ms.get());
+                if let Some(&TransformAnimation::Spin { duration_ms }) = anim.animation() {
+                    let _angle = spin_rotation_radians(elapsed, duration_ms);
                     // Svg::new(handle).rotation(Rotation::Floating(angle))
                 }
             }

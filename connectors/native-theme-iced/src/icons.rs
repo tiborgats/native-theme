@@ -44,8 +44,9 @@ use native_theme::icons::{
 pub struct AnimatedSvgHandles {
     /// SVG handles ready for iced rendering.
     pub handles: Vec<iced_core::svg::Handle>,
-    /// Duration of each frame in milliseconds.
-    pub frame_duration_ms: u32,
+    /// Duration of each frame in milliseconds, non-zero as the icon data's
+    /// is ([`AnimatedIcon::frame_duration_ms`]).
+    pub frame_duration_ms: std::num::NonZeroU32,
 }
 
 /// Converts RGBA [`IconData`] to an iced [`iced_core::image::Handle`].
@@ -167,7 +168,7 @@ pub fn custom_icon_to_svg_handle(
 /// if let Some(anim) = native_theme::icons::MaterialLoader::load_indicator() {
 ///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
 ///         // Cache `anim_handles`, then in subscription():
-///         // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
+///         // iced::time::every(Duration::from_millis(u64::from(anim_handles.frame_duration_ms.get())))
 ///         //     .map(|_| Message::AnimationTick)
 ///         // In update(): frame_index = (frame_index + 1) % anim_handles.handles.len();
 ///         // In view(): Svg::new(anim_handles.handles[frame_index].clone())
@@ -191,7 +192,7 @@ pub fn animated_frames_to_svg_handles(
             } else {
                 Some(AnimatedSvgHandles {
                     handles,
-                    frame_duration_ms: data.frame_duration_ms().get(),
+                    frame_duration_ms: data.frame_duration_ms(),
                 })
             }
         }
@@ -203,7 +204,8 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// Returns a [`Radians`](iced_core::Radians) value representing the current
 /// rotation based on `elapsed` time and `duration_ms` (the full rotation
-/// period from [`native_theme::icons::TransformAnimation::Spin`]).
+/// period from [`native_theme::icons::TransformAnimation::Spin`], passed as
+/// it is: the model's period is non-zero, so is this one).
 ///
 /// The angle wraps around via modulo, so values of `elapsed` greater than
 /// `duration_ms` cycle correctly.
@@ -223,24 +225,25 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// # fn spin(anim: &native_theme_iced::AnimatedIcon) {
 /// let elapsed = std::time::Duration::from_millis(500);
-/// if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() {
-///     let angle = spin_rotation_radians(elapsed, duration_ms.get());
+/// if let Some(&TransformAnimation::Spin { duration_ms }) = anim.animation() {
+///     let angle = spin_rotation_radians(elapsed, duration_ms);
 ///     // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
 /// }
 /// # }
 /// ```
 #[must_use]
-pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> iced_core::Radians {
-    if duration_ms == 0 {
-        return iced_core::Radians(0.0);
-    }
+pub fn spin_rotation_radians(
+    elapsed: std::time::Duration,
+    duration_ms: std::num::NonZeroU32,
+) -> iced_core::Radians {
     // The remainder in integers: an f32 of the milliseconds steps by 128 ms
     // twelve days in.
+    let period = duration_ms.get();
     let position = elapsed
         .as_millis()
-        .checked_rem(u128::from(duration_ms))
+        .checked_rem(u128::from(period))
         .unwrap_or(0);
-    let progress = position as f32 / duration_ms as f32;
+    let progress = position as f32 / period as f32;
     iced_core::Radians(progress * std::f32::consts::TAU)
 }
 
@@ -611,7 +614,13 @@ mod tests {
 
     // --- animated icon tests ---
 
+    use std::num::NonZeroU32;
     use std::time::Duration;
+
+    /// A spin period of `ms` milliseconds.
+    fn period(ms: u32) -> NonZeroU32 {
+        NonZeroU32::new(ms).unwrap()
+    }
 
     #[test]
     fn animated_frames_returns_handles() {
@@ -627,7 +636,7 @@ mod tests {
         assert!(result.is_some());
         let anim_handles = result.unwrap();
         assert_eq!(anim_handles.handles.len(), 2);
-        assert_eq!(anim_handles.frame_duration_ms, 80);
+        assert_eq!(anim_handles.frame_duration_ms, NonZeroU32::new(80).unwrap());
     }
 
     #[test]
@@ -665,37 +674,24 @@ mod tests {
 
     #[test]
     fn spin_rotation_zero_elapsed() {
-        let radians = spin_rotation_radians(Duration::ZERO, 1000);
+        let radians = spin_rotation_radians(Duration::ZERO, period(1000));
         assert_eq!(radians, iced_core::Radians(0.0));
     }
 
     #[test]
     fn spin_rotation_half() {
-        let radians = spin_rotation_radians(Duration::from_millis(500), 1000);
-        let expected = std::f32::consts::PI;
-        assert!(
-            (radians.0 - expected).abs() < 0.001,
-            "Expected ~{}, got {}",
-            expected,
-            radians.0
-        );
+        let radians = spin_rotation_radians(Duration::from_millis(500), period(1000));
+        assert_eq!(radians, iced_core::Radians(std::f32::consts::PI));
     }
 
     #[test]
     fn spin_rotation_full_wraps() {
-        let radians = spin_rotation_radians(Duration::from_millis(1000), 1000);
+        let radians = spin_rotation_radians(Duration::from_millis(1000), period(1000));
         assert!(
             radians.0.abs() < 0.001,
             "Expected ~0.0 (wrapped), got {}",
             radians.0
         );
-    }
-
-    #[test]
-    fn spin_rotation_zero_duration_returns_zero() {
-        let radians = spin_rotation_radians(Duration::from_millis(500), 0);
-        assert_eq!(radians.0, 0.0, "zero duration should return 0.0, not NaN");
-        assert!(!radians.0.is_nan(), "must not be NaN");
     }
 
     #[test]
@@ -757,7 +753,7 @@ mod tests {
     // Issue 14.3: spin_rotation_radians with very large elapsed (wraps correctly)
     #[test]
     fn spin_rotation_large_elapsed_wraps() {
-        let duration_ms = 1000;
+        let duration_ms = period(1000);
         // 1_000_000 seconds = 1M full rotations. Result should be near 0.
         let elapsed = std::time::Duration::from_secs(1_000_000);
         let result = spin_rotation_radians(elapsed, duration_ms);
@@ -775,7 +771,10 @@ mod tests {
     /// 1.2e9 ms is 128 ms.
     #[test]
     fn spin_rotation_is_exact_two_weeks_in() {
-        let result = spin_rotation_radians(std::time::Duration::from_millis(1_209_600_050), 1000);
+        let result = spin_rotation_radians(
+            std::time::Duration::from_millis(1_209_600_050),
+            period(1000),
+        );
         assert!(
             (result.0 - 0.1 * std::f32::consts::PI).abs() < 1e-4,
             "expected 0.1π, got {}",

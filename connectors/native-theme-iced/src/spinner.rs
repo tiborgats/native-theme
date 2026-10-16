@@ -1,6 +1,7 @@
 //! [`Spinner`]: the icon set's loading indicator, or an arc at the theme's stroke.
 
 use std::f32::consts::TAU;
+use std::num::NonZeroU32;
 use std::time::Duration;
 
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
@@ -78,7 +79,7 @@ enum Drawn {
     /// The indicator's frames, each `frame_ms` long.
     Frames { frames: Vec<Frame>, frame_ms: u32 },
     /// One image turned once every `period_ms`.
-    Spin { frame: Frame, period_ms: u32 },
+    Spin { frame: Frame, period_ms: NonZeroU32 },
     /// No indicator: the arc.
     Arc,
 }
@@ -226,9 +227,9 @@ fn drawn(anim: &AnimatedIcon, paint: Paint) -> Option<Drawn> {
         });
     }
     match (anim.icon(), anim.animation()) {
-        (Some(icon), Some(TransformAnimation::Spin { duration_ms })) => Some(Drawn::Spin {
+        (Some(icon), Some(&TransformAnimation::Spin { duration_ms })) => Some(Drawn::Spin {
             frame: Frame::of(icon, paint)?,
-            period_ms: duration_ms.get(),
+            period_ms: duration_ms,
         }),
         _ => None,
     }
