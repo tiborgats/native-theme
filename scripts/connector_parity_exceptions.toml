@@ -622,13 +622,13 @@ reason = "a bundled icon is an `IconData` like any other, so it takes `to_image_
 connector = "iced"
 name = "icons::bundled_svg_to_image_source"
 kind = "absent"
-reason = "AWAITING A RULING (M8 T9): gpui's convenience for SVG bytes that skips the `IconData` (connectors/native-theme-gpui/src/icons.rs, its doc); no ruling or doc records why iced has no `svg::Handle` twin. iced's `to_svg_handle` takes the bytes as `IconData::Svg`"
+reason = "gpui's is its raster path's copy-avoidance: it hands SVG bytes to `svg_bytes_to_image_source` as a `&[u8]`, without copying them into an `IconData::Svg` first (connectors/native-theme-gpui/src/icons.rs:877-891, Issue 27). iced's `to_svg_handle` borrows `IconData::Svg`'s `Cow` and hands the bytes to iced's own SVG renderer (src/icons.rs:73-81), so bundled bytes wrapped in an `IconData::Svg` cost no copy, and no twin is needed; egui has none either (the entry above)"
 
 [[exception]]
 connector = "iced"
 name = "icons::animated_frames_to_image_sources_for"
 kind = "absent"
-reason = "AWAITING A RULING (M8 T9): gpui's per-set colouring of an indicator's frames (M6-14, e7e3f809), whose freedesktop arm keeps a theme's own stylesheet colour; iced's `Spinner` colours its set's indicator itself (src/spinner.rs), but no ruling or doc records why iced has no public per-set twin of `animated_frames_to_svg_handles`"
+reason = "a bug, the iced half of M6-14: iced's `animated_frames_to_svg_handles` takes no set, so with `Some(color)` it overrides a freedesktop indicator's stylesheet colour, and with `None` the indicator's `currentColor` draws black. M8 T9a adds `animated_frames_to_svg_handles_for`, gpui's twin, and deletes this exception"
 
 [[exception]]
 connector = ["gpui", "iced"]
