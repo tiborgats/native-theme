@@ -623,12 +623,18 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
     sys.accessibility.reduce_transparency
 }
 
-/// `accessibility.text_scaling_factor` as the OS reported it (1.0 = no scaling), unfiltered;
-/// [`scaled_text_size`] is what ignores a factor that is not finite and positive.
+/// `accessibility.text_scaling_factor`, the factor of the user's text-size preference the
+/// toolkit has not applied (1.0 = no scaling), unfiltered; [`scaled_text_size`] is what ignores
+/// a factor that is not finite and positive.
 ///
-/// The atlas applies it to text sizes ([`Builder::accessibility`](crate::Builder::accessibility)). egui has no equivalent of
-/// its own: no `egui` or `eframe` 0.36.2 source reads an OS text-scaling preference, and
-/// `Context::set_zoom_factor` (`egui/src/context.rs:2337`) is not one — it sets
+/// The atlas applies it to text sizes ([`Builder::accessibility`](crate::Builder::accessibility)).
+/// On a GNOME or Budgie X11 session it is 1.0: eframe's `native_pixels_per_point` is winit's
+/// scale factor (egui-winit 0.36.2 `src/lib.rs:54-58`, `:1376`), which on X11, while
+/// `WINIT_X11_SCALE_FACTOR` is unset, is `Xft.dpi` over 96 (winit 0.30.13
+/// `src/platform_impl/linux/x11/util/randr.rs:112-154`), and gnome-settings-daemon writes
+/// `Xft.dpi` with the factor in it, so egui scales every length there, text included.
+/// Elsewhere egui has no equivalent of its own: `Context::set_zoom_factor`
+/// (`egui/src/context.rs:2337`) is not one — it sets
 /// `pixels_per_point = zoom_factor * native_pixels_per_point` (`:455`) and so scales every
 /// length, strokes and icons included, where the preference asks for larger text
 /// (`native-theme/src/lib.rs:251-253`). Do **not** pre-multiply any `Style` value by

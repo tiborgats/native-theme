@@ -352,6 +352,10 @@ pub struct AccessibilityPreferences {
     /// 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
     /// `:797-798`; winit 0.30.13 `src/platform_impl/linux/x11/util/randr.rs:41-53`,
     /// `:145-146`; gpui-pre-linux 0.3.9 `src/linux/x11/client.rs:2671-2678`).
+    /// They do so only while `WINIT_X11_SCALE_FACTOR` and
+    /// `GPUI_X11_SCALE_FACTOR` are unset (`randr.rs:112-154`,
+    /// `client.rs:2620-2666`); with an override the application owns the
+    /// scale, and the factor is applied nowhere.
     pub text_scaling_factor: f32,
     /// Whether the user has requested reduced motion.
     pub reduce_motion: bool,
