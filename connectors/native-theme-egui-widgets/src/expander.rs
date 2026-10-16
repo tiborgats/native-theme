@@ -89,9 +89,8 @@ impl Expander {
         ui: &mut egui::Ui,
         add_body: impl FnOnce(&mut egui::Ui) -> R,
     ) -> ExpanderResponse<R> {
-        let resolved: Option<ResolvedTheme> = ThemeAtlas::from_ctx(ui.ctx())
-            .map(|atlas| atlas.resolved_for(ui.ctx().theme()).clone());
-        let Some(t) = resolved else {
+        let atlas = ThemeAtlas::from_ctx(ui.ctx());
+        let Some(t) = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme())) else {
             return own(ui, self, None, add_body);
         };
         let e = &t.expander;
@@ -101,7 +100,7 @@ impl Expander {
             && e.frame_enabled.is_none()
         {
             return scope::open(ui, Role::Expander, true, |ui| {
-                own(ui, self, Some(&t), add_body)
+                own(ui, self, Some(t), add_body)
             });
         }
         scope::open(ui, Role::Expander, true, |ui| {
