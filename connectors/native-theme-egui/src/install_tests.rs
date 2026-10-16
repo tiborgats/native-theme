@@ -256,8 +256,9 @@ fn install_requests_a_repaint() {
 }
 
 /// M7-01: an `install` of the atlas already installed requests no repaint, frees no texture
-/// and leaves the fonts alone, so an application that installs in every pass still lets egui
-/// idle. Repaints are counted by egui's callback (`egui/src/context.rs:1961`), which fires
+/// and leaves the fonts the application set since alone, so an application that installs in
+/// every pass still lets egui idle and keeps its own fonts. The atlas carries a font plan, so
+/// a full install would set its fonts back (§10.3 step 1). Repaints are counted by egui's callback (`egui/src/context.rs:1961`), which fires
 /// only when a request lowers the pending delay (`:157-168`), so the passes between the two
 /// installs serve the first one's request (`:110-123`); frees are the texture delta's `free`
 /// list (`epaint/src/textures.rs:72-80`, taken at `:102`).
@@ -274,7 +275,19 @@ fn a_second_install_of_the_installed_atlas_repaints_and_frees_nothing() {
     let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
     let key = IconKey::name("raster", IconSet::Freedesktop);
     let handle_id = texture_id(&uri(&icon));
-    let atlas = preset_atlas("kde-breeze");
+    let atlas = ThemeAtlas::builder(
+        "kde-breeze",
+        &resolved("kde-breeze", ColorMode::Light),
+        &resolved("kde-breeze", ColorMode::Dark),
+    )
+    .fonts(crate::fonts::FontPlan::new().with_base(egui::FontDefinitions::empty()))
+    .build();
+    // The application's own fonts, set after the first install: a family and no face, so no
+    // face is parsed (`bare_context`'s shape).
+    let mut own = egui::FontDefinitions::empty();
+    own.families
+        .insert(egui::FontFamily::Name("app-own".into()), Vec::new());
+    assert!(atlas.fonts().is_some_and(|defs| *defs != own));
     // The delta's frees, and the delta cleared unapplied as `pass` does.
     let take_frees = |ctx: &egui::Context| {
         let mut delta = ctx.tex_manager().write().take_delta();
@@ -303,7 +316,15 @@ fn a_second_install_of_the_installed_atlas_repaints_and_frees_nothing() {
         for theme in [egui::Theme::Dark, egui::Theme::Light] {
             assert!(Arc::ptr_eq(&ctx.style_of(theme), &atlas.scheme(theme).base));
         }
+        if n == 0 {
+            ctx.set_fonts(own.clone());
+            let _ = pass(&ctx, egui::RawInput::default(), |_ui| {});
+        }
     }
+    assert!(
+        ctx.fonts(|f| f.definitions() == &own),
+        "the second install must leave the application's fonts as it set them"
+    );
     assert_eq!(
         (requested, freed),
         (1, 1),

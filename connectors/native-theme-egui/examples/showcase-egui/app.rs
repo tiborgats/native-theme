@@ -520,11 +520,9 @@ impl App {
                 self.theme_error = None;
             }
             Err(error) => {
+                // The installed atlas, its fonts and the semibold faces stay as they are.
                 self.theme_error = Some(error.to_string());
-                // The kept atlas is the installed one, whose install would leave the fonts as
-                // they are: `clear` first, so `apply` puts the atlas's fonts back before it
-                // registers the semibold faces again.
-                ThemeAtlas::clear(ctx);
+                return;
             }
         }
         self.apply(ctx);

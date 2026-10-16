@@ -202,8 +202,10 @@ impl FontPlan {
     /// `egui::FontDefinitions::default()`, whose emoji fallbacks it keeps (§8.1).
     /// `Context::set_fonts` overwrites the whole definition (`egui/src/context.rs:2105-2106`), so
     /// an application's own fonts — a `FontFamily::Name` family its code names, a script
-    /// fallback — survive an install only in this base; an `add_font` still pending at the next
-    /// pass is applied on top of them (`egui/src/context.rs:556-574`). A dropped `Name` family
+    /// fallback — survive an install of another atlas only in this base; an `add_font` still
+    /// pending at the next pass is applied on top of them (`egui/src/context.rs:556-574`). An
+    /// install of the atlas already installed sets no fonts, so the fonts the application added
+    /// since stay too. A dropped `Name` family
     /// panics in release at the first text that names it (`epaint/src/text/fonts.rs:1025`). The base cannot be
     /// recovered from the `Context` instead: `Context::fonts` panics before the first pass
     /// (`egui/src/context.rs:1097-1106`), and a face re-added with `Context::add_font` after an

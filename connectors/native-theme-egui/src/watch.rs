@@ -124,7 +124,9 @@ impl ThemeWatcher {
 
     /// Take the pending atlas, if the OS theme changed since the last call. Non-blocking, and
     /// `None` on the overwhelming majority of frames. Install the result; `install` flushes
-    /// the icon cache and requests the repaint (§10.3).
+    /// the icon cache and requests the repaint (§10.3), unless `rebuild` returned the atlas
+    /// already installed, whose install restores the base styles alone
+    /// ([`ThemeAtlas::install`]).
     #[must_use]
     pub fn take(&self) -> Option<ThemeAtlas> {
         self.handoff.take()

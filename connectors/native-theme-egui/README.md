@@ -233,7 +233,11 @@ native-theme for the faces of the theme's font families and installs them as
 the head of egui's `Proportional` and `Monospace` families. An
 application with fonts of its own passes them as the base:
 `FontPlan::from_system(&light).with_base(its_definitions)` into
-`Builder::fonts`. This crate never emits a `FontFamily::Name`. A family the
+`Builder::fonts`. Installing the installed atlas again (the one
+`ThemeAtlas::from_ctx` returns) keeps the fonts and icons the application added
+since, restoring only the base styles, its own `TextStyle::Name` keys kept;
+`ThemeAtlas::clear` then `install` brings back the atlas's fonts. This crate
+never emits a `FontFamily::Name`. A family the
 platform does not have is drawn in the family the platform draws in its place
 (`native_theme::fonts::substitute_family`: fontconfig's best match on Linux,
 what every native application there gets; none yet on macOS and Windows) and
@@ -273,7 +277,7 @@ is `None`; nothing is substituted. Installing another atlas, and
 icon's texture is freed then, so call `to_image_source` in each pass rather
 than keeping its result (the texture is cached, a pass uploads nothing new).
 Installing the installed atlas again restores its base styles and does nothing
-else: no fonts, no icons, no repaint.
+else: it sets no fonts, forgets no icon and requests no repaint.
 
 ## Runtime theme change
 
