@@ -32,6 +32,7 @@ use crate::scope;
 pub struct ProgressBar {
     progress: f32,
     desired_width: Option<f32>,
+    animate: bool,
 }
 
 impl ProgressBar {
@@ -40,12 +41,24 @@ impl ProgressBar {
         Self {
             progress,
             desired_width: None,
+            animate: false,
         }
     }
 
     /// The bar's width, as `egui::ProgressBar::desired_width`.
     pub fn desired_width(mut self, width: f32) -> Self {
         self.desired_width = Some(width);
+        self
+    }
+
+    /// Whether the bar shows egui's busy animation while `progress` is below `1.0`, as
+    /// `egui::ProgressBar::animate`: an indeterminate bar, repainted every frame. Under the
+    /// stated corner radius egui pulses the fill and draws no spinning arc, its own rule for a
+    /// bar given a radius (`egui/src/widgets/progress_bar.rs:78-80`, `:163`). Under reduced
+    /// motion (the atlas's `AccessibilityPreferences::reduce_motion`) the bar holds still, as
+    /// the crate's [`Spinner`](crate::spinner::Spinner) does.
+    pub fn animate(mut self, animate: bool) -> Self {
+        self.animate = animate;
         self
     }
 }
@@ -55,13 +68,17 @@ impl egui::Widget for ProgressBar {
         let ProgressBar {
             progress,
             desired_width,
+            animate,
         } = self;
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
         let theme = atlas
             .as_ref()
             .map(|a| &a.resolved_for(ui.ctx().theme()).progress_bar);
         let min_width = theme.and_then(|p| scope::length(p.min_width));
-        let bar = egui::ProgressBar::new(progress);
+        let still = atlas
+            .as_ref()
+            .is_some_and(|a| a.accessibility().reduce_motion);
+        let bar = egui::ProgressBar::new(progress).animate(animate && !still);
         let border = theme.and_then(|p| {
             let b = &p.border;
             let radius = b.corner_radius.is_finite().then_some(b.corner_radius)?;

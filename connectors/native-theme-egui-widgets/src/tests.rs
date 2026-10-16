@@ -1224,6 +1224,44 @@ fn the_progress_bar_is_at_least_its_min_width() {
     }
 }
 
+/// `animate(true)` is egui's own busy bar: under the stated radius, its fill pulses, as egui
+/// draws it, and it repaints; under reduced motion it holds still.
+#[test]
+fn the_animated_progress_bar_pulses_unless_motion_is_reduced() {
+    let t = kde();
+    let fill = to_color32(t.progress_bar.fill_color);
+    let mut still = AccessibilityPreferences::default();
+    still.reduce_motion = true;
+    for (prefs, animate, pulses) in [
+        (AccessibilityPreferences::default(), true, true),
+        (AccessibilityPreferences::default(), false, false),
+        (still, true, false),
+    ] {
+        let ctx = installed(&t, &prefs);
+        let add =
+            |ui: &mut egui::Ui| ui.add(ProgressBar::new(0.4).desired_width(200.0).animate(animate));
+        // egui repaints its first passes itself (the fonts, the first layout).
+        for time in [0.0, 0.1, 0.2] {
+            let _ = response(&ctx, at(time), add);
+        }
+        // A quarter turn of egui's clock, where its pulse is darkest (`time.cos().abs()`).
+        let (out, bar) = response(&ctx, at(std::f64::consts::FRAC_PI_2), add);
+        let filled = Parts::of(&bar).unwrap().get("fill").unwrap();
+        let painted = rects(&out)
+            .into_iter()
+            .find(|r| r.rect == filled)
+            .unwrap()
+            .fill;
+        assert_eq!(painted != fill, pulses, "{animate} {prefs:?}");
+        let delay = out.viewport_output[&egui::ViewportId::ROOT].repaint_delay;
+        assert_eq!(
+            delay == std::time::Duration::ZERO,
+            pulses,
+            "{animate} {prefs:?}"
+        );
+    }
+}
+
 /// The slider's rail, fill and knob are the theme's, the knob's hover a layer over it.
 #[test]
 fn the_slider_paints_the_themes_knob() {
