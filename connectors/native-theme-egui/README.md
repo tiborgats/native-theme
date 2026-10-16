@@ -276,6 +276,9 @@ is `None`; nothing is substituted. Installing another atlas, and
 (`icons::forget_icons`) and leave the application's own images alone; a raster
 icon's texture is freed then, so call `to_image_source` in each pass rather
 than keeping its result (the texture is cached, a pass uploads nothing new).
+`icons::custom_icon_to_image_source` keeps the icon a provider's name loads,
+per icon theme, size and colour, until then, so a freedesktop icon is read from
+disk once, not in every pass.
 Installing the installed atlas again restores its base styles and does nothing
 else: it sets no fonts, forgets no icon and requests no repaint.
 

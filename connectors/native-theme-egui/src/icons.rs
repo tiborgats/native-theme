@@ -6,8 +6,9 @@
 pub use native_theme::icons::IconData;
 
 use std::borrow::Cow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::hash::{DefaultHasher, Hasher};
+use std::sync::Arc;
 use std::time::Duration;
 
 use native_theme::color::Rgba;
@@ -246,6 +247,79 @@ pub(crate) fn handles_key() -> egui::Id {
     egui::Id::new("native-theme-egui/icon-handles")
 }
 
+/// A named icon [`custom_icon_to_image_source`] loaded, with what its set's loader was given.
+#[derive(Clone)]
+struct LoadedIcon {
+    set: IconSet,
+    icon_theme: Option<String>,
+    size: Option<u32>,
+    color: Option<Rgba>,
+    icon: Arc<IconData>,
+}
+
+/// The named icons [`custom_icon_to_image_source`] loaded, by the provider's name; stored
+/// under `loaded_key()`, dropped by `forget_icons`.
+#[derive(Clone, Default)]
+pub(crate) struct LoadedIcons {
+    by_name: HashMap<String, Vec<LoadedIcon>>,
+}
+
+impl LoadedIcons {
+    /// The icon `name` loaded from `set` in this icon theme, at this size, in this colour.
+    fn get(
+        &self,
+        name: &str,
+        set: IconSet,
+        icon_theme: Option<&str>,
+        size: Option<u32>,
+        color: Option<Rgba>,
+    ) -> Option<Arc<IconData>> {
+        self.by_name
+            .get(name)?
+            .iter()
+            .find(|kept| {
+                kept.set == set
+                    && kept.icon_theme.as_deref() == icon_theme
+                    && kept.size == size
+                    && kept.color == color
+            })
+            .map(|kept| Arc::clone(&kept.icon))
+    }
+}
+
+/// A provider of one name and no SVG of its own: the name's load alone.
+#[derive(Debug)]
+struct NameOnly<'a>(&'a str);
+
+impl IconProvider for NameOnly<'_> {
+    fn icon_name(&self, _: IconSet) -> Option<&str> {
+        Some(self.0)
+    }
+
+    fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> {
+        None
+    }
+}
+
+/// A provider's own SVG alone, without its name.
+#[derive(Debug)]
+struct SvgOnly<'a>(&'a dyn IconProvider);
+
+impl IconProvider for SvgOnly<'_> {
+    fn icon_name(&self, _: IconSet) -> Option<&str> {
+        None
+    }
+
+    fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+        self.0.icon_svg(set)
+    }
+}
+
+/// The `Context` data key of the loaded icons, `Id::new("native-theme-egui/loaded-icons")`.
+pub(crate) fn loaded_key() -> egui::Id {
+    egui::Id::new("native-theme-egui/loaded-icons")
+}
+
 /// The `Context` data key of the stored `TextureHandle` of a raster icon's URI.
 pub(crate) fn texture_id(uri: &str) -> egui::Id {
     egui::Id::new(("native-theme-egui/icon-texture", uri))
@@ -410,6 +484,16 @@ pub fn to_image(
 /// where the provider has none. Build the key with `IconKey::name(n, set)`, `n` its
 /// `icon_name(set)` where it has one; where it has none, a name that describes it, which
 /// becomes its alt text — the URI is the hash of the bytes alone (§9.2).
+///
+/// **What a call costs.** The icon a provider's name loads is loaded once per name, set,
+/// icon theme, size and colour — for a freedesktop icon a lookup in the icon theme and a read
+/// of its file from disk (native-theme's `freedesktop.rs` performance note), for an SF Symbol
+/// or a Segoe glyph a raster the OS draws — and kept in `ctx`'s data until [`forget_icons`],
+/// which the next install of another atlas and [`crate::ThemeAtlas::clear`] call; an icon
+/// file changed on disk is seen after that. A later call copies, hashes and registers the kept
+/// bytes; another colour — another tint, or the other scheme's text colour — loads the icon
+/// once more. A name the set's loader does not find is looked up again on every call, and
+/// the provider's own SVG is coloured again on every call.
 #[must_use]
 pub fn custom_icon_to_image_source(
     ctx: &egui::Context,
@@ -423,17 +507,52 @@ pub fn custom_icon_to_image_source(
     // At 0 an SF Symbol or a Segoe glyph loads nothing (`SfSymbolsLoader::size`,
     // `SegoeFluentLoader::size`).
     let size = key.size.map(|size| size.max(1));
-    let icon = native_theme::icons::load_custom_icon_in(
-        provider,
-        key.set,
-        key.icon_theme.as_deref(),
-        color,
-        size,
-    )?;
+    let load = |provider: &dyn IconProvider| {
+        native_theme::icons::load_custom_icon_in(
+            provider,
+            key.set,
+            key.icon_theme.as_deref(),
+            color,
+            size,
+        )
+    };
+    let icon_theme = key.icon_theme.as_deref();
+    let named = provider.icon_name(key.set).and_then(|name| {
+        let kept = ctx.data_mut(|d| {
+            d.get_temp_mut_or_default::<LoadedIcons>(loaded_key())
+                .get(name, key.set, icon_theme, size, color)
+        });
+        kept.or_else(|| {
+            let icon = Arc::new(load(&NameOnly(name))?);
+            let loaded = LoadedIcon {
+                set: key.set,
+                icon_theme: key.icon_theme.clone(),
+                size,
+                color,
+                icon: Arc::clone(&icon),
+            };
+            ctx.data_mut(|d| {
+                d.get_temp_mut_or_default::<LoadedIcons>(loaded_key())
+                    .by_name
+                    .entry(name.to_owned())
+                    .or_default()
+                    .push(loaded);
+            });
+            Some(icon)
+        })
+    });
+    let own;
+    let icon: &IconData = match &named {
+        Some(icon) => icon,
+        None => {
+            own = load(&SvgOnly(provider))?;
+            &own
+        }
+    };
     // Loaded in its colour: keyed as it is, with no second colouring pass.
     match icon {
-        IconData::Svg(bytes) => Some(svg_source(ctx, bytes.into_owned())),
-        icon => raster_source(ctx, &icon),
+        IconData::Svg(bytes) => Some(svg_source(ctx, bytes.to_vec())),
+        icon => raster_source(ctx, icon),
     }
 }
 
@@ -443,9 +562,13 @@ pub fn custom_icon_to_image_source(
 /// are released with `Context::forget_image` (`egui/src/context.rs:3764`), which reaches only
 /// the loader caches (`:3771-3780`), and the stored `TextureHandle`s are removed from
 /// `ctx.data_mut()`, which is what frees their textures — `forget_image` never reaches a
-/// handle this crate stored.
+/// handle this crate stored. The icons [`custom_icon_to_image_source`] loaded go too, so its
+/// next call for each loads it again.
 pub fn forget_icons(ctx: &egui::Context) {
-    let registry = ctx.data_mut(|d| d.remove_temp::<IconRegistry>(handles_key()));
+    let registry = ctx.data_mut(|d| {
+        d.remove::<LoadedIcons>(loaded_key());
+        d.remove_temp::<IconRegistry>(handles_key())
+    });
     let Some(registry) = registry else { return };
     for uri in &registry.uris {
         ctx.forget_image(uri);
@@ -1061,6 +1184,40 @@ mod tests {
                 "chosen",
                 &[("folder", CHOSEN), ("only-chosen", CHOSEN)],
             )
+        })?;
+        Ok(())
+    }
+
+    /// M7-13: a provider's named icon is loaded once per icon theme, size and colour and kept
+    /// until [`forget_icons`]: the fixture's file, rewritten after the first load, is read
+    /// again only in another colour and after `forget_icons`. The theme is a fixture in a
+    /// child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_named_custom_icon_is_loaded_once_until_forget_icons()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::a_named_custom_icon_is_loaded_once_until_forget_icons";
+        const FIRST: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#3daee9" d="M2 2h12v12H2z"/></svg>"##;
+        const SECOND: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
+        if let Some(icons) = crate::icon_fixture::icons_dir() {
+            let ctx = egui::Context::default();
+            let loaded = |key: &IconKey| {
+                custom_icon_to_image_source(&ctx, &named("folder"), key)
+                    .map(|source| String::from_utf8_lossy(&bytes_of(&source).1).into_owned())
+                    .ok_or("no folder")
+            };
+            let key = IconKey::name("folder", IconSet::Freedesktop);
+            assert_eq!(loaded(&key)?, FIRST);
+            std::fs::write(icons.join("kept/places/folder.svg"), SECOND)?;
+            assert_eq!(loaded(&key)?, FIRST, "the loaded icon is kept");
+            let tinted = key.clone().tint(egui::Color32::from_rgb(0x12, 0x34, 0x56));
+            assert_eq!(loaded(&tinted)?, SECOND, "another colour is loaded");
+            forget_icons(&ctx);
+            assert_eq!(loaded(&key)?, SECOND, "forget_icons drops the loaded icons");
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "kept", |icons| {
+            write_scalable_theme(icons, "kept", &[("folder", FIRST)])
         })?;
         Ok(())
     }

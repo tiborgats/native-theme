@@ -25,6 +25,11 @@ pub(crate) fn in_child() -> bool {
     std::env::var_os(ROOT).is_some()
 }
 
+/// The icons dir that holds the fixture, in the child process [`run`] starts.
+pub(crate) fn icons_dir() -> Option<PathBuf> {
+    std::env::var_os(ROOT).map(|root| PathBuf::from(root).join("share/icons"))
+}
+
 /// Runs the test `name` (its path from the crate root) again in a child
 /// process whose system icon theme is `theme`, an icon theme `write` puts in
 /// the icons dir it is given, and asserts that the test passed there.

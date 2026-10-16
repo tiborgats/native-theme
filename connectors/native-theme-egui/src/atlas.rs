@@ -506,8 +506,10 @@ impl ThemeAtlas {
     /// **Installing the installed atlas again is cheap.** For the atlas [`ThemeAtlas::from_ctx`]
     /// returns, or a clone of it, `install` restores both base styles — so a style the
     /// application reset is the atlas's again, its text sizes lowered to the cap — and does
-    /// nothing else: it sets no fonts, forgets no icon and requests no repaint, so an
-    /// application that installs in every pass still lets egui idle. Fonts the application set
+    /// nothing else: it sets no fonts, forgets no icon — the icons
+    /// [`icons::custom_icon_to_image_source`](crate::icons::custom_icon_to_image_source) loaded
+    /// are kept, not loaded again — and requests no repaint, so an application that installs
+    /// in every pass still lets egui idle. Fonts the application set
     /// after the install stay as it set them; [`ThemeAtlas::clear`] then `install` runs the
     /// whole sequence.
     ///
@@ -515,7 +517,9 @@ impl ThemeAtlas {
     /// [`ThemeAtlas::clear`], forget the icons this crate cached
     /// ([`icons::forget_icons`](crate::icons::forget_icons)): the texture a raster icon's
     /// `ImageSource::Texture` from [`icons::to_image_source`](crate::icons::to_image_source)
-    /// names is freed then, and an SVG icon's `ImageSource::Bytes` keeps the previous colour.
+    /// names is freed then, an SVG icon's `ImageSource::Bytes` keeps the previous colour, and
+    /// an icon [`icons::custom_icon_to_image_source`](crate::icons::custom_icon_to_image_source)
+    /// loaded is loaded again at its next call, a freedesktop one from disk.
     /// Call `to_image_source` or [`icons::to_image`](crate::icons::to_image) in each pass rather
     /// than keeping the result: the crate caches the texture, so a pass that finds it uploads
     /// nothing.
@@ -583,8 +587,10 @@ impl ThemeAtlas {
     /// `ctx.set_style_of(t, t.default_style())` (`egui/src/memory/theme.rs:24-29`) for each
     /// `egui::Theme` `t`, and `ctx.set_fonts(egui::FontDefinitions::default())` if the atlas
     /// installed a font plan, to get stock egui back. The icons this crate cached go with the
-    /// atlas ([`icons::forget_icons`](crate::icons::forget_icons)): their URIs are forgotten
-    /// and the textures of raster icons freed. A later [`ThemeAtlas::install`] of any atlas,
+    /// atlas ([`icons::forget_icons`](crate::icons::forget_icons)): their URIs are forgotten,
+    /// the textures of raster icons freed and the icons
+    /// [`icons::custom_icon_to_image_source`](crate::icons::custom_icon_to_image_source) loaded
+    /// dropped. A later [`ThemeAtlas::install`] of any atlas,
     /// the one removed too, runs its whole sequence.
     pub fn clear(ctx: &egui::Context) {
         let key = atlas_key();
