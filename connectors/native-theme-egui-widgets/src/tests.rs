@@ -1707,6 +1707,92 @@ fn the_segments_are_joined() {
     }
 }
 
+/// Two segments of different heights in one centred row are one row: a divider between them.
+#[test]
+fn segments_of_two_heights_share_a_row() {
+    let t = kde();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    // A label twice the segment's height, so its segment is taller than the other.
+    let tall = egui::RichText::new("Week").size(2.0 * t.segmented_control.segment_height);
+    let labels = [egui::WidgetText::from("Day"), tall.into()];
+    for wrap in [false, true] {
+        let (_, control) = response(&ctx, at(0.0), |ui| {
+            let mut selected = 0;
+            let control = SegmentedControl::new(&mut selected, labels.clone());
+            ui.add(if wrap { control.wrap() } else { control })
+        });
+        let parts = Parts::of(&control).unwrap();
+        let (day, week) = (
+            parts.get("segment_0").unwrap(),
+            parts.get("segment_1").unwrap(),
+        );
+        assert!(day.height() < week.height(), "{wrap}: {day:?} {week:?}");
+        assert!(parts.get("divider_0").is_some(), "{wrap}: {parts:?}");
+    }
+}
+
+/// A wrapped control in a `Ui` that is not shown asks egui for no discarded pass, as egui's
+/// `Grid` asks for none there; and where egui declines the discard (`max_passes` 1), it asks
+/// for a repaint, so the next pass corrects the corners it guessed.
+#[test]
+fn a_wrapped_control_corrects_its_guess_once_shown() {
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let labels = ["Monday", "Tuesday", "Wed", "Thu"];
+    let narrow = |ui: &mut egui::Ui, width: f32| {
+        ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
+            ui.add(SegmentedControl::new(&mut 0, labels).wrap())
+        })
+        .inner
+    };
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (_, unwrapped) = response(&ctx, at(0.0), |ui| {
+        ui.add(SegmentedControl::new(&mut 0, labels))
+    });
+    let parts = Parts::of(&unwrapped).unwrap();
+    let (first, second) = (
+        parts.get("segment_1").unwrap(),
+        parts.get("segment_2").unwrap(),
+    );
+    let width = first.right() - unwrapped.rect.left() + 0.5 * second.width();
+
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (out, _) = response(&ctx, at(0.0), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().invisible(), |ui| narrow(ui, width))
+            .inner
+    });
+    assert_eq!(out.platform_output.num_completed_passes, 1, "not shown");
+
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    ctx.options_mut(|o| o.max_passes = std::num::NonZeroUsize::MIN);
+    // A wide `Ui` first, until egui's own first-pass repaints are over: one row.
+    for time in [0.0, 0.1, 0.2, 0.3] {
+        let _ = response(&ctx, at(time), |ui| narrow(ui, 2.0 * width));
+    }
+    let (out, _) = response(&ctx, at(0.4), |ui| narrow(ui, 2.0 * width));
+    let delay = |out: &egui::FullOutput| out.viewport_output[&egui::ViewportId::ROOT].repaint_delay;
+    assert_eq!(delay(&out), std::time::Duration::MAX, "one row, settled");
+    // Narrowed, it wraps: the guess (one row) is wrong, the discard declined, a repaint asked.
+    let (out, _) = response(&ctx, at(0.5), |ui| narrow(ui, width));
+    assert_eq!(out.platform_output.num_completed_passes, 1);
+    assert_eq!(
+        delay(&out),
+        std::time::Duration::ZERO,
+        "a repaint corrects it"
+    );
+    let (out, control) = response(&ctx, at(0.6), |ui| narrow(ui, width));
+    let border = to_color32(t.segmented_control.border.color);
+    let corrected = rects(&out)
+        .iter()
+        .filter(|r| r.fill != border)
+        .any(|r| r.corner_radius.ne > 0 && r.rect.top() < control.rect.center().y);
+    assert!(
+        corrected,
+        "the first row's last segment rounds its top-right corner"
+    );
+}
+
 /// A wrapped control rounds the corners its segments share with the outline, row by row, from
 /// its first pass on (one discarded pass to learn the rows), and records a divider only
 /// between two segments of one row.
@@ -1757,7 +1843,7 @@ fn a_wrapped_control_rounds_its_corners_per_row() {
     let later_pass = response(&ctx, at(0.0), &mut add_reading);
     assert!(border.width > 0.0 && radius.nw > 0);
     let inset = native_theme_egui::convert::u8_from_f32_saturating(border.width);
-    let inner = |r: u8| r - inset;
+    let inner = |r: u8| r.saturating_sub(inset);
     for (pass_name, (out, control)) in [("first", first_pass), ("later", later_pass)] {
         let all = rects(&out);
         let segments: Vec<_> = all.iter().filter(|r| r.fill != border.color).collect();

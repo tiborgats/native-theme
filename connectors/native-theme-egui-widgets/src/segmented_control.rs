@@ -90,7 +90,9 @@ impl<'a> SegmentedControl<'a> {
     /// bottom ones, where they reach them. egui places the segments one by one, so the rows
     /// are known only after a pass: each pass takes them from the one before, and where they
     /// came out otherwise (the first pass, a changed segment list, a resized `Ui`) it asks egui
-    /// to discard the pass and run it again with them known (`Context::request_discard`).
+    /// to discard the pass and run it again with them known (`Context::request_discard`), and
+    /// to repaint, so a pass egui declines to run again is corrected in the next; a pass that
+    /// is not shown (an invisible `Ui`, a sizing pass) asks for neither.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
@@ -148,10 +150,15 @@ impl egui::Widget for SegmentedControl<'_> {
                             row(ui, selected, segments, Some((&outline, shared.as_slice())))
                         })
                         .inner;
-                    // egui's way with a guess that layout proves wrong: run the pass again
-                    // (`egui/src/context.rs:1980-1992`, `Options::max_passes`).
-                    if wrap && by_place(&rects) != shared {
+                    // egui's way with a guess that layout proves wrong, as its `Grid` does it:
+                    // run the pass again where it is shown (`egui/src/grid.rs:466-468`,
+                    // `egui/src/context.rs:1980-1992`), and repaint (`egui/src/grid.rs:290-294`),
+                    // so a pass egui does not run again (`Options::max_passes`) is corrected in
+                    // the next one.
+                    let shown = ui.is_visible() && !ui.is_sizing_pass();
+                    if wrap && shown && by_place(&rects) != shared {
                         ui.ctx().request_discard("segmented control wrap");
+                        ui.ctx().request_repaint();
                     }
                     (changed, rects)
                 };
@@ -187,10 +194,13 @@ impl MapChanged for egui::InnerResponse<(bool, Vec<egui::Rect>)> {
         later.next();
         for (i, segment) in segments.iter().enumerate() {
             parts.push(format!("segment_{i}"), *segment);
-            // The outline's colour shows between two segments of one row: the gap the row
-            // leaves. A wrapped row's next segment starts the next row.
+            // The outline's colour shows between two segments of one row, side by side and
+            // overlapping in height, of one height or two: the gap the row leaves. A wrapped
+            // row's next segment starts the next row.
             if let Some(next) = later.next().filter(|next| {
-                next.left() >= segment.right() && next.y_range() == segment.y_range()
+                next.left() >= segment.right()
+                    && next.top() < segment.bottom()
+                    && segment.top() < next.bottom()
             }) {
                 parts.push(
                     format!("divider_{i}"),
