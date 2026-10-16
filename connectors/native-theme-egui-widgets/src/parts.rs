@@ -16,7 +16,7 @@ use native_theme_egui::egui::util::id_type_map::RawKey;
 /// | [`Slider`](crate::slider::Slider) | `track`, `fill`, `thumb` |
 /// | [`RadioButton`](crate::radio_button::RadioButton) | `indicator`, `dot` (when checked), `label` |
 /// | [`ProgressBar`](crate::progress_bar::ProgressBar) | `fill` |
-/// | [`SegmentedControl`](crate::segmented_control::SegmentedControl) | `segment_<n>` from 0, `divider_<n>` between segment `n` and the next |
+/// | [`SegmentedControl`](crate::segmented_control::SegmentedControl) | `segment_<n>` from 0, `divider_<n>` between segment `n` and the next in its row |
 /// | [`Expander`](crate::expander::Expander) | `header`, `arrow`, `title`, `body` (when open), `frame` (when `frame_enabled` draws one) |
 /// | [`ComboBox`](crate::combo_box::ComboBox) | `text`, `arrow` |
 ///
@@ -31,7 +31,12 @@ impl Parts {
     /// for, and for one not drawn in the last two passes of its viewport that drew a widget of
     /// this crate.
     pub fn of(response: &egui::Response) -> Option<Self> {
-        let ctx = &response.ctx;
+        Self::of_id(&response.ctx, response.id)
+    }
+
+    /// [`Parts::of`] the widget answering with `id`, read before it answers: what a widget
+    /// reads of the last pass that drew it.
+    pub(crate) fn of_id(ctx: &egui::Context, id: egui::Id) -> Option<Self> {
         let viewport = ctx.viewport_id();
         ctx.data(|d| {
             // Borrowed, not cloned as `get_temp` clones (`egui/src/util/id_type_map.rs:448-450`).
@@ -46,7 +51,7 @@ impl Parts {
                 .get(&viewport)
                 .into_iter()
                 .chain(others.map(|(_, generations)| generations))
-                .find_map(|generations| generations.get(response.id))
+                .find_map(|generations| generations.get(id))
                 .cloned()
         })
     }

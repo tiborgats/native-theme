@@ -84,6 +84,13 @@ impl<'a> SegmentedControl<'a> {
 
     /// Wraps the segments onto a further line, inside the one outline, where the `Ui` is too
     /// narrow for them (`Ui::horizontal_wrapped`), instead of running past its edge.
+    ///
+    /// A segment rounds the corners it shares with the outline in the rows as placed: the
+    /// first row's first and last segments the outline's top corners, the last row's its
+    /// bottom ones, where they reach them. egui places the segments one by one, so the rows
+    /// are known only after a pass: each pass takes them from the one before, and where they
+    /// came out otherwise (the first pass, a changed segment list, a resized `Ui`) it asks egui
+    /// to discard the pass and run it again with them known (`Context::request_discard`).
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
@@ -125,10 +132,28 @@ impl egui::Widget for SegmentedControl<'_> {
                 }
                 let outline = Outline::of(ui);
                 let contents = |ui: &mut egui::Ui| {
-                    outline
+                    let count = segments.len();
+                    let shared = if wrap {
+                        // The rows the last pass placed the segments in, kept under the id the
+                        // row's response answers with: its `Ui`'s (`egui/src/ui.rs:2203-2215`).
+                        Parts::of_id(ui.ctx(), ui.unique_id())
+                            .and_then(|parts| segment_rects(&parts, count))
+                            .map_or_else(|| by_index(count), |rects| by_place(&rects))
+                    } else {
+                        by_index(count)
+                    };
+                    let (changed, rects) = outline
                         .frame()
-                        .show(ui, |ui| row(ui, selected, segments, Some(&outline)))
-                        .inner
+                        .show(ui, |ui| {
+                            row(ui, selected, segments, Some((&outline, shared.as_slice())))
+                        })
+                        .inner;
+                    // egui's way with a guess that layout proves wrong: run the pass again
+                    // (`egui/src/context.rs:1980-1992`, `Options::max_passes`).
+                    if wrap && by_place(&rects) != shared {
+                        ui.ctx().request_discard("segmented control wrap");
+                    }
+                    (changed, rects)
                 };
                 if wrap {
                     ui.horizontal_wrapped(contents).map_changed()
@@ -145,7 +170,8 @@ impl egui::Widget for SegmentedControl<'_> {
 }
 
 /// The response of a row whose `inner` says whether a click moved the selection, marked
-/// changed when it did, with the row's segments as its `Parts`.
+/// changed when it did, with the row's segments as its `Parts`, and a divider between each
+/// two neighbours in one row.
 trait MapChanged {
     fn map_changed(self) -> egui::Response;
 }
@@ -161,8 +187,11 @@ impl MapChanged for egui::InnerResponse<(bool, Vec<egui::Rect>)> {
         later.next();
         for (i, segment) in segments.iter().enumerate() {
             parts.push(format!("segment_{i}"), *segment);
-            if let Some(next) = later.next() {
-                // The outline's colour shows between two segments: the gap the row leaves.
+            // The outline's colour shows between two segments of one row: the gap the row
+            // leaves. A wrapped row's next segment starts the next row.
+            if let Some(next) = later.next().filter(|next| {
+                next.left() >= segment.right() && next.y_range() == segment.y_range()
+            }) {
                 parts.push(
                     format!("divider_{i}"),
                     egui::Rect::from_x_y_ranges(segment.right()..=next.left(), segment.y_range()),
@@ -200,20 +229,96 @@ impl Outline {
             .corner_radius(self.radius)
     }
 
-    /// The corners of a segment, the `first` and/or the `last` of its row or neither: the
-    /// outline's inner radius on those it shares with the outline, square where it meets a
-    /// divider.
-    fn corners(&self, first: bool, last: bool) -> egui::CornerRadius {
+    /// The corners of a segment: the outline's inner radius on those `shared` with the
+    /// outline, square where it meets a divider or the outline's straight edge.
+    fn corners(&self, shared: Shared) -> egui::CornerRadius {
         let inset = u8_from_f32_saturating(self.stroke.width);
-        let inner = |r: u8| r.saturating_sub(inset);
+        let inner = |on: bool, r: u8| if on { r.saturating_sub(inset) } else { 0 };
         let r = self.radius;
         egui::CornerRadius {
-            nw: if first { inner(r.nw) } else { 0 },
-            sw: if first { inner(r.sw) } else { 0 },
-            ne: if last { inner(r.ne) } else { 0 },
-            se: if last { inner(r.se) } else { 0 },
+            nw: inner(shared.nw, r.nw),
+            ne: inner(shared.ne, r.ne),
+            sw: inner(shared.sw, r.sw),
+            se: inner(shared.se, r.se),
         }
     }
+}
+
+/// Which corners of a segment lie on the outline's corners.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct Shared {
+    nw: bool,
+    ne: bool,
+    sw: bool,
+    se: bool,
+}
+
+/// How far from the outline's corner a segment's corner may lie and still be on it: a point,
+/// the plan's ruling (M7-19), for the rounding of egui's layout.
+const ON_CORNER: f32 = 1.0;
+
+impl Shared {
+    /// The corners of `segment` that lie on a corner of `outline`, within [`ON_CORNER`].
+    fn by_place(segment: egui::Rect, outline: egui::Rect) -> Self {
+        let on = |a: f32, b: f32| (a - b).abs() <= ON_CORNER;
+        let (left, right) = (
+            on(segment.left(), outline.left()),
+            on(segment.right(), outline.right()),
+        );
+        let (top, bottom) = (
+            on(segment.top(), outline.top()),
+            on(segment.bottom(), outline.bottom()),
+        );
+        Self {
+            nw: left && top,
+            ne: right && top,
+            sw: left && bottom,
+            se: right && bottom,
+        }
+    }
+}
+
+/// The shared corners of `count` segments in one row: the first one's left corners and the
+/// last one's right.
+fn by_index(count: usize) -> Vec<Shared> {
+    let mut shared: Vec<Shared> = (0..count)
+        .map(|i| Shared {
+            nw: i == 0,
+            sw: i == 0,
+            ..Shared::default()
+        })
+        .collect();
+    if let Some(last) = shared.last_mut() {
+        last.ne = true;
+        last.se = true;
+    }
+    shared
+}
+
+/// The shared corners of segments placed at `rects`, whose rows the outline holds: the
+/// corners on the corners of the rectangle round them all.
+fn by_place(rects: &[egui::Rect]) -> Vec<Shared> {
+    let outline = rects
+        .iter()
+        .fold(egui::Rect::NOTHING, |outline, rect| outline.union(*rect));
+    rects
+        .iter()
+        .map(|rect| Shared::by_place(*rect, outline))
+        .collect()
+}
+
+/// The rectangles of the `count` segments `parts` records, where it records that many.
+fn segment_rects(parts: &Parts, count: usize) -> Option<Vec<egui::Rect>> {
+    let recorded = parts
+        .iter()
+        .filter(|(name, _)| name.starts_with("segment_"))
+        .count();
+    if recorded != count {
+        return None;
+    }
+    (0..count)
+        .map(|i| parts.get(&format!("segment_{i}")))
+        .collect()
 }
 
 /// The segmented control scope's colours faded as one widget over `ground` by `alpha`: the
@@ -270,27 +375,27 @@ fn fit_height(ui: &mut egui::Ui, segments: &[egui::WidgetText]) {
     }
 }
 
-/// The segments, laid left to right in `ui`, which is the radio group; joined inside
-/// `outline` where one is given. Returns whether a click moved the selection.
+/// The segments, laid left to right in `ui`, which is the radio group; joined inside the
+/// outline where one is given, each segment rounding the corners it shares with it. Returns
+/// whether a click moved the selection, and where each segment lies.
 fn row(
     ui: &mut egui::Ui,
     selected: &mut usize,
     segments: Vec<egui::WidgetText>,
-    outline: Option<&Outline>,
+    joined: Option<(&Outline, &[Shared])>,
 ) -> (bool, Vec<egui::Rect>) {
     let mut changed = false;
     let mut rects = Vec::new();
     ui.ctx().accesskit_node_builder(ui.unique_id(), |node| {
         node.set_role(accesskit::Role::RadioGroup);
     });
-    let mut segments = segments.into_iter().enumerate().peekable();
-    while let Some((i, label)) = segments.next() {
+    for (i, label) in segments.into_iter().enumerate() {
         let mut button = egui::Button::new(label).selected(i == *selected);
-        if let Some(outline) = outline {
-            let last = segments.peek().is_none();
+        if let Some((outline, shared)) = joined {
+            let shared = shared.get(i).copied().unwrap_or_default();
             button = button
                 .stroke(egui::Stroke::NONE)
-                .corner_radius(outline.corners(i == 0, last));
+                .corner_radius(outline.corners(shared));
         }
         let response = ui.add(button);
         ui.ctx().accesskit_node_builder(response.id, |node| {

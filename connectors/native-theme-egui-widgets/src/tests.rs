@@ -1524,6 +1524,109 @@ fn the_segments_are_joined() {
     }
 }
 
+/// A wrapped control rounds the corners its segments share with the outline, row by row, from
+/// its first pass on (one discarded pass to learn the rows), and records a divider only
+/// between two segments of one row.
+#[test]
+fn a_wrapped_control_rounds_its_corners_per_row() {
+    use native_theme_egui::NativeThemeUiExt as _;
+
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let labels = ["Monday", "Tuesday", "Wed", "Thu"];
+    // A column as wide as the first two segments and the outline: the last two wrap.
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (_, unwrapped) = response(&ctx, at(0.0), |ui| {
+        ui.add(SegmentedControl::new(&mut 0, labels))
+    });
+    let parts = Parts::of(&unwrapped).unwrap();
+    let (first, second, third) = (
+        parts.get("segment_1").unwrap(),
+        parts.get("segment_2").unwrap(),
+        parts.get("segment_3").unwrap(),
+    );
+    let margin = unwrapped.rect.right() - third.right();
+    let width = first.right() - unwrapped.rect.left() + margin + 0.5 * second.width();
+    let add = |ui: &mut egui::Ui| {
+        ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
+            ui.add(SegmentedControl::new(&mut 0, labels).wrap())
+        })
+        .inner
+    };
+
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut border = egui::Stroke::NONE;
+    let mut radius = egui::CornerRadius::ZERO;
+    let mut add_reading = |ui: &mut egui::Ui| {
+        let idle = ui
+            .native_scope(
+                native_theme_egui::Role::SegmentedControl,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| ui.visuals().widgets.inactive,
+            )
+            .inner;
+        border = idle.bg_stroke;
+        radius = idle.corner_radius;
+        add(ui)
+    };
+    let first_pass = response(&ctx, at(0.0), &mut add_reading);
+    let later_pass = response(&ctx, at(0.0), &mut add_reading);
+    assert!(border.width > 0.0 && radius.nw > 0);
+    let inset = native_theme_egui::convert::u8_from_f32_saturating(border.width);
+    let inner = |r: u8| r - inset;
+    for (pass_name, (out, control)) in [("first", first_pass), ("later", later_pass)] {
+        let all = rects(&out);
+        let segments: Vec<_> = all.iter().filter(|r| r.fill != border.color).collect();
+        assert_eq!(segments.len(), 4, "{pass_name}: {all:#?}");
+        let s: Vec<egui::Rect> = segments.iter().map(|r| r.rect).collect();
+        assert_eq!(s[0].top(), s[1].top(), "{pass_name}: one row");
+        assert_eq!(s[2].top(), s[3].top(), "{pass_name}: one row");
+        assert!(s[2].top() > s[0].bottom(), "{pass_name}: the last two wrap");
+        let outline = control.rect.shrink(border.width);
+        assert_eq!(s[1].right(), outline.right(), "{pass_name}");
+        assert!(s[3].right() < outline.right() - 1.0, "{pass_name}");
+        let want = [
+            egui::CornerRadius {
+                nw: inner(radius.nw),
+                ..egui::CornerRadius::ZERO
+            },
+            egui::CornerRadius {
+                ne: inner(radius.ne),
+                ..egui::CornerRadius::ZERO
+            },
+            egui::CornerRadius {
+                sw: inner(radius.sw),
+                ..egui::CornerRadius::ZERO
+            },
+            egui::CornerRadius::ZERO,
+        ];
+        for (i, (segment, want)) in segments.iter().zip(want).enumerate() {
+            assert_eq!(segment.corner_radius, want, "{pass_name}: segment {i}");
+        }
+        let parts = Parts::of(&control).unwrap();
+        for (name, rect) in parts.iter() {
+            assert!(
+                !name.starts_with("divider_") || rect.min.x <= rect.max.x,
+                "{pass_name}: {name} {rect:?}"
+            );
+        }
+        assert!(parts.get("divider_0").is_some(), "{pass_name}");
+        assert_eq!(
+            parts.get("divider_1"),
+            None,
+            "{pass_name}: no divider at the wrap"
+        );
+        assert!(parts.get("divider_2").is_some(), "{pass_name}");
+        // The first pass guesses one row and is discarded; once the rows are known, none is.
+        let passes = if pass_name == "first" { 2 } else { 1 };
+        assert_eq!(
+            out.platform_output.num_completed_passes, passes,
+            "{pass_name}"
+        );
+    }
+}
+
 /// The drop-down is as tall as its text and padding, at least `combo_box.min_height`, where
 /// egui's square arrow box would make it taller; the arrow keeps `arrow_icon_size`'s box, its
 /// column the stated width. kde-breeze's 10px arrow is shorter than its line, so the case is
