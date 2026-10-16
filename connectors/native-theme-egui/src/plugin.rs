@@ -8,6 +8,7 @@ use egui::{Context, CornerRadius, Id, Rect, StrokeKind};
 
 use crate::atlas::FocusRing;
 use crate::convert::{clamp_length, to_color32, u8_from_f32_saturating};
+use crate::fonts::WidestGlyph;
 use crate::style::push_note;
 use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 
@@ -141,22 +142,46 @@ const FONT_ATLAS_MAX_WIDTH: usize = 16 * 1024;
 /// `vello_cpu`), adding less than one pixel on each.
 const GLYPH_BOX_ROUNDING: usize = 2;
 
+/// How many pixels per em TrueType hinting can add to the size it draws at: skrifa's
+/// interpreter rounds the pixels per em to an integer for a face whose `head` does not allow
+/// fractional sizes (`skrifa-0.44.0/src/outline/glyf/mod.rs:175-186`), through
+/// `F26Dot6::from_f64`, which rounds to the nearest 1/64
+/// (`font-types-0.12.4/src/fixed.rs:316-321`), then `F26Dot6::round`, to the nearest integer,
+/// half up (`:51-53`): at most 1/2 + 1/128.
+const HINTED_PPEM_ROUNDING: f32 = 0.5 + 1.0 / 128.0;
+
 /// [`ThemeAtlas::text_size_cap`]'s derivation (M7-04): the font atlas's width
-/// (`epaint/src/text/fonts.rs:975`) less [`GLYPH_BOX_ROUNDING`], over the width of the widest
-/// glyph at one point, `pixels_per_point × widest_glyph_em`, floored. `None` where that is not
-/// a positive normal `f32`: a `max_texture_side` of two pixels or fewer, or a
-/// `pixels_per_point` or width that is zero, negative or not finite.
+/// (`epaint/src/text/fonts.rs:975`), less [`GLYPH_BOX_ROUNDING`] and the widest glyph's growth
+/// under [`HINTED_PPEM_ROUNDING`], over the width of the widest glyph at one point,
+/// `pixels_per_point × widest.em`, floored. `None` where that is not a positive normal `f32`:
+/// an atlas too narrow for the slack, a `pixels_per_point` or width that is zero, negative or
+/// not finite, or a cap below one point.
+///
+/// Hinting moves outline points under the target epaint hints for by default
+/// (`HintingTarget::default`, `epaint/src/text/fonts.rs:310-313`: smooth, not light,
+/// `preserve_linear_metrics`, `:376-384`), each engine chosen by skrifa's `AutoFallback`
+/// (`skrifa-0.44.0/src/outline/hint.rs:27-34`), within these limits: the CFF hinter hints only
+/// `y` and scales `x` (`cff/hint.rs:1055-1078`); the autohinter fits nothing horizontally for a
+/// script of the default group (`autohint/metrics/mod.rs:364`, `:380-386`); the TrueType
+/// interpreter runs every glyph program in backward-compatibility mode under
+/// `preserve_linear_metrics` (`glyf/hint/engine/dispatch.rs:41-43`), in which its two point
+/// movers move nothing horizontally (`glyf/hint/zone.rs:417-468`, `:476-505`). Not covered,
+/// because the source states no bound for them: the TrueType `ISECT` instruction, which sets a
+/// point to the intersection of two lines with no backward-compatibility check
+/// (`glyf/hint/engine/outline.rs:611-663`); the autohinter's other script groups (CJK, Indic),
+/// fitted horizontally; and a face whose `FontTweak::hinting_target` the application changed.
 pub(crate) fn derive_text_size_cap(
     max_texture_side: usize,
     pixels_per_point: f32,
-    widest_glyph_em: f32,
+    widest: WidestGlyph,
 ) -> Option<f32> {
-    let width = max_texture_side
+    let side = max_texture_side
         .min(FONT_ATLAS_MAX_WIDTH)
         .saturating_sub(GLYPH_BOX_ROUNDING);
-    let width = f32::from(u16::try_from(width).ok()?); // at most 16382: exact
-    let cap = (width / (pixels_per_point * widest_glyph_em)).floor();
-    (cap.is_normal() && cap > 0.0).then_some(cap)
+    let side = f32::from(u16::try_from(side).ok()?); // at most 16382: exact
+    let width = side - HINTED_PPEM_ROUNDING * widest.unscaled_em;
+    let cap = (width / (pixels_per_point * widest.em)).floor();
+    (cap.is_normal() && cap >= 1.0).then_some(cap)
 }
 
 /// Whether a text size of `style` — a `text_styles` entry or `override_font_id` — is above `cap`.
@@ -206,8 +231,8 @@ fn cap_text_sizes(
     pixels_per_point: f32,
 ) -> Option<f32> {
     let cap = atlas
-        .widest_glyph_em()
-        .and_then(|em| derive_text_size_cap(max_texture_side, pixels_per_point, em));
+        .widest_glyph()
+        .and_then(|widest| derive_text_size_cap(max_texture_side, pixels_per_point, widest));
     atlas.set_text_size_cap(cap);
     if let Some(cap) = cap {
         for theme in [egui::Theme::Dark, egui::Theme::Light] {
@@ -302,8 +327,8 @@ impl egui::plugin::Plugin for NativeThemePlugin {
         let (max_texture_side, pixels_per_point) =
             ctx.input(|i| (i.max_texture_side, i.pixels_per_point()));
         let derived = atlas
-            .widest_glyph_em()
-            .and_then(|em| derive_text_size_cap(max_texture_side, pixels_per_point, em));
+            .widest_glyph()
+            .and_then(|widest| derive_text_size_cap(max_texture_side, pixels_per_point, widest));
         if derived == atlas.text_size_cap() {
             return;
         }
@@ -522,25 +547,48 @@ mod tests {
         );
     }
 
-    /// M7-04: the cap is the atlas width less two pixels over the widest glyph's width at one
-    /// point, floored; the atlas is never wider than 16 × 1024 (`epaint/src/text/fonts.rs:975`).
+    /// A widest glyph of `em` with no `FontTweak::scale`.
+    fn widest(em: f32) -> WidestGlyph {
+        WidestGlyph {
+            em,
+            unscaled_em: em,
+        }
+    }
+
+    /// M7-04: the cap is the atlas width less two pixels and the hinted size's rounding over
+    /// the widest glyph's width at one point, floored; the atlas is never wider than 16 × 1024
+    /// (`epaint/src/text/fonts.rs:975`).
     #[test]
     fn the_text_size_cap_is_the_atlas_width_over_the_widest_glyph() {
-        assert_eq!(derive_text_size_cap(2048, 1.0, 1.0), Some(2046.0));
-        assert_eq!(derive_text_size_cap(2048, 2.0, 1.0), Some(1023.0));
-        assert_eq!(derive_text_size_cap(2048, 1.0, 4.0), Some(511.0)); // 511.5, floored
-        assert_eq!(derive_text_size_cap(2048, 1.5, 0.5), Some(2728.0));
-        assert_eq!(derive_text_size_cap(1 << 20, 1.0, 1.0), Some(16382.0));
-        assert_eq!(derive_text_size_cap(16 * 1024, 1.0, 1.0), Some(16382.0));
+        // 2048 − 2 − 65/128 = 2045.49…, over 1.0
+        assert_eq!(derive_text_size_cap(2048, 1.0, widest(1.0)), Some(2045.0));
+        assert_eq!(derive_text_size_cap(2048, 2.0, widest(1.0)), Some(1022.0));
+        // (2046 − 4 × 65/128) / 4 = 511.0, less than 511 by the rounding: 510
+        assert_eq!(derive_text_size_cap(2048, 1.0, widest(4.0)), Some(510.0));
+        // A `FontTweak::scale` of 0.5: the rounding is on the unscaled width.
+        let half = WidestGlyph {
+            em: 0.5,
+            unscaled_em: 1.0,
+        };
+        assert_eq!(derive_text_size_cap(2048, 1.0, half), Some(4090.0));
+        assert_eq!(
+            derive_text_size_cap(1 << 20, 1.0, widest(1.0)),
+            Some(16381.0)
+        );
+        assert_eq!(
+            derive_text_size_cap(16 * 1024, 1.0, widest(1.0)),
+            Some(16381.0)
+        );
         // Nothing to divide by, or no width: no cap.
-        assert_eq!(derive_text_size_cap(2, 1.0, 1.0), None);
-        assert_eq!(derive_text_size_cap(0, 1.0, 1.0), None);
-        assert_eq!(derive_text_size_cap(2048, 0.0, 1.0), None);
-        assert_eq!(derive_text_size_cap(2048, f32::NAN, 1.0), None);
-        assert_eq!(derive_text_size_cap(2048, 1.0, f32::INFINITY), None);
-        assert_eq!(derive_text_size_cap(2048, -1.0, 1.0), None);
-        // A width below one point at the cap's scale floors to zero: no cap.
-        assert_eq!(derive_text_size_cap(2048, 1.0, 4096.0), None);
+        assert_eq!(derive_text_size_cap(2, 1.0, widest(1.0)), None);
+        assert_eq!(derive_text_size_cap(0, 1.0, widest(1.0)), None);
+        assert_eq!(derive_text_size_cap(2048, 0.0, widest(1.0)), None);
+        assert_eq!(derive_text_size_cap(2048, f32::NAN, widest(1.0)), None);
+        assert_eq!(derive_text_size_cap(2048, 1.0, widest(f32::INFINITY)), None);
+        assert_eq!(derive_text_size_cap(2048, -1.0, widest(1.0)), None);
+        // A cap below one point: none.
+        assert_eq!(derive_text_size_cap(2048, 1.0, widest(4096.0)), None);
+        assert_eq!(derive_text_size_cap(2048, 4096.0, widest(1.0)), None);
     }
 
     /// M7-04: `capped` hands the same `Arc` back when no size is above the cap, and lowers

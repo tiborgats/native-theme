@@ -148,10 +148,10 @@ pub(crate) struct AtlasInner {
     pub(crate) icon_theme: [Option<String>; 2],
     /// The definitions `install` sets (§10.3 step 1); `None` when no plan was given.
     pub(crate) fonts: Option<egui::FontDefinitions>,
-    /// The widest glyph of the faces the atlas installs, in em (`fonts::widest_glyph_em`):
-    /// the plan's definitions, or `egui::FontDefinitions::default()` with no plan; `None`
-    /// when no face states a bounding box.
-    pub(crate) widest_glyph_em: Option<f32>,
+    /// The widest glyph of the faces the atlas installs (`fonts::widest_glyph`): the plan's
+    /// definitions, or `egui::FontDefinitions::default()` with no plan; `None` when no face
+    /// gives one.
+    pub(crate) widest_glyph: Option<crate::fonts::WidestGlyph>,
     /// [`ThemeAtlas::text_size_cap`] as `f32` bits, `f32::INFINITY` until the install plugin
     /// derives it (M7-04).
     pub(crate) text_size_cap: AtomicU32,
@@ -427,12 +427,20 @@ impl ThemeAtlas {
     /// at its full size and asserts that it fits its font atlas
     /// (`epaint/src/texture_atlas.rs:226-231`) — a panic in release builds too — whose width is
     /// `max_texture_side` at most `16 × 1024` (`epaint/src/text/fonts.rs:975`). So the cap is
-    /// `floor((min(max_texture_side, 16 × 1024) − 2) / (pixels_per_point × w))`: the atlas width
-    /// less the two pixels by which epaint rounds a glyph's outline box out
-    /// (`epaint/src/text/font.rs:266-267`), over the width at one point of `w`, the widest glyph
-    /// of the faces the atlas installs in em — each face's own `head` bounding box (skrifa's
-    /// `Metrics::bounds`, `skrifa-0.44.0/src/metrics.rs:72-102`), which every glyph's box lies
-    /// inside, times its `FontTweak::scale` ([`Builder::fonts`] names the faces).
+    /// `floor((min(max_texture_side, 16 × 1024) − 2 − (1/2 + 1/128) × u) / (pixels_per_point × w))`:
+    /// the atlas width, less the two pixels by which epaint rounds a glyph's outline box out
+    /// (`epaint/src/text/font.rs:266-267`) and the growth of a glyph `u` em wide when TrueType
+    /// hinting rounds its pixels per em up to an integer
+    /// (`skrifa-0.44.0/src/outline/glyf/mod.rs:175-186`), over the width at one point of `w`,
+    /// the widest glyph of the faces the atlas installs in em of the font size, `u` the same
+    /// before `FontTweak::scale` ([`Builder::fonts`] names the faces). Per face: a static
+    /// TrueType face's `head` box (skrifa's `Metrics::bounds`,
+    /// `skrifa-0.44.0/src/metrics.rs:72-102`), which the `head` table states over all its
+    /// glyphs; for a variable face or a `CFF`/`CFF2` one, whose `head` box bounds the default
+    /// instance only and need not hold a CFF outline's control box, the widest control box of
+    /// its glyphs' outlines at the location the face is drawn at (skrifa's
+    /// `GlyphMetrics::bounds`, `skrifa-0.44.0/src/metrics.rs:352-393`), worked out once per
+    /// face and location for the process.
     ///
     /// Both inputs are the GPU's and the monitor's, known only at run time, so the install
     /// plugin derives the cap before every pass from that pass's `RawInput::max_texture_side`
@@ -446,16 +454,20 @@ impl ThemeAtlas {
     /// size is only ever lowered: a cap that rises again — the window moved to a monitor of
     /// fewer pixels per point — restores nothing until the next [`ThemeAtlas::install`].
     ///
-    /// `None` until a pass has run with the atlas installed, and where no face of the atlas
-    /// states a bounding box. An atlas installed into several `Context`s, or drawn in
+    /// `None` until a pass has run with the atlas installed, where no face of the atlas gives a
+    /// width, and where the derivation gives less than one point — an atlas too narrow for
+    /// the slack, or a `pixels_per_point` that is not a positive finite number — in which
+    /// case nothing is lowered. An atlas installed into several `Context`s, or drawn in
     /// viewports of different `pixels_per_point`, reports the last pass's. A size handed to
     /// egui by the application — from [`text_role_font`](crate::text_role_font),
     /// [`window_title_bar_font`](crate::window_title_bar_font),
     /// [`list_header_font`](crate::list_header_font) or
     /// [`scaled_text_size`](crate::scaled_text_size) — is the application's to clamp to it.
-    /// Not bounded by it: a glyph whose outline exceeds its face's `head` box by more than
-    /// the floor leaves (a CFF face's control box can), and a face the application adds to
-    /// the `Context` itself.
+    /// Not bounded by it: the horizontal hinting epaint's default target still allows — a
+    /// TrueType `ISECT` instruction, the autohinter's non-default script groups (CJK, Indic) —
+    /// and any under a `FontTweak::hinting_target` the application changed, a
+    /// `TextFormat::coords` variation the application sets on a run, and a face the
+    /// application adds to the `Context` itself.
     #[must_use]
     pub fn text_size_cap(&self) -> Option<f32> {
         let cap = f32::from_bits(self.0.text_size_cap.load(Ordering::Relaxed));
@@ -563,9 +575,9 @@ impl ThemeAtlas {
         self.0.scheme(theme).focus_ring.as_ref()
     }
 
-    /// The widest glyph of the faces the atlas installs, in em (M7-04).
-    pub(crate) fn widest_glyph_em(&self) -> Option<f32> {
-        self.0.widest_glyph_em
+    /// The widest glyph of the faces the atlas installs (M7-04).
+    pub(crate) fn widest_glyph(&self) -> Option<crate::fonts::WidestGlyph> {
+        self.0.widest_glyph
     }
 
     /// Store the cap the install plugin derived for a pass; `None` is no cap.
@@ -735,8 +747,9 @@ impl<'a> Builder<'a> {
     /// (`epaint/src/text/font.rs:561-565` scales by the font size alone), so no zoom or DPI
     /// change invalidates either value.
     ///
-    /// Recorded here too, from the same faces, is the width of their widest glyph in em, which
-    /// the install plugin turns into [`ThemeAtlas::text_size_cap`] at run time.
+    /// Recorded here too, from the same faces, is the width of their widest glyph, which the
+    /// install plugin turns into [`ThemeAtlas::text_size_cap`] at run time; for a variable or
+    /// CFF face it draws every glyph's outline once per process, face and weight.
     #[must_use = "this builds the styles; it does not install them"]
     pub fn build(self) -> ThemeAtlas {
         let mut notes = Vec::new();
@@ -750,7 +763,7 @@ impl<'a> Builder<'a> {
             defs
         });
         let defs = fonts.clone().unwrap_or_default(); // egui's default faces for an atlas with no plan
-        let widest_glyph_em = crate::fonts::widest_glyph_em(&defs);
+        let widest_glyph = crate::fonts::widest_glyph(&defs);
         let light = compile_scheme(
             egui::Theme::Light,
             self.light,
@@ -785,7 +798,7 @@ impl<'a> Builder<'a> {
                 self.icon_theme[1].map(str::to_owned),
             ],
             fonts,
-            widest_glyph_em,
+            widest_glyph,
             text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
             notes,
         }))

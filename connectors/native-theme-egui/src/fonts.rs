@@ -408,30 +408,129 @@ pub(crate) fn body_row_height(defs: &egui::FontDefinitions, size: f32) -> Option
     (row.is_finite() && row > 0.0).then_some(row)
 }
 
-/// The width of the widest glyph any face of `defs` can draw, in em of the font size
-/// (M7-04): per face, skrifa's `Metrics::bounds` (`skrifa-0.44.0/src/metrics.rs:72-102`, filled
-/// from the `head` table at `:116-122`), the face's own bounding box, which every glyph's
-/// box lies inside, as `(x_max − x_min) / units_per_em × tweak.scale` — epaint draws a glyph
-/// at `font_size × tweak.scale × pixels_per_point` (`epaint/src/text/font.rs:567`) — and the
-/// maximum over the faces. Parsed as [`body_row_height`] parses its face. A face that does
-/// not parse, states no `head`, or gives no finite positive width is passed over; `None` when
-/// no face gives one.
-pub(crate) fn widest_glyph_em(defs: &egui::FontDefinitions) -> Option<f32> {
-    use skrifa::MetadataProvider as _;
+/// The widest glyph of a set of faces (M7-04), each width the maximum over the faces.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct WidestGlyph {
+    /// In em of the font size: per face, times its `FontTweak::scale`, since epaint draws a
+    /// glyph at `font_size × tweak.scale × pixels_per_point` (`epaint/src/text/font.rs:567`).
+    pub(crate) em: f32,
+    /// In em of the face's own pixels per em, without `FontTweak::scale`: what a whole pixel
+    /// more per em, as TrueType hinting can round to, adds to the glyph's width.
+    pub(crate) unscaled_em: f32,
+}
 
+/// The widest glyph any face of `defs` can draw (M7-04): the maximum over the faces of
+/// [`face_widest_glyph`]. A face that does not parse or gives no finite positive width is
+/// passed over; `None` when no face gives one.
+pub(crate) fn widest_glyph(defs: &egui::FontDefinitions) -> Option<WidestGlyph> {
     defs.font_data
         .values()
-        .filter_map(|data| {
-            let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
-            let m = face.metrics(
+        .filter_map(|data| face_widest_glyph(data))
+        .reduce(|a, b| WidestGlyph {
+            em: a.em.max(b.em),
+            unscaled_em: a.unscaled_em.max(b.unscaled_em),
+        })
+}
+
+/// A face's identity for [`widest_glyph_memo`]: its file's length, its index in a
+/// collection, its table directory — each table's tag, checksum and length
+/// (`read-fonts-0.41.0/generated/font.rs:162-171`), the checksum computed over the table's
+/// bytes — and the normalised coordinates of the location it is drawn at. By content, not by
+/// address: [`font_definitions`] copies a [`FontBytes::Shared`] face into a new `Vec` at every
+/// build (`FontData::from_owned`, `epaint/src/text/fonts.rs:133`). The checksums are the
+/// file's own statement, trusted as its `head` box is for a static face; reading them costs
+/// one pass over the directory where hashing the bytes would read the whole file.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct WidestGlyphKey {
+    len: usize,
+    index: u32,
+    tables: Vec<(skrifa::Tag, u32, u32)>,
+    location: Vec<i16>,
+}
+
+/// The process-wide memo of the outline-bound faces' widest glyph, in font units: `compute`
+/// runs once per [`WidestGlyphKey`], as native-theme loads its font database once per process
+/// (`native-theme/src/fonts.rs:158-165`). It grows by one entry per face and location the
+/// process builds an atlas with. A poisoned lock is recovered: the map holds plain values,
+/// written whole.
+fn widest_glyph_memo(key: WidestGlyphKey, compute: impl FnOnce() -> Option<f32>) -> Option<f32> {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock, PoisonError};
+    static MEMO: OnceLock<Mutex<HashMap<WidestGlyphKey, Option<f32>>>> = OnceLock::new();
+    let memo = MEMO.get_or_init(Mutex::default);
+    if let Some(width) = memo
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .get(&key)
+    {
+        return *width;
+    }
+    let width = compute();
+    memo.lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .insert(key, width);
+    width
+}
+
+/// One face's widest glyph. Parsed as [`body_row_height`] parses its face.
+///
+/// * A static TrueType face: its `head` box, skrifa's `Metrics::bounds`
+///   (`skrifa-0.44.0/src/metrics.rs:72-102`, read from `head` at `:116-122`), which the
+///   OpenType `head` table defines over all glyph bounding boxes.
+/// * A variable face (one with `fvar`) or a `CFF`/`CFF2` one: the widest of its glyphs'
+///   own boxes at the location the face is drawn at — its `FontTweak::coords` through
+///   `AxisCollection::location`, as epaint forms it (`epaint/src/text/font.rs:574-578`) —
+///   from skrifa's `GlyphMetrics::bounds`, which for such a face takes the control box of
+///   the unhinted outline (`skrifa-0.44.0/src/metrics.rs:352-358`, `:384-393`), the box
+///   epaint measures (`epaint/src/text/font.rs:266`). `head` bounds only a variable face's
+///   default instance, and a CFF outline's control box need not lie inside it. Every glyph
+///   is drawn once for this, so the width is kept for the process per face content and
+///   location ([`widest_glyph_memo`]).
+fn face_widest_glyph(data: &FontData) -> Option<WidestGlyph> {
+    use skrifa::MetadataProvider as _;
+    use skrifa::raw::TableProvider as _;
+
+    let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
+    let units_per_em = face
+        .metrics(
+            skrifa::instance::Size::unscaled(),
+            skrifa::instance::LocationRef::default(),
+        )
+        .units_per_em;
+    let outline_bound = face.fvar().is_ok() || face.cff().is_ok() || face.cff2().is_ok();
+    let width = if outline_bound {
+        let location = face.axes().location(data.tweak.coords.as_ref());
+        let key = WidestGlyphKey {
+            len: data.font.len(),
+            index: data.index,
+            tables: face
+                .table_directory
+                .table_records()
+                .iter()
+                .map(|t| (t.tag(), t.checksum(), t.length()))
+                .collect(),
+            location: location.coords().iter().map(|c| c.to_bits()).collect(),
+        };
+        widest_glyph_memo(key, || {
+            let glyphs = face.glyph_metrics(skrifa::instance::Size::unscaled(), &location);
+            (0..glyphs.glyph_count())
+                .filter_map(|id| glyphs.bounds(skrifa::GlyphId::new(id)))
+                .map(|b| b.x_max - b.x_min)
+                .reduce(f32::max)
+        })?
+    } else {
+        let bounds = face
+            .metrics(
                 skrifa::instance::Size::unscaled(),
                 skrifa::instance::LocationRef::default(),
-            );
-            let bounds = m.bounds?;
-            let em = (bounds.x_max - bounds.x_min) / f32::from(m.units_per_em) * data.tweak.scale;
-            (em.is_finite() && em > 0.0).then_some(em)
-        })
-        .reduce(f32::max)
+            )
+            .bounds?;
+        bounds.x_max - bounds.x_min
+    };
+    let unscaled_em = width / f32::from(units_per_em);
+    let em = unscaled_em * data.tweak.scale;
+    (unscaled_em.is_finite() && unscaled_em > 0.0 && em.is_finite() && em > 0.0)
+        .then_some(WidestGlyph { em, unscaled_em })
 }
 
 #[cfg(test)]
@@ -461,32 +560,149 @@ mod tests {
         assert_eq!(body_row_height(&egui::FontDefinitions::empty(), 13.0), None);
     }
 
-    /// M7-04: the widest glyph of egui's default faces is the widest `head` box, read here
-    /// from the table itself (`skrifa::raw::tables::head`), over `unitsPerEm`, times the
-    /// face's `FontTweak::scale`; a definitions with no face has none.
+    /// M7-04: for egui's default faces, all static TrueType, the widest glyph is the widest
+    /// `head` box, read here from the table itself (`skrifa::raw::tables::head`), over
+    /// `unitsPerEm`, and times the face's `FontTweak::scale` for `em`; a definitions with no
+    /// face, or with bytes that do not parse, has none.
     #[test]
-    fn widest_glyph_em_is_the_widest_head_box() {
+    fn widest_glyph_of_static_faces_is_the_widest_head_box() {
         use skrifa::raw::TableProvider as _;
         let defs = egui::FontDefinitions::default();
-        let want = defs
-            .font_data
-            .values()
-            .map(|data| {
-                let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
-                let head = face.head().unwrap();
-                f32::from(head.x_max() - head.x_min()) / f32::from(head.units_per_em())
-                    * data.tweak.scale
-            })
-            .fold(0.0_f32, f32::max);
-        assert!(want > 0.0);
-        assert_eq!(widest_glyph_em(&defs), Some(want));
-        assert_eq!(widest_glyph_em(&egui::FontDefinitions::empty()), None);
+        let (mut em, mut unscaled_em) = (0.0_f32, 0.0_f32);
+        for data in defs.font_data.values() {
+            let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
+            assert!(face.fvar().is_err() && face.cff().is_err() && face.cff2().is_err());
+            let head = face.head().unwrap();
+            let w = f32::from(head.x_max() - head.x_min()) / f32::from(head.units_per_em());
+            unscaled_em = unscaled_em.max(w);
+            em = em.max(w * data.tweak.scale);
+        }
+        assert!(em > 0.0);
+        assert_eq!(widest_glyph(&defs), Some(WidestGlyph { em, unscaled_em }));
+        assert_eq!(widest_glyph(&egui::FontDefinitions::empty()), None);
         let mut garbage = egui::FontDefinitions::empty();
         garbage.font_data.insert(
             "garbage".to_owned(),
             Arc::new(egui::FontData::from_static(b"garbage")),
         );
-        assert_eq!(widest_glyph_em(&garbage), None);
+        assert_eq!(widest_glyph(&garbage), None);
+    }
+
+    /// M7-04: a variable or CFF face's widest glyph is the widest control box of its own
+    /// outlines at the location it is drawn at, recomputed here with a pen of the test's own
+    /// over every glyph's unhinted outline (`OutlineGlyph::draw`), not with
+    /// `GlyphMetrics::bounds`. Over the system faces the platform presets select (feature
+    /// `system-fonts`), each at its plan's weight; a host whose faces are all static TrueType
+    /// checks nothing and says so.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn widest_glyph_of_outline_bound_faces_is_the_widest_control_box_at_its_location() {
+        use skrifa::MetadataProvider as _;
+        use skrifa::raw::TableProvider as _;
+        #[derive(Default)]
+        struct XPen(Option<(f32, f32)>);
+        impl XPen {
+            fn x(&mut self, x: f32) {
+                let (lo, hi) = self.0.unwrap_or((x, x));
+                self.0 = Some((lo.min(x), hi.max(x)));
+            }
+        }
+        impl skrifa::outline::OutlinePen for XPen {
+            fn move_to(&mut self, x: f32, _: f32) {
+                self.x(x);
+            }
+            fn line_to(&mut self, x: f32, _: f32) {
+                self.x(x);
+            }
+            fn quad_to(&mut self, cx: f32, _: f32, x: f32, _: f32) {
+                self.x(cx);
+                self.x(x);
+            }
+            fn curve_to(&mut self, cx0: f32, _: f32, cx1: f32, _: f32, x: f32, _: f32) {
+                self.x(cx0);
+                self.x(cx1);
+                self.x(x);
+            }
+            fn close(&mut self) {}
+        }
+        let mut checked = 0;
+        for key in ["adwaita", "kde-breeze", "windows-11", "macos-tahoe"] {
+            let Ok(t) = native_theme::theme::Theme::preset(key)
+                .and_then(|p| p.resolve(native_theme::theme::ColorMode::Light))
+            else {
+                continue;
+            };
+            let (defs, _) = font_definitions(&t.variant, &FontPlan::from_system(&t.variant));
+            let faces = defs.font_data.iter().flat_map(|(name, data)| {
+                // The plan's own weight, and the axis's two ends where the face has one.
+                [None, Some(100.0), Some(900.0)].map(|wght| {
+                    let mut data = egui::FontData::clone(data);
+                    if let Some(w) = wght {
+                        data.tweak.coords = VariationCoords::new([(Tag::new(b"wght"), w)]);
+                    }
+                    (name, data)
+                })
+            });
+            for (name, data) in faces {
+                let data = &data;
+                let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
+                if face.fvar().is_err() && face.cff().is_err() && face.cff2().is_err() {
+                    continue;
+                }
+                let location = face.axes().location(data.tweak.coords.as_ref());
+                let outlines = face.outline_glyphs();
+                let upem = f32::from(face.head().unwrap().units_per_em());
+                let mut want = 0.0_f32;
+                for id in 0..face.maxp().unwrap().num_glyphs() {
+                    let Some(glyph) = outlines.get(skrifa::GlyphId::new(u32::from(id))) else {
+                        continue;
+                    };
+                    let mut pen = XPen::default();
+                    let settings = skrifa::outline::DrawSettings::unhinted(
+                        skrifa::instance::Size::unscaled(),
+                        &location,
+                    );
+                    if glyph.draw(settings, &mut pen).is_ok()
+                        && let Some((lo, hi)) = pen.0
+                    {
+                        want = want.max(hi - lo);
+                    }
+                }
+                if face
+                    .axes()
+                    .iter()
+                    .any(|axis| axis.tag() == Tag::new(b"wght"))
+                {
+                    // The location is the one drawn: `W` is wider at 900 than at 100.
+                    let w_width = |wght: f32| {
+                        let at = face.axes().location([(Tag::new(b"wght"), wght)]);
+                        let id = face.charmap().map('W').unwrap();
+                        let mut pen = XPen::default();
+                        let settings = skrifa::outline::DrawSettings::unhinted(
+                            skrifa::instance::Size::unscaled(),
+                            &at,
+                        );
+                        outlines.get(id).unwrap().draw(settings, &mut pen).unwrap();
+                        pen.0.map(|(lo, hi)| hi - lo).unwrap()
+                    };
+                    assert!(w_width(900.0) > w_width(100.0), "{key} {name}");
+                }
+                let got = face_widest_glyph(data).unwrap();
+                assert_eq!(got.unscaled_em, want / upem, "{key} {name}");
+                assert_eq!(got.em, want / upem * data.tweak.scale, "{key} {name}");
+                let head = face.head().unwrap();
+                println!(
+                    "widest glyph: {key} {name}: {} em at {:?}, head box {} em",
+                    got.unscaled_em,
+                    data.tweak.coords.as_ref(),
+                    f32::from(head.x_max() - head.x_min()) / upem
+                );
+                checked += 1;
+            }
+        }
+        if checked == 0 {
+            println!("widest glyph: no variable or CFF system face on this host; nothing checked");
+        }
     }
 
     /// `weight_coords` is the `wght` axis at the CSS weight, built independently here.
