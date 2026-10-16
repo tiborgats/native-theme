@@ -226,6 +226,13 @@ pub mod widgets;
 #[cfg(feature = "watch")]
 pub use watch::on_theme_change;
 
+// The source crate, re-exported as the egui and iced connectors do, so an
+// application reaches the rest of native-theme's API
+// (`native_theme_gpui::native_theme::detect::invalidate_caches()`) without a
+// dependency of its own: a downstream `Cargo.toml` need not add a second
+// one, whose version could drift from the connector's.
+pub use native_theme;
+
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
@@ -1922,6 +1929,22 @@ mod tests {
             resolved.defaults.accent_color != Rgba::TRANSPARENT
                 || resolved.defaults.background_color != Rgba::TRANSPARENT,
             "resolved variant should have at least accent or background populated"
+        );
+    }
+
+    /// The crate root re-exports native-theme, so an application names its
+    /// API through `native_theme_gpui::native_theme` with no dependency of
+    /// its own, and it is the copy the connector's own types come from.
+    #[test]
+    fn native_theme_is_reached_through_the_connector() {
+        let _: fn() = crate::native_theme::detect::invalidate_caches;
+        let theme: crate::native_theme::theme::Theme = Theme::preset("adwaita").unwrap();
+        let resolved = theme.resolve(ColorMode::Light).unwrap();
+        let _ = to_theme(
+            &resolved.variant,
+            &theme.name,
+            false,
+            &AccessibilityPreferences::default(),
         );
     }
 
