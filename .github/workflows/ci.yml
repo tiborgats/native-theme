@@ -119,6 +119,7 @@ jobs:
           - { name: "Linux (linux-kde)", os: ubuntu-latest, flags: "--features linux-kde" }
           - { name: "Linux (linux-portal)", os: ubuntu-latest, flags: "--features linux-portal" }
           - { name: "Linux (linux)", os: ubuntu-latest, flags: "--features linux" }
+          - { name: "Linux (linux, watch)", os: ubuntu-latest, flags: "--features linux,watch" }
           - { name: "Linux (native)", os: ubuntu-latest, flags: "--features native" }
           - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
@@ -179,7 +180,7 @@ jobs:
       - run: cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
 
   test-build-crate:
-    name: Test native-theme-build
+    name: Test native-theme-build and native-theme-derive
     needs: fmt
     runs-on: ubuntu-latest
     steps:
@@ -187,6 +188,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme-build
+      - run: cargo test -p native-theme-derive
 
   test-connectors:
     name: Test ${{ matrix.name }}
