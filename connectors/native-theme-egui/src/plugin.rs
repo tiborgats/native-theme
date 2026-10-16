@@ -302,8 +302,8 @@ pub(crate) fn cap_at_install(ctx: &Context, atlas: &ThemeAtlas) {
 /// reads the atlas `install` published, so a re-install takes effect with no second
 /// registration (egui keeps the first plugin of a type, `egui/src/context.rs:2045`,
 /// `egui/src/plugin.rs:206-210`) — only its own bookkeeping: which viewports' input it filled
-/// this pass, the last window theme it sent per viewport, and the cap inputs of each pass in
-/// progress.
+/// this pass, the last window theme it sent per viewport, the cap inputs of each pass in
+/// progress, and whether it has adopted the focus entries written before it was registered.
 #[derive(Default)]
 pub(crate) struct NativeThemePlugin {
     /// Per viewport whose input this plugin saw, whether it filled the scheme in its latest
