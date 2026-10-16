@@ -24,7 +24,7 @@
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
 //! `egui::Spinner`, [`segmented_control::SegmentedControl`] as unscoped
-//! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
+//! buttons, the [`links`] functions as egui's `Link` and `Hyperlink`,
 //! [`combo_box::ComboBox`] as `egui::ComboBox`, [`radio_button::RadioButton`]
 //! as `egui::RadioButton`, [`progress_bar::ProgressBar`] as
 //! `egui::ProgressBar`, [`expander::Expander`] as `egui::CollapsingHeader`.
@@ -87,6 +87,7 @@
 pub mod combo_box;
 pub mod expander;
 pub mod fade;
+pub mod links; // Tier W: `link`, `hyperlink`
 pub mod parts;
 pub mod progress_bar;
 pub mod radio_button;
@@ -94,7 +95,6 @@ pub mod segmented_control;
 pub mod slider;
 pub mod spinner;
 pub mod switch;
-pub mod wrap; // Tier W: `link`, `hyperlink`
 
 mod scope;
 

@@ -17,6 +17,7 @@ use native_theme_egui::{
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
 use native_theme_egui_widgets::fade::fade_as_one;
+use native_theme_egui_widgets::links;
 use native_theme_egui_widgets::parts::Parts;
 use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
@@ -24,7 +25,6 @@ use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_egui_widgets::wrap;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -1075,7 +1075,7 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
     });
     reg.amend_last(|i| {

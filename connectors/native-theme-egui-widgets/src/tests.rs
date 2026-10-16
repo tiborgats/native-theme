@@ -19,13 +19,13 @@ use native_theme_egui::{
 };
 
 use crate::combo_box::ComboBox;
+use crate::links;
 use crate::progress_bar::ProgressBar;
 use crate::radio_button::RadioButton;
 use crate::segmented_control::SegmentedControl;
 use crate::slider::Slider;
 use crate::spinner::Spinner;
 use crate::switch::Switch;
-use crate::wrap;
 
 // ---- harness ----------------------------------------------------------------------------------
 
@@ -235,7 +235,7 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
         (
             "link",
             Box::new(|ui| {
-                let w = wrap::link(ui, "Link");
+                let w = links::link(ui, "Link");
                 ui.add(w)
             }),
             Box::new(|ui| ui.add(egui::Link::new("Link"))),
@@ -243,7 +243,7 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
         (
             "hyperlink",
             Box::new(|ui| {
-                let w = wrap::hyperlink(ui, "Docs", "https://example.org");
+                let w = links::hyperlink(ui, "Docs", "https://example.org");
                 ui.add(w)
             }),
             Box::new(|ui| {
@@ -316,11 +316,11 @@ fn one_widget(ui: &mut egui::Ui, i: usize) -> egui::Response {
         2 => ui.add(Spinner::new()),
         3 => ui.add(SegmentedControl::new(&mut 0, ["Day", "Week"])),
         4 => {
-            let link = wrap::link(ui, "Link");
+            let link = links::link(ui, "Link");
             ui.add(link)
         }
         5 => {
-            let hyperlink = wrap::hyperlink(ui, "Docs", "https://example.org");
+            let hyperlink = links::hyperlink(ui, "Docs", "https://example.org");
             ui.add(hyperlink)
         }
         6 => {
@@ -609,7 +609,7 @@ fn a_clicked_hyperlink_is_visited() {
     t.link.visited_text_color = native_theme_egui::native_theme::color::Rgba::new(1, 2, 3, 255);
     let ctx = installed(&t, &AccessibilityPreferences::default());
     let add = |ui: &mut egui::Ui| {
-        let w = wrap::hyperlink(ui, "Docs", "https://example.org");
+        let w = links::hyperlink(ui, "Docs", "https://example.org");
         ui.add(w)
     };
     let (_, r) = click(&ctx, add);

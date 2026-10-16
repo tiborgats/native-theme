@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: a default build no longer reads the OS theme. The connector turned on native-theme's `linux`, `macos` or `windows` reader for the target it was built for; it now forwards them as the `native` feature, off by default as in native-theme and the iced connector, so without it `from_system()`, and the `SystemTheme::from_system()` whose result `apply_system_theme` takes, give the platform preset on Linux and an error on macOS and Windows. Add `features = ["native"]` (the README's Quick start does), or name native-theme's `kde`, `portal`, `macos` or `windows` for one platform.
 - **native-theme-egui-widgets**: `expander::ExpanderResponse` is `#[non_exhaustive]`, as the connector's `Loaded` is, so the fields egui's `CollapsingResponse` also carries (`body_response`, `openness`) can be added later without a breaking change; its fields are read as before, but outside the crate it can no longer be built by struct literal or destructured without `..`.
 - **native-theme-egui**: `convert::to_color32_with_opacity` is gone: nothing in the connector, the widgets crate or the showcase called it; `to_color32(c).gamma_multiply(opacity)` is egui's own spelling.
+- **native-theme-egui-widgets**: the module `wrap` is `links` (`links::link`, `links::hyperlink`), named for what it holds: in this crate and in egui "wrap" means line-wrapping (`SegmentedControl::wrap`, `ComboBox::wrap`). The old path is gone, with no alias.
 
 ### Added
 
