@@ -403,7 +403,11 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// not send again — unless egui's own already rides in the output, and its `last_sent`
     /// entry is dropped, so the window and egui agree and the plugin is inert (M7-02). Not
     /// `SetTheme(ctx.theme())`: a preset pins its scheme through `Context::set_theme`, which
-    /// egui's `sync_window_theme` sends itself.
+    /// egui's `sync_window_theme` sends itself. On X11 winit writes `_GTK_THEME_VARIANT =
+    /// "dark"` for `SystemDefault` whatever the desktop's scheme (spec §10.3's table, from
+    /// winit 0.30.13's `src/platform_impl/linux/x11/window.rs`, the `None` arm at line 638), so
+    /// with `Options::fallback_theme = Light` the title bar goes dark under a light UI after
+    /// this restore: egui's own behaviour from startup, which the restore brings back.
     ///
     /// The `filled` map is read, never emptied: an immediate viewport runs its whole pass, hooks
     /// included, inside its parent's, and the parent's commands reach the outermost pass's

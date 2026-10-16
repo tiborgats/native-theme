@@ -111,3 +111,8 @@ pub use native_theme_egui as connector;
 
 #[cfg(test)]
 mod tests;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
