@@ -1408,7 +1408,7 @@ fn load_all_icons(
 #[derive(Debug, Clone)]
 struct FrameHandles {
     handles: Vec<iced_core::svg::Handle>,
-    frame_duration_ms: u32,
+    frame_duration_ms: NonZeroU32,
 }
 
 /// Whether the Icons page tints `icon_set`'s animated indicator in the text
@@ -1480,7 +1480,7 @@ fn build_animation_caches(
                     if !handles.is_empty() {
                         let anim_handles = FrameHandles {
                             handles,
-                            frame_duration_ms: data.frame_duration_ms().get(),
+                            frame_duration_ms: data.frame_duration_ms(),
                         };
                         animated_frames.push((set_name.clone(), anim_handles));
                     }
@@ -2770,7 +2770,8 @@ fn update_inner(state: &mut State, message: Message) {
             let tick_duration = Duration::from_millis(50);
             for (i, (_, anim_handles)) in state.animated_frames.iter().enumerate() {
                 state.animated_frame_elapsed[i] += tick_duration;
-                let frame_dur = Duration::from_millis(anim_handles.frame_duration_ms as u64);
+                let frame_dur =
+                    Duration::from_millis(u64::from(anim_handles.frame_duration_ms.get()));
                 if state.animated_frame_elapsed[i] >= frame_dur {
                     state.animated_frame_elapsed[i] -= frame_dur;
                     state.animated_frame_indices[i] =
