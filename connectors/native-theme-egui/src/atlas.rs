@@ -692,7 +692,7 @@ impl<'a> Builder<'a> {
     /// Applied wherever egui has a sink, as the sibling connectors apply them: gpui scales its
     /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:217`, `:219`)
     /// and forwards reduced motion to gpui (`:854`); iced scales through `font_size` and
-    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1123-1128`, `:1169-1174`).
+    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1114-1119`, `:1169-1174`).
     ///
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
     ///   and each `Style::override_font_id` size, in the base styles and in every role style —

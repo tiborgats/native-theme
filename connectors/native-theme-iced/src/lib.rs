@@ -528,7 +528,8 @@ pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<i
 }
 
 /// Returns each side a widget border's padding states, plus the border's line
-/// width, and `default`'s side where it states none.
+/// width, and `default`'s side where it states none: [`padding_or()`] of
+/// `ResolvedWidgetBorder::padding_outside`.
 ///
 /// The model's padding lies inside the border (`ResolvedWidgetBorder::padding`,
 /// "padding inside the border"), while iced lays a widget's content out
@@ -545,17 +546,7 @@ pub fn padding_inside_border(
     border: &native_theme::theme::ResolvedWidgetBorder,
     default: iced_core::Padding,
 ) -> iced_core::Padding {
-    let side = |stated: Option<f32>, default: f32| match stated {
-        Some(v) => v + border.line_width,
-        None => default,
-    };
-    let stated = &border.padding;
-    iced_core::Padding {
-        top: side(stated.top, default.top),
-        right: side(stated.right, default.right),
-        bottom: side(stated.bottom, default.bottom),
-        left: side(stated.left, default.left),
-    }
+    padding_or(&border.padding_outside(), default)
 }
 
 /// Returns button padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
@@ -1402,57 +1393,6 @@ mod tests {
             .unwrap()
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap()
-    }
-
-    /// M8-07: `padding_inside_border` is core's `padding_outside` over the
-    /// default, for every widget border of every bundled preset in both modes.
-    #[test]
-    fn padding_inside_border_is_padding_or_of_padding_outside() {
-        fn borders(at: &str, v: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
-            let serde_json::Value::Object(map) = v else {
-                return;
-            };
-            for (key, child) in map {
-                let path = format!("{at}.{key}");
-                if key == "border" && !path.starts_with(".defaults") {
-                    out.push((path.clone(), child.clone()));
-                }
-                borders(&path, child, out);
-            }
-        }
-        let defaults = [
-            iced_core::Padding::ZERO,
-            iced_widget::button::DEFAULT_PADDING,
-            iced_core::Padding {
-                top: 1.0,
-                right: 2.0,
-                bottom: 3.0,
-                left: 4.0,
-            },
-        ];
-        let mut checked = 0;
-        for info in Theme::list_presets() {
-            for dark in [false, true] {
-                let r = make_resolved_preset(info.key, dark);
-                let mut found = Vec::new();
-                borders("", &serde_json::to_value(&r).unwrap(), &mut found);
-                for (path, value) in found {
-                    let border: native_theme::theme::ResolvedWidgetBorder =
-                        serde_json::from_value(value).unwrap();
-                    for default in defaults {
-                        assert_eq!(
-                            padding_inside_border(&border, default),
-                            padding_or(&border.padding_outside(), default),
-                            "{} {dark} {path}",
-                            info.key
-                        );
-                        checked += 1;
-                    }
-                }
-            }
-        }
-        assert!(checked > 0);
-        println!("padding_inside_border against padding_outside: {checked} checks");
     }
 
     /// A family the system has no face of stays as stated: the family is

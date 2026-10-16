@@ -245,29 +245,32 @@ pub fn to_margin(
 /// still open, so there each of those controls comes out one line width per side taller than
 /// the platform's until platform-facts settles those cells (`docs/todo.md`).
 ///
-/// The width is `clamp_length(finite_or(line_width, 0.0))`: a non-finite width adds nothing
-/// — egui's own padding already holds egui's own stroke, so adding nothing is egui's value
-/// there — and a negative one is `0.0`; the call site reports a non-finite width. A finite
-/// side plus a finite width can only overflow upwards, and `.min(f32::MAX)` keeps that sum
-/// finite, so [`to_margin`] saturates it rather than mistaking it for a non-finite side. A
-/// `None` or non-finite side stays `None`, which every consumer resolves to egui's own value.
+/// The sum is core's `ResolvedWidgetBorder::padding_outside` over the border with its width
+/// `clamp_length(finite_or(line_width, 0.0))` and its non-finite sides unstated: a non-finite
+/// width adds nothing — egui's own padding already holds egui's own stroke, so adding nothing
+/// is egui's value there — and a negative one is `0.0`; the call site reports a non-finite
+/// width. A finite side plus a finite width can only overflow upwards, and core saturates that
+/// sum at `f32::MAX`, so [`to_margin`] saturates it rather than mistaking it for a non-finite
+/// side. A `None` or non-finite side stays `None`, which every consumer resolves to egui's own
+/// value.
 #[inline]
 #[must_use]
 pub(crate) fn padding_with_border(
     border: &native_theme::theme::ResolvedWidgetBorder,
 ) -> native_theme::theme::ResolvedPadding {
-    let width = clamp_length(finite_or(border.line_width, 0.0));
-    let side = |stated: Option<f32>| {
-        stated
-            .filter(|v| v.is_finite())
-            .map(|v| (v + width).min(f32::MAX))
-    };
-    native_theme::theme::ResolvedPadding {
-        top: side(border.padding.top),
-        right: side(border.padding.right),
-        bottom: side(border.padding.bottom),
-        left: side(border.padding.left),
+    let finite = |stated: Option<f32>| stated.filter(|v| v.is_finite());
+    let stated = &border.padding;
+    native_theme::theme::ResolvedWidgetBorder {
+        line_width: clamp_length(finite_or(border.line_width, 0.0)),
+        padding: native_theme::theme::ResolvedPadding {
+            top: finite(stated.top),
+            right: finite(stated.right),
+            bottom: finite(stated.bottom),
+            left: finite(stated.left),
+        },
+        ..border.clone()
     }
+    .padding_outside()
 }
 
 /// `Spacing::button_padding` from a widget's resolved border, under spec §5's pair rule.
@@ -497,56 +500,6 @@ mod tests {
             (m.top, m.right, m.bottom, m.left),
             (0, 127, -128, base_margin.left)
         );
-    }
-
-    /// M8-07: on every widget border of every bundled preset in both modes, where each length
-    /// is finite and below `LENGTH_CEILING` (core's validation), `padding_with_border` is core's
-    /// `padding_outside`.
-    #[test]
-    fn padding_with_border_is_padding_outside_on_every_preset() {
-        fn borders(at: &str, v: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
-            let serde_json::Value::Object(map) = v else {
-                return;
-            };
-            for (key, child) in map {
-                let path = format!("{at}.{key}");
-                if key == "border" && !path.starts_with(".defaults") {
-                    out.push((path.clone(), child.clone()));
-                }
-                borders(&path, child, out);
-            }
-        }
-        let mut checked = 0;
-        for info in Theme::list_presets() {
-            for mode in [ColorMode::Light, ColorMode::Dark] {
-                let r = crate::install_tests::resolved(info.key, mode);
-                let mut found = Vec::new();
-                borders("", &serde_json::to_value(&r).unwrap(), &mut found);
-                for (path, value) in found {
-                    let b: ResolvedWidgetBorder = serde_json::from_value(value).unwrap();
-                    let p = b.padding;
-                    let sides = [p.top, p.right, p.bottom, p.left];
-                    assert!(
-                        [Some(b.line_width)]
-                            .into_iter()
-                            .chain(sides)
-                            .flatten()
-                            .all(|v| v.is_finite() && (0.0..LENGTH_CEILING).contains(&v)),
-                        "{} {mode:?} {path}: {b:?}",
-                        info.key
-                    );
-                    assert_eq!(
-                        padding_with_border(&b),
-                        b.padding_outside(),
-                        "{} {mode:?} {path}",
-                        info.key
-                    );
-                    checked += 1;
-                }
-            }
-        }
-        assert!(checked > 0);
-        println!("padding_with_border against padding_outside: {checked} borders");
     }
 
     /// T17: `padding_with_border` adds the line width to each stated finite side, adds nothing
