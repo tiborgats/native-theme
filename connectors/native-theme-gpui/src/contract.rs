@@ -137,7 +137,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // `link_hover` and `link_active` are upstream's hovered and pressed link
-    // *text* colours ("Hover link text color", `theme_color.rs:180-181`), and
+    // *text* colours ("Hover link text color", `theme_color.rs:179`, `:181`), and
     // their only reader takes each as the `fg` of a `Button::link`
     // (`button/button.rs:1199, 1275, 1317`) over the transparent fill that
     // variant paints in every state (`:1193, 1270, 1310`). Neither native
@@ -913,7 +913,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
-                   pressed *text* (`theme_color.rs:180-181`), which is what \
+                   pressed *text* (`theme_color.rs:179`, `:181`), which is what \
                    their rows give them.",
         stated_none: &[
             ("kde-breeze", LINK_HOVER_NONE),
@@ -1179,7 +1179,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "expander.arrow_color",
         why: Unread::NoReceiver(
             "an Accordion's chevron is `muted_foreground`, with no style hook \
-             (`accordion.rs:328-332`)",
+             (`accordion.rs:327-331`)",
         ),
     },
     UnreadColour {
@@ -1225,7 +1225,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "list.hover_text_color",
         why: Unread::NoReceiver(
             "a hovered `ListItem` changes only its fill \
-             (`list/list_item.rs:226-232`)",
+             (`list/list_item.rs:227-233`)",
         ),
     },
     UnreadColour {
