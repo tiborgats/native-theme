@@ -306,8 +306,10 @@ pub(crate) struct NativeThemePlugin {
 impl NativeThemePlugin {
     /// Drop the focus entry of every viewport whose input this plugin saw and that egui no
     /// longer has, as egui drops its own state of a closed viewport
-    /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), and the viewport from `filled`, which
-    /// is the list scanned. egui has no accessor that lists its viewports; it counts one it no
+    /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), its `last_sent` theme, and the viewport
+    /// from `filled`, which is the list scanned. A window reopened under the same id gets
+    /// egui's own `SetTheme(SystemDefault)` in its first pass, as egui's new state of it has
+    /// sent none (`egui/src/context.rs:2485-2498`), which `output_hook` rewrites. egui has no accessor that lists its viewports; it counts one it no
     /// longer has as having completed no pass (`Context::cumulative_pass_nr_for`,
     /// `egui/src/context.rs:1788-1793`). A viewport whose input this plugin saw has begun a
     /// pass, so one still open has completed it unless that pass is in progress now, which
@@ -327,12 +329,22 @@ impl NativeThemePlugin {
         if closed.is_empty() {
             return;
         }
+        for viewport in &closed {
+            self.last_sent.remove(viewport);
+        }
         ctx.data_mut(|data| {
             for viewport in closed {
                 data.remove::<FocusEntry>(focus_key_of(viewport));
             }
         });
     }
+}
+
+/// The viewports the install plugin holds a last-sent window theme for, for the tests.
+#[cfg(test)]
+pub(crate) fn last_sent_viewports(ctx: &Context) -> Vec<egui::ViewportId> {
+    ctx.with_plugin(|plugin: &mut NativeThemePlugin| plugin.last_sent.keys().copied().collect())
+        .unwrap_or_default()
 }
 
 /// The atlas's OS mode, read from `Context` data (spec §10.3 step 3).

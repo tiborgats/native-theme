@@ -3348,6 +3348,53 @@ fn a_closed_viewport_s_focus_entry_is_let_go() {
     assert_eq!(entries(&ctx), 1, "the root's");
 }
 
+/// M8 T6 review: the window theme the plugin last told a closed immediate viewport is let go
+/// with its focus entry.
+#[test]
+fn a_closed_viewport_s_last_sent_theme_is_let_go() {
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = with_system_theme(None);
+        input.viewport_id = viewport.ids.this;
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("told child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, with_system_theme(None), |ui| {
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |_, _| (),
+                );
+            }
+        });
+    };
+    root(&ctx, true);
+    assert!(
+        crate::plugin::last_sent_viewports(&ctx).contains(&child),
+        "the plugin told the child its theme, or the test proves nothing"
+    );
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert!(!crate::plugin::last_sent_viewports(&ctx).contains(&child));
+}
+
 /// M7-04: a pass whose sizes all lie under the cap writes no style: both base styles are the
 /// same `Arc` before and after it.
 #[test]
