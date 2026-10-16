@@ -254,7 +254,10 @@ crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
 — are on by default. `system-fonts` (default) enables
 `system_font_family`, the family iced's font database holds for a theme font — on macOS the
-system UI font's `.SF NS` for the stated "SF Pro". `advanced-shaping` (default)
+system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
+one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
+match on Linux, asked once per family and kept for the process: the first ask is one
+`fc-match` process, about 12.5 ms, with a 2 s timeout). `advanced-shaping` (default)
 kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
 `default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
 is the way to narrow.

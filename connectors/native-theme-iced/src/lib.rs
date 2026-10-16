@@ -1221,9 +1221,14 @@ pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 
 /// The family iced's font database holds for a theme font: the family
 /// fontdb records for the face `native_theme::fonts::system_face` chooses
-/// for the stated family, weight and style, or the stated family where the
-/// system has no such face — which iced then draws as it draws any family
-/// its database lacks.
+/// for the stated family, weight and style; where the system has no such
+/// face, the family of the face it chooses for the family the platform
+/// draws in the stated one's place (`native_theme::fonts::substitute_family_cached`:
+/// fontconfig's match on Linux and the other non-Apple, non-Android unix
+/// systems, the font every native application of the system gets), as the
+/// gpui and egui connectors draw it; and the stated family where neither
+/// has a face — which iced then draws as it draws any family its database
+/// lacks, in cosmic-text's own fallback.
 ///
 /// iced draws through cosmic-text over fontdb 0.23, the version
 /// native-theme selects the face with, and cosmic-text takes a face when any
@@ -1235,13 +1240,29 @@ pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 /// The first call in a process loads the system font database, which
 /// native-theme keeps for the process; every call selects a face among it
 /// and copies its bytes, so call it when the theme changes, not per frame.
+/// The platform is asked for a missing family's substitute once per family
+/// and the answer kept for the process: the first ask runs on the calling
+/// thread, on Linux and the other non-Apple, non-Android unix systems one
+/// `fc-match` process, about 12.5 ms measured on one Linux machine, with a
+/// 2 s timeout. A thread asking for another family, or for one already
+/// answered, does not wait for it.
 #[cfg(feature = "system-fonts")]
 #[must_use]
 pub fn system_font_family(spec: &native_theme::theme::ResolvedFontSpec) -> std::sync::Arc<str> {
-    match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style) {
-        Some(face) => face.family,
-        None => spec.family.clone(),
-    }
+    drawn_family(spec, native_theme::fonts::substitute_family_cached)
+}
+
+/// [`system_font_family`] with the platform's substitute for a missing
+/// family asked of `substitute`.
+#[cfg(feature = "system-fonts")]
+fn drawn_family(
+    spec: &native_theme::theme::ResolvedFontSpec,
+    substitute: impl FnOnce(&str) -> Option<String>,
+) -> std::sync::Arc<str> {
+    let face = |family: &str| native_theme::fonts::system_face(family, spec.weight, spec.style);
+    face(&spec.family)
+        .or_else(|| substitute(&spec.family).and_then(|substitute| face(&substitute)))
+        .map_or_else(|| spec.family.clone(), |face| face.family)
 }
 
 /// Returns the monospace font size in logical pixels, scaled by the user's
@@ -1493,17 +1514,53 @@ mod tests {
             .unwrap()
     }
 
-    /// A family the system has no face of stays as stated: the family is
-    /// never substituted (egui spec §8.8, §8.2).
+    /// A family the system has no face of stays as stated where the
+    /// platform substitutes none for it, or one the system has no face of
+    /// either: iced then draws it in cosmic-text's own fallback.
     #[cfg(feature = "system-fonts")]
     #[test]
     fn system_font_family_keeps_a_family_no_system_has() {
         let mut spec = make_resolved_preset("catppuccin-mocha", true).defaults.font;
         spec.family = std::sync::Arc::from("native-theme-no-such-family-7f3c1a");
         assert_eq!(
-            system_font_family(&spec).as_ref(),
+            drawn_family(&spec, |_| None).as_ref(),
             "native-theme-no-such-family-7f3c1a"
         );
+        assert_eq!(
+            drawn_family(&spec, |_| Some(
+                "native-theme-no-such-family-9e2b4d".to_owned()
+            ))
+            .as_ref(),
+            "native-theme-no-such-family-7f3c1a"
+        );
+    }
+
+    /// A stated family the system lacks comes back as the family of the face
+    /// `system_face` gives for the platform's substitute, as the gpui and
+    /// egui connectors draw it: windows-11's "Segoe UI" on a Linux system
+    /// without it is fontconfig's match for it.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn system_font_family_takes_the_platform_substitute_for_a_family_the_system_lacks() {
+        let spec = make_resolved_preset("windows-11", false).defaults.font;
+        if native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some() {
+            eprintln!("this system has {:?}: nothing to substitute", spec.family);
+            return;
+        }
+        let Some(face) =
+            native_theme::fonts::substitute_family_cached(&spec.family).and_then(|substitute| {
+                native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
+            })
+        else {
+            eprintln!(
+                "the platform substitutes no family held for {:?}",
+                spec.family
+            );
+            return;
+        };
+        let drawn = system_font_family(&spec);
+        assert_ne!(drawn, spec.family, "the stated family is not drawn");
+        assert_eq!(drawn, face.family);
     }
 
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {

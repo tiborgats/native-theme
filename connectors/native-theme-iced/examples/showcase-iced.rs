@@ -16199,10 +16199,13 @@ mod tests {
             },
             family: resolved,
         };
+        // The family iced is asked for: "Theme Sans" where the system has
+        // it, else the platform's substitute for it (`system_font_family`).
+        let asked = resolved_family(&font);
         let held = drawn(
-            iced::font::Family::Name("Theme Sans"),
+            iced::font::Family::Name(asked),
             iced::font::Weight::Bold,
-            Some("Theme Sans"),
+            Some(asked),
         );
         assert_eq!(
             font_row_drawn("button.font", &font, &held),
