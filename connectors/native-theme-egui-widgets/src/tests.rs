@@ -2269,7 +2269,7 @@ fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {
 /// The colour leaves each widget draws in, beyond the atlas's cells, which the connector's
 /// `mapping.toml` rows. `ComboBox` reads no colour of the theme's: its colours are its cell's.
 const WIDGET_READS: &[(&str, &[&str])] = &[
-    ("Spinner", &["spinner.fill_color"]),
+    ("Spinner", &["spinner.fill_color", "defaults.text_color"]),
     (
         "Switch",
         &[
@@ -2317,6 +2317,41 @@ const WIDGET_READS: &[(&str, &[&str])] = &[
     ("SegmentedControl", &["defaults.background_color"]),
     ("Expander", &["expander.arrow_color"]),
 ];
+
+/// Every widget's `Look` is spliced: the crate's sources define as many `pub(crate) struct Look`
+/// as `looks` reads, and `WIDGET_READS` has a row for each widget `looks` names.
+#[test]
+fn every_look_is_read_by_the_coverage_test() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut defined = Vec::new();
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        if name == "tests.rs" || !name.ends_with(".rs") {
+            continue;
+        }
+        let code = std::fs::read_to_string(&path).unwrap();
+        for _ in code.matches("pub(crate) struct Look ") {
+            defined.push(name.clone());
+        }
+    }
+    defined.sort();
+    let read = looks(&kde());
+    assert_eq!(
+        defined.len(),
+        read.len(),
+        "the `Look`s defined ({defined:?}) are not the ones `looks` reads ({:?})",
+        read.iter().map(|(w, _)| *w).collect::<Vec<_>>()
+    );
+    let mut named: Vec<&str> = read.iter().map(|(w, _)| *w).collect();
+    let mut rowed: Vec<&str> = WIDGET_READS.iter().map(|(w, _)| *w).collect();
+    named.sort_unstable();
+    rowed.sort_unstable();
+    assert_eq!(
+        named, rowed,
+        "a widget `looks` reads without its WIDGET_READS row, or the reverse"
+    );
+}
 
 /// The leaves of a serialised theme, each with its value.
 fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
@@ -2434,4 +2469,76 @@ fn each_widget_draws_in_the_colour_leaves_it_lists() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// A freedesktop indicator whose `currentColor` its document leaves unset, as GNOME's
+/// `process-working-symbolic` does, is drawn in `defaults.text_color`, the colour the
+/// spinner's `Look` carries to it as the icon key's tint. The theme is a fixture in a child
+/// process (`native_theme_test_fixtures`).
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour()
+-> Result<(), Box<dyn std::error::Error>> {
+    use native_theme_test_fixtures::{Child, in_child, run, write_scalable_theme};
+    const NAME: &str = "tests::a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour";
+    if in_child() {
+        let t = from_preset("adwaita", true, &AccessibilityPreferences::default())?.1;
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.reduce_motion = true;
+        let ctx = egui::Context::default();
+        ThemeAtlas::builder("test", &t, &t)
+            .accessibility(&prefs)
+            .icon_set(IconSet::Freedesktop)
+            .build()
+            .install(&ctx);
+        ctx.set_theme(egui::Theme::Dark);
+        let _ = pass(&ctx, idle(), |ui| {
+            ui.add(Spinner::new());
+        });
+        let frames = crate::spinner::kept_frames(&ctx, IconSet::Freedesktop);
+        assert_eq!(frames.len(), 1, "the indicator's one frame, drawn still");
+        let svg = String::from_utf8(frames[0].to_vec())?;
+        let c = t.defaults.text_color;
+        let hex = format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b);
+        assert!(
+            !svg.contains("currentColor") && svg.contains(&hex),
+            "{hex}: {svg}"
+        );
+        return Ok(());
+    }
+    // The system's icon theme is the fixture's, the only one holding the indicator.
+    run(NAME, Child::kde("symbolic-only"), |icons| {
+        write_scalable_theme(
+            icons,
+            "symbolic-only",
+            &[(
+                "process-working-symbolic",
+                r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M0 0h16v16H0z"/></svg>"##,
+            )],
+        )
+    })?;
+    Ok(())
+}
+
+/// The key's tint carries `defaults.text_color` to a freedesktop indicator's `currentColor`
+/// unchanged in every bundled preset and mode: `fill_current_color` writes the colour's
+/// `#rrggbb`, and the tint's `Color32` gives the same red, green and blue back.
+#[test]
+fn the_text_colour_survives_the_tint() {
+    use native_theme_egui::native_theme::theme::Theme;
+    for info in Theme::list_presets() {
+        for is_dark in [false, true] {
+            let t = from_preset(info.key, is_dark, &AccessibilityPreferences::default())
+                .unwrap()
+                .1;
+            let c = t.defaults.text_color;
+            let [r, g, b, _] = to_color32(c).to_srgba_unmultiplied();
+            assert_eq!(
+                (r, g, b),
+                (c.r, c.g, c.b),
+                "{} dark={is_dark}: {c:?}",
+                info.key
+            );
+        }
+    }
 }

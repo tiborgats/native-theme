@@ -31,7 +31,9 @@ const MAX_POINTS: u8 = 128;
 /// `native_theme::icons::load_icon_indicator`, and for a freedesktop set
 /// `FreedesktopLoader::load_indicator` of the icon theme the atlas names for the scheme being
 /// drawn ([`ThemeAtlas::icon_theme`]) — that indicator is drawn, at `spinner.diameter`,
-/// tinted `spinner.fill_color` for the monochrome bundled sets (Material, Lucide), animated by
+/// tinted `spinner.fill_color` for the monochrome bundled sets (Material, Lucide) and, for a
+/// freedesktop set, with its `currentColor` filled in with `defaults.text_color` where the
+/// document sets no `color` of its own (`native_theme::icons::fill_current_color`), animated by
 /// [`icons::animated_frame_index`] or [`icons::spin_angle`] and drawn still on its first frame
 /// under reduced motion. It is an SVG or RGBA image: an application draws SVGs with the
 /// image loaders it installs (`egui_extras::install_image_loaders`), as for every icon of the
@@ -68,12 +70,15 @@ impl Spinner {
 pub(crate) struct Look {
     /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's tint.
     pub(crate) fill_color: Rgba,
+    /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
+    pub(crate) text_color: Rgba,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
             fill_color: t.spinner.fill_color,
+            text_color: t.defaults.text_color,
         }
     }
 }
@@ -83,6 +88,8 @@ struct Paint {
     diameter: f32,
     stroke_width: f32,
     colour: egui::Color32,
+    /// A freedesktop indicator's `currentColor`.
+    current_colour: egui::Color32,
     set: IconSet,
     icon_theme: Option<String>,
     reduce_motion: bool,
@@ -94,10 +101,12 @@ impl egui::Widget for Spinner {
             let theme = ui.ctx().theme();
             let t = atlas.resolved_for(theme);
             let s = &t.spinner;
+            let look = Look::of(t);
             Some(Paint {
                 diameter: scope::length(s.diameter)?,
                 stroke_width: scope::length(s.stroke_width)?,
-                colour: to_color32(Look::of(t).fill_color),
+                colour: to_color32(look.fill_color),
+                current_colour: to_color32(look.text_color),
                 set: atlas.icon_set(),
                 icon_theme: atlas.icon_theme(theme).map(str::to_string),
                 reduce_motion: atlas.accessibility().reduce_motion,
@@ -223,6 +232,7 @@ fn paint_indicator(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) -> bool {
         if let Some(theme) = paint.icon_theme.as_deref() {
             key = key.icon_theme(theme);
         }
+        key = key.tint(paint.current_colour);
     } else if matches!(paint.set, IconSet::Material | IconSet::Lucide) {
         key = key.tint(paint.colour);
     }
@@ -281,7 +291,13 @@ fn paint_arc(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) {
 }
 
 /// The bytes of every frame source the indicator entry of `set` (with no icon theme) keeps.
-#[cfg(all(test, feature = "material-icons"))]
+#[cfg(all(
+    test,
+    any(
+        feature = "material-icons",
+        all(target_os = "linux", feature = "system-icons")
+    )
+))]
 pub(crate) fn kept_frames(ctx: &egui::Context, set: IconSet) -> Vec<egui::load::Bytes> {
     indicator(ctx, set, None)
         .sources

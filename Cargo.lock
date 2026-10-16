@@ -5853,6 +5853,7 @@ name = "native-theme-egui-widgets"
 version = "0.6.1"
 dependencies = [
  "native-theme-egui",
+ "native-theme-test-fixtures",
  "serde_json",
 ]
 
