@@ -9736,7 +9736,7 @@ Rejected:
 **Fix proposed:** At the top of `install`, when `ThemeAtlas::from_ctx(ctx)` is `Arc::ptr_eq` to `self`, re-run only step 2 (the two `set_style_of`, so a style the app reset is restored) and return, skipping `set_fonts`, `forget_icons` and `request_repaint`; document that re-installing the installed atlas is cheap. `install_requests_a_repaint` and `install_leaves_no_stored_icon_texture_handle` re-install the same atlas and would switch to a second atlas.
 **Verdict:** CONFIRMED — install has no same-atlas guard: every call runs request_repaint (atlas.rs:478, so egui never idles), forget_icons (icons.rs:446-457 drops every stored TextureHandle and forgets every SVG URI, so the next pass re-uploads and re-rasterizes) and set_fonts, whose comparison checks the TTF bytes (egui context.rs:2105-2115); the docs say only 'Safe to call at any time' (atlas.rs:426-427). To confirm: drive Context::run_ui passes that call install each pass and count has_requested_repaint, tex_manager allocations and frees per pass, and the time of set_fonts with a system-font plan, against one install.
 **Triage:** fix — a repeated `install` of the atlas already installed requests no repaint, frees no texture and resets no fonts; gate: a test counting repaint requests and texture frees over two installs of one atlas (a behaviour, not a timing: an app that installs every frame never idles today).
-**Status:** open
+**Status:** fixed in c3101b1f (M7 T6; eafec295): a re-install of the installed atlas restores its base styles and nothing else
 *Source:* R1#0.
 
 
@@ -9746,7 +9746,7 @@ Rejected:
 **Fix proposed:** In `output_hook`, when the OS mode is None (or the input was not filled) while `sync_window_theme` holds, the preference is System and `last_sent` holds a scheme for that viewport, push `SetTheme(SystemDefault)` once and remove that `last_sent` entry, restoring egui's own state; keep the rest of the hook as is.
 **Verdict:** CONFIRMED — output_hook returns early at plugin.rs:187-189 when os_mode is None, and egui's sync_window_theme sends again only when the preference changes (egui context.rs:2474-2497, last_sent_window_theme), so the earlier SetTheme(Light) stays; meanwhile input_hook leaves system_theme None (winit x11 window.rs:1905-1907 always returns None), so ctx.theme() is fallback_theme (egui memory/mod.rs:367). The spec's T14(c) tests only the UI scheme for the no-OS-mode atlas, not the title bar.
 **Triage:** fix — CONFIRMED: an atlas without an OS mode (a preset, or `clear`) sends the scheme it draws in, so the title bar follows.
-**Status:** open
+**Status:** fixed in 2c13742f (M7 T5)
 *Source:* R1#1.
 
 
@@ -9756,7 +9756,7 @@ Rejected:
 **Fix proposed:** Give `record_scope` a `replace: bool` (or split it): `native_scope` pushes without searching, `native_set_style` keeps the search; in `paint_focus_ring`, compute the edge and radius inside one `ctx.data_mut(|d| d.get_temp_mut_or_default::<FocusEntry>(key) ...)` reading the entry by reference — taking care that `scope_radius` calls `ctx.viewport`, so read the widget table first and pass it in, keeping the no-nested-accessor rule (§10.3).
 **Verdict:** CONFIRMED — native_scope records child.unique_id() (ext.rs:98), a Ui created in that same pass whose id is unique, so the find at plugin.rs:92 only ever matters for native_set_style's repeat on one Ui; paint_focus_ring's data.get_temp::<FocusEntry> (plugin.rs:298) clones both Vecs whenever a widget is focused. To confirm it matters, time record_scope across a pass with N = 100 and 1000 scopes; at tens of scopes it is likely below the noise.
 **Triage:** fix if measurable — `record_scope`'s scan and the focus-ring clone; a timing with 100 and 1000 scopes per pass first, dropped below the spread.
-**Status:** open
+**Status:** fixed in 3aed83e2 (M7 T8; 1000 scopes 755 → 578 µs); the focus-ring clone half dropped, below the spread
 *Source:* R1#2.
 
 
@@ -9766,7 +9766,7 @@ Rejected:
 **Fix proposed:** Cap text sizes at `LENGTH_CEILING` in `text_size` and `text_size_or_stock` for parity with lengths (a bound with its upstream source, emath's `GUI_ROUNDING`), document in `Builder::accessibility` that a size wider than the GPU's `max_texture_side` panics in epaint 0.36.2, and report the assert upstream (a glyph too wide for the atlas should be skipped, as `width == 0` already is, font.rs:268).
 **Verdict:** CONFIRMED — text_size_or_stock (accessors.rs:42-48) checks only is_normal and > 0, AccessibilityPreferences::scaled (native-theme lib.rs:406-413) only finite and positive, and check_font (validate_helpers.rs:491) sets no maximum; epaint draws the glyph at full size (font.rs:265-283, width capped only by `as u16`) and TextureAtlas::allocate asserts w <= the atlas width (texture_atlas.rs:226-231), which is at most 16384 (fonts.rs:975), so a 30000 px glyph panics. Whether the 13 pt x 1000 case panics depends on max_texture_side and the glyph's width, so the gate is a test that draws 'W' at 30000.
 **Triage:** fix — a finite but huge text size (a theme file's `size = 30000`, or a large factor) panics in epaint's atlas assert; the cap is derived at install from the runtime `max_texture_side` (spec §14 item 44 records the limit as run-time dependent, so no build-time number), with a `Note`; failing test first (a "W" at 30000).
-**Status:** open
+**Status:** fixed in 1f85ba7a, 8fa65f40, 3e069a77, 7be875d9, f85a5823, 9608a95a (M7 T1): `ThemeAtlas::text_size_cap`, derived per pass from `max_texture_side`, `pixels_per_point` and the faces' widest glyph
 *Source:* R1#4.
 
 
@@ -9776,7 +9776,7 @@ Rejected:
 **Fix proposed:** Before: no impl. After: `impl std::fmt::Debug for ThemeWatcher { fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.debug_struct("ThemeWatcher").field("pending", &self.handoff.pending.lock().map(|p| p.is_some()).unwrap_or(false)).finish_non_exhaustive() } }` (or `finish_non_exhaustive()` alone). Additive.
 **Verdict:** CONFIRMED — ThemeWatcher (watch.rs:56-60) has no Debug, derived or written by hand, although both fields could have one (native-theme's ThemeSubscription implements Debug at watch/mod.rs:148, and Handoff is crate-private), so a struct that derives Debug cannot hold Option<ThemeWatcher> as in README.md:275-277; this is M6-35's class.
 **Triage:** fix — derive or implement `Debug` for `ThemeWatcher` (core's `ThemeSubscription` is `Debug`).
-**Status:** open
+**Status:** fixed in 478bde34 (M7 T2)
 *Source:* R1#5.
 
 
@@ -9786,7 +9786,7 @@ Rejected:
 **Fix proposed:** Name the document once in the crate docs ('§ numbers refer to docs/archive/todo_v0.6.0_egui-connector-spec.md in the repository') and, per M6-38's ruling, write the document's name at each public citation, or drop citations that add nothing for a reader; private-item comments untouched.
 **Verdict:** CONFIRMED — There are about 120 doc-comment lines with a § in the region (atlas.rs 43, accessors.rs 29, plugin.rs 17, roles.rs 16, ext.rs 12, watch.rs 4), most of them on public items, and no crate doc or README names the spec document (grep for 'egui-connector-spec' or 'connector spec' finds nothing), so under the M6-38 ruling (findings.md:9654) each one needs the document's name; the count of 'about a hundred' covers public and private items together. Also reported by API (connectors/native-theme-egui/src/atlas.rs:1): About 190 public doc comments in the modules docs.rs renders cite a bare section number ('§6.18', 'spec §4.2') of a document the crate never names, so a docs.rs reader cannot follow any of them; the egui twin of M6-38 at a larger scale. Verifier: CONFIRMED — No rendered module names the spec: a grep for 'spec.md' or 'connector-spec' in src finds nothing. About 190 '§' doc lines sit in the docs.rs-rendered files (lib, accessors, atlas, convert, ext, fonts, icons, plugin, roles, watch, before their test modules); roughly 150 are on pub items, the rest on private ones. The M6-38 ruling (docs/todo_code-review-findings.md:9654) gives such a citation its document's name.
 **Triage:** fix — merged with API-4: name the archived spec document once per crate doc and wherever a public doc cites a bare `§` (the M6-38 ruling).
-**Status:** open
+**Status:** fixed in 0de7592d (M7 T13; tripwires in both crates)
 *Source:* R1#6.
 
 
@@ -9796,7 +9796,7 @@ Rejected:
 **Fix proposed:** State in `install`'s doc and in `to_image_source`'s: call `to_image_source` (or `to_image`) in each pass rather than keeping its result — the crate already caches the texture — because `install` frees the textures of the previous theme's icons.
 **Verdict:** CONFIRMED — install step 5 (atlas.rs:474-476) runs forget_icons, which removes the stored TextureHandle (icons.rs:452-455), and dropping it frees the texture, so a held ImageSource::Texture (icons.rs:373) points at nothing; the docs say this only indirectly ('register its URI for forget_icons', icons.rs:309; README 'install releases the icons this crate cached'), and nowhere tell the reader to call to_image_source again after install or on every pass. A held SVG ImageSource::Bytes still draws, because the source carries its bytes, but in the old colour.
 **Triage:** fix — `install` and `to_image_source` document that a raster icon's `ImageSource::Texture` is freed at the next `install`.
-**Status:** open
+**Status:** fixed in 1016ba04 (M7 T6)
 *Source:* R1#7.
 
 
@@ -9806,7 +9806,7 @@ Rejected:
 **Fix proposed:** Make `stroke` take the width path alone (`width_path: &'static str`) and drop the colour path from `BorderSource::paths`, `panel_edge` and `BorderPaths`.
 **Verdict:** CONFIRMED — base.rs:69 binds `_color_path` and never reads it (it was dead already in the plan, todo_v0.6.0_egui-connector-plan.md:5262; a colour sink has no Note, since to_color32 is total), so every caller carries a dead leaf: states.rs:172/179 and the [_;3] BorderSource.paths at its 10 literals, roles.rs:134/139 with its 3 panel_edge calls, base.rs:190, and frames.rs:22/33/65. The fix deletes code: `paths` becomes one width path, BorderSource.paths becomes [_;2], and BorderPaths.color plus its macro line go away.
 **Triage:** fix — the dead colour path goes from every border call site and `BorderPaths.color`; deletes code.
-**Status:** open
+**Status:** fixed in c25a1c8b (M7 T14)
 *Source:* R2#1.
 
 
@@ -9816,7 +9816,7 @@ Rejected:
 **Fix proposed:** One `pub(crate) fn usable_text_size(size: f32, prefs) -> Option<f32>` (scale, then the predicate) in accessors.rs, which the three callers map onto their own fallback.
 **Verdict:** CONFIRMED — The test `s.is_normal() && s > 0.0` appears verbatim at base.rs:28, roles.rs:65 and accessors.rs:43 (a fourth copy at contract.rs:65 is test-only). The claim's reason for merging them is weak, though: §14 item 44 (spec:8143) says the atlas-overflow bound depends on pixels_per_point and max_texture_side, run-time values, so no build-time predicate can carry it. Merging them adds a helper and deletes no code (net about zero lines): an S4 nicety at most.
 **Triage:** drop — merging the three checks adds a helper and deletes no code (the plan's simplify rule), and spec §14 item 44 rules out the bound the claim anticipates.
-**Status:** dropped
+**Status:** dropped (triage): a helper that deletes no code
 *Source:* R2#2.
 
 
@@ -9826,7 +9826,7 @@ Rejected:
 **Fix proposed:** Pass `key.size` to the SF Symbols and Segoe loaders (`.size(size)` where `Some`), or, with M1-T6-06, call core's `load_custom_icon(provider, set, color, key.size)`; update the two docs to say the size reaches every system set.
 **Verdict:** CONFIRMED — icons.rs:427-432 builds SfSymbolsLoader/SegoeFluentLoader with color_opt only and never calls .size() on them, though both have size(u32) at HEAD (core icons.rs:419, :505; defaults 24 pt and 32 px, :410, :494). key.size reaches only the freedesktop arm (:420-422). This is M6-13's twin. It does not depend on the in-flux core change: HEAD's load_custom_icon(provider, set, color, size) already forwards size (icons.rs:759-765), so the scheduled M1-T6-06 switch fixes it if the switch passes key.size.
 **Triage:** fix — CONFIRMED: the requested size reaches the SF Symbols and Segoe loaders, through core's `load_custom_icon(.., size)` in the M1-T6-06 switch.
-**Status:** open
+**Status:** fixed in 0cf938bc, bc365b7f (M7 T4)
 *Source:* R3#0.
 
 
@@ -9836,7 +9836,7 @@ Rejected:
 **Fix proposed:** Before the switch, give core a theme-taking public entry (for example `load_custom_icon_in(provider, set, theme: Option<&str>, color, size)`, or an `icon_theme` argument on `load_custom_icon` while it is still unreleased) and call it with `key.icon_theme.as_deref()`, `load_color(ctx, key)` and `key.size`; then convert with no second colouring pass for the sets core already coloured.
 **Verdict:** CONFIRMED — At HEAD, load_custom_icon passes theme None to load_provider_icon (core icons.rs:765), and its doc says a freedesktop icon 'comes from the system's icon theme'. The theme-taking load_icon_in is pub(crate) (:771). So a literal switch drops the key.icon_theme that icons.rs:415-417 honours today, and adwaita.toml:12 sets icon_theme = "Adwaita". This depends on core's icon API, which is being edited now: recheck it once that lands (the fix needs a theme-taking public entry, or the egui freedesktop arm kept).
 **Triage:** fix — core gains a public theme-taking form of the custom-icon loader before egui's M1-T6-06 switch, so `IconKey::icon_theme` is kept.
-**Status:** open
+**Status:** fixed in 76b13644 (M7 T4: core `load_custom_icon_in`)
 *Source:* R3#1.
 
 
@@ -9846,7 +9846,7 @@ Rejected:
 **Fix proposed:** Keep the substitute answer per family for the process, as gpui's `substituted_family` does (lock held for the look-up and the insert only, not across the subprocess), and state the once-per-family cost in `FontPlan::from_system`'s and `from_preset`'s docs.
 **Verdict:** CONFIRMED — fonts.rs:165-171 calls substitute_family for each missing family. Core spawns fc-match on every call with no cache (core fonts.rs:290-310); gpui memoises it per process (gpui lib.rs:679-684); egui has no cache. from_preset (ext.rs:211) and the watcher rebuild (watch.rs:100 -> ext.rs:336) both reach it. On this host Inter, JetBrains Mono, SF Pro, SF Mono, Segoe UI and Cascadia Mono are absent (fc-list), so the 10 Inter/JetBrains presets plus windows-11, ios-13 and macos-* each spawn two fc-match. Measured: fc-match took 36-45 ms per call here (20-call average 49 ms), so about 80-100 ms per from_preset. Confirm in-process by timing from_preset("nord") against from_preset("kde-breeze") (both families present).
 **Triage:** fix — cache the substituted family per process, as gpui does since M6 (lock not held across the subprocess, the M6-03 ruling); gate: warm `from_preset` in tests/timings.rs, 135–185 ms today on 14 presets.
-**Status:** open
+**Status:** fixed in 96a38eb4 (M7 T7: core `substitute_family_cached`; warm `from_preset` 31–33 → 0.4–0.6 ms on 14 presets)
 *Source:* R3#2.
 
 
@@ -9856,7 +9856,7 @@ Rejected:
 **Fix proposed:** Cache the loaded `IconData` per `IconKey` in `ctx.data` (dropped by `forget_icons` with the URIs, so a theme switch reloads), or at least state in the doc that each call reads the icon from disk and the caller should keep the `IconData`.
 **Verdict:** CONFIRMED — custom_icon_to_image_source (icons.rs:409-436) loads through the core loader on every call, with no memo keyed by IconKey. to_image_source then re-colours, hashes and allocates the SVG bytes (:340-349). The doc (:397-407) names no cost, while core's own note asks callers to cache (freedesktop.rs 'Performance note: Each call reads the icon file from disk'). The per-frame cost is not measured: time N calls per frame for a freedesktop hit and for a provider SVG (and an SF/Segoe raster on CI) to rate it beyond S4.
 **Triage:** fix if measurable — a timing row for N `custom_icon_to_image_source` calls first; a per-key cache only above the spread; the doc names the cost either way.
-**Status:** open
+**Status:** fixed in a06aff8e, 576dd13b (M7 T8; 42 freedesktop icons 1.87 ms → 24 µs; keyed by the resolved icon theme)
 *Source:* R3#3.
 
 
@@ -9866,7 +9866,7 @@ Rejected:
 **Fix proposed:** Call `crate::icons::forget_icons(ctx)` in `clear`, or name it in `clear`'s doc beside `set_style_of` and `set_fonts`.
 **Verdict:** CONFIRMED — ThemeAtlas::clear (atlas.rs:487-490) only removes the atlas, and its doc lists set_style_of/set_fonts but not icons::forget_icons, so the registry, the stored TextureHandles and the bytes:// loader entries outlive it. Nothing stale is drawn, though: load_color is None without an atlas (icons.rs:226), so new bytes give a new URI. The cost is memory held until the next install, and the fix is a doc line or a forget_icons call.
 **Triage:** fix — `clear` forgets the icons it registered.
-**Status:** open
+**Status:** fixed in 75ca38ce (M7 T6)
 *Source:* R3#4.
 
 
@@ -9876,7 +9876,7 @@ Rejected:
 **Fix proposed:** Load the freedesktop chrome icon with `FreedesktopLoader::any(&["sidebar-expand-left", "sidebar-show"])` in the chosen theme and delete `gtk_desktop`; route to M9a with the other showcase items.
 **Verdict:** CONFIRMED — demo.rs:861-865 picks sidebar-show only when gtk_desktop() (:871-881: GNOME/Budgie/Cinnamon/Mate/Xfce). On KDE, Sway, Hyprland or Unknown, named_image (:897-921) loads sidebar-expand-left from the Adwaita theme. That name is absent from Adwaita, from AdwaitaLegacy and hicolor (which it inherits), and exists only in breeze (checked under /usr/share/icons). So it returns None, and ghost_button shows the label. docs/todo.md:3451 records iced's panel_left_name twin but not egui's. The fix is FreedesktopLoader::any(&["sidebar-expand-left","sidebar-show"]) (present at HEAD, core icons.rs:242), which is in the core API now changing.
 **Triage:** fix — the showcase's panel icon tries both names through core's `FreedesktopLoader::any` in one theme (the gpui showcase's M6-12 fix); the iced showcase's twin (docs/todo.md) in the same task.
-**Status:** open
+**Status:** fixed in c8dcbbb3, 81c934ae (M7 T12; the iced showcase's twin too)
 *Source:* R3#5.
 
 
@@ -9886,7 +9886,7 @@ Rejected:
 **Fix proposed:** As M6's ruling for gpui: give Slider a backdrop(Color32) (default defaults.background_color), open the scope with that ground, and compose rail over ground, fill over rail, knob and outline over fill, each faded by disabled_alpha over the ground (crate::fade::faded), the painter's opacity left at 1.
 **Verdict:** CONFIRMED — Slider::ui opens scope::open(ui, Role::Slider, enabled, ..) (slider.rs:124), i.e. plain Ui::disable, not open_faded/fade_as_one as Switch and RadioButton do, and slider_ui paints rail, trailing fill and knob as three shapes (slider.rs:287-296), each with its alpha multiplied by the painter's opacity, so under adwaita (defaults.disabled_opacity 0.5, adwaita.toml:61; no disabled_*_color, :207) the rail shows through the fill and both through the knob; lib.rs:70-75 limits fade-as-one to Switch/RadioButton and no test covers a disabled adwaita slider (tests.rs:824-863 tests the switch only); it is the twin of gpui's M6-19.
 **Triage:** fix — CONFIRMED: the disabled slider fades as one (the gpui twin M6-19).
-**Status:** open
+**Status:** fixed in d8434add, eee055eb, 427be59c (M7 T10)
 *Source:* R4#0.
 
 
@@ -9896,7 +9896,7 @@ Rejected:
 **Fix proposed:** For a disabled checked radio where checkbox.disabled_background is None, open the Selected cell and fade it as one (fade_as_one) instead of the Disabled cell; the same gap affects egui's own Checkbox through the connector's cell (variants.rs:87-101), which the connector's reviewer should weigh with it.
 **Verdict:** CONFIRMED — open_faded picks RoleVariant::Disabled whenever enabled is false, whatever checked is (scope.rs:48-52); the connector's Checkbox Disabled cell sets inactive.bg_fill to disabled_background, else unchecked_background (#ffffff on adwaita, adwaita.toml:170), and fg_stroke to disabled_text_color (variants.rs Role::Checkbox arm); egui's RadioButton paints the circle in interact(..).bg_fill and the dot in fg_stroke.color (egui radio_button.rs:79-104, interact, not interact_selectable), so a checked disabled radio shows the unchecked white circle with a disabled-text dot, not the checked fill and indicator_color dot that the disabled rule calls for (docs/todo.md:2041-2047: with no disabled_background a disabled box is its enabled self).
 **Triage:** fix — CONFIRMED: a disabled checked radio (and the connector's disabled checkbox cell) shows its checked look faded, the disabled rule of 2026-09-28.
-**Status:** open
+**Status:** fixed in 4eecb361, 4ee44718, d6e43be6 (M7 T10: `RoleVariant::SelectedDisabled`)
 *Source:* R4#1.
 
 
@@ -9906,7 +9906,7 @@ Rejected:
 **Fix proposed:** Under a disabled Ui with disabled_alpha < 1, compose the segment fills over the border fill and fade each over the backdrop (fade_as_one on the scope's cells, the outline fill included), as Switch does; or paint the outline as a stroke plus divider lines instead of a filled backdrop.
 **Verdict:** CONFIRMED — The outline is a Frame filled with the border colour (segmented_control.rs:170-176) and the segments are Buttons painted on top (:248); under a disabled calling Ui each shape is faded by the painter's opacity separately, and the base disabled_alpha is defaults.disabled_opacity (native-theme-egui style/base.rs:196-199, 0.5 on adwaita), so the border fill bleeds through every segment fill; the doc (:48-50) accepts egui's fade as the disabled look but does not account for the layering, and no fade_as_one route exists for this widget.
 **Triage:** fix — CONFIRMED: a disabled segmented control fades as one, no border colour through the segments.
-**Status:** open
+**Status:** fixed in 541d3ede, eee055eb (M7 T10)
 *Source:* R4#2.
 
 
@@ -9916,7 +9916,7 @@ Rejected:
 **Fix proposed:** Decide corners per placed row (round only the corners a segment shares with the outline's rect, after layout or by measuring rows first), and record no divider between segments on different rows.
 **Verdict:** CONFIRMED — With wrap() the Frame's content Ui inherits horizontal_wrapped's layout (egui Frame::begin -> new_child, ui.rs:228 layout.unwrap_or(*self.layout())), yet corners are chosen by index in the whole list, outline.corners(i == 0, peek().is_none()) (segmented_control.rs:243-246): row 1's last segment keeps square ne/se corners, row 2's first keeps square nw/sw, and segment 0 rounds its sw corner mid-edge; map_changed builds divider_i from segment.right()..=next.left() (:143), which Rect::from_x_y_ranges does not sort (emath rect.rs:95-101), so at the wrap the rect is inverted; the square-corner overhang past the outer arc shows only where radius > ~3.4 x border width.
 **Triage:** fix — CONFIRMED: `.wrap()` rounds corners per row and records no inverted divider; a test of `.wrap()`.
-**Status:** open
+**Status:** fixed in 864b1d4e, da026691 (M7 T11)
 *Source:* R4#3.
 
 
@@ -9926,7 +9926,7 @@ Rejected:
 **Fix proposed:** Lay the title out with TextWrapMode::Wrap at `wrap` (the height already follows the galley), or, to stay egui's, allocate at least the title's width as CollapsingHeader does.
 **Verdict:** CONFIRMED — header() computes wrap = width - pads - arrow - gap but passes Some(TextWrapMode::Extend) (expander.rs:261-268), which epaint maps to no_max_width (text_layout_types.rs:683-697), and then allocates exactly ui.available_width() (:270), so a long title runs past the header rect and, with trailing arrow, under the arrow at rect.right() - right - arrow (:281-282); egui's own CollapsingHeader also does not wrap but allocates at least text_max_x + padding (collapsing_header.rs:516-532), which the painted path drops.
 **Triage:** fix — CONFIRMED: the painted expander title wraps at the computed width and the header is at least the text's width, as egui's own CollapsingHeader allocates.
-**Status:** open
+**Status:** fixed in 3559ddb2 (M7 T11)
 *Source:* R4#4.
 
 
@@ -9936,7 +9936,7 @@ Rejected:
 **Fix proposed:** When desired_width is None and min_width is finite, pass desired_width(ui.available_size_before_wrap().x.max(clamp_length(min_width))) — egui's own formula with the theme's floor in place of 96.
 **Verdict:** CONFIRMED — ProgressBar reads only the border (progress_bar.rs:60-65) and hands egui no width unless desired_width is set, so egui's available_size_before_wrap().x.at_least(96.0) floor stands (egui progress_bar.rs:113-114) while the gpui sibling applies min_w(progress_bar.min_width) (native-theme-gpui widgets/progress.rs:73, :236); caveat: the stated values are presets' own choices without a platform source (docs/todo.md:2867-2892, a 1.0 item that says each such field needs a connector decision), and the claim's KDE case is wrong as phrased: there a 6 px minimum would let the bar shrink below 96, not keep it at 96.
 **Triage:** fix — CONFIRMED: `progress_bar.min_width` reaches egui (connectors follow theme data; the values' own sources are docs/todo.md's [1.0] item).
-**Status:** open
+**Status:** fixed in f2bb8321 (M7 T11)
 *Source:* R4#5.
 
 
@@ -9946,7 +9946,7 @@ Rejected:
 **Fix proposed:** Record Parts only on request (a Context flag the showcase and tests set, or a cargo feature), and name parts with a &'static str plus an index instead of a String; the extra label layouts then run only when recording.
 **Verdict:** CONFIRMED — Every widget calls Parts::store, which runs insert_temp under id.with(..) (parts.rs:51-53) with no cfg gate and no removal, and egui's IdTypeMap has no GC for temp values (id_type_map.rs:375 'cleared when egui is shut down'; max_bytes_per_type applies only to persisted entries, :708-738), so an entry stays for every widget id ever drawn; the growth is bounded by distinct ids and matters only where ids churn, and the second label layout (radio_button.rs:146-154, expander.rs:130-138, switch.rs:210, combo_box.rs:161) is a galley-cache hit after the first frame. Confirm by counting temp_keys() after N frames of widgets with changing ids, plus an allocation count per frame.
 **Triage:** fix — `Parts` stop accumulating in egui temp data for every widget id ever drawn (record only where read, or clear per pass); the leak is the gate (a temp-key count over frames), the speed half is measured.
-**Status:** open
+**Status:** fixed in 8392f1e6, 9b1ecafe, c4cfea24 (M7 T9: a two-generation store per viewport)
 *Source:* R4#6.
 
 
@@ -9956,7 +9956,7 @@ Rejected:
 **Fix proposed:** Store Arc<BTreeSet<String>> (cheap clone, copy-on-write on insert), or test membership inside data_mut with get_temp_mut_or_default, which borrows instead of cloning.
 **Verdict:** CONFIRMED — themed() reads d.get_temp::<Visited>(visited_key()) (wrap.rs:97-101), and IdTypeMap::get_temp returns .cloned() (egui id_type_map.rs:448-450), so each link deep-clones the whole BTreeSet<String> every frame to test one URL (a borrow via data_mut/get_temp_mut_or_default or an Arc<BTreeSet> avoids it); the cost is small in practice since V is the set of clicked URLs; measure with an allocation count per frame over N hyperlinks and V visited URLs.
 **Triage:** fix if measurable — the hyperlink reads the visited set without cloning it.
-**Status:** open
+**Status:** fixed in 073ead86 (M7 T9; 100 links × 100 visited 600 → 188 µs)
 *Source:* R4#7.
 
 
@@ -9966,7 +9966,7 @@ Rejected:
 **Fix proposed:** let atlas = ThemeAtlas::from_ctx(ui.ctx()); let t = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme())); and pass the borrow; in wrap.rs move the cloned ThemeAtlas into the closure instead of the cloned link theme.
 **Verdict:** CONFIRMED — Expander::show does ThemeAtlas::from_ctx(..).map(|atlas| atlas.resolved_for(..).clone()) (expander.rs:91-92), deep-copying the ResolvedTheme (with its font-family Strings) each frame for each expander, where ThemeAtlas is an Arc (atlas.rs:231) whose resolved_for returns a borrow (:280-285), so keeping the atlas in a local avoids the copy; the gain is likely below timing noise (one struct clone per expander per frame); measure with a per-frame allocation count.
 **Triage:** fix if measurable — the expander keeps the atlas `Arc` instead of a `ResolvedTheme` clone per frame.
-**Status:** open
+**Status:** fixed in a4647e0e (M7 T9; 100 expanders 306 → 250 µs); the link half dropped, within the spread
 *Source:* R4#8.
 
 
@@ -9976,7 +9976,7 @@ Rejected:
 **Fix proposed:** Cache the per-frame ImageSources beside the AnimatedIcon in the spinner's Context entry, keyed by set, icon theme, colour and diameter, and reuse them by frame index.
 **Verdict:** CONFIRMED — paint_indicator calls icons::to_image_source(ctx, &key, frame) every frame (spinner.rs:145), and for SVG data that runs final_svg_bytes (a to_vec, replace or colorize_monochrome_svg copy, native-theme-egui icons.rs:236-253), hashed_uri (hash plus format!, :188-201) and remember_uri (:273-282) each time; egui's loader caches by URI, so only the copy, hash and format repeat, and for a few-KB indicator that is small (the M6-16 twin, kept only if measurable); confirm with a timing of to_image_source for the indicator frame against a cached ImageSource.
 **Triage:** fix if measurable — the animated spinner's SVG URI is not rebuilt per frame.
-**Status:** open
+**Status:** fixed in 580aa40e, 032fc513 (M7 T9; 5.8 → 4.3 µs per spinner pass)
 *Source:* R4#9.
 
 
@@ -9986,7 +9986,7 @@ Rejected:
 **Fix proposed:** Before: pub fn desired_width(self, width: f32) -> Self only. After: add pub fn animate(self, bool) -> Self, pub fn text(self, impl Into<WidgetText>) -> Self and pub fn show_percentage(self) -> Self, forwarded to egui::ProgressBar (fill and corner_radius stay the theme's).
 **Verdict:** CONFIRMED — egui::ProgressBar has desired_height, fill, text, show_percentage and animate (egui progress_bar.rs:41-95), and the wrapper exposes only new and desired_width (progress_bar.rs:36-47), as the spec scoped it (todo_egui-widgets-spec.md:384, :770-777) without a recorded decision against the rest; corrections: egui skips the animate arc under a custom corner_radius, which the wrapper always sets (egui :78-80, :163), so animate would give only the pulse, and desired_height or fill would override the theme's track_height and fill_color.
 **Triage:** fix, narrowed — `animate` (the indeterminate bar, parity with gpui's M6-28) only; `text`/`show_percentage` stay out by the recorded wrapper scope (spec §4.9, the rejected API-8).
-**Status:** open
+**Status:** fixed in 2d0236e2 (M7 T11: `ProgressBar::animate`)
 *Source:* R4#10.
 
 
@@ -9996,7 +9996,7 @@ Rejected:
 **Fix proposed:** Before: new/id_salt/default_open. After: add pub fn open(self, open: Option<bool>) -> Self (forwarded to CollapsingHeader::open in own(), applied to the CollapsingState in painted()) and pub fn enabled(self, bool) -> Self through scope::open.
 **Verdict:** CONFIRMED — CollapsingHeader has open(Option<bool>) and enabled(bool) (egui collapsing_header.rs:426-446, applied in show_dyn :635-637), and Expander has only new, id_salt, default_open and show (expander.rs:61-109); workarounds exist, ui.add_enabled_ui for disabling and CollapsingState::load(..)/set_open under ui.make_persistent_id(salt) (:191-196) for opening, so this is a convenience gap.
 **Triage:** fix — `Expander::open(Option<bool>)` and `enabled(bool)`, as CollapsingHeader.
-**Status:** open
+**Status:** fixed in 2585e120 (M7 T11)
 *Source:* R4#11.
 
 
@@ -10006,7 +10006,7 @@ Rejected:
 **Fix proposed:** Before: `pub trait NativeThemeUiExt { fn native_scope(..); fn native_set_style(..); fn native_frame(&self, surface: Surface) -> egui::Frame; }`. After: the same plus `#[must_use] fn native_role_modifier(&self, role: Role, variant: RoleVariant) -> egui::style::StyleModifier;` returning `atlas.role_modifier(self.ctx().theme(), role, variant)` or `StyleModifier::default()` with no atlas; the showcase's helper and its four call sites use it. Additive (the trait is sealed).
 **Verdict:** PLAUSIBLE — The gap is real: the showcase wrote its own Option-returning helper (examples/showcase-egui/demo.rs:307-314, used at :455, :573, :597, :619, with one direct call at :331), and widgets combo_box.rs:143 already holds the atlas. But a Ui form cannot fall back to StyleModifier::default() with no atlas, because MenuConfig's default is menu_style (egui menu.rs:83, :226) and a default modifier would drop it. So the method would have to return an Option or a role-dependent fallback, which breaks the trait's 'none returns an Option' contract (ext.rs:15).
 **Triage:** defer (docs/todo.md) — PLAUSIBLE: a `Ui` form needs an `Option` with no atlas, against the trait's documented contract (ext.rs:15); the showcase helper stands until M8's cross-connector API batch.
-**Status:** deferred
+**Status:** deferred (docs/todo.md, M8 API batch)
 *Source:* API#0.
 
 
@@ -10016,7 +10016,7 @@ Rejected:
 **Fix proposed:** Before: `pub trait SystemThemeExt { fn to_egui_atlas(&self) -> ThemeAtlas; }`. After: `pub trait SystemThemeExt { fn to_egui_builder(&self) -> Builder<'_>; fn to_egui_atlas(&self) -> ThemeAtlas /* = self.to_egui_builder().build() */; }`, and the README's Fonts section shows `sys.to_egui_builder().fonts(FontPlan::from_system(&sys.light).with_base(defs)).build()`. Additive (the trait is sealed).
 **Verdict:** CONFIRMED — to_egui_atlas (ext.rs:322-339) builds the Builder and calls .build() inside, and its doc (ext.rs:305-316) tells the reader to re-spell the chain to add style_patch or fonts. from_preset (ext.rs:198-213) has the same shape. No caller in the workspace needs it today (the showcase at app.rs:499 uses to_egui_atlas plain), so the addition touches 0 call sites.
 **Triage:** fix — `SystemThemeExt::to_egui_builder(&self) -> Builder<'_>`, and `to_egui_atlas` built from it.
-**Status:** open
+**Status:** fixed in 90de6095 (M7 T13: `SystemThemeExt::to_egui_builder`)
 *Source:* API#1.
 
 
@@ -10026,7 +10026,7 @@ Rejected:
 **Fix proposed:** Add the one line both snippets lack: `ctx.set_theme(egui::ThemePreference::Dark);` (or `if is_dark { Dark } else { Light }` where the bool is a variable), with the sentence that a preset pins the scheme while `from_system` follows the OS. No signature change.
 **Verdict:** CONFIRMED — lib.rs:30-31 and README.md:165-166 install a from_preset atlas without ctx.set_theme. from_preset's own doc (ext.rs:172-173) says is_dark does not pin egui's scheme, and catppuccin-mocha has a light variant (presets/catppuccin-mocha.toml:9), so on a light-scheme macOS or Windows the example shows Latte-derived colours. On Linux it happens to match, since fallback_theme is Dark and is_dark is true.
 **Triage:** fix — the preset Quick start (lib.rs, README) calls `set_theme` for the variant `is_dark` named.
-**Status:** open
+**Status:** fixed in a829f6ff (M7 T3)
 *Source:* API#2.
 
 
@@ -10036,7 +10036,7 @@ Rejected:
 **Fix proposed:** Rewrite the README recipe from the installed atlas (`let atlas = ThemeAtlas::from_ctx(ui.ctx())?; let set = atlas.icon_set(); let mut key = IconKey::role(role, set).size(side); if let Some(t) = atlas.icon_theme(ui.ctx().theme()) { key = key.icon_theme(t) } custom_icon_to_image_source(ui.ctx(), &role, &key)`), say in `custom_icon_to_image_source`'s doc that an `IconRole` is a provider, and optionally add `custom_icon_to_image(ctx, provider, key) -> Option<egui::Image<'static>>` beside `to_image` so the role path also gets the alt text (api-add, additive); the showcase's two helpers then shrink to it.
 **Verdict:** CONFIRMED — README.md:247-249 hard-codes IconSet::Lucide and never consults atlas.icon_set or icon_theme. One correction: core's load_icon (native-theme/src/icons.rs:692-700) reaches all five sets, not just the bundled ones, though with no theme, size or colour. custom_icon_to_image_source (icons.rs:397-438) is the loading path that takes theme, size and tint, and IconRole implements IconProvider (model/icons.rs:547).
 **Triage:** fix — the icon recipe goes through `custom_icon_to_image_source` for an `IconRole`, with the icon theme.
-**Status:** open
+**Status:** fixed in b61475db, 28f4727d (M7 T12: `icons::custom_icon_to_image`)
 *Source:* API#3.
 
 
@@ -10046,7 +10046,7 @@ Rejected:
 **Fix proposed:** Before: `pub struct ExpanderResponse<R> { pub header_response: egui::Response, pub body_returned: Option<R> }`. After: `#[non_exhaustive] pub struct ExpanderResponse<R> { pub header_response: egui::Response, pub body_returned: Option<R> }`; field reads keep working, only an outside struct literal or exhaustive pattern (none known) breaks, and `body_response`/`openness` can follow additively.
 **Verdict:** CONFIRMED — expander.rs:54-59 has two pub fields and no #[non_exhaustive], and spec:802 records the fields but no reason against non_exhaustive. Every workspace user only reads the fields (showcase pages/basic.rs:1304-1305, pages/containers.rs:73, :78, widgets tests.rs:553, :587). None constructs or destructures the struct, so adding it touches 0 call sites.
 **Triage:** maintainer: 2026-10-15, `#[non_exhaustive]` on `ExpanderResponse` → fix.
-**Status:** open
+**Status:** fixed in 2e4a32d8 (M7 T2, maintainer 2026-10-15)
 *Source:* API#5.
 
 
@@ -10056,7 +10056,7 @@ Rejected:
 **Fix proposed:** Forward `watch = ["native-theme-egui/watch"]` now and `native = ["native-theme-egui/native"]` in the same M7 task that adds it to the connector, and have the README's Features list name them (both off by default).
 **Verdict:** CONFIRMED — widgets Cargo.toml:27-32 forwards five features, while the connector has six, including watch (native-theme-egui/Cargo.toml:33). So the README's 'forwarded one to one' is false, and the spec's feature block (spec:858-866, rationale §3.12) gives no reason for leaving watch out. 'Cannot' is overstated: an application can still enable watch with a direct native-theme-egui dependency of the same version, which Cargo unifies. This is the widgets crate's twin of the known M5-02 passthrough item.
 **Triage:** fix — the widgets crate forwards `watch` and `native` too (M5-02's egui half).
-**Status:** open
+**Status:** fixed in 36620c8e (M7 T3)
 *Source:* API#9.
 
 
@@ -10066,7 +10066,7 @@ Rejected:
 **Fix proposed:** Add a Quick start `toml` block (`eframe`, `native-theme-egui`, `native-theme-egui-widgets` at the workspace minor), one Compatibility sentence (egui 0.36.2, rust-version 1.95, as the connector's) and the connector's crates.io or docs.rs URL in place of the relative path; when M5-20's README version check lands in the connector (M7), cover this README's block too.
 **Verdict:** CONFIRMED — Partly confirmed. The widgets README has no [dependencies] block and no egui version (a grep for 0.36, MSRV, dependencies and toml finds nothing), while the connector README has one (README.md:124). The link part does not hold: crates.io resolves relative README links through path_in_vcs, and the maintainer prefers relative links. MSRV is shown from Cargo.toml:8 on crates.io. The version check itself is the known M5-20 item.
 **Triage:** fix — the widgets README gains a `[dependencies]` block and the egui version (relative links stay: the maintainer's rule).
-**Status:** open
+**Status:** fixed in 36620c8e, 08bd7b04 (M7 T3; the README compiled as a doctest in T13)
 *Source:* API#10.
 
 
@@ -10076,7 +10076,7 @@ Rejected:
 **Fix proposed:** Call `ctx.request_repaint()` in the `Err` arm too, and say in `start`'s and `last_error`'s docs that the UI is woken either way. No signature change.
 **Verdict:** CONFIRMED — watch.rs:29-34, the Err arm, stores last_error with no ctx.request_repaint(), while the Ok arm calls it (:27). The spec's §10.2 (spec:6715-6716) records no reason for skipping it, and test T15(b) (watch.rs:172-191) does not count repaints; a test with set_request_repaint_callback counting 1 after a failing rebuild would show it.
 **Triage:** fix — a failed watcher rebuild requests a repaint, as a successful one does.
-**Status:** open
+**Status:** fixed in 61090f39 (M7 T5)
 *Source:* API#11.
 
 
@@ -10086,7 +10086,7 @@ Rejected:
 **Fix proposed:** Delete it with its test (a `Color32::gamma_multiply` is the egui-side spelling an application would use), or make it `pub(crate)` if a sink is about to need it.
 **Verdict:** CONFIRMED — The only references in the repository are its definition (convert.rs:186), its own tests (:572-581) and a doc link (:48); its doc (:176-179) says it is not for borders, the use the spec first gave it (spec:1878). Note that removing it is an api-break, not S4.
 **Triage:** maintainer: 2026-10-15, remove `to_color32_with_opacity` → fix.
-**Status:** open
+**Status:** fixed in 8524b36a (M7 T2, maintainer 2026-10-15)
 *Source:* API#12.
 
 
@@ -10096,7 +10096,7 @@ Rejected:
 **Fix proposed:** Before: `pub mod wrap;` with `wrap::link`, `wrap::hyperlink`. After: `pub mod links;` with `links::link`, `links::hyperlink` (the module doc keeps the tier note); one showcase import changes.
 **Verdict:** CONFIRMED — The name is recorded in spec:324 with no stated reason, every other module is named for its widget, and SegmentedControl::wrap (segmented_control.rs:77) and egui's ComboBox::wrap (combo_box.rs:173) do use 'wrap' for line-wrapping. A rename touches widgets lib.rs:27 and :97, README.md:16, tests.rs:28, :238, :246, :319, :323, :612, and the showcase's pages/basic.rs:27 and :1078.
 **Triage:** maintainer: 2026-10-15, rename the module `wrap` to `links` → fix.
-**Status:** open
+**Status:** fixed in 7e4787b8 (M7 T2, maintainer 2026-10-15)
 *Source:* API#13.
 
 ### Step 6 — fix plan (2026-10-15)
