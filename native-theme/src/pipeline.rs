@@ -940,7 +940,7 @@ impl SelectedReader {
 #[allow(unreachable_code)]
 #[allow(clippy::unnecessary_wraps)] // Option is part of the public contract.
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated dispatch.
-async fn select_reader() -> Option<SelectedReader> {
+pub(crate) async fn select_reader() -> Option<SelectedReader> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]

@@ -141,16 +141,16 @@ fn heading(body: crate::model::font::FontSize, factor: f32) -> crate::TextScaleE
 
 /// Populate per-widget font fields on a ThemeMode from KDE INI.
 ///
-/// Reads font keys from [General] and [WM] sections:
-/// - defaults.font from [General] font, and from its size the Kirigami
+/// Reads font keys from `[General]` and `[WM]` sections:
+/// - defaults.font from `[General]` font, and from its size the Kirigami
 ///   heading sizes of text_scale.section_heading (level 2) and
 ///   text_scale.dialog_title (level 1), `docs/platform-facts.md:1438-1439`
-/// - defaults.mono_font from [General] fixed
-/// - text_scale.caption from [General] smallestReadableFont
+/// - defaults.mono_font from `[General]` fixed
+/// - text_scale.caption from `[General]` smallestReadableFont
 ///   (`docs/platform-facts.md:1437`)
-/// - menu.font from [General] menuFont (KDE-03)
-/// - toolbar.font from [General] toolBarFont (KDE-03)
-/// - window.title_bar_font from [WM] activeFont (KDE-01)
+/// - menu.font from `[General]` menuFont (KDE-03)
+/// - toolbar.font from `[General]` toolBarFont (KDE-03)
+/// - window.title_bar_font from `[WM]` activeFont (KDE-01)
 ///
 /// Missing keys result in None fields (no hardcoded fallbacks).
 pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::ThemeMode) {

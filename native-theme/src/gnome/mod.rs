@@ -595,7 +595,7 @@ pub(crate) async fn portal_reduce_motion() -> Option<bool> {
 /// client's backend (docs/todo.md, *Font DPI*).
 ///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
-/// by [`pipeline::select_reader`]; external consumers should use
+/// by [`crate::pipeline::select_reader`]; external consumers should use
 /// [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
 pub(crate) struct GnomeReader;
 
@@ -651,7 +651,7 @@ impl crate::reader::ThemeReader for GnomeReader {
 /// Requires both `kde` and `portal` features.
 ///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
-/// by [`pipeline::select_reader`]; external consumers should use
+/// by [`crate::pipeline::select_reader`]; external consumers should use
 /// [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
 #[cfg(feature = "kde")]
 pub(crate) struct GnomePortalKdeReader;

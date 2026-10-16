@@ -616,10 +616,11 @@ fn desktop_font_dpi(desktop: LinuxDesktop) -> Option<f32> {
 
 /// Detect the font DPI for the current system.
 ///
-/// Used by [`ThemeMode::into_resolved()`] as a fallback when no OS reader
-/// has provided `font_dpi`, and by the KDE reader as its own. Returns the
-/// platform-appropriate DPI for converting typographic points to logical
-/// pixels.
+/// Used, through [`system_font_dpi`], by
+/// [`ResolutionContext::from_system()`](crate::ResolutionContext::from_system)
+/// where no OS reader has provided `font_dpi`, and by the KDE reader as its
+/// own. Returns the platform-appropriate DPI for converting typographic
+/// points to logical pixels.
 ///
 /// - **Linux, GNOME or Budgie, `portal` feature**: 96.0 (`GNOME_FONT_DPI`);
 ///   the desktop is [`DetectionContext::refined_linux_desktop_sync`]'s, so an

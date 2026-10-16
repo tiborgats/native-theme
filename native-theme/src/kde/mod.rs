@@ -255,7 +255,7 @@ fn icon_sizes_in_bases(theme_name: &str, bases: &[std::path::PathBuf]) -> IconSi
 /// a [`ReaderResult`](crate::ReaderResult).
 ///
 /// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
-/// by [`pipeline::select_reader`]; external consumers should use
+/// by [`crate::pipeline::select_reader`]; external consumers should use
 /// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 pub(crate) struct KdeReader;
 
