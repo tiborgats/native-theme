@@ -567,10 +567,13 @@ impl ThemeAtlas {
     /// `Style`s already written into `Options` are left alone; call
     /// `ctx.set_style_of(t, t.default_style())` (`egui/src/memory/theme.rs:24-29`) for each
     /// `egui::Theme` `t`, and `ctx.set_fonts(egui::FontDefinitions::default())` if the atlas
-    /// installed a font plan, to get stock egui back.
+    /// installed a font plan, to get stock egui back. The icons this crate cached go with the
+    /// atlas ([`icons::forget_icons`](crate::icons::forget_icons)): their URIs are forgotten
+    /// and the textures of raster icons freed.
     pub fn clear(ctx: &egui::Context) {
         let key = atlas_key();
         ctx.data_mut(|data| data.remove::<Self>(key));
+        crate::icons::forget_icons(ctx);
     }
 
     /// One scheme's compiled styles: the store every seam and every test module reads cells

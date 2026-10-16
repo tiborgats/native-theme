@@ -2328,6 +2328,27 @@ fn install_leaves_no_stored_icon_texture_handle() {
     assert_eq!(ctx.tex_manager().read().num_allocated(), before);
 }
 
+/// M7-14: `clear` forgets the icons this crate cached with the atlas, so a raster icon's
+/// stored `TextureHandle` goes and its texture is freed.
+#[test]
+fn clear_leaves_no_stored_icon_texture_handle() {
+    use crate::icons::{IconKey, IconRegistry, handles_key, texture_id, to_image_source, uri};
+    let ctx = egui::Context::default();
+    let (atlas, _) =
+        crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
+    atlas.install(&ctx);
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
+    let key = IconKey::name("raster", IconSet::Freedesktop);
+    let before = ctx.tex_manager().read().num_allocated();
+    let _ = to_image_source(&ctx, &key, &icon).unwrap();
+    let handle_id = texture_id(&uri(&icon));
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+    ThemeAtlas::clear(&ctx);
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_none()));
+    assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
+    assert_eq!(ctx.tex_manager().read().num_allocated(), before);
+}
+
 // ---- T8: the documented limits (spec §13 T8; T8 (c) is `icons::tests`') -------------------
 
 fn kde_breeze() -> (ResolvedTheme, ResolvedTheme) {
