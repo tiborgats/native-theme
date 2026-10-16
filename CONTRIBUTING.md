@@ -60,7 +60,9 @@ iced, egui and egui-widgets crates' other configurations (tests with no default 
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
 `cargo build --examples` for the crates that have examples, the widget-coverage
-check (`scripts/check_widget_coverage.py`, Python 3.11+), the showcase-parity
+check (`scripts/check_widget_coverage.py`, Python 3.11+), the connector-parity
+check (`scripts/check_connector_parity.py` and its `--self-test`), the
+README-version check (`scripts/check_readme_versions.py` and its `--self-test`), the showcase-parity
 comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `--self-test`, which needs Pillow), per-crate
 `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`,

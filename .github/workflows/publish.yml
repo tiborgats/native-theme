@@ -115,6 +115,13 @@ jobs:
           python3 --version
           python3 scripts/check_connector_parity.py
 
+      # Fails on a `native-theme*` dependency a README's `toml` block states
+      # at another `major.minor` than the version about to be published.
+      - name: README versions
+        run: |
+          python3 --version
+          python3 scripts/check_readme_versions.py
+
       - name: Documentation (core)
         env:
           RUSTDOCFLAGS: -Dwarnings

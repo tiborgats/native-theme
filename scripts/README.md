@@ -253,7 +253,7 @@ There is no verb that writes the stamp without the run.
 The workspace's quality gate: source hygiene, `cargo check`, the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the examples,
-widget coverage, the showcase-parity comparator's static modes, docs and the
+widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, docs and the
 archive index, then the release-only sections: the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks. Prints one line per check and a summary;
@@ -385,6 +385,34 @@ Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
 ```sh
 python3 scripts/check_connector_parity.py
 python3 scripts/check_connector_parity.py --self-test
+```
+
+## check_readme_versions.py
+
+Checks that every README depends on this workspace's release. Reads the
+workspace manifest's `[workspace.package] version` and, in the root README and
+every workspace member's, each `native-theme` or `native-theme-*` dependency a
+`toml` block states (`name = "0.6"`, `{ version = .. }`, `{ package = .., version = .. }`),
+and requires it to name the version's `major.minor`. The rule compares against
+the version the workspace states, so until the release commit bumps it the
+READMEs name the current minor; the bump fails the check until the same
+commit moves every README to the new one, and the check holds them there.
+Each crate an application depends on (core, build, the three connectors,
+egui-widgets) must state its own dependency, in its Quick start where it has
+one, so a README that lost its block cannot pass with nothing to compare.
+Exits 0 when clean, 1 on a README naming another minor, 2 on an input it
+cannot read (a version not of the form major.minor.patch, a missing README, a
+crate README without its own dependency). `--self-test` runs its built-in
+scenarios, a README naming another minor among them; `--root DIR` reads a
+scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
+subset too) runs the check and the self-test; `ci.yml`'s documentation job
+and `publish.yml` run the check.
+
+Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
+
+```sh
+python3 scripts/check_readme_versions.py
+python3 scripts/check_readme_versions.py --self-test
 ```
 
 ## check_showcase_parity.py

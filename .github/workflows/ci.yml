@@ -317,6 +317,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # Fails on a `native-theme*` dependency a README's `toml` block states
+      # at another `major.minor` than the workspace version's. Reads files
+      # only; ubuntu-latest's Python 3.12 has the `tomllib` it needs.
+      - name: README versions
+        run: |
+          python3 --version
+          python3 scripts/check_readme_versions.py
       - run: cargo doc --workspace --no-deps
       # docs.rs builds native-theme-iced with every feature, and a doc item
       # behind a feature gate can only break in that configuration.

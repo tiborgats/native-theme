@@ -125,7 +125,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = { version = "0.7", features = ["native"] }
+native-theme-egui = { version = "0.6", features = ["native"] }
 ```
 
 Install the OS theme once, where eframe hands you the `Context`, and let egui

@@ -31,8 +31,8 @@ Add the connector, with the OS readers (`native`), and this crate:
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = { version = "0.7", features = ["native"] }
-native-theme-egui-widgets = "0.7"
+native-theme-egui = { version = "0.6", features = ["native"] }
+native-theme-egui-widgets = "0.6"
 ```
 
 Install the connector's atlas (its README's Quick start), then add a widget:

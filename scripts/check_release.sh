@@ -820,15 +820,20 @@ done
 # a sibling, unless scripts/connector_parity_exceptions.toml lists it with its
 # reason, or on a stale exception. Its self-test plants each violation in a
 # synthetic tree.
+#
+# scripts/check_readme_versions.py, under the same floor, fails on a
+# `native-theme` or `native-theme-*` dependency a README states in a `toml`
+# block that does not name the workspace version's `major.minor`; the release
+# bump moves every README at once, and the check holds them there.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check_widget_coverage.py and scripts/check_connector_parity.py need Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py and scripts/check_readme_versions.py need Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py and scripts/check_connector_parity.py need 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py and scripts/check_readme_versions.py need 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
@@ -837,6 +842,10 @@ run_check "connector parity: accessor names (iced · gpui · egui)" \
     python3 scripts/check_connector_parity.py
 run_check "connector parity: self-test" \
     python3 scripts/check_connector_parity.py --self-test
+run_check "README versions: native-theme* dependencies name the workspace's minor" \
+    python3 scripts/check_readme_versions.py
+run_check "README versions: self-test" \
+    python3 scripts/check_readme_versions.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: showcase parity (static modes)
