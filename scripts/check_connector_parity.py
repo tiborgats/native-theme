@@ -37,19 +37,26 @@ since the accessor returns the toolkit's type. `defaults.info_text_color` is
 The sibling rule
 ----------------
 Every function compared, of every class, is held to it. A one-field accessor
-named after its leaf stands for that leaf: a sibling has it, or the exception
-list names the sibling and the accessor with the reason the sibling has none,
-`kind = "absent"` where the sibling has no function of that name and
-`kind = "unlike"` where it has one that is not that accessor (gpui's
-`font_family(&Arc<str>)` beside iced's and egui's `font_family(resolved)`).
-Any other function -- `outside`, `inputs`, `group`, `multi`, `undecided`, or a
-one-field one the naming rule excepts -- stands for its name: each sibling has
-a function of that name with the same signature, or is excepted, `absent`
-where it has none, `unlike` where its signature differs. The signature is the
-parameter types, without paths and lifetimes, a type the core crate does not
-declare and std does not name read as `_`: a toolkit's own type (`Hsla`,
-`iced_core::Color`, `egui::Ui`) is what a sibling takes in its place by
-construction, and the return type is the toolkit's for the same reason. Where
+named after its leaf stands for that leaf: a sibling has it, under the same
+signature, or the exception list names the sibling and the accessor with the
+reason the sibling has none or another, `kind = "absent"` where the sibling
+has no function of that name and `kind = "unlike"` where it has one that is
+not that accessor or takes other parameters (gpui's `font_family(&Arc<str>)`
+beside iced's and egui's `font_family(resolved)`). Any other function --
+`outside`, `inputs`, `group`, `multi`, `undecided`, or a one-field one the
+naming rule excepts -- stands for its name: each sibling has a function of
+that name with the same signature, or is excepted, `absent` where it has
+none, `unlike` where its signature differs.
+
+The signature is the parameter types, lifetimes dropped (a lifetime-only
+generic, `Native<'_>`, is the bare type), each type the core crate's or std's
+kept by its name and every other one read as `_`: a toolkit's own type
+(`Hsla`, `iced_core::Color`, `egui::Ui`) is what a sibling takes in its place
+by construction, and the return type is the toolkit's for the same reason. A
+type is the core crate's when the crate declares it `pub` and the function
+names it with no path, or with one that starts at `native_theme`, and does
+not take it as a generic parameter or import it from another crate: iced's
+`iced_core::Theme` is a toolkit's, though the core crate has a `Theme`. Where
 the connectors that have the function disagree, the signature most of them
 share is the reference, on a tie the first connector's in `CONNECTORS` order,
 and each other one needs `unlike`.
@@ -344,7 +351,8 @@ FN_RE = re.compile(r"^pub (?:const )?fn (\w+)", re.M)
 
 
 class Fn:
-    def __init__(self, name, line, cls, leaves, groups, detail="", ptypes=(), module=None):
+    def __init__(self, name, line, cls, leaves, groups, detail="", ptypes=(), module=None,
+                 foreign=frozenset()):
         self.name = name
         self.line = line
         self.cls = cls
@@ -353,6 +361,9 @@ class Fn:
         self.detail = detail
         self.ptypes = tuple(ptypes)
         self.module = module
+        # names that are not the core crate's where the function is written:
+        # its generic parameters, and what its file imports from elsewhere
+        self.foreign = frozenset(foreign)
 
     @property
     def leaf(self):
@@ -383,23 +394,62 @@ def core_types(sources):
     return {m.group(1) for source in sources for m in CORE_TYPE_RE.finditer(blank(source))}
 
 
+TYPE_RE = re.compile(r"\b((?:[A-Za-z_]\w*\s*::\s*)*)([A-Za-z_]\w*)\b")
+STD_ROOTS = ("std", "core", "alloc")
+
+
 def signature(f, shared):
-    """`f`'s parameter types, each with its paths and lifetimes dropped and
-    every type outside `shared` and `STD_TYPES` read as `_`."""
+    """`f`'s parameter types, each with its lifetimes dropped and every type
+    that is neither the core crate's (`shared`) nor std's (`STD_TYPES`) read
+    as `_`: a path that does not start at `native_theme` (or std) is a
+    toolkit's (`iced_core::Theme`), and so is a bare name the function takes
+    as a generic parameter or its file imports from another crate, though
+    the core crate declares one of that name."""
+
+    def one(m):
+        prefix, name = m.group(1), m.group(2)
+        if name in ("mut", "dyn", "impl"):
+            return m.group(0)
+        if prefix:
+            root = prefix.split("::")[0].strip()
+            if root == "native_theme" and name in shared:
+                return name
+            return name if root in STD_ROOTS and name in STD_TYPES else "_"
+        if name in f.foreign:
+            return "_"
+        return name if name in shared or name in STD_TYPES else "_"
+
     parts = []
     for text in f.ptypes:
         text = re.sub(r"\s*\+\s*'\w+|'\w+\s*,\s*|'\w+\s*", "", text)
-        text = re.sub(r"\b(?:\w+\s*::\s*)+", "", text)
-        text = re.sub(
-            r"\b[A-Za-z_]\w*\b",
-            lambda m: m.group(0) if m.group(0) in shared or m.group(0) in STD_TYPES
-            or m.group(0) in ("mut", "dyn", "impl") else "_",
-            text,
-        )
+        text = re.sub(r"<\s*>", "", text)
+        text = TYPE_RE.sub(one, text)
         text = re.sub(r"\s+", " ", text).strip()
         text = re.sub(r"\s*([&<>,()\[\]])\s*", r"\1", text).replace(",", ", ")
         parts.append(text)
     return "(" + ", ".join(parts) + ")"
+
+
+IMPORT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+([^;]+);", re.M)
+
+
+def foreign_imports(text):
+    """The names a (blanked) source file brings into scope with a `use` of
+    another crate's path: not `native_theme`, `crate`, `self` or `super`."""
+    names = set()
+    for m in IMPORT_RE.finditer(text):
+        tree = m.group(1)
+        root = tree.split("::")[0].strip()
+        if root in ("native_theme", "crate", "self", "super"):
+            continue
+        for item in re.finditer(r"(\w+)(?:\s+as\s+(\w+))?\s*(?=[,}]|$)", tree):
+            names.add(item.group(2) or item.group(1))
+    return names
+
+
+def generic_names(text):
+    """The type parameters of a `<...>` generic list (lifetimes left out)."""
+    return {p.split(":")[0].strip() for p in split_top(text) if not p.startswith("'")}
 
 
 def is_theme_type(text):
@@ -478,13 +528,17 @@ def scan(model, source, label, module=None):
     """The column-0 `pub fn`s of one source file, classified; `module` names
     the public module they are reached through, None at the crate root."""
     text = blank(source)
+    imported = foreign_imports(text)
     fns = []
     for m in FN_RE.finditer(text):
         name = m.group(1)
         line = text.count("\n", 0, m.start()) + 1
         pos = m.end()
+        generics = set()
         if text[pos : pos + 1] == "<":
-            pos = balanced(text, pos, "<", ">")
+            end = balanced(text, pos, "<", ">")
+            generics = generic_names(text[pos + 1 : end - 1]) if end > 0 else set()
+            pos = end
         open_ = text.find("(", pos)
         close = balanced(text, open_, "(", ")")
         if open_ < 0 or close < 0:
@@ -502,11 +556,12 @@ def scan(model, source, label, module=None):
         ptypes = [t for _, t in params]
         where = f"{label}:{line} `{name}`"
         if not theme:
-            fns.append(Fn(name, line, "outside", set(), set(), ptypes=ptypes, module=module))
+            fns.append(Fn(name, line, "outside", set(), set(), ptypes=ptypes, module=module,
+                          foreign=imported | generics))
             continue
         if len(theme) > 1 or others:
             fns.append(Fn(name, line, "inputs", set(), set(), ", ".join(others),
-                          ptypes=ptypes, module=module))
+                          ptypes=ptypes, module=module, foreign=imported | generics))
             continue
         leaves, groups, escapes = classify_body(
             model, text[body_open + 1 : body_close - 1], theme[0], where
@@ -519,7 +574,8 @@ def scan(model, source, label, module=None):
             cls = "undecided"
         else:
             cls = "one-field"
-        fns.append(Fn(name, line, cls, leaves, groups, ptypes=ptypes, module=module))
+        fns.append(Fn(name, line, cls, leaves, groups, ptypes=ptypes, module=module,
+                      foreign=imported | generics))
     return fns
 
 
@@ -717,6 +773,13 @@ def check(connectors, exceptions, shared=frozenset()):
     for name in sorted(every):
         offered = ", ".join(sorted(every[name]))
         leaf = next(iter(every[name].values())).leaf
+        ref, sigs = reference_signature(every[name], shared)
+        holders = ", ".join(c for c in connectors if sigs.get(c) == ref)
+        for connector, f in every[name].items():
+            if sigs[connector] != ref:
+                needs[(connector, name)] = (
+                    "unlike", f"`{name}{sigs[connector]}` (line {f.line}) is not the "
+                    f"`{name}{ref}` {holders} offer(s)")
         for connector, fns in connectors.items():
             if connector in every[name]:
                 continue
@@ -1077,6 +1140,30 @@ def self_test():
            sorted(v.split(":")[0] for v in violations if "padded" in v), ["egui", "gpui"])
     expect("on a tie the earlier connector's signature is the reference",
            any(v.startswith("gpui: `padded(&_, f32, bool)`") for v in violations), True)
+    _, _, stale = check(clean, {("gpui", "padded"): {"kind": "unlike", "reason": "x"}})
+    expect("an unlike exception whose signature matches again is stale", stale,
+           ["gpui: `padded` excepted as unlike, but the connector offers it as its siblings do"])
+
+    # a one-field accessor named after its leaf is held to the signature too:
+    # a scaled `line_height` beside an unscaled one is another function
+    shared = {"ResolvedTheme", "AccessibilityPreferences"}
+    scaled = SELF_ICED.replace(
+        "pub fn line_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {",
+        "pub fn line_height(resolved: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {")
+    one_field_sig = dict(clean)
+    one_field_sig["gpui"] = merge(scan(model, scaled, "gpui"))
+    expect("the scaled `line_height` is still one-field",
+           one_field_sig["gpui"]["line_height"].cls, "one-field")
+    _, violations, _ = check(one_field_sig, {}, shared)
+    expect("a one-field accessor under another signature fails", violations, [
+        "gpui: `line_height(&ResolvedTheme, &AccessibilityPreferences)` (line 3) is not the "
+        "`line_height(&ResolvedTheme)` iced, egui offer(s); add it or except it with its reason"])
+    unlike_lh = {("gpui", "line_height"): {"kind": "unlike", "reason": "x"}}
+    _, violations, stale = check(one_field_sig, unlike_lh, shared)
+    expect("an excepted one-field signature passes", (violations, stale), ([], []))
+    _, _, stale = check(clean, unlike_lh, shared)
+    expect("a one-field unlike exception whose signature matches again is stale", stale,
+           ["gpui: `line_height` excepted as unlike, but the connector offers it as its siblings do"])
 
     # a signature keeps the core crate's types and std's, and reads a
     # toolkit's type, a path and a lifetime away
@@ -1085,6 +1172,25 @@ def self_test():
                    "native_theme::theme::IconSet", "impl Into<ElementId> + 'static"])
     expect("signature", signature(f, {"IconSet"}),
            "(&_, Option<&str>, &mut _, IconSet, impl Into<_>)")
+    # a lifetime-only generic is the bare type, as the same type without one
+    expect("a lifetime-only generic", signature(Fn("g", 1, "outside", set(), set(),
+           ptypes=["Native<'_>", "Native<'a>", "Native"]), set()), "(_, _, _)")
+    # a toolkit's type named like a core one is the toolkit's: written with
+    # its path, taken as a generic parameter, or imported from its crate
+    themed = merge(scan(model, '''
+use iced_core::Theme as IcedTheme;
+use iced_core::{Color, Theme};
+pub fn by_path(a: &native_theme::theme::Theme, b: &iced_core::Theme) -> u8 { 0 }
+pub fn by_generic<'a, Theme: Clone>(a: Theme, b: Option<&'a str>) -> u8 { 0 }
+pub fn by_import(a: Theme, b: IcedTheme, c: Color) -> u8 { 0 }
+''', "t"))
+    expect("a toolkit's `Theme` beside the core's",
+           [signature(themed[n], {"Theme"}) for n in ("by_path", "by_generic", "by_import")],
+           ["(&Theme, &_)", "(_, Option<&str>)", "(_, _, _)"])
+    expect("a core `Theme` imported from native_theme stays the core's",
+           signature(merge(scan(model, "use native_theme::theme::Theme;\n"
+                                "pub fn f(a: &Theme) -> u8 { 0 }", "t"))["f"], {"Theme"}),
+           "(&Theme)")
     expect("core_types", sorted(core_types(["pub struct A;\npub(crate) struct B;\n"
                                             "pub enum C {}\n// pub struct D;\npub trait E {}"])),
            ["A", "C", "E"])
