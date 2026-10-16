@@ -45,7 +45,7 @@ pub(crate) const fn denan(v: f32) -> f32 {
 }
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
-/// `epaint/src/corner_radius.rs:13-25`) and the alpha byte of [`to_color32_with_opacity`].
+/// `epaint/src/corner_radius.rs:13-25`).
 /// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are cited for their
 /// representable range only — this crate never writes shadow geometry (§6.14).
 ///
@@ -170,22 +170,6 @@ pub fn unit_interval(v: f32) -> f32 {
 #[must_use]
 pub const fn to_color32(c: Rgba) -> egui::Color32 {
     egui::Color32::from_rgba_unmultiplied_const(c.r, c.g, c.b, c.a)
-}
-
-/// [`to_color32`] with an opacity multiplier folded into alpha.
-///
-/// Not for a border: every border colour the model states is the final line colour, with
-/// `defaults.border.opacity` already folded in (`native-theme/src/model/border.rs`,
-/// `DefaultsBorderSpec::opacity`), and the connector paints it as stated. A
-/// non-finite `opacity` is `1.0` (no fold), per the non-finite rule; the call site reports
-/// it. Never use the result for
-/// `WidgetVisuals::bg_fill`, documented "Must never be `Color32::TRANSPARENT`"
-/// (`egui/src/style.rs:1292-1294`); `opacity == 0.0` produces exactly that.
-#[inline]
-#[must_use]
-pub fn to_color32_with_opacity(c: Rgba, opacity: f32) -> egui::Color32 {
-    let a = u8_from_f32_saturating(f32::from(c.a) * unit_interval(finite_or(opacity, 1.0)));
-    egui::Color32::from_rgba_unmultiplied_const(c.r, c.g, c.b, a)
 }
 
 /// Uniform `epaint::CornerRadius` from one logical-pixel length, over the sink's own radius.
@@ -549,10 +533,9 @@ mod tests {
         assert_eq!(p.x, 6.5);
     }
 
-    /// T17: `to_color32` premultiplies in gamma space with no transfer function; the
-    /// opacity fold multiplies alpha and treats a non-finite opacity as `1.0`.
+    /// T17: `to_color32` premultiplies in gamma space with no transfer function.
     #[test]
-    fn colours_convert_in_gamma_space_and_the_opacity_folds_into_alpha() {
+    fn colours_convert_in_gamma_space() {
         assert_eq!(
             to_color32(Rgba::rgb(255, 0, 0)),
             egui::Color32::from_rgb(255, 0, 0)
@@ -568,21 +551,6 @@ mod tests {
             to_color32(half),
             egui::Color32::from_rgba_unmultiplied(200, 100, 50, 128)
         );
-        assert_eq!(
-            to_color32_with_opacity(Rgba::rgb(10, 20, 30), 0.5),
-            egui::Color32::from_rgba_unmultiplied(10, 20, 30, 128)
-        );
-        assert_eq!(
-            to_color32_with_opacity(Rgba::rgb(10, 20, 30), 0.0),
-            egui::Color32::TRANSPARENT
-        );
-        for o in NON_FINITE {
-            assert_eq!(
-                to_color32_with_opacity(Rgba::rgb(10, 20, 30), o),
-                egui::Color32::from_rgb(10, 20, 30),
-                "{o}"
-            );
-        }
     }
 
     fn collect_colours(v: &serde_json::Value, out: &mut HashSet<Rgba>) {
