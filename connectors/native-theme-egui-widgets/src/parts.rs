@@ -1,5 +1,7 @@
 //! [`Parts`]: where a widget of this crate painted its parts.
 
+use std::borrow::Cow;
+
 use native_theme_egui::egui;
 use native_theme_egui::egui::util::id_type_map::RawKey;
 
@@ -21,7 +23,7 @@ use native_theme_egui::egui::util::id_type_map::RawKey;
 /// A widget drawn with egui's own counterpart, where no atlas is installed or a size is not
 /// finite, records none.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Parts(Vec<(String, egui::Rect)>);
+pub struct Parts(Vec<(Cow<'static, str>, egui::Rect)>);
 
 impl Parts {
     /// The parts the widget answering with `response` painted in the pass that drew it; `None`
@@ -54,11 +56,11 @@ impl Parts {
 
     /// Every part, in the order the widget painted them.
     pub fn iter(&self) -> impl Iterator<Item = (&str, egui::Rect)> + '_ {
-        self.0.iter().map(|(n, rect)| (n.as_str(), *rect))
+        self.0.iter().map(|(n, rect)| (n.as_ref(), *rect))
     }
 
     /// Add the part `name` at `rect`.
-    pub(crate) fn push(&mut self, name: impl Into<String>, rect: egui::Rect) {
+    pub(crate) fn push(&mut self, name: impl Into<Cow<'static, str>>, rect: egui::Rect) {
         self.0.push((name.into(), rect));
     }
 
