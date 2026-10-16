@@ -1288,20 +1288,6 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              the toolbar's and the popover's edge width is the defaults'\"",
         ),
     },
-    UnreadColour {
-        leaf: "popover.border.color",
-        why: Unread::NoEdgeByData(
-            "in most presets the popover's edge inherits `defaults.border` \
-             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`); \
-             adwaita states one in both modes from a source (`#0000000d`, \
-             libadwaita's outline, docs/platform-facts.md §2.16 :1410), and \
-             gpui-component draws a popover's edge as its own ring inside the \
-             shadow (`styled.rs:186-194`). `geometry::popover` draws no \
-             border until docs/todo.md item \"Presets: the toolbar's and the \
-             popover's edge width is the defaults'\" is settled, so adwaita's \
-             stated edge is not drawn",
-        ),
-    },
 ];
 
 /// One preset in one mode: the native values and the `ThemeColor` built from

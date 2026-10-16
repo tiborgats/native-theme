@@ -534,10 +534,19 @@ const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 
 /// `Popover` (`src/popover.rs:308` → `:360`). An unstated side keeps
 /// upstream's `p_3` (`:308`).
+///
+/// The edge is `popover.border.color` at `popover.border.line_width`, the
+/// popover's as the theme states it. Upstream draws no border on a popover:
+/// its edge is a 1px ring of `foreground` at low alpha in the shadow
+/// (`styled.rs:36-38`, `:186-194`), outside the surface (`:63-67`), and it
+/// stays, so the border lies inside it.
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding).rounded(px(p.border.corner_radius))
+    with_padding(StyleRefinement::default(), &p.border.padding)
+        .rounded(px(p.border.corner_radius))
+        .border(px(p.border.line_width))
+        .border_color(rgba_to_hsla(p.border.color))
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -2254,6 +2263,8 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
             );
+            assert_eq!(out.border_widths.top, abs(p.border.line_width));
+            assert_eq!(out.border_color, Some(rgba_to_hsla(p.border.color)));
 
             let sb = &r.status_bar;
             let out = status_bar(n);

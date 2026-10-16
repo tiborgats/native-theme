@@ -7267,8 +7267,8 @@ pub(crate) fn popover(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native().is_some();
-    let mut popover_info = info::overlays::popover(cx.theme(), styled);
+    let native = cx.native();
+    let mut popover_info = info::overlays::popover(cx.theme(), native.as_ref().map(|n| n.resolved));
     let trigger = labelled(
         ui,
         cx,
@@ -7332,8 +7332,8 @@ pub(crate) fn hover_card(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native().is_some();
-    let mut card_info = info::overlays::hover_card(cx.theme(), styled);
+    let native = cx.native();
+    let mut card_info = info::overlays::hover_card(cx.theme(), native.as_ref().map(|n| n.resolved));
     let trigger = labelled(
         ui,
         cx,

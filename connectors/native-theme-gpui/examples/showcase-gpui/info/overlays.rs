@@ -1,11 +1,12 @@
 //! What the Overlays page's widgets report about themselves (spec §3.4).
 
 use gpui_component::theme::Theme;
+use native_theme_gpui::ResolvedTheme;
 
 use super::{
     WidgetInfo, buttons,
     chrome::{dialog_surface, popup_menu, sheet_surface},
-    claim,
+    claim, px_text, stated,
 };
 use crate::demo::{ButtonKind, ButtonState, Overlay, SAMPLE_MENU, SheetSide};
 use crate::support::SampleIcon;
@@ -230,9 +231,10 @@ pub fn sheet(t: &Theme, side: SheetSide, reduce_motion: bool) -> WidgetInfo {
 }
 
 /// What a surface `popover_style` paints -- a Popover's and a HoverCard's --
-/// and the showcase's own muted line on it. `styled` is whether
-/// `geometry::popover` refined it, which replaces the corners.
-fn popover_surface(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
+/// and the showcase's own muted line on it. `native` is the theme
+/// `geometry::popover` refined it from, where a native theme is installed:
+/// the refinement replaces the corners and draws the popover's edge.
+fn popover_surface(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = info
         .color(claim(
             "bg",
@@ -259,26 +261,43 @@ fn popover_surface(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
             t.muted_foreground,
             "showcase",
         ));
-    if styled {
-        info.not_themeable(
-            "corner radius",
-            "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
-        )
-    } else {
-        info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+    match native {
+        Some(r) => info
+            .not_themeable(
+                "corner radius",
+                "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
+            )
+            .color(claim(
+                "edge",
+                "color",
+                stated(r.popover.border.color),
+                "showcase",
+            ))
+            .config(
+                "edge",
+                format!(
+                    "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component styled.rs, popover_style)",
+                    px_text(r.popover.border.line_width)
+                ),
+            ),
+        None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
     }
 }
 
-/// The page's Popover, whose trigger and content both report it. `styled`
-/// is whether `geometry::popover` refined it; its geometry lines are
-/// recorded where `demo::popover` applies the builders.
-pub fn popover(t: &Theme, styled: bool) -> WidgetInfo {
-    popover_surface(WidgetInfo::new("Popover"), t, styled)
-        .not_themeable(
+/// The page's Popover, whose trigger and content both report it. `native`
+/// is the theme `geometry::popover` refined it from, where a native theme
+/// is installed; its geometry lines are recorded where `demo::popover`
+/// applies the builders.
+pub fn popover(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = popover_surface(WidgetInfo::new("Popover"), t, native);
+    let info = match native {
+        Some(_) => info,
+        None => info.not_themeable(
             "edge",
-            "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it, and it is why popover.border.color has no receiver here (gpui-component styled.rs, popover_style and popover_ring)",
-        )
-        .instance(
+            "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it; popover.border.color reaches the surface only through geometry::popover (gpui-component styled.rs, popover_style and popover_ring)",
+        ),
+    };
+    info.instance(
             "trigger",
             "any Selectable element: here a Default Button reading Click for Popover, which reports the Popover and is drawn selected while it is open (popover.rs, Popover::trigger). Its own colours are a Default Button's, which the Buttons page's Default Button states",
         )
@@ -300,16 +319,20 @@ pub fn popover(t: &Theme, styled: bool) -> WidgetInfo {
         )
 }
 
-/// The page's HoverCard, whose trigger and card both report it. `styled` is
-/// whether `geometry::popover` refined it; its geometry lines are recorded
-/// where `demo::hover_card` applies the builders and the spacing.
-pub fn hover_card(t: &Theme, styled: bool) -> WidgetInfo {
-    popover_surface(WidgetInfo::new("HoverCard"), t, styled)
-        .not_themeable(
+/// The page's HoverCard, whose trigger and card both report it. `native`
+/// is the theme `geometry::popover` refined it from, where a native theme
+/// is installed; its geometry lines are recorded where `demo::hover_card`
+/// applies the builders and the spacing.
+pub fn hover_card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = popover_surface(WidgetInfo::new("HoverCard"), t, native);
+    let info = match native {
+        Some(_) => info,
+        None => info.not_themeable(
             "edge",
             "no border: the card is Popover::render_popover_content, whose popover_style draws a shadow ring instead (gpui-component popover.rs and styled.rs)",
-        )
-        .not_themeable(
+        ),
+    };
+    info.not_themeable(
             "delays",
             "600ms to open and 300ms to close by default, which HoverCard::open_delay and close_delay replace (hover_card.rs, HoverCard::new)",
         )
