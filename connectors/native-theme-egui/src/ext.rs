@@ -133,7 +133,9 @@ impl NativeThemeUiExt for egui::Ui {
 /// `role`'s style in `variant` as an `egui::style::StyleModifier`, from the atlas installed in
 /// `ui`'s `Context` ([`ThemeAtlas::from_ctx`](crate::ThemeAtlas::from_ctx)), in the scheme
 /// `ui.ctx().theme()` reports: [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier)
-/// for a call site that holds a `Ui` and not the atlas. Feed it to the same four acceptors.
+/// for a call site that holds a `Ui` and not the atlas. Feed it to the four acceptors that
+/// method names: `Popup::style`, `MenuConfig::style`, `MenuBar::style` and
+/// `ComboBox::popup_style`.
 ///
 /// `None` when no atlas is installed: pass the acceptor nothing, and it keeps egui's own
 /// style. There is no modifier that does that — `MenuConfig::style` and `MenuBar::style`
