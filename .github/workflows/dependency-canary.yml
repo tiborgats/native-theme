@@ -141,7 +141,8 @@ jobs:
           python3 --version
           python3 scripts/check_widget_coverage.py
 
-      # The connectors' accessor names against the model's leaves; `if:
+      # The connectors' accessor names against the model's leaves, and each
+      # function in every connector under one signature, or excepted; `if:
       # always()` for the same reason as the step above.
       - name: Connector parity
         if: always()
