@@ -1278,10 +1278,10 @@ fn drawn_family(
 /// iced's `Family::Name` takes a `&'static str` (`iced_core` 0.14
 /// `font.rs:46`), so the family's name is leaked the first time the process
 /// asks for it and kept for the process, and every later call for that
-/// family is given the same one: the names leaked are the distinct families
-/// the themes drawn state, and their substitutes. Each call selects a face as
-/// `system_font_family` does, so build a theme's fonts when the theme
-/// changes, not per frame.
+/// family is given the same one: the names leaked are the distinct family
+/// names `system_font_family` returns for the fonts drawn. Each call selects
+/// a face as `system_font_family` does, so build a theme's fonts when the
+/// theme changes, not per frame.
 #[cfg(feature = "system-fonts")]
 #[must_use]
 pub fn font(spec: &native_theme::theme::ResolvedFontSpec) -> iced_core::Font {

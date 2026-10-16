@@ -257,8 +257,8 @@ features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
 system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
 one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
 match on Linux, asked once per family and kept for the process: the first ask is one
-`fc-match` process, about 12.5 ms, with a 2 s timeout), and `font`, the whole `iced::Font`
-of a theme font. `advanced-shaping` (default)
+`fc-match` process, about 12.5 ms, with a 2 s timeout). It also enables `font`, the whole
+`iced::Font` of a theme font. `advanced-shaping` (default)
 kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
 `default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
 is the way to narrow.
