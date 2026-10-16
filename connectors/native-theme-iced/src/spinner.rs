@@ -1,7 +1,7 @@
 //! [`Spinner`]: the icon set's loading indicator, or an arc at the theme's stroke.
 
 use std::f32::consts::TAU;
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU128};
 use std::time::Duration;
 
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
@@ -77,7 +77,10 @@ pub struct Spinner {
 #[derive(Debug, Clone)]
 enum Drawn {
     /// The indicator's frames, each `frame_ms` long.
-    Frames { frames: Vec<Frame>, frame_ms: u32 },
+    Frames {
+        frames: Vec<Frame>,
+        frame_ms: NonZeroU32,
+    },
     /// One image turned once every `period_ms`.
     Spin { frame: Frame, period_ms: NonZeroU32 },
     /// No indicator: the arc.
@@ -221,10 +224,7 @@ fn drawn(anim: &AnimatedIcon, paint: Paint) -> Option<Drawn> {
             .iter()
             .map(|data| Frame::of(data, paint))
             .collect::<Option<Vec<_>>>()?;
-        return Some(Drawn::Frames {
-            frames,
-            frame_ms: frame_ms.get(),
-        });
+        return Some(Drawn::Frames { frames, frame_ms });
     }
     match (anim.icon(), anim.animation()) {
         (Some(icon), Some(&TransformAnimation::Spin { duration_ms })) => Some(Drawn::Spin {
@@ -237,15 +237,16 @@ fn drawn(anim: &AnimatedIcon, paint: Paint) -> Option<Drawn> {
 
 /// The frame shown `elapsed` into an animation of `count` frames, each
 /// `frame_ms` long, looping.
-fn frame_index(elapsed: Duration, frame_ms: u32, count: usize) -> usize {
+fn frame_index(elapsed: Duration, frame_ms: NonZeroU32, count: usize) -> usize {
     let Ok(count) = u128::try_from(count) else {
         return 0;
     };
-    let cycle = u128::from(frame_ms).saturating_mul(count);
+    let frame_ms = NonZeroU128::from(frame_ms);
+    let cycle = frame_ms.get().saturating_mul(count);
     elapsed
         .as_millis()
         .checked_rem(cycle)
-        .and_then(|position| position.checked_div(u128::from(frame_ms)))
+        .map(|position| position / frame_ms)
         .and_then(|index| usize::try_from(index).ok())
         .unwrap_or(0)
 }
@@ -314,14 +315,14 @@ mod tests {
 
     #[test]
     fn frames_loop_one_per_frame_duration() {
-        let at = |ms| frame_index(Duration::from_millis(ms), 42, 24);
+        let frame_ms = NonZeroU32::new(42).unwrap();
+        let at = |ms| frame_index(Duration::from_millis(ms), frame_ms, 24);
         assert_eq!(at(0), 0);
         assert_eq!(at(41), 0);
         assert_eq!(at(42), 1);
         assert_eq!(at(42 * 24 - 1), 23);
         assert_eq!(at(42 * 24), 0);
-        assert_eq!(frame_index(Duration::from_millis(5), 0, 24), 0);
-        assert_eq!(frame_index(Duration::from_millis(5), 42, 0), 0);
+        assert_eq!(frame_index(Duration::from_millis(5), frame_ms, 0), 0);
     }
 
     /// Fourteen days and 50 ms in, the arc is a twentieth of a turn round:
@@ -416,7 +417,7 @@ mod tests {
         match &spinner.drawn {
             Drawn::Frames { frames, frame_ms } => {
                 assert_eq!(frames.len(), anim.frame_list().map_or(0, |l| l.len()));
-                assert_eq!(Some(*frame_ms), anim.frame_duration_ms().map(|d| d.get()));
+                assert_eq!(Some(*frame_ms), anim.frame_duration_ms());
                 match (frames.first(), expected) {
                     (Some(Frame::Svg(first)), Some(expected)) => assert_eq!(first, &expected),
                     other => panic!("the first frame is not the recoloured SVG: {other:?}"),
