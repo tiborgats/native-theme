@@ -1,7 +1,7 @@
 //! [`Spinner`]: the icon set's loading indicator, or an arc at the theme's stroke.
 
 use std::f32::consts::TAU;
-use std::num::{NonZeroU32, NonZeroU128};
+use std::num::NonZeroU32;
 use std::time::Duration;
 
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
@@ -241,12 +241,12 @@ fn frame_index(elapsed: Duration, frame_ms: NonZeroU32, count: usize) -> usize {
     let Ok(count) = u128::try_from(count) else {
         return 0;
     };
-    let frame_ms = NonZeroU128::from(frame_ms);
-    let cycle = frame_ms.get().saturating_mul(count);
+    let frame_ms = u128::from(frame_ms.get());
+    let cycle = frame_ms.saturating_mul(count);
     elapsed
         .as_millis()
         .checked_rem(cycle)
-        .map(|position| position / frame_ms)
+        .and_then(|position| position.checked_div(frame_ms))
         .and_then(|index| usize::try_from(index).ok())
         .unwrap_or(0)
 }
