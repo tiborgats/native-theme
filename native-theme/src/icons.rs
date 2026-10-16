@@ -32,13 +32,13 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
 
 /// The largest size, in pixels (points for an SF Symbol), that
-/// [`load_custom_icon`], [`load_custom_icon_in`] and
-/// [`rasterize_svg`](crate::rasterize::rasterize_svg) load or draw an icon
-/// at: a larger size is taken as this one, and 0 as 1.
+/// [`load_custom_icon`], [`load_custom_icon_in`] and `rasterize::rasterize_svg`
+/// (feature `svg-rasterize`) load or draw an icon at: a larger size is taken
+/// as this one, and 0 as 1.
 ///
 /// 512, so the largest raster one call builds is 512² × 4 bytes, 1 MiB, where
-/// a size of 10 000 would allocate 400 MB for one icon. Every connector loads
-/// its icons through these, so all three share the bound.
+/// a size of 10 000 would allocate 400 MB for one icon. A connector that loads
+/// and rasterizes its icons through these shares the bound.
 pub const MAX_ICON_SIZE: u32 = 512;
 
 /// Whether a `size × size` RGBA raster (`size² × 4` bytes) is inside
@@ -2032,8 +2032,8 @@ mod runtime_set_icon_tests {
     /// A custom icon is loaded at a size clamped to `1..=MAX_ICON_SIZE`: a
     /// freedesktop lookup at 99 999 is made at 512, so it takes the theme's
     /// 512 directory, not its 1024 one, and one at 0 is made at 1, taking the
-    /// 1 directory, not the 0 one. The theme
-    /// is a fixture in a child process ([`native_theme_test_fixtures`]).
+    /// 1 directory, not the 0 one. The theme is a fixture in a child process
+    /// ([`native_theme_test_fixtures`]).
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
     fn a_custom_icon_is_loaded_at_a_clamped_size() -> std::io::Result<()> {

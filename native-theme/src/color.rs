@@ -140,11 +140,10 @@ impl Rgba {
 /// as [`Rgba::to_f32_array`] gives it.
 ///
 /// The result covers `a = layer.a + base.a × (1 − layer.a)`, and each channel
-/// is the two channels weighted by what each contributes, divided by `a`. A
-/// translucent layer over a translucent base therefore covers more than
-/// either: a tint over a tint is not the base's alpha. Where one input
-/// decides the result, that input is returned exactly, with no division to
-/// move it by an ulp:
+/// is the two channels weighted by what each contributes, divided by `a`, so
+/// a translucent layer over a translucent base covers more than either. Where
+/// one input decides the result, that input is returned exactly, with no
+/// division to move it by an ulp:
 ///
 /// - an opaque layer (`layer.a >= 1`) is the layer;
 /// - a transparent layer (`layer.a <= 0`) is `base`, a transparent one
