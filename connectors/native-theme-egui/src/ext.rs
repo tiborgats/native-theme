@@ -22,7 +22,7 @@ mod sealed {
 /// call of a `Context` method of that name, and a trait method taking `&self` every call of
 /// an inherent `Ui` method of that name taking `&mut self`; where the inherent `Ui` method is
 /// reached first, it shadows the new trait method instead (all three verified with a probe on
-/// rustc 1.98.1). §12.2 clause 6 carries the same rule.
+/// rustc 1.98.1). Spec §12.2 clause 6 carries the same rule.
 pub trait NativeThemeUiExt: sealed::Sealed {
     /// Run `add_contents` in a child `Ui` styled for `role` in `variant`.
     ///
@@ -39,14 +39,14 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// It also records, for this pass, the child `Ui`'s `unique_id` (`egui/src/ui.rs:357-359`)
     /// with the role style's `widgets.active.corner_radius`, so the focus ring around a widget
     /// inside it takes the role's corners: the plugin uses the innermost recorded `Ui` whose
-    /// final rect contains the focused widget's `interact_rect` on its layer (§6.18).
+    /// final rect contains the focused widget's `interact_rect` on its layer (spec §6.18).
     ///
     /// **Does not reach `Area`-based containers** (`Window`, `Popup`, `Tooltip`, `Modal`,
     /// menus, `ComboBox` popups) when wrapped around them: their content `Ui` is built from
-    /// the `Context`'s style (§1.5). Popups and menus take [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier);
+    /// the `Context`'s style (spec §1.5). Popups and menus take [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier);
     /// `Window` and `Modal` take [`NativeThemeUiExt::native_frame`] for their chrome and this
     /// scope, or [`NativeThemeUiExt::native_set_style`], as the first statement *inside* their
-    /// closure for their body (§1.5, §3.3).
+    /// closure for their body (spec §1.5, §3.3).
     fn native_scope<R>(
         &mut self,
         role: Role,
@@ -59,16 +59,16 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// lowering a text size above the cap as [`NativeThemeUiExt::native_scope`] does; nothing
     /// changes when no atlas is installed.
     /// Records this `Ui` and the role's corner radius for the focus ring as `native_scope`
-    /// does, a later call on the same `Ui` replacing the record (§6.18). On the root `Ui`
+    /// does, a later call on the same `Ui` replacing the record (spec §6.18). On the root `Ui`
     /// that `Context::run_ui` hands over, the ring reads the root's own style at the end of
-    /// the pass instead, so a `Ui::reset_style` there (§4.4) is seen. The record covers the
+    /// the pass instead, so a `Ui::reset_style` there (spec §4.4) is seen. The record covers the
     /// whole `Ui` while the restyle applies from this call on, and on any other `Ui` a style
     /// the application later sets by other means (`Ui::set_style`, `Ui::reset_style`) is
-    /// not seen by the ring — §6.18's stated residuals.
+    /// not seen by the ring — spec §6.18's stated residuals.
     ///
     /// The spelling for a role that must be live on a `Ui` the application does not create:
-    /// the body of a `Window` or `Modal` (§1.5), and the parent of a `Panel`, whose separator
-    /// line is painted from the parent's style (§4.4).
+    /// the body of a `Window` or `Modal` (spec §1.5), and the parent of a `Panel`, whose separator
+    /// line is painted from the parent's style (spec §4.4).
     fn native_set_style(&mut self, role: Role, variant: RoleVariant);
 
     /// `surface`'s [`egui::Frame`] ([`ThemeAtlas::surface_frame`](crate::ThemeAtlas::surface_frame)). When nothing is installed

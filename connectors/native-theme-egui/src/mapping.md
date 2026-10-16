@@ -2,7 +2,7 @@
 
 <!-- Generated from `mapping.toml` by `mapping_doc::render`; regenerate with `cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md`. Do not edit. -->
 
-One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scope» or «scope:variant» a role cell's field; \[surface\] a `Frame`'s.
+One row per native leaf (spec §5, §13.1). A `§N` that names no document cites the connector's design specification, `docs/archive/todo_v0.6.0_egui-connector-spec.md` in the repository. A sink is a base-style field; «scope» or «scope:variant» a role cell's field; \[surface\] a `Frame`'s.
 
 ## Totals
 

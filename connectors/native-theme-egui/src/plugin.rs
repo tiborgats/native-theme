@@ -1,4 +1,4 @@
-//! The install plugin (§10.3) and the focus-ring bookkeeping (§6.18). This half records, per
+//! The install plugin (spec §10.3) and the focus-ring bookkeeping (spec §6.18). This half records, per
 //! pass and per viewport, the `Ui`s a role scope styled and the radius each took; the plugin
 //! reads the record at the end of the pass.
 
@@ -12,7 +12,7 @@ use crate::fonts::WidestGlyph;
 use crate::style::push_note;
 use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 
-/// §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
+/// Spec §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
 /// `focus_ring_offset`. A non-finite width or offset is egui's own value — no ring — with a
 /// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as gpui's
 /// `focus_ring = width > 0.0` (`connectors/native-theme-gpui/src/lib.rs:227`). The offset is
@@ -52,7 +52,7 @@ pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> 
 }
 
 /// The one temporary `Context` data entry per viewport holding this pass's scope records and
-/// registered focus shapes (§6.18; §4.3). One entry, not one per `Ui`: egui's garbage
+/// registered focus shapes (spec §6.18; §4.3). One entry, not one per `Ui`: egui's garbage
 /// collection gathers only the elements it can serialize and skips a temporary value
 /// (`egui/src/util/id_type_map.rs:712-722`); its `gc` scope walks that gathered map (`:728-729`).
 #[derive(Clone, Default)]
@@ -66,7 +66,7 @@ pub(crate) struct FocusEntry {
 }
 
 impl FocusEntry {
-    /// Empties both lists when the entry belongs to an earlier pass (§6.18).
+    /// Empties both lists when the entry belongs to an earlier pass (spec §6.18).
     pub(crate) fn begin(&mut self, pass_nr: u64) {
         if self.pass_nr != pass_nr {
             self.scopes.clear();
@@ -76,7 +76,7 @@ impl FocusEntry {
     }
 }
 
-/// The entry's key for the current viewport (§4.3): per viewport, because an immediate
+/// The entry's key for the current viewport (spec §4.3): per viewport, because an immediate
 /// viewport runs a pass nested inside its parent's and `cumulative_pass_nr` is counted per
 /// viewport (`egui/src/context.rs:1781-1793`).
 pub(crate) fn focus_key(ctx: &Context) -> Id {
@@ -84,11 +84,11 @@ pub(crate) fn focus_key(ctx: &Context) -> Id {
 }
 
 /// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
-/// pass. With `replace`, a second record for the same `Ui` replaces the first (§6.18), at the
+/// pass. With `replace`, a second record for the same `Ui` replaces the first (spec §6.18), at the
 /// cost of a scan of the pass's records; without it the record is pushed, for a `Ui` created in
 /// this pass, whose `unique_id` no earlier record holds (`egui/src/ui.rs:252-260`). The pass
 /// number and the key are read before `data_mut` is entered: no `Context` accessor inside
-/// another (§10.3).
+/// another (spec §10.3).
 pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, replace: bool) {
     let pass_nr = ctx.cumulative_pass_nr();
     let key = focus_key(ctx);
@@ -112,15 +112,15 @@ pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, repla
 /// widget that also holds its label, a composite whose focus belongs to one part. A widget
 /// whose outline is its rect needs no call: the ring takes the corner radius of the
 /// innermost role scope around it ([`NativeThemeUiExt::native_scope`](crate::NativeThemeUiExt::native_scope)), or outside any the
-/// radius of the root `Ui`'s style at the end of the pass, normally the base style's (§6.18).
+/// radius of the root `Ui`'s style at the end of the pass, normally the base style's (spec §6.18).
 /// `rect` is the shape the ring surrounds (the ring is still offset from it by
 /// `defaults.focus_ring_offset`) and `corner_radius` its radius. Call it after the
 /// widget's `Response` exists, in the same pass, from outside any other `Context` accessor
-/// closure (the lock discipline of §10.3).
+/// closure (the lock discipline of spec §10.3).
 ///
 /// Stored in the viewport's one temporary focus entry (`IdTypeMap::insert_temp`,
 /// `egui/src/util/id_type_map.rs:425`), keyed `Id::new(("native-theme-egui/focus",
-/// ctx.viewport_id()))` (`egui/src/context.rs:3949`), beside §6.18's scope records and that
+/// ctx.viewport_id()))` (`egui/src/context.rs:3949`), beside spec §6.18's scope records and that
 /// viewport's `ctx.cumulative_pass_nr()` (`egui/src/context.rs:1781-1793`). The first registration of a new
 /// pass empties the entry's lists, and the plugin reads them only in the pass they hold, so
 /// a shape registered in an earlier pass — by a widget no longer drawn, or drawn elsewhere —
@@ -278,8 +278,8 @@ pub(crate) fn cap_at_install(ctx: &Context, atlas: &ThemeAtlas) {
     }
 }
 
-/// The install plugin of §10.3: the OS colour scheme where the integration reports none, the
-/// title bar that follows it, the focus ring of §6.18 and the text-size cap of M7-04
+/// The install plugin of spec §10.3: the OS colour scheme where the integration reports none, the
+/// title bar that follows it, the focus ring of spec §6.18 and the text-size cap of M7-04
 /// ([`ThemeAtlas::text_size_cap`]). It holds no theme data — every hook
 /// reads the atlas `install` published, so a re-install takes effect with no second
 /// registration (egui keeps the first plugin of a type, `egui/src/context.rs:2045`,
@@ -297,7 +297,7 @@ pub(crate) struct NativeThemePlugin {
     passes: Vec<(egui::ViewportId, usize, f32)>,
 }
 
-/// The atlas's OS mode, read from `Context` data (§10.3 step 3).
+/// The atlas's OS mode, read from `Context` data (spec §10.3 step 3).
 fn os_mode(ctx: &Context) -> Option<ColorMode> {
     ThemeAtlas::from_ctx(ctx).and_then(|atlas| atlas.os_mode())
 }
@@ -395,7 +395,7 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// (`egui/src/context.rs:2474-2497`, at `:2456`, before this hook at `:2464`) becomes
     /// `SetTheme(<the OS mode>)`, and when the mode differs from the one last sent for that
     /// viewport — a rebuilt atlas after the desktop switched — the command is appended, because
-    /// egui sends again only when the *preference* changes (§10.3).
+    /// egui sends again only when the *preference* changes (spec §10.3).
     ///
     /// The inverse, under the same two conditions, once the atlas has no OS mode (a preset, or
     /// after [`ThemeAtlas::clear`]): a viewport this hook last told an explicit scheme gets
@@ -495,7 +495,7 @@ fn grow(radius: CornerRadius, by: f32) -> CornerRadius {
 }
 
 /// The active corner radius of the innermost recorded scope on the widget's layer whose final
-/// rect contains the widget's `interact_rect` (§6.18): of the matches, the `Ui` last in the
+/// rect contains the widget's `interact_rect` (spec §6.18): of the matches, the `Ui` last in the
 /// layer's order (`egui/src/widget_rect.rs:132-134`), since a `Ui` is registered before every
 /// `Ui` it contains (`egui/src/ui.rs:170-183`). The root `Ui`'s entry still holds
 /// `Rect::NOTHING` during `on_end_pass` (`egui/src/ui.rs:171`), so its record never matches.
@@ -520,9 +520,9 @@ fn scope_radius(
     })
 }
 
-/// §6.18. The focused widget is read from this pass's widget table
+/// Spec §6.18. The focused widget is read from this pass's widget table
 /// (`egui/src/context.rs:3963-3965`, `egui/src/widget_rect.rs:127-129`), never from
-/// `read_response`, which falls back to the previous pass's rect (§6.18). `ui` is the root `Ui`
+/// `read_response`, which falls back to the previous pass's rect (spec §6.18). `ui` is the root `Ui`
 /// `on_end_pass` receives: its own style is the radius where no record matches.
 fn paint_focus_ring(ui: &egui::Ui) {
     let ctx = ui.ctx();

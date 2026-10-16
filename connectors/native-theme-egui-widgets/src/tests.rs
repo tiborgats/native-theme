@@ -2203,3 +2203,40 @@ fn a_kept_spinner_frame_is_drawn_again() {
     assert_eq!(later.len(), 1);
     assert_eq!(first[0].as_ptr(), later[0].as_ptr(), "the same bytes");
 }
+
+// ---- M7-06: a `§` citation names its document ---------------------------------------------------
+
+/// Every `///` or `//!` line of the crate's sources outside its tests that holds a `§` names
+/// the document it cites (M6-38's ruling), `spec §` for the crate's own specification, which
+/// the crate docs name, or the document by name (`docs/platform-facts.md`), so a docs.rs reader
+/// can look it up. As in [`painting_sources`], a file's test items sit at its end.
+#[test]
+fn every_section_citation_names_its_document() {
+    const NAMES: &[&str] = &["spec §", "Spec §", ".md"];
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut scanned = 0;
+    let mut bare = Vec::new();
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        if name == "tests.rs" || !name.ends_with(".rs") {
+            continue;
+        }
+        let raw = std::fs::read_to_string(&path).unwrap();
+        let code = raw.split("#[cfg(test)]").next().unwrap_or_default();
+        for (i, line) in code.lines().enumerate() {
+            let doc = line.trim_start();
+            let is_doc = doc.starts_with("///") || doc.starts_with("//!");
+            if is_doc && doc.contains('§') && !NAMES.iter().any(|n| doc.contains(n)) {
+                bare.push(format!("src/{name}:{}: {doc}", i + 1));
+            }
+        }
+        scanned += 1;
+    }
+    assert!(scanned > 10, "only {scanned} sources read");
+    assert!(
+        bare.is_empty(),
+        "a `§` that names no document (write `spec §N`):\n{}",
+        bare.join("\n")
+    );
+}

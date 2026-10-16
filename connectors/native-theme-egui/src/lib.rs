@@ -8,6 +8,13 @@
 //! `Style` can hold reaches every widget automatically, and the per-widget
 //! values reach the screen only where the application asks for them.
 //!
+//! # Spec citations
+//!
+//! A `spec §N` in these docs cites section N of the connector's design specification,
+//! [`docs/archive/todo_v0.6.0_egui-connector-spec.md`](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.6.0_egui-connector-spec.md)
+//! in the repository; the published crate does not include it. The mapping document below
+//! cites the same document by bare section numbers, as its preamble says.
+//!
 //! # Quick start
 //!
 //! With feature `native`, the OS readers ([`from_system`] says what it returns without them):

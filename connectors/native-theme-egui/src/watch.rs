@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::ThemeAtlas;
 
-/// The hand-off between the watcher thread and the UI thread (§10.2): the pending atlas and
+/// The hand-off between the watcher thread and the UI thread (spec §10.2): the pending atlas and
 /// the last rebuild error. A poisoned lock is taken as it is — the data is a plain `Option`.
 #[derive(Default)]
 pub(crate) struct Handoff {
@@ -53,7 +53,7 @@ impl Handoff {
 }
 
 /// Watch for OS theme changes, rebuild the atlas off the UI thread with the application's
-/// `rebuild` closure, and wake egui with `ctx.request_repaint()` (§10.2). Installation stays
+/// `rebuild` closure, and wake egui with `ctx.request_repaint()` (spec §10.2). Installation stays
 /// on the UI thread: [`ThemeWatcher::take`] is the hand-off.
 #[must_use = "dropping the watcher stops it immediately"]
 pub struct ThemeWatcher {
@@ -80,7 +80,7 @@ impl ThemeWatcher {
     /// returns the atlas to hand over: [`ThemeWatcher::system_rebuild`] for an application on
     /// the OS theme, else a closure that builds exactly what the application built at start-up,
     /// every builder input included, after `native_theme::detect::invalidate_caches()`
-    /// (`native-theme/src/detect.rs:230`) when it reads the OS (§10.2).
+    /// (`native-theme/src/detect.rs:230`) when it reads the OS (spec §10.2).
     ///
     /// Bind the result: dropping it stops the watch and joins the thread
     /// (`native-theme/src/watch/mod.rs:174-189`). `Send` but not `Sync`, like native-theme's
@@ -127,7 +127,7 @@ impl ThemeWatcher {
 
     /// Take the pending atlas, if the OS theme changed since the last call. Non-blocking, and
     /// `None` on the overwhelming majority of frames. Install the result; `install` flushes
-    /// the icon cache and requests the repaint (§10.3), unless `rebuild` returned the atlas
+    /// the icon cache and requests the repaint (spec §10.3), unless `rebuild` returned the atlas
     /// already installed, whose install restores the base styles alone
     /// ([`ThemeAtlas::install`]).
     #[must_use]

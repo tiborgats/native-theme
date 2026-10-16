@@ -19,7 +19,7 @@ use crate::{ResolvedTheme, ThemeAtlas};
 
 /// Which of native-theme's five per-context icon sizes to use
 /// (`ResolvedIconSizes`, `native-theme/src/model/resolved.rs:15-26`). egui has no icon-size
-/// vocabulary of its own (§9.4).
+/// vocabulary of its own (spec §9.4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum IconContext {
@@ -60,7 +60,7 @@ enum KeyId {
 
 /// The inputs an icon is looked up and coloured by: the role or name, the set, the icon
 /// theme, the size and the tint. They decide the bytes, whose hash alone makes the URI
-/// (§9.2), and the role or name gives [`to_image`] its alt text. Constructed through the builder below: private
+/// (spec §9.2), and the role or name gives [`to_image`] its alt text. Constructed through the builder below: private
 /// fields, because a
 /// `#[non_exhaustive]` struct with no constructor cannot be built outside its defining crate
 /// at all (`E0639`).
@@ -100,7 +100,7 @@ impl IconKey {
 
     /// The freedesktop icon-theme name the icon was looked up in; given only when there is
     /// one — `if let Some(name) = atlas.icon_theme(ctx.theme()) { key = key.icon_theme(name) }`
-    /// ([`crate::ThemeAtlas::icon_theme`], §9.2). [`custom_icon_to_image_source`] looks a
+    /// ([`crate::ThemeAtlas::icon_theme`], spec §9.2). [`custom_icon_to_image_source`] looks a
     /// freedesktop icon up in it, and without it in the system's icon theme.
     #[must_use]
     pub fn icon_theme(mut self, icon_theme: &str) -> Self {
@@ -119,11 +119,11 @@ impl IconKey {
     /// is asked for as 1, as those two load nothing at 0. A size those two do not accept
     /// above that, one whose `size² × 4` raster bytes exceed their 64 MiB decode bound, gives
     /// `None`, and so does a raster with a side above `max_texture_side`: egui refuses an
-    /// oversized raster rather than resampling it (§9.3). A Material or Lucide icon is
+    /// oversized raster rather than resampling it (spec §9.3). A Material or Lucide icon is
     /// scalable and loads the same at every size. Stored as a private `u32` — the type the
     /// three loaders take — computed as `(if points > 0.0 { points.round() } else { 0.0 }) as
     /// u32`, which is total over every `f32`: `NaN`, `-0.0` and every negative fold to the
-    /// single key `0`, and the float-to-int `as` cast saturates at `u32::MAX` (§7.1). An
+    /// single key `0`, and the float-to-int `as` cast saturates at `u32::MAX` (spec §7.1). An
     /// integer, not an `f32`, is what lets `IconKey` derive `Eq` and `Hash`. Without this call
     /// the key has no size, and each loader takes its own default: 24 pixels, 24 points and 32
     /// pixels.
@@ -140,13 +140,13 @@ impl IconKey {
     /// `native_theme::icons::colorize_monochrome_svg` for a bundled set, through
     /// `native_theme::icons::fill_current_color` for a freedesktop icon — and
     /// [`custom_icon_to_image_source`] loads the icon in it, so the pixels, and through their
-    /// hash the URI, carry it (§9.2). Not `egui::Image::tint`, a draw-time multiply that
+    /// hash the URI, carry it (spec §9.2). Not `egui::Image::tint`, a draw-time multiply that
     /// leaves black black. Unset, a bundled set's bytes are used as they are, which is right
     /// for a full-colour icon, and a freedesktop icon, an SF Symbol and a Segoe glyph take the
     /// atlas's text colour. A freedesktop icon whose own stylesheet sets its `color`, as
     /// nearly every Breeze `currentColor` icon does, keeps it, tint or not, and a full-colour
     /// one its palette; the tint colours bundled monochrome sets, the freedesktop icons that
-    /// set none and a system set's glyphs (§9.2).
+    /// set none and a system set's glyphs (spec §9.2).
     #[must_use]
     pub fn tint(mut self, tint: egui::Color32) -> Self {
         self.tint = Some(tint);
@@ -172,7 +172,7 @@ impl IconKey {
 }
 
 /// The 64-bit hash of the final bytes, their length and, for a raster icon, its size, as
-/// `bytes://native-theme/<16 hex digits>`, with `.svg` for an SVG (§9.2). `DefaultHasher::new`
+/// `bytes://native-theme/<16 hex digits>`, with `.svg` for an SVG (spec §9.2). `DefaultHasher::new`
 /// is keyed the same each time (std's `hash/random.rs`, lines 97–107), unlike a `RandomState`.
 fn hashed_uri(bytes: &[u8], raster_size: Option<(u32, u32)>, svg: bool) -> String {
     let mut hasher = DefaultHasher::new();
@@ -192,7 +192,7 @@ fn hashed_uri(bytes: &[u8], raster_size: Option<(u32, u32)>, svg: bool) -> Strin
 
 /// The URI of these bytes: `bytes://native-theme/` and the 16 lower-case hex digits of a
 /// 64-bit hash of `icon`'s bytes and, for `IconData::Rgba`, its width and height, ending in
-/// `.svg` for `IconData::Svg` (§9.2). Pass the final bytes; [`to_image_source`] calls it with
+/// `.svg` for `IconData::Svg` (spec §9.2). Pass the final bytes; [`to_image_source`] calls it with
 /// the bytes after colouring.
 // An `IconData` variant this crate does not know hashes its bytes with no extension
 // (`to_image_source` returns `None` for it before any URI is used).
@@ -207,7 +207,7 @@ pub fn uri(icon: &IconData) -> String {
 
 /// The colour a freedesktop icon, or a system set's monochrome glyph, is loaded in: the key's
 /// tint, else `defaults.text_color` of the installed atlas's theme for `ctx.theme()`; `None`
-/// with neither (§9.2). Two `Context` accessors, one after the other, never nested (§10.3).
+/// with neither (spec §9.2). Two `Context` accessors, one after the other, never nested (spec §10.3).
 fn load_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
     if let Some(tint) = key.tint_rgba() {
         return Some(tint);
@@ -217,7 +217,7 @@ fn load_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
     Some(atlas.resolved_for(theme).defaults.text_color)
 }
 
-/// The final bytes of an SVG the application loaded (§9.2): a freedesktop icon's
+/// The final bytes of an SVG the application loaded (spec §9.2): a freedesktop icon's
 /// `currentColor` filled in with [`load_color`]'s colour where the document sets no `color` of
 /// its own (`native_theme::icons::fill_current_color`); another set's coloured with the key's
 /// tint through `native_theme::icons::colorize_monochrome_svg`; the bytes as they are without
@@ -340,10 +340,10 @@ fn remember_uri(ctx: &egui::Context, uri: &str) {
 }
 
 /// Convert a decoded RGBA icon into an `egui::ColorImage`; `None`, never a panic, for a zero
-/// side, an overflowing `width * height * 4` or a buffer of another length (§9.3), and for
+/// side, an overflowing `width * height * 4` or a buffer of another length (spec §9.3), and for
 /// an `IconData` variant this crate does not know (`IconData` is `#[non_exhaustive]`,
 /// `native-theme/src/model/icons.rs:292`), and for an `IconData::Svg`, which this crate never
-/// decodes (§9.1). The
+/// decodes (spec §9.1). The
 /// oversize test needs a `Context` and lives in [`to_image_source`] and [`to_image`].
 #[must_use]
 pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
@@ -370,13 +370,13 @@ pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
 /// with the `#rrggbb` of the tint, else of `defaults.text_color` of the installed atlas's
 /// `ResolvedTheme` for `ctx.theme()` (`native_theme::icons::fill_current_color`; the bytes
 /// as they are where no atlas is installed); a full-colour icon, and one whose stylesheet
-/// sets its `color`, untouched (§9.2). A freedesktop icon the application loads itself is
+/// sets its `color`, untouched (spec §9.2). A freedesktop icon the application loads itself is
 /// best loaded with `FreedesktopLoader::color` in the same colour, so a symbolic icon's
-/// placeholders take it too (§9.2); [`custom_icon_to_image_source`] loads a provider's icon
+/// placeholders take it too (spec §9.2); [`custom_icon_to_image_source`] loads a provider's icon
 /// that way and passes it through no colouring here. `IconData::Rgba` →
 /// `ImageSource::Texture`, uploaded once via `Context::load_texture`
 /// (`egui/src/context.rs:2390`) under the same URI and reused afterwards. `None` for an
-/// image with a side above `max_texture_side` — rejected, never resampled (§9.3) — and for
+/// image with a side above `max_texture_side` — rejected, never resampled (spec §9.3) — and for
 /// an `IconData` variant this crate does not know.
 ///
 /// **Texture ownership is part of the contract.** `egui::TextureHandle` frees its texture on
@@ -387,7 +387,7 @@ pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage> {
 /// (`egui/src/util/id_type_map.rs:425`) — and returns
 /// `ImageSource::Texture(SizedTexture::from_handle(&handle))` (`egui/src/load.rs:473`). The
 /// cache is read in one `ctx.data_mut`, the texture uploaded outside it, and inserted in a
-/// second one, because `load_texture` itself takes the `Context` lock (§10.3).
+/// second one, because `load_texture` itself takes the `Context` lock (spec §10.3).
 ///
 /// **The texture is freed at the next install of another atlas**, and by
 /// [`crate::ThemeAtlas::clear`]: both call [`forget_icons`], which removes the stored handle, so
@@ -482,14 +482,14 @@ pub fn to_image(
 /// black fill as well as a `currentColor`), on every platform (an SF Symbol's on Linux and
 /// Windows as well), so give a system set a monochrome SVG. A size a system set's loader
 /// does not accept, and a raster with a side above `max_texture_side`, give `None`, never a
-/// resampled raster (§9.3; [`IconKey::size`]). A Material or Lucide icon, and the
+/// resampled raster (spec §9.3; [`IconKey::size`]). A Material or Lucide icon, and the
 /// provider's own SVG for one, take the tint alone and are untouched without one
 /// ([`IconKey::tint`]). The loaded bytes are keyed as [`to_image_source`] keys an icon, with
 /// no second colouring pass, so the provider's bytes are what the URI's hash covers. `None`
 /// where the provider has none. For an `IconRole`, build the key with
 /// `IconKey::role(role, set)`; for another provider, with `IconKey::name(n, set)`, `n` its
 /// `icon_name(set)` where it has one; where it has none, a name that describes it, which
-/// becomes its alt text — the URI is the hash of the bytes alone (§9.2).
+/// becomes its alt text — the URI is the hash of the bytes alone (spec §9.2).
 ///
 /// **What a call costs.** The icon a provider's name loads is loaded once per name, set,
 /// icon theme, size and colour — for a freedesktop icon a lookup in the icon theme and a read
@@ -631,7 +631,7 @@ pub fn forget_icons(ctx: &egui::Context) {
     });
 }
 
-/// egui's clock in whole milliseconds; `0` where it is not a duration (§9.4's arithmetic is on
+/// egui's clock in whole milliseconds; `0` where it is not a duration (spec §9.4's arithmetic is on
 /// `u128`).
 fn now_ms(ctx: &egui::Context) -> u128 {
     let seconds = ctx.input(|i| i.time);
@@ -641,8 +641,8 @@ fn now_ms(ctx: &egui::Context) -> u128 {
 }
 
 /// The frame index to draw for a frame-animated icon, scheduling one wake-up at the next frame
-/// boundary (§9.4). The caller hands that frame's `IconData`, `frames[i]`, to
-/// [`to_image_source`] under the icon's one key, and the URI follows the frame's bytes (§9.2).
+/// boundary (spec §9.4). The caller hands that frame's `IconData`, `frames[i]`, to
+/// [`to_image_source`] under the icon's one key, and the URI follows the frame's bytes (spec §9.2).
 /// `None`, scheduling nothing, when the icon is not `AnimatedIcon::Frames` or
 /// `reduced_motion` is `true` (pass `atlas.accessibility().reduce_motion` or
 /// [`crate::is_reduced_motion`]) — draw `AnimatedIcon::first_frame()` then.
@@ -667,7 +667,7 @@ pub fn animated_frame_index(
     usize::try_from(index).ok()
 }
 
-/// The rotation angle in radians for a spin-animated icon, repainting every frame (§9.4);
+/// The rotation angle in radians for a spin-animated icon, repainting every frame (spec §9.4);
 /// `None`, scheduling nothing, when the icon is not `AnimatedIcon::Transform` with
 /// `TransformAnimation::Spin`, or `reduced_motion` is `true`. Feed to
 /// `Image::rotate(angle, Vec2::splat(0.5))` (`egui/src/widgets/image.rs:239-243`), which

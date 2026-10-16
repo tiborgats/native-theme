@@ -1,9 +1,9 @@
-//! Font registration: a face enters epaint only as bytes, never by an OS family name (§8.2);
+//! Font registration: a face enters epaint only as bytes, never by an OS family name (spec §8.2);
 //! this crate never emits a `FontFamily::Name`, so at most two faces are installed — the one
 //! matching `defaults.font` as `FontFamily::Proportional` and the one matching
-//! `defaults.mono_font` as `FontFamily::Monospace` — and one weight per family (§8.1, §8.3);
+//! `defaults.mono_font` as `FontFamily::Monospace` — and one weight per family (spec §8.1, §8.3);
 //! and every face is validated with epaint's own parse before epaint sees it, so epaint's
-//! release-mode parse panic is unreachable (§8.2). This crate reads no file itself: the bytes
+//! release-mode parse panic is unreachable (spec §8.2). This crate reads no file itself: the bytes
 //! come from the application ([`FontPlan::face`]) or, with feature `system-fonts`, from
 //! native-theme (`FontPlan::from_system`, a plain name: an intra-doc link to a feature-gated
 //! item breaks the documentation built without the feature).
@@ -59,12 +59,12 @@ impl PlannedFace {
 
 /// Which faces the application has bytes for, and the choice among them.
 ///
-/// The choice is made by `native_theme::fonts::select_face` (§8.2), the pure function
+/// The choice is made by `native_theme::fonts::select_face` (spec §8.2), the pure function
 /// native-theme exports without a feature and `native_theme::fonts::system_face` also uses:
 /// each registered face is described to it as a `native_theme::fonts::FaceTraits` (its
 /// family, weight and style as registered, and width `5`, normal, since a registered face
 /// states no width), and it applies CSS Fonts Level 4 §5.1 caseless
-/// family matching, never substituting another family, then §5.2's width, style and weight
+/// family matching, never substituting another family, then CSS Fonts §5.2's width, style and weight
 /// steps. So an application's faces and the system's are matched by one rule. A
 /// request with no face of its family is a [`crate::Note::FontFamilyUnavailable`] in
 /// [`crate::ThemeAtlas::notes`]; nothing is ever invented. Faces registered beyond the two
@@ -84,7 +84,7 @@ const PROPORTIONAL_KEY: &str = "native-theme-egui/proportional";
 const MONOSPACE_KEY: &str = "native-theme-egui/monospace";
 
 impl FontPlan {
-    /// An empty plan. An atlas built with it installs the plan's base alone (§10.3 step 1).
+    /// An empty plan. An atlas built with it installs the plan's base alone (spec §10.3 step 1).
     pub fn new() -> Self {
         Self::default()
     }
@@ -102,8 +102,8 @@ impl FontPlan {
     /// theme asks for instead of requiring one file per weight. It is described to
     /// `select_face` at the weight asked for, which its axis reaches, so within its family and
     /// style it matches exactly. The coordinate is applied through `FontTweak::coords`
-    /// (`epaint/src/text/fonts.rs:250`) with the infallible `Tag::new(b"wght")` (§8.3). A face
-    /// registered here that has no `wght` axis (§8.3) renders at its own weight and is a
+    /// (`epaint/src/text/fonts.rs:250`) with the infallible `Tag::new(b"wght")` (spec §8.3). A face
+    /// registered here that has no `wght` axis (spec §8.3) renders at its own weight and is a
     /// [`crate::Note::FontWeightAxisUnsupported`].
     pub fn variable_face(self, family: &str, style: FontStyle, bytes: FontBytes) -> Self {
         self.face_at(family, None, style, bytes, 0)
@@ -137,11 +137,11 @@ impl FontPlan {
 
     /// The OS's own faces for the theme's two families — `defaults.font` and
     /// `defaults.mono_font`, each asked for at its `weight` and `style` — from
-    /// `native_theme::fonts::system_face` (§8.2), whose `SystemFace` carries the chosen face's
+    /// `native_theme::fonts::system_face` (spec §8.2), whose `SystemFace` carries the chosen face's
     /// bytes, its index in a collection file, and its own `family`, `weight` and `style` as
     /// fontdb records them; this crate reads the bytes, the weight and the style. Each face is registered at that weight and style — the face's own, not
     /// the ones asked for. A face with a `wght` axis
-    /// gets the theme's weight as a coordinate (§8.3); a face whose weight differs from the
+    /// gets the theme's weight as a coordinate (spec §8.3); a face whose weight differs from the
     /// theme's and has no `wght` axis renders at its own weight and is a
     /// [`crate::Note::FontWeightAxisUnsupported`]; a family the OS has no face of is a
     /// [`crate::Note::FontFamilyUnavailable`]: it is drawn in the face `system_face` gives for
@@ -157,7 +157,7 @@ impl FontPlan {
     /// [`crate::ThemeAtlas::notes`] through [`crate::Builder::build`]. Feature
     /// `system-fonts`, which enables native-theme's own `system-fonts` feature. That the names
     /// the macOS and Windows readers report resolve is verified on those platforms' CI
-    /// runners (§8.2, §13).
+    /// runners (spec §8.2, §13).
     ///
     /// No `#[must_use]` of its own: `FontPlan` is `#[must_use]`, and a second one on a function
     /// returning it trips `clippy::double_must_use`.
@@ -201,8 +201,8 @@ impl FontPlan {
     }
 
     /// The `FontDefinitions` the plan's faces are prepended to — by [`crate::ThemeAtlas::install`]
-    /// (§10.3 step 1) and by [`crate::Builder::build`]'s row height (§6.15). Without this call:
-    /// `egui::FontDefinitions::default()`, whose emoji fallbacks it keeps (§8.1).
+    /// (spec §10.3 step 1) and by [`crate::Builder::build`]'s row height (spec §6.15). Without this call:
+    /// `egui::FontDefinitions::default()`, whose emoji fallbacks it keeps (spec §8.1).
     /// `Context::set_fonts` overwrites the whole definition (`egui/src/context.rs:2105-2106`), so
     /// an application's own fonts — a `FontFamily::Name` family its code names, a script
     /// fallback — survive an install of another atlas only in this base; an `add_font` still
@@ -244,7 +244,7 @@ fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a 
 /// and `Monospace` chains. Pure: needs no `Context`, so it is fully testable and the
 /// application may install the result itself. The starting point is the plan's base
 /// ([`FontPlan::with_base`]; `FontDefinitions::default()`, with egui's emoji fallbacks,
-/// without one, §8.1). A family the plan has no usable face for keeps the base's chain.
+/// without one, spec §8.1). A family the plan has no usable face for keeps the base's chain.
 ///
 /// **How a chain is reached is part of the contract**, because `FontDefinitions`'s two fields
 /// are both `pub` (`epaint/src/text/fonts.rs:435`, `:443`) and a plan may carry a base that
@@ -259,7 +259,7 @@ fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a 
 /// latter to empty chains, which lay text out without a panic — so the `or_default` only
 /// matters for a hand-built base.
 ///
-/// Every face of the plan is validated before one is chosen (§8.2): a face whose bytes fail
+/// Every face of the plan is validated before one is chosen (spec §8.2): a face whose bytes fail
 /// epaint's parse, or whose `head` states a zero `unitsPerEm`, is never a candidate, and the
 /// returned `Vec` carries a [`crate::Note::FontDataInvalid`] for its family, whether or not
 /// the theme asks for it; the choice is made among the faces that remain, and a family none
@@ -351,7 +351,7 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
 
 /// The parse epaint makes when it loads a face — `skrifa::FontRef::from_index`
 /// (`epaint/src/text/font.rs:386-388`) — plus the zero-`unitsPerEm` check epaint does not
-/// make: its `px_scale_factor` divides by `units_per_em` (`epaint/src/text/font.rs:215-218`; §8.2).
+/// make: its `px_scale_factor` divides by `units_per_em` (`epaint/src/text/font.rs:215-218`; spec §8.2).
 fn parses(bytes: &[u8], index: u32) -> bool {
     use skrifa::MetadataProvider as _;
     skrifa::FontRef::from_index(bytes, index).is_ok_and(|font| {
@@ -366,7 +366,7 @@ fn parses(bytes: &[u8], index: u32) -> bool {
 
 /// Whether the face has a `wght` axis. `false` for a static font and for bytes that do not
 /// parse alike: `FontData::variation_axes` (`epaint/src/text/fonts.rs:153-173`) answers an
-/// empty list for both, and no public epaint API tells them apart (§8.3).
+/// empty list for both, and no public epaint API tells them apart (spec §8.3).
 pub(crate) fn supports_weight_axis(data: &FontData) -> bool {
     data.variation_axes()
         .iter()
@@ -378,7 +378,7 @@ pub(crate) fn supports_weight_axis(data: &FontData) -> bool {
 /// (`epaint/src/text/fonts.rs:250`) of a face an application registers in a `FontDefinitions`
 /// of its own rather than through a [`FontPlan`], and `TextFormat::coords`
 /// (`epaint/src/text/text_layout_types.rs:505`) of a `LayoutJob` section. The counterpart of
-/// iced's `to_iced_weight` (§4.7). Built with the infallible `Tag::new(b"wght")` (§8.3).
+/// iced's `to_iced_weight` (spec §4.7). Built with the infallible `Tag::new(b"wght")` (spec §8.3).
 #[must_use]
 pub fn weight_coords(css_weight: u16) -> VariationCoords {
     // `Tag::new` is the infallible `const fn` (§8.3); the `[u8; 4]` / `&str` `IntoTag` impls
@@ -387,13 +387,13 @@ pub fn weight_coords(css_weight: u16) -> VariationCoords {
 }
 
 /// egui's row height for the head face of `defs`' `Proportional` chain at `size` points,
-/// computed as epaint computes it (§6.15): the face's unscaled metrics at the default
+/// computed as epaint computes it (spec §6.15): the face's unscaled metrics at the default
 /// variation location (`epaint/src/text/font.rs:397-400`), scaled by
 /// `size · tweak.scale / units_per_em` (`:561`, `:215-218`); ascent, descent and line gap each
 /// rounded with `round_ui` (`:563-565`) and summed (`:587`). epaint measures a family by the
 /// first face of its chain (`:697-702`, `epaint/src/text/fonts.rs:865-875`). `None` for an
 /// empty chain, a face epaint cannot parse, or a row that is not finite and positive (a zero
-/// `units_per_em`, which §8.2 drops before it gets here; kept for totality).
+/// `units_per_em`, which spec §8.2 drops before it gets here; kept for totality).
 pub(crate) fn body_row_height(defs: &egui::FontDefinitions, size: f32) -> Option<f32> {
     use egui::emath::GuiRounding as _;
     use skrifa::MetadataProvider as _;

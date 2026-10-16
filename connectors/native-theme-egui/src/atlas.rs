@@ -29,13 +29,13 @@ pub enum Note {
     /// `path` is the native-theme field path, e.g. `"button.border.corner_radius"`.
     #[non_exhaustive]
     ValueSanitised {
-        /// The native-theme leaf path whose value was replaced (§7.2: the leaf, never the egui sink).
+        /// The native-theme leaf path whose value was replaced (spec §7.2: the leaf, never the egui sink).
         path: &'static str,
     },
     /// A length saturated at the `i8` bound of an epaint type — in practice
-    /// `epaint::Margin`, the only `i8` sink this crate writes from theme data (§6.14 leaves
+    /// `epaint::Margin`, the only `i8` sink this crate writes from theme data (spec §6.14 leaves
     /// all shadow geometry to egui). **Real data loss.** `u8` saturation — corner radii — is
-    /// benign and is deliberately **not** reported; see §7.2.
+    /// benign and is deliberately **not** reported; see spec §7.2.
     #[non_exhaustive]
     ValueSaturated {
         /// The native-theme leaf path whose length saturated.
@@ -43,7 +43,7 @@ pub enum Note {
     },
     /// The theme asked for a font family for which the plan holds no bytes — or, from
     /// `fonts::FontPlan::from_system`, which the OS has no face of under that name (compared
-    /// case-insensitively, §8.2).
+    /// case-insensitively, spec §8.2).
     /// From `from_system`, the family the platform draws in its place —
     /// `native_theme::fonts::substitute_family`, fontconfig's best match on Linux — is drawn
     /// instead where the OS has a face of it, and named in `substitute`; otherwise egui's own
@@ -59,7 +59,7 @@ pub enum Note {
     /// The face chosen for a family has no `wght` axis — `FontData::variation_axes()`
     /// (`epaint/src/text/fonts.rs:153-173`) reports none — and either its own weight differs
     /// from the one the theme asked for, or it was registered with
-    /// [`fonts::FontPlan::variable_face`](crate::fonts::FontPlan::variable_face). The face renders at its own weight (§8.2).
+    /// [`fonts::FontPlan::variable_face`](crate::fonts::FontPlan::variable_face). The face renders at its own weight (spec §8.2).
     #[non_exhaustive]
     FontWeightAxisUnsupported {
         /// The family the face was chosen for.
@@ -68,7 +68,7 @@ pub enum Note {
     /// A native colour with alpha `0` was written, as given, to a `WidgetVisuals::bg_fill`,
     /// which egui documents as "Must never be `Color32::TRANSPARENT`"
     /// (`egui/src/style.rs:1292-1294`). Nothing is substituted — a substitute would be a
-    /// colour no platform stated — so the widget paints no background in that state (§6.4).
+    /// colour no platform stated — so the widget paints no background in that state (spec §6.4).
     #[non_exhaustive]
     TransparentFill {
         /// The native-theme leaf path of the colour with alpha `0`.
@@ -78,7 +78,7 @@ pub enum Note {
     /// `skrifa::FontRef::from_index(data, index)`, the only fallible step of epaint's
     /// `FontFace::new` (`epaint/src/text/font.rs:386-388`), whose failure epaint turns into a
     /// panic in release builds too (`epaint/src/text/fonts.rs:990`) — or they parsed with a zero
-    /// `unitsPerEm`, which epaint divides by (§8.2). The face was dropped and
+    /// `unitsPerEm`, which epaint divides by (spec §8.2). The face was dropped and
     /// the family falls back to the next face in its chain, egui's own if no other. `family`
     /// is the name the face was registered under.
     #[non_exhaustive]
@@ -88,11 +88,11 @@ pub enum Note {
     },
 }
 
-/// The builder's stored style patch (§4.3): a named type, because the spelled-out
+/// The builder's stored style patch (spec §4.3): a named type, because the spelled-out
 /// `Option<Box<dyn Fn(&mut egui::Style) + 'a>>` is `clippy::type_complexity`.
 pub(crate) type StylePatch<'a> = Box<dyn Fn(&mut egui::Style) + 'a>;
 
-/// The focus ring of one scheme (§6.18): stroke and offset from `defaults.focus_ring_*`,
+/// The focus ring of one scheme (spec §6.18): stroke and offset from `defaults.focus_ring_*`,
 /// built by `plugin::build_focus_ring`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct FocusRing {
@@ -100,15 +100,15 @@ pub(crate) struct FocusRing {
     pub(crate) offset: f32,
 }
 
-/// One colour scheme's compiled styles (§3.4).
+/// One colour scheme's compiled styles (spec §3.4).
 pub(crate) struct SchemeStyles {
     pub(crate) base: Arc<egui::Style>,
     /// `cells[role.index()][variant.index()]`; a cell with no data of its own shares its
-    /// `Normal` `Arc` (§3.4), and a `SelectedDisabled` one its `Disabled` `Arc`.
+    /// `Normal` `Arc` (spec §3.4), and a `SelectedDisabled` one its `Disabled` `Arc`.
     pub(crate) cells: [[Arc<egui::Style>; 4]; 25],
     /// `frames[surface.index()]`.
     pub(crate) frames: [egui::Frame; 11],
-    /// The ring the install plugin paints (§6.18); `None` for a zero or non-finite width or a
+    /// The ring the install plugin paints (spec §6.18); `None` for a zero or non-finite width or a
     /// non-finite offset, which paints no ring.
     pub(crate) focus_ring: Option<FocusRing>,
 }
@@ -134,7 +134,7 @@ impl SchemeStyles {
     }
 }
 
-/// What a `ThemeAtlas` holds (§4.2 names every field's type, which is what makes the handle
+/// What a `ThemeAtlas` holds (spec §4.2 names every field's type, which is what makes the handle
 /// `Send + Sync`).
 pub(crate) struct AtlasInner {
     pub(crate) name: String,
@@ -146,7 +146,7 @@ pub(crate) struct AtlasInner {
     pub(crate) os_mode: Option<ColorMode>,
     pub(crate) icon_set: IconSet,
     pub(crate) icon_theme: [Option<String>; 2],
-    /// The definitions `install` sets (§10.3 step 1); `None` when no plan was given.
+    /// The definitions `install` sets (spec §10.3 step 1); `None` when no plan was given.
     pub(crate) fonts: Option<egui::FontDefinitions>,
     /// The widest glyph of the faces the atlas installs (`fonts::widest_glyph`): the plan's
     /// definitions, or `egui::FontDefinitions::default()` with no plan; `None` when no face
@@ -168,7 +168,7 @@ impl AtlasInner {
     }
 }
 
-/// Every `TextStyle::Name` key of `from` that `into` lacks, with its font (§7.5).
+/// Every `TextStyle::Name` key of `from` that `into` lacks, with its font (spec §7.5).
 fn missing_name_keys<'a>(
     from: &'a egui::Style,
     into: &egui::Style,
@@ -181,7 +181,7 @@ fn missing_name_keys<'a>(
         .collect()
 }
 
-/// `into` with every `TextStyle::Name` key of `from` that it lacks (§7.5): `into`'s own `Arc`
+/// `into` with every `TextStyle::Name` key of `from` that it lacks (spec §7.5): `into`'s own `Arc`
 /// when there is none — an application without named styles pays nothing — and a copy with
 /// the keys inserted otherwise. The five stock keys always keep `into`'s values.
 pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Arc<egui::Style> {
@@ -197,7 +197,7 @@ pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Ar
 }
 
 /// The `Context` data key under which [`ThemeAtlas::install`] publishes the atlas
-/// (§10.3 step 3) and [`ThemeAtlas::from_ctx`] reads it back.
+/// (spec §10.3 step 3) and [`ThemeAtlas::from_ctx`] reads it back.
 pub(crate) fn atlas_key() -> egui::Id {
     egui::Id::new("native-theme-egui/atlas")
 }
@@ -212,7 +212,7 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// [`ResolvedTheme`](crate::ResolvedTheme)s, its [`LayoutTheme`](crate::LayoutTheme) (four `Option<f32>`), its name (`String`), the
 /// OS [`ColorMode`](crate::ColorMode) (`Option`), the
 /// [`IconSet`](crate::IconSet) and the icon-theme name per `egui::Theme` (`Option<String>` each) it carries, the
-/// focus ring per `egui::Theme` (§6.18: an `Option` of an `egui::Stroke` and an `f32` offset),
+/// focus ring per `egui::Theme` (spec §6.18: an `Option` of an `egui::Stroke` and an `f32` offset),
 /// and the `egui::FontDefinitions` [`Builder::build`] made from its [`fonts::FontPlan`](crate::fonts::FontPlan) for
 /// [`ThemeAtlas::install`] (none when no plan was given), which are `BTreeMap`s of `String`,
 /// `FontFamily` (an `Arc<str>` in `Name`) and `Arc<FontData>` (`epaint/src/text/fonts.rs:431-444`,
@@ -228,14 +228,14 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// * one base [`egui::Style`],
 /// * one [`egui::Style`] per ([`Role`](crate::Role), [`RoleVariant`](crate::RoleVariant)),
 /// * one [`egui::Frame`] per [`Surface`](crate::Surface),
-/// * one focus ring, or none where the theme states no ring (§6.18),
+/// * one focus ring, or none where the theme states no ring (spec §6.18),
 ///
 /// plus the two [`ResolvedTheme`](crate::ResolvedTheme)s it was built from. The styles reach widgets through
 /// [`ThemeAtlas::install`] (the base styles), [`NativeThemeUiExt`](crate::NativeThemeUiExt) and
 /// [`ThemeAtlas::role_modifier`] (the role styles) and [`ThemeAtlas::surface_frame`] (the
 /// frames). No raw role or base `Arc<Style>` is handed out: installed raw, it would drop the
 /// application's `TextStyle::Name` keys, on which `TextStyle::resolve` panics in release
-/// (`egui/src/style.rs:112-120`, §14 item 30), and every seam of §3.3 is covered by those
+/// (`egui/src/style.rs:112-120`, spec §14 item 30), and every seam of spec §3.3 is covered by those
 /// calls.
 #[derive(Clone)]
 pub struct ThemeAtlas(Arc<AtlasInner>);
@@ -256,7 +256,7 @@ impl ThemeAtlas {
     /// (`egui/src/memory/mod.rs:196`, `:200`). Pass the same value twice if only one exists.
     ///
     /// The `#[must_use]` carries a message because [`Builder`] is itself `#[must_use]`; a bare
-    /// one is `clippy::double_must_use`, which §13's **Lints, MSRV, package** test runs as an
+    /// one is `clippy::double_must_use`, which spec §13's **Lints, MSRV, package** test runs as an
     /// error.
     #[must_use = "this starts the builder; call `build()` to produce the atlas"]
     pub fn builder<'a>(
@@ -296,7 +296,7 @@ impl ThemeAtlas {
 
     /// The accessibility preferences the atlas was built with, applied as
     /// [`Builder::accessibility`] describes, or `AccessibilityPreferences::default()`
-    /// (`native-theme/src/lib.rs:265-274`). Hand it to the text-size accessors of §4.7, so a
+    /// (`native-theme/src/lib.rs:265-274`). Hand it to the text-size accessors of spec §4.7, so a
     /// size read at a call site matches the size the atlas installed.
     #[must_use]
     pub fn accessibility(&self) -> &AccessibilityPreferences {
@@ -306,7 +306,7 @@ impl ThemeAtlas {
     /// The layout spacing the atlas was built with, as [`Builder::layout`] took it, or
     /// `LayoutTheme::default()` (`native-theme/src/model/widgets/mod.rs:1028-1045`, all four
     /// fields `None`). Read `container_margin` and `section_gap` here, the two per-call values
-    /// no `Style` field carries (§5.1), so an atlas from [`from_system`](crate::from_system) needs no second
+    /// no `Style` field carries (spec §5.1), so an atlas from [`from_system`](crate::from_system) needs no second
     /// detection of the OS.
     #[must_use]
     pub fn layout(&self) -> &LayoutTheme {
@@ -316,7 +316,7 @@ impl ThemeAtlas {
     /// The OS colour mode the atlas carries: `SystemTheme::mode` on the [`from_system`](crate::from_system) /
     /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path, the value given to [`Builder::os_mode`], or
     /// `None` — [`from_preset`](crate::from_preset) and [`to_theme`](crate::to_theme) carry none. The install plugin feeds it to
-    /// egui where the integration reports no OS scheme (§3.2, §10.3).
+    /// egui where the integration reports no OS scheme (spec §3.2, §10.3).
     #[must_use]
     pub fn os_mode(&self) -> Option<ColorMode> {
         self.0.os_mode
@@ -347,7 +347,7 @@ impl ThemeAtlas {
     /// other. On the [`from_preset`](crate::from_preset) path it is each variant's `Resolved::icon_theme`
     /// (`native-theme/src/model/resolved.rs:268`, from `Theme::resolve` of that mode); on the
     /// [`from_system`](crate::from_system) / [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path it is
-    /// `SystemTheme::icon_theme_for` of that mode (§9.2); a [`Builder`] atlas takes
+    /// `SystemTheme::icon_theme_for` of that mode (spec §9.2); a [`Builder`] atlas takes
     /// [`Builder::icon_theme`] per scheme. `None` where the theme states none for that scheme
     /// and detection failed; nothing is invented.
     #[must_use]
@@ -366,7 +366,7 @@ impl ThemeAtlas {
     /// Feed to `Popup::style` (`egui/src/containers/popup.rs:417`), `MenuConfig::style`
     /// (`egui/src/containers/menu.rs:107`), `MenuBar::style` (`:241`) or
     /// `ComboBox::popup_style` (`egui/src/containers/combo_box.rs:199`) — the only four
-    /// acceptors in egui 0.36.2 (§3.2); `Tooltip` reaches `Popup::style` through its public
+    /// acceptors in egui 0.36.2 (spec §3.2); `Tooltip` reaches `Popup::style` through its public
     /// `popup` field (`egui/src/containers/tooltip.rs:9`).
     ///
     /// For menus this is required, not convenient: without it a menu's style is the
@@ -374,11 +374,11 @@ impl ThemeAtlas {
     /// which overwrites `spacing.button_padding` (`:23`), **four** `bg_stroke`s — `active`
     /// (`:24`), `open` (`:25`), `hovered` (`:26`), `inactive` (`:28`) — and
     /// `widgets.inactive.weak_bg_fill` (`:27`) and carries none of the menu's own values;
-    /// the `Role::Menu` cell applies the same function and then those values (§3.4). It is
+    /// the `Role::Menu` cell applies the same function and then those values (spec §3.4). It is
     /// also the menu's chrome: egui builds every menu's frame from the style
     /// the modifier produces ([`Surface`](crate::Surface) gives the detail), so the fill, stroke, radius,
     /// shadow and margins of a menu are the ones the `Role::Menu` cell inherits from the base
-    /// style, and its items' border, radius and padding the cell's own (§5.2).
+    /// style, and its items' border, radius and padding the cell's own (spec §5.2).
     ///
     /// The modifier replaces the whole `Style`, like `impl From<Style> for StyleModifier`
     /// (`egui/src/style.rs:211-215`), except that every `TextStyle::Name` key of the style it
@@ -416,7 +416,7 @@ impl ThemeAtlas {
     /// (`egui/src/containers/frame.rs:404`).
     ///
     /// This is the **only** way to theme container margins: five of egui's eight `Frame`
-    /// presets hardcode their inner margin and read no `Style::spacing` (§3.2).
+    /// presets hardcode their inner margin and read no `Style::spacing` (spec §3.2).
     #[must_use = "this returns the frame recipe; hand it to a container's `.frame(..)`"]
     pub fn surface_frame(&self, theme: egui::Theme, surface: Surface) -> egui::Frame {
         self.scheme(theme).frame(surface)
@@ -488,10 +488,10 @@ impl ThemeAtlas {
     /// Install into an [`egui::Context`]: the atlas's fonts, both colour schemes' base styles
     /// (keeping the application's own `TextStyle::Name` keys, and, once a pass has run, each
     /// text size lowered to [`ThemeAtlas::text_size_cap`]), the atlas into `Context` data, the
-    /// install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their order
+    /// install plugin, the icon-cache flush and a repaint — spec §10.3 lists the steps, their order
     /// and what each must not touch. The plugin supplies the OS colour scheme where the
-    /// integration reports none, paints the focus ring (§6.18) and keeps the OS title bar on the
-    /// scheme the UI is drawn in (§10.3).
+    /// integration reports none, paints the focus ring (spec §6.18) and keeps the OS title bar on the
+    /// scheme the UI is drawn in (spec §10.3).
     ///
     /// Run it on every application start, even when egui memory is persisted:
     /// `Options::dark_style` and `light_style` are `#[serde(skip)]`
@@ -606,8 +606,8 @@ impl ThemeAtlas {
         crate::icons::forget_icons(ctx);
     }
 
-    /// §10.3 step 2: both base styles, each first given the `Name` keys of the style it
-    /// replaces — `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); §7.5 —
+    /// Spec §10.3 step 2: both base styles, each first given the `Name` keys of the style it
+    /// replaces — `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); spec §7.5 —
     /// and then lowered to the text-size cap at once once a pass has run, not at the plugin's
     /// next `input_hook`: a `Window` or popup opened later in this pass builds its `Ui` from
     /// these styles (`egui/src/ui.rs:136`). M7-04; `plugin::cap_at_install` says why not
@@ -626,7 +626,7 @@ impl ThemeAtlas {
         self.0.scheme(theme)
     }
 
-    /// The `FontDefinitions` `Builder::build` made from the atlas's plan (§10.3 step 1), or
+    /// The `FontDefinitions` `Builder::build` made from the atlas's plan (spec §10.3 step 1), or
     /// `None` when the atlas was built with no plan.
     pub(crate) fn fonts(&self) -> Option<&egui::FontDefinitions> {
         self.0.fonts.as_ref()
@@ -634,7 +634,7 @@ impl ThemeAtlas {
 }
 
 impl ThemeAtlas {
-    /// The focus ring of one scheme, or `None` where the theme states none (§6.18).
+    /// The focus ring of one scheme, or `None` where the theme states none (spec §6.18).
     pub(crate) fn focus_ring(&self, theme: egui::Theme) -> Option<&FocusRing> {
         self.0.scheme(theme).focus_ring.as_ref()
     }
@@ -668,12 +668,12 @@ pub struct Builder<'a> {
 }
 
 impl<'a> Builder<'a> {
-    /// Layout spacing. The atlas writes `widget_gap` into `spacing.item_spacing` (§6.16) and
+    /// Layout spacing. The atlas writes `widget_gap` into `spacing.item_spacing` (spec §6.16) and
     /// `window_margin` into [`Surface::CentralPanel`](crate::Surface::CentralPanel)'s inner margin; a `None` leaves that egui
     /// value at its stock default. `container_margin` and `section_gap` have no `Style` field;
     /// the application reads them per call from [`ThemeAtlas::layout`], which keeps the
     /// layout given here — a nested container's `Frame::inner_margin` and `Ui::add_space`
-    /// (§5.1).
+    /// (spec §5.1).
     ///
     /// A separate input because [`LayoutTheme`](crate::LayoutTheme) lives on `native_theme::theme::Theme`
     /// (`native-theme/src/model/mod.rs:282`) and on `SystemTheme`
@@ -742,7 +742,7 @@ impl<'a> Builder<'a> {
     }
 
     /// The OS colour mode, which the install plugin feeds to egui wherever the integration
-    /// reports none — on Linux always, since winit 0.30.13 reports none there (§3.2).
+    /// reports none — on Linux always, since winit 0.30.13 reports none there (spec §3.2).
     /// [`from_system`](crate::from_system) and [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) set it from `SystemTheme::mode`.
     /// An atlas built from a preset has none unless given one here; the OS's current mode is
     /// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`
@@ -792,11 +792,11 @@ impl<'a> Builder<'a> {
     /// conversion in this crate is total (see [`convert`](crate::convert)). Every face of the font plan is
     /// validated here, once, with the parse epaint will make ([`fonts::font_definitions`](crate::fonts::font_definitions));
     /// each rejected face is a [`Note::FontDataInvalid`] in [`ThemeAtlas::notes`], and the
-    /// `egui::FontDefinitions` it returns are kept for [`ThemeAtlas::install`] (§10.3).
+    /// `egui::FontDefinitions` it returns are kept for [`ThemeAtlas::install`] (spec §10.3).
     ///
     /// Also computed here, per variant, is the body text's `Spacing::extra_text_line_spacing`
     /// (`egui/src/style.rs:424`), written into both base styles, which every role style
-    /// starts from (§3.4): the
+    /// starts from (spec §3.4): the
     /// theme's line box, `defaults.line_height` × the scaled `defaults.font.size`, less the row
     /// height epaint gives the `Proportional` face the atlas installs — the plan's face, or, for
     /// a plan with no face, the head of its base's chain ([`fonts::FontPlan::with_base`](crate::fonts::FontPlan::with_base); egui's
@@ -805,8 +805,8 @@ impl<'a> Builder<'a> {
     /// keeps unless the application replaces it ([`Builder::style_patch`]) — at that size,
     /// computed from the face's own metrics exactly as epaint does
     /// (`epaint/src/text/font.rs:397-400`, `:561-565`, `:587`), and floored at egui's `0.0`
-    /// (§6.15). The same row height sets the `Role::Slider` cells' `expansion`, which keeps
-    /// the slider knob at `slider.thumb_diameter` when the Body row outgrows it (§6.6). The
+    /// (spec §6.15). The same row height sets the `Role::Slider` cells' `expansion`, which keeps
+    /// the slider knob at `slider.thumb_diameter` when the Body row outgrows it (spec §6.6). The
     /// row height does not depend on `pixels_per_point`
     /// (`epaint/src/text/font.rs:561-565` scales by the font size alone), so no zoom or DPI
     /// change invalidates either value.
@@ -869,7 +869,7 @@ impl<'a> Builder<'a> {
     }
 }
 
-/// One scheme's styles, with §6.15's Body row measured on `defs` at the Body size `base_style`
+/// One scheme's styles, with spec §6.15's Body row measured on `defs` at the Body size `base_style`
 /// writes. The throw-away `Vec` is deliberate: `base_style` reports the size's leaf; this call
 /// only needs the same sanitised size.
 fn compile_scheme(

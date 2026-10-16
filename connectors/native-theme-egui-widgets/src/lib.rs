@@ -47,6 +47,13 @@
 //! are inherent methods, which Rust resolves before a trait's, so a trait
 //! method of the same name would be silently ignored at every call site.
 //!
+//! # Spec citations
+//!
+//! A `spec §N` in these docs cites section N of the crate's design specification,
+//! [`docs/archive/todo_egui-widgets-spec.md`](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_egui-widgets-spec.md)
+//! in the repository, which the published crate does not include; a citation of another
+//! document, such as `docs/platform-facts.md`, names it.
+//!
 //! # Tiers
 //!
 //! Each widget's documentation names its tier — what this crate owns, and so
