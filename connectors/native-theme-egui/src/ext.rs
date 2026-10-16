@@ -244,6 +244,10 @@ pub fn from_preset(
 /// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme)); [`Loaded`] carries them by the
 /// field names the iced and gpui connectors' `Loaded` uses.
 ///
+/// The OS is read with feature `native` (or native-theme's `kde`, `portal`, `macos` or
+/// `windows`); without a reader, `SystemTheme::from_system` is the platform preset on Linux and
+/// an error on macOS and Windows.
+///
 /// # Errors
 /// Propagates `SystemTheme::from_system`.
 #[must_use = "this builds the styles; it does not install them"]

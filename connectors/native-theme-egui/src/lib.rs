@@ -10,6 +10,8 @@
 //!
 //! # Quick start
 //!
+//! With feature `native`, the OS readers ([`from_system`] says what it returns without them):
+//!
 //! ```rust,no_run
 //! use native_theme_egui::from_system;
 //!

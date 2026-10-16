@@ -24,6 +24,19 @@ in the colour scheme egui is drawing, and contains no colour, radius or
 metric of its own. With no atlas installed, each renders as egui's own
 counterpart.
 
+## Quick start
+
+Add the connector, with the OS readers (`native`), and this crate:
+
+```toml
+[dependencies]
+eframe = "0.36.2"
+native-theme-egui = { version = "0.7", features = ["native"] }
+native-theme-egui-widgets = "0.7"
+```
+
+Install the connector's atlas (its README's Quick start), then add a widget:
+
 ```rust,no_run
 use native_theme_egui_widgets::connector::egui;
 use native_theme_egui_widgets::switch::Switch;
@@ -43,8 +56,16 @@ site.
 ## Features
 
 The connector's, forwarded one to one, with the connector's default set:
-`material-icons`, `lucide-icons`, `system-icons`, `system-fonts` (default)
-and `svg-rasterize`. This crate adds none of its own.
+`material-icons`, `lucide-icons`, `system-icons`, `system-fonts` (default),
+and `svg-rasterize`, `native` (the OS readers) and `watch` (`ThemeWatcher`),
+off by default as there. This crate adds none of its own.
+
+## Compatibility
+
+Built for egui 0.36.2, which it reaches through the connector, with
+`rust-version = "1.95"`, as the connector; the connector's
+[Compatibility](../native-theme-egui/README.md#compatibility) section has the
+floors and the versions verified.
 
 ## Limits
 

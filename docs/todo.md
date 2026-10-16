@@ -3271,7 +3271,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### Connectors: `native` and `watch` passthrough features in gpui and egui
 
-- [ ] [v0.7.0] For M6/M7 (ruling M5-02, 2026-10-14): the iced connector
+- [x] [v0.7.0] For M6/M7 (ruling M5-02, 2026-10-14): the iced connector
       forwards native-theme's readers and watcher as two features, both off
       by default as in core, `native = ["native-theme/native"]` and
       `watch = ["native-theme/watch", "dep:iced_futures"]`
@@ -3294,6 +3294,15 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       sentence, the CHANGELOG's *Breaking Changes*; `check_release.sh`, CI,
       the crates.io workflow, the canary and `update_compatibility.sh` build
       the connector with `native,watch`. egui stays (M7).
+      egui done (M7 T3, 2026-10-16): `native = ["native-theme/native"]` in
+      place of the per-target reader lines, beside the `watch` it had; the
+      dev-dependencies' native-theme with `native` and `watch`; the widgets
+      crate forwards both (M7-33); the README's Quick start, Features table
+      and sentence, the widgets README's Features sentence, the CHANGELOG's
+      *Breaking Changes*. The egui legs of `check_release.sh`, CI, the
+      crates.io workflow, the canary and `update_compatibility.sh` build both
+      crates with `--all-features`, and `check_features.sh` each feature
+      alone, so no gate line changed.
 
 ### READMEs: the dependency-version check beyond iced
 
@@ -3317,6 +3326,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       beside the floor checks; the README's two `toml` blocks (the Quick
       start, *Runtime theme change*) name 0.6 until the 0.7.0 bump, which
       the test then fails until they follow. egui, core and build stay.
+      egui (M7 T3, 2026-10-16): no third copy of the check (the M6 T3
+      ruling); the egui README's Quick start and the widgets README's new one
+      name 0.7, the coming release's minor, and M8's one workspace check (the
+      *For M8* entry on the README check) takes both READMEs with core's and
+      build's.
 
 ### Connectors: a public theme builder that takes the mode
 
@@ -3523,7 +3537,7 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
 - [ ] [v0.7.0] For M8 (parity): gpui lays `slider.thumb_hover_color` over the thumb as a layer (M6 T9, `colors::over`), while iced uses it as given.
 - [ ] [v0.7.0] For M8 (parity): on a text-scaling factor whose product is not a normal positive number, gpui and iced keep the theme's unscaled size (core's `AccessibilityPreferences::scaled`, M6 T13), while egui keeps its stock size with a `Note::ValueSanitised`, as its spec prescribes (d05d64f6). Decide whether the connectors should agree.
 - [ ] [v0.7.0] For M8 (parity): iced's `font_family` returns the default family only. gpui's geometry builders carry each font's family and style since M6's final review (35785f1e).
-- [ ] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling).
+- [ ] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
 - [ ] [v0.7.0] For M8 (test quality): the icon fixture helper (`icon_fixture.rs`) is copied between the iced and gpui connectors (M6 T4). The gpui DataTable row-growth test re-implements `table_row_height`, and the row formula leaves out the row's 1 px bottom border (M6 T6). The text stays inside either way.
 - [ ] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
 - [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1609 names `ItemView_ArrowSize` where :1616 says the arrow is Breeze's `renderArrow` with `ArrowSize`.

@@ -118,10 +118,12 @@ not only the field list.
 
 ## Quick start
 
+Add the crate to your `Cargo.toml`, with the OS readers (`native`):
+
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = "0.6"
+native-theme-egui = { version = "0.7", features = ["native"] }
 ```
 
 Install the OS theme once, where eframe hands you the `Context`, and let egui
@@ -267,9 +269,9 @@ cached (`icons::forget_icons`) and leaves the application's own images alone.
 
 ## Runtime theme change
 
-With the `watch` feature, `ThemeWatcher::start(ctx, rebuild)` rebuilds the
-atlas on the watcher thread on every OS theme change and wakes egui; the UI
-thread installs it:
+With the `watch` feature and a reader feature (`native`),
+`ThemeWatcher::start(ctx, rebuild)` rebuilds the atlas on the watcher thread on
+every OS theme change and wakes egui; the UI thread installs it:
 
 ```rust,no_run
 use native_theme_egui::ThemeWatcher;
@@ -325,10 +327,15 @@ zero and turns scroll animation off. The accessors that return a text size take 
 | `system-icons` | on | freedesktop, SF Symbols and Windows system icon lookup |
 | `system-fonts` | on | `FontPlan::from_system`, and the system typeface in `from_preset`, `from_system` and `to_egui_atlas` |
 | `svg-rasterize` | off | native-theme's in-process SVG rasteriser, whose output `icons::to_color_image` converts |
+| `native` | off | the OS readers, so `from_system`, `native_theme::SystemTheme::from_system` and `ThemeWatcher::system_rebuild` read the OS theme |
 | `watch` | off | `ThemeWatcher` |
 
 Each forwards to the `native-theme` feature of the same name.
 `default-features = false` and the list you keep gives a smaller build.
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` watches with a reader feature only.
 
 ## Limits
 

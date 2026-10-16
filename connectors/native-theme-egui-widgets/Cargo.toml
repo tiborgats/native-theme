@@ -22,14 +22,17 @@ targets = [
 ]
 
 [features]
-# The connector's default set, forwarded one to one; `svg-rasterize` is
-# forwarded but off by default, as it is there.
+# The connector's features, forwarded one to one, with its default set;
+# `svg-rasterize`, `native` and `watch` are forwarded but off by default, as
+# they are there.
 default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]
 material-icons = ["native-theme-egui/material-icons"]
 lucide-icons   = ["native-theme-egui/lucide-icons"]
 system-icons   = ["native-theme-egui/system-icons"]
 svg-rasterize  = ["native-theme-egui/svg-rasterize"]
 system-fonts   = ["native-theme-egui/system-fonts"]
+native         = ["native-theme-egui/native"]
+watch          = ["native-theme-egui/watch"]
 
 [dependencies]
 # egui and native-theme are reached through the connector's re-exports
