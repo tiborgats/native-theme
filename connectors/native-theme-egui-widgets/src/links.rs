@@ -31,8 +31,8 @@ use std::sync::Arc;
 
 use native_theme_egui::convert::{composite_over, to_color32};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::theme::ResolvedLinkTheme;
-use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 /// The URLs a [`hyperlink`] of this `Context` was clicked for: its visited set, kept in
 /// `Context` data for the life of the `Context`. Shared, so a read clones the `Arc` and not the
@@ -45,9 +45,40 @@ fn visited_key() -> egui::Id {
     egui::Id::new("native-theme-egui-widgets::visited")
 }
 
-/// `ui`'s link theme, from the installed atlas in the scheme egui is drawing.
-fn link_theme(ui: &egui::Ui) -> Option<ResolvedLinkTheme> {
-    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.resolved_for(ui.ctx().theme()).link.clone())
+/// What a link reads of a theme, every colour read in one place, so the crate's colour-leaf
+/// coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `link.font.color`: the text at rest.
+    pub(crate) text_color: Rgba,
+    pub(crate) background_color: Rgba,
+    pub(crate) hover_background: Rgba,
+    pub(crate) hover_text_color: Rgba,
+    pub(crate) active_text_color: Rgba,
+    pub(crate) visited_text_color: Rgba,
+    pub(crate) disabled_text_color: Rgba,
+    pub(crate) underline_enabled: bool,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let l = &t.link;
+        Self {
+            text_color: l.font.color,
+            background_color: l.background_color,
+            hover_background: l.hover_background,
+            hover_text_color: l.hover_text_color,
+            active_text_color: l.active_text_color,
+            visited_text_color: l.visited_text_color,
+            disabled_text_color: l.disabled_text_color,
+            underline_enabled: l.underline_enabled,
+        }
+    }
+}
+
+/// `ui`'s link look, from the installed atlas in the scheme egui is drawing.
+fn link_theme(ui: &egui::Ui) -> Option<Look> {
+    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| Look::of(atlas.resolved_for(ui.ctx().theme())))
 }
 
 /// egui's `Link` in `link.*`'s colours. `ui` is read for the atlas and the scheme only.
@@ -91,7 +122,7 @@ pub fn hyperlink<'a>(
 /// was visited.
 fn themed(
     ui: &mut egui::Ui,
-    l: &ResolvedLinkTheme,
+    l: &Look,
     text: egui::WidgetText,
     url: Option<&str>,
 ) -> (egui::Response, bool) {
@@ -119,7 +150,7 @@ fn themed(
         } else if visited {
             l.visited_text_color
         } else {
-            l.font.color
+            l.text_color
         };
         let background = if hovered && ui.is_enabled() {
             composite_over(l.hover_background, l.background_color)

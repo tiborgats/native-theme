@@ -9,11 +9,12 @@ use native_theme_egui::egui;
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::mutex::Mutex;
 use native_theme_egui::icons::{self, IconKey};
+use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, load_icon_indicator,
 };
 use native_theme_egui::native_theme::theme::IconSet;
-use native_theme_egui::{Role, ThemeAtlas};
+use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::scope;
 
@@ -61,6 +62,22 @@ impl Spinner {
     }
 }
 
+/// The colours a spinner reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's tint.
+    pub(crate) fill_color: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            fill_color: t.spinner.fill_color,
+        }
+    }
+}
+
 /// What the spinner draws, read from the atlas before its scope opens.
 struct Paint {
     diameter: f32,
@@ -75,11 +92,12 @@ impl egui::Widget for Spinner {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let theme = ui.ctx().theme();
-            let s = &atlas.resolved_for(theme).spinner;
+            let t = atlas.resolved_for(theme);
+            let s = &t.spinner;
             Some(Paint {
                 diameter: scope::length(s.diameter)?,
                 stroke_width: scope::length(s.stroke_width)?,
-                colour: to_color32(s.fill_color),
+                colour: to_color32(Look::of(t).fill_color),
                 set: atlas.icon_set(),
                 icon_theme: atlas.icon_theme(theme).map(str::to_string),
                 reduce_motion: atlas.accessibility().reduce_motion,

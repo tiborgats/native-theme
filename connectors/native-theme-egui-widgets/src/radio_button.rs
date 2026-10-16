@@ -2,7 +2,8 @@
 
 use native_theme_egui::convert::{clamp_length, to_color32};
 use native_theme_egui::egui;
-use native_theme_egui::{Role, ThemeAtlas};
+use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -107,6 +108,22 @@ fn radio_parts(
     parts
 }
 
+/// The colours a radio button reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            background: t.defaults.background_color,
+        }
+    }
+}
+
 impl egui::Widget for RadioButton {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let RadioButton {
@@ -122,7 +139,7 @@ impl egui::Widget for RadioButton {
         let checkbox = &resolved.checkbox;
         let dot = checkbox.radio_dot_diameter.and_then(scope::length);
         let width = checkbox.radio_indicator_width.and_then(scope::length);
-        let ground = backdrop.unwrap_or_else(|| to_color32(resolved.defaults.background_color));
+        let ground = backdrop.unwrap_or_else(|| to_color32(Look::of(resolved).background));
         scope::open_faded(ui, Role::Checkbox, checked, enabled, Some(ground), |ui| {
             if let Some(width) = width {
                 ui.spacing_mut().icon_width = clamp_length(width);

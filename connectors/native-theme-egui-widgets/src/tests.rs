@@ -2240,3 +2240,198 @@ fn every_section_citation_names_its_document() {
         bare.join("\n")
     );
 }
+
+// ---- the widgets' colour reads (docs/todo.md, "Contracts: the connectors' widgets") ----------
+
+/// Each widget's colour reads as the coverage test sees them: its `Look` of `t`, as text.
+fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {
+    vec![
+        ("Spinner", format!("{:?}", crate::spinner::Look::of(t))),
+        ("Switch", format!("{:?}", crate::switch::Look::of(t))),
+        ("Slider", format!("{:?}", crate::slider::Look::of(t))),
+        ("links", format!("{:?}", crate::links::Look::of(t))),
+        (
+            "ProgressBar",
+            format!("{:?}", crate::progress_bar::Look::of(t)),
+        ),
+        (
+            "RadioButton",
+            format!("{:?}", crate::radio_button::Look::of(t)),
+        ),
+        (
+            "SegmentedControl",
+            format!("{:?}", crate::segmented_control::Look::of(t)),
+        ),
+        ("Expander", format!("{:?}", crate::expander::Look::of(t))),
+    ]
+}
+
+/// The colour leaves each widget draws in, beyond the atlas's cells, which the connector's
+/// `mapping.toml` rows. `ComboBox` reads no colour of the theme's: its colours are its cell's.
+const WIDGET_READS: &[(&str, &[&str])] = &[
+    ("Spinner", &["spinner.fill_color"]),
+    (
+        "Switch",
+        &[
+            "switch.checked_background",
+            "switch.hover_checked_background",
+            "switch.unchecked_background",
+            "switch.hover_unchecked_background",
+            "switch.disabled_checked_background",
+            "switch.disabled_unchecked_background",
+            "switch.thumb_background",
+            "switch.unchecked_thumb_background",
+            "switch.disabled_thumb_color",
+            "defaults.font.color",
+            "defaults.disabled_text_color",
+            "defaults.background_color",
+        ],
+    ),
+    (
+        "Slider",
+        &[
+            "slider.track_color",
+            "slider.fill_color",
+            "slider.thumb_color",
+            "slider.thumb_hover_color",
+            "slider.disabled_track_color",
+            "slider.disabled_fill_color",
+            "slider.disabled_thumb_color",
+            "defaults.background_color",
+        ],
+    ),
+    (
+        "links",
+        &[
+            "link.font.color",
+            "link.background_color",
+            "link.hover_background",
+            "link.hover_text_color",
+            "link.active_text_color",
+            "link.visited_text_color",
+            "link.disabled_text_color",
+        ],
+    ),
+    ("ProgressBar", &["progress_bar.border.color"]),
+    ("RadioButton", &["defaults.background_color"]),
+    ("SegmentedControl", &["defaults.background_color"]),
+    ("Expander", &["expander.arrow_color"]),
+];
+
+/// The leaves of a serialised theme, each with its value.
+fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
+    fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, child) in map {
+                    let path = if prefix.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{prefix}.{key}")
+                    };
+                    walk(&path, child, out);
+                }
+            }
+            _ => out.push((prefix.to_owned(), value.clone())),
+        }
+    }
+    let mut out = Vec::new();
+    walk("", value, &mut out);
+    out
+}
+
+/// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a theme; `None`
+/// where the leaf already holds it or does not take a colour.
+fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
+    let pointer = format!("/{}", leaf.replace('.', "/"));
+    let value = serde_json::Value::String(hex.to_owned());
+    if json.pointer(&pointer)? == &value {
+        return None;
+    }
+    let mut spliced = json.clone();
+    *spliced.pointer_mut(&pointer)? = value;
+    serde_json::from_value(spliced).ok()
+}
+
+/// The widgets' own colour reads are sinks of a coverage test, as the iced `Spinner`'s and gpui's
+/// Looks are of theirs: every colour leaf of `ResolvedTheme` -- a colour, or an unstated
+/// `Option<Rgba>` a colour splices into -- is spliced in each bundled preset in both modes with
+/// two colours no leaf of the base holds, and every widget whose `Look` moves must list the leaf
+/// in `WIDGET_READS`; every leaf a widget lists must move its `Look` in at least one base.
+#[test]
+fn each_widget_draws_in_the_colour_leaves_it_lists() {
+    use native_theme_egui::native_theme::color::Rgba;
+    use native_theme_egui::native_theme::theme::Theme;
+    use std::collections::BTreeSet;
+
+    let mut moved: BTreeSet<(&str, String)> = BTreeSet::new();
+    let mut failures = Vec::new();
+    let mut bases = 0;
+    for info in Theme::list_presets() {
+        for is_dark in [false, true] {
+            let t = from_preset(info.key, is_dark, &AccessibilityPreferences::default())
+                .unwrap()
+                .1;
+            let json = serde_json::to_value(&t).unwrap();
+            let base = looks(&t);
+            let taken: BTreeSet<String> = leaf_values(&json)
+                .into_iter()
+                .filter_map(|(_, v)| v.as_str().map(str::to_ascii_lowercase))
+                .collect();
+            let sentinels: Vec<String> = (0x13..=u8::MAX)
+                .map(|red| format!("#{red:02x}579b"))
+                .filter(|hex| !taken.contains(hex))
+                .take(2)
+                .collect();
+            bases += 1;
+            for (leaf, value) in leaf_values(&json) {
+                let colour = match &value {
+                    serde_json::Value::String(s) => s.starts_with('#') && s.parse::<Rgba>().is_ok(),
+                    serde_json::Value::Null => true,
+                    _ => false,
+                };
+                if !colour {
+                    continue;
+                }
+                for hex in &sentinels {
+                    let Some(spliced) = spliced_colour(&json, &leaf, hex) else {
+                        continue;
+                    };
+                    for ((widget, before), (_, after)) in base.iter().zip(looks(&spliced)) {
+                        if *before == after {
+                            continue;
+                        }
+                        let listed = WIDGET_READS
+                            .iter()
+                            .any(|(w, leaves)| w == widget && leaves.contains(&leaf.as_str()));
+                        if !listed && moved.insert((widget, leaf.clone())) {
+                            failures.push(format!(
+                                "{widget} draws in {leaf} (on {} {}), which WIDGET_READS does \
+                                 not list",
+                                info.key,
+                                if is_dark { "dark" } else { "light" }
+                            ));
+                        }
+                        moved.insert((widget, leaf.clone()));
+                    }
+                }
+            }
+        }
+    }
+    assert!(bases > 20, "only {bases} preset/mode combinations read");
+    for (widget, leaves) in WIDGET_READS {
+        for leaf in *leaves {
+            if !moved.contains(&(*widget, (*leaf).to_owned())) {
+                failures.push(format!(
+                    "{widget} lists {leaf}, which moves its Look in no combination"
+                ));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} widget colour read(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}

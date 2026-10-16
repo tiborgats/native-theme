@@ -2,7 +2,8 @@
 
 use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui;
-use native_theme_egui::{Role, ThemeAtlas};
+use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -63,6 +64,22 @@ impl ProgressBar {
     }
 }
 
+/// The colours a progress bar reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `progress_bar.border.color`: the outline.
+    pub(crate) border_color: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            border_color: t.progress_bar.border.color,
+        }
+    }
+}
+
 impl egui::Widget for ProgressBar {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let ProgressBar {
@@ -71,19 +88,18 @@ impl egui::Widget for ProgressBar {
             animate,
         } = self;
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
-        let theme = atlas
-            .as_ref()
-            .map(|a| &a.resolved_for(ui.ctx().theme()).progress_bar);
-        let min_width = theme.and_then(|p| scope::length(p.min_width));
+        let resolved = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme()));
+        let theme = resolved.map(|t| (&t.progress_bar, Look::of(t)));
+        let min_width = theme.and_then(|(p, _)| scope::length(p.min_width));
         let still = atlas
             .as_ref()
             .is_some_and(|a| a.accessibility().reduce_motion);
         let bar = egui::ProgressBar::new(progress).animate(animate && !still);
-        let border = theme.and_then(|p| {
+        let border = theme.and_then(|(p, look)| {
             let b = &p.border;
             let radius = b.corner_radius.is_finite().then_some(b.corner_radius)?;
             let width = scope::length(b.line_width)?;
-            Some((radius, width, b.color))
+            Some((radius, width, look.border_color))
         });
         let Some((radius, width, color)) = border else {
             let bar = sized(bar, ui, desired_width, min_width);

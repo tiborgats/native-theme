@@ -2,6 +2,7 @@
 
 use native_theme_egui::convert::{to_color32, to_margin};
 use native_theme_egui::egui;
+use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::{
     ArrowSide, ResolvedExpanderTheme, ResolvedPadding, ResolvedTheme,
 };
@@ -61,6 +62,23 @@ pub struct ExpanderResponse<R> {
     pub header_response: egui::Response,
     /// What the body closure returned, where the body is (partly) open.
     pub body_returned: Option<R>,
+}
+
+/// The colours a painted expander reads of a theme, every colour read in one place, so the
+/// crate's colour-leaf coverage test sees the widget's reads. Over egui's own header the arrow
+/// is the connector's `expander_icon`, which reads the same leaf.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `expander.arrow_color`: the arrow, egui's `fg_stroke` where unstated.
+    pub(crate) arrow_color: Option<Rgba>,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            arrow_color: t.expander.arrow_color,
+        }
+    }
 }
 
 impl Expander {
@@ -127,8 +145,9 @@ impl Expander {
                 own(ui, self, Some(t), add_body)
             });
         }
+        let look = Look::of(t);
         scope::open(ui, Role::Expander, enabled, |ui| {
-            painted(ui, self, e, add_body)
+            painted(ui, self, e, look, add_body)
         })
     }
 }
@@ -210,6 +229,7 @@ fn painted<R>(
     ui: &mut egui::Ui,
     expander: Expander,
     e: &ResolvedExpanderTheme,
+    look: Look,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
     let Expander {
@@ -234,7 +254,7 @@ fn painted<R>(
         egui::Frame::NONE
     };
     let out = frame.show(ui, |ui| {
-        let (header, mut parts) = header(ui, &mut state, id, open, title, e);
+        let (header, mut parts) = header(ui, &mut state, id, open, title, e, look);
         let own_indent = ui.spacing().indent;
         let indent = stated_or(e.content_indent, own_indent);
         let body = state.show_body_unindented(ui, |ui| {
@@ -275,6 +295,7 @@ fn header(
     open: Option<bool>,
     title: egui::WidgetText,
     e: &ResolvedExpanderTheme,
+    look: Look,
 ) -> (egui::Response, Parts) {
     let own_pad = ui.spacing().button_padding;
     let pad = &e.border.padding;
@@ -344,7 +365,7 @@ fn header(
     let visuals = ui.style().interact(&response);
     let painter = ui.painter();
     painter.rect_filled(rect, visuals.corner_radius, visuals.weak_bg_fill);
-    let colour = e.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
+    let colour = look.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
     painter.add(egui::Shape::convex_polygon(
         triangle(arrow_box, state.openness(ui.ctx()), trailing),
         colour,

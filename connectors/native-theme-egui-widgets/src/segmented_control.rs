@@ -2,7 +2,8 @@
 
 use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
-use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 use crate::parts::Parts;
 
@@ -106,6 +107,22 @@ impl<'a> SegmentedControl<'a> {
     }
 }
 
+/// The colours a segmented control reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            background: t.defaults.background_color,
+        }
+    }
+}
+
 impl egui::Widget for SegmentedControl<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let SegmentedControl {
@@ -121,7 +138,7 @@ impl egui::Widget for SegmentedControl<'_> {
             // The fade a disabled calling `Ui` gave the painter, which the control takes back to
             // fade itself as one.
             let fade = crate::fade::outer_fade(ui).map(|under| {
-                let ground = backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color));
+                let ground = backdrop.unwrap_or_else(|| to_color32(Look::of(t).background));
                 (ground, under)
             });
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {

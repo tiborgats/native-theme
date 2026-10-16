@@ -5,8 +5,9 @@ use std::ops::RangeInclusive;
 use native_theme_egui::convert::{composite_over, to_color32};
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::{self, accesskit};
+use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::ResolvedSliderTheme;
-use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -133,6 +134,37 @@ impl Fade {
     }
 }
 
+/// The colours a slider reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    pub(crate) track_color: Rgba,
+    pub(crate) fill_color: Rgba,
+    pub(crate) thumb_color: Rgba,
+    pub(crate) thumb_hover_color: Option<Rgba>,
+    pub(crate) disabled_track_color: Option<Rgba>,
+    pub(crate) disabled_fill_color: Option<Rgba>,
+    pub(crate) disabled_thumb_color: Option<Rgba>,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let sl = &t.slider;
+        Self {
+            track_color: sl.track_color,
+            fill_color: sl.fill_color,
+            thumb_color: sl.thumb_color,
+            thumb_hover_color: sl.thumb_hover_color,
+            disabled_track_color: sl.disabled_track_color,
+            disabled_fill_color: sl.disabled_fill_color,
+            disabled_thumb_color: sl.disabled_thumb_color,
+            background: t.defaults.background_color,
+        }
+    }
+}
+
 /// The knob and rail sizes, every one finite, and the slider's width.
 #[derive(Clone, Copy)]
 struct Geometry {
@@ -167,9 +199,9 @@ impl egui::Widget for Slider<'_> {
         let as_one = (!enabled && ui.is_enabled()) || under.is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let t = atlas.resolved_for(ui.ctx().theme());
-            let ground =
-                as_one.then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color)));
-            Geometry::of(&t.slider, width).map(|g| (g, t.slider.clone(), ground))
+            let look = Look::of(t);
+            let ground = as_one.then(|| backdrop.unwrap_or_else(|| to_color32(look.background)));
+            Geometry::of(&t.slider, width).map(|g| (g, look, ground))
         });
         let Some((geometry, sl, ground)) = paint else {
             let mut slider = egui::Slider::new(value, range).show_value(false);
@@ -246,7 +278,7 @@ fn slider_ui(
     range: &RangeInclusive<f64>,
     label: Option<&str>,
     g: Geometry,
-    sl: &ResolvedSliderTheme,
+    sl: &Look,
     fade: Option<Fade>,
 ) -> egui::Response {
     let old = *value;
