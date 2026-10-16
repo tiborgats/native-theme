@@ -138,9 +138,9 @@ impl NativeThemeUiExt for egui::Ui {
 /// `None` when no atlas is installed: pass the acceptor nothing, and it keeps egui's own
 /// style. There is no modifier that does that — `MenuConfig::style` and `MenuBar::style`
 /// default to egui's `menu_style` (`egui/src/containers/menu.rs:83`, `:226`), which
-/// `StyleModifier::default()`, a modifier whose `apply` does nothing (`egui/src/style.rs:192-194`,
-/// `:224-228`), would replace — so this
-/// is a free function, not a [`NativeThemeUiExt`] method, none of which returns an `Option`.
+/// `StyleModifier::default()`, a modifier whose `apply` does nothing
+/// (`egui/src/style.rs:192-194`, `:224-228`), would replace — so this is a free function, not
+/// a [`NativeThemeUiExt`] method, none of which returns an `Option`.
 #[must_use]
 pub fn role_modifier(
     ui: &egui::Ui,
