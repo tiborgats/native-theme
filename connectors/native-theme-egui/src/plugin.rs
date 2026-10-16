@@ -84,15 +84,23 @@ pub(crate) fn focus_key(ctx: &Context) -> Id {
 }
 
 /// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
-/// pass. A second record for the same `Ui` replaces the first (§6.18). The pass number and the
-/// key are read before `data_mut` is entered: no `Context` accessor inside another (§10.3).
-pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius) {
+/// pass. With `replace`, a second record for the same `Ui` replaces the first (§6.18), at the
+/// cost of a scan of the pass's records; without it the record is pushed, for a `Ui` created in
+/// this pass, whose `unique_id` no earlier record holds (`egui/src/ui.rs:252-260`). The pass
+/// number and the key are read before `data_mut` is entered: no `Context` accessor inside
+/// another (§10.3).
+pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, replace: bool) {
     let pass_nr = ctx.cumulative_pass_nr();
     let key = focus_key(ctx);
     ctx.data_mut(|data| {
         let entry = data.get_temp_mut_or_insert_with(key, FocusEntry::default);
         entry.begin(pass_nr);
-        match entry.scopes.iter_mut().find(|(id, _)| *id == ui_id) {
+        let slot = if replace {
+            entry.scopes.iter_mut().find(|(id, _)| *id == ui_id)
+        } else {
+            None
+        };
+        match slot {
             Some(slot) => slot.1 = radius,
             None => entry.scopes.push((ui_id, radius)),
         }
@@ -532,6 +540,8 @@ fn paint_focus_ring(ui: &egui::Ui) {
     };
     let pass_nr = ctx.cumulative_pass_nr();
     let key = focus_key(ctx);
+    // `get_temp` clones both lists, once per pass while a widget has the focus: a read by
+    // reference measured no gain above the run-to-run spread with 1000 scopes in a pass (M7-03).
     let entry = ctx
         .data(|data| data.get_temp::<FocusEntry>(key))
         .filter(|entry| entry.pass_nr == pass_nr)

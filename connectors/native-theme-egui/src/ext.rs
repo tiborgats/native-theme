@@ -101,7 +101,8 @@ impl NativeThemeUiExt for egui::Ui {
         );
         let radius = style.visuals.widgets.active.corner_radius;
         self.scope_builder(egui::UiBuilder::new().style(style), |child| {
-            record_scope(child.ctx(), child.unique_id(), radius);
+            // A child `Ui` of this pass: no earlier record holds its id.
+            record_scope(child.ctx(), child.unique_id(), radius, false);
             add_contents(child)
         })
     }
@@ -116,7 +117,7 @@ impl NativeThemeUiExt for egui::Ui {
             atlas.text_size_cap(),
         );
         let radius = style.visuals.widgets.active.corner_radius;
-        record_scope(self.ctx(), self.unique_id(), radius);
+        record_scope(self.ctx(), self.unique_id(), radius, true);
         self.set_style(style);
     }
 
