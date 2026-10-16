@@ -983,14 +983,15 @@ impl Semibold {
                 }
             }
             // The family the connector's font plan draws the body in: the theme's where the OS
-            // has it, else the platform's substitute (`native_theme::fonts::substitute_family`,
-            // fontconfig's on Linux), as `FontPlan::from_system` takes it.
+            // has it, else the platform's substitute
+            // (`native_theme::fonts::substitute_family_cached`, fontconfig's on Linux), as
+            // `FontPlan::from_system` takes it.
             let drawn = if native_theme::fonts::system_face(&body.family, body.weight, body.style)
                 .is_some()
             {
                 body.family.to_string()
             } else {
-                native_theme::fonts::substitute_family(&body.family)
+                native_theme::fonts::substitute_family_cached(&body.family)
                     .unwrap_or_else(|| body.family.to_string())
             };
             for (weight, family) in families {

@@ -728,48 +728,7 @@ pub(crate) fn font_style(style: native_theme::theme::FontStyle) -> gpui::FontSty
 /// [`font_family`]'s substitute for `family`, asked of the platform once.
 #[cfg(feature = "system-fonts")]
 fn substituted_family(family: &str) -> Option<String> {
-    static ASKED: std::sync::OnceLock<AskedFamilies> = std::sync::OnceLock::new();
-    asked_once(
-        ASKED.get_or_init(AskedFamilies::default),
-        family,
-        native_theme::fonts::substitute_family,
-    )
-}
-
-/// Each family asked, with the platform's answer.
-#[cfg(feature = "system-fonts")]
-type AskedFamilies = std::sync::Mutex<std::collections::HashMap<String, Option<String>>>;
-
-/// `ask`'s answer for `family`, kept in `asked`. The lock is held for the
-/// look-up and the insert only, not across `ask`: the platform's ask starts
-/// a process (native-theme `src/fonts.rs` `substitute_family`: `fc-match`
-/// on Linux and the other non-Apple, non-Android unix systems, bounded by
-/// `SUBPROCESS_TIMEOUT`, 2 s, native-theme `src/detect.rs:20`), and a thread
-/// building any other theme must not wait for it. The 12.5 ms per ask the
-/// public docs state was measured by M6-03's verifier with a logging
-/// `fc-match` shim first on `PATH` over the release `timings` binary: two
-/// asks of about 12.5 ms in each preset's first call that brings two new
-/// families (docs/todo_code-review-findings.md, M6-03). Two first askers of
-/// one family may both ask; the answer is the same, and the last one is
-/// kept.
-#[cfg(feature = "system-fonts")]
-fn asked_once(
-    asked: &AskedFamilies,
-    family: &str,
-    ask: impl FnOnce(&str) -> Option<String>,
-) -> Option<String> {
-    let lock = || {
-        asked
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-    };
-    let kept = lock().get(family).cloned();
-    if let Some(answer) = kept {
-        return answer;
-    }
-    let answer = ask(family);
-    lock().insert(family.to_owned(), answer.clone());
-    answer
+    native_theme::fonts::substitute_family_cached(family)
 }
 
 /// Without feature `system-fonts`, no family is substituted.
@@ -1520,71 +1479,6 @@ mod tests {
             None => assert_eq!(drawn.as_ref(), family.as_ref()),
         }
         assert_eq!(font_family(&family), drawn, "asked again, another family");
-    }
-
-    /// M6-03: the platform's ask runs a subprocess (`fc-match` on Linux,
-    /// with a 2 s timeout), so a look-up of a cached family, and the ask for
-    /// another one, must not wait for an ask in flight. The first asker
-    /// blocks until the test releases it; the other two must finish first.
-    #[cfg(feature = "system-fonts")]
-    #[test]
-    fn a_family_ask_in_flight_blocks_no_other_look_up() {
-        use std::sync::mpsc;
-        use std::time::Duration;
-        const GENEROUS: Duration = Duration::from_secs(10);
-
-        let asked = std::sync::Arc::new(AskedFamilies::default());
-        asked
-            .lock()
-            .unwrap()
-            .insert("Cached".to_owned(), Some("Cached substitute".to_owned()));
-
-        let (started_tx, started) = mpsc::channel();
-        let (release, release_rx) = mpsc::channel::<()>();
-        let first = std::thread::spawn({
-            let asked = asked.clone();
-            move || {
-                asked_once(&asked, "First", |_| {
-                    let _ = started_tx.send(());
-                    let _ = release_rx.recv();
-                    Some("First substitute".to_owned())
-                })
-            }
-        });
-        started
-            .recv_timeout(GENEROUS)
-            .expect("the first ask never started");
-
-        let (done_tx, done) = mpsc::channel();
-        let others = std::thread::spawn({
-            let asked = asked.clone();
-            move || {
-                let cached = asked_once(&asked, "Cached", |_| Some("asked again".to_owned()));
-                let _ = done_tx.send(("Cached", cached));
-                let second = asked_once(&asked, "Second", |_| Some("Second substitute".to_owned()));
-                let _ = done_tx.send(("Second", second));
-            }
-        });
-        let while_in_flight: Vec<_> = (0..2)
-            .map_while(|_| done.recv_timeout(GENEROUS).ok())
-            .collect();
-
-        release.send(()).unwrap();
-        assert_eq!(first.join().unwrap().as_deref(), Some("First substitute"));
-        others.join().unwrap();
-        assert_eq!(
-            while_in_flight,
-            [
-                ("Cached", Some("Cached substitute".to_owned())),
-                ("Second", Some("Second substitute".to_owned())),
-            ],
-            "a look-up waited for another family's ask"
-        );
-        assert_eq!(
-            asked_once(&asked, "First", |_| None).as_deref(),
-            Some("First substitute"),
-            "the first ask's answer is kept"
-        );
     }
 
     /// On macOS the system UI font's stated family becomes gpui's own alias

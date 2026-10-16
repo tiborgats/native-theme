@@ -145,9 +145,12 @@ impl FontPlan {
     /// theme's and has no `wght` axis renders at its own weight and is a
     /// [`crate::Note::FontWeightAxisUnsupported`]; a family the OS has no face of is a
     /// [`crate::Note::FontFamilyUnavailable`]: it is drawn in the face `system_face` gives for
-    /// the family the platform draws in its place, `native_theme::fonts::substitute_family`
+    /// the family the platform draws in its place, `native_theme::fonts::substitute_family_cached`
     /// (fontconfig's best match on Linux, what every native application there gets), which the
     /// note names, and keeps egui's own face where there is no such family or face. The
+    /// platform is asked once per missing family and the answer kept for the process: the first
+    /// ask runs on the calling thread, on Linux and the other fontconfig platforms one `fc-match`
+    /// process with a 2 s timeout, and every later plan for that family starts none. The
     /// substitute's face is registered as a direct one is: under the family the theme asked
     /// for, at the face's own weight and style. The plan carries
     /// these lookup notes, and [`font_definitions`] returns them with its own, so they reach
@@ -166,7 +169,7 @@ impl FontPlan {
             {
                 Some(face) => Some(face),
                 None => {
-                    let substituted = native_theme::fonts::substitute_family(&spec.family)
+                    let substituted = native_theme::fonts::substitute_family_cached(&spec.family)
                         .and_then(|substitute| {
                             native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
                         });

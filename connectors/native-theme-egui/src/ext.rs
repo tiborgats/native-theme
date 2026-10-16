@@ -155,7 +155,9 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `connectors/native-theme-gpui/src/lib.rs:295`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
-/// egui's default base.
+/// egui's default base. A family the OS lacks costs one ask of the platform per process, not
+/// per call: the first `from_preset` that brings it runs it on the calling thread (on Linux
+/// one `fc-match` process, with a 2 s timeout), as `FontPlan::from_system` states.
 ///
 /// The atlas carries **both** of the preset's variants — `ColorMode::Light` into the light
 /// `Style`, `ColorMode::Dark` into the dark one, each through `Theme::resolve_with`
