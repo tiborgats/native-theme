@@ -938,7 +938,7 @@ fn a_disabled_slider_fades_as_one() {
     let ground = to_color32(t.defaults.background_color);
     let rail = ground.blend(to_color32(sl.track_color));
     let fill = rail.blend(to_color32(sl.fill_color));
-    let knob = ground.lerp_to_gamma(fill.blend(to_color32(sl.thumb_color)), 0.5);
+    let knob = ground.lerp_to_gamma(ground.blend(to_color32(sl.thumb_color)), 0.5);
     // The knob's outline: the slider's `Disabled` cell's `inactive` stroke, over the fill.
     let mut outline = egui::Stroke::NONE;
     let _ = response(&ctx, at(0.0), |ui| {
@@ -951,7 +951,7 @@ fn a_disabled_slider_fades_as_one() {
         .response
     });
     assert!(outline.width > 0.0);
-    let ring = ground.lerp_to_gamma(fill.blend(outline.color), 0.5);
+    let ring = ground.lerp_to_gamma(ground.blend(outline.color), 0.5);
     // Disabled by its own `.enabled(false)`, and under a disabled `Ui`, whose `disabled_alpha`
     // (`defaults.disabled_opacity`, 0.5) it is faded by.
     type Add = Box<dyn Fn(&mut egui::Ui) -> egui::Response>;
@@ -990,6 +990,36 @@ fn a_disabled_slider_fades_as_one() {
         rects(&out)
             .iter()
             .any(|s| s.fill == card.lerp_to_gamma(rail, 0.5))
+    );
+}
+
+/// A translucent knob is taken over the backdrop it is faded against, where most of it lies (it
+/// is taller than the rail), not over the trailing fill: macos-tahoe's dark `thumb_color`
+/// `#ffffffd9`, with the slider's `disabled_opacity` lowered to 0.5 here, since the preset dims
+/// a slider by colour alone.
+#[test]
+fn a_disabled_translucent_knob_fades_over_the_backdrop() {
+    let mut t = from_preset("macos-tahoe", true, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let sl = &t.slider;
+    assert_eq!(sl.disabled_thumb_color, None);
+    assert!(
+        sl.thumb_color.a < 255,
+        "macos-tahoe's dark knob is translucent"
+    );
+    assert!(sl.thumb_diameter > sl.track_height);
+    t.slider.disabled_opacity = 0.5;
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let knob = ground.lerp_to_gamma(ground.blend(to_color32(t.slider.thumb_color)), 0.5);
+    let (out, _) = click(&ctx, |ui| {
+        ui.add(Slider::new(&mut 40.0, 0.0..=100.0).enabled(false))
+    });
+    assert!(
+        circles(&out).iter().any(|c| c.fill == knob),
+        "{knob:?} in {:#?}",
+        circles(&out)
     );
 }
 

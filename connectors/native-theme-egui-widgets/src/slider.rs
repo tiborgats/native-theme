@@ -40,13 +40,15 @@ const KEY_STEP: f32 = 1.0;
 ///   `disabled_thumb_color` (a `None` copies the colour it stands for), faded by
 ///   `slider.disabled_opacity` as one widget over its backdrop ([`Self::backdrop`]), as
 ///   libadwaita fades the whole widget (the crate's *Disabled*): the rail over the backdrop,
-///   the trailing fill over the rail, the knob and its outline over the fill, each faded over
-///   the backdrop and painted at the opacity the `Ui` had, so no part shows another through
-///   it. The knob and its outline are taken over the fill throughout, which is exact for an
-///   opaque one; a translucent knob (macos-monterey's dark `thumb_color` `#ffffff80`,
-///   material-3's `disabled_thumb_color` at alpha `0x61`) shows the fill also where its half
-///   beyond the fill's end lies over the rail. Under `ui.add_enabled(false, ..)` it is faded
-///   as one by the calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
+///   the trailing fill over the rail, the knob and its outline over the backdrop, each faded
+///   over the backdrop and painted at the opacity the `Ui` had, so no part shows another
+///   through it. The knob is taken over the backdrop, where a knob taller than the rail
+///   mostly lies; where it overlaps the rail and the fill, a translucent knob
+///   (macos-monterey's dark `thumb_color` `#ffffff80`, macos-tahoe's dark `#ffffffd9`,
+///   material-3's `disabled_thumb_color` at alpha `0x61`) shows the backdrop's composite
+///   there, not the rail's or the fill's; an opaque knob is exact everywhere. Under
+///   `ui.add_enabled(false, ..)` it is faded as one by the calling `Ui`'s `disabled_alpha`,
+///   the fade egui gave the painter taken back.
 ///
 /// Interaction is egui's on a linear range: it senses `Sense::drag()` (`:655`); a drag sets
 /// the value from the pointer (`:666-678`); while focused, the arrow keys along the rail move
@@ -357,15 +359,14 @@ fn slider_ui(
         let radius = ui.visuals().widgets.inactive.corner_radius;
         let mut outline = ui.style().interact(&response).fg_stroke;
         // Faded as one: the rail over the ground, the fill over the rail, the knob and its
-        // outline over the fill.
+        // outline over the ground, where most of the knob lies (the class doc).
         let (track, fill, thumb) = match fade {
             Some(f) => {
-                let filled = f.ground.blend(track).blend(fill);
-                outline.color = f.over(filled, f.outline.color);
+                outline.color = f.over(f.ground, f.outline.color);
                 (
                     f.over(f.ground, track),
                     f.over(f.ground.blend(track), fill),
-                    f.over(filled, thumb),
+                    f.over(f.ground, thumb),
                 )
             }
             None => (track, fill, thumb),
