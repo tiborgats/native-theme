@@ -3666,18 +3666,20 @@ fn every_role_and_surface_is_demonstrated() {
         harness.run_steps(2);
         collect(&harness);
     }
-    // The variants a role carries: `Normal` always; `selected` or `disabled` where the
-    // manifest declares a sink in that cell (§13.1's `variant`).
+    // The variants a role carries: `Normal` always; every other variant where the manifest
+    // declares a sink in that cell (§13.1's `variant`).
     let mut missing = Vec::new();
     for role in native_theme_egui::Role::all() {
         let key = role.key();
         let mut variants = vec!["normal"];
-        for v in ["selected", "disabled"] {
-            if manifest.rows.iter().any(|r| {
-                r.sinks
-                    .iter()
-                    .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
-            }) {
+        for v in RoleVariant::all().iter().map(|v| v.key()) {
+            if v != "normal"
+                && manifest.rows.iter().any(|r| {
+                    r.sinks
+                        .iter()
+                        .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
+                })
+            {
                 variants.push(v);
             }
         }

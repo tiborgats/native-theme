@@ -52,7 +52,9 @@ pub(crate) fn show(
                 )
             },
         );
-        let mut disabled = true;
+        // Unchecked and disabled, the `Disabled` cell; the Basic page draws a checked one in
+        // `SelectedDisabled`.
+        let mut disabled = false;
         demo::scoped(
             reg,
             ui,

@@ -520,16 +520,10 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
-    // The disabled box is checked. Where the theme states a disabled fill it is the `Disabled`
-    // cell's; where it states none the platform dims by opacity alone
-    // (docs/platform-facts.md §2.1.6), so the box is the checked (`Selected`) cell's, faded by
-    // its `disabled_alpha`, `checkbox.disabled_opacity`: egui's cells are one variant each.
+    // The disabled box is checked: the `SelectedDisabled` cell, the checked box with the
+    // theme's disabled fill where it states one, faded as one by its `disabled_alpha`,
+    // `checkbox.disabled_opacity` (docs/platform-facts.md §2.1.6).
     heading(reg, ui, "basic.checkboxes.heading", "Checkboxes");
-    let disabled_variant = if t.checkbox.disabled_background.is_some() {
-        RoleVariant::Disabled
-    } else {
-        RoleVariant::Selected
-    };
     for (label, checked, variant, enabled, kind, id) in [
         (
             "Unchecked",
@@ -550,7 +544,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         (
             "Disabled",
             true,
-            disabled_variant,
+            RoleVariant::SelectedDisabled,
             false,
             "checkbox (disabled)",
             "basic.checkboxes.disabled",
@@ -559,17 +553,8 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            // A checked box is bordered in `checkbox.border.color`, disabled too: egui's
-            // `Disabled` cell serves a checked and an unchecked box alike and carries the
-            // unchecked border, so the disabled checked box takes the checked one per call.
-            if checked && !enabled && variant == RoleVariant::Disabled {
-                let border = to_color32(t.checkbox.border.color);
-                let widgets = &mut ui.visuals_mut().widgets;
-                widgets.noninteractive.bg_stroke.color = border;
-                widgets.inactive.bg_stroke.color = border;
-            }
             let text = demo::lined(ui, label, egui::TextStyle::Body);
-            let r = if !enabled && variant == RoleVariant::Selected {
+            let r = if !enabled {
                 let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
                     // The check box faded as one over the page (the companion crate's rule,
@@ -579,7 +564,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                 })
                 .inner
             } else {
-                ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()))
+                ui.add(egui::Checkbox::new(&mut value, text.clone()))
             };
             parts = checkbox_parts(ui, &r, text, checked);
             r
