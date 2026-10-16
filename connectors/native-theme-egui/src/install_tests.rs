@@ -3348,6 +3348,63 @@ fn a_closed_viewport_s_focus_entry_is_let_go() {
     assert_eq!(entries(&ctx), 1, "the root's");
 }
 
+/// M8 T6 review: a focus entry `register_focus_shape` wrote before any install, so before the
+/// plugin saw its viewport's input, is let go too once egui has closed the viewport.
+#[test]
+fn a_focus_entry_written_before_the_install_is_let_go() {
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("uninstalled child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        let rect =
+                            egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(8.0, 8.0));
+                        crate::register_focus_shape(
+                            ui.ctx(),
+                            egui::Id::new("shape"),
+                            rect,
+                            egui::CornerRadius::ZERO,
+                        );
+                    },
+                );
+            }
+        });
+    };
+    let entries = |ctx: &egui::Context| ctx.data(|d| d.count::<crate::plugin::FocusEntry>());
+    root(&ctx, true);
+    assert_eq!(entries(&ctx), 1, "the child's, written with no plugin");
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    preset_atlas("kde-breeze").install(&ctx);
+    root(&ctx, false);
+    assert_eq!(entries(&ctx), 0);
+}
+
 /// M8 T6 review: the window theme the plugin last told a closed immediate viewport is let go
 /// with its focus entry.
 #[test]

@@ -58,6 +58,9 @@ pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> 
 /// So the install plugin drops a viewport's entry itself once egui has closed the viewport.
 #[derive(Clone, Default)]
 pub(crate) struct FocusEntry {
+    /// The viewport the entry belongs to, which its key hashes: the plugin finds an entry
+    /// written before it saw that viewport's input by this field.
+    pub(crate) viewport: egui::ViewportId,
     /// `Context::cumulative_pass_nr` of the pass the lists belong to.
     pub(crate) pass_nr: u64,
     /// Each styled `Ui`'s `unique_id` with its role style's `widgets.active.corner_radius`.
@@ -67,6 +70,14 @@ pub(crate) struct FocusEntry {
 }
 
 impl FocusEntry {
+    /// An empty entry for `viewport`.
+    fn of(viewport: egui::ViewportId) -> Self {
+        Self {
+            viewport,
+            ..Self::default()
+        }
+    }
+
     /// Empties both lists when the entry belongs to an earlier pass (spec §6.18).
     pub(crate) fn begin(&mut self, pass_nr: u64) {
         if self.pass_nr != pass_nr {
@@ -96,10 +107,10 @@ fn focus_key_of(viewport: egui::ViewportId) -> Id {
 /// number and the key are read before `data_mut` is entered: no `Context` accessor inside
 /// another (spec §10.3).
 pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, replace: bool) {
-    let pass_nr = ctx.cumulative_pass_nr();
-    let key = focus_key(ctx);
+    let (pass_nr, viewport) = (ctx.cumulative_pass_nr(), ctx.viewport_id());
+    let key = focus_key_of(viewport);
     ctx.data_mut(|data| {
-        let entry = data.get_temp_mut_or_insert_with(key, FocusEntry::default);
+        let entry = data.get_temp_mut_or_insert_with(key, || FocusEntry::of(viewport));
         entry.begin(pass_nr);
         let slot = if replace {
             entry.scopes.iter_mut().find(|(id, _)| *id == ui_id)
@@ -132,15 +143,16 @@ pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, repla
 /// a shape registered in an earlier pass — by a widget no longer drawn, or drawn elsewhere —
 /// is ignored, and the entry never holds more than one pass's shapes. A `rect` that is not finite (`Rect::is_finite`,
 /// `emath/src/rect.rs:524`) is not stored. Needs no atlas: without an install plugin the
-/// entry is simply never read.
+/// entry is simply never read, and once one is installed it lets the entry go when egui closes
+/// the viewport, as it does every viewport's.
 pub fn register_focus_shape(ctx: &Context, id: Id, rect: Rect, corner_radius: CornerRadius) {
     if !rect.is_finite() {
         return;
     }
-    let pass_nr = ctx.cumulative_pass_nr();
-    let key = focus_key(ctx);
+    let (pass_nr, viewport) = (ctx.cumulative_pass_nr(), ctx.viewport_id());
+    let key = focus_key_of(viewport);
     ctx.data_mut(|data| {
-        let entry = data.get_temp_mut_or_insert_with(key, FocusEntry::default);
+        let entry = data.get_temp_mut_or_insert_with(key, || FocusEntry::of(viewport));
         entry.begin(pass_nr);
         entry.shapes.push((id, rect, corner_radius));
     });
@@ -294,6 +306,8 @@ pub(crate) fn cap_at_install(ctx: &Context, atlas: &ThemeAtlas) {
 /// progress.
 #[derive(Default)]
 pub(crate) struct NativeThemePlugin {
+    /// Per viewport whose input this plugin saw, whether it filled the scheme in its latest
+    /// pass; `false` too for the viewport of a focus entry older than the plugin.
     filled: egui::ViewportIdMap<bool>,
     last_sent: egui::ViewportIdMap<egui::SystemTheme>,
     /// The `max_texture_side` and `pixels_per_point` of each pass in progress, innermost last:
@@ -301,6 +315,9 @@ pub(crate) struct NativeThemePlugin {
     /// (`egui/src/context.rs:2799-2811`), so the cap one pass derives is put back to its
     /// parent's when it ends (M7-04).
     passes: Vec<(egui::ViewportId, usize, f32)>,
+    /// Whether the viewports of the focus entries written before this plugin saw their input
+    /// have joined `filled`, at the first root pass it sees.
+    adopted: bool,
 }
 
 impl NativeThemePlugin {
@@ -309,12 +326,36 @@ impl NativeThemePlugin {
     /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), its `last_sent` theme, and the viewport
     /// from `filled`, which is the list scanned. A window reopened under the same id gets
     /// egui's own `SetTheme(SystemDefault)` in its first pass, as egui's new state of it has
-    /// sent none (`egui/src/context.rs:2485-2498`), which `output_hook` rewrites. egui has no accessor that lists its viewports; it counts one it no
-    /// longer has as having completed no pass (`Context::cumulative_pass_nr_for`,
-    /// `egui/src/context.rs:1788-1793`). A viewport whose input this plugin saw has begun a
-    /// pass, so one still open has completed it unless that pass is in progress now, which
-    /// only the viewports in `passes` can be. Call after this pass is pushed.
-    fn forget_closed_viewports(&mut self, ctx: &Context) {
+    /// sent none (`egui/src/context.rs:2485-2498`), which `output_hook` rewrites.
+    ///
+    /// egui has no accessor that lists its viewports; it counts one it no longer has as having
+    /// completed no pass (`Context::cumulative_pass_nr_for`, `egui/src/context.rs:1788-1793`).
+    /// A viewport whose input this plugin saw has begun a pass, so one still open has completed
+    /// it unless that pass is in progress now, which only the viewports in `passes` can be.
+    /// Call after this pass is pushed, with its viewport.
+    ///
+    /// An entry can be older than the plugin: [`register_focus_shape`] needs no atlas, and a
+    /// pass in progress when the first install registers the plugin records its scopes too. So
+    /// at the first root pass's input, when no other pass is in progress, the viewports of all
+    /// the entries join the list, found through `IdTypeMap::temp_keys` and `get_temp_raw`
+    /// (`egui/src/util/id_type_map.rs:629-634`, `:456-461`); from then on every entry is
+    /// written in a pass whose input this plugin sees.
+    fn forget_closed_viewports(&mut self, ctx: &Context, viewport: egui::ViewportId) {
+        if !self.adopted && viewport == egui::ViewportId::ROOT {
+            self.adopted = true;
+            let written = ctx.data(|data| {
+                data.temp_keys()
+                    .filter_map(|key| {
+                        data.get_temp_raw(key)?
+                            .downcast_ref::<FocusEntry>()
+                            .map(|entry| entry.viewport)
+                    })
+                    .collect::<Vec<_>>()
+            });
+            for viewport in written {
+                self.filled.entry(viewport).or_insert(false);
+            }
+        }
         let passes = &self.passes;
         let mut closed = Vec::new();
         self.filled.retain(|&viewport, _| {
@@ -404,7 +445,7 @@ impl egui::plugin::Plugin for NativeThemePlugin {
         }
         self.passes
             .push((input.viewport_id, max_texture_side, pixels_per_point));
-        self.forget_closed_viewports(ctx);
+        self.forget_closed_viewports(ctx, input.viewport_id);
         if let Some(atlas) = atlas {
             cap_text_sizes(ctx, &atlas, max_texture_side, pixels_per_point);
         }
