@@ -344,16 +344,10 @@ kind = "absent"
 reason = "egui's are `text_role_font`, `text_role_line_height` and `text_role_weight`, one accessor per property keyed by `TextRole`, each already text-scaled (the egui spec §4.7, `text_scale`; the M8-04/M8-05 ruling)"
 
 [[exception]]
-connector = "iced"
-name = "text_scale"
-kind = "absent"
-reason = "iced draws a text-scale role as it draws any stated font: the application reads the role's leaves, `resolved.text_scale.caption.size` and its weight, and scales the size with `scaled_text_size` (src/lib.rs, `scaled_text_size`'s and `font_size`'s docs; README.md, *Text scaling*), so no accessor hands the group over whole"
-
-[[exception]]
 connector = ["iced", "gpui"]
 name = ["text_role_font", "text_role_line_height", "text_role_weight"]
 kind = "absent"
-reason = "egui's `FontId` carries no weight and egui installs one face per family, so a text-scale role's font, line height and weight reach a call site through these, keyed by `TextRole` (connectors/native-theme-egui/src/accessors.rs, `role_font_weight`'s doc; the egui spec §4.7, `text_scale`, §4.9). gpui returns the four roles whole (`text_scale`), and iced's application reads the role's leaves and scales the size with `scaled_text_size`"
+reason = "egui's `FontId` carries no weight and egui installs one face per family, so a text-scale role's font, line height and weight reach a call site through these, keyed by `TextRole` (connectors/native-theme-egui/src/accessors.rs, `role_font_weight`'s doc; the egui spec §4.7, `text_scale`, §4.9). iced and gpui return the four roles whole (`text_scale`), and the application scales a role's size with `scaled_text_size`"
 
 [[exception]]
 connector = ["iced", "gpui"]

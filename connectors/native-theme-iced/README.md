@@ -298,7 +298,7 @@ table header's height),
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `expander_arrow_color`,
 `selection_background`, `info_color`, `info_text_color`,
-`warning_text_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
+`warning_text_color`, `icon_sizes`, `text_scale`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
 `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `switch` /
 `switch_over` and `radio` (all feature `widgets`).

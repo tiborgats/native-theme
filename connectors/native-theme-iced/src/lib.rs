@@ -227,7 +227,7 @@
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (28 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`) | Per-widget resolved fields |
-//! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
+//! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
@@ -1484,6 +1484,17 @@ pub fn icon_sizes(
     &resolved.defaults.icon_sizes
 }
 
+/// Returns a reference to the text scale from the resolved theme: its four
+/// roles, `caption`, `section_heading`, `dialog_title` and `display`, each a
+/// size, weight and line height as the theme states them, unscaled; scale a
+/// size with [`scaled_text_size()`].
+#[must_use]
+pub fn text_scale(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> &native_theme::theme::ResolvedTextScale {
+    &resolved.text_scale
+}
+
 /// Returns the line height multiplier from the resolved theme.
 ///
 /// The raw multiplier (e.g., 1.4). Use with iced's
@@ -2266,6 +2277,17 @@ mod tests {
         let is = icon_sizes(&resolved);
         assert!(is.small > 0.0, "small icon size should be > 0");
         assert!(is.toolbar > 0.0, "toolbar icon size should be > 0");
+    }
+
+    #[test]
+    fn text_scale_is_the_themes() {
+        let resolved = make_resolved(false);
+        let ts = text_scale(&resolved);
+        assert!(
+            std::ptr::eq(ts, &resolved.text_scale),
+            "text_scale should hand over the resolved theme's own text scale"
+        );
+        assert!(ts.caption.size > 0.0, "caption size should be > 0");
     }
 
     // === Font helper tests ===
