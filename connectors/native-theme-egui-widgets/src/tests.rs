@@ -1452,6 +1452,53 @@ fn parts_answer_until_two_passes_go_by_without_the_widget() {
     assert!(Parts::of(&kept).is_some());
 }
 
+/// M7-22: a widget drawn in a child viewport answers when read outside it, and the parts of a
+/// viewport egui has closed are let go with it.
+#[test]
+fn parts_of_a_closed_viewport_are_let_go() {
+    let ctx = installed(&kde(), &AccessibilityPreferences::default());
+    ctx.set_embed_viewports(false);
+    let child = egui::ViewportId::from_hash_of("child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, idle(), |ui| {
+            ui.add(Switch::new(&mut true));
+            if open {
+                ui.ctx()
+                    .show_viewport_deferred(child, egui::ViewportBuilder::default(), |_, _| ());
+            }
+        });
+    };
+    root(&ctx, false);
+    root(&ctx, true);
+    let in_child = egui::RawInput {
+        viewport_id: child,
+        viewports: std::iter::once((child, egui::ViewportInfo::default())).collect(),
+        ..idle()
+    };
+    let (_, drawn) = response(&ctx, in_child, |ui| {
+        ui.push_id("child", |ui| ui.add(Switch::new(&mut true)))
+            .inner
+    });
+    assert!(Parts::of(&drawn).is_some(), "read outside the child");
+    assert_eq!(
+        crate::parts::stored_viewports(&ctx).len(),
+        2,
+        "the root's and the child's"
+    );
+    // egui drops the child at the end of the first root pass that does not show it.
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert_eq!(
+        crate::parts::stored_viewports(&ctx),
+        vec![egui::ViewportId::ROOT]
+    );
+}
+
 // ---- M7-25: the spinner's frame sources ------------------------------------------------------------
 
 /// A context with `t` installed with Material's indicator, drawn light, under reduced motion so
