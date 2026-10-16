@@ -231,7 +231,6 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "status_bar.border.line_width"               = "defaults.border.line_width"
 
 # list (§2.15)
-"list.alternate_row_background"              = "list.background_color"        # see wrong_safety_nets
 "list.selection_background"                  = "defaults.selection_background"
 "list.selection_text_color"                  = "defaults.selection_text_color"
 "list.header_background"                     = "defaults.surface_color"       # see wrong_safety_nets
@@ -305,7 +304,7 @@ fallback = "defaults.text_color"
 macos    = "preset"
 windows  = "defaults.text_color"
 kde      = "defaults.focus_ring_color"
-gnome    = "defaults.accent_color"
+gnome    = "input.font.color"  # currentColor (libadwaita 1.10.0 _entries.scss:11); adwaita states it
 
 [per_platform."scrollbar.track_color"]
 fallback = "defaults.background_color"
@@ -330,7 +329,7 @@ gnome    = "preset"
 
 [per_platform."list.background_color"]
 fallback = "defaults.background_color"
-macos    = "defaults.background_color"
+macos    = "preset"                      # controlBackgroundColor (platform-facts §2.15)
 windows  = "defaults.background_color"
 kde      = "preset"
 gnome    = "preset"
@@ -352,7 +351,7 @@ gnome    = "preset"
 # Disabled state (docs/platform-facts.md §2.1.6, `disabled_opacity`): a
 # consumer paints the `disabled_*` colours AND fades the widget by its
 # `disabled_opacity`. A platform uses one of the two, and its preset makes the
-# other an identity: KDE and Windows state `defaults.disabled_opacity = 1.0`;
+# other an identity: KDE, macOS and Windows state `defaults.disabled_opacity = 1.0`;
 # GNOME states no `disabled_*` fill (None = the enabled colour) and its
 # enabled text colours as the disabled ones. A widget without a
 # `disabled_opacity` of its own (menu, list, link) fades by
@@ -364,8 +363,8 @@ fields = [
                                        # (FIXED: resolve.rs no longer inherits from defaults.muted_color)
     "switch.track_radius",             # derived from half track height (pill shape)
     "link.underline_enabled",          # boolean convention differs per platform
-    "link.background_color",           # only Windows HyperlinkButton has a value
-    "link.hover_background",           # only Windows SubtleFillColorSecondary
+    "link.background_color",           # inline links have none, WinUI's inline Hyperlink too (§2.28)
+    "link.hover_background",           # only WinUI's HyperlinkButton has one; inline links none (§2.28)
     "scrollbar.overlay_mode",          # boolean: macOS/GNOME overlay, Win/KDE persistent
     "dialog.button_order",             # enum: macOS/GNOME trailing, Win/KDE leading
     "icon_set",                        # OS reader detects or TOML specifies (on Theme)
@@ -413,6 +412,9 @@ fields = [
     "expander.arrow_gap",              # macOS documents no disclosure geometry (§2.27)
     "expander.content_indent",         # macOS documents no disclosure geometry (§2.27)
     "expander.frame_enabled",          # boolean: KDE unframed, GNOME/Windows framed (§2.27)
+    "tooltip.show_delay",              # milliseconds: macOS documents no delay (§2.7)
+    "dialog.entrance",                 # enum: Windows/GNOME/Material scale_fade, KDE fade_rise (§2.22)
+    "list.header_height",              # KDE content-sized, WinUI has no column header (§2.15)
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
@@ -422,9 +424,10 @@ fields = [
 # ─── Wrong safety nets ────────────────────────────────────────────────────
 #
 # Fields where resolve() currently inherits (via [uniform] or
-# [font_inheritance] above), but the inheritance is known to produce
-# wrong results. The preset MUST provide the actual value. These are
-# listed in the inheritance doc as "cannot be universally derived."
+# [font_inheritance] above), or once did (list.alternate_row_background),
+# but the inheritance is known to produce wrong results. The preset MUST
+# provide the actual value. These are listed in the inheritance doc as
+# "cannot be universally derived."
 
 [wrong_safety_nets]
 
@@ -486,7 +489,7 @@ why_wrong     = "Win COLOR_MENUTEXT and GNOME popover.menu fg differ from defaul
 
 [wrong_safety_nets."sidebar.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
-why_wrong     = "KDE Complementary group and GNOME .sidebar fg are distinct"
+why_wrong     = "GNOME .sidebar fg and Material's drawer label are distinct; KDE's sidebar colour set is open (platform-facts.md §2.12)"
 
 [wrong_safety_nets."list.item_font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
@@ -512,7 +515,7 @@ why_wrong     = "All platforms have distinct thumb APIs; macOS/GNOME thumb is wh
 #
 # These are NOT real inheritance rules — they fabricate values out of thin air
 # when a field is None. Documented in todo_v0.5.5.md as bugs to remove.
-# All 16 presets already provide these values, so the safety nets are dead code.
+# All 17 presets already provide these values, so the safety nets are dead code.
 
 [hardcoded_safety_nets]
 "defaults.line_height"         = { value = "1.2", status = "dead_code" }

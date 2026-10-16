@@ -58,7 +58,7 @@ fn resolve_text_scale_entry(
 /// left). On GNOME, macOS, and iOS the convention is trailing-affirmative.
 /// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
 /// and modern WinUI 3 ContentDialog — see
-/// `docs/platform-facts.md:1494, 1513-1520, 1835-1836`.
+/// `docs/platform-facts.md:1496, 1516-1523, 1838-1839`.
 pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
@@ -245,12 +245,14 @@ impl ThemeMode {
         self.combo_box.resolve_font_from_defaults(d); // font
         self.segmented_control.resolve_font_from_defaults(d); // font
         self.expander.resolve_font_from_defaults(d); // font
+        let link_color_stated = self.link.font.as_ref().is_some_and(|f| f.color.is_some());
         self.link.resolve_font_from_defaults(d); // font
 
         // Exception: link.font.color inherits from defaults.link_color, NOT
         // defaults.font.color. This MUST run AFTER the generic
-        // resolve_font_from_defaults call above, which populates
-        // link.font.color from defaults.font.color; we overwrite it here.
+        // resolve_font_from_defaults call above, which fills a None
+        // link.font.color from defaults.font.color; we replace that fill
+        // here, and keep a link.font.color the theme stated.
         //
         // OUT of G6 codegen scope per docs/archive/v0.5.7_gaps.md §G6: the
         // override TARGET (a nested sub-field inside an Option FontSpec)
@@ -258,7 +260,7 @@ impl ThemeMode {
         // grammar which names the whole font field. Staying hand-written
         // keeps the rule visible to the `uniform_rules_all_accounted_for`
         // drift test.
-        if let Some(ref mut font) = self.link.font {
+        if !link_color_stated && let Some(ref mut font) = self.link.font {
             font.color = self.defaults.link_color;
         }
     }
@@ -565,8 +567,9 @@ mod tests {
     // --- Regression guard: list.alternate_row_background NOT derived ---
     //
     // The rule `list.alternate_row_background <- list.background_color` was
-    // deprecated (see docs/inheritance-rules.toml [wrong_safety_nets] line
-    // 394-396; `why_wrong = "Alternate rows are always a tinted variant"`).
+    // deprecated (see docs/inheritance-rules.toml
+    // `[wrong_safety_nets."list.alternate_row_background"]`;
+    // `why_wrong = "Alternate rows are always a tinted variant"`).
     // Post-G6 it must NOT be re-introduced into any inheritance category.
     // Presets provide this field explicitly; no resolver populates it.
 
@@ -648,161 +651,143 @@ mod tests {
         );
     }
 
-    // --- [uniform] bidirectional ---
+    // --- [uniform] rules and their sources ---
     //
-    // The [uniform] section contains rules implemented across multiple phases:
-    //   - proc-macro-generated rules (via #[theme(inherit_from = "...")]) — Phase 3
-    //   - widget-to-widget rules — Phase 4
-    //   - partial border rules (sidebar/status_bar) — Phase 3
-    //   - font color override (link.font.color) — Phase 3
-    //   - safety-net-adjacent (scrollbar.thumb_*) — Phase 3
+    // The [uniform] section contains rules implemented across multiple phases.
+    // Every rule's key and source are compared against the implementation:
+    //   - proc-macro-generated rules (via #[theme(inherit_from = "...")]) — Phase 3:
+    //     against the UniformInheritanceInfo registry
+    //   - partial border rules (sidebar/status_bar) — Phase 3: against the
+    //     BorderInheritanceInfo registry's `partial` rows
+    //   - widget-to-widget rules — Phase 4, and the font color override
+    //     (link.font.color) — Phase 3: hand-written, so listed below
 
     #[test]
     fn uniform_rules_all_accounted_for() {
+        use std::collections::BTreeMap;
+
         let table = load_rules_toml();
         let section = table
             .get("uniform")
             .and_then(|v| v.as_table())
             .expect("[uniform] section exists");
 
-        let toml_keys: Vec<String> = section.keys().cloned().collect();
+        let toml_rules: BTreeMap<String, String> = section
+            .iter()
+            .map(|(key, source)| {
+                let source = source.as_str().expect("[uniform] sources are strings");
+                (key.clone(), source.to_string())
+            })
+            .collect();
 
-        // Every [uniform] rule must appear in exactly one of these implementation categories.
-        // Each rule is listed under its implementation method in inheritance.rs.
+        // Every [uniform] rule must appear in exactly one of these categories.
+        let mut implemented: Vec<(String, String)> = Vec::new();
 
-        // Category 1: proc-macro generated via #[theme(inherit_from = "defaults.*")]
-        // These are implemented by resolve_from_defaults() on each widget struct.
-        let proc_macro_rules: &[&str] = &[
-            // window (§2.2)
-            "window.background_color",
-            "window.title_bar_background",
-            // button (§2.3)
-            "button.background_color",
-            "button.primary_background",
-            "button.primary_text_color",
-            "button.disabled_opacity",
-            "button.hover_background",
-            "button.disabled_text_color",
-            // input (§2.4)
-            "input.background_color",
-            "input.placeholder_color",
-            "input.selection_background",
-            "input.selection_text_color",
-            "input.disabled_opacity",
-            "input.disabled_text_color",
-            // checkbox (§2.5)
-            "checkbox.background_color",
-            "checkbox.checked_background",
-            "checkbox.indicator_color",
-            "checkbox.disabled_opacity",
-            "checkbox.disabled_text_color",
-            // menu (§2.6)
-            "menu.background_color",
-            "menu.separator_color",
-            "menu.icon_size",
-            "menu.hover_background",
-            "menu.hover_text_color",
-            "menu.disabled_text_color",
-            // tooltip (§2.7)
-            "tooltip.background_color",
-            // scrollbar (§2.8)
-            "scrollbar.thumb_color",
-            "scrollbar.thumb_hover_color",
-            // slider (§2.9)
-            "slider.fill_color",
-            "slider.track_color",
-            "slider.thumb_color",
-            "slider.disabled_opacity",
-            // progress_bar (§2.10)
-            "progress_bar.fill_color",
-            "progress_bar.track_color",
-            // tab (§2.11)
-            "tab.background_color",
-            "tab.active_background",
-            "tab.active_text_color",
-            "tab.bar_background",
-            // sidebar (§2.12)
-            "sidebar.background_color",
-            "sidebar.selection_background",
-            "sidebar.selection_text_color",
-            "sidebar.hover_background",
-            // toolbar (§2.13)
-            "toolbar.background_color",
-            "toolbar.icon_size",
-            // status_bar (§2.14)
-            "status_bar.background_color",
-            // list (§2.15)
-            "list.selection_background",
-            "list.selection_text_color",
-            "list.header_background",
-            "list.grid_color",
-            "list.hover_background",
-            "list.disabled_text_color",
-            // switch (§2.21)
-            "switch.checked_background",
-            "switch.thumb_background",
-            "switch.disabled_opacity",
-            // combo_box (§2.24)
-            "combo_box.background_color",
-            "combo_box.disabled_opacity",
-            "combo_box.disabled_text_color",
-            // segmented_control (§2.25)
-            "segmented_control.background_color",
-            "segmented_control.active_background",
-            "segmented_control.active_text_color",
-            "segmented_control.disabled_opacity",
-            // card (§2.26)
-            "card.background_color",
-            // splitter (§2.17)
-            "splitter.divider_color",
-            // separator (§2.18)
-            "separator.line_color",
-            "separator.line_width",
-            // link (§2.28)
-            "link.visited_text_color",
-            "link.disabled_text_color",
+        // Category 1: proc-macro generated via #[theme(inherit_from = "defaults.*")],
+        // implemented by resolve_from_defaults() on each widget struct.
+        let macro_rules: Vec<(String, String)> =
+            inventory::iter::<crate::resolve::UniformInheritanceInfo>()
+                .map(|i| {
+                    (
+                        format!("{}.{}", i.widget_name, i.field),
+                        i.inherit_from.to_string(),
+                    )
+                })
+                .collect();
+        assert!(
+            macro_rules.len() >= 67,
+            "Expected >=67 inherit_from rows in UniformInheritanceInfo, got {}. \
+             Silent-green guard: the proc-macro may not be emitting inventory::submit!.",
+            macro_rules.len()
+        );
+        implemented.extend(macro_rules);
+
+        // Category 2: partial border rules (resolve_border_inheritance, Phase 3),
+        // the color + line_width that gen_border_inherit's `partial` kind fills.
+        let partial: Vec<&str> = inventory::iter::<crate::resolve::BorderInheritanceInfo>()
+            .filter(|i| i.kind == "partial")
+            .map(|i| i.widget_name)
+            .collect();
+        assert!(
+            !partial.is_empty(),
+            "no `partial` rows in BorderInheritanceInfo"
+        );
+        for widget in partial {
+            for sub in ["color", "line_width"] {
+                implemented.push((
+                    format!("{widget}.border.{sub}"),
+                    format!("defaults.border.{sub}"),
+                ));
+            }
+        }
+
+        // Category 3: hand-written rules — widget-to-widget chains
+        // (resolve_widget_to_widget, Phase 4) and the link.font.color override
+        // (resolve_font_inheritance, Phase 3).
+        let hand_written_rules: &[(&str, &str)] = &[
+            (
+                "window.inactive_title_bar_background",
+                "window.title_bar_background",
+            ),
+            (
+                "window.inactive_title_bar_text_color",
+                "window.title_bar_font.color",
+            ),
+            ("text_area.border.color", "input.border.color"),
+            (
+                "text_area.border.corner_radius",
+                "input.border.corner_radius",
+            ),
+            ("text_area.border.line_width", "input.border.line_width"),
+            (
+                "text_area.border.shadow_enabled",
+                "input.border.shadow_enabled",
+            ),
+            ("button.hover_text_color", "button.font.color"),
+            ("button.active_text_color", "button.font.color"),
+            ("tab.hover_text_color", "tab.font.color"),
+            ("list.hover_text_color", "list.item_font.color"),
+            ("splitter.hover_color", "splitter.divider_color"),
+            ("link.hover_text_color", "link.font.color"),
+            ("link.active_text_color", "link.font.color"),
+            ("link.font.color", "defaults.link_color"),
         ];
 
-        // Category 2: widget-to-widget chains (resolve_widget_to_widget, Phase 4)
-        let widget_to_widget_rules: &[&str] = &[
-            "window.inactive_title_bar_background",
-            "window.inactive_title_bar_text_color",
-            "text_area.border.color",
-            "text_area.border.corner_radius",
-            "text_area.border.line_width",
-            "text_area.border.shadow_enabled",
-            "button.hover_text_color",
-            "button.active_text_color",
-            "tab.hover_text_color",
-            "list.hover_text_color",
-            "splitter.hover_color",
-            "link.hover_text_color",
-            "link.active_text_color",
-        ];
+        for &(target, source) in hand_written_rules {
+            implemented.push((target.to_string(), source.to_string()));
+        }
 
-        // Category 3: partial border rules (resolve_border_inheritance, Phase 3)
-        let partial_border_rules: &[&str] = &[
-            "sidebar.border.color",
-            "sidebar.border.line_width",
-            "status_bar.border.color",
-            "status_bar.border.line_width",
-        ];
+        let mut drift: Vec<String> = Vec::new();
+        let mut code_rules: BTreeMap<String, String> = BTreeMap::new();
+        for (target, source) in implemented {
+            if code_rules.insert(target.clone(), source).is_some() {
+                drift.push(format!("'{target}' is implemented in two categories"));
+            }
+        }
+        for (target, source) in &toml_rules {
+            match code_rules.get(target) {
+                None => drift.push(format!(
+                    "TOML has '{target}' = '{source}' but no implementation category does"
+                )),
+                Some(code) if code != source => drift.push(format!(
+                    "'{target}': TOML says '{source}', the implementation '{code}'"
+                )),
+                Some(_) => {}
+            }
+        }
+        for (target, source) in &code_rules {
+            if !toml_rules.contains_key(target) {
+                drift.push(format!(
+                    "implementation has '{target}' = '{source}' but the TOML does not"
+                ));
+            }
+        }
 
-        // Category 4: font color override (resolve_font_inheritance, Phase 3)
-        let font_override_rules: &[&str] = &["link.font.color"];
-
-        // Category 5: widget-to-widget via list (resolve_widget_to_widget, Phase 4)
-        let list_alternate_rule: &[&str] = &["list.alternate_row_background"];
-
-        // Combine all categories
-        let mut all_implemented: Vec<&str> = Vec::new();
-        all_implemented.extend_from_slice(proc_macro_rules);
-        all_implemented.extend_from_slice(widget_to_widget_rules);
-        all_implemented.extend_from_slice(partial_border_rules);
-        all_implemented.extend_from_slice(font_override_rules);
-        all_implemented.extend_from_slice(list_alternate_rule);
-
-        assert_bidirectional("uniform", &toml_keys, &all_implemented);
+        assert!(
+            drift.is_empty(),
+            "[uniform] in docs/inheritance-rules.toml diverges from the implementation:\n{}",
+            drift.join("\n")
+        );
     }
 
     // --- [no_inheritance] negative check ---

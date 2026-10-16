@@ -2,7 +2,8 @@
 //! `AtomLayout`, and the companion crate's segmented control and switch.
 
 use egui::Button;
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::IconRole;
+use native_theme::theme::IconSet;
 use native_theme_egui::icons::{IconContext, icon_size};
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
 use native_theme_egui_widgets::segmented_control::SegmentedControl;

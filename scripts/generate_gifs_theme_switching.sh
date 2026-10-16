@@ -33,7 +33,7 @@ DELAY=3
 # Icon theme must match the UI theme.
 THEMES=(
     "kde-breeze:dark:freedesktop:breeze-dark"
-    "material:light:material:"
+    "material-3:light:material:"
     "catppuccin-mocha:dark:lucide:"
     "kde-breeze:light:freedesktop:breeze"
 )

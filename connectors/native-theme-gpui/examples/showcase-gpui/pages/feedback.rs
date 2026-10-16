@@ -203,9 +203,28 @@ impl Showcase {
                                 .child(demo::label(ui, cx, label_id, label))
                                 .child(demo::label(ui, cx, value_id, format!("{value}%"))),
                         )
-                        .child(demo::progress(ui, cx, id, label, value))
+                        .child(demo::progress(ui, cx, id, label, Some(value)))
                 },
             )))
+            // Indeterminate: the fill sweeps the track.
+            .child(
+                v_flex()
+                    .gap_3()
+                    .w(px(360.0))
+                    .child(demo::label(
+                        ui,
+                        cx,
+                        "feedback-progress-loading-label",
+                        "Loading",
+                    ))
+                    .child(demo::progress(
+                        ui,
+                        cx,
+                        "feedback-progress-loading",
+                        "Loading",
+                        None,
+                    )),
+            )
             .child(demo::heading(
                 ui,
                 cx,

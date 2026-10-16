@@ -1,18 +1,14 @@
 // Generation of check_ranges() on the Resolved struct.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::Ident;
 
-use crate::parse::{FieldCategory, FieldMeta, LayerMeta, RangeCheck};
+use crate::parse::{FieldCategory, FieldMeta, RangeCheck};
+use crate::util::is_type;
 
 /// Generate `check_ranges()` impl block on the Resolved struct.
-pub(crate) fn gen_ranges(opt_name: &Ident, fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
-    let resolved_name = layer
-        .resolved_name
-        .clone()
-        .unwrap_or_else(|| format_ident!("Resolved{}", opt_name));
-
+pub(crate) fn gen_ranges(resolved_name: &Ident, fields: &[FieldMeta]) -> TokenStream {
     let check_stmts = gen_check_stmts(fields);
 
     quote! {
@@ -33,14 +29,15 @@ pub(crate) fn gen_ranges(opt_name: &Ident, fields: &[FieldMeta], layer: &LayerMe
 
 /// Generate range check statements from field metadata.
 ///
-/// All generated code defers `format!` to error branches only -- the happy path
-/// (all values in range) allocates zero path strings.
+/// Paths name each field's TOML key. All generated code defers `format!` to
+/// error branches only -- the happy path (all values in range) allocates zero
+/// path strings.
 fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
     let mut stmts = Vec::new();
 
     for f in fields {
         let ident = &f.ident;
-        let field_name = ident.to_string();
+        let field_name = f.toml_key();
 
         // Emit explicit range check if present. A soft-option field stays
         // `Option<T>` on the resolved struct, so it is checked only where it
@@ -111,7 +108,10 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
 
         // Emit min_max_pair check if present
         if let Some(ref pair_ident) = f.min_max_pair {
-            let pair_name = pair_ident.to_string();
+            let pair_name = fields
+                .iter()
+                .find(|g| g.ident == *pair_ident)
+                .map_or_else(|| pair_ident.to_string(), FieldMeta::toml_key);
             stmts.push(quote! {
                 crate::resolve::validate_helpers::check_min_max(
                     self.#ident,
@@ -124,15 +124,15 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
             });
         }
 
-        // Auto-emit the padding check for nested ResolvedWidgetBorder fields:
-        // every side the theme states must be >= 0; an unstated side is not
-        // checked.
+        // Auto-emit the border check for nested ResolvedWidgetBorder fields:
+        // corner radius, line width and every padding side the theme states
+        // must be >= 0; an unstated side is not checked.
         if let FieldCategory::Nested { resolved_ty } = &f.category
-            && is_resolved_widget_border(resolved_ty)
+            && is_type(resolved_ty, "ResolvedWidgetBorder")
         {
             stmts.push(quote! {
-                crate::resolve::validate_helpers::check_padding(
-                    &self.#ident.padding,
+                crate::resolve::validate_helpers::check_widget_border(
+                    &self.#ident,
                     prefix,
                     #field_name,
                     errors,
@@ -140,55 +140,21 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
             });
         }
 
-        // Auto-emit font range checks for nested ResolvedFontSpec fields.
-        // Inlines the check logic so that format! only runs in error branches,
-        // avoiding sub-prefix allocation on the happy path.
+        // Auto-emit the font check for nested ResolvedFontSpec fields: size
+        // > 0, weight 100..=900.
         if let FieldCategory::Nested { resolved_ty } = &f.category
-            && is_resolved_font_spec(resolved_ty)
+            && is_type(resolved_ty, "ResolvedFontSpec")
         {
             stmts.push(quote! {
-                {
-                    let font = &self.#ident;
-                    if !font.size.is_finite() || font.size <= 0.0 {
-                        errors.push(crate::error::RangeViolation {
-                            path: format!("{prefix}.{}.size", #field_name),
-                            value: font.size as f64,
-                            min: Some(f64::MIN_POSITIVE),
-                            max: None,
-                        });
-                    }
-                    if font.weight < 100 || font.weight > 900 {
-                        errors.push(crate::error::RangeViolation {
-                            path: format!("{prefix}.{}.weight", #field_name),
-                            value: font.weight as f64,
-                            min: Some(100.0),
-                            max: Some(900.0),
-                        });
-                    }
-                }
+                crate::resolve::validate_helpers::check_font(
+                    &self.#ident,
+                    prefix,
+                    #field_name,
+                    errors,
+                );
             });
         }
     }
 
     quote! { #(#stmts)* }
-}
-
-/// Check if a type path refers to ResolvedFontSpec.
-fn is_resolved_font_spec(ty: &syn::Type) -> bool {
-    if let syn::Type::Path(type_path) = ty
-        && let Some(seg) = type_path.path.segments.last()
-    {
-        return seg.ident == "ResolvedFontSpec";
-    }
-    false
-}
-
-/// Check if a type path refers to ResolvedWidgetBorder.
-fn is_resolved_widget_border(ty: &syn::Type) -> bool {
-    if let syn::Type::Path(type_path) = ty
-        && let Some(seg) = type_path.path.segments.last()
-    {
-        return seg.ident == "ResolvedWidgetBorder";
-    }
-    false
 }

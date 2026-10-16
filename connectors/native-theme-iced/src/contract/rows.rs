@@ -113,6 +113,77 @@ pub(super) const ROWS: &[Row] = &[
     },
 ];
 
+/// Every colour accessor of the crate root and the native leaf it returns: the
+/// colours iced has no `Style` field for, which a consumer reads to draw with.
+pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
+    AccessorRow {
+        accessor: "crate::border_color",
+        native: |r| Some(to_color(r.defaults.border.color)),
+        get: |r| Some(crate::border_color(r)),
+    },
+    AccessorRow {
+        // iced 0.14 draws no focus ring: the consumer draws one.
+        accessor: "crate::focus_ring_color",
+        native: |r| Some(to_color(r.defaults.focus_ring_color)),
+        get: |r| Some(crate::focus_ring_color(r)),
+    },
+    AccessorRow {
+        // iced's one link colour of its own, `markdown::Style.link_color`,
+        // needs iced's `markdown` feature, which the connector does not
+        // enable; a link button takes `link.font.color`, which inherits this
+        // leaf (`docs/inheritance-rules.toml:286`). Ruling T12a C5.
+        accessor: "crate::link_color",
+        native: |r| Some(to_color(r.defaults.link_color)),
+        get: |r| Some(crate::link_color(r)),
+    },
+    AccessorRow {
+        // The disclosure arrow is the consumer's drawing: iced has no
+        // expander.
+        accessor: "crate::expander_arrow_color",
+        native: |r| {
+            Some(to_color(
+                r.expander.arrow_color.unwrap_or(r.expander.font.color),
+            ))
+        },
+        get: |r| Some(crate::expander_arrow_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::selection_background",
+        native: |r| Some(to_color(r.defaults.selection_background)),
+        get: |r| Some(crate::selection_background(r)),
+    },
+    AccessorRow {
+        // iced's palette has no info family.
+        accessor: "crate::info_color",
+        native: |r| Some(to_color(r.defaults.info_color)),
+        get: |r| Some(crate::info_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::info_text_color",
+        native: |r| Some(to_color(r.defaults.info_text_color)),
+        get: |r| Some(crate::info_text_color(r)),
+    },
+    AccessorRow {
+        accessor: "crate::warning_text_color",
+        native: |r| Some(to_color(r.defaults.warning_text_color)),
+        get: |r| Some(crate::warning_text_color(r)),
+    },
+    #[cfg(feature = "widgets")]
+    AccessorRow {
+        // The line is drawn only where the theme states its colour, a
+        // positive width and a side.
+        accessor: "crate::tab_indicator_line",
+        native: |r| {
+            let t = &r.tab;
+            let drawn = t.active_indicator_side.is_some()
+                && t.active_indicator_width
+                    .is_some_and(|w| w.is_finite() && w > 0.0);
+            t.active_indicator_color.filter(|_| drawn).map(to_color)
+        },
+        get: |r| crate::tab_indicator_strip(&r.tab).map(|(color, _, _)| color),
+    },
+];
+
 /// Every `button::Status`, as values rather than names.
 ///
 /// Each function declares its own such list, of its own widget's `Status`. A
@@ -250,16 +321,100 @@ pub(super) const BUTTON_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow 
     get: |t, r, s| styles::button(r)(t, s).border,
 }];
 
+/// Every state of a toggle button: every button status, off and on.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_STATUSES: &[(bool, button::Status)] = &[
+    (false, button::Status::Active),
+    (false, button::Status::Hovered),
+    (false, button::Status::Pressed),
+    (false, button::Status::Disabled),
+    (true, button::Status::Active),
+    (true, button::Status::Hovered),
+    (true, button::Status::Pressed),
+    (true, button::Status::Disabled),
+];
+
+/// The fill and the label the native fields give a toggle button, computed
+/// from the resolved theme alone.
+///
+/// Off, the plain button's. On, `checked_background` and `checked_text_color`
+/// in every enabled status -- the model states no hovered or pressed checked
+/// toggle -- each falling back to the pressed pair where unstated
+/// (`docs/inheritance-rules.toml`, "the pressed pair shows a checked toggle").
+/// Disabled, the plain disabled pair where the platform states a disabled
+/// fill, the checked pair where it states none, faded either way.
+#[cfg(feature = "widgets")]
+pub(super) fn native_button_toggle(
+    r: &ResolvedTheme,
+    (checked, status): (bool, button::Status),
+) -> (Color, Color) {
+    if !checked {
+        return (
+            native_button_fill(r, status),
+            native_button_label(r, status),
+        );
+    }
+    let b = &r.button;
+    let fill = b
+        .checked_background
+        .map_or_else(|| native_button_fill(r, button::Status::Pressed), to_color);
+    let label = to_color(b.checked_text_color.unwrap_or(b.active_text_color));
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => (fill, label),
+        button::Status::Disabled => {
+            let (fill, label) = match b.disabled_background {
+                Some(background) => (to_color(background), to_color(b.disabled_text_color)),
+                None => (fill, label),
+            };
+            (
+                dim(fill, b.disabled_opacity),
+                dim(label, b.disabled_opacity),
+            )
+        }
+    }
+}
+
+/// Every color field of `styles::button_toggle`.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_ROWS: &[StyleRow<(bool, button::Status)>] = &[
+    StyleRow {
+        field: "styles::button_toggle.background",
+        statuses: BUTTON_TOGGLE_STATUSES,
+        native: |r, s| native_button_toggle(r, s).0,
+        get: |t, r, (checked, status)| {
+            flat(styles::button_toggle(r, checked)(t, status).background)
+        },
+    },
+    StyleRow {
+        field: "styles::button_toggle.text_color",
+        statuses: BUTTON_TOGGLE_STATUSES,
+        native: |r, s| native_button_toggle(r, s).1,
+        get: |t, r, (checked, status)| Ok(styles::button_toggle(r, checked)(t, status).text_color),
+    },
+];
+
+/// A toggle button wears the plain button's border, on or off.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_TOGGLE_BORDER_ROWS: &[BorderRow<(bool, button::Status)>] = &[BorderRow {
+    field: "styles::button_toggle",
+    statuses: BUTTON_TOGGLE_STATUSES,
+    native: |r, (_, status)| native_button_border(r, status),
+    get: |t, r, (checked, status)| styles::button_toggle(r, checked)(t, status).border,
+}];
+
 /// The statuses of a class button whose fill and label the function itself
 /// decides, and so the only ones its rows and its contrast pair cover.
 #[cfg(feature = "widgets")]
 pub(super) const CLASS_BUTTON_NATIVE_STATUSES: &[button::Status] =
     &[button::Status::Active, button::Status::Disabled];
 
-/// The statuses a class button takes whole from iced's own class, because the
-/// model states no hovered and no pressed variant of an accent or a status
-/// color (spec section 3.3). Asserted by
-/// `a_class_button_takes_its_hovered_and_pressed_states_from_iced`.
+/// The statuses a class button takes from iced's derivation, because the
+/// model states no hovered and no pressed variant of a primary or a status
+/// color (spec section 3.3): a status button's are iced's own class, asserted
+/// by `a_class_button_takes_its_hovered_and_pressed_states_from_iced`; the
+/// primary button's are iced's derivation from `button.primary_background`,
+/// asserted by
+/// `a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill`.
 #[cfg(feature = "widgets")]
 pub(super) const CLASS_BUTTON_ICED_STATUSES: &[button::Status] =
     &[button::Status::Hovered, button::Status::Pressed];
@@ -268,9 +423,10 @@ pub(super) const CLASS_BUTTON_ICED_STATUSES: &[button::Status] =
 ///
 /// The match has no catch-all, but only the two statuses of
 /// `CLASS_BUTTON_NATIVE_STATUSES` ever reach a row: the other two are iced's
-/// on both sides. Their arm still has to name a color, and the idle one is the
-/// least surprising -- if a status is ever moved between the two lists, the row
-/// compares it against that and fails rather than passing quietly.
+/// derivation, asserted outside the rows. Their arm still has to name a color,
+/// and the idle one is the least surprising -- if a status is ever moved
+/// between the two lists, the row compares it against that and fails rather
+/// than passing quietly.
 #[cfg(feature = "widgets")]
 pub(super) fn native_class_button_fill(
     r: &ResolvedTheme,
@@ -390,19 +546,21 @@ fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
     }
 }
 
-/// The border color the native fields give a text input, by state.
+/// The border color the native fields give a text field framed by `rest`,
+/// by state: `input.border.color` for a text input, `text_area.border.color`
+/// for a text editor.
 ///
 /// Both soft options copy the border's own color, the base-state value of
 /// spec section 3.2's table.
 #[cfg(feature = "widgets")]
-fn native_input_border(r: &ResolvedTheme, hovered: bool, focused: bool) -> Color {
+fn native_input_border(r: &ResolvedTheme, rest: Rgba, hovered: bool, focused: bool) -> Color {
     let i = &r.input;
     to_color(if focused {
-        i.focus_border_color.unwrap_or(i.border.color)
+        i.focus_border_color.unwrap_or(rest)
     } else if hovered {
-        i.hover_border_color.unwrap_or(i.border.color)
+        i.hover_border_color.unwrap_or(rest)
     } else {
-        i.border.color
+        rest
     })
 }
 
@@ -433,14 +591,15 @@ pub(super) fn native_text_input_fill(r: &ResolvedTheme, status: text_input::Stat
 
 #[cfg(feature = "widgets")]
 fn native_text_input_border(r: &ResolvedTheme, status: text_input::Status) -> Color {
+    let rest = r.input.border.color;
     match status {
-        text_input::Status::Active => native_input_border(r, false, false),
+        text_input::Status::Active => native_input_border(r, rest, false, false),
         text_input::Status::Disabled => dim(
-            native_input_border(r, false, false),
+            native_input_border(r, rest, false, false),
             r.input.disabled_opacity,
         ),
-        text_input::Status::Hovered => native_input_border(r, true, false),
-        text_input::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+        text_input::Status::Hovered => native_input_border(r, rest, true, false),
+        text_input::Status::Focused { is_hovered: _ } => native_input_border(r, rest, false, true),
     }
 }
 
@@ -523,14 +682,15 @@ pub(super) fn native_text_editor_fill(r: &ResolvedTheme, status: text_editor::St
 
 #[cfg(feature = "widgets")]
 fn native_text_editor_border(r: &ResolvedTheme, status: text_editor::Status) -> Color {
+    let rest = r.text_area.border.color;
     match status {
-        text_editor::Status::Active => native_input_border(r, false, false),
+        text_editor::Status::Active => native_input_border(r, rest, false, false),
         text_editor::Status::Disabled => dim(
-            native_input_border(r, false, false),
+            native_input_border(r, rest, false, false),
             r.input.disabled_opacity,
         ),
-        text_editor::Status::Hovered => native_input_border(r, true, false),
-        text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+        text_editor::Status::Hovered => native_input_border(r, rest, true, false),
+        text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, rest, false, true),
     }
 }
 
@@ -574,15 +734,16 @@ pub(super) const TEXT_EDITOR_ROWS: &[StyleRow<text_editor::Status>] = &[
     },
 ];
 
-/// The same border, through the editor's own `Status`.
+/// The editor's border is the text area's own, `text_area.border`, through the
+/// editor's own `Status`; its hovered and focused colours are the input's.
 #[cfg(feature = "widgets")]
 pub(super) const TEXT_EDITOR_BORDER_ROWS: &[BorderRow<text_editor::Status>] = &[BorderRow {
     field: "styles::text_editor",
     statuses: TEXT_EDITOR_STATUSES,
     native: |r, s| NativeBorder {
         color: native_text_editor_border(r, s),
-        width: r.input.border.line_width,
-        radius: r.input.border.corner_radius,
+        width: r.text_area.border.line_width,
+        radius: r.text_area.border.corner_radius,
     },
     get: |t, r, s| styles::text_editor(r)(t, s).border,
 }];
@@ -623,7 +784,7 @@ pub(super) const CHECKBOX_UNCHECKED_STATUSES: &[checkbox::Status] = &[
 /// The fill the native fields give a checkbox at rest, by whether it is
 /// checked. `unchecked_background` is a soft option copying the checkbox's own
 /// fill, and it is an idle fill, so it is emitted as given even where the
-/// platform states it translucent -- windows-11 does, at `#0000000a`.
+/// platform states it translucent -- windows-11 does, at `#00000006`.
 #[cfg(feature = "widgets")]
 fn native_checkbox_idle(r: &ResolvedTheme, is_checked: bool) -> Color {
     let c = &r.checkbox;
@@ -644,10 +805,12 @@ pub(super) fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) 
         // states no hover for a checked one, and a state the platform does
         // not state has no distinct appearance.
         checkbox::Status::Hovered { is_checked: true } => native_checkbox_idle(r, true),
-        checkbox::Status::Hovered { is_checked: false } => over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, false),
-        ),
+        // Unset, the hover is the unchecked box at rest.
+        checkbox::Status::Hovered { is_checked: false } => {
+            let idle = native_checkbox_idle(r, false);
+            c.hover_background
+                .map_or(idle, |hover| over(to_color(hover), idle))
+        }
         // One disabled fill for both, replacing the idle one, as given; with
         // none stated the platform dims by opacity alone and the box is its
         // enabled self. Faded as one either way.
@@ -818,10 +981,11 @@ pub(super) fn native_radio_fill(r: &ResolvedTheme, status: radio::Status) -> Col
     match status {
         radio::Status::Active { is_selected } => native_checkbox_idle(r, is_selected),
         radio::Status::Hovered { is_selected: true } => native_checkbox_idle(r, true),
-        radio::Status::Hovered { is_selected: false } => over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, false),
-        ),
+        radio::Status::Hovered { is_selected: false } => {
+            let idle = native_checkbox_idle(r, false);
+            c.hover_background
+                .map_or(idle, |hover| over(to_color(hover), idle))
+        }
     }
 }
 
@@ -901,17 +1065,17 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
     let s = &r.switch;
     match status {
         toggler::Status::Active { is_toggled } => native_toggler_idle(r, is_toggled),
-        // Each hover layer copies the track it covers when the platform
-        // states none, and is composited over it (C17).
-        toggler::Status::Hovered { is_toggled } => over(
-            to_color(if is_toggled {
-                s.hover_checked_background.unwrap_or(s.checked_background)
+        // Each hover layer is composited over the track it covers (C17);
+        // where the platform states none the track is as at rest.
+        toggler::Status::Hovered { is_toggled } => {
+            let idle = native_toggler_idle(r, is_toggled);
+            let hover = if is_toggled {
+                s.hover_checked_background
             } else {
                 s.hover_unchecked_background
-                    .unwrap_or(s.unchecked_background)
-            }),
-            native_toggler_idle(r, is_toggled),
-        ),
+            };
+            hover.map_or(idle, |hover| over(to_color(hover), idle))
+        }
         // A disabled track replaces the idle one, so it is as given, faded as
         // one with its thumb.
         toggler::Status::Disabled { is_toggled } => as_one(
@@ -1082,10 +1246,8 @@ pub(super) fn native_pick_list_fill(r: &ResolvedTheme, status: pick_list::Status
     let c = &r.combo_box;
     let idle = to_color(c.background_color);
     let hovered = || {
-        over(
-            to_color(c.hover_background.unwrap_or(c.background_color)),
-            idle,
-        )
+        c.hover_background
+            .map_or(idle, |hover| over(to_color(hover), idle))
     };
     match status {
         pick_list::Status::Active => idle,
@@ -1529,6 +1691,47 @@ pub(super) const RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
     get: |t, r, ()| Ok(styles::rule(r)(t).color),
 }];
 
+/// A pane grid has no `Status` (shape B): it picks the hovered or the picked
+/// line itself (`pane_grid.rs:949-956`).
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_STATUSES: &[()] = &[()];
+
+/// The two line colours of `styles::pane_grid`. A picked split is the hovered
+/// one: `SplitterTheme` states no dragged colour, and the dragged line is
+/// under the pointer.
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::pane_grid.hovered_split.color",
+        statuses: PANE_GRID_STATUSES,
+        native: |r, ()| to_color(r.splitter.hover_color),
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).hovered_split.color),
+    },
+    StyleRow {
+        field: "styles::pane_grid.picked_split.color",
+        statuses: PANE_GRID_STATUSES,
+        native: |r, ()| to_color(r.splitter.hover_color),
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).picked_split.color),
+    },
+];
+
+/// Both lines are `splitter.divider_width` wide.
+#[cfg(feature = "widgets")]
+pub(super) const PANE_GRID_SCALAR_ROWS: &[ScalarRow<()>] = &[
+    ScalarRow {
+        field: "styles::pane_grid.hovered_split.width",
+        statuses: PANE_GRID_STATUSES,
+        native: |_, r, ()| r.splitter.divider_width,
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).hovered_split.width),
+    },
+    ScalarRow {
+        field: "styles::pane_grid.picked_split.width",
+        statuses: PANE_GRID_STATUSES,
+        native: |_, r, ()| r.splitter.divider_width,
+        get: |t, r, ()| Ok(styles::pane_grid(r)(t).picked_split.width),
+    },
+];
+
 /// A tooltip has no `Status` (shape B).
 #[cfg(feature = "widgets")]
 pub(super) const TOOLTIP_STATUSES: &[()] = &[()];
@@ -1668,8 +1871,10 @@ pub(super) fn native_segment(
         let fill = to_color(s.active_background);
         (fill, fill, to_color(s.active_text_color))
     } else {
-        let layer = to_color(s.hover_background.unwrap_or(s.background_color));
-        (base, over(layer, base), to_color(s.font.color))
+        let hovered = s
+            .hover_background
+            .map_or(base, |hover| over(to_color(hover), base));
+        (base, hovered, to_color(s.font.color))
     };
     let fade = |c: Color| Color {
         a: c.a * s.disabled_opacity,
@@ -1788,6 +1993,18 @@ pub(super) fn native_expander_fill(r: &ResolvedTheme, status: button::Status) ->
     }
 }
 
+/// The label the native fields give an expander header in `status`:
+/// `expander.font.color`, faded by `defaults.disabled_opacity` when disabled,
+/// since `ExpanderTheme` states no `disabled_opacity` of its own.
+#[cfg(feature = "widgets")]
+pub(super) fn native_expander_label(r: &ResolvedTheme, status: button::Status) -> Color {
+    let label = to_color(r.expander.font.color);
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => label,
+        button::Status::Disabled => dim(label, r.defaults.disabled_opacity),
+    }
+}
+
 /// Every color field of `styles::expander`.
 #[cfg(feature = "widgets")]
 pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
@@ -1805,7 +2022,7 @@ pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
     StyleRow {
         field: "styles::expander.text_color",
         statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.expander.font.color),
+        native: native_expander_label,
         get: |t, r, s| Ok(styles::expander(r)(t, s).text_color),
     },
 ];
@@ -1814,12 +2031,48 @@ pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
 pub(super) const EXPANDER_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
     field: "styles::expander",
     statuses: BUTTON_STATUSES,
-    native: |r, _| NativeBorder {
-        color: to_color(r.expander.border.color),
-        width: r.expander.border.line_width,
-        radius: r.expander.border.corner_radius,
+    native: |r, s| {
+        let color = to_color(r.expander.border.color);
+        NativeBorder {
+            color: if s == button::Status::Disabled {
+                dim(color, r.defaults.disabled_opacity)
+            } else {
+                color
+            },
+            // Where the theme states the frame, framed or not, the header
+            // draws none: the frame is `styles::expander_frame`'s.
+            width: match r.expander.frame_enabled {
+                Some(_) => 0.0,
+                None => r.expander.border.line_width,
+            },
+            radius: r.expander.border.corner_radius,
+        }
     },
     get: |t, r, s| styles::expander(r)(t, s).border,
+}];
+
+/// An expander's frame has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_FRAME_STATUSES: &[()] = &[()];
+
+/// `styles::expander_frame` emits no color field the model states but its
+/// border's: the frame has no fill and no label of its own, both iced's
+/// `None` in `DERIVED`.
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_FRAME_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::expander_frame",
+    statuses: EXPANDER_FRAME_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.expander.border.color),
+        // Drawn only where the theme states one frame round header and body.
+        width: if r.expander.frame_enabled == Some(true) {
+            r.expander.border.line_width
+        } else {
+            0.0
+        },
+        radius: r.expander.border.corner_radius,
+    },
+    get: |t, r, ()| styles::expander_frame(r)(t).border,
 }];
 
 // ---- `styles::aw`: the six `iced_aw` widgets (section 3a) ----
@@ -2285,6 +2538,12 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(SCROLLABLE_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(PROGRESS_BAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(RULE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(PANE_GRID_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(
+        PANE_GRID_SCALAR_ROWS
+            .iter()
+            .map(|row| row.field.to_string()),
+    );
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(
@@ -2295,6 +2554,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(SEGMENT_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(SEGMENT_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(EXPANDER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_TOGGLE_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -2312,6 +2572,8 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
     out.extend(border_row_fields(SEGMENTED_CONTROL_BORDER_ROWS));
     out.extend(border_row_fields(EXPANDER_BORDER_ROWS));
+    out.extend(border_row_fields(EXPANDER_FRAME_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_TOGGLE_BORDER_ROWS));
     // `styles::aw`, gated on the feature that declares it: its rows, its
     // `check_*` calls, its walkers and its pairs all carry the same gate, so
     // the two directions of `Checked::covers` agree in every configuration.

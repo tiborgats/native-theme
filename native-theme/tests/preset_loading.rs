@@ -6,7 +6,9 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::theme::Theme;
+use native_theme::error::Error;
+use native_theme::resolve::ResolutionContext;
+use native_theme::theme::{ColorMode, Theme};
 
 #[test]
 fn all_presets_parse_without_error() {
@@ -116,8 +118,14 @@ fn all_presets_have_interactive_colors() {
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
+        // A preset may leave the selection to inherit the accent
+        // (docs/inheritance-rules.toml, defaults.selection_background).
         assert!(
-            light.defaults.selection_background.is_some(),
+            light
+                .defaults
+                .selection_background
+                .or(light.defaults.accent_color)
+                .is_some(),
             "preset '{name}' light missing selection"
         );
         assert!(
@@ -125,8 +133,13 @@ fn all_presets_have_interactive_colors() {
             "preset '{name}' light missing link"
         );
 
+        // A preset may leave the selection to inherit the accent
+        // (docs/inheritance-rules.toml, defaults.selection_background).
         assert!(
-            dark.defaults.selection_background.is_some(),
+            dark.defaults
+                .selection_background
+                .or(dark.defaults.accent_color)
+                .is_some(),
             "preset '{name}' dark missing selection"
         );
         assert!(
@@ -272,12 +285,58 @@ fn all_presets_round_trip_toml() {
     }
 }
 
+/// ios-13's caption states `size_pt` and `line_height_pt`; an overlay
+/// stating `size_px` leaves a merged entry in mixed units, which `to_toml`
+/// writes as `size_px` with `line_height_pt` and `from_toml` must read back.
 #[test]
-fn list_presets_returns_sixteen_entries() {
+fn merged_mixed_unit_text_scale_round_trips_toml() {
+    let mut theme = Theme::preset("ios-13").unwrap();
+    let overlay = Theme::from_toml("[light.text_scale.caption]\nsize_px = 12.0\n").unwrap();
+    theme.merge(&overlay);
+
+    let toml_str = theme.to_toml().unwrap();
+    let reparsed = Theme::from_toml(&toml_str)
+        .unwrap_or_else(|e| panic!("merged theme round-trip from_toml failed: {e}"));
+    assert_eq!(theme, reparsed);
+}
+
+/// A caption stating `size_pt` with `line_height_px` resolves each value in
+/// its own unit: at 96 DPI, 12 pt is 16 px and the 20 px line height stays 20.
+#[test]
+fn mixed_unit_text_scale_resolves_each_value_in_its_own_unit() {
+    let mut theme = Theme::preset("ios-13").unwrap();
+    let overlay = Theme::from_toml("[light.text_scale.caption]\nline_height_px = 20.0\n").unwrap();
+    theme.merge(&overlay);
+    let theme = Theme::from_toml(&theme.to_toml().unwrap()).unwrap();
+
+    let ctx = ResolutionContext {
+        font_dpi: 96.0,
+        ..ResolutionContext::for_tests()
+    };
+    let caption = theme
+        .resolve_with(ColorMode::Light, &ctx)
+        .unwrap()
+        .variant
+        .text_scale
+        .caption;
+    assert!(
+        (caption.size - 16.0).abs() < 0.01,
+        "12 pt at 96 DPI should be 16 px, got {}",
+        caption.size
+    );
+    assert!(
+        (caption.line_height - 20.0).abs() < 0.01,
+        "line_height_px = 20.0 should stay 20 px, got {}",
+        caption.line_height
+    );
+}
+
+#[test]
+fn list_presets_returns_seventeen_entries() {
     assert_eq!(
         Theme::list_presets().len(),
-        16,
-        "expected 16 presets, got {}",
+        17,
+        "expected 17 presets, got {}",
         Theme::list_presets().len()
     );
 }
@@ -323,11 +382,15 @@ fn preset_names_are_correct() {
     assert!(has_key("adwaita"), "list_presets() missing 'adwaita'");
     assert!(has_key("windows-11"), "list_presets() missing 'windows-11'");
     assert!(
-        has_key("macos-sonoma"),
-        "list_presets() missing 'macos-sonoma'"
+        has_key("macos-monterey"),
+        "list_presets() missing 'macos-monterey'"
     );
-    assert!(has_key("material"), "list_presets() missing 'material'");
-    assert!(has_key("ios"), "list_presets() missing 'ios'");
+    assert!(
+        has_key("macos-tahoe"),
+        "list_presets() missing 'macos-tahoe'"
+    );
+    assert!(has_key("material-3"), "list_presets() missing 'material-3'");
+    assert!(has_key("ios-13"), "list_presets() missing 'ios-13'");
     assert!(
         has_key("catppuccin-latte"),
         "list_presets() missing 'catppuccin-latte'"
@@ -353,4 +416,48 @@ fn preset_names_are_correct() {
         "list_presets() missing 'tokyo-night'"
     );
     assert!(has_key("one-dark"), "list_presets() missing 'one-dark'");
+}
+
+#[test]
+fn material_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("material-3").is_ok());
+    assert!(Theme::preset("material").is_err());
+    assert!(Theme::list_presets().iter().any(|p| p.key == "material-3"));
+}
+
+#[test]
+fn macos_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("macos-monterey").is_ok());
+    assert!(Theme::preset("macos-tahoe").is_ok());
+    assert!(matches!(
+        Theme::preset("macos-sonoma"),
+        Err(Error::UnknownPreset { .. })
+    ));
+    assert!(
+        Theme::list_presets()
+            .iter()
+            .any(|p| p.key == "macos-monterey")
+    );
+}
+
+#[test]
+fn ios_preset_is_named_by_its_generation() {
+    assert!(Theme::preset("ios-13").is_ok());
+    assert!(matches!(
+        Theme::preset("ios"),
+        Err(Error::UnknownPreset { .. })
+    ));
+    assert!(Theme::list_presets().iter().any(|p| p.key == "ios-13"));
+}
+
+#[test]
+fn live_preset_tier_is_gone() {
+    for name in [
+        "kde-breeze-live",
+        "adwaita-live",
+        "macos-sonoma-live",
+        "windows-11-live",
+    ] {
+        assert!(Theme::preset(name).is_err(), "{name} still loads");
+    }
 }

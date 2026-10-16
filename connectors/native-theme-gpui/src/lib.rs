@@ -4,34 +4,51 @@
 //!
 //! # Quick Start
 //!
-//! ```ignore
-//! use native_theme_gpui::{AccessibilityPreferences, from_preset};
+//! Initialise gpui-component, then install the OS theme, or a bundled preset
+//! where the OS theme cannot be read:
 //!
-//! let prefs = AccessibilityPreferences::from_system();
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
+//! ```no_run
+//! use native_theme_gpui::{
+//!     AccessibilityPreferences, SystemTheme, apply, apply_system_theme, from_preset,
+//! };
+//!
+//! gpui_kit::application().run(|cx| {
+//!     // Before `apply`: an `init` afterwards resets the theme to upstream's default.
+//!     gpui_kit::init(cx);
+//!     match SystemTheme::from_system() {
+//!         // Both variants, so `Theme::sync_system_appearance` switches between them.
+//!         Ok(sys) => apply_system_theme(&sys, cx),
+//!         Err(_) => {
+//!             let prefs = AccessibilityPreferences::from_system();
+//!             if let Ok((theme, resolved)) = from_preset("adwaita", false, &prefs) {
+//!                 apply(theme, &resolved, &prefs, cx);
+//!             }
+//!         }
+//!     }
+//!     // Then open the windows with `gpui_kit::open_window`.
+//! });
 //! ```
 //!
-//! Or from the OS-detected theme:
-//!
-//! ```ignore
-//! use native_theme_gpui::from_system;
-//!
-//! let (theme, resolved, is_dark) = from_system()?;
-//! ```
+//! [`SystemTheme::from_system()`] reads the OS theme with the `native` feature
+//! (see [Features](#features)). Nothing reaches the windows until [`apply`] or
+//! [`apply_system_theme`] runs; [`from_preset()`], [`from_system()`] and
+//! [`to_theme()`] only build a theme. Once one is installed,
+//! [`cx.native()`](ActiveNativeTheme::native) is the input of the [`geometry`]
+//! builders.
 //!
 //! # Manual Path
 //!
 //! For full control over the resolve/validate/convert pipeline:
 //!
-//! ```ignore
-//! use native_theme::theme::{ColorMode, Theme};
-//! use native_theme_gpui::{AccessibilityPreferences, to_theme};
+//! ```no_run
+//! use native_theme_gpui::{AccessibilityPreferences, ColorMode, Theme, to_theme};
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
-//! let variant = nt.into_variant(ColorMode::Dark)?;
-//! let resolved = variant.resolve_system()?;
+//! let resolved = nt.resolve(ColorMode::Dark)?;
 //! let prefs = AccessibilityPreferences::from_system();
-//! let theme = to_theme(&resolved, "Catppuccin Mocha", true, &prefs);
+//! let theme = to_theme(&resolved.variant, &nt.name, resolved.mode.is_dark(), &prefs);
+//! // Then `apply(theme, &resolved.variant, &prefs, cx)`.
+//! # Ok::<(), native_theme_gpui::Error>(())
 //! ```
 //!
 //! # Single-Mode Behavior
@@ -40,10 +57,27 @@
 //! one mode (light or dark). The `is_dark` parameter selects which variant to
 //! load from the preset's TOML. Presets that only define one variant will return
 //! that variant for both `is_dark=true` and `is_dark=false` (the resolution
-//! pipeline falls back to the available variant). To support runtime light/dark
-//! switching, call [`from_preset()`] once per mode and [`apply`] both: each
-//! `apply` stores its variant, and gpui-component's `Theme::change` /
-//! `sync_system_appearance` then switch between the two native palettes.
+//! pipeline falls back to the available variant), and [`from_preset()`] builds
+//! the theme in that variant's mode
+//! ([`Resolved::mode`](native_theme::theme::Resolved::mode)). To support
+//! runtime light/dark switching, call [`from_preset()`] once per mode and
+//! [`apply`] both: each `apply` stores its variant, and gpui-component's
+//! `Theme::change` / `sync_system_appearance` then switch between the two
+//! native palettes.
+//!
+//! # What each flag does
+//!
+//! The four [`AccessibilityPreferences`] flags reach the connector through the
+//! preferences [`from_preset()`], [`to_theme()`], [`apply`] and
+//! [`apply_accessibility`] take; [`from_system()`] and [`apply_system_theme`]
+//! use the OS reading.
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`], through [`AccessibilityPreferences::scaled`] (a size the factor would make infinite, subnormal or zero stays as stated); `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
+//! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
+//! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
+//! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md`, the item "the gpui connector reads `AccessibilityPreferences::high_contrast`"); [`is_high_contrast`] reads it | its own colours, if they should change |
 //!
 //! # Theme Field Coverage
 //!
@@ -58,20 +92,32 @@
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
-//! | `sidebar` | 4 of 6 | background, font.color, selection_background, selection_text_color |
-//! | `window` | 4 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar` |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text via `geometry::input` |
+//! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
+//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
-//! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's size, weight and colour via `geometry::status_bar` |
+//! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
-//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
+//! | `combo_box` | geometry | height, width, padding, radius, font via `geometry::select` and `geometry::combobox`; the fill, and a disabled trigger's fill and text colour, via `geometry::combo_box_fill` |
+//! | `card`, `expander` | geometry | the card's padding, radius and edge via `geometry::group_box_content`; the expander's title height and colour via `geometry::accordion_title`, its edge colour via `geometry::accordion`, its hover fill via `geometry::accordion_hover` |
+//! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
+//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
+//! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`, where the `Link` widget paints no background of its own (`link.rs:73-90`); `link.hover_background` has no receiver — the `Link` widget paints no background in any state, a `ButtonVariant::Link` button paints `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
+//!
+//! **Accessors.** The free functions of the crate root read what an application
+//! needs beside the theme; one that returns one `ResolvedTheme` leaf is named
+//! after the leaf's path, without the leading `defaults.` and a unit suffix:
+//! `defaults.border.corner_radius` is `border_corner_radius`,
+//! `scrollbar.groove_width` is `scrollbar_groove_width`, the same name in the
+//! iced, gpui and egui connectors (`scripts/check_connector_parity.py` checks
+//! it).
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
 //! reach the widgets through the [`geometry`] module: pure builders returning a
@@ -94,7 +140,9 @@
 //!
 //! # Features
 //!
-//! All six are on by default.
+//! The first six are on by default; `gpui-fast` is off, because it changes the
+//! GPUI core rather than adding to it, and `native` and `watch` are off, as in
+//! native-theme.
 //!
 //! | Feature | Enables |
 //! |---------|---------|
@@ -104,16 +152,55 @@
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
+//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+//! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
+//! | `watch` | `on_theme_change`, a closure run on gpui's foreground, with a window, when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
+//!
+//! The crate names GPUI through gpui-kit, so it is built on whichever core
+//! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
+//! gpui-kit's `component` feature gets this crate on GPUI Fast without
+//! `gpui-fast` here. The README's *Backends* section says when to enable it.
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
 //! paints nothing the first time it comes up and is rasterized at a size gpui
 //! chooses. [`icons::to_image_source`] documents it.
+//!
+//! # Runtime theme change
+//!
+//! With the `watch` feature and a reader feature (`native`),
+//! `on_theme_change(window, cx, f)` runs `f` on gpui's foreground, with the
+//! window and the `App`, each time the OS theme changes, for as long as the
+//! `ThemeSubscription` it returns is held and the window is open; register
+//! it on the main window, since events stop once that window closes. In
+//! `f`, call `native_theme::detect::invalidate_caches()`, read the theme
+//! again with the entry point the application used
+//! ([`SystemTheme::from_system()`], or
+//! [`SystemTheme::from_system_with_preset`] for a pinned preset), and
+//! [`apply_system_theme`] it; gpui-component's `Theme::sync_system_appearance`
+//! keeps switching between its light and dark palettes after that:
+//!
+//! ```rust,ignore
+//! use native_theme_gpui::{SystemTheme, apply_system_theme, on_theme_change};
+//!
+//! // Held while the application follows the OS theme; dropping it stops
+//! // the watcher.
+//! let watcher = on_theme_change(window, cx, |_event, _window, cx| {
+//!     native_theme::detect::invalidate_caches();
+//!     if let Ok(sys) = SystemTheme::from_system() {
+//!         apply_system_theme(&sys, cx);
+//!     }
+//! })?;
+//! ```
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
 
 pub mod base_layer;
 pub(crate) mod colors;
@@ -124,31 +211,42 @@ pub(crate) mod config;
 mod contract;
 pub(crate) mod derive;
 pub mod geometry;
+#[cfg(test)]
+mod icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod showcase;
 pub mod variants;
+#[cfg(feature = "watch")]
+mod watch;
 #[cfg(feature = "widgets")]
 pub mod widgets;
+
+#[cfg(feature = "watch")]
+pub use watch::on_theme_change;
 
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
+pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
-    ResolvedTheme, Theme, ThemeMode, TransformAnimation,
+    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
 };
+#[cfg(feature = "watch")]
+pub use native_theme::watch::{ThemeChangeEvent, ThemeSubscription};
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
 
-use gpui::{App, Global, SharedString, px};
+use gpui::{App, Global, Hsla, SharedString, px};
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
+use std::borrow::Cow;
 use std::rc::Rc;
+use std::time::Duration;
 
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
@@ -161,11 +259,13 @@ use std::rc::Rc;
 /// This avoids the fragile apply-then-restore pattern where `apply_config`
 /// would overwrite all 139 color fields with defaults.
 ///
-/// The `is_dark` parameter is required rather than auto-derived because
-/// several presets (e.g. solarized, gruvbox) have borderline lightness
-/// values where auto-detection would disagree with the user's intent.
-/// To auto-derive: `let is_dark = resolved.defaults.background_color` lightness < 0.5
-/// via [`is_dark_resolved()`].
+/// A [`ResolvedTheme`] carries no colour mode, so `is_dark` is the theme's:
+/// [`Resolved::mode`](native_theme::theme::Resolved::mode) of the variant
+/// [`Theme::resolve`] resolved, as [`from_preset()`] passes it, or
+/// [`SystemTheme::mode`], as [`from_system()`] does. [`is_dark_resolved()`]
+/// guesses it from the background's lightness for a caller holding only a
+/// `ResolvedTheme`; on a borderline background (solarized, gruvbox) the
+/// guess can disagree with the theme's mode.
 ///
 /// Note: `is_dark` is an explicit parameter here; the iced connector's
 /// `to_theme` takes no mode.
@@ -174,7 +274,12 @@ use std::rc::Rc;
 /// system UI font, "SF Pro", is passed to gpui as its own alias
 /// `.SystemUIFont`, so Core Text supplies the system font itself; a family
 /// the system lacks is the one the platform substitutes for it (feature
-/// `system-fonts`); every other family is passed as stated.
+/// `system-fonts`); every other family is passed as stated. The platform is
+/// asked on the calling thread, once per family per process: on Linux and
+/// the other non-Apple, non-Android unix systems the first theme to bring a
+/// family runs one `fc-match` (about 12.5 ms measured on one Linux machine,
+/// with a 2 s timeout), so a theme with a new UI and a new mono family costs
+/// about 25 ms once, and every later theme with those families nothing.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &ResolvedTheme,
@@ -182,7 +287,6 @@ pub fn to_theme(
     is_dark: bool,
     prefs: &AccessibilityPreferences,
 ) -> GpuiTheme {
-    let s = text_scale_factor(prefs);
     let theme_color = colors::to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let mode = if is_dark {
         GpuiThemeMode::Dark
@@ -198,14 +302,13 @@ pub fn to_theme(
     theme.mode = mode;
     theme.font_family = font_family(&d.font.family);
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
-    // to font_size (gpui-component src/root.rs:436), so scaling these two sizes scales every rem-relative
+    // to font_size (gpui-component src/root.rs:440), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
-    theme.font_size = px(d.font.size * s);
+    theme.font_size = px(prefs.scaled(d.font.size));
     theme.mono_font_family = font_family(&d.mono_font.family);
-    theme.mono_font_size = px(d.mono_font.size * s);
-    // Issue 14: clamp radius to non-negative
-    theme.radius = px(d.border.corner_radius.max(0.0));
-    theme.radius_lg = px(d.border.corner_radius_lg.max(0.0));
+    theme.mono_font_size = px(prefs.scaled(d.mono_font.size));
+    theme.radius = px(d.border.corner_radius);
+    theme.radius_lg = px(d.border.corner_radius_lg);
     theme.shadow = d.border.shadow_enabled;
 
     // §8.3: the ring is drawn only when the theme gives it a width; its width
@@ -240,20 +343,37 @@ pub fn to_theme(
 
 /// Load a bundled preset and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
-/// This is the primary entry point for most users. It handles the full pipeline:
-/// load preset, pick variant, resolve, validate, and convert to gpui Theme.
+/// The preset half of the common task; [`apply`] installs the result. It
+/// handles the full pipeline: load preset, pick variant, resolve, validate,
+/// and convert to gpui Theme.
 ///
 /// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
 /// access per-widget metrics (button padding, scrollbar width, etc.) that the
 /// flat `ThemeColor` cannot represent.
 ///
+/// The gpui theme is dark when the variant resolved is the dark one
+/// ([`Resolved::mode`](native_theme::theme::Resolved::mode)), so a light-only
+/// preset asked for dark gives a light theme.
+///
 /// The theme's display name is the preset's `name` field (`"Dracula"` for
 /// `"dracula"`), not the name passed in.
 ///
-/// Pass `&AccessibilityPreferences::default()` for no scaling, or
-/// `&AccessibilityPreferences::from_system()` to honour the OS preferences
-/// under a preset: accessibility is orthogonal to the theme choice, and a
-/// user with large text wants it under a preset too.
+/// Pass `&AccessibilityPreferences::default()` for no scaling, or the OS
+/// preferences to honour them under a preset: accessibility is orthogonal to
+/// the theme choice, and a user with large text wants it under a preset too.
+/// On a preset switch, `native_theme::detect::accessibility_preferences()` is
+/// the cached reading: the first call after a system read may still run the
+/// reduced-motion detection (about 3 ms measured on one KDE machine), and
+/// every later call returns the cached block in nanoseconds;
+/// [`AccessibilityPreferences::from_system()`] runs the platform reader each
+/// time.
+///
+/// The first preset to bring a font family not yet seen in the process asks
+/// the platform for its substitute on the calling thread ([`font_family`],
+/// feature `system-fonts`): on Linux and the other non-Apple, non-Android
+/// unix systems one `fc-match` per new family, about 12.5 ms measured on one
+/// Linux machine, so a first switch to a preset with a new UI and a new mono
+/// family costs about 25 ms more, once.
 ///
 /// # Errors
 ///
@@ -261,12 +381,13 @@ pub fn to_theme(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_gpui::AccessibilityPreferences;
 ///
 /// let prefs = AccessibilityPreferences::from_system();
 /// let (dark_theme, resolved) = native_theme_gpui::from_preset("dracula", true, &prefs)?;
 /// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false, &prefs)?;
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn from_preset(
@@ -274,27 +395,70 @@ pub fn from_preset(
     is_dark: bool,
     prefs: &AccessibilityPreferences,
 ) -> Result<(GpuiTheme, ResolvedTheme)> {
-    let spec = Theme::preset(name)?;
-    let display_name = spec.name.clone();
-    let variant = spec.into_variant(if is_dark {
+    from_spec(&Theme::preset(name)?, is_dark, prefs)
+}
+
+/// [`from_preset()`] of a theme already loaded.
+fn from_spec(
+    spec: &Theme,
+    is_dark: bool,
+    prefs: &AccessibilityPreferences,
+) -> Result<(GpuiTheme, ResolvedTheme)> {
+    let resolved = spec.resolve(if is_dark {
         ColorMode::Dark
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.resolve_system()?;
-    let theme = to_theme(&resolved, &display_name, is_dark, prefs);
-    Ok((theme, resolved))
+    let theme = to_theme(
+        &resolved.variant,
+        &spec.name,
+        resolved.mode.is_dark(),
+        prefs,
+    );
+    Ok((theme, resolved.variant))
+}
+
+/// The OS theme as [`from_system()`] and [`SystemThemeExt::to_gpui_theme`]
+/// return it: the gpui-component theme of the OS colour mode's variant, with
+/// what the OS reading detected beside it.
+///
+/// `#[non_exhaustive]`, so a field added later is not a breaking change;
+/// read it by field, or destructure it with `..`.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct Loaded {
+    /// The gpui-component theme, built by [`to_theme()`] from
+    /// [`resolved`](Self::resolved) with [`accessibility`](Self::accessibility).
+    pub theme: GpuiTheme,
+    /// The resolved variant of the OS colour mode, for the per-widget
+    /// metrics the flat `ThemeColor` cannot represent.
+    pub resolved: ResolvedTheme,
+    /// The OS colour mode, the OS preference rather than a guess from the
+    /// background colour; [`resolved`](Self::resolved) is its variant.
+    pub mode: ColorMode,
+    /// The OS accessibility preferences the theme was built with, which
+    /// [`apply`] takes.
+    pub accessibility: AccessibilityPreferences,
+    /// The icon set the theme names ([`SystemTheme::icon_set`]).
+    pub icon_set: IconSet,
+    /// The icon theme of the OS colour mode's variant
+    /// ([`SystemTheme::icon_theme_for`]), for a freedesktop icon or spinner;
+    /// `None` where that variant states none and detection failed.
+    pub icon_theme: Option<Cow<'static, str>>,
 }
 
 /// Detect the OS theme and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
 /// Combines [`SystemTheme::from_system()`](native_theme::SystemTheme::from_system)
-/// with [`to_theme()`] using the system-detected name and dark-mode preference.
+/// with [`to_theme()`] using the system-detected name, dark-mode preference
+/// and accessibility preferences.
 ///
-/// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
-/// access per-widget metrics that the flat `ThemeColor` cannot represent.
+/// Returns the gpui Theme with the [`ResolvedTheme`], so callers can access
+/// per-widget metrics that the flat `ThemeColor` cannot represent, and the
+/// OS colour mode, the accessibility preferences, the icon set and the icon
+/// theme beside them, as a [`Loaded`].
 ///
-/// **Ownership note** (Issue 19/31): this function takes ownership of the
+/// **Ownership note:** this function takes ownership of the
 /// `SystemTheme`'s active variant. The non-active variant (light when dark
 /// is active, or vice versa) is dropped. If you need both variants, use
 /// `SystemTheme::from_system()` directly and call [`to_theme()`] on each.
@@ -306,52 +470,81 @@ pub fn from_preset(
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read (e.g., unsupported platform,
-/// missing desktop environment).
+/// missing desktop environment). Without a reader feature (`native`, or
+/// native-theme's `kde`, `portal`, `macos` or `windows`) the theme is the
+/// platform preset on Linux and an error on macOS and Windows.
 ///
 /// # Examples
 ///
-/// ```ignore
-/// let (theme, resolved, is_dark) = native_theme_gpui::from_system()?;
+/// ```no_run
+/// let loaded = native_theme_gpui::from_system()?;
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
+pub fn from_system() -> Result<Loaded> {
     let sys = SystemTheme::from_system()?;
-    let is_dark = sys.mode.is_dark();
+    let mode = sys.mode;
+    let is_dark = mode.is_dark();
+    let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
     let name = sys.name; // K-5: move instead of clone
     let accessibility = sys.accessibility;
     let resolved = if is_dark { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name, is_dark, &accessibility);
-    Ok((theme, resolved, is_dark))
+    Ok(Loaded {
+        theme,
+        resolved,
+        mode,
+        accessibility,
+        icon_set: sys.icon_set,
+        icon_theme,
+    })
 }
 
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`GpuiTheme`].
 ///
 /// Useful when you already have a `SystemTheme` and want method syntax:
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_gpui::SystemThemeExt;
 ///
 /// let sys = native_theme::SystemTheme::from_system()?;
-/// let theme = sys.to_gpui_theme();
+/// let theme = sys.to_gpui_theme().theme;
+/// # Ok::<(), native_theme::Error>(())
 /// ```
 pub trait SystemThemeExt {
-    /// Convert this system theme to a gpui-component [`GpuiTheme`].
+    /// Convert this system theme to a gpui-component [`GpuiTheme`], as a
+    /// [`Loaded`].
     ///
-    /// Uses the OS-active variant (based on `mode`), the theme name,
-    /// and the color mode from the `SystemTheme`.
+    /// Uses the OS-active variant (based on `mode`), the theme name, the
+    /// color mode and the accessibility preferences from the `SystemTheme`.
+    /// The variant is cloned out of `self`; [`from_system()`] moves it.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_gpui_theme(&self) -> GpuiTheme;
+    fn to_gpui_theme(&self) -> Loaded;
 }
 
 impl SystemThemeExt for SystemTheme {
-    fn to_gpui_theme(&self) -> GpuiTheme {
-        to_theme(
-            self.pick(self.mode),
-            &self.name,
-            self.mode.is_dark(),
-            &self.accessibility,
-        )
+    fn to_gpui_theme(&self) -> Loaded {
+        Loaded {
+            theme: system_gpui_theme(self),
+            resolved: self.pick(self.mode).clone(),
+            mode: self.mode,
+            accessibility: self.accessibility.clone(),
+            icon_set: self.icon_set,
+            icon_theme: self
+                .icon_theme_for(self.mode)
+                .map(|s| Cow::Owned(s.to_owned())),
+        }
     }
+}
+
+/// [`SystemThemeExt::to_gpui_theme`]'s theme, without cloning the variant.
+fn system_gpui_theme(sys: &SystemTheme) -> GpuiTheme {
+    to_theme(
+        sys.pick(sys.mode),
+        &sys.name,
+        sys.mode.is_dark(),
+        &sys.accessibility,
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -370,14 +563,6 @@ pub fn is_dark_resolved(resolved: &ResolvedTheme) -> bool {
 }
 
 // --- Issue 32: Accessibility helpers ---
-
-/// Returns `true` if the resolved theme is considered dark.
-///
-/// Equivalent to [`is_dark_resolved()`] -- delegates to background lightness.
-#[must_use]
-pub fn is_dark(resolved: &ResolvedTheme) -> bool {
-    is_dark_resolved(resolved)
-}
 
 /// Whether the user/OS has requested reduced motion.
 #[must_use]
@@ -399,9 +584,9 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
 
 // --- Issue 15: Defaults field accessors ---
 
-/// Frame/border width from the resolved theme defaults.
+/// Border line width from the resolved theme defaults.
 #[must_use]
-pub fn frame_width(resolved: &ResolvedTheme) -> f32 {
+pub fn border_line_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.line_width
 }
 
@@ -423,7 +608,7 @@ pub fn border_opacity(resolved: &ResolvedTheme) -> f32 {
 
 /// Whether drop shadows are enabled.
 #[must_use]
-pub fn shadow_enabled(resolved: &ResolvedTheme) -> bool {
+pub fn border_shadow_enabled(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.border.shadow_enabled
 }
 
@@ -458,30 +643,38 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
 /// For a size the connector does not apply itself: a `text_scale` role's
 /// (`resolved.text_scale.caption.size`, …) or a widget font set by hand. The
 /// factor applies to every text size alike. A factor that is not finite and
-/// positive is ignored.
+/// positive is ignored, and a size whose product with the factor is not a
+/// normal positive number is returned as it is.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
+    prefs.scaled(size)
 }
 
-/// Text-scaling multiplier from the preferences: the factor when it is finite
-/// and positive, else `1.0` (spec §7.2). Named `text_scale_factor` because
-/// [`text_scale()`], the public typography-scale accessor, already owns the
-/// shorter name.
-pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+/// `layer` composited over `base` as the connector composites a theme's
+/// state layers: source-over with straight alpha in sRGB, so the result
+/// covers `layer.a + base.a × (1 − layer.a)`. The filled buttons' hover and
+/// pressed fills (`ThemeColor::button_hover`, `button_active`, …) and the
+/// widgets' hover states are this composite of the theme's layer over the
+/// fill it covers, so an application drawing a layered state of its own — a
+/// stated `hover_background` over a control's fill — matches them through
+/// it. An opaque layer comes back as it is and a transparent one gives
+/// `base`. Where `base` or `layer` is opaque this equals `Hsla::blend`;
+/// where both are translucent `blend` keeps `base`'s alpha, and this does
+/// not.
+#[must_use]
+pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
+    colors::over(base, layer)
 }
 
 /// The family gpui is asked to draw `family` in. On macOS (`macos`), the
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
 /// alias `.SystemUIFont`, "used to identify the system UI font, which varies
-/// based on platform" (gpui-pre 0.3.8 `src/text_system.rs` line 1295): gpui's
+/// based on platform" (gpui-pre 0.3.9 `src/text_system.rs` line 1295): gpui's
 /// macOS text system maps it to `.AppleSystemUIFont` through
-/// `font_name_with_fallbacks` (gpui-pre 0.3.8 `src/text_system.rs` lines 1420–1430,
-/// gpui-pre-macos 0.3.8 `src/text_system.rs` line 282) and looks that up among
-/// its memory fonts first, then in the system source (lines 286–289), so Core
+/// `font_name_with_fallbacks` (gpui-pre 0.3.9 `src/text_system.rs` lines 1420–1430,
+/// gpui-pre-apple 0.3.9 `src/text_system.rs` line 290) and looks that up among
+/// its memory fonts first, then in the system source (lines 294–297), so Core
 /// Text supplies its own system UI font. Every other family, and every
 /// family elsewhere, is passed as stated: fontdb-style databases file the
 /// font under `.SF NS`, but gpui does not draw from one. The platform is a
@@ -498,12 +691,18 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// The family gpui is asked to draw a theme's `family` in: the macOS alias
 /// of `ui_font_family`; with feature `system-fonts`, where the system
 /// lacks `family`, the family the platform substitutes for it
-/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
-/// the font every native application of the system gets); else `family` as
+/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux
+/// and the other non-Apple, non-Android unix systems, the font every native
+/// application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
-/// list of its own, `.ZedMono` first (gpui-pre 0.3.8 `src/text_system.rs`
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.9 `src/text_system.rs`
 /// lines 255-266, 370-379), not the platform's. The platform is asked once
-/// per family and the answer kept, so a caller may ask every frame.
+/// per family and the answer kept for the process, so a caller may ask
+/// every frame. The first ask for a family runs on the calling thread: on
+/// Linux and the other non-Apple, non-Android unix systems one `fc-match`
+/// process, about 12.5 ms measured on one Linux machine, with a 2 s timeout.
+/// A thread asking for another family, or for one already answered, does
+/// not wait for it.
 #[must_use]
 pub fn font_family(family: &std::sync::Arc<str>) -> SharedString {
     let alias = ui_font_family(family, cfg!(target_os = "macos"));
@@ -516,22 +715,20 @@ pub fn font_family(family: &std::sync::Arc<str>) -> SharedString {
     }
 }
 
+/// A theme's font style as gpui's, for the `geometry` builders and the
+/// widgets' labels alike.
+pub(crate) fn font_style(style: native_theme::theme::FontStyle) -> gpui::FontStyle {
+    match style {
+        native_theme::theme::FontStyle::Normal => gpui::FontStyle::Normal,
+        native_theme::theme::FontStyle::Italic => gpui::FontStyle::Italic,
+        native_theme::theme::FontStyle::Oblique => gpui::FontStyle::Oblique,
+    }
+}
+
 /// [`font_family`]'s substitute for `family`, asked of the platform once.
 #[cfg(feature = "system-fonts")]
 fn substituted_family(family: &str) -> Option<String> {
-    use std::collections::HashMap;
-    use std::sync::{Mutex, OnceLock, PoisonError};
-    static ASKED: OnceLock<Mutex<HashMap<String, Option<String>>>> = OnceLock::new();
-    let mut asked = ASKED
-        .get_or_init(Mutex::default)
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
-    if let Some(answer) = asked.get(family) {
-        return answer.clone();
-    }
-    let answer = native_theme::fonts::substitute_family(family);
-    asked.insert(family.to_owned(), answer.clone());
-    answer
+    native_theme::fonts::substitute_family_cached(family)
 }
 
 /// Without feature `system-fonts`, no family is substituted.
@@ -540,11 +737,11 @@ fn substituted_family(_family: &str) -> Option<String> {
     None
 }
 
-// --- Issue 36: Line height multiplier ---
+// --- Issue 36: Line height ---
 
 /// Line height multiplier from the resolved theme defaults.
 #[must_use]
-pub fn line_height_multiplier(resolved: &ResolvedTheme) -> f32 {
+pub fn line_height(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -584,31 +781,31 @@ pub fn dialog_button_order(resolved: &ResolvedTheme) -> DialogButtonOrder {
 
 /// Dialog button gap in logical pixels.
 #[must_use]
-pub fn dialog_button_spacing(resolved: &ResolvedTheme) -> f32 {
+pub fn dialog_button_gap(resolved: &ResolvedTheme) -> f32 {
     resolved.dialog.button_gap
 }
 
 /// Scrollbar groove width in logical pixels.
 #[must_use]
-pub fn scrollbar_width(resolved: &ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(resolved: &ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
 /// Selection text color (foreground for selected content).
 #[must_use]
-pub fn selection_foreground(resolved: &ResolvedTheme) -> Rgba {
+pub fn selection_text_color(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_text_color
 }
 
 /// Selection background when window is unfocused.
 #[must_use]
-pub fn selection_inactive(resolved: &ResolvedTheme) -> Rgba {
+pub fn selection_inactive_background(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_inactive_background
 }
 
 /// Foreground color for disabled elements.
 #[must_use]
-pub fn disabled_foreground(resolved: &ResolvedTheme) -> Rgba {
+pub fn disabled_text_color(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.disabled_text_color
 }
 
@@ -624,6 +821,25 @@ pub fn focus_ring_offset(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.focus_ring_offset
 }
 
+/// The delay between the pointer coming to rest on an element and its
+/// tooltip showing, `tooltip.show_delay_ms`; `None` where the theme states
+/// none.
+///
+/// [`apply`] installs it as gpui-base's application-wide `TooltipDefaults`
+/// show delay, which every tooltip shown through gpui-component's tooltip
+/// overlay waits (a `Button::tooltip`'s, among others). GPUI's own
+/// `.tooltip()` on an element does not read those defaults: it waits GPUI's
+/// 500 ms (gpui-pre `src/elements/div.rs:53`) unless the element is given
+/// this value through `StatefulInteractiveElement::tooltip_show_delay`
+/// (`:1708`).
+#[must_use]
+pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
+    resolved
+        .tooltip
+        .show_delay
+        .map(|ms| Duration::from_millis(u64::from(ms)))
+}
+
 // ---------------------------------------------------------------------------
 // Installation: NativeTheme global, apply family, base-layer observer (§8.1, §3.3)
 // ---------------------------------------------------------------------------
@@ -631,16 +847,18 @@ pub fn focus_ring_offset(resolved: &ResolvedTheme) -> f32 {
 /// The native theme installed by [`apply`]; one per `App`, read with
 /// [`ActiveNativeTheme::native_theme`].
 ///
-/// Stores both resolved variants (when known) because upstream's
+/// Stores both resolved variants of one theme (when known) because upstream's
 /// `Theme::change` switches modes without going through the connector, and the
 /// re-apply observer must then find the variant of the mode upstream switched
-/// to (rationale §2.22). Every field's default is the right initial state, so
-/// `Default` is derived (a hand-written impl would trip clippy's
-/// `derivable_impls`).
-#[derive(Default)]
+/// to (`docs/archive/todo_v0.5.8_gpui-component-0.6-rationale.md` §2.22).
+/// Each variant is kept with the display name of the theme that stored it, so
+/// a later `apply` of another theme drops it. Every field's default is the
+/// right initial state, so `Default` is derived (a hand-written impl would
+/// trip clippy's `derivable_impls`).
+#[derive(Debug, Default)]
 pub struct NativeTheme {
-    light: Option<ResolvedTheme>,
-    dark: Option<ResolvedTheme>,
+    light: Option<StoredVariant>,
+    dark: Option<StoredVariant>,
     accessibility: AccessibilityPreferences,
     /// Set by the observer around its own write of `gpui_base::Theme`, so it
     /// can tell that notification from an upstream rebuild (§3.3).
@@ -653,6 +871,13 @@ pub struct NativeTheme {
 
 impl Global for NativeTheme {}
 
+/// A resolved variant and the display name of the theme that stored it.
+#[derive(Debug)]
+struct StoredVariant {
+    name: SharedString,
+    resolved: ResolvedTheme,
+}
+
 impl NativeTheme {
     fn is_dark(&self, cx: &App) -> bool {
         cx.try_global::<GpuiTheme>()
@@ -660,12 +885,16 @@ impl NativeTheme {
             .unwrap_or(self.last_is_dark)
     }
 
-    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+    fn stored(&self, is_dark: bool) -> Option<&StoredVariant> {
         if is_dark {
             self.dark.as_ref()
         } else {
             self.light.as_ref()
         }
+    }
+
+    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+        self.stored(is_dark).map(|stored| &stored.resolved)
     }
 
     /// The stored variant for the styled theme's current mode, if any.
@@ -691,20 +920,31 @@ impl NativeTheme {
     }
 }
 
-/// `cx.native_theme()`, mirroring gpui-component's `cx.theme()`.
+/// `cx.native_theme()` and `cx.native()`, mirroring gpui-component's
+/// `cx.theme()`.
 pub trait ActiveNativeTheme {
     /// The installed [`NativeTheme`], or `None` before [`apply`] ran.
     fn native_theme(&self) -> Option<&NativeTheme>;
+
+    /// The [`Native`] view for the styled theme's current mode, or `None`
+    /// before [`apply`] ran or when no variant is stored for that mode
+    /// ([`NativeTheme::native`] of [`native_theme`](Self::native_theme)).
+    fn native(&self) -> Option<Native<'_>>;
 }
 
 impl ActiveNativeTheme for App {
     fn native_theme(&self) -> Option<&NativeTheme> {
         self.try_global::<NativeTheme>()
     }
+
+    fn native(&self) -> Option<Native<'_>> {
+        self.native_theme()?.native(self)
+    }
 }
 
-/// Borrowed inputs of every `geometry` builder (spec §9.1).
-#[derive(Clone, Copy)]
+/// Borrowed inputs of every `geometry` builder
+/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9.1).
+#[derive(Clone, Copy, Debug)]
 pub struct Native<'a> {
     /// The resolved theme the values come from.
     pub resolved: &'a ResolvedTheme,
@@ -712,35 +952,33 @@ pub struct Native<'a> {
     pub accessibility: &'a AccessibilityPreferences,
 }
 
-static UNSCALED: AccessibilityPreferences = AccessibilityPreferences {
-    text_scaling_factor: 1.0,
-    reduce_motion: false,
-    high_contrast: false,
-    reduce_transparency: false,
-};
-
 impl<'a> Native<'a> {
     /// Unscaled, no reductions: for the preset path and tests.
     #[must_use]
     pub fn unscaled(resolved: &'a ResolvedTheme) -> Self {
         Self {
             resolved,
-            accessibility: &UNSCALED,
+            accessibility: &AccessibilityPreferences::DEFAULT,
         }
     }
 }
 
 /// Install `theme` as gpui-component's global theme with the native base-layer
-/// overrides, and keep them installed across upstream rebuilds (spec §8.1, §3.3).
+/// overrides, and keep them installed across upstream rebuilds
+/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.1, §3.3).
 ///
-/// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`];
+/// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`],
+///    dropping the other mode's stored variant when another theme (one of a
+///    different display name) stored it;
 /// 2. initialises gpui-component if its theme global is absent (upstream
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
-/// 3. writes the styled theme, then installs a `ThemeConfig` for the *other*
+/// 3. writes the styled theme, keeping the application's own `notification`,
+///    `list`, `sheet` and `motion` settings of the installed one, as upstream's
+///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
-///    either mode (D34);
+///    either mode;
 /// 4. projects into gpui-base (`sync_base`);
 /// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
@@ -749,21 +987,37 @@ impl<'a> Native<'a> {
 ///    only that switch, never clears a flag the connector did not set, and
 ///    asks gpui-base (which reads the OS preference itself since 0.6.2) to
 ///    re-read the system;
-/// 7. installs, once per `App`, the observer that restores step 5 and the 12
+/// 7. installs the variant's [`tooltip_show_delay`] as gpui-base's
+///    application-wide `TooltipDefaults` show delay, keeping the grace period
+///    installed; where the theme states no delay, the application's comes back:
+///    the one installed before the connector's first write, or set by the
+///    application since (gpui-base's 500 ms where it set none);
+/// 8. installs, once per `App`, the observer that restores step 5 and the 12
 ///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
-///    private in `ThemeConfigColors`; D43) whenever upstream rebuilds the
-///    theme, together with one deferred repeat for the update that installs it
-///    (the subscription activates only at the end of that update's effect
-///    flush, D38);
-/// 8. refreshes every window so the change paints at once (D37).
+///    private in `ThemeConfigColors`), and installs step 7's delay for the
+///    mode then current, whenever upstream rebuilds the theme (a
+///    `Theme::change` or `sync_system_appearance` mode switch among them),
+///    together with one deferred repeat for the update that installs it (the
+///    subscription activates only at the end of that update's effect
+///    flush);
+/// 9. refreshes every window so the change paints at once.
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards resets the theme to upstream's default. A single-variant
-/// `apply` leaves the other mode's config at `ThemeConfig::default()`, so a
-/// `Theme::change` to the unstored mode shows upstream's built-in
-/// `ThemeColor::light()` / `dark()` constants (the default config carries no
-/// colours);
-/// call `apply` once per variant to store both.
+/// `apply` of a theme whose other variant is not stored (none was, or another
+/// theme's was, which step 1 drops) leaves the other mode's config at
+/// `ThemeConfig::default()`, a light config with no colours and an empty name.
+/// Upstream's `apply_config` takes the mode from the config and stores it in
+/// that mode's slot (gpui-component src/theme/schema.rs:1065-1069, :1108), so
+/// a `Theme::change` to the unstored mode shows upstream's built-in
+/// `ThemeColor::light()` constants, in light mode. Where the stored variant is
+/// the light one, a change to dark therefore leaves the window light and
+/// replaces the theme's light config with the empty one: a later change back
+/// to light shows upstream's constants too, while the base palette,
+/// scrollbars, resize handles, tooltip delay and [`ActiveNativeTheme::native`]
+/// still follow the stored light variant, until the next `apply` or
+/// [`apply_accessibility`] rebuilds the theme from it. Call `apply` once per
+/// variant, or [`apply_system_theme`], to store both and avoid this.
 ///
 /// Reduced motion: a flag that is already on is left to whoever switched it on
 /// — gpui-base following the OS, or the application. While the connector's own
@@ -795,7 +1049,7 @@ pub fn apply(
 /// and installing both `ThemeConfig`s, then [`apply`]; upstream's
 /// `Theme::sync_system_appearance` then reproduces native colours in either mode.
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
-    let theme = sys.to_gpui_theme();
+    let theme = system_gpui_theme(sys);
     apply_inner(
         theme,
         Some(&sys.light),
@@ -809,15 +1063,14 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
 /// a settings toggle). When a variant is stored for the current mode, the
 /// styled theme is rebuilt from it with `prefs` and re-installed through the
 /// [`apply`] path, so text scaling and transparency take effect and both
-/// configs are refreshed (D35); the stored variants are kept. Without a stored
+/// configs are refreshed; the stored variants are kept. Without a stored
 /// variant only the reduced-motion request is forwarded and the preferences
 /// are stored.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
     let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
         let is_dark = nt.is_dark(cx);
-        let resolved = nt.variant(is_dark)?;
-        let name = cx.try_global::<GpuiTheme>()?.theme_name().clone();
-        Some(to_theme(resolved, &name, is_dark, prefs))
+        let stored = nt.stored(is_dark)?;
+        Some(to_theme(&stored.resolved, &stored.name, is_dark, prefs))
     });
     match rebuilt {
         // `None, None` keeps the stored variants; apply_inner stores `prefs`.
@@ -857,8 +1110,52 @@ fn forward_reduce_motion(reduce: bool, cx: &mut App) {
     gpui_base::apply_system_reduce_motion(cx);
 }
 
+/// The show delay the connector last installed on gpui-base's
+/// `TooltipDefaults`, and the application's own, which a theme without a
+/// delay brings back (spec §7.4).
+#[derive(Default)]
+struct TooltipDelayWrite {
+    /// What the connector last installed; `None` before its first write.
+    last_written: Option<Duration>,
+    /// The delay installed before the connector's first write, or set by the
+    /// application since.
+    app_delay: Duration,
+}
+
+impl Global for TooltipDelayWrite {}
+
+/// Install `theme`'s delay as the `TooltipDefaults` show delay, or the
+/// application's where the theme states none. A show delay that is not the
+/// one the connector last wrote was set by the application (or is gpui-base's
+/// default, before the first write), so it becomes the application's delay.
+/// The grace period is never touched. Decided by value, as gpui-base decides
+/// reduced motion: an application delay equal to the one the connector last
+/// wrote is taken for the connector's.
+fn install_tooltip_delay(theme: Option<Duration>, cx: &mut App) {
+    let current = gpui_base::TooltipDefaults::global(cx);
+    let state = cx.default_global::<TooltipDelayWrite>();
+    if state.last_written != Some(current.show_delay()) {
+        state.app_delay = current.show_delay();
+    }
+    let delay = theme.unwrap_or(state.app_delay);
+    state.last_written = Some(delay);
+    if delay != current.show_delay() {
+        current.with_show_delay(delay).install(cx);
+    }
+}
+
+/// [`install_tooltip_delay`] for the stored variant of the styled theme's
+/// current mode, or for no delay where none is stored.
+fn install_variant_tooltip_delay(cx: &mut App) {
+    let delay = cx
+        .try_global::<NativeTheme>()
+        .and_then(|nt| nt.resolved(cx))
+        .and_then(tooltip_show_delay);
+    install_tooltip_delay(delay, cx);
+}
+
 fn apply_inner(
-    theme: GpuiTheme,
+    mut theme: GpuiTheme,
     light: Option<&ResolvedTheme>,
     dark: Option<&ResolvedTheme>,
     prefs: &AccessibilityPreferences,
@@ -870,11 +1167,21 @@ fn apply_inner(
     let name: SharedString = theme.theme_name().clone();
     {
         let nt = cx.default_global::<NativeTheme>();
+        // The stored pair is the two modes of one theme: another theme's
+        // variant would be installed under this theme's name.
+        nt.light.take_if(|stored| stored.name != name);
+        nt.dark.take_if(|stored| stored.name != name);
         if let Some(light) = light {
-            nt.light = Some(light.clone());
+            nt.light = Some(StoredVariant {
+                name: name.clone(),
+                resolved: light.clone(),
+            });
         }
         if let Some(dark) = dark {
-            nt.dark = Some(dark.clone());
+            nt.dark = Some(StoredVariant {
+                name: name.clone(),
+                resolved: dark.clone(),
+            });
         }
         nt.accessibility = prefs.clone();
         nt.last_is_dark = is_dark;
@@ -884,7 +1191,15 @@ fn apply_inner(
     if !cx.has_global::<GpuiTheme>() {
         gpui_component::init(cx);
     }
-    *GpuiTheme::global_mut(cx) = theme;
+    // The application's settings, not theme data: upstream's own switch
+    // (`Theme::change` -> `apply_config`, gpui-component
+    // src/theme/schema.rs:1064-1108) leaves them, and so does `apply`.
+    let installed = GpuiTheme::global_mut(cx);
+    theme.notification = installed.notification.clone();
+    theme.list = installed.list.clone();
+    theme.sheet = installed.sheet.clone();
+    theme.motion = installed.motion.clone();
+    *installed = theme;
 
     // D34: the other mode's config from its stored variant, so Theme::change
     // reproduces the native palette instead of the registry default.
@@ -912,6 +1227,7 @@ fn apply_inner(
     // is active (§3.3), so it must not be marked as the observer's own.
     write_base_overrides(cx, false);
     forward_reduce_motion(prefs.reduce_motion, cx);
+    install_variant_tooltip_delay(cx);
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event. The theme is written through
@@ -919,7 +1235,7 @@ fn apply_inner(
     // leaves the refresh to such a caller (gpui-component
     // src/theme/mod.rs:468-469), where its own `Theme::change` refreshes every
     // window (`:334`) -- and `refresh_windows` schedules every window (gpui-pre
-    // src/app.rs:1237).
+    // src/app.rs:1308).
     cx.refresh_windows();
 }
 
@@ -1026,11 +1342,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:1863-1865`), delivered
-/// after the pending mark is removed (`:2020-2024`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1983-1985`), delivered
+/// after the pending mark is removed (`:2140-2144`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2330-2342`)
+/// The subscription activates through a deferred effect (`src/app.rs:2450-2462`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next
@@ -1048,6 +1364,11 @@ fn install_observer_once(cx: &mut App) {
         // A rebuild also resets the 12 private base-palette colours (D43);
         // a plain comparison makes this safe on every delivery.
         repair_base_palette(cx);
+        // A mode switch upstream (`Theme::change`) ends in this rebuild, and
+        // the new mode's variant may state another delay. It writes only a
+        // changed delay, to `TooltipDefaults`, which this observer does not
+        // watch.
+        install_variant_tooltip_delay(cx);
         let Some(nt) = cx.try_global::<NativeTheme>() else {
             return;
         };
@@ -1119,9 +1440,10 @@ mod tests {
             colors: _,
             tokens: _,
             transparent: _,
-            // Left at upstream's default on purpose: native-theme models no
-            // notification placement, list highlight default, sheet margin or
-            // motion tokens (`ResolvedTheme` has no such field).
+            // Left to the application: native-theme models no notification
+            // placement, list highlight default, sheet margin or motion tokens
+            // (`ResolvedTheme` has no such field), so `to_theme` leaves
+            // upstream's default and `apply` keeps the installed theme's.
             notification: _,
             list: _,
             sheet: _,
@@ -1178,10 +1500,9 @@ mod tests {
     }
 
     fn scaled(factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = factor;
+        prefs
     }
 
     #[test]
@@ -1354,6 +1675,36 @@ mod tests {
         }
     }
 
+    /// A finite factor whose product with a font size overflows f32 leaves
+    /// the sizes as the theme states them, in the theme and in its config.
+    #[test]
+    fn to_theme_leaves_a_font_size_the_factor_overflows_unscaled() {
+        let resolved = test_resolved();
+        let d = &resolved.defaults;
+        for factor in [f32::MAX / 4.0, f32::MAX] {
+            assert!((d.font.size * factor).is_infinite(), "factor {factor}");
+            assert!((d.mono_font.size * factor).is_infinite(), "factor {factor}");
+            let theme = to_theme(&resolved, "Overflow", true, &scaled(factor));
+            assert!(f32::from(theme.font_size).is_finite(), "factor {factor}");
+            assert_eq!(theme.font_size, px(d.font.size), "factor {factor}");
+            assert_eq!(
+                theme.mono_font_size,
+                px(d.mono_font.size),
+                "factor {factor}"
+            );
+            assert_eq!(
+                theme.dark_theme.font_size,
+                Some(d.font.size),
+                "factor {factor}"
+            );
+            assert_eq!(
+                theme.dark_theme.mono_font_size,
+                Some(d.mono_font.size),
+                "factor {factor}"
+            );
+        }
+    }
+
     /// §8.3: only the flag has a receiver; a zero-width ring is not drawn.
     #[test]
     fn focus_ring_follows_focus_ring_width() {
@@ -1438,6 +1789,43 @@ mod tests {
         .expect("light should work");
     }
 
+    #[test]
+    fn from_preset_takes_is_dark_from_the_resolved_mode() {
+        let prefs = AccessibilityPreferences::default();
+        let presets = Theme::list_presets();
+        assert!(!presets.is_empty());
+        for info in presets {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let (theme, _) = from_preset(info.key, mode.is_dark(), &prefs)
+                    .unwrap_or_else(|e| panic!("{} {mode:?}: {e}", info.key));
+                let resolved = Theme::preset(info.key)
+                    .and_then(|spec| spec.resolve(mode))
+                    .unwrap_or_else(|e| panic!("{} {mode:?}: {e}", info.key));
+                assert_eq!(
+                    theme.is_dark(),
+                    resolved.mode.is_dark(),
+                    "{} asked for {mode:?}",
+                    info.key
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn from_preset_light_only_asked_for_dark_is_light() {
+        let mut spec = Theme::preset("catppuccin-latte").expect("preset should load");
+        spec.dark = None;
+        let (theme, resolved) = from_spec(&spec, true, &AccessibilityPreferences::default())
+            .expect("the light variant should resolve");
+        assert!(!theme.is_dark());
+        assert_eq!(
+            Some(resolved.defaults.background_color),
+            spec.light
+                .as_ref()
+                .and_then(|light| light.defaults.background_color)
+        );
+    }
+
     // -- SystemThemeExt + from_system tests --
 
     #[test]
@@ -1446,12 +1834,17 @@ mod tests {
         let Ok(sys) = SystemTheme::from_system() else {
             return;
         };
-        let theme = sys.to_gpui_theme();
+        let loaded = sys.to_gpui_theme();
         assert_eq!(
-            theme.is_dark(),
+            loaded.theme.is_dark(),
             sys.mode.is_dark(),
             "to_gpui_theme() is_dark should match SystemTheme.mode"
         );
+        assert_eq!(&loaded.resolved, sys.pick(sys.mode));
+        assert_eq!(loaded.mode, sys.mode);
+        assert_eq!(loaded.accessibility, sys.accessibility);
+        assert_eq!(loaded.icon_set, sys.icon_set);
+        assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
     }
 
     #[test]
@@ -1461,14 +1854,20 @@ mod tests {
     }
 
     #[test]
-    fn from_system_returns_tuple() {
-        let Ok((theme, resolved, _is_dark)) = from_system() else {
+    fn from_system_matches_system_theme_ext() {
+        let (Ok(loaded), Ok(sys)) = (from_system(), SystemTheme::from_system()) else {
             return;
         };
-        // Theme and resolved should agree on basic properties
-        assert!(resolved.defaults.font.size > 0.0);
-        // Theme mode should be set
-        let _ = theme.is_dark();
+        let expected = sys.to_gpui_theme();
+        assert!(loaded.resolved.defaults.font.size > 0.0);
+        assert_eq!(loaded.theme.is_dark(), loaded.mode.is_dark());
+        assert_eq!(loaded.theme.is_dark(), expected.theme.is_dark());
+        assert_eq!(loaded.theme.background, expected.theme.background);
+        assert_eq!(loaded.resolved, expected.resolved);
+        assert_eq!(loaded.mode, expected.mode);
+        assert_eq!(loaded.accessibility, expected.accessibility);
+        assert_eq!(loaded.icon_set, expected.icon_set);
+        assert_eq!(loaded.icon_theme, expected.icon_theme);
     }
 
     #[test]
@@ -1476,7 +1875,7 @@ mod tests {
         let Ok(sys) = SystemTheme::from_system() else {
             return;
         };
-        let via_convenience = sys.to_gpui_theme();
+        let via_convenience = sys.to_gpui_theme().theme;
         let via_manual = to_theme(
             sys.pick(sys.mode),
             &sys.name,
@@ -1529,7 +1928,7 @@ mod tests {
     #[test]
     fn defaults_field_helpers() {
         let resolved = test_resolved();
-        assert!(frame_width(&resolved) >= 0.0);
+        assert!(border_line_width(&resolved) >= 0.0);
         assert!(disabled_opacity(&resolved) >= 0.0);
         assert!(disabled_opacity(&resolved) <= 1.0);
         assert!(border_opacity(&resolved) >= 0.0);
@@ -1577,7 +1976,7 @@ mod tests {
     fn line_height_helper() {
         let resolved = test_resolved();
         assert!(
-            line_height_multiplier(&resolved) > 0.0,
+            line_height(&resolved) > 0.0,
             "line height should be positive"
         );
     }
@@ -1585,16 +1984,16 @@ mod tests {
     #[test]
     fn geometry_helpers() {
         let resolved = test_resolved();
-        assert!(dialog_button_spacing(&resolved) >= 0.0);
-        assert!(scrollbar_width(&resolved) > 0.0);
+        assert!(dialog_button_gap(&resolved) >= 0.0);
+        assert!(scrollbar_groove_width(&resolved) > 0.0);
     }
 
     #[test]
     fn selection_and_disabled_helpers() {
         let resolved = test_resolved();
-        let _ = selection_foreground(&resolved);
-        let _ = selection_inactive(&resolved);
-        let _ = disabled_foreground(&resolved);
+        let _ = selection_text_color(&resolved);
+        let _ = selection_inactive_background(&resolved);
+        let _ = disabled_text_color(&resolved);
     }
 
     #[test]
@@ -1604,7 +2003,27 @@ mod tests {
         assert!(focus_ring_offset(&resolved) >= 0.0);
     }
 
-    // -- Issue 26: integration tests for all 16 presets in both modes --
+    #[test]
+    fn tooltip_show_delay_is_the_stated_delay_or_none() {
+        let prefs = AccessibilityPreferences::default();
+        let (_, breeze) = from_preset("kde-breeze", false, &prefs).unwrap();
+        assert_eq!(breeze.tooltip.show_delay, Some(700), "precondition");
+        assert_eq!(
+            tooltip_show_delay(&breeze),
+            Some(std::time::Duration::from_millis(700))
+        );
+        let (_, material) = from_preset("material-3", false, &prefs).unwrap();
+        assert_eq!(material.tooltip.show_delay, Some(0), "precondition");
+        assert_eq!(
+            tooltip_show_delay(&material),
+            Some(std::time::Duration::ZERO)
+        );
+        let (_, mocha) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
+        assert_eq!(mocha.tooltip.show_delay, None, "precondition");
+        assert_eq!(tooltip_show_delay(&mocha), None);
+    }
+
+    // -- Issue 26: integration tests for all 17 presets in both modes --
 
     #[test]
     fn all_presets_dark_mode_no_panic() {
@@ -1679,10 +2098,9 @@ mod apply_tests {
     }
 
     fn prefs(reduce_motion: bool) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            reduce_motion,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.reduce_motion = reduce_motion;
+        prefs
     }
 
     /// The dark catppuccin preset, with the precondition every observer test
@@ -1956,11 +2374,9 @@ mod apply_tests {
         let (theme, resolved) =
             from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
         cx.update(|cx| apply(theme, &resolved, &prefs, cx));
-        let scaled = AccessibilityPreferences {
-            text_scaling_factor: 1.5,
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        };
+        let mut scaled = AccessibilityPreferences::default();
+        scaled.text_scaling_factor = 1.5;
+        scaled.reduce_motion = true;
         cx.update(|cx| apply_accessibility(&scaled, cx));
         cx.update(|cx| {
             let styled = GpuiTheme::global(cx);
@@ -1979,6 +2395,217 @@ mod apply_tests {
         });
     }
 
+    /// A preset that states `tooltip.show_delay_ms`, a second that states
+    /// another, and one that states none.
+    fn tooltip_delay_presets() -> [(GpuiTheme, ResolvedTheme); 3] {
+        let prefs = AccessibilityPreferences::default();
+        let load = |name| from_preset(name, false, &prefs).expect("preset should load");
+        let (breeze, adwaita, latte) = (
+            load("kde-breeze"),
+            load("adwaita"),
+            load("catppuccin-latte"),
+        );
+        assert_eq!(breeze.1.tooltip.show_delay, Some(700), "precondition");
+        assert_eq!(adwaita.1.tooltip.show_delay, Some(500), "precondition");
+        assert_eq!(latte.1.tooltip.show_delay, None, "precondition");
+        [breeze, adwaita, latte]
+    }
+
+    fn ms(ms: u64) -> std::time::Duration {
+        std::time::Duration::from_millis(ms)
+    }
+
+    fn apply_preset(preset: &(GpuiTheme, ResolvedTheme), cx: &mut App) {
+        apply(
+            preset.0.clone(),
+            &preset.1,
+            &AccessibilityPreferences::default(),
+            cx,
+        );
+    }
+
+    /// Spec §7.4: the theme's delay becomes the application-wide
+    /// `TooltipDefaults` show delay; the grace period stays gpui-base's.
+    #[gpui::test]
+    fn a_stated_tooltip_delay_is_installed(cx: &mut TestAppContext) {
+        let [breeze, _, _] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            let defaults = gpui_base::TooltipDefaults::global(cx);
+            assert_eq!(defaults.show_delay(), ms(700));
+            assert_eq!(
+                defaults.grace_period(),
+                gpui_base::TooltipDefaults::new().grace_period()
+            );
+        });
+    }
+
+    /// Review Focus 2: a theme without the field keeps the toolkit's delay.
+    #[gpui::test]
+    fn a_theme_without_a_delay_keeps_the_toolkits(cx: &mut TestAppContext) {
+        let [_, _, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&latte, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                gpui_base::TooltipDefaults::new()
+            );
+        });
+    }
+
+    /// Review Focus 3: from a theme that states a delay to one that does not,
+    /// the delay goes back to gpui-base's 500 ms where the application set
+    /// none.
+    #[gpui::test]
+    fn a_switch_to_a_theme_without_a_delay_restores_the_default(cx: &mut TestAppContext) {
+        let [breeze, adwaita, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(700));
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(500));
+            apply_preset(&breeze, cx);
+            apply_preset(&adwaita, cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(500));
+        });
+    }
+
+    /// Review Focus 3 and 6: the delay and grace period the application
+    /// installed before the first apply. A theme's delay replaces the
+    /// application's delay and keeps its grace period; a theme without one
+    /// brings the application's delay back.
+    #[gpui::test]
+    fn the_applications_defaults_installed_first_are_kept(cx: &mut TestAppContext) {
+        let [breeze, _, latte] = tooltip_delay_presets();
+        let own = gpui_base::TooltipDefaults::new()
+            .with_show_delay(ms(250))
+            .with_grace_period(ms(80));
+        cx.update(|cx| {
+            own.install(cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            apply_preset(&breeze, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own.with_show_delay(ms(700))
+            );
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+    }
+
+    /// Review Focus 3 and 6: a delay the application sets between two
+    /// applies is its own from then on, and outlives a later theme's delay.
+    #[gpui::test]
+    fn a_delay_the_application_sets_between_applies_is_kept(cx: &mut TestAppContext) {
+        let [breeze, adwaita, latte] = tooltip_delay_presets();
+        cx.update(|cx| {
+            apply_preset(&breeze, cx);
+            let own = gpui_base::TooltipDefaults::global(cx)
+                .with_show_delay(ms(900))
+                .with_grace_period(ms(40));
+            own.install(cx);
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            apply_preset(&adwaita, cx);
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own.with_show_delay(ms(500))
+            );
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+    }
+
+    /// An upstream mode switch (`Theme::change`, which ends in a rebuild of
+    /// gpui-base's theme) installs the new mode's variant's delay, so a theme
+    /// whose two variants state different delays does not keep the previous
+    /// mode's.
+    #[gpui::test]
+    fn an_upstream_mode_switch_installs_that_variants_delay(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (dark_theme, dark) =
+            from_preset("kde-breeze", true, &prefs).expect("preset should load");
+        let (light_theme, mut light) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        assert_eq!(dark.tooltip.show_delay, Some(700), "precondition");
+        light.tooltip.show_delay = Some(300);
+        cx.update(|cx| {
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx);
+            assert!(!GpuiTheme::global(cx).is_dark());
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(300));
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            assert!(GpuiTheme::global(cx).is_dark());
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx).show_delay(),
+                ms(700),
+                "the dark variant's delay after the switch"
+            );
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx).show_delay(),
+                ms(300),
+                "the light variant's delay after the switch back"
+            );
+        });
+    }
+
+    /// An upstream mode switch to a variant that states no delay brings the
+    /// application's own delay back: a variant of the same theme, and the
+    /// unstored mode of a theme applied in one variant after another theme
+    /// (M6-02).
+    #[gpui::test]
+    fn the_applications_delay_survives_a_mode_switch_to_a_variant_without_one(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let (dark_theme, dark) =
+            from_preset("kde-breeze", true, &prefs).expect("preset should load");
+        let (light_theme, mut light) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        assert_eq!(dark.tooltip.show_delay, Some(700), "precondition");
+        light.tooltip.show_delay = None;
+        let [_, _, latte] = tooltip_delay_presets();
+        let own = gpui_base::TooltipDefaults::new().with_show_delay(ms(250));
+        cx.update(|cx| {
+            own.install(cx);
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            assert_eq!(gpui_base::TooltipDefaults::global(cx).show_delay(), ms(700));
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own,
+                "the light variant states no delay"
+            );
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            apply_preset(&latte, cx);
+            assert_eq!(gpui_base::TooltipDefaults::global(cx), own);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::TooltipDefaults::global(cx),
+                own,
+                "Catppuccin Latte stores no dark variant, and KDE Breeze's is gone"
+            );
+        });
+    }
+
     #[gpui::test]
     fn apply_accessibility_forwards_reduce_motion(cx: &mut TestAppContext) {
         cx.update(|cx| {
@@ -1986,6 +2613,160 @@ mod apply_tests {
             assert!(cx.reduce_motion());
             apply_accessibility(&prefs(false), cx);
             assert!(!cx.reduce_motion());
+        });
+    }
+
+    /// M6-01: `notification`, `list`, `sheet` and `motion` are the
+    /// application's settings, not theme data, so `apply` and
+    /// `apply_accessibility` keep the values the application set, as
+    /// upstream's own `Theme::change` does.
+    #[gpui::test]
+    fn apply_keeps_the_applications_own_settings(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = from_preset("nord", true, &prefs).expect("preset should load");
+        assert_ne!(theme.sheet.margin_top, px(40.), "precondition");
+        assert_ne!(theme.notification.max_items, 3, "precondition");
+        assert!(theme.list.active_highlight, "precondition");
+        assert_ne!(theme.motion.duration_normal, Duration::ZERO, "precondition");
+        let assert_kept = |cx: &App| {
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.sheet.margin_top, px(40.));
+            assert_eq!(styled.notification.max_items, 3);
+            assert!(!styled.list.active_highlight);
+            assert_eq!(styled.motion.duration_normal, Duration::ZERO);
+        };
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            let styled = GpuiTheme::global_mut(cx);
+            styled.sheet.margin_top = px(40.);
+            styled.notification.max_items = 3;
+            styled.list.active_highlight = false;
+            styled.motion.duration_normal = Duration::ZERO;
+            apply(theme, &resolved, &prefs, cx);
+            assert_kept(cx);
+            let mut scaled = AccessibilityPreferences::default();
+            scaled.text_scaling_factor = 1.5;
+            apply_accessibility(&scaled, cx);
+            assert_kept(cx);
+        });
+    }
+
+    /// M6-02: a one-variant `apply` of another theme drops the variant an
+    /// earlier theme stored for the other mode, so a `Theme::change` to that
+    /// mode shows upstream's built-in palette, not the earlier theme's. The
+    /// unstored config is `ThemeConfig::default()`, a light one: a change to
+    /// an unstored dark mode keeps the window light (gpui-component
+    /// src/theme/schema.rs:1108), as the `apply` doc says.
+    #[gpui::test]
+    fn a_one_variant_apply_of_another_theme_drops_the_earlier_themes_other_mode(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let (breeze_theme, breeze) =
+            from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        let (mocha_theme, mocha) =
+            from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
+        assert!(
+            !breeze_theme.is_dark() && mocha_theme.is_dark(),
+            "precondition"
+        );
+        assert_ne!(
+            breeze_theme.theme_name(),
+            mocha_theme.theme_name(),
+            "precondition"
+        );
+        let upstream_light =
+            colors::hsla_to_hex(gpui_component::theme::ThemeColor::light().background);
+        for earlier in [&breeze, &mocha] {
+            assert_ne!(
+                colors::hsla_to_hex(colors::rgba_to_hsla(earlier.defaults.background_color)),
+                upstream_light,
+                "precondition"
+            );
+        }
+        cx.update(|cx| {
+            apply(breeze_theme.clone(), &breeze, &prefs, cx);
+            apply(mocha_theme, &mocha, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(!styled.is_dark());
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                upstream_light,
+                "upstream's light palette, not KDE Breeze's"
+            );
+            assert!(
+                cx.native().is_none(),
+                "no light variant of Catppuccin Mocha"
+            );
+        });
+        cx.update(|cx| {
+            apply(breeze_theme, &breeze, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(!styled.is_dark(), "the unstored dark config is a light one");
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                upstream_light,
+                "upstream's light palette, not Catppuccin Mocha's"
+            );
+            assert_eq!(
+                styled.theme_name().as_ref(),
+                "",
+                "the empty config replaced KDE Breeze's light one"
+            );
+            assert!(
+                cx.native().is_some(),
+                "the stored light variant is the current mode's"
+            );
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                colors::hsla_to_hex(GpuiTheme::global(cx).background),
+                upstream_light,
+                "a change back to light does not bring KDE Breeze back"
+            );
+        });
+    }
+
+    /// After a change to an unstored dark mode the styled theme's name is the
+    /// empty config's, while the stored light variant keeps its theme's name:
+    /// `apply_accessibility` rebuilds from that variant under its own name, so
+    /// the stored variants survive and the theme comes back.
+    #[gpui::test]
+    fn apply_accessibility_rebuilds_under_the_stored_name(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, breeze) = from_preset("kde-breeze", false, &prefs).expect("preset should load");
+        let name = theme.theme_name().clone();
+        assert!(!name.is_empty(), "precondition");
+        cx.update(|cx| {
+            apply(theme, &breeze, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                GpuiTheme::global(cx).theme_name().as_ref(),
+                "",
+                "precondition"
+            );
+            let mut scaled = AccessibilityPreferences::default();
+            scaled.text_scaling_factor = 1.5;
+            apply_accessibility(&scaled, cx);
+        });
+        cx.update(|cx| {
+            assert!(cx.native().is_some(), "the stored light variant survives");
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.theme_name(), &name);
+            assert_eq!(styled.font_size, px(breeze.defaults.font.size * 1.5));
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(breeze.defaults.background_color))
+            );
         });
     }
 
@@ -1998,7 +2779,7 @@ mod apply_tests {
         )
         .unwrap();
         let n = Native::unscaled(&resolved);
-        assert_eq!(text_scale_factor(n.accessibility), 1.0);
+        assert_eq!(n.accessibility.text_scale_factor(), 1.0);
         assert!(!n.accessibility.reduce_motion);
     }
 
@@ -2007,7 +2788,10 @@ mod apply_tests {
         let prefs = AccessibilityPreferences::default();
         let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
         let nt = NativeTheme {
-            dark: Some(resolved.clone()),
+            dark: Some(StoredVariant {
+                name: theme.theme_name().clone(),
+                resolved: resolved.clone(),
+            }),
             ..NativeTheme::default()
         };
         let (g, r) =

@@ -123,7 +123,7 @@ dbus-send (D-Bus), Python 3, Pillow
 
 ## generate_gifs_theme_switching.sh
 
-Captures four preset/variant pairs (kde-breeze dark, material light,
+Captures four preset/variant pairs (kde-breeze dark, material-3 light,
 catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
 Each frame passes `capture_window.sh`'s check.
@@ -162,7 +162,9 @@ Full pre-release asset pipeline. Triggers the CI screenshots workflow for
 macOS/Windows, generates all local Linux assets while CI runs, then downloads
 the CI artifacts into the correct per-connector `docs/assets/` directory
 based on artifact name, and finally writes `docs/assets/PROVENANCE.toml`
-through `update_provenance.sh`. Refuses to start while HEAD is unpushed or a path
+through `update_provenance.sh`, with the OS versions the CI jobs recorded
+beside their captures (`<os>-os-version.txt` in each artifact, copied to a
+temporary directory, never into `docs/`). Refuses to start while HEAD is unpushed or a path
 the assets depend on has uncommitted changes, because the captures must come
 from the commit CI builds.
 
@@ -187,7 +189,11 @@ that feeds the showcases (crate manifests and sources, presets, icon
 bundles, the egui connector's `mapping.toml`, the egui widgets crate,
 `Cargo.lock`, the capture
 scripts, the screenshots workflow) into
-`docs/assets/PROVENANCE.toml`. `check` recomputes the hash at HEAD and exits
+`docs/assets/PROVENANCE.toml`; `write DIR` also records, as `macos_version`
+and `windows_version`, every distinct OS version in DIR's sidecars
+(`<toolkit>-macos.txt`, `<toolkit>-windows.txt`: `sw_vers -productVersion`
+and `[System.Environment]::OSVersion.Version` on the screenshot runners),
+empty without them. No gate checks the versions against a preset's range yet. `check` recomputes the hash at HEAD and exits
 non-zero with a message when the stamp is missing or the sources differ;
 `scripts/check_release.sh` and the crates.io workflow's CI gate call it, so a
 release whose assets were captured from other sources is refused. Docs-only
@@ -196,6 +202,7 @@ uncommitted changes; `hash` prints the current value.
 
 ```sh
 ./scripts/update_provenance.sh check
+./scripts/update_provenance.sh write DIR
 ```
 
 ## update_compatibility.sh
@@ -207,14 +214,18 @@ The upstream versions each connector has been verified against, recorded in
   connector's `Cargo.toml`, `src`, `examples` or `tests` — for egui
   `mapping.toml` in place of `tests` — have uncommitted
   changes, then runs `cargo update` on the connector's upstream family
-  (gpui-base, gpui-component, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
+  (gpui-base, gpui-component, gpui-fast, gpui-fast-apple, gpui-fast-linux,
+  gpui-fast-macos, gpui-fast-macros, gpui-fast-platform, gpui-fast-web,
+  gpui-fast-wgpu, gpui-fast-windows, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
   iced_aw, iced_core, iced_test, iced_widget; or the egui release train —
   ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest,
   emath, epaint, epaint_default_fonts, kittest) and that connector's gates on
-  the result with `--locked`: tests (for iced also `--no-default-features`
-  and `--features iced_aw`; for egui also `--no-default-features` and
-  `--all-features`), clippy with `-D warnings` (for iced and egui with
-  `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for
+  the result with `--locked`: tests (for gpui with `--features native,watch`
+  and `--features gpui-fast,native,watch --all-targets`; for iced also `--no-default-features` and
+  `--features iced_aw`; for egui also `--no-default-features` and
+  `--all-features`), clippy with `-D warnings` (for gpui with
+  `--features native,watch`, for iced and egui with `--all-features`),
+  documentation with `RUSTDOCFLAGS="-D warnings"` (for
   iced and egui also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
   versions the lockfile resolved, the commit and a sources hash into the
   stamp and rewrite the README's Verified line between its
@@ -237,6 +248,29 @@ There is no verb that writes the stamp without the run.
 ./scripts/update_compatibility.sh check
 ```
 
+## check_release.sh
+
+The workspace's quality gate: source hygiene, `cargo check`, the feature
+combinations, the cross-target checks and clippy, fmt, clippy, the strict
+panic lints, the tests, the connectors' other configurations, the examples,
+widget coverage, the showcase-parity comparator's static modes, docs and the
+archive index, then the release-only sections: the docs.rs emulation,
+packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
+visual-asset and compatibility stamp checks. Prints one line per check and a summary;
+exits 1 on a hard failure. `CONTRIBUTING.md` lists every check.
+
+With `--commit` it runs the per-commit subset: the release-tag check, the gpui
+connector's tests on GPUI Fast and the release-only sections are skipped, each
+printing `skipped (--commit mode)`, and the summary names them.
+The subset runs before every commit; the full run on the last commit of every
+fix phase and before the release commit. An unknown argument exits 2;
+`--help` prints the usage.
+
+```sh
+./scripts/check_release.sh --commit
+./scripts/check_release.sh
+```
+
 ## check_features.sh
 
 Checks that every workspace crate builds, without warnings, in every feature
@@ -245,7 +279,10 @@ with a library target, `cargo check -p <crate> --lib` with
 `--no-default-features`, with `--no-default-features --features <F>` for each
 feature in its `[features]` table except `default`, and with
 `--all-features` — the coverage of `cargo hack check --each-feature`, without
-the extra tool. A combination fails when it does not build or when cargo
+the extra tool. A feature that moves a crate to other dependencies instead of
+adding to them is checked alone but left out of the all-features run, which
+then names every other feature: native-theme-gpui's `gpui-fast`, which
+switches the connector to another GPUI core. A combination fails when it does not build or when cargo
 prints a `warning:` line; cargo caps lints for dependencies, so those come
 from the workspace's own crates, and no `RUSTFLAGS` is set, so the
 dependencies are not rebuilt. Colour is turned off inside the script, and so
@@ -259,6 +296,20 @@ Requires jq.
 
 ```sh
 ./scripts/check_features.sh
+```
+
+## check_strict_panic.sh
+
+Runs `cargo clippy` with the type-aware panic-prone lints denied:
+`unwrap_used`, `expect_used`, `indexing_slicing`, `arithmetic_side_effects`
+and the rest of the list the script holds, each category explained in its
+header. The arguments are clippy's, before the `--`. `scripts/check_release.sh`
+runs it on every crate's library (the gpui connector soft) and `ci.yml`'s
+clippy job runs the same calls (the gpui connector's with
+`continue-on-error`), so the lint list lives in this one file.
+
+```sh
+./scripts/check_strict_panic.sh -p native-theme-iced --lib
 ```
 
 ## check_docsrs.py
@@ -305,6 +356,35 @@ is populated.
 python3 scripts/check_widget_coverage.py
 ```
 
+## check_connector_parity.py
+
+Checks that the iced, gpui and egui connectors name their accessors after the
+model's fields. Lists each connector's crate-root `pub fn`s (its `lib.rs`'s
+own and those a `pub use` there re-exports from one of its modules) and the
+`ResolvedTheme` leaves each reads (the leaf and group types come from the core
+crate's model sources), and requires every one-field accessor to be named
+after its leaf's path, without the leading `defaults.` and a unit suffix
+(`defaults.border.corner_radius` is `border_corner_radius`), and to be present
+in every connector, unless `scripts/connector_parity_exceptions.toml` lists it
+with its reason (`absent` where a connector has no function of that name,
+`unlike` where it has one that is not the accessor). A function it cannot classify needs an exception too, and it
+prints how many functions it put in each class. Exits 0 when clean, 1 on a
+violation or a stale exception, 2 on an input it cannot read (a field the
+model lacks, a `Resolved*` type no model source declares, a connector with
+no one-field accessor found, a malformed exception file). `--self-test` runs its built-in
+scenarios, a planted violation of each rule among them; `--root DIR` reads a
+scratch copy of the tree instead, to try a change; `-v` lists every function
+with its class. `scripts/check_release.sh` (in the `--commit` subset too) runs
+the check and the self-test; `ci.yml`, `publish.yml` and `dependency-canary.yml`
+run the check.
+
+Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
+
+```sh
+python3 scripts/check_connector_parity.py
+python3 scripts/check_connector_parity.py --self-test
+```
+
 ## check_showcase_parity.py
 
 Compares the gpui, iced and egui showcases element by element, for the
@@ -320,7 +400,7 @@ and samples taken, rounded to the pixel grid (R-snap), a text run's width within
 (R-glyph). Every other difference must be listed with a reason in the
 `[parity]` section of `docs/showcase-exceptions.toml`, in `[[parity.group]]`
 entries that each state a `reason` once for their `keys`; a key may be scoped
-to a preset (`material:<id>.<property>`), a preset in one variant
+to a preset (`material-3:<id>.<property>`), a preset in one variant
 (`adwaita/dark:...`) or a run (`hover@...`, `menu@...`). A dump directory
 holds the dumps directly or one subdirectory down; `hover=DIR` or `menu=DIR`
 names the run it is (a bare `DIR` is the `rest` run). Exits 0 when clean, 1 on
@@ -333,7 +413,9 @@ groups) and the current groups, one group per set of reasons, listing the
 proposals it dropped and the differences none covers. With `--write` it also
 rewrites the exceptions file's `[parity]` section, from its `[parity]` line to
 the end, with those groups, every byte above that line unchanged; a second run
-over the same inputs changes nothing.
+over the same inputs changes nothing. `scripts/check_release.sh` (in the
+`--commit` subset too) and `ci.yml` run `--check-list` and `--self-test`,
+which need no display; the dump-and-compare run is not wired into a gate yet.
 
 Requires Python 3.11+ (for `tomllib`) and Pillow.
 

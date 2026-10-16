@@ -1,7 +1,8 @@
 //! Range (spec §10.4's palette table): `Role::Slider`, `Role::ProgressBar`, `Role::Spinner`,
-//! egui's own widgets and the companion crate's slider and spinner.
+//! egui's own widgets and the companion crate's slider, progress bar and spinner.
 
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 
@@ -110,6 +111,16 @@ pub(crate) fn show(
         normal,
         "ProgressBar (animated)",
         |ui| ui.add(egui::ProgressBar::new(state.progress).animate(true)),
+    );
+    // The companion crate's bar (docs/archive/todo_egui-widgets-spec.md §4.9), animated: egui's
+    // busy animation under the stated corner radius, still under reduced motion.
+    demo::widget(
+        reg,
+        ui,
+        Role::ProgressBar,
+        normal,
+        "ProgressBar (native-theme-egui-widgets, animated)",
+        |ui| ui.add(ProgressBar::new(state.progress).animate(true)),
     );
 
     caption(reg, ui, "Spinner (Role::Spinner)");

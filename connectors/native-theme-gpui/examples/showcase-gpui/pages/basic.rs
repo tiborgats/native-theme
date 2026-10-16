@@ -12,12 +12,12 @@
 //! record where they were laid out (`crate::elements`).
 
 use gpui::{
-    AnyElement, AvailableSpace, Context, IntoElement, ParentElement, Pixels, Styled, Window, div,
-    prelude::*, px, size,
+    AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
+    div, prelude::*, px, size,
 };
 use gpui_component::{h_flex, v_flex};
 
-use native_theme::theme::IconRole;
+use native_theme::icons::IconRole;
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
@@ -178,7 +178,7 @@ pub(crate) const BASIC_GROUPS: [BasicGroup; 20] = [
 /// the page's five, four and three columns (docs/showcase-elements.toml, the
 /// Basic page): four columns end the other four with the fifth's groups,
 /// three put the fourth's too, balanced by the groups' heights under the
-/// material preset, the tallest.
+/// material-3 preset, the tallest.
 pub(crate) const BASIC_FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
     &[4, 5, 6],
@@ -501,8 +501,15 @@ impl Showcase {
             group(
                 slider,
                 vec![
-                    demo::slider(ui, cx, "basic-slider", &self.basic_slider_state, width)
-                        .into_any_element(),
+                    demo::slider(
+                        ui,
+                        cx,
+                        "basic-slider",
+                        &self.basic_slider_state,
+                        Axis::Horizontal,
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
         ];
@@ -586,7 +593,7 @@ impl Showcase {
                         cx,
                         "basic-progress",
                         "Progress bar",
-                        BASIC_PROGRESS,
+                        Some(BASIC_PROGRESS),
                     ))
                     .into_any_element(),
             ],

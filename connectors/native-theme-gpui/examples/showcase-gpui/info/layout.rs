@@ -66,7 +66,7 @@ pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
             "line",
             "line_color",
             stated(s.line_color),
-            "native-theme-gpui/widgets/separator.rs:28",
+            "native-theme-gpui/widgets/separator.rs:30",
         ))
         .config(
             "thickness",
@@ -192,11 +192,13 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
     .instance("title", title.to_string())
 }
 
-/// The `Accordion`, drawn while gpui's `reduce_motion` is as given. Its
-/// title rows' geometry line is recorded where `demo::accordion` applies
-/// the builder.
-pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
-    WidgetInfo::new("Accordion")
+/// The `Accordion`, drawn while gpui's `reduce_motion` is as given. `styled`
+/// is whether a native theme is installed, so whether `geometry::accordion`
+/// coloured its edges and `geometry::accordion_title` its titles, whose
+/// geometry lines -- recorded where `demo::accordion` applies the builders --
+/// then name the colours.
+pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Accordion")
         .not_themeable(
             "own icons",
             super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
@@ -206,8 +208,11 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "accordion",
             t.accordion,
             "gpui-component/accordion.rs:378",
-        ))
-        .color(claim(
+        ));
+    let info = if styled {
+        info
+    } else {
+        info.color(claim(
             "border",
             "border",
             t.border,
@@ -234,7 +239,8 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             t.foreground,
             "showcase",
         ))
-        .color(claim(
+    };
+    info.color(claim(
             "chevron",
             "muted_foreground",
             t.muted_foreground,
@@ -244,7 +250,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "border-radius",
             format!("radius_lg: {}px", t.radius_lg.as_f32()),
         )
-        .not_themeable("padding", "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height")
+        .not_themeable("padding", "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour")
         .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver -- Tier U")
         .not_themeable("animation", "reads the theme's spring_control (accordion.rs, AccordionItem). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
         .instance("animation", if reduce_motion {
@@ -413,7 +419,7 @@ pub fn tab_row(
                 "bar",
                 "tab_bar",
                 t.tab_bar,
-                "gpui-component/tab/tab_bar.rs:369",
+                "gpui-component/tab/tab_bar.rs:371",
             ))
             .color(claim(
                 "label",
@@ -443,7 +449,7 @@ pub fn tab_row(
                 "rule under the bar",
                 "border",
                 t.border,
-                "gpui-component/tab/tab_bar.rs:512",
+                "gpui-component/tab/tab_bar.rs:553",
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
@@ -457,7 +463,7 @@ pub fn tab_row(
     let shown = labels.get(selected).copied().unwrap_or("none");
     info.instance("tabs", labels.join(", "))
         .instance("selected", shown)
-        .instance("click", "selects the tab; the showcase keeps the state")
+        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled into view, the next one peeking past it (tab/tab_bar.rs, TabReveal)")
 }
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
@@ -542,37 +548,37 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:101",
+            "native-theme-gpui/widgets/tab_bar.rs:104",
         ))
         .color(claim(
             "unselected tab",
             "background_color",
             stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:102",
+            "native-theme-gpui/widgets/tab_bar.rs:105",
         ))
         .color(claim(
             "label",
             "font",
             stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:107",
+            "native-theme-gpui/widgets/tab_bar.rs:110",
         ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:110",
+            "native-theme-gpui/widgets/tab_bar.rs:113",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:111",
+            "native-theme-gpui/widgets/tab_bar.rs:114",
         ))
         .color(claim(
             "selected tab's outline",
             "border",
             stated(t.border.color),
-            "native-theme-gpui/widgets/tab_bar.rs:112",
+            "native-theme-gpui/widgets/tab_bar.rs:115",
         ))
         .color(claim(
             "rule under the bar",
@@ -585,7 +591,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             stated(t.hover_background.unwrap_or(t.background_color)),
-            "native-theme-gpui/widgets/tab_bar.rs:108",
+            "native-theme-gpui/widgets/tab_bar.rs:111",
         ))
     } else {
         info
@@ -594,7 +600,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         "hovered label",
         "hover_text_color",
         stated(t.hover_text_color),
-        "native-theme-gpui/widgets/tab_bar.rs:109",
+        "native-theme-gpui/widgets/tab_bar.rs:112",
     ));
     // Only where the theme states the line: TabBar draws none otherwise.
     let info = if t.active_indicator_color.is_some() {
@@ -602,7 +608,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "selected tab's line",
             "active_indicator_color",
             stated(t.active_indicator_color.unwrap_or(t.active_background)),
-            "native-theme-gpui/widgets/tab_bar.rs:123",
+            "native-theme-gpui/widgets/tab_bar.rs:126",
         ))
     } else {
         info
@@ -615,7 +621,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         )
     };
     info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
-        .config("font", format!("tab.font, {}px, weight {}", px_text(t.font.size), t.font.weight))
+        .config("font", format!("tab.font: {}, {}px, weight {}, {:?}", t.font.family, px_text(t.font.size), t.font.weight, t.font.style))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
         .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11)", px_text(t.border.line_width), px_text(t.border.corner_radius)))
         .not_themeable("selection mark", "none beyond the selected tab's fill, label and outline: tab.* states no underline or indicator (upstream's TabBar variants draw a primary underline or a framed tab of their own, tab/tab_bar.rs and tab/tab.rs, TabVariant; Breeze's 3px Highlight strip on the selected tab is no tab field)")
@@ -664,13 +670,13 @@ pub fn segmented(
                 "track",
                 "tab_bar_segmented",
                 t.tab_bar_segmented,
-                "gpui-component/tab/tab_bar.rs:391",
+                "gpui-component/tab/tab_bar.rs:393",
             ))
             .color(claim(
                 "selected segment",
                 "background",
                 t.background,
-                "gpui-component/tab/tab_bar.rs:258",
+                "gpui-component/tab/tab_bar.rs:260",
             ))
             .color(claim(
                 "label",
@@ -804,26 +810,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:705, :790-795).
+    // style (button/button.rs:716, :801-806).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1285",
+                "gpui-component/button/button.rs:1302",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:992",
+                "gpui-component/button/button.rs:1009",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1061",
             ))
             .not_themeable(
                 "hover",
@@ -834,31 +840,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:978",
+            "gpui-component/button/button.rs:995",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:992",
+            "gpui-component/button/button.rs:1009",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1044",
+            "gpui-component/button/button.rs:1061",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1122",
+            "gpui-component/button/button.rs:1139",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1206",
+            "gpui-component/button/button.rs:1223",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))

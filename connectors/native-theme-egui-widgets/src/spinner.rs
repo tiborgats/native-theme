@@ -1,14 +1,18 @@
 //! [`Spinner`]: the icon set's loading indicator, or an arc at the theme's stroke.
 
+use std::collections::HashMap;
 use std::f64::consts::TAU;
 use std::sync::Arc;
 
 use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui;
 use native_theme_egui::egui::emath::Numeric as _;
+use native_theme_egui::egui::mutex::Mutex;
 use native_theme_egui::icons::{self, IconKey};
-use native_theme_egui::native_theme::icons::{FreedesktopLoader, load_icon_indicator};
-use native_theme_egui::native_theme::theme::{AnimatedIcon, IconSet};
+use native_theme_egui::native_theme::icons::{
+    AnimatedIcon, FreedesktopLoader, load_icon_indicator,
+};
+use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{Role, ThemeAtlas};
 
 use crate::scope;
@@ -32,7 +36,7 @@ const MAX_POINTS: u8 = 128;
 /// image loaders it installs (`egui_extras::install_image_loaders`), as for every icon of the
 /// connector.
 ///
-/// **Tier P.** Where the set has none (`SfSymbols`, `SegoeIcons`, or its icon feature is
+/// **Tier P.** Where the set has none (`SfSymbols`, `SegoeFluent`, or its icon feature is
 /// off), it paints an arc, because `egui::Spinner` exposes only `.size()` and `.color()`
 /// (`egui/src/widgets/spinner.rs:25`, `:32`): its stroke is hardcoded
 /// `Stroke::new(3.0, color)` (`:58`) and its radius inset by a literal `- 2.0` (`:45`), so
@@ -101,21 +105,88 @@ fn spinner_ui(ui: &mut egui::Ui, paint: &Paint) -> egui::Response {
     response
 }
 
+/// An icon set's indicator, and the image source of each of its frames drawn so far under one
+/// key and scheme: `icons::to_image_source` copies, colours and hashes a frame's SVG and
+/// formats its URI on every call, and a spinner draws a frame in every pass.
+struct Indicator {
+    icon: Option<AnimatedIcon>,
+    sources: Mutex<Sources>,
+}
+
+/// The image sources of an indicator's frames, by frame index, for the key and scheme they
+/// were made under: one key at a time, as every spinner of a `Context` draws the indicator of
+/// its entry under the one key the installed atlas and egui's scheme give in a pass (set, icon
+/// theme, `spinner.diameter`, `spinner.fill_color`). A new key, from a scheme switch or another
+/// atlas, drops the frames kept for the old one, and its frames are made once each.
+#[derive(Default)]
+struct Sources {
+    made_for: Option<(IconKey, egui::Theme)>,
+    frames: HashMap<usize, egui::ImageSource<'static>>,
+}
+
+impl Sources {
+    /// The source of frame `index` made under `key` in `scheme`, while egui still holds its
+    /// bytes: `icons::forget_icons` (the install of another atlas, `ThemeAtlas::clear`) forgets
+    /// them, and a source egui loads again then is one the connector no longer registers.
+    fn get(
+        &self,
+        ctx: &egui::Context,
+        key: &IconKey,
+        scheme: egui::Theme,
+        index: usize,
+    ) -> Option<egui::ImageSource<'static>> {
+        let (made_key, made_scheme) = self.made_for.as_ref()?;
+        if made_key != key || *made_scheme != scheme {
+            return None;
+        }
+        let source = self.frames.get(&index)?;
+        if let egui::ImageSource::Bytes { uri, .. } = source
+            && ctx.try_load_bytes(uri).is_err()
+        {
+            return None;
+        }
+        Some(source.clone())
+    }
+
+    /// Keep `source` as frame `index` made under `key` in `scheme`, dropping the sources made
+    /// under another. A raster frame's `ImageSource::Texture` is not kept: `forget_icons` frees
+    /// the texture it names, and `to_image_source` reuses its stored handle anyway.
+    fn put(
+        &mut self,
+        key: &IconKey,
+        scheme: egui::Theme,
+        index: usize,
+        source: egui::ImageSource<'static>,
+    ) {
+        if !matches!(source, egui::ImageSource::Bytes { .. }) {
+            return;
+        }
+        let same = self
+            .made_for
+            .as_ref()
+            .is_some_and(|(k, s)| k == key && *s == scheme);
+        if !same {
+            self.made_for = Some((key.clone(), scheme));
+            self.frames.clear();
+        }
+        self.frames.insert(index, source);
+    }
+}
+
 /// The icon set's indicator for `set` and, for a freedesktop set, `icon_theme`, loaded once per
 /// `Context` and kept in its data.
-fn indicator(
-    ctx: &egui::Context,
-    set: IconSet,
-    icon_theme: Option<&str>,
-) -> Arc<Option<AnimatedIcon>> {
+fn indicator(ctx: &egui::Context, set: IconSet, icon_theme: Option<&str>) -> Arc<Indicator> {
     let key = egui::Id::new(("native-theme-egui-widgets::spinner", set, icon_theme));
-    if let Some(found) = ctx.data(|d| d.get_temp::<Arc<Option<AnimatedIcon>>>(key)) {
+    if let Some(found) = ctx.data(|d| d.get_temp::<Arc<Indicator>>(key)) {
         return found;
     }
     // Outside every accessor closure: a freedesktop lookup reads the file system.
-    let loaded = Arc::new(match set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
-        other => load_icon_indicator(other),
+    let loaded = Arc::new(Indicator {
+        icon: match set {
+            IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
+            other => load_icon_indicator(other, None),
+        },
+        sources: Mutex::default(),
     });
     ctx.data_mut(|d| d.insert_temp(key, Arc::clone(&loaded)));
     loaded
@@ -126,7 +197,7 @@ fn indicator(
 fn paint_indicator(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) -> bool {
     let ctx = ui.ctx();
     let loaded = indicator(ctx, paint.set, paint.icon_theme.as_deref());
-    let Some(anim) = loaded.as_ref() else {
+    let Some(anim) = loaded.icon.as_ref() else {
         return false;
     };
     let mut key = IconKey::name("indicator", paint.set).size(paint.diameter);
@@ -137,10 +208,22 @@ fn paint_indicator(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) -> bool {
     } else if matches!(paint.set, IconSet::Material | IconSet::Lucide) {
         key = key.tint(paint.colour);
     }
-    let frame = icons::animated_frame_index(ctx, anim, paint.reduce_motion)
-        .and_then(|i| anim.frame_list()?.get(i))
-        .unwrap_or_else(|| anim.first_frame());
-    let Some(source) = icons::to_image_source(ctx, &key, frame) else {
+    // Frame 0 is the first frame (`FrameList::first`), and a turning indicator's one frame.
+    let (index, frame) = icons::animated_frame_index(ctx, anim, paint.reduce_motion)
+        .and_then(|i| Some((i, anim.frame_list()?.get(i)?)))
+        .unwrap_or_else(|| (0, anim.first_frame()));
+    // The scheme names the colour of a freedesktop frame's `currentColor`.
+    let scheme = ctx.theme();
+    let cached = loaded.sources.lock().get(ctx, &key, scheme, index);
+    let Some(source) = cached.or_else(|| {
+        // Made with the lock released, as `get` released it: no other draw waits on the copy,
+        // colouring and hash. The lock is taken before the `Context`'s, never inside it: `get`
+        // asks egui's bytes loaders with it held, and nothing here takes it from inside an
+        // accessor.
+        let made = icons::to_image_source(ctx, &key, frame)?;
+        loaded.sources.lock().put(&key, scheme, index, made.clone());
+        Some(made)
+    }) else {
         return false;
     };
     let mut image = egui::Image::new(source);
@@ -177,4 +260,19 @@ fn paint_arc(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) {
         path,
         egui::Stroke::new(paint.stroke_width, paint.colour),
     ));
+}
+
+/// The bytes of every frame source the indicator entry of `set` (with no icon theme) keeps.
+#[cfg(all(test, feature = "material-icons"))]
+pub(crate) fn kept_frames(ctx: &egui::Context, set: IconSet) -> Vec<egui::load::Bytes> {
+    indicator(ctx, set, None)
+        .sources
+        .lock()
+        .frames
+        .values()
+        .filter_map(|source| match source {
+            egui::ImageSource::Bytes { bytes, .. } => Some(bytes.clone()),
+            _ => None,
+        })
+        .collect()
 }

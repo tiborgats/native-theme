@@ -16,43 +16,72 @@ Thank you for your interest in contributing.
 
 ## Pre-commit gate — `./scripts/check_release.sh`
 
-Before every commit, run the full pre-release check:
+The script has two modes. Before every commit, run the per-commit subset:
+
+```bash
+./scripts/check_release.sh --commit
+```
+
+On the last commit of every fix phase and before the release commit, run the
+full pre-release check:
 
 ```bash
 ./scripts/check_release.sh
 ```
 
-This is the canonical quality gate. It runs, in order: a TODO/FIXME and
+This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME and
 panic-pattern scan of non-test code, per-crate `cargo check --all-targets`,
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
-features, failing on a warning), the cross-target checks on
-`x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
+features — for `native-theme-gpui` all but `gpui-fast` — failing on a
+warning), the cross-target checks on `x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
 installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
 (`native-theme` with `system-icons` alone, and with all features
 under `RUSTFLAGS="-D warnings"`, and for x86_64-apple-darwin `native-theme-egui`
 with all targets and features), `cargo fmt --all` (formats in place; CI uses
-`--check`), per-crate `cargo clippy --all-targets -- -D warnings`, the strict
+`--check`), per-crate `cargo clippy --all-targets -- -D warnings`
+(`native-theme-gpui` with `native,watch`, and with `gpui-fast,native,watch`), the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
-and the rest of the type-aware set), per-crate `cargo test` (and `native-theme`
-with `portal,watch` and with `system-fonts`), the iced, egui and egui-widgets
-crates' other configurations (tests with no default features and, for iced, with
-`iced_aw`, for egui and egui-widgets with all features; clippy with `iced_aw`,
+and the rest of the type-aware set; `native-theme-gpui` with `native,watch` and
+with `gpui-fast,native,watch`),
+per-crate `cargo test` (`native-theme-gpui` with `native,watch`, and `native-theme`
+with `portal,watch` and with `system-fonts`), the gpui connector's tests with no
+default features and on GPUI Fast (`--features gpui-fast,native,watch --all-targets`; the
+`--all-targets` leaves the doctests out, since each is a crate of its own that
+names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
+iced, egui and egui-widgets crates' other configurations (tests with no default features and, for iced, with
+`iced_aw,watch,native`, for egui and egui-widgets with all features; clippy with `iced_aw,watch,native`,
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
 `cargo build --examples` for the crates that have examples, the widget-coverage
-check (`scripts/check_widget_coverage.py`, Python 3.11+), per-crate
+check (`scripts/check_widget_coverage.py`, Python 3.11+), the showcase-parity
+comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
+`--self-test`, which needs Pillow), per-crate
 `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`,
-`native-theme-egui` and `native-theme-egui-widgets` with all features), `cargo package` on every
-publishable crate, `cargo audit`, `cargo outdated`, the visual assets'
+`native-theme-egui` and `native-theme-egui-widgets` with all features), the
+archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
+emulation, `cargo package` on every
+publishable crate, `cargo semver-checks` against each crate's crates.io release
+(`native-theme-gpui` with `--default-features`),
+`cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
-a single-line status per check; the gpui-connector checks and the connector
-packaging are soft (`⚠`), tolerable on a WIP branch but to be resolved before
-opening a release PR; a hard failure (`❌`) exits non-zero and must be fixed.
+a single-line status per check; the gpui-connector checks, the connector
+packaging, the archive index and the semver checks are soft (`⚠`), tolerable on
+a WIP branch but to be resolved before opening a release PR (a semver warning
+by the version number or by undoing the change); a hard failure (`❌`) exits
+non-zero and must be fixed.
+
+`--commit` runs every one of those checks except the release-tag check, the gpui
+connector's tests on GPUI Fast and the release-only sections:
+the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
+`cargo semver-checks`, `cargo audit`, `cargo outdated`, and the PROVENANCE and
+compatibility stamp checks. Each of
+them prints `skipped (--commit mode)`, and the summary names them as skipped,
+not passed.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
-strict panic lints, packaging and outdated-dependency checks CI does not run.
+packaging, semver, outdated-dependency and archive-index checks CI does not run.
 CI additionally tests `native-theme` across its feature matrix on Linux,
 Windows and macOS, which the script cannot do locally.
 
@@ -73,7 +102,7 @@ cargo fmt --all --check
 # Lint each crate (CI runs clippy per-crate, not workspace-wide)
 cargo clippy -p native-theme --all-targets
 cargo clippy -p native-theme-build --all-targets
-cargo clippy -p native-theme-gpui --all-targets
+cargo clippy -p native-theme-gpui --all-targets --features native,watch
 cargo clippy -p native-theme-iced --all-targets
 cargo clippy -p native-theme-egui --all-targets
 cargo clippy -p native-theme-egui-widgets --all-targets
@@ -153,6 +182,16 @@ Design-level choices are captured in files under `docs/`:
 - [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS Sonoma/Tahoe, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
 - [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
 - [`docs/inheritance-rules.toml`](docs/inheritance-rules.toml) — widget-field inheritance rules driving the resolution pipeline
+- [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)
+
+A change too large for one entry there gets a plan: `docs/todo_<topic>-plan.md`,
+usually with a `-rationale.md` (why each decision was taken) and a `-spec.md`
+(what to build) beside it. The `docs/todo_*.md` files in `docs/` are the live
+plans. Archiving is every plan's last task: once it is implemented, the plan,
+its rationale and its spec move to [`docs/archive/`](docs/archive/), keeping
+their names, and the index table in
+[`docs/archive/README.md`](docs/archive/README.md) gains their row;
+`scripts/check_release.sh` warns about an archived file the table does not name.
 
 Do not invent platform-native values. When the authoritative reference is
 silent, flag it explicitly rather than guessing.
@@ -173,7 +212,8 @@ per-crate READMEs resolve on GitHub, on crates.io, and offline.
 
 Regeneration cannot be forgotten: `generate_assets_release.sh` ends by writing
 `docs/assets/PROVENANCE.toml`, which records the workspace version, the
-commit, and a hash over the git object ids of every path that feeds the
+commit, the OS versions of the CI runners that captured the macOS and Windows
+screenshots, and a hash over the git object ids of every path that feeds the
 showcases (crate sources, presets, icon bundles, `Cargo.lock`, the capture
 scripts, the screenshots workflow). `scripts/check_release.sh` recomputes that
 hash at HEAD; a mismatch is a warning while the CHANGELOG entry for the

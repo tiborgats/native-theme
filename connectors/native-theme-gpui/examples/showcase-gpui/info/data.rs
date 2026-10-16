@@ -50,39 +50,77 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
 /// The striped, bordered `DataTable`: its frame and fill. Its rows report
 /// themselves (`data_table_row`). `styled` where a native theme is installed,
 /// so the table takes `geometry::data_table_size` and its container
-/// `geometry::table`.
-pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> WidgetInfo {
+/// `geometry::table`; `header` where the theme states `list.header_height`,
+/// which the header row takes through `geometry::list_header_height`.
+pub fn data_table(
+    t: &Theme,
+    rows: usize,
+    columns: usize,
+    styled: bool,
+    header: bool,
+) -> WidgetInfo {
     let info = WidgetInfo::new("DataTable")
         .variant("striped, bordered")
         .color(claim(
             "frame",
             "border",
             t.border,
-            "gpui-component/table/data_table.rs:171",
+            "gpui-component/table/data_table.rs:185",
         ))
         .color(claim(
             "bg",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:167",
+            "gpui-component/table/data_table.rs:181",
+        ))
+        .color(claim(
+            "sort button icon",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "gpui-component/table/state.rs:1661",
+        ))
+        .color(claim(
+            "sort button hover",
+            "secondary",
+            t.secondary,
+            "gpui-component/table/state.rs:1653",
+        ))
+        .color(claim(
+            "sort button pressed",
+            "secondary_active",
+            t.secondary_active,
+            "gpui-component/table/state.rs:1654",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .config(
+            "sort button radius",
+            format!("radius / 2: {}px", t.radius.as_f32() / 2.0),
+        )
+        .not_themeable("sort button", "dimmed to 50% opacity while its column is unsorted, and given opacity literals of 7 hovered and 1 pressed (table/state.rs, render_sort_icon)")
+        .not_themeable("own icons", super::own_icons("the sort button's ChevronsUpDown, SortAscending and SortDescending (table/state.rs, render_sort_icon)"))
         .not_themeable(
             "geometry",
             "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
-                         a theme reaches it only through its Size and the text its \
-                         container gives the cells",
+                         a theme reaches it only through its Size, its header row \
+                         height (table/data_table.rs, DataTable::header_row_height) \
+                         and the text its container gives the cells",
         );
-    let info = if styled {
-        info.geometry("data_table_size").geometry("table")
+    let info = if styled && header {
+        info.geometry("data_table_size")
+            .geometry("table")
+            .geometry("list_header_height")
+    } else if styled {
+        info.geometry("data_table_size").geometry("table").not_themeable("header height", "the body rows' height: the theme states no list.header_height, and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
     } else {
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
-    info.config("keyboard focus", "a Tab-focused DataTable takes `ring` and the focus ring (table/data_table.rs:176-179)")
+    info.config("keyboard focus", "a Tab-focused DataTable takes `ring` and the focus ring (table/data_table.rs:190-193)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
+        .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
+        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: lines 2119 and 2235), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 310) because selecting cells instead of rows would change the row panels")
 }
 
 /// The `DataTable`'s header row.
@@ -93,13 +131,13 @@ pub fn data_table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/state.rs:1819",
+            "gpui-component/table/state.rs:1852",
         ))
         .color(claim(
             "text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/table/state.rs:1820",
+            "gpui-component/table/state.rs:1853",
         ))
         .instance("columns", columns.to_string())
 }
@@ -119,14 +157,14 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "stripe",
                     "table_even",
                     t.table_even,
-                    "gpui-component/table/state.rs:2290",
+                    "gpui-component/table/state.rs:2324",
                 ))
             } else {
                 info.color(claim(
                     "bg, the table's",
                     "table",
                     t.table,
-                    "gpui-component/table/data_table.rs:167",
+                    "gpui-component/table/data_table.rs:181",
                 ))
             };
             return info
@@ -134,7 +172,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "bottom border",
                     "table_row_border",
                     t.table_row_border,
-                    "gpui-component/table/state.rs:2289",
+                    "gpui-component/table/state.rs:2323",
                 ))
                 .not_themeable("purpose", "a row a striped table draws below its data to fill its height: no cells, and no hover (table/state.rs, TableState::render_table_row)");
         }
@@ -167,21 +205,21 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "selected bg",
             "table_active",
             t.table_active,
-            "gpui-component/table/state.rs:2245",
+            "gpui-component/table/state.rs:2279",
         ))
     } else if body.striped {
         info.color(claim(
             "stripe",
             "table_even",
             t.table_even,
-            "gpui-component/table/state.rs:2032",
+            "gpui-component/table/state.rs:2065",
         ))
     } else {
         info.color(claim(
             "bg, the table's",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:167",
+            "gpui-component/table/data_table.rs:181",
         ))
     };
     // A cell is the delegate's plain text, and neither the table nor its
@@ -201,7 +239,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "hover",
             "table_hover",
             t.table_hover,
-            "gpui-component/table/state.rs:2038",
+            "gpui-component/table/state.rs:2071",
         ))
     };
     let info = if body.right_clicked {
@@ -209,7 +247,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "right-click frame",
             "selection",
             t.selection,
-            "gpui-component/table/state.rs:2261",
+            "gpui-component/table/state.rs:2295",
         ))
         .not_themeable("bottom border", "transparent while the row is right-clicked, under the frame drawn around it (table/state.rs, TableState::render_table_row)")
     } else {
@@ -217,7 +255,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "bottom border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/state.rs:2030",
+            "gpui-component/table/state.rs:2063",
         ));
         if body.last && !body.selected {
             info.not_themeable("last border", "the last row's bottom border is drawn only while the rows leave room below them or the row is selected (table/state.rs, TableState::render_table_row)")
@@ -308,7 +346,7 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
 }
 
 /// The fill of the page Button showing the current page: an outlined
-/// Default Button's `input_background()` (button/button.rs:902), the shared
+/// Default Button's `input_background()` (button/button.rs:919), the shared
 /// claim with a role that says whose fill it is.
 fn current_page_fill(t: &Theme) -> ColorClaim {
     ColorClaim {
@@ -340,25 +378,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "current page text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:992",
+                "gpui-component/button/button.rs:1009",
             ))
             .color(claim(
                 "current page edge",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1044",
+                "gpui-component/button/button.rs:1061",
             ))
             .color(claim(
                 "current page hover, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:903-907",
+                "gpui-component/button/button.rs:920-924",
             ))
             .color(claim(
                 "current page pressed, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:908-912",
+                "gpui-component/button/button.rs:925-929",
             ))
             .not_themeable("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
@@ -377,7 +415,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "disabled text, at 50%",
                 "muted_foreground",
                 t.muted_foreground.opacity(0.5),
-                "gpui-component/button/button.rs:1327",
+                "gpui-component/button/button.rs:1344",
             ))
             .instance("disabled", format!("{which}: there is no page beyond it (pagination.rs, Pagination::render_nav_button)")),
         None => info,

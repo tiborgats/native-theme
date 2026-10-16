@@ -8,29 +8,65 @@
 //! `Style` can hold reaches every widget automatically, and the per-widget
 //! values reach the screen only where the application asks for them.
 //!
+//! # Spec citations
+//!
+//! A `spec §N` in these docs cites section N of the connector's design specification,
+//! [`docs/archive/todo_v0.6.0_egui-connector-spec.md`](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.6.0_egui-connector-spec.md)
+//! in the repository; the published crate does not include it. The mapping document below
+//! cites the same document by bare section numbers, as its preamble says.
+//!
 //! # Quick start
+//!
+//! With feature `native`, the OS readers ([`from_system`] says what it returns without them):
 //!
 //! ```rust,no_run
 //! use native_theme_egui::from_system;
 //!
 //! # fn install(cc: &eframe::CreationContext<'_>) -> native_theme_egui::Result<()> {
-//! let (atlas, _resolved, _is_dark) = from_system()?;
-//! atlas.install(&cc.egui_ctx);
+//! let loaded = from_system()?;
+//! loaded.atlas.install(&cc.egui_ctx);
 //! cc.egui_ctx.set_theme(egui::ThemePreference::System);
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! Or from a bundled preset:
+//! Or from a bundled preset. A preset pins the scheme: set the one `is_dark` named.
+//! [`from_system`] instead follows the OS, with `ThemePreference::System`:
 //!
 //! ```rust,no_run
+//! use egui::ThemePreference;
 //! use native_theme_egui::{from_preset, AccessibilityPreferences};
 //!
 //! # fn install(ctx: &egui::Context) -> native_theme_egui::Result<()> {
-//! let (atlas, _resolved) = from_preset("catppuccin-mocha", true, &AccessibilityPreferences::default())?;
+//! let is_dark = true;
+//! let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &AccessibilityPreferences::default())?;
 //! atlas.install(ctx);
+//! ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! # Window background
+//!
+//! eframe paints `App::clear_color` behind every panel: its root `Ui` has no margin or
+//! background colour (eframe `src/epi.rs:173`), and the default clear colour is a translucent
+//! near-black, `rgba(12, 12, 12, 180)` (`:248-252`). A panel fill the theme states translucent
+//! or transparent — `windows-11`'s sidebar, WinUI's docked `NavigationView` pane over the
+//! window backdrop — lies over that colour, so return the base style's `panel_fill`, the
+//! theme's `defaults.background_color`:
+//!
+//! ```rust,no_run
+//! struct MyApp;
+//!
+//! impl eframe::App for MyApp {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         ui.label("Hello");
+//!     }
+//!
+//!     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
+//!         visuals.panel_fill.to_normalized_gamma_f32()
+//!     }
+//! }
 //! ```
 //!
 //! # Where the theme reaches
@@ -39,8 +75,29 @@
 //! style reaches a widget through [`NativeThemeUiExt::native_scope`],
 //! [`NativeThemeUiExt::native_set_style`] or [`ThemeAtlas::role_modifier`], and a
 //! container's frame through [`NativeThemeUiExt::native_frame`] or
-//! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries are the free
-//! accessors of this crate root; fonts are [`fonts`]' and icons [`icons`]'.
+//! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries, and some the
+//! `Style` also holds, are the free accessors of this crate root, for the application's own
+//! use; fonts are [`fonts`]' and icons [`icons`]'.
+//!
+//! An accessor that returns one `ResolvedTheme` leaf, converted to egui's type
+//! or scaled by the text-scaling factor, is named after the leaf's path,
+//! without the leading `defaults.` and a unit suffix:
+//! `defaults.border.corner_radius` is `border_corner_radius`,
+//! `scrollbar.groove_width` is `scrollbar_groove_width`, the same name in the
+//! iced, gpui and egui connectors (`scripts/check_connector_parity.py` checks
+//! it).
+//!
+//! # What each flag does
+//!
+//! The four [`AccessibilityPreferences`] flags reach the atlas through
+//! [`Builder::accessibility`] and [`from_preset`]; [`from_system`] uses the OS reading.
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | every text size in the styles, and the font accessors' sizes, times [`AccessibilityPreferences::text_scale_factor`]; no other length | a size it reads from the `ResolvedTheme` itself, through [`scaled_text_size`] |
+//! | `reduce_motion` | `Style::animation_time = 0.0` and `ScrollAnimation::none()` in every style | animations of its own |
+//! | `reduce_transparency` | nothing: egui's `Modal` backdrop is a per-call `Modal::backdrop_color`, not a `Style` field; [`is_reduced_transparency`] reads it | the backdrop colour and its own translucent surfaces |
+//! | `high_contrast` | nothing; [`is_high_contrast`] reads it | its own colours, if they should change |
 //!
 //! # Semver
 //!
@@ -84,6 +141,8 @@ mod contract;
 pub mod convert;
 mod ext;
 pub mod fonts;
+#[cfg(test)]
+mod icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;
@@ -100,19 +159,20 @@ mod style_diff;
 mod watch;
 
 pub use accessors::{
-    border_color, border_radius, border_radius_lg, dialog_button_order, disabled_opacity,
-    disabled_text_color, expander_icon, focus_ring_color, focus_ring_offset, focus_ring_width,
-    font_family, font_size, font_weight, info_color, info_text_color, input_frame, input_margin,
-    is_high_contrast, is_reduced_motion, is_reduced_transparency, line_height_multiplier,
-    list_header_font, mono_font_family, mono_font_size, mono_font_weight, role_font_is_italic,
-    role_font_weight, scaled_text_size, scrollbar_width, selection_inactive_background,
-    text_area_frame, text_area_margin, text_role_font, text_role_line_height, text_role_weight,
-    text_scaling_factor, warning_text_color, window_title_bar_font, window_title_bar_text_color,
+    border_color, border_corner_radius, border_corner_radius_lg, dialog_button_order,
+    disabled_opacity, disabled_text_color, expander_icon, focus_ring_color, focus_ring_offset,
+    focus_ring_width, font_family, font_size, font_weight, info_color, info_text_color,
+    input_frame, input_margin, is_high_contrast, is_reduced_motion, is_reduced_transparency,
+    line_height, list_header_font, list_header_height, mono_font_family, mono_font_size,
+    mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
+    scrollbar_groove_width, selection_inactive_background, text_area_frame, text_area_margin,
+    text_role_font, text_role_line_height, text_role_weight, text_scaling_factor,
+    tooltip_show_delay, warning_text_color, window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
 pub use ext::NativeThemeUiExt;
-pub use ext::{SystemThemeExt, from_preset, from_system, to_theme};
+pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(feature = "watch")]
@@ -132,7 +192,7 @@ pub use native_theme;
 // RULE: the crate root re-exports no name that also exists at `egui`'s root.
 // Four native-theme names are therefore deliberately NOT here:
 //   * `native_theme::color::Rgba`     -> `convert::Rgba`   (egui/src/lib.rs:442, opposite colour space)
-//   * `native_theme::theme::IconData` -> `icons::IconData` (egui/src/viewport.rs:183)
+//   * `native_theme::icons::IconData` -> `icons::IconData` (egui/src/viewport.rs:183)
 //   * `native_theme::theme::Theme`    -> reachable as `native_theme::theme::Theme`
 //                                        (egui/src/lib.rs:483 already exports `Theme`)
 //   * `native_theme::SystemTheme`     -> reachable as `native_theme::SystemTheme`
@@ -141,9 +201,9 @@ pub use native_theme;
 //                                         it resolves as `crate::SystemTheme` inside egui at
 //                                         context.rs:252 and :2479)
 pub use native_theme::error::Error;
+pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, FontStyle, IconProvider, IconRole, IconSet,
-    LayoutTheme, ResolvedTheme, ThemeMode, TransformAnimation,
+    ColorMode, DialogButtonOrder, FontStyle, IconSet, LayoutTheme, ResolvedTheme, ThemeMode,
 };
 pub use native_theme::{AccessibilityPreferences, Result};
 
@@ -151,7 +211,7 @@ pub use native_theme::{AccessibilityPreferences, Result};
 pub use native_theme::detect::LinuxDesktop;
 
 /// The README's code blocks, compiled as doctests so they cannot drift from the API; the
-/// runtime-theme-change block needs feature `watch`.
-#[cfg(all(doctest, feature = "watch"))]
+/// runtime-theme-change block needs feature `watch`, and the fonts block `system-fonts`.
+#[cfg(all(doctest, feature = "watch", feature = "system-fonts"))]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;

@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! is drawn instead. Upstream citations are to gpui-component 0.7.3,
+//! gpui-base 0.7.3 and gpui-pre 0.3.9.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;
@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1295)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1312)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
     ),
     (
         "chrome.toolbar.",
@@ -281,12 +281,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_background",
-        "gpui: ThemeColor button_active, the fill blended with it (colors.rs); the pressed fill",
+        "gpui: ThemeColor button_active, laid over the fill source-over (colors.rs, over); the pressed fill",
     ),
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1257-1261)",
+        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1274-1278)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (button.rs:1093-1098)",
+        "not reachable: only a Custom variant takes a shadow (button.rs:1110-1115)",
     ),
     (
         "",
@@ -351,7 +351,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.font",
-        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s size and weight (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
+        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
     ),
     (
         "",
@@ -361,12 +361,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_background",
-        "gpui: ThemeColor button_hover, the fill blended with it (colors.rs): the hover fill",
+        "gpui: ThemeColor button_hover, laid over the fill source-over (colors.rs, over): the hover fill",
     ),
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1181-1186)",
+        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1198-1203)",
     ),
     (
         "",
@@ -434,7 +434,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.background_color",
-        "gpui: widgets::Checkbox's unchecked fill and hover where theirs are unstated (CheckboxLook)",
+        "gpui: widgets::Checkbox's unchecked fill where unchecked_background is unstated (CheckboxLook)",
     ),
     (
         "",
@@ -499,7 +499,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.font",
-        "gpui: the label's size and weight (widgets::Checkbox); family: the window's",
+        "gpui: the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
     ),
     (
         "",
@@ -509,7 +509,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.hover_background",
-        "gpui: over the unchecked fill under the pointer (CheckboxLook)",
+        "gpui: over the unchecked fill under the pointer; unset, the fill at rest (CheckboxLook)",
     ),
     (
         "",
@@ -550,7 +550,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font",
-        "gpui: geometry::combobox's size and weight; family: the window's",
+        "gpui: geometry::combobox's family, size, weight and style",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -571,7 +571,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.background_color",
-        "gpui: the fill under the trigger (demo::combo_surface)",
+        "gpui: geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
     ),
     (
         "",
@@ -616,7 +616,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.font",
-        "gpui: geometry::select's size and weight; family: the window's",
+        "gpui: geometry::select's family, size, weight and style",
     ),
     (
         "",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:436, 444)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:440, 448)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:444)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:448)",
     ),
     (
         "basic.icons.large",
@@ -767,7 +767,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (switch.rs:292)",
+        "gpui: not applied — the label's line box is the track's height (switch.rs:300)",
     ),
     (
         "basic.text_inputs",
@@ -1094,27 +1094,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:2541)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (input/base/element.rs:2541)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:748-751)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:758-761)",
     ),
     (
         "basic.text_area",
         "input.font",
-        "gpui: geometry::text_area's size and weight; family: the window's",
+        "gpui: geometry::text_area's family, size, weight and style",
     ),
     (
         "",
         "input.font",
-        "gpui: geometry::input's size and weight; family: the window's",
+        "gpui: geometry::input's family, size, weight and style",
     ),
     (
         "",
         "input.font.color",
-        "gpui: not carried — the Input letters its text in `foreground` (input/input.rs:105)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (input/input.rs:707)",
     ),
     (
         "basic.number_input",
@@ -1236,12 +1236,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: not applied — the Link paints no fill (link.rs:70-90)",
+        "gpui: geometry::link's fill, where the Link paints none (link.rs:70-90)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's size and weight; family: the window's",
+        "gpui: geometry::link's family, size, weight and style",
     ),
     (
         "",
@@ -1264,6 +1264,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: geometry::link removes upstream's underline where false",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
+    (
+        "basic.table",
+        "list.header_height_px",
+        "gpui: geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
+    ),
+    (
+        "basic.table.header",
+        "list.row_height_px",
+        "gpui: the header row's height where list.header_height is unstated and this is stated, else padding and line (demo::files_table)",
+    ),
     (
         "basic.table",
         "list.background_color",
@@ -1413,7 +1423,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's size and weight; family: the window's",
+        "gpui: geometry::list_item's family, size, weight and style",
     ),
     (
         "",
@@ -1433,7 +1443,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: the selected row's text colour (demo::ListRow)",
+        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (
@@ -1811,7 +1821,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "slider.thumb_hover_color",
-        "gpui: over the thumb under the pointer (SliderLook)",
+        "gpui: over the thumb under the pointer (SliderLook); unset, the thumb at rest",
     ),
     (
         "",
@@ -1899,7 +1909,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.font",
-        "gpui: geometry::status_bar's size and weight; family: the window's",
+        "gpui: geometry::status_bar's family, size, weight and style",
     ),
     (
         "",
@@ -1930,12 +1940,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.hover_checked_background",
-        "gpui: over the on track under the pointer (SwitchLook)",
+        "gpui: over the on track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
         "switch.hover_unchecked_background",
-        "gpui: over the off track under the pointer (SwitchLook)",
+        "gpui: over the off track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
@@ -2036,7 +2046,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tab.font",
-        "gpui: each label's size and weight (widgets::TabBar); family: the window's",
+        "gpui: each label's family, size, weight and style (widgets::TabBar)",
     ),
     (
         "",
@@ -2079,7 +2089,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:788)",
+        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:798)",
     ),
     (
         "",
@@ -2197,7 +2207,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "toolbar.font",
-        "gpui: geometry::toolbar's size and weight on the row; no text is drawn in it",
+        "gpui: geometry::toolbar's family, size, weight, style and colour on the row; no text is drawn in it",
     ),
     (
         "",
@@ -2258,7 +2268,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.font",
-        "gpui: geometry::tooltip's size and weight; family: the window's",
+        "gpui: geometry::tooltip's family, size, weight and style",
     ),
     (
         "",
@@ -2269,6 +2279,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "tooltip.max_width_px",
         "gpui: geometry::tooltip_content, less the bubble's padding and border",
+    ),
+    (
+        "",
+        "tooltip.show_delay_ms",
+        "gpui: tooltip_show_delay on the element of gpui's own tooltip where stated, else gpui's 500ms (demo::built_tooltip_button)",
     ),
     // --- window ---------------------------------------------------------------------------
     (

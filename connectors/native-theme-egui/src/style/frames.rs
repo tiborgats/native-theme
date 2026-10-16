@@ -19,7 +19,6 @@ use crate::{Note, PanelSide, Surface};
 
 /// The leaf paths of one widget's border, for `base`'s reporting helpers (§7.2's emission rule).
 struct BorderPaths {
-    color: &'static str,
     line_width: &'static str,
     corner_radius: &'static str,
     /// top, right, bottom, left — `to_margin`'s order
@@ -30,7 +29,6 @@ struct BorderPaths {
 macro_rules! border_paths {
     ($w:literal) => {
         BorderPaths {
-            color: concat!($w, ".border.color"),
             line_width: concat!($w, ".border.line_width"),
             corner_radius: concat!($w, ".border.corner_radius"),
             padding: [
@@ -62,7 +60,7 @@ fn border_stroke(
     notes: &mut Vec<Note>,
 ) -> egui::Stroke {
     stroke(
-        [paths.color, paths.line_width],
+        paths.line_width,
         own,
         to_color32(border.color),
         border.line_width,

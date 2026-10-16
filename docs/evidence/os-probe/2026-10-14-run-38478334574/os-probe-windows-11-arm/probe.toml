@@ -1,0 +1,775 @@
+[os]
+platform = "Windows"
+source = 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+ProductName = "Windows 10 Enterprise"
+DisplayVersion = "25H2"
+CurrentBuild = "26200"
+UBR = 9457
+EditionID = "Enterprise"
+InstallationType = "Client"
+CurrentMajorVersionNumber = 10
+CurrentMinorVersionNumber = 0
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "win11-vs2026-arm64"
+runner_image_version = "20261004.176.1"
+
+[windows.dpi]
+SetProcessDpiAwarenessContext_PER_MONITOR_AWARE_V2 = "ok"
+GetDpiForSystem = 96
+note = "GetSystemMetrics and SystemParametersInfoW answer at the system DPI of this per-monitor-aware process"
+
+[windows.system_metrics.SM_CXBORDER]
+ForDpi_96 = 1
+ForDpi_120 = 1
+ForDpi_144 = 1
+ForDpi_192 = 1
+GetSystemMetrics = 1
+
+[windows.system_metrics.SM_CYBORDER]
+ForDpi_96 = 1
+ForDpi_120 = 1
+ForDpi_144 = 1
+ForDpi_192 = 1
+GetSystemMetrics = 1
+
+[windows.system_metrics.SM_CXEDGE]
+ForDpi_96 = 2
+ForDpi_120 = 2
+ForDpi_144 = 2
+ForDpi_192 = 2
+GetSystemMetrics = 2
+
+[windows.system_metrics.SM_CYEDGE]
+ForDpi_96 = 2
+ForDpi_120 = 2
+ForDpi_144 = 2
+ForDpi_192 = 2
+GetSystemMetrics = 2
+
+[windows.system_metrics.SM_CXFOCUSBORDER]
+ForDpi_96 = 1
+ForDpi_120 = 1
+ForDpi_144 = 1
+ForDpi_192 = 1
+GetSystemMetrics = 1
+
+[windows.system_metrics.SM_CYFOCUSBORDER]
+ForDpi_96 = 1
+ForDpi_120 = 1
+ForDpi_144 = 1
+ForDpi_192 = 1
+GetSystemMetrics = 1
+
+[windows.system_metrics.SM_CXFIXEDFRAME]
+ForDpi_96 = 3
+ForDpi_120 = 3
+ForDpi_144 = 3
+ForDpi_192 = 3
+GetSystemMetrics = 3
+
+[windows.system_metrics.SM_CYFIXEDFRAME]
+ForDpi_96 = 3
+ForDpi_120 = 3
+ForDpi_144 = 3
+ForDpi_192 = 3
+GetSystemMetrics = 3
+
+[windows.system_metrics.SM_CXFRAME]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 5
+ForDpi_192 = 5
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CYFRAME]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 5
+ForDpi_192 = 5
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CXPADDEDBORDER]
+ForDpi_96 = 4
+ForDpi_120 = 5
+ForDpi_144 = 6
+ForDpi_192 = 8
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CXVSCROLL]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CYVSCROLL]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CXHSCROLL]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CYHSCROLL]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CXHTHUMB]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CYVTHUMB]
+ForDpi_96 = 17
+ForDpi_120 = 21
+ForDpi_144 = 26
+ForDpi_192 = 34
+GetSystemMetrics = 17
+
+[windows.system_metrics.SM_CYCAPTION]
+ForDpi_96 = 23
+ForDpi_120 = 29
+ForDpi_144 = 34
+ForDpi_192 = 45
+GetSystemMetrics = 23
+
+[windows.system_metrics.SM_CYSMCAPTION]
+ForDpi_96 = 23
+ForDpi_120 = 29
+ForDpi_144 = 34
+ForDpi_192 = 45
+GetSystemMetrics = 23
+
+[windows.system_metrics.SM_CXSIZE]
+ForDpi_96 = 36
+ForDpi_120 = 46
+ForDpi_144 = 54
+ForDpi_192 = 72
+GetSystemMetrics = 36
+
+[windows.system_metrics.SM_CYSIZE]
+ForDpi_96 = 22
+ForDpi_120 = 28
+ForDpi_144 = 33
+ForDpi_192 = 44
+GetSystemMetrics = 22
+
+[windows.system_metrics.SM_CXSMSIZE]
+ForDpi_96 = 22
+ForDpi_120 = 28
+ForDpi_144 = 33
+ForDpi_192 = 44
+GetSystemMetrics = 22
+
+[windows.system_metrics.SM_CYSMSIZE]
+ForDpi_96 = 22
+ForDpi_120 = 28
+ForDpi_144 = 33
+ForDpi_192 = 44
+GetSystemMetrics = 22
+
+[windows.system_metrics.SM_CYMENU]
+ForDpi_96 = 20
+ForDpi_120 = 25
+ForDpi_144 = 30
+ForDpi_192 = 39
+GetSystemMetrics = 20
+
+[windows.system_metrics.SM_CXMENUSIZE]
+ForDpi_96 = 19
+ForDpi_120 = 24
+ForDpi_144 = 29
+ForDpi_192 = 38
+GetSystemMetrics = 19
+
+[windows.system_metrics.SM_CYMENUSIZE]
+ForDpi_96 = 19
+ForDpi_120 = 24
+ForDpi_144 = 29
+ForDpi_192 = 38
+GetSystemMetrics = 19
+
+[windows.system_metrics.SM_CXMENUCHECK]
+ForDpi_96 = 15
+ForDpi_120 = 19
+ForDpi_144 = 25
+ForDpi_192 = 31
+GetSystemMetrics = 15
+
+[windows.system_metrics.SM_CYMENUCHECK]
+ForDpi_96 = 15
+ForDpi_120 = 19
+ForDpi_144 = 25
+ForDpi_192 = 31
+GetSystemMetrics = 15
+
+[windows.system_metrics.SM_CXICON]
+ForDpi_96 = 32
+ForDpi_120 = 40
+ForDpi_144 = 48
+ForDpi_192 = 64
+GetSystemMetrics = 32
+
+[windows.system_metrics.SM_CYICON]
+ForDpi_96 = 32
+ForDpi_120 = 40
+ForDpi_144 = 48
+ForDpi_192 = 64
+GetSystemMetrics = 32
+
+[windows.system_metrics.SM_CXSMICON]
+ForDpi_96 = 16
+ForDpi_120 = 20
+ForDpi_144 = 24
+ForDpi_192 = 32
+GetSystemMetrics = 16
+
+[windows.system_metrics.SM_CYSMICON]
+ForDpi_96 = 16
+ForDpi_120 = 20
+ForDpi_144 = 24
+ForDpi_192 = 32
+GetSystemMetrics = 16
+
+[windows.system_metrics.SM_CXICONSPACING]
+ForDpi_96 = 75
+ForDpi_120 = 94
+ForDpi_144 = 113
+ForDpi_192 = 150
+GetSystemMetrics = 75
+
+[windows.system_metrics.SM_CYICONSPACING]
+ForDpi_96 = 75
+ForDpi_120 = 94
+ForDpi_144 = 113
+ForDpi_192 = 150
+GetSystemMetrics = 75
+
+[windows.system_metrics.SM_CXCURSOR]
+ForDpi_96 = 32
+ForDpi_120 = 32
+ForDpi_144 = 48
+ForDpi_192 = 64
+GetSystemMetrics = 32
+
+[windows.system_metrics.SM_CYCURSOR]
+ForDpi_96 = 32
+ForDpi_120 = 32
+ForDpi_144 = 48
+ForDpi_192 = 64
+GetSystemMetrics = 32
+
+[windows.system_metrics.SM_CXDRAG]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 4
+ForDpi_192 = 4
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CYDRAG]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 4
+ForDpi_192 = 4
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CXDOUBLECLK]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 4
+ForDpi_192 = 4
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CYDOUBLECLK]
+ForDpi_96 = 4
+ForDpi_120 = 4
+ForDpi_144 = 4
+ForDpi_192 = 4
+GetSystemMetrics = 4
+
+[windows.system_metrics.SM_CXSCREEN]
+ForDpi_96 = 1024
+ForDpi_120 = 1024
+ForDpi_144 = 1024
+ForDpi_192 = 1024
+GetSystemMetrics = 1024
+
+[windows.system_metrics.SM_CYSCREEN]
+ForDpi_96 = 768
+ForDpi_120 = 768
+ForDpi_144 = 768
+ForDpi_192 = 768
+GetSystemMetrics = 768
+
+[windows.sys_colors]
+format = "#rrggbb from the COLORREF; windows10 marks follow docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_00]
+names = ["COLOR_SCROLLBAR"]
+value = "#c8c8c8"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_01]
+names = ["COLOR_BACKGROUND", "COLOR_DESKTOP"]
+value = "#000000"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_02]
+names = ["COLOR_ACTIVECAPTION"]
+value = "#99b4d1"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_03]
+names = ["COLOR_INACTIVECAPTION"]
+value = "#bfcddb"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_04]
+names = ["COLOR_MENU"]
+value = "#f0f0f0"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_05]
+names = ["COLOR_WINDOW"]
+value = "#ffffff"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_06]
+names = ["COLOR_WINDOWFRAME"]
+value = "#646464"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_07]
+names = ["COLOR_MENUTEXT"]
+value = "#000000"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_08]
+names = ["COLOR_WINDOWTEXT"]
+value = "#000000"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_09]
+names = ["COLOR_CAPTIONTEXT"]
+value = "#000000"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_10]
+names = ["COLOR_ACTIVEBORDER"]
+value = "#b4b4b4"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_11]
+names = ["COLOR_INACTIVEBORDER"]
+value = "#f4f7fc"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_12]
+names = ["COLOR_APPWORKSPACE"]
+value = "#ababab"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_13]
+names = ["COLOR_HIGHLIGHT"]
+value = "#0078d4"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_14]
+names = ["COLOR_HIGHLIGHTTEXT"]
+value = "#ffffff"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_15]
+names = ["COLOR_BTNFACE", "COLOR_3DFACE"]
+value = "#f0f0f0"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_16]
+names = ["COLOR_BTNSHADOW", "COLOR_3DSHADOW"]
+value = "#a0a0a0"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_17]
+names = ["COLOR_GRAYTEXT"]
+value = "#6d6d6d"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_18]
+names = ["COLOR_BTNTEXT"]
+value = "#000000"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_19]
+names = ["COLOR_INACTIVECAPTIONTEXT"]
+value = "#000000"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_20]
+names = ["COLOR_BTNHIGHLIGHT", "COLOR_BTNHILIGHT", "COLOR_3DHIGHLIGHT", "COLOR_3DHILIGHT"]
+value = "#ffffff"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_21]
+names = ["COLOR_3DDKSHADOW"]
+value = "#696969"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_22]
+names = ["COLOR_3DLIGHT"]
+value = "#e3e3e3"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_23]
+names = ["COLOR_INFOTEXT"]
+value = "#000000"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_24]
+names = ["COLOR_INFOBK"]
+value = "#ffffe1"
+windows10 = "not supported (docs/platform-facts.md:360-365)"
+
+[windows.sys_colors.index_25]
+names = []
+value = "#000000"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_26]
+names = ["COLOR_HOTLIGHT"]
+value = "#0066cc"
+windows10 = "supported (docs/platform-facts.md:355-357)"
+
+[windows.sys_colors.index_27]
+names = ["COLOR_GRADIENTACTIVECAPTION"]
+value = "#b9d1ea"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_28]
+names = ["COLOR_GRADIENTINACTIVECAPTION"]
+value = "#d7e4f2"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_29]
+names = ["COLOR_MENUHILIGHT"]
+value = "#0078d4"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.sys_colors.index_30]
+names = ["COLOR_MENUBAR"]
+value = "#f0f0f0"
+windows10 = "not listed in docs/platform-facts.md:355-365"
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96]
+cbSize = 504
+iBorderWidth = 1
+iScrollWidth = 17
+iScrollHeight = 17
+iCaptionWidth = 36
+iCaptionHeight = 22
+iSmCaptionWidth = 22
+iSmCaptionHeight = 22
+iMenuWidth = 19
+iMenuHeight = 19
+iPaddedBorderWidth = 4
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96.lfCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96.lfSmCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96.lfMenuFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96.lfStatusFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_96.lfMessageFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144]
+cbSize = 504
+iBorderWidth = 2
+iScrollWidth = 26
+iScrollHeight = 26
+iCaptionWidth = 54
+iCaptionHeight = 33
+iSmCaptionWidth = 33
+iSmCaptionHeight = 33
+iMenuWidth = 29
+iMenuHeight = 29
+iPaddedBorderWidth = 6
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144.lfCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144.lfSmCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144.lfMenuFont]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144.lfStatusFont]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoForDpi_144.lfMessageFont]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoW]
+cbSize = 504
+iBorderWidth = 1
+iScrollWidth = 17
+iScrollHeight = 17
+iCaptionWidth = 36
+iCaptionHeight = 22
+iSmCaptionWidth = 22
+iSmCaptionHeight = 22
+iMenuWidth = 19
+iMenuHeight = 19
+iPaddedBorderWidth = 4
+
+[windows.nonclient_metrics.SystemParametersInfoW.lfCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoW.lfSmCaptionFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoW.lfMenuFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoW.lfStatusFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.nonclient_metrics.SystemParametersInfoW.lfMessageFont]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.system_parameters]
+note = "SPI_GETNONCLIENTMETRICS is under nonclient_metrics; BOOL values are 0 or 1; SPI_GETMENUSHOWDELAY and SPI_GETMOUSEHOVERTIME are in milliseconds"
+SPI_GETCLIENTAREAANIMATION = 1
+SPI_GETFOCUSBORDERWIDTH = 1
+SPI_GETFOCUSBORDERHEIGHT = 1
+SPI_GETCARETWIDTH = 1
+SPI_GETFLATMENU = 1
+SPI_GETDROPSHADOW = 1
+SPI_GETKEYBOARDCUES = 0
+SPI_GETMENUSHOWDELAY = 400
+SPI_GETUIEFFECTS = 1
+SPI_GETCLEARTYPE = 1
+SPI_GETFONTSMOOTHING = 1
+SPI_GETFONTSMOOTHINGTYPE = 2
+SPI_GETFONTSMOOTHINGCONTRAST = 1200
+SPI_GETHOTTRACKING = 1
+SPI_GETGRADIENTCAPTIONS = 1
+SPI_GETMENUANIMATION = 1
+SPI_GETCOMBOBOXANIMATION = 1
+SPI_GETLISTBOXSMOOTHSCROLLING = 1
+SPI_GETTOOLTIPANIMATION = 1
+SPI_GETSELECTIONFADE = 1
+SPI_GETWHEELSCROLLLINES = 3
+SPI_GETMOUSEHOVERTIME = 400
+
+[windows.system_parameters.SPI_GETICONTITLELOGFONT.SystemParametersInfoForDpi_96]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.system_parameters.SPI_GETICONTITLELOGFONT.SystemParametersInfoForDpi_144]
+lfFaceName = "Segoe UI"
+lfHeight = -18
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.system_parameters.SPI_GETICONTITLELOGFONT.SystemParametersInfoW]
+lfFaceName = "Segoe UI"
+lfHeight = -12
+points = 9.0
+lfWidth = 0
+lfWeight = 400
+lfItalic = 0
+lfCharSet = 1
+lfQuality = 5
+lfPitchAndFamily = 0
+
+[windows.system_parameters.SPI_GETHIGHCONTRAST]
+dwFlags = 126
+HCF_HIGHCONTRASTON = false
+lpszDefaultScheme = ""
+
+[windows.ui_settings]
+TextScaleFactor = 1.0
+AdvancedEffectsEnabled = true
+AnimationsEnabled = true
+AutoHideScrollBars = true
+AccessibilitySettings_HighContrast = false
+AccessibilitySettings_HighContrastScheme = ""
+
+[windows.ui_settings.GetColorValue]
+Background = "#ffffffff"
+Foreground = "#000000ff"
+AccentDark3 = "#001a68ff"
+AccentDark2 = "#003e92ff"
+AccentDark1 = "#0067c0ff"
+Accent = "#0078d4ff"
+AccentLight1 = "#0091f8ff"
+AccentLight2 = "#4cc2ffff"
+AccentLight3 = "#99ebffff"
+Complement = "unavailable: The parameter is incorrect. (0x80070057)"
+
+[windows.dwm]
+DwmGetColorizationColor = "#006fc4e3"
+raw_0xAARRGGBB = "0xe3006fc4"
+opaque_blend = true
+
+[windows.registry.'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize']
+AppsUseLightTheme = 1
+SystemUsesLightTheme = 1
+EnableTransparency = 1
+
+[windows.registry.'HKCU\Software\Microsoft\Windows\DWM']
+ColorPrevalence = 0
+AccentColor = 4292114432

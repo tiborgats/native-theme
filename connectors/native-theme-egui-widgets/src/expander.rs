@@ -26,7 +26,9 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// * the header is as wide as the `Ui`, at least the scope's `interact_size.y` tall
 ///   (`expander.header_height`), padded by the stated `expander.border.padding` sides (the
 ///   scope's `button_padding` on a side left unstated), its fill the scope's state fill
-///   (`expander.hover_background` under the pointer);
+///   (`expander.hover_background` under the pointer); the title wraps at the width the
+///   padding and the arrow leave it, and where it cannot wrap that narrow the header is as
+///   wide as it needs, as egui's own header is at least its text;
 /// * the arrow, `expander.arrow_icon_size` across in `expander.arrow_color` (the state's
 ///   text colour where unstated), is egui's triangle: before the title it turns from the
 ///   title to down as the body opens, egui's own turn; after it (`arrow_side` trailing) from
@@ -47,10 +49,13 @@ pub struct Expander {
     title: egui::WidgetText,
     id_salt: egui::IdSalt,
     default_open: bool,
+    open: Option<bool>,
+    enabled: bool,
 }
 
 /// What [`Expander::show`] returns: the header's response, and the body's value where the
 /// body was shown.
+#[non_exhaustive]
 pub struct ExpanderResponse<R> {
     /// The header's response: `clicked()` on the frame it toggles the body.
     pub header_response: egui::Response,
@@ -66,6 +71,8 @@ impl Expander {
             id_salt: egui::IdSalt::new(title.text()),
             title,
             default_open: false,
+            open: None,
+            enabled: true,
         }
     }
 
@@ -82,28 +89,45 @@ impl Expander {
         self
     }
 
+    /// `Some(true)` opens the body in this pass, or keeps it open, `Some(false)` closes it, or
+    /// keeps it closed, whatever the pointer does; `None`, the default, leaves it to the
+    /// header's clicks: as `CollapsingHeader::open`. The header's response is marked changed
+    /// in the pass that opens or closes it.
+    pub fn open(mut self, open: Option<bool>) -> Self {
+        self.open = open;
+        self
+    }
+
+    /// Where `false`, the expander is disabled: the header cannot be clicked, and header and
+    /// body are drawn in the expander scope's `Disabled` variant, as `CollapsingHeader::enabled`
+    /// greys the header out by `Ui::disable`.
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
     /// Show the header and, where open, the body `add_body` fills.
     pub fn show<R>(
         self,
         ui: &mut egui::Ui,
         add_body: impl FnOnce(&mut egui::Ui) -> R,
     ) -> ExpanderResponse<R> {
-        let resolved: Option<ResolvedTheme> = ThemeAtlas::from_ctx(ui.ctx())
-            .map(|atlas| atlas.resolved_for(ui.ctx().theme()).clone());
-        let Some(t) = resolved else {
+        let atlas = ThemeAtlas::from_ctx(ui.ctx());
+        let Some(t) = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme())) else {
             return own(ui, self, None, add_body);
         };
         let e = &t.expander;
+        let enabled = self.enabled;
         if e.arrow_side.is_none()
             && e.arrow_gap.is_none()
             && e.content_indent.is_none()
             && e.frame_enabled.is_none()
         {
-            return scope::open(ui, Role::Expander, true, |ui| {
-                own(ui, self, Some(&t), add_body)
+            return scope::open(ui, Role::Expander, enabled, |ui| {
+                own(ui, self, Some(t), add_body)
             });
         }
-        scope::open(ui, Role::Expander, true, |ui| {
+        scope::open(ui, Role::Expander, enabled, |ui| {
             painted(ui, self, e, add_body)
         })
     }
@@ -120,6 +144,8 @@ fn own<R>(
         title,
         id_salt,
         default_open,
+        open,
+        enabled,
     } = expander;
     // Where egui lays the header out (`egui/src/containers/collapsing_header.rs:512-590`): the
     // title `indent` in, in the button font, centred on the row; the arrow's box
@@ -138,10 +164,13 @@ fn own<R>(
         .size();
     let header = egui::CollapsingHeader::new(title)
         .id_salt(id_salt)
-        .default_open(default_open);
+        .default_open(default_open)
+        .open(open);
+    // In the expander's scope, `scope::open` has disabled the `Ui` already, and a second
+    // `Ui::disable` would fade it twice (`egui/src/ui.rs:497-502`).
     let header = match t {
         Some(t) => header.icon(expander_icon(t)),
-        None => header,
+        None => header.enabled(enabled),
     };
     let out = header.show(ui, add_body);
     let rect = out.header_response.rect;
@@ -187,6 +216,8 @@ fn painted<R>(
         title,
         id_salt,
         default_open,
+        open,
+        enabled: _,
     } = expander;
     let id = ui.make_persistent_id(id_salt);
     let mut state = egui::collapsing_header::CollapsingState::load_with_default_open(
@@ -203,7 +234,7 @@ fn painted<R>(
         egui::Frame::NONE
     };
     let out = frame.show(ui, |ui| {
-        let (header, mut parts) = header(ui, &mut state, id, title, e);
+        let (header, mut parts) = header(ui, &mut state, id, open, title, e);
         let own_indent = ui.spacing().indent;
         let indent = stated_or(e.content_indent, own_indent);
         let body = state.show_body_unindented(ui, |ui| {
@@ -235,12 +266,13 @@ fn painted<R>(
     }
 }
 
-/// The header row: allocated, sensed and painted, toggling `state` on a click; with the
-/// `header`, `arrow` and `title` [`Parts`] it painted.
+/// The header row: allocated, sensed and painted, toggling `state` on a click, or to `open`
+/// where that is given; with the `header`, `arrow` and `title` [`Parts`] it painted.
 fn header(
     ui: &mut egui::Ui,
     state: &mut egui::collapsing_header::CollapsingState,
     id: egui::Id,
+    open: Option<bool>,
     title: egui::WidgetText,
     e: &ResolvedExpanderTheme,
 ) -> (egui::Response, Parts) {
@@ -258,18 +290,28 @@ fn header(
     let gap = stated_or(e.arrow_gap, ui.spacing().icon_spacing);
     let trailing = e.arrow_side == Some(ArrowSide::Trailing);
 
-    let width = ui.available_width();
-    let wrap = (width - left - right - arrow - gap).max(0.0);
+    let available = ui.available_width();
+    let wrap = (available - left - right - arrow - gap).max(0.0);
     let galley = title.into_galley(
         ui,
-        Some(egui::TextWrapMode::Extend),
+        Some(egui::TextWrapMode::Wrap),
         wrap,
         egui::TextStyle::Button,
     );
+    // At least the title's width, as egui's own header is at least its text
+    // (`egui/src/containers/collapsing_header.rs:516-532`): a title that cannot wrap to the
+    // width left (a glyph wider than it) still lies inside the header, clear of the arrow.
+    let width = available.max(galley.size().x + left + right + arrow + gap);
     let height = (galley.size().y + top + bottom).max(ui.spacing().interact_size.y);
     let (_, rect) = ui.allocate_space(egui::vec2(width, height));
     let mut response = ui.interact(rect, id, egui::Sense::click());
-    if response.clicked() {
+    // egui's own rule (`egui/src/containers/collapsing_header.rs:542-550`): a given `open`
+    // wins over a click.
+    let toggle = match open {
+        Some(open) => open != state.is_open(),
+        None => response.clicked(),
+    };
+    if toggle {
         state.toggle(ui);
         response.mark_changed();
     }

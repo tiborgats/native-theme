@@ -1,124 +1,23 @@
 //! Bundled theme presets and TOML serialization API.
 //!
-//! Provides 16 user-facing built-in presets embedded at compile time:
-//! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material,
-//! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
-//! Solarized, Tokyo Night, One Dark), plus 4 internal live presets
-//! (no colours or font families: geometry, metrics and sizes, used by the
-//! OS-first pipeline) and functions for
+//! Provides 17 user-facing built-in presets embedded at compile time:
+//! 7 platform (kde-breeze, adwaita, windows-11, macos-monterey, macos-tahoe,
+//! material-3, ios-13) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
+//! Solarized, Tokyo Night, One Dark), and functions for
 //! loading themes from TOML strings and files.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use crate::{Error, Result, Theme};
-
-/// All preset entries (name + embedded TOML source), parsed once into a HashMap.
-///
-/// To add a new preset, add it here and (if user-facing) to [`PRESET_NAMES`].
-const PRESET_ENTRIES: &[(&str, &str)] = &[
-    // Platform presets
-    ("kde-breeze", include_str!("presets/kde-breeze.toml")),
-    ("adwaita", include_str!("presets/adwaita.toml")),
-    ("windows-11", include_str!("presets/windows-11.toml")),
-    ("macos-sonoma", include_str!("presets/macos-sonoma.toml")),
-    ("material", include_str!("presets/material.toml")),
-    ("ios", include_str!("presets/ios.toml")),
-    // Community presets
-    (
-        "catppuccin-latte",
-        include_str!("presets/catppuccin-latte.toml"),
-    ),
-    (
-        "catppuccin-frappe",
-        include_str!("presets/catppuccin-frappe.toml"),
-    ),
-    (
-        "catppuccin-macchiato",
-        include_str!("presets/catppuccin-macchiato.toml"),
-    ),
-    (
-        "catppuccin-mocha",
-        include_str!("presets/catppuccin-mocha.toml"),
-    ),
-    ("nord", include_str!("presets/nord.toml")),
-    ("dracula", include_str!("presets/dracula.toml")),
-    ("gruvbox", include_str!("presets/gruvbox.toml")),
-    ("solarized", include_str!("presets/solarized.toml")),
-    ("tokyo-night", include_str!("presets/tokyo-night.toml")),
-    ("one-dark", include_str!("presets/one-dark.toml")),
-    // Internal live presets (geometry-only, not user-selectable)
-    (
-        "kde-breeze-live",
-        include_str!("presets/kde-breeze-live.toml"),
-    ),
-    ("adwaita-live", include_str!("presets/adwaita-live.toml")),
-    (
-        "macos-sonoma-live",
-        include_str!("presets/macos-sonoma-live.toml"),
-    ),
-    (
-        "windows-11-live",
-        include_str!("presets/windows-11-live.toml"),
-    ),
-];
-
-/// All available user-facing preset names (excludes internal live presets).
-const PRESET_NAMES: &[&str] = &[
-    "kde-breeze",
-    "adwaita",
-    "windows-11",
-    "macos-sonoma",
-    "material",
-    "ios",
-    "catppuccin-latte",
-    "catppuccin-frappe",
-    "catppuccin-macchiato",
-    "catppuccin-mocha",
-    "nord",
-    "dracula",
-    "gruvbox",
-    "solarized",
-    "tokyo-night",
-    "one-dark",
-];
-
-/// Known display names for bundled presets (borrowed from static strings).
-///
-/// After TOML deserialization the `Theme.name` field is `Cow::Owned` because
-/// TOML parsing cannot borrow into static memory. This map lets the cache
-/// replace the owned name with a `Cow::Borrowed` reference, avoiding a
-/// per-load `String` allocation for bundled preset names.
-const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
-    ("kde-breeze", "KDE Breeze"),
-    ("kde-breeze-live", "KDE Breeze"),
-    ("adwaita", "Adwaita"),
-    ("adwaita-live", "Adwaita"),
-    ("windows-11", "Windows 11"),
-    ("windows-11-live", "Windows 11"),
-    ("macos-sonoma", "macOS Sonoma"),
-    ("macos-sonoma-live", "macOS Sonoma"),
-    ("material", "Material"),
-    ("ios", "iOS"),
-    ("catppuccin-latte", "Catppuccin Latte"),
-    ("catppuccin-frappe", "Catppuccin Frappe"),
-    ("catppuccin-macchiato", "Catppuccin Macchiato"),
-    ("catppuccin-mocha", "Catppuccin Mocha"),
-    ("nord", "Nord"),
-    ("dracula", "Dracula"),
-    ("gruvbox", "Gruvbox"),
-    ("solarized", "Solarized"),
-    ("tokyo-night", "Tokyo Night"),
-    ("one-dark", "One Dark"),
-];
 
 /// Structured information about a bundled preset.
 ///
 /// Returned by [`Theme::list_presets()`] and [`Theme::list_presets_for_platform()`]
 /// to provide richer metadata than bare preset names.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct PresetInfo {
     /// Machine-readable preset key (e.g. `"catppuccin-mocha"`, `"kde-breeze"`).
     /// Pass this to [`Theme::preset()`] to load the preset.
@@ -126,116 +25,55 @@ pub struct PresetInfo {
     /// Human-readable display name (e.g. `"Catppuccin Mocha"`, `"KDE Breeze"`).
     pub display_name: &'static str,
     /// Target platform tags (e.g. `&["linux-kde"]`). Empty for presets offered
-    /// on every platform (`material` and the community themes).
+    /// on every platform (`material-3` and the community themes).
     pub platforms: &'static [&'static str],
-    /// Whether the preset provides only a light variant (no dark variant).
-    pub light_only: bool,
 }
 
-/// Structured metadata for all 16 user-facing presets.
-///
-/// Combines data from [`PRESET_NAMES`], [`PRESET_DISPLAY_NAMES`], and
-/// [`PLATFORM_SPECIFIC`] into a single array for richer preset enumeration.
-const PRESET_INFOS: &[PresetInfo] = &[
+/// Builds [`PRESET_INFOS`], [`PRESET_NAMES`] and [`PRESET_ENTRIES`] from one
+/// table, in the same order, so the three cannot disagree.
+macro_rules! bundled_presets {
+    ($($key:literal => $display_name:literal, $platforms:expr;)*) => {
+        /// Structured metadata for every bundled preset.
+        const PRESET_INFOS: &[PresetInfo] = &[$(PresetInfo {
+            key: $key,
+            display_name: $display_name,
+            platforms: $platforms,
+        }),*];
+
+        /// Every bundled preset's key.
+        const PRESET_NAMES: &[&str] = &[$($key),*];
+
+        /// Every bundled preset's key and embedded TOML source,
+        /// `presets/<key>.toml`.
+        const PRESET_ENTRIES: &[(&str, &str)] =
+            &[$(($key, include_str!(concat!("presets/", $key, ".toml")))),*];
+    };
+}
+
+// The bundled presets: key => display name, platform tags. To add a preset,
+// add its line here and its `presets/<key>.toml`, whose `name` is the display
+// name (a test checks it).
+bundled_presets! {
     // Platform presets
-    PresetInfo {
-        key: "kde-breeze",
-        display_name: "KDE Breeze",
-        platforms: &["linux-kde"],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "adwaita",
-        display_name: "Adwaita",
-        platforms: &["linux"],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "windows-11",
-        display_name: "Windows 11",
-        platforms: &["windows"],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "macos-sonoma",
-        display_name: "macOS Sonoma",
-        platforms: &["macos"],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "material",
-        display_name: "Material",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "ios",
-        display_name: "iOS",
-        platforms: &["macos", "ios"],
-        light_only: false,
-    },
+    "kde-breeze" => "KDE Breeze", &["linux-kde"];
+    "adwaita" => "Adwaita", &["linux"];
+    "windows-11" => "Windows 11", &["windows"];
+    "macos-monterey" => "macOS Sonoma", &["macos"];
+    "macos-tahoe" => "macOS Tahoe", &["macos"];
+    "material-3" => "Material", &[];
+    "ios-13" => "iOS", &["macos", "ios"];
     // Community presets
-    PresetInfo {
-        key: "catppuccin-latte",
-        display_name: "Catppuccin Latte",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "catppuccin-frappe",
-        display_name: "Catppuccin Frappe",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "catppuccin-macchiato",
-        display_name: "Catppuccin Macchiato",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "catppuccin-mocha",
-        display_name: "Catppuccin Mocha",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "nord",
-        display_name: "Nord",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "dracula",
-        display_name: "Dracula",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "gruvbox",
-        display_name: "Gruvbox",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "solarized",
-        display_name: "Solarized",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "tokyo-night",
-        display_name: "Tokyo Night",
-        platforms: &[],
-        light_only: false,
-    },
-    PresetInfo {
-        key: "one-dark",
-        display_name: "One Dark",
-        platforms: &[],
-        light_only: false,
-    },
-];
+    "catppuccin-latte" => "Catppuccin Latte", &[];
+    "catppuccin-frappe" => "Catppuccin Frappe", &[];
+    "catppuccin-macchiato" => "Catppuccin Macchiato", &[];
+    "catppuccin-mocha" => "Catppuccin Mocha", &[];
+    "nord" => "Nord", &[];
+    "dracula" => "Dracula", &[];
+    "gruvbox" => "Gruvbox", &[];
+    "solarized" => "Solarized", &[];
+    "tokyo-night" => "Tokyo Night", &[];
+    "one-dark" => "One Dark", &[];
+}
 
 /// Cached parse result. Uses `String` for the error type (not `Error`) because:
 /// - `Error` does not implement `Clone`, which is needed for cache retrieval
@@ -247,31 +85,35 @@ fn parse(toml_str: &str) -> Parsed {
     from_toml(toml_str).map_err(|e| e.to_string())
 }
 
-static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
-    PRESET_ENTRIES
-        .iter()
-        .map(|(key, toml_str)| {
-            let mut result = parse(toml_str);
-            // Replace the TOML-deserialized owned name with a borrowed static string
-            if let Ok(ref mut theme) = result
-                && let Some((_, display_name)) = PRESET_DISPLAY_NAMES.iter().find(|(k, _)| k == key)
-            {
-                theme.name = Cow::Borrowed(display_name);
-            }
-            (*key, result)
-        })
-        .collect()
-});
+/// One cell per [`PRESET_ENTRIES`] entry, at the same position, so a preset's
+/// TOML is parsed on its first use only.
+static CACHE: [OnceLock<Parsed>; PRESET_ENTRIES.len()] =
+    [const { OnceLock::new() }; PRESET_ENTRIES.len()];
 
 pub(crate) fn preset(name: &str) -> Result<Theme> {
-    match CACHE.get(name) {
-        None => Err(Error::UnknownPreset {
+    let Some(((_, toml_str), (info, cell))) = PRESET_ENTRIES
+        .iter()
+        .zip(PRESET_INFOS.iter().zip(&CACHE))
+        .find(|((key, _), _)| *key == name)
+    else {
+        return Err(Error::UnknownPreset {
             name: name.to_string(),
             known: PRESET_NAMES,
-        }),
-        Some(Ok(theme)) => Ok(theme.clone()),
-        Some(Err(msg)) => Err(Error::ReaderFailed {
-            reader: "preset_cache",
+        });
+    };
+    let parsed = cell.get_or_init(|| {
+        let mut result = parse(toml_str);
+        // The TOML name equals the display name (tested); borrowing the
+        // static one saves an owned `String` per load
+        if let Ok(ref mut theme) = result {
+            theme.name = Cow::Borrowed(info.display_name);
+        }
+        result
+    });
+    match parsed {
+        Ok(theme) => Ok(theme.clone()),
+        Err(msg) => Err(Error::ReaderFailed {
+            reader: crate::error::reader_names::PRESET_CACHE,
             source: format!("bundled preset '{name}': {msg}").into(),
         }),
     }
@@ -284,15 +126,14 @@ pub(crate) fn list_presets() -> &'static [PresetInfo] {
 /// Detect the current platform tag for preset filtering.
 ///
 /// Returns a string like "linux-kde", "linux", "windows", or "macos".
-#[allow(unreachable_code)]
 fn detect_platform() -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        return "macos";
+        "macos"
     }
     #[cfg(target_os = "windows")]
     {
-        return "windows";
+        "windows"
     }
     #[cfg(target_os = "linux")]
     {
@@ -318,7 +159,7 @@ fn detect_platform() -> &'static str {
 
 /// Returns preset info appropriate for the current platform.
 ///
-/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
+/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-monterey, macos-tahoe, ios-13)
 /// are only included on their native platform. Community themes are always included.
 pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     let platform = detect_platform();
@@ -338,7 +179,11 @@ pub(crate) fn from_toml(toml_str: &str) -> Result<Theme> {
 }
 
 pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<Theme> {
-    let contents = std::fs::read_to_string(path)?;
+    let path = path.as_ref();
+    let contents = std::fs::read_to_string(path).map_err(|source| Error::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
     from_toml(&contents)
 }
 
@@ -381,17 +226,31 @@ mod tests {
         );
     }
 
+    /// The cache swaps each preset's TOML `name` for its display name, so
+    /// the two must be equal, or the swap would hide the TOML's.
+    #[test]
+    fn every_bundled_preset_toml_name_is_its_display_name() {
+        assert_eq!(PRESET_ENTRIES.len(), PRESET_INFOS.len());
+        for ((key, source), info) in PRESET_ENTRIES.iter().zip(PRESET_INFOS) {
+            let theme = from_toml(source).unwrap();
+            assert_eq!(
+                theme.name, info.display_name,
+                "preset {key}'s TOML name differs from its display name"
+            );
+        }
+    }
+
     #[test]
     fn preset_unknown_name_returns_unknown_preset() {
         let err = preset("nonexistent").unwrap_err();
-        let Error::UnknownPreset { name, .. } = err else {
-            return;
-        };
-        assert!(name.contains("nonexistent"));
+        assert!(
+            matches!(err, Error::UnknownPreset { ref name, .. } if name == "nonexistent"),
+            "expected UnknownPreset, got: {err:?}"
+        );
     }
 
-    // NOTE: list_presets_returns_all_sixteen is covered by
-    // tests/preset_loading.rs::list_presets_returns_sixteen_entries.
+    // NOTE: list_presets_returns_all_seventeen is covered by
+    // tests/preset_loading.rs::list_presets_returns_seventeen_entries.
 
     #[test]
     fn from_toml_minimal_valid() {
@@ -466,12 +325,13 @@ accent_color = "#00ff00"
     fn icon_set_native_presets_have_correct_values() {
         use crate::IconSet;
         let cases: &[(&str, IconSet)] = &[
-            ("windows-11", IconSet::SegoeIcons),
-            ("macos-sonoma", IconSet::SfSymbols),
-            ("ios", IconSet::SfSymbols),
+            ("windows-11", IconSet::SegoeFluent),
+            ("macos-monterey", IconSet::SfSymbols),
+            ("macos-tahoe", IconSet::SfSymbols),
+            ("ios-13", IconSet::SfSymbols),
             ("adwaita", IconSet::Freedesktop),
             ("kde-breeze", IconSet::Freedesktop),
-            ("material", IconSet::Material),
+            ("material-3", IconSet::Material),
         ];
         for (name, expected) in cases {
             let theme = preset(name).unwrap();
@@ -511,9 +371,20 @@ accent_color = "#00ff00"
     fn from_file_nonexistent_returns_error() {
         let err = from_file("/tmp/nonexistent_theme_file_12345.toml").unwrap_err();
         match err {
-            Error::Io(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
+            Error::Io { source, .. } => assert_eq!(source.kind(), std::io::ErrorKind::NotFound),
             other => panic!("expected Io, got: {other:?}"),
         }
+    }
+
+    #[test]
+    fn from_file_error_names_the_path() {
+        let path = "/nonexistent/native_theme_missing_12345.toml";
+        let err = Theme::from_file(path).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains(path),
+            "error message should name the file: {msg}"
+        );
     }
 
     #[test]
@@ -535,7 +406,13 @@ accent_color = "#00ff00"
     #[test]
     fn platform_presets_no_derived_fields() {
         // Platform presets must not contain fields that are derived by resolve()
-        let platform_presets = &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"];
+        let platform_presets = &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+        ];
         for name in platform_presets {
             let theme = preset(name).unwrap();
             for (label, variant_opt) in [
@@ -543,10 +420,14 @@ accent_color = "#00ff00"
                 ("dark", theme.dark.as_ref()),
             ] {
                 let variant = variant_opt.unwrap();
-                // button.primary_background is derived from accent - should not be in presets
-                assert!(
-                    variant.button.primary_background.is_none(),
-                    "preset '{name}' {label}.button.primary_background should be None (derived)"
+                // button.primary_background is derived from accent, except on
+                // Windows, where WinUI 3 paints AccentFillColorDefault instead
+                // (docs/platform-facts.md:1175, §2.3)
+                assert_eq!(
+                    variant.button.primary_background.is_some(),
+                    *name == "windows-11",
+                    "preset '{name}' {label}.button.primary_background: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
                 // checkbox.checked_background is derived from accent, except on
                 // KDE, where Breeze tints the button colour instead
@@ -564,7 +445,7 @@ accent_color = "#00ff00"
                 );
                 // progress_bar.fill is derived from accent, except on KDE,
                 // where Breeze lays the accent at 0.7 over the window
-                // (docs/platform-facts.md:1301, §2.10)
+                // (docs/platform-facts.md:1302, §2.10)
                 assert_eq!(
                     variant.progress_bar.fill_color.is_some(),
                     *name == "kde-breeze",
@@ -785,87 +666,6 @@ accent_color = "#00ff00"
     // NOTE: all_presets_round_trip_exact is covered by
     // tests/preset_loading.rs::all_presets_round_trip_toml.
 
-    // === Live preset tests ===
-
-    #[test]
-    fn live_presets_loadable() {
-        let live_names = &[
-            "kde-breeze-live",
-            "adwaita-live",
-            "macos-sonoma-live",
-            "windows-11-live",
-        ];
-        for name in live_names {
-            let theme = preset(name)
-                .unwrap_or_else(|e| panic!("live preset '{name}' failed to parse: {e}"));
-
-            // Both variants must exist
-            assert!(
-                theme.light.is_some(),
-                "live preset '{name}' missing light variant"
-            );
-            assert!(
-                theme.dark.is_some(),
-                "live preset '{name}' missing dark variant"
-            );
-
-            let light = theme.light.as_ref().unwrap();
-            let dark = theme.dark.as_ref().unwrap();
-
-            // No colors
-            assert!(
-                light.defaults.accent_color.is_none(),
-                "live preset '{name}' light should have no accent"
-            );
-            assert!(
-                light.defaults.background_color.is_none(),
-                "live preset '{name}' light should have no background"
-            );
-            assert!(
-                light.defaults.text_color.is_none(),
-                "live preset '{name}' light should have no foreground"
-            );
-            assert!(
-                dark.defaults.accent_color.is_none(),
-                "live preset '{name}' dark should have no accent"
-            );
-            assert!(
-                dark.defaults.background_color.is_none(),
-                "live preset '{name}' dark should have no background"
-            );
-            assert!(
-                dark.defaults.text_color.is_none(),
-                "live preset '{name}' dark should have no foreground"
-            );
-
-            // No fonts
-            assert!(
-                light.defaults.font.family.is_none(),
-                "live preset '{name}' light should have no font family"
-            );
-            assert!(
-                light.defaults.font.size.is_none(),
-                "live preset '{name}' light should have no font size"
-            );
-            assert!(
-                light.defaults.font.weight.is_none(),
-                "live preset '{name}' light should have no font weight"
-            );
-            assert!(
-                dark.defaults.font.family.is_none(),
-                "live preset '{name}' dark should have no font family"
-            );
-            assert!(
-                dark.defaults.font.size.is_none(),
-                "live preset '{name}' dark should have no font size"
-            );
-            assert!(
-                dark.defaults.font.weight.is_none(),
-                "live preset '{name}' dark should have no font weight"
-            );
-        }
-    }
-
     #[test]
     fn list_presets_for_platform_returns_subset() {
         let all = list_presets();
@@ -897,38 +697,10 @@ accent_color = "#00ff00"
                 "community preset '{name}' should always be in filtered list"
             );
         }
-        // material is cross-platform, always present
+        // material-3 is cross-platform, always present
         assert!(
-            filtered.iter().any(|info| info.key == "material"),
-            "material should always be in filtered list"
+            filtered.iter().any(|info| info.key == "material-3"),
+            "material-3 should always be in filtered list"
         );
-    }
-
-    #[test]
-    fn live_presets_fail_validate_standalone() {
-        let live_names = &[
-            "kde-breeze-live",
-            "adwaita-live",
-            "macos-sonoma-live",
-            "windows-11-live",
-        ];
-        for name in live_names {
-            let theme = preset(name).unwrap();
-            let mut light = theme.light.clone().unwrap();
-            light.resolve();
-            let result = light.validate();
-            assert!(
-                result.is_err(),
-                "live preset '{name}' light should fail validation standalone (missing colors/fonts)"
-            );
-
-            let mut dark = theme.dark.clone().unwrap();
-            dark.resolve();
-            let result = dark.validate();
-            assert!(
-                result.is_err(),
-                "live preset '{name}' dark should fail validation standalone (missing colors/fonts)"
-            );
-        }
     }
 }

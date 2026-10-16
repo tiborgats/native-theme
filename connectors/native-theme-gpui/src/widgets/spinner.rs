@@ -2,9 +2,9 @@
 //! without one, an arc painted from `SpinnerTheme`, on gpui-base's headless
 //! progress indicator.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::f32::consts::TAU;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -17,38 +17,40 @@ use gpui_base::Progress as BaseProgress;
 use gpui_component::plot::shape::{Arc, ArcData};
 use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
-use native_theme::icons::{FreedesktopLoader, colorize_monochrome_svg, load_icon_indicator};
-use native_theme::theme::{
-    AnimatedIcon, IconData, IconSet, ResolvedTheme, TransformAnimation, system_icon_set,
-};
+use native_theme::detect::{system_icon_set, system_icon_theme};
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use native_theme::theme::{IconSet, ResolvedTheme};
 
-use super::{color, length, native};
-use crate::icons::{to_image_source, with_spin_animation};
+use super::{color, length};
+use crate::icons::{MAX_ICON_SIZE, animated_frames_to_image_sources_for, with_spin_animation};
+use crate::{ActiveNativeTheme, NativeTheme};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
 /// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
-/// rem (gpui-component 0.7.1 `src/icon.rs:188-192`, `Icon::with_size`). A
+/// rem (gpui-component 0.7.3 `src/icon.rs:188-192`, `Icon::with_size`). A
 /// size other than Medium keeps that ratio to Medium, anchored at
 /// `spinner.diameter`.
 const XSMALL_RATIO: f32 = 0.75;
-/// Small to Medium: `size_3p5` to `size_4` (gpui-component 0.7.1
+/// Small to Medium: `size_3p5` to `size_4` (gpui-component 0.7.3
 /// `src/icon.rs:190-191`).
 const SMALL_RATIO: f32 = 0.875;
-/// Large to Medium: `size_6` to `size_4` (gpui-component 0.7.1
+/// Large to Medium: `size_6` to `size_4` (gpui-component 0.7.3
 /// `src/icon.rs:191-192`).
 const LARGE_RATIO: f32 = 1.5;
 
-/// What a spinner paints, from `SpinnerTheme` (spec §2.6).
+/// What a spinner paints, from `SpinnerTheme`
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.6).
 ///
 /// The diameter depends on the [`Size`]: Medium is `spinner.diameter`, the
 /// platform's spinner; XSmall, Small and Large are `spinner.diameter` × 0.75,
 /// × 0.875 and × 1.5, gpui-component's own spinner ladder (`size_3`,
-/// `size_3p5`, `size_4`, `size_6`; gpui-component 0.7.1 `src/icon.rs:188-192`)
+/// `size_3p5`, `size_4`, `size_6`; gpui-component 0.7.3 `src/icon.rs:188-192`)
 /// re-anchored at the platform's Medium, so the sizes keep upstream's
 /// proportions and the platform's size; `Size::Size(px)` is `px`. None is
 /// less than `spinner.min_diameter`. The stroke is `spinner.stroke_width` at
 /// every size.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SpinnerLook {
     /// The indicator's size: `spinner.diameter` for Medium, scaled for the
     /// other sizes ([`SpinnerLook::of_size`]), and no less than
@@ -91,10 +93,14 @@ impl SpinnerLook {
     }
 
     /// The radius of the stroke's centre line: the model gives the diameter
-    /// as the ring's outer size, and the stroke is centred on its path.
+    /// as the ring's outer size, and the stroke is centred on its path. No
+    /// less than 0: a stroke wider than the diameter fills the disc, as
+    /// `ring` clamps its inner radius at 0. Nothing draws with it; the tests
+    /// check the look against the model through it.
+    #[cfg(test)]
     #[must_use]
-    pub fn path_radius(&self) -> Pixels {
-        px((f32::from(self.diameter) - f32::from(self.stroke)) / 2.)
+    pub(crate) fn path_radius(&self) -> Pixels {
+        px(((f32::from(self.diameter) - f32::from(self.stroke)) / 2.).max(0.))
     }
 }
 
@@ -124,46 +130,6 @@ fn frame_at(delta: f32, count: usize) -> usize {
     ix.min(count.saturating_sub(1))
 }
 
-/// Whether an SVG sets a `color` of its own (a `color` property or
-/// attribute): egui's `native_theme_egui::icons::sets_color`, so a
-/// freedesktop icon is coloured as the egui connector colours it.
-fn sets_color(svg: &str) -> bool {
-    let bytes = svg.as_bytes();
-    svg.match_indices("color").any(|(at, _)| {
-        let preceded = at
-            .checked_sub(1)
-            .and_then(|i| bytes.get(i))
-            .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'-' || *b == b'_');
-        if preceded {
-            return false;
-        }
-        at.checked_add("color".len())
-            .and_then(|i| bytes.get(i..))
-            .and_then(|rest| rest.iter().find(|b| !b.is_ascii_whitespace()))
-            .is_some_and(|b| *b == b':' || *b == b'=')
-    })
-}
-
-/// An indicator frame's bytes in `colour`: a monochrome bundled set's
-/// coloured through `colorize_monochrome_svg`; a freedesktop icon's
-/// `currentColor` replaced where the document sets no `color` of its own
-/// (Breeze's stylesheet sets one per scheme); any other as it is.
-fn paint_svg(set: IconSet, bytes: &[u8], colour: Rgba) -> Vec<u8> {
-    match set {
-        IconSet::Material | IconSet::Lucide => colorize_monochrome_svg(bytes, colour),
-        IconSet::Freedesktop => match std::str::from_utf8(bytes) {
-            Ok(text) if text.contains("currentColor") && !sets_color(text) => text
-                .replace(
-                    "currentColor",
-                    &format!("#{:02x}{:02x}{:02x}", colour.r, colour.g, colour.b),
-                )
-                .into_bytes(),
-            _ => bytes.to_vec(),
-        },
-        _ => bytes.to_vec(),
-    }
-}
-
 /// The colour an indicator of `set` is drawn in: `fill`
 /// (`spinner.fill_color`) for the monochrome bundled sets, `text`
 /// (`defaults.text_color`, the colour `currentColor` stands for) for the
@@ -185,8 +151,12 @@ enum Indicator {
     /// One SVG turned a full turn every `duration_ms`. gpui turns an SVG
     /// element but not an image (gpui-pre elements/svg.rs,
     /// `Svg::with_transformation`), and an SVG element paints every shape in
-    /// its text colour.
-    Spin { svg: Rc<[u8]>, duration_ms: u32 },
+    /// its text colour: it rasterizes the SVG to an alpha mask and draws that
+    /// in the colour (gpui-pre 0.3.9 `src/window.rs:5007`, `:5032`).
+    Spin {
+        svg: Rc<[u8]>,
+        duration_ms: NonZeroU32,
+    },
 }
 
 /// Which indicator, drawn how.
@@ -199,47 +169,109 @@ struct IndicatorKey {
     size: u32,
 }
 
+impl IndicatorKey {
+    /// The key of `set`'s indicator in `colour` at `size`. A freedesktop
+    /// set's icon theme is `icon_theme`, or where that is `None` the system's,
+    /// `system` (asked only then; [`system_theme`]), so a key names the theme
+    /// its indicator comes from and a changed system theme is a key of its
+    /// own; another set has no theme. The size is at most the 512 an SVG is
+    /// rasterized at (`icons::MAX_ICON_SIZE`), so the sizes above it share
+    /// their one image.
+    fn new(
+        set: IconSet,
+        icon_theme: Option<SharedString>,
+        system: impl FnOnce() -> Option<SharedString>,
+        colour: Rgba,
+        size: u32,
+    ) -> Self {
+        let icon_theme = match set {
+            IconSet::Freedesktop => icon_theme.or_else(system),
+            _ => None,
+        };
+        Self {
+            set,
+            icon_theme,
+            colour: [colour.r, colour.g, colour.b, colour.a],
+            size: size.clamp(1, MAX_ICON_SIZE),
+        }
+    }
+}
+
 /// The indicators loaded so far, one per key: loading reads the file system
 /// for a freedesktop set and rasterizes every frame, so it is done once.
 /// Each key's images stay for the life of the application; a key is a set,
-/// an icon theme, a colour and a size, so there are as many as the
-/// combinations drawn.
+/// an icon theme (the system's, where none is named), a colour and a size,
+/// so there are as many as the combinations drawn.
 #[derive(Default)]
-struct Indicators(HashMap<IndicatorKey, Option<Rc<Indicator>>>);
+struct Indicators {
+    loaded: HashMap<IndicatorKey, Option<Rc<Indicator>>>,
+    /// `system_icon_theme()`'s answer since the native theme was last
+    /// installed ([`system_theme`]); `None` until it is asked.
+    system_theme: Option<Option<SharedString>>,
+    /// Whether an observer of [`NativeTheme`] forgets `system_theme`.
+    observing: bool,
+}
 
 impl Global for Indicators {}
 
+/// The system's icon theme, `system_icon_theme()`, asked once and kept until
+/// the native theme is installed again: a spinner is drawn again every frame
+/// it turns, and asking each time would take the detection cache's lock and
+/// copy its answer each frame. Every install of the native theme ([`apply`],
+/// [`apply_system_theme`], [`apply_accessibility`], an upstream mode switch)
+/// writes the [`NativeTheme`] global, whose observer forgets the answer, so
+/// a changed system theme, read again after `invalidate_caches()` and
+/// installed as the runtime theme change recipe does, is asked anew and
+/// makes a key of its own. `None` where the theme cannot be detected.
+///
+/// [`apply`]: crate::apply
+/// [`apply_system_theme`]: crate::apply_system_theme
+/// [`apply_accessibility`]: crate::apply_accessibility
+fn system_theme(cx: &mut App) -> Option<SharedString> {
+    if let Some(known) = cx
+        .try_global::<Indicators>()
+        .and_then(|i| i.system_theme.clone())
+    {
+        return known;
+    }
+    let theme = system_icon_theme().ok().map(SharedString::from);
+    let indicators = cx.default_global::<Indicators>();
+    indicators.system_theme = Some(theme.clone());
+    if !std::mem::replace(&mut indicators.observing, true) {
+        cx.observe_global::<NativeTheme>(|cx| {
+            if cx.has_global::<Indicators>() {
+                cx.global_mut::<Indicators>().system_theme = None;
+            }
+        })
+        .detach();
+    }
+    theme
+}
+
 /// Load `key`'s indicator: `None` where its set has none, or it cannot be
-/// made an image.
+/// made an image. Frames are coloured as their set is, in `colour`
+/// ([`animated_frames_to_image_sources_for`]); a spinning SVG is kept as it
+/// is, as the SVG element draws it as a mask in its text colour.
 fn load(key: &IndicatorKey, colour: Rgba) -> Option<Indicator> {
-    let anim = match key.set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(key.icon_theme.as_deref()),
-        other => load_icon_indicator(other),
-    }?;
+    let anim = load_icon_indicator(key.set, key.icon_theme.as_deref())?;
     match &anim {
-        AnimatedIcon::Frames(data) => {
-            let frames: Option<Vec<ImageSource>> = data
-                .frames()
-                .iter()
-                .map(|frame| match frame {
-                    IconData::Svg(bytes) => to_image_source(
-                        &IconData::Svg(Cow::Owned(paint_svg(key.set, bytes, colour))),
-                        None,
-                        Some(key.size),
-                    ),
-                    other => to_image_source(other, None, Some(key.size)),
-                })
-                .collect();
+        AnimatedIcon::Frames(_) => {
+            let frames = animated_frames_to_image_sources_for(
+                key.set,
+                &anim,
+                Some(color(colour)),
+                Some(key.size),
+            )?;
             Some(Indicator::Frames {
-                frames: frames?.into(),
-                frame_ms: data.frame_duration_ms().get(),
+                frames: frames.sources.into(),
+                frame_ms: frames.frame_duration_ms.get(),
             })
         }
         AnimatedIcon::Transform(data) => match (data.icon(), data.animation()) {
             (IconData::Svg(bytes), TransformAnimation::Spin { duration_ms, .. }) => {
                 Some(Indicator::Spin {
-                    svg: paint_svg(key.set, bytes, colour).into(),
-                    duration_ms: duration_ms.get(),
+                    svg: bytes.as_ref().into(),
+                    duration_ms: *duration_ms,
                 })
             }
             _ => None,
@@ -250,12 +282,15 @@ fn load(key: &IndicatorKey, colour: Rgba) -> Option<Indicator> {
 
 /// `key`'s indicator, loaded once per application.
 fn indicator(key: IndicatorKey, colour: Rgba, cx: &mut App) -> Option<Rc<Indicator>> {
-    if let Some(found) = cx.try_global::<Indicators>().and_then(|c| c.0.get(&key)) {
+    if let Some(found) = cx
+        .try_global::<Indicators>()
+        .and_then(|c| c.loaded.get(&key))
+    {
         return found.clone();
     }
     let loaded = load(&key, colour).map(Rc::new);
     cx.default_global::<Indicators>()
-        .0
+        .loaded
         .insert(key, loaded.clone());
     loaded
 }
@@ -305,7 +340,7 @@ fn frame(frames: &[ImageSource], ix: usize) -> impl IntoElement {
 /// Which icon set's indicator a spinner draws.
 #[derive(Clone)]
 enum IconChoice {
-    /// `native_theme::theme::system_icon_set()`, its icon theme detected.
+    /// `native_theme::detect::system_icon_set()`, its icon theme detected.
     System,
     /// A set, or none; for a freedesktop set, the icon theme.
     Set(Option<IconSet>, Option<SharedString>),
@@ -317,7 +352,7 @@ enum IconChoice {
 /// **Every size is the platform's.** The spinner is [`Sizable`]: Medium, the
 /// default, is `spinner.diameter`; XSmall, Small and Large are
 /// `spinner.diameter` × 0.75, × 0.875 and × 1.5, the ratios of
-/// gpui-component's own spinner sizes to its Medium (gpui-component 0.7.1
+/// gpui-component's own spinner sizes to its Medium (gpui-component 0.7.3
 /// `src/icon.rs:188-192`, `Icon::with_size`), so `.small()` and `.large()`
 /// draw the same indicator smaller and larger; `Size::Size(px)` is `px`.
 /// None is less than `spinner.min_diameter` ([`SpinnerLook::of_size`]). The
@@ -328,16 +363,27 @@ enum IconChoice {
 /// for a freedesktop set `FreedesktopLoader::load_indicator` of the icon
 /// theme the icons come from (Breeze's is `process-working`) -- that
 /// indicator is drawn, at the Size's diameter: the monochrome bundled sets
-/// (Material, Lucide) tinted `spinner.fill_color`, a freedesktop icon in its
-/// own colours (its `currentColor`, where it sets no colour of its own,
-/// `defaults.text_color`). Frames play at the indicator's own frame
-/// duration, a spinning icon turns at its own speed, and under reduced
-/// motion the first frame stands still. Name the set with
-/// [`icon_set`](Self::icon_set) and, for a freedesktop set,
-/// [`icon_theme`](Self::icon_theme); without them it is
-/// `native_theme::theme::system_icon_set()` with the system's icon theme.
+/// (Material, Lucide) tinted `spinner.fill_color`; a freedesktop sprite
+/// sheet (Breeze's) as images in its own colours (its `currentColor`, where
+/// it sets no colour of its own, `defaults.text_color`); a freedesktop icon
+/// that spins (a theme whose indicator is only `process-working-symbolic`)
+/// in `defaults.text_color` alone. gpui turns an SVG element but not an
+/// image, whose sprite carries no transformation (gpui-pre 0.3.9
+/// `src/scene.rs:749-758`), and the SVG element draws the icon's alpha
+/// mask in its text colour (`src/svg_renderer.rs:241-250`,
+/// `src/window.rs:5007`, `:5032`), so a spinning icon's own colours are
+/// lost. Frames play at the indicator's own frame duration, a spinning icon
+/// turns at its own speed, and under reduced motion the first frame stands
+/// still. Name the set with [`icon_set`](Self::icon_set) and, for a
+/// freedesktop set, [`icon_theme`](Self::icon_theme); without them it is
+/// `native_theme::detect::system_icon_set()` with the system's icon theme,
+/// `native_theme::detect::system_icon_theme()`. That theme is asked once
+/// and kept until the native theme is installed again, so a change of it is
+/// drawn once `native_theme::detect::invalidate_caches()` has cleared the
+/// detection and the theme is installed again ([`apply_system_theme`]), as
+/// the runtime theme change recipe does.
 ///
-/// **An arc for a set without one** (`SfSymbols`, `SegoeIcons`, an icon
+/// **An arc for a set without one** (`SfSymbols`, `SegoeFluent`, an icon
 /// feature that is off, or `icon_set(None)`): `spinner.fill_color` at
 /// `spinner.stroke_width`, its outer edge the Size's diameter across,
 /// sweeping 240° and turning a turn a second; under reduced motion it stands
@@ -346,6 +392,8 @@ enum IconChoice {
 /// At Medium the widget is drawn the same with the
 /// `native-theme-egui-widgets` and iced connectors' spinners. Without a
 /// native theme it renders gpui-component's `Spinner` at the same [`Size`].
+///
+/// [`apply_system_theme`]: crate::apply_system_theme
 pub struct Spinner {
     id: ElementId,
     label: Option<SharedString>,
@@ -408,7 +456,7 @@ impl Sizable for Spinner {
 
 impl RenderOnce for Spinner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some((look, fill, text)) = native(cx).and_then(|n| {
+        let Some((look, fill, text)) = cx.native().and_then(|n| {
             let r = n.resolved;
             Some((
                 SpinnerLook::of_size(r, self.size)?,
@@ -432,12 +480,7 @@ impl RenderOnce for Spinner {
             let size = (f32::from(look.diameter) * window.scale_factor())
                 .ceil()
                 .max(1.) as u32;
-            let key = IndicatorKey {
-                set,
-                icon_theme: icon_theme.filter(|_| set == IconSet::Freedesktop),
-                colour: [colour.r, colour.g, colour.b, colour.a],
-                size,
-            };
+            let key = IndicatorKey::new(set, icon_theme, || system_theme(cx), colour, size);
             Some((indicator(key, colour, cx)?, colour))
         });
         let root = BaseProgress::new(self.id)
@@ -531,31 +574,11 @@ mod tests {
     }
 
     #[test]
-    fn a_freedesktop_icon_keeps_its_own_colour() {
-        let red = Rgba::rgb(255, 0, 0);
-        let breeze = br#"<svg><style>.ColorScheme-Text { color:#232629; }</style><path class="ColorScheme-Text" fill="currentColor"/></svg>"#;
-        assert_eq!(
-            paint_svg(IconSet::Freedesktop, breeze, red),
-            breeze.to_vec()
-        );
-        let plain = br#"<svg><path fill="currentColor"/></svg>"#;
-        assert_eq!(
-            paint_svg(IconSet::Freedesktop, plain, red),
-            br##"<svg><path fill="#ff0000"/></svg>"##.to_vec()
-        );
-    }
-
-    #[test]
     fn a_set_without_an_indicator_has_none() {
-        let key = |set| IndicatorKey {
-            set,
-            icon_theme: None,
-            colour: [0, 0, 0, 255],
-            size: 16,
-        };
         let black = Rgba::rgb(0, 0, 0);
+        let key = |set| IndicatorKey::new(set, None, || None, black, 16);
         assert!(load(&key(IconSet::SfSymbols), black).is_none());
-        assert!(load(&key(IconSet::SegoeIcons), black).is_none());
+        assert!(load(&key(IconSet::SegoeFluent), black).is_none());
         #[cfg(feature = "lucide-icons")]
         assert!(matches!(
             load(&key(IconSet::Lucide), black),
@@ -566,5 +589,120 @@ mod tests {
             load(&key(IconSet::Material), black),
             Some(Indicator::Frames { .. })
         ));
+    }
+
+    /// A stroke wider than the diameter, which `of_size` does not bound, has
+    /// its centre line at the centre, as `ring` clamps the inner radius at
+    /// 0, not at a negative radius.
+    #[test]
+    fn the_path_radius_is_never_negative() {
+        let look = |diameter: f32, stroke: f32| SpinnerLook {
+            diameter: px(diameter),
+            stroke: px(stroke),
+            color: gpui::black(),
+        };
+        assert_eq!(look(4., 6.).path_radius(), px(0.));
+        assert_eq!(look(16., 2.).path_radius(), px(7.));
+    }
+
+    /// A size above the 512 an SVG is rasterized at most
+    /// (`icons::MAX_ICON_SIZE`) is one key, as it is one image.
+    #[test]
+    fn a_key_s_size_is_at_most_the_largest_raster() {
+        let black = Rgba::rgb(0, 0, 0);
+        let key = |size| IndicatorKey::new(IconSet::Material, None, || None, black, size);
+        assert_eq!(key(4096).size, 512);
+        assert!(key(4096) == key(513));
+        assert_eq!(key(22).size, 22);
+    }
+
+    /// The system's icon theme is in the key of a freedesktop indicator that
+    /// names none. It is asked once, not every frame: a changed system theme
+    /// whose detection was cleared is not seen until the native theme is
+    /// installed again, and then the spinner loads the new theme's indicator
+    /// instead of finding the old one. A named theme stays, and another set
+    /// has no theme. The themes are fixtures in a child process
+    /// ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[gpui::test]
+    fn a_changed_system_icon_theme_is_a_new_indicator(cx: &mut gpui::TestAppContext) {
+        const NAME: &str =
+            "widgets::spinner::tests::a_changed_system_icon_theme_is_a_new_indicator";
+        const TWO: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><path fill="currentColor" d="M2 2h18v18H2zM6 28h10v10H6z"/></svg>"#;
+        const THREE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 66"><path fill="currentColor" d="M2 2h18v18H2zM6 28h10v10H6zM8 52h6v6H8z"/></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let black = Rgba::rgb(0, 0, 0);
+            let frames = |key: &IndicatorKey| match load(key, black) {
+                Some(Indicator::Frames { frames, .. }) => frames.len(),
+                _ => 0,
+            };
+            let key = |cx: &mut App| {
+                IndicatorKey::new(IconSet::Freedesktop, None, || system_theme(cx), black, 22)
+            };
+            let first = cx.update(|cx| key(cx));
+            assert_eq!(first.icon_theme.as_deref(), Some("first"));
+            assert_eq!(frames(&first), 2);
+
+            let written = std::env::var_os("XDG_CONFIG_HOME").map(|config| {
+                std::fs::write(
+                    std::path::Path::new(&config).join("kdeglobals"),
+                    "[Icons]\nTheme=second\n",
+                )
+            });
+            assert!(matches!(written, Some(Ok(()))), "{written:?}");
+            native_theme::detect::invalidate_caches();
+            let kept = cx.update(|cx| key(cx));
+            assert!(
+                kept == first,
+                "the answer is kept until the theme is installed"
+            );
+
+            cx.update(|cx| {
+                let resolved = native_theme::theme::Theme::preset("kde-breeze")
+                    .ok()
+                    .and_then(|theme| {
+                        theme
+                            .into_variant(native_theme::theme::ColorMode::Light)
+                            .ok()
+                    })
+                    .and_then(|variant| {
+                        variant
+                            .into_resolved(&native_theme::ResolutionContext::for_tests())
+                            .ok()
+                    });
+                assert!(resolved.is_some(), "kde-breeze resolves");
+                if let Some(r) = resolved {
+                    let prefs = native_theme::AccessibilityPreferences::default();
+                    crate::apply(
+                        crate::to_theme(&r, "kde-breeze", false, &prefs),
+                        &r,
+                        &prefs,
+                        cx,
+                    );
+                }
+            });
+            let second = cx.update(|cx| key(cx));
+            assert_eq!(second.icon_theme.as_deref(), Some("second"));
+            assert!(first != second, "a changed theme is a new key");
+            assert_eq!(frames(&second), 3);
+
+            let named = IndicatorKey::new(
+                IconSet::Freedesktop,
+                Some("first".into()),
+                || None,
+                black,
+                22,
+            );
+            assert_eq!(named.icon_theme.as_deref(), Some("first"));
+            let other =
+                IndicatorKey::new(IconSet::Material, Some("first".into()), || None, black, 22);
+            assert_eq!(other.icon_theme, None);
+            return;
+        }
+        let ran = crate::icon_fixture::run(NAME, "first", |icons| {
+            crate::icon_fixture::write_indicator_theme(icons, "first", TWO)?;
+            crate::icon_fixture::write_indicator_theme(icons, "second", THREE)
+        });
+        assert!(ran.is_ok(), "{ran:?}");
     }
 }

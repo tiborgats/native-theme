@@ -7,7 +7,7 @@
 [![core MSRV: 1.88.0](https://img.shields.io/badge/core%20MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
 Cross-platform native theme loading for Rust GUI applications. Reads OS themes
-on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets
+on Linux (KDE, GNOME), macOS, and Windows, or loads any of 17 bundled presets
 (Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
 populated `ResolvedTheme`.
 
@@ -38,17 +38,17 @@ and egui connectors need Rust 1.95.
 ## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies. Your UI code reads from this.
-- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-sonoma`). Load with `Theme::preset("name")`.
+- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are the tooltip show delay and the dialog entrance. Your UI code reads from this.
+- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
 ## See it in action
 
 - **gpui** — full widget gallery with live theme switching
-  - Run: `cargo run -p native-theme-gpui --example showcase-gpui`
+  - Run: `cargo run -p native-theme-gpui --example showcase-gpui`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-gpui/README.md`](connectors/native-theme-gpui/README.md#gallery)
 - **iced** — full widget gallery with live theme switching
-  - Run: `cargo run -p native-theme-iced --example showcase-iced`
+  - Run: `cargo run -p native-theme-iced --example showcase-iced`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-iced/README.md`](connectors/native-theme-iced/README.md#gallery)
 - **egui** — the gpui showcase's application in egui, with live theme switching
   - Run: `cargo run -p native-theme-egui --example showcase-egui`

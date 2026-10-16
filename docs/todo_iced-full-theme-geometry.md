@@ -80,7 +80,7 @@ that implements all `Catalog` traits. Users get fully transparent theming —
 ### Option C: Keep Helpers Only (rejected)
 
 Leave the current architecture. Applications manually apply geometry via
-`border_radius()`, `scrollbar_width()`, etc.
+`border_corner_radius()`, `scrollbar_groove_width()`, etc.
 
 **Rejected because:**
 - Every application using the connector must duplicate the same boilerplate
@@ -421,8 +421,8 @@ pub fn apply_fonts(settings: &mut iced::Settings, variant: &ThemeVariant) {
 
 ### Widget Metrics Helpers (already partially exist)
 
-Keep existing: `button_padding()`, `input_padding()`, `scrollbar_width()`,
-`border_radius()`, `border_radius_lg()`, `font_family()`, `font_size()`,
+Keep existing: `button_padding()`, `input_padding()`, `scrollbar_groove_width()`,
+`border_corner_radius()`, `border_corner_radius_lg()`, `font_family()`, `font_size()`,
 `mono_font_family()`, `mono_font_size()`.
 
 Add: `checkbox_size()`, `checkbox_spacing()`, `slider_track_height()`,

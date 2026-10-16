@@ -1,4 +1,7 @@
-//! §4.7's free accessors: the values no `Style` field carries.
+//! Spec §4.7's free accessors: the values no `Style` field carries, and some the `Style` also
+//! holds, for the application's own use.
+
+use std::time::Duration;
 
 use egui::FontId;
 use native_theme::SystemTheme;
@@ -12,25 +15,29 @@ use crate::convert::{
 };
 use crate::{AccessibilityPreferences, Role, TextRole};
 
-/// A text size from the theme times the user's text-scaling factor; a factor that is not
-/// finite and positive is ignored. Same signature and semantics as
-/// `native_theme_iced::scaled_text_size` (`connectors/native-theme-iced/src/lib.rs:1050`) and
-/// `native_theme_gpui::scaled_text_size` (`connectors/native-theme-gpui/src/lib.rs:463`).
+/// A text size from the theme times the user's text-scaling factor,
+/// [`AccessibilityPreferences::text_scale_factor`]: a factor that is not finite and positive is
+/// ignored. The product is returned as it is, even where it is not a positive normal `f32` (a
+/// finite factor that overflows it to `+∞`): every size the atlas writes then takes spec §8.5's
+/// rule, egui's own size for the slot with a `Note::ValueSanitised`, and the font accessors
+/// egui's own size. `native_theme_iced::scaled_text_size` and
+/// `native_theme_gpui::scaled_text_size` go through [`AccessibilityPreferences::scaled`]
+/// instead, which returns such a size unscaled.
 ///
 /// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a
 /// `&SystemTheme`, so the preset path can pass [`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility).
+///
+/// The product has no upper bound here; the one that matters is the GPU's and the monitor's.
+/// epaint panics on a glyph wider than its font atlas (`epaint/src/texture_atlas.rs:226-231`),
+/// so every size the atlas hands egui is lowered to
+/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap), derived from the pass's
+/// `max_texture_side` and `pixels_per_point`: the base styles' at install and before each
+/// pass, a role style's when it is handed over; a size from here that the application hands
+/// egui itself is its own to clamp to that cap.
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
-}
-
-/// The text-scaling multiplier: the factor when it is finite and positive, else `1.0`, the
-/// multiplicative identity (§6.17) — the rule both siblings apply, iced's own
-/// `text_scale_factor` being `connectors/native-theme-iced/src/lib.rs:1056-1059`.
-fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+    size * prefs.text_scale_factor()
 }
 
 /// egui's own size for a stock `TextStyle` slot (`egui/src/style.rs:1414-1424`); `None` only
@@ -41,7 +48,7 @@ fn stock_text_size(slot: &egui::TextStyle) -> Option<f32> {
         .map(|id| id.size)
 }
 
-/// §8.5's rule for a size this crate hands out as a `FontId`: `scaled` when it is a positive
+/// Spec §8.5's rule for a size this crate hands out as a `FontId`: `scaled` when it is a positive
 /// normal `f32`, else egui's own size for `slot` — and the degenerate value itself only where
 /// egui's stock styles lack the slot, which they never do (nothing is invented).
 pub(crate) fn text_size_or_stock(scaled: f32, slot: &egui::TextStyle) -> f32 {
@@ -114,7 +121,7 @@ fn text_role_entry(t: &ResolvedTheme, role: TextRole) -> &ResolvedTextScaleEntry
     }
 }
 
-/// The stock slot a text-scale role falls back to (§4.7): `Small` for `Caption`, `Heading`
+/// The stock slot a text-scale role falls back to (spec §4.7): `Small` for `Caption`, `Heading`
 /// for the other three, the style `Ui::heading` sets (`egui/src/widget_text.rs:233-235`).
 fn text_role_slot(role: TextRole) -> egui::TextStyle {
     match role {
@@ -128,7 +135,7 @@ fn text_role_slot(role: TextRole) -> egui::TextStyle {
 /// The `egui::FontId` for a text-scale role, its size [`scaled_text_size`] of the role's size —
 /// the size the atlas installs — or, where that is not a positive normal `f32`, egui's own size
 /// for `TextStyle::Small` (`Caption`) or `TextStyle::Heading` (the other three, the style
-/// `Ui::heading` sets, `egui/src/widget_text.rs:233-235`) (§8.5). `Caption` and
+/// `Ui::heading` sets, `egui/src/widget_text.rs:233-235`) (spec §8.5). `Caption` and
 /// `SectionHeading` are also installed
 /// into `TextStyle::Small` and `TextStyle::Heading`; `DialogTitle` and `Display` have no
 /// **stock** `TextStyle` slot and are reachable only here, through `RichText::font(..)`
@@ -138,7 +145,11 @@ fn text_role_slot(role: TextRole) -> egui::TextStyle {
 /// stored in `Style::text_styles`, `:289`) — so this is a **declined** candidate, not an egui
 /// limitation. It is declined because `TextStyle::resolve` panics on a key absent from
 /// `text_styles` (`:112-120`) with no `cfg(debug_assertions)` guard, which would make a `Name`
-/// key a live panic in release for any `Style` this crate did not build. See §5.8.
+/// key a live panic in release for any `Style` this crate did not build. See spec §5.8.
+///
+/// Not bounded above: clamp the size to
+/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap) before handing it to egui,
+/// which panics on a glyph wider than its font atlas (`epaint/src/texture_atlas.rs:226-231`).
 #[must_use]
 pub fn text_role_font(
     t: &ResolvedTheme,
@@ -167,7 +178,7 @@ pub fn text_role_line_height(
 /// (`native-theme/src/model/resolved.rs:76-77`). Not the same unit as
 /// [`text_role_line_height`].
 #[must_use]
-pub fn line_height_multiplier(t: &ResolvedTheme) -> f32 {
+pub fn line_height(t: &ResolvedTheme) -> f32 {
     t.defaults.line_height
 }
 /// `defaults.font.weight`, a CSS weight.
@@ -187,7 +198,7 @@ pub fn text_role_weight(t: &ResolvedTheme, role: TextRole) -> u16 {
     text_role_entry(t, role).weight
 }
 
-/// The font a role's text is set in (§4.7's table): the widget's own `font` for the fourteen
+/// The font a role's text is set in (spec §4.7's table): the widget's own `font` for the fourteen
 /// that state one, `list.item_font`, `dialog.body_font`, `window.title_bar_font`, and
 /// `defaults.font` for the eight whose widget states none.
 fn role_font(t: &ResolvedTheme, role: Role) -> &ResolvedFontSpec {
@@ -223,7 +234,7 @@ fn role_font(t: &ResolvedTheme, role: Role) -> &ResolvedFontSpec {
 /// The CSS weight of the font text in `role` is set in — for `RichText::variation(
 /// egui::epaint::text::Tag::new(b"wght"), w as f32)` (`egui/src/widget_text.rs:202`) at a
 /// call site, because a `FontId` carries no weight (`epaint/src/text/fonts.rs:21-28`) and this
-/// crate installs one face per family (§4.9). The font is the widget's own: `font` for the
+/// crate installs one face per family (spec §4.9). The font is the widget's own: `font` for the
 /// fourteen roles whose widget states one (`Button`, `Input`, `Checkbox`, `Menu`, `Tooltip`,
 /// `Tab`, `Sidebar`, `Toolbar`, `StatusBar`, `Popover`, `ComboBox`, `SegmentedControl`,
 /// `Expander`, `Link`), `list.item_font` for `List` (its cells), `dialog.body_font` for
@@ -243,21 +254,25 @@ pub fn role_font_weight(t: &ResolvedTheme, role: Role) -> u16 {
 /// (`egui/src/widget_text.rs:284`), to show the slant the theme asks for: `true` when the
 /// role's font (as [`role_font_weight`] chooses it) has a `style` other than
 /// `FontStyle::Normal` (`native-theme/src/model/font.rs:59`) and `defaults.font` — the spec
-/// whose face the atlas installs as `FontFamily::Proportional` (§4.9, §8.2) — has
+/// whose face the atlas installs as `FontFamily::Proportional` (spec §4.9, §8.2) — has
 /// `FontStyle::Normal`. When `defaults.font` is itself slanted, the installed face already
 /// is, and a second, synthetic slant would double it, so this returns `false`. egui's skew
-/// cannot tell `Italic` from `Oblique`, so both map to the same call (§8.4).
+/// cannot tell `Italic` from `Oblique`, so both map to the same call (spec §8.4).
 #[must_use]
 pub fn role_font_is_italic(t: &ResolvedTheme, role: Role) -> bool {
     role_font(t, role).style != FontStyle::Normal && t.defaults.font.style == FontStyle::Normal
 }
 
 /// `window.title_bar_font` as an `egui::FontId`: `FontFamily::Proportional` (the never-`Name`
-/// invariant, §4.9) at [`scaled_text_size`] of its size, or egui's own `TextStyle::Heading`
+/// invariant, spec §4.9) at [`scaled_text_size`] of its size, or egui's own `TextStyle::Heading`
 /// size where that is not a positive normal `f32` — the style a `Window` title falls back to
-/// (`egui/src/containers/window.rs:1350`, §8.5). For the title atoms of a `Window`,
+/// (`egui/src/containers/window.rs:1350`, spec §8.5). For the title atoms of a `Window`,
 /// via `RichText::font` (`egui/src/widget_text.rs:190-198`): the title is laid out outside the
-/// application's closure (§5.2), so no scope reaches it.
+/// application's closure (spec §5.2), so no scope reaches it.
+///
+/// Not bounded above: clamp the size to
+/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap) before handing it to egui,
+/// which panics on a glyph wider than its font atlas (`epaint/src/texture_atlas.rs:226-231`).
 #[must_use]
 pub fn window_title_bar_font(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> FontId {
     let scaled = scaled_text_size(t.window.title_bar_font.size, prefs);
@@ -267,7 +282,7 @@ pub fn window_title_bar_font(t: &ResolvedTheme, prefs: &AccessibilityPreferences
 /// The title text colour for an active (`true`) or inactive window: `window.title_bar_font.color`
 /// or `window.inactive_title_bar_text_color` (`native-theme/src/model/widgets/mod.rs:25`).
 /// Feed to `RichText::color` (`egui/src/widget_text.rs:320`). egui does not tell the title
-/// which of the two a window is in (§5.2), so the application passes what it knows.
+/// which of the two a window is in (spec §5.2), so the application passes what it knows.
 #[must_use]
 pub fn window_title_bar_text_color(t: &ResolvedTheme, active: bool) -> egui::Color32 {
     to_color32(if active {
@@ -285,7 +300,7 @@ const TEXT_EDIT_MARGIN: egui::Margin = egui::Margin::symmetric(4, 2);
 /// (`egui/src/widgets/text_edit/builder.rs:313`), the one place a `TextEdit` takes its inner
 /// padding — no `Style` field holds it. Each side the theme states is that side plus the
 /// border's line width, because `TextEdit` paints its stroke inside this margin (`:763-767`)
-/// where the platform's padding lies inside the border (§7.2); a side the theme leaves
+/// where the platform's padding lies inside the border (spec §7.2); a side the theme leaves
 /// `None` keeps egui's own default, `Margin::symmetric(4, 2)`
 /// (`egui/src/widgets/text_edit/builder.rs:136`, a crate constant naming that line). Built
 /// with [`convert::to_margin`](crate::convert::to_margin), so a side saturates at the `i8` bound of `epaint::Margin`.
@@ -299,7 +314,7 @@ pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
 /// given (`:712-713`, `:734-735`): egui's own frame for a mutable text (`:737-750`,
 /// `:759-768`), except that a focused field's stroke takes its colour from
 /// `input.focus_border_color` where egui's takes `visuals.selection.stroke` (`:742-747`) —
-/// the selected text's colour, which the `Role::Input` cell holds (§5.4) — at the width of
+/// the selected text's colour, which the `Role::Input` cell holds (spec §5.4) — at the width of
 /// the state's own `bg_stroke`. Called inside the `Role::Input` scope with the id handed to
 /// `TextEdit::id` (`:168`):
 /// `TextEdit::singleline(&mut s).id(id).frame(input_frame(ui, id, &t))`. The frame's inner
@@ -327,20 +342,20 @@ pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
 /// `selection.stroke.width`: a width that changed with the state would change the frame's
 /// total margin, and the field's size, on focus) — or the
 /// resting `widgets.inactive.bg_stroke` where that `soft_option` is `None`, the border not
-/// changing on focus (§5.4); inner margin [`input_margin`] plus `expansion − stroke.width`
+/// changing on focus (spec §5.4); inner margin [`input_margin`] plus `expansion − stroke.width`
 /// on every side, outer margin `−expansion` (`:763-767`). Both narrowings to `i8` go through
-/// `i8_from_f32_saturating` (§7.2) where egui casts with `as`
+/// `i8_from_f32_saturating` (spec §7.2) where egui casts with `as`
 /// (`egui/src/widgets/text_edit/builder.rs:765`, `:767`), and the sum is `epaint::Margin`'s
 /// saturating `Add` (`epaint/src/margin.rs:123-134`), so the function is total; the two agree
 /// bit for bit wherever `expansion` is whole, as it is in every scope but `Role::Slider`'s
-/// (§6.6).
+/// (spec §6.6).
 ///
 /// `TextEdit` lays a custom frame out by the frame's own total margin
 /// (`egui/src/widgets/text_edit/builder.rs:715`, `:726-729`; `Frame::total_margin`,
 /// `egui/src/containers/frame.rs:327-331`), where it lays its stock frame out by the margin
 /// alone (`egui/src/widgets/text_edit/builder.rs:713`); the two agree whenever
-/// `expansion − stroke.width` is whole. With a half-point stroke (`macos-sonoma`, `ios`,
-/// §5.4) the total margin is half a point less than egui's stock one in every state, so the
+/// `expansion − stroke.width` is whole. With a half-point stroke (`macos-monterey`, `ios-13`,
+/// spec §5.4) the total margin is half a point less than egui's stock one in every state, so the
 /// field is one point shorter than egui's own and keeps that size whether focused or not.
 #[must_use = "hand the frame to TextEdit::frame"]
 pub fn input_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Frame {
@@ -364,9 +379,10 @@ pub fn text_area_margin(t: &ResolvedTheme) -> egui::Margin {
 /// [`text_area_margin`] where [`input_frame`]'s is [`input_margin`], its stroke is
 /// `text_area.border.line_width` wide, its corners `text_area.border.corner_radius`, and at
 /// rest -- the scope's `inactive` or `noninteractive` entry -- its stroke is
-/// `text_area.border.color`. Those inherit `input.border`'s (§2.29), so on a theme that states
-/// none of its own the two fields are framed alike; under the pointer and focused the stroke
-/// takes the input's hover and focus colours, which the text area shares.
+/// `text_area.border.color`. Those inherit `input.border`'s (`docs/platform-facts.md` §2.29),
+/// so on a theme that states none of its own the two fields are framed alike; under the
+/// pointer and focused the stroke takes the input's hover and focus colours, which the text
+/// area shares.
 #[must_use = "hand the frame to TextEdit::frame"]
 pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Frame {
     field_frame(ui, id, t, text_area_margin(t), Some(&t.text_area.border))
@@ -482,35 +498,57 @@ pub fn expander_icon(t: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
 }
 
 /// `list.header_font` (`native-theme/src/model/widgets/mod.rs:620`) as an `egui::FontId`:
-/// `FontFamily::Proportional` (the never-`Name` invariant, §4.9) at [`scaled_text_size`] of
+/// `FontFamily::Proportional` (the never-`Name` invariant, spec §4.9) at [`scaled_text_size`] of
 /// its size, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
-/// (§8.5). Feed to `RichText::font(..)`
+/// (spec §8.5). Feed to `RichText::font(..)`
 /// (`egui/src/widget_text.rs:190-198`); the header's colour and weight are
-/// `t.list.header_font.color` and `.weight` (§5.4).
+/// `t.list.header_font.color` and `.weight` (spec §5.4).
+///
+/// Not bounded above: clamp the size to
+/// [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap) before handing it to egui,
+/// which panics on a glyph wider than its font atlas (`epaint/src/texture_atlas.rs:226-231`).
 #[must_use]
 pub fn list_header_font(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> FontId {
     let scaled = scaled_text_size(t.list.header_font.size, prefs);
     FontId::proportional(text_size_or_stock(scaled, &egui::TextStyle::Body))
 }
 
-/// `dialog.button_order`: the order in which to add a dialog's buttons (§5.2).
+/// `dialog.button_order`: the order in which to add a dialog's buttons (spec §5.2).
 #[must_use]
 pub fn dialog_button_order(t: &ResolvedTheme) -> DialogButtonOrder {
     t.dialog.button_order
 }
+/// `list.header_height`, the height of a table's header row in logical pixels, for
+/// `TableBuilder::header(height, ..)` (`egui_extras/src/table.rs:452`), which no `Style` field
+/// reaches; `None` where the theme states none, and the showcase's tables then make the header
+/// as tall as a row.
+#[must_use]
+pub fn list_header_height(t: &ResolvedTheme) -> Option<f32> {
+    t.list.header_height
+}
+/// `tooltip.show_delay` as a `Duration`, or `None` where the theme states none. The atlas
+/// already writes it, in seconds, into `Style::interaction.tooltip_delay`
+/// (`egui/src/style.rs:928`), which egui's own tooltips wait for
+/// (`egui/src/containers/tooltip.rs:238`); this is for a delay the application times itself.
+#[must_use]
+pub fn tooltip_show_delay(t: &ResolvedTheme) -> Option<Duration> {
+    t.tooltip
+        .show_delay
+        .map(|ms| Duration::from_millis(u64::from(ms)))
+}
 /// `scrollbar.groove_width`, in logical pixels.
 #[must_use]
-pub fn scrollbar_width(t: &ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(t: &ResolvedTheme) -> f32 {
     t.scrollbar.groove_width
 }
 /// `defaults.border.corner_radius`, in logical pixels.
 #[must_use]
-pub fn border_radius(t: &ResolvedTheme) -> f32 {
+pub fn border_corner_radius(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius
 }
 /// `defaults.border.corner_radius_lg`, in logical pixels.
 #[must_use]
-pub fn border_radius_lg(t: &ResolvedTheme) -> f32 {
+pub fn border_corner_radius_lg(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius_lg
 }
 /// `defaults.border.color` as an `egui::Color32`: the final line colour, into which the model
@@ -532,8 +570,8 @@ pub fn font_family(t: &ResolvedTheme) -> &str {
 
 /// [`scaled_text_size`] of `defaults.font.size` — the `TextStyle::Body` size the atlas
 /// installs, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
-/// (§8.5). Same signature as `native_theme_iced::font_size`
-/// (`connectors/native-theme-iced/src/lib.rs:981-986`).
+/// (spec §8.5). Same signature as `native_theme_iced::font_size`
+/// (`connectors/native-theme-iced/src/lib.rs:1123-1128`).
 #[must_use]
 pub fn font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(
@@ -550,7 +588,7 @@ pub fn mono_font_family(t: &ResolvedTheme) -> &str {
 
 /// [`scaled_text_size`] of `defaults.mono_font.size` — the `TextStyle::Monospace` size the
 /// atlas installs, or egui's own `TextStyle::Monospace` size where that is not a positive
-/// normal `f32` (§8.5).
+/// normal `f32` (spec §8.5).
 #[must_use]
 pub fn mono_font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(
@@ -591,7 +629,7 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
 /// `pixels_per_point = zoom_factor * native_pixels_per_point` (`:455`) and so scales every
 /// length, strokes and icons included, where the preference asks for larger text
 /// (`native-theme/src/lib.rs:251-253`). Do **not** pre-multiply any `Style` value by
-/// `pixels_per_point` or `zoom_factor` (§2, *Lengths*).
+/// `pixels_per_point` or `zoom_factor` (spec §2, *Lengths*).
 #[must_use]
 pub fn text_scaling_factor(sys: &SystemTheme) -> f32 {
     sys.accessibility.text_scaling_factor
@@ -612,9 +650,10 @@ mod tests {
     /// is returned unchanged (T13 (d) repeats it).
     #[test]
     fn scaled_text_size_ignores_a_factor_that_is_not_finite_and_positive() {
-        let prefs = |f: f32| AccessibilityPreferences {
-            text_scaling_factor: f,
-            ..AccessibilityPreferences::default()
+        let prefs = |f: f32| {
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = f;
+            prefs
         };
         assert_eq!(scaled_text_size(10.0, &prefs(1.5)), 15.0);
         for f in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {

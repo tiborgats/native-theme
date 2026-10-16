@@ -45,9 +45,9 @@ pub(crate) const fn denan(v: f32) -> f32 {
 }
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
-/// `epaint/src/corner_radius.rs:13-25`) and the alpha byte of [`to_color32_with_opacity`].
+/// `epaint/src/corner_radius.rs:13-25`).
 /// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are cited for their
-/// representable range only — this crate never writes shadow geometry (§6.14).
+/// representable range only — this crate never writes shadow geometry (spec §6.14).
 ///
 /// `NaN` -> 0; `v <= 0.0` -> 0; `v >= 255.0` -> 255; otherwise round-half-away-from-zero.
 /// `f32::round`, not `round_ties_even`, so a value this crate converts and a value epaint
@@ -67,7 +67,7 @@ pub fn u8_from_f32_saturating(v: f32) -> u8 {
 /// Saturating, rounding `f32` -> `i8`, for `epaint::Margin` (four `i8`,
 /// `epaint/src/margin.rs:15-20`) — the only `i8` sink this crate writes from theme data.
 /// `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`) is cited for its representable
-/// range only; this crate never writes shadow geometry (§6.14).
+/// range only; this crate never writes shadow geometry (spec §6.14).
 ///
 /// `NaN` -> 0, **not** −128, because [`denan`] runs first: `f32::NAN.max(-128.0)` is
 /// `-128.0`, so a `NaN` margin would otherwise become the most-negative margin.
@@ -77,7 +77,7 @@ pub fn u8_from_f32_saturating(v: f32) -> u8 {
 /// `egui/src/widgets/text_edit/builder.rs:767`).
 ///
 /// Saturation here is a **real** loss of theme data and emits a
-/// [`crate::Note::ValueSaturated`] at the call site, which detects it itself (§7.2's
+/// [`crate::Note::ValueSaturated`] at the call site, which detects it itself (spec §7.2's
 /// emission rule); the helper stays pure and single-valued.
 #[inline]
 #[must_use]
@@ -91,7 +91,7 @@ pub(crate) fn i8_from_f32_saturating(v: f32) -> i8 {
 
 /// Pass a finite `f32` through; substitute `fallback` for `NaN` and `±∞`.
 ///
-/// The crate's one non-finite rule (§6): `fallback` is **egui's own value for the sink** —
+/// The crate's one non-finite rule (spec §6): `fallback` is **egui's own value for the sink** —
 /// the value the starting `Style` carries there — so a non-finite theme value leaves egui's
 /// look in place instead of inventing one, and it is never `0.0` unless that is egui's
 /// value. A substitution made here is **reported**: the call site emits
@@ -107,13 +107,13 @@ pub fn finite_or(v: f32, fallback: f32) -> f32 {
 ///
 /// `Layout::next_frame` rounds every edge with `round_ui`, `(x / GUI_ROUNDING).round() *
 /// GUI_ROUNDING` (`egui/src/layout.rs:635`, `emath/src/gui_rounding.rs:59`), which overflows
-/// to `+∞` above this product and trips egui's debug asserts (§6.7); `GUI_ROUNDING` is
+/// to `+∞` above this product and trips egui's debug asserts (spec §6.7); `GUI_ROUNDING` is
 /// `1.0 / 32.0`, `pub` at `egui::emath::GUI_ROUNDING` (`emath/src/gui_rounding.rs:18`,
 /// re-exported at `emath/src/lib.rs:47` and `egui/src/lib.rs:438`). The product with a power
 /// of two is exact, so `next_down` lands on the neighbouring `f32`; float arithmetic and
-/// `f32::next_down` are `const` on Rust 1.88.0 already, below the crate's MSRV (§12.4). One
+/// `f32::next_down` are `const` on Rust 1.88.0 already, below the crate's MSRV (spec §12.4). One
 /// step below the product, a lone widget or a solid scrollbar groove inside a `Window`
-/// completes its passes (§6.5, §6.7).
+/// completes its passes (spec §6.5, §6.7).
 const LENGTH_CEILING: f32 = (f32::MAX * egui::emath::GUI_ROUNDING).next_down();
 
 /// Clamp one layout length into `0.0..=LENGTH_CEILING`, total over all `f32`.
@@ -125,7 +125,7 @@ const LENGTH_CEILING: f32 = (f32::MAX * egui::emath::GUI_ROUNDING).next_down();
 /// overflowed — caps at the ceiling. A value merely clamped is not sanitised and emits
 /// nothing. The cap bounds **one** length: an edge is the sum of every length laid out
 /// before it, so two stacked widgets each just under the ceiling can still reach egui's
-/// rounding edge; no per-value bound can prevent that, and it stays a stated residual (§6.7).
+/// rounding edge; no per-value bound can prevent that, and it stays a stated residual (spec §6.7).
 #[inline]
 #[must_use]
 #[allow(
@@ -142,7 +142,7 @@ pub fn clamp_length(v: f32) -> f32 {
 /// `Visuals::disable` (`:1177-1180`) forwards it to `Color32::gamma_multiply`, which carries
 /// `debug_assert!(0.0 <= factor && factor.is_finite(), ..)` (`ecolor/src/color32.rs:270-273`);
 /// its only caller in egui is `Ui::dnd_drop_zone` (`egui/src/ui.rs:2726-2727`), while
-/// `Ui::disable` does not reach it (§7.4). A **non-finite** input is a substitution and is
+/// `Ui::disable` does not reach it (spec §7.4). A **non-finite** input is a substitution and is
 /// reported as [`crate::Note::ValueSanitised`] at the call site; a finite value merely
 /// clamped into range is not, and emits nothing.
 #[inline]
@@ -165,27 +165,11 @@ pub fn unit_interval(v: f32) -> f32 {
 /// (`:147-151`, `ecolor/src/lib.rs:137-146`) that rounds exactly as the non-`const`
 /// `Color32::from_rgba_unmultiplied` does, since that one calls this one
 /// (`ecolor/src/color32.rs:133-135`). Do **not** route through `ecolor::Rgba`: feeding it sRGB
-/// floats double-encodes gamma (§7.3).
+/// floats double-encodes gamma (spec §7.3).
 #[inline]
 #[must_use]
 pub const fn to_color32(c: Rgba) -> egui::Color32 {
     egui::Color32::from_rgba_unmultiplied_const(c.r, c.g, c.b, c.a)
-}
-
-/// [`to_color32`] with an opacity multiplier folded into alpha.
-///
-/// Not for a border: every border colour the model states is the final line colour, with
-/// `defaults.border.opacity` already folded in (`native-theme/src/model/border.rs`,
-/// `DefaultsBorderSpec::opacity`), and the connector paints it as stated. A
-/// non-finite `opacity` is `1.0` (no fold), per the non-finite rule; the call site reports
-/// it. Never use the result for
-/// `WidgetVisuals::bg_fill`, documented "Must never be `Color32::TRANSPARENT`"
-/// (`egui/src/style.rs:1292-1294`); `opacity == 0.0` produces exactly that.
-#[inline]
-#[must_use]
-pub fn to_color32_with_opacity(c: Rgba, opacity: f32) -> egui::Color32 {
-    let a = u8_from_f32_saturating(f32::from(c.a) * unit_interval(finite_or(opacity, 1.0)));
-    egui::Color32::from_rgba_unmultiplied_const(c.r, c.g, c.b, a)
 }
 
 /// Uniform `epaint::CornerRadius` from one logical-pixel length, over the sink's own radius.
@@ -215,7 +199,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 /// `Spacing::window_margin`'s `Margin::same(6)` (`egui/src/style.rs:1456`), a panel frame's
 /// `Margin::symmetric(8, 2)` (`egui/src/containers/frame.rs:187`) — never an invented `0`.
 /// `base` is a parameter because only the call site knows the sink, as in iced's
-/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:371-381`). The call site reports a
+/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:492-502`). The call site reports a
 /// non-finite side, and a saturated one.
 #[inline]
 #[must_use]
@@ -254,10 +238,12 @@ pub fn to_margin(
 /// `round(button_padding − width) + width` per side (`egui/src/widget_style.rs:163-165`,
 /// `epaint/src/margin.rs:117-119`), so a fractional padding or width moves an edge by at
 /// most half a point. It is exact only where the preset's padding is the platform's
-/// inside-the-border padding: `macos-sonoma`'s vertical button padding is derived as outer
-/// minus content, `(22 − 16) / 2` (`docs/platform-facts.md:1172`), which already contains
-/// the border, so there the button comes out one line width per side taller than the
-/// platform's until platform-facts corrects that derivation (`docs/todo.md`).
+/// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
+/// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) and `macos-tahoe`'s (4 / 4 for all three)
+/// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1172`,
+/// `:1197`, `:1560`), where the border's share is
+/// still open, so there each of those controls comes out one line width per side taller than
+/// the platform's until platform-facts settles those cells (`docs/todo.md`).
 ///
 /// The width is `clamp_length(finite_or(line_width, 0.0))`: a non-finite width adds nothing
 /// — egui's own padding already holds egui's own stroke, so adding nothing is egui's value
@@ -284,7 +270,7 @@ pub(crate) fn padding_with_border(
     }
 }
 
-/// `Spacing::button_padding` from a widget's resolved border, under §5's pair rule.
+/// `Spacing::button_padding` from a widget's resolved border, under spec §5's pair rule.
 ///
 /// `button_padding` is one `Vec2` (`egui/src/style.rs:398`) that `Button`, `ComboBox` and
 /// `CollapsingHeader` apply symmetrically, so left and right share `.x` and top and bottom
@@ -294,14 +280,14 @@ pub(crate) fn padding_with_border(
 /// (`vec2(4.0, 1.0)`, `style.rs:1458`) on the base style, the base style's in a role cell — exactly as [`to_margin`] keeps `base`'s side.
 /// With both sides stated the component is `(a + b) / 2 + line_width`: the one symmetric value
 /// that keeps the native outer size and moves the content off-centre by the least,
-/// `|a − b| / 2` (§5, §14 item 32). Filtering non-finite sides in [`padding_with_border`] is
-/// what keeps a `NaN` out of the `Vec2` (§7.4). `f32::midpoint` (stable since Rust 1.85)
+/// `|a − b| / 2` (spec §5, §14 item 32). Filtering non-finite sides in [`padding_with_border`] is
+/// what keeps a `NaN` out of the `Vec2` (spec §7.4). `f32::midpoint` (stable since Rust 1.85)
 /// never overflows for finite operands, returns an equal pair bit for bit, and equals
 /// `(a + b) / 2.0` wherever that is finite. `button_padding` is `f32`, so no integer
-/// saturation is needed here; [`clamp_length`] supplies the `0.0` floor (§6.17) and the layout
+/// saturation is needed here; [`clamp_length`] supplies the `0.0` floor (spec §6.17) and the layout
 /// cap. The expander reads `.x` on its trailing side only
 /// (`egui/src/containers/collapsing_header.rs:526`), so its call site takes `.y` from this
-/// function and writes `.x` from `padding_with_border(border).right` alone (§7.4).
+/// function and writes `.x` from `padding_with_border(border).right` alone (spec §7.4).
 #[inline]
 #[must_use]
 pub(crate) fn to_button_padding(
@@ -318,7 +304,7 @@ pub(crate) fn to_button_padding(
     )
 }
 
-/// A stated hover or pressed fill composited over the widget's idle fill (C17, §6.1).
+/// A stated hover or pressed fill composited over the widget's idle fill (spec §6.1).
 ///
 /// Source-over in premultiplied gamma space, `layer + idle · (1 − layer.a)`, done by
 /// ecolor's own `Color32::blend` (`ecolor/src/color32.rs:343-345`): an integer
@@ -352,7 +338,7 @@ pub fn to_stroke(base: egui::Stroke, color: Rgba, line_width_px: f32) -> egui::S
     )
 }
 
-/// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See §6.14.
+/// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See spec §6.14.
 ///
 /// native-theme carries **no** shadow geometry — only `shadow_enabled: bool`
 /// (`native-theme/src/model/border.rs:234`, `:251`) — while `epaint::Shadow` needs
@@ -547,10 +533,9 @@ mod tests {
         assert_eq!(p.x, 6.5);
     }
 
-    /// T17: `to_color32` premultiplies in gamma space with no transfer function; the
-    /// opacity fold multiplies alpha and treats a non-finite opacity as `1.0`.
+    /// T17: `to_color32` premultiplies in gamma space with no transfer function.
     #[test]
-    fn colours_convert_in_gamma_space_and_the_opacity_folds_into_alpha() {
+    fn colours_convert_in_gamma_space() {
         assert_eq!(
             to_color32(Rgba::rgb(255, 0, 0)),
             egui::Color32::from_rgb(255, 0, 0)
@@ -566,21 +551,6 @@ mod tests {
             to_color32(half),
             egui::Color32::from_rgba_unmultiplied(200, 100, 50, 128)
         );
-        assert_eq!(
-            to_color32_with_opacity(Rgba::rgb(10, 20, 30), 0.5),
-            egui::Color32::from_rgba_unmultiplied(10, 20, 30, 128)
-        );
-        assert_eq!(
-            to_color32_with_opacity(Rgba::rgb(10, 20, 30), 0.0),
-            egui::Color32::TRANSPARENT
-        );
-        for o in NON_FINITE {
-            assert_eq!(
-                to_color32_with_opacity(Rgba::rgb(10, 20, 30), o),
-                egui::Color32::from_rgb(10, 20, 30),
-                "{o}"
-            );
-        }
     }
 
     fn collect_colours(v: &serde_json::Value, out: &mut HashSet<Rgba>) {
@@ -597,7 +567,7 @@ mod tests {
     }
 
     /// T17: `composite_over` returns an opaque layer exactly and, for an `a == 0` layer, the
-    /// idle fill exactly, over every colour the sixteen presets state in both modes plus the
+    /// idle fill exactly, over every colour the seventeen presets state in both modes plus the
     /// alpha edges (`0`, `1`, `254`, `255`) no preset states.
     #[test]
     fn composite_over_returns_an_opaque_layer_and_a_transparent_layers_idle_fill_exactly() {

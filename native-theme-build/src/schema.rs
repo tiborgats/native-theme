@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 /// All other modules derive their theme lists from this table.
 pub(crate) const THEME_TABLE: &[(&str, &str)] = &[
     ("sf-symbols", "IconSet::SfSymbols"),
-    ("segoe-fluent", "IconSet::SegoeIcons"),
+    ("segoe-fluent", "IconSet::SegoeFluent"),
     ("freedesktop", "IconSet::Freedesktop"),
     ("material", "IconSet::Material"),
     ("lucide", "IconSet::Lucide"),
@@ -15,7 +15,8 @@ pub(crate) const THEME_TABLE: &[(&str, &str)] = &[
 
 /// Single-source table mapping lowercase DE keys to `LinuxDesktop` variant paths.
 ///
-/// Every entry is `(toml_key, "LinuxDesktop::Variant")`.
+/// Every entry is `(toml_key, "LinuxDesktop::Variant")`, the key the lowercase
+/// of the `XDG_CURRENT_DESKTOP` token `parse_linux_desktop` maps to the variant.
 /// The special `"default"` key is deliberately absent -- it is handled as a
 /// wildcard in codegen and validation.
 pub(crate) const DE_TABLE: &[(&str, &str)] = &[
@@ -26,6 +27,12 @@ pub(crate) const DE_TABLE: &[(&str, &str)] = &[
     ("mate", "LinuxDesktop::Mate"),
     ("lxqt", "LinuxDesktop::LxQt"),
     ("budgie", "LinuxDesktop::Budgie"),
+    ("hyprland", "LinuxDesktop::Hyprland"),
+    ("sway", "LinuxDesktop::Sway"),
+    ("river", "LinuxDesktop::River"),
+    ("niri", "LinuxDesktop::Niri"),
+    ("wayfire", "LinuxDesktop::Wayfire"),
+    ("cosmic", "LinuxDesktop::CosmicDe"),
 ];
 
 /// Check whether `name` is a known theme name (appears in `THEME_TABLE`).
@@ -71,8 +78,14 @@ pub(crate) type ThemeMapping = BTreeMap<String, MappingValue>;
 /// - `Simple`: a direct icon name string.
 /// - `DeAware`: a table mapping desktop environment names to icon names,
 ///   with a required `"default"` key.
+///
+/// The `expecting` text is the whole message serde gives a value of neither
+/// form (it replaces "data did not match any variant of untagged enum").
 #[derive(Deserialize, Clone)]
-#[serde(untagged)]
+#[serde(
+    untagged,
+    expecting = "expected an icon name string or an inline table of desktop = icon name pairs with a `default` key"
+)]
 pub(crate) enum MappingValue {
     /// A plain icon name string (e.g., `"play_pause"`).
     Simple(String),
@@ -244,7 +257,7 @@ mod tests {
     fn theme_table_covers_all_icon_set_variants() {
         let all_variants: &[native_theme::theme::IconSet] = &[
             native_theme::theme::IconSet::SfSymbols,
-            native_theme::theme::IconSet::SegoeIcons,
+            native_theme::theme::IconSet::SegoeFluent,
             native_theme::theme::IconSet::Freedesktop,
             native_theme::theme::IconSet::Material,
             native_theme::theme::IconSet::Lucide,
@@ -271,85 +284,135 @@ mod tests {
 
     // === Drift detection: DE_TABLE vs native_theme::LinuxDesktop ===
 
-    /// Verify every DE_TABLE entry resolves to a real LinuxDesktop variant
-    /// and that the variant path string matches the Debug representation.
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn de_table_entries_match_linux_desktop_variants() {
-        use native_theme::detect::{LinuxDesktop, parse_linux_desktop};
-
-        // Map from TOML key to the XDG_CURRENT_DESKTOP value that produces
-        // each LinuxDesktop variant.
-        let key_to_xdg: &[(&str, &str)] = &[
-            ("kde", "KDE"),
-            ("gnome", "GNOME"),
-            ("xfce", "XFCE"),
-            ("cinnamon", "Cinnamon"),
-            ("mate", "MATE"),
-            ("lxqt", "LXQt"),
-            ("budgie", "Budgie:GNOME"),
-        ];
-
-        for (toml_key, variant_str) in DE_TABLE {
-            let xdg = key_to_xdg
-                .iter()
-                .find(|(k, _)| *k == *toml_key)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "DE_TABLE key \"{toml_key}\" has no XDG mapping in the drift test -- \
-                     update key_to_xdg"
-                    )
-                });
-
-            let desktop = parse_linux_desktop(xdg.1);
-            assert_ne!(
-                desktop,
-                LinuxDesktop::Unknown,
-                "DE_TABLE key \"{toml_key}\" (XDG=\"{}\") resolves to LinuxDesktop::Unknown",
-                xdg.1,
+    /// `LinuxDesktop` is `#[non_exhaustive]`, so no match outside native-theme
+    /// can list its variants; its source, `native-theme/src/detect.rs`, is read
+    /// instead. It is read at run time, and `None` (the test skips) where the
+    /// sibling crate is absent, as in the published crate, which holds this
+    /// crate alone. Where the sibling crate is present, an unreadable
+    /// `detect.rs` (moved or renamed) fails the test rather than skipping it.
+    fn detect_rs() -> Option<String> {
+        let sibling = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../native-theme");
+        if !sibling.join("Cargo.toml").is_file() {
+            eprintln!(
+                "skipping: {} is absent; the LinuxDesktop drift tests run in the native-theme \
+                 workspace",
+                sibling.join("Cargo.toml").display()
             );
+            return None;
+        }
+        let path = sibling.join("src/detect.rs");
+        match std::fs::read_to_string(&path) {
+            Ok(source) => Some(source),
+            Err(e) => panic!(
+                "{} cannot be read ({e}); the LinuxDesktop drift tests read LinuxDesktop and \
+                 parse_linux_desktop from it",
+                path.display()
+            ),
+        }
+    }
 
-            let expected = format!("LinuxDesktop::{desktop:?}");
-            assert_eq!(
-                *variant_str, expected,
-                "DE_TABLE variant string for \"{toml_key}\" is \"{variant_str}\", \
-                 but parse_linux_desktop produces {expected}"
+    /// The variants of `LinuxDesktop` other than `Unknown` in `detect_rs`, as
+    /// `"LinuxDesktop::Variant"`, in declaration order.
+    fn linux_desktop_variants(detect_rs: &str) -> Vec<String> {
+        let body = detect_rs
+            .split_once("pub enum LinuxDesktop {")
+            .and_then(|(_, rest)| rest.split_once("\n}"))
+            .map(|(body, _)| body)
+            .expect("native-theme/src/detect.rs declares `pub enum LinuxDesktop {`");
+        body.lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty() && !line.starts_with("//") && !line.starts_with('#'))
+            .map(|line| line.trim_end_matches(','))
+            .filter(|variant| *variant != "Unknown")
+            .map(|variant| format!("LinuxDesktop::{variant}"))
+            .collect()
+    }
+
+    /// The arms of `parse_linux_desktop` in `detect_rs`: each
+    /// `XDG_CURRENT_DESKTOP` token list with the `"LinuxDesktop::Variant"` it
+    /// returns.
+    fn parse_linux_desktop_arms(detect_rs: &str) -> Vec<(Vec<String>, String)> {
+        let body = detect_rs
+            .split_once("pub fn parse_linux_desktop(")
+            .and_then(|(_, rest)| rest.split_once("\n}"))
+            .map(|(body, _)| body)
+            .expect("native-theme/src/detect.rs declares `pub fn parse_linux_desktop(`");
+        body.lines()
+            .filter_map(|line| line.split_once("=> return "))
+            .map(|(tokens, variant)| {
+                let tokens = tokens
+                    .split('|')
+                    .map(|t| t.trim().trim_matches('"').to_string())
+                    .collect();
+                (tokens, variant.trim().trim_end_matches(',').to_string())
+            })
+            .collect()
+    }
+
+    /// Every `LinuxDesktop` variant but `Unknown` has one `DE_TABLE` entry, and
+    /// no entry names another variant.
+    #[test]
+    fn de_table_covers_all_linux_desktop_variants() {
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        let variants = linux_desktop_variants(&detect_rs);
+        assert!(!variants.is_empty(), "no LinuxDesktop variants read");
+        for variant in &variants {
+            assert!(
+                DE_TABLE.iter().any(|(_, v)| v == variant),
+                "{variant} has no DE_TABLE entry"
+            );
+        }
+        for (key, variant) in DE_TABLE {
+            assert!(
+                variants.iter().any(|v| v == variant),
+                "DE_TABLE entry \"{key}\" names {variant}, which is not a LinuxDesktop variant"
             );
         }
     }
 
-    /// Verify every non-Unknown LinuxDesktop variant has a DE_TABLE entry.
+    /// Every `DE_TABLE` key is the lowercase of an `XDG_CURRENT_DESKTOP` token
+    /// that `parse_linux_desktop` maps to the entry's variant.
+    #[test]
+    fn de_table_keys_are_lowercase_xdg_tokens() {
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        let arms = parse_linux_desktop_arms(&detect_rs);
+        assert!(!arms.is_empty(), "no parse_linux_desktop arms read");
+        for (key, variant) in DE_TABLE {
+            let token = arms
+                .iter()
+                .filter(|(_, v)| v == variant)
+                .flat_map(|(tokens, _)| tokens)
+                .find(|token| token.to_lowercase() == *key);
+            assert!(
+                token.is_some(),
+                "DE_TABLE key \"{key}\" is not the lowercase of a token parse_linux_desktop maps to {variant}"
+            );
+        }
+    }
+
+    /// The tokens read from the source are the ones `parse_linux_desktop`
+    /// maps at run time.
     #[cfg(target_os = "linux")]
     #[test]
-    fn de_table_covers_all_linux_desktop_variants() {
-        use native_theme::detect::LinuxDesktop;
+    fn de_table_keys_parse_to_their_variants() {
+        use native_theme::detect::parse_linux_desktop;
 
-        // All non-Unknown variants. If a new variant is added to LinuxDesktop,
-        // update this list AND DE_TABLE.
-        let all_variants: &[(&str, LinuxDesktop)] = &[
-            ("kde", LinuxDesktop::Kde),
-            ("gnome", LinuxDesktop::Gnome),
-            ("xfce", LinuxDesktop::Xfce),
-            ("cinnamon", LinuxDesktop::Cinnamon),
-            ("mate", LinuxDesktop::Mate),
-            ("lxqt", LinuxDesktop::LxQt),
-            ("budgie", LinuxDesktop::Budgie),
-        ];
-
-        assert_eq!(
-            DE_TABLE.len(),
-            all_variants.len(),
-            "DE_TABLE has {} entries but there are {} non-Unknown LinuxDesktop variants -- \
-             a variant was added or removed without updating the table",
-            DE_TABLE.len(),
-            all_variants.len(),
-        );
-
-        for (expected_key, variant) in all_variants {
-            assert!(
-                DE_TABLE.iter().any(|(k, _)| k == expected_key),
-                "LinuxDesktop::{variant:?} (key=\"{expected_key}\") has no DE_TABLE entry",
-            );
+        let Some(detect_rs) = detect_rs() else {
+            return;
+        };
+        for (tokens, variant) in parse_linux_desktop_arms(&detect_rs) {
+            for token in tokens {
+                let desktop = parse_linux_desktop(&token);
+                assert_eq!(
+                    format!("LinuxDesktop::{desktop:?}"),
+                    variant,
+                    "parse_linux_desktop(\"{token}\")"
+                );
+            }
         }
     }
 }

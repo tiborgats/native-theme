@@ -9,7 +9,8 @@
 //! time, so no test has to find them at run time -- and compared in both
 //! directions: a floor the README misstates fails, and so does a floor it
 //! leaves out. The dependency lines of the README's **Quick start** are held
-//! to the same floors.
+//! to the same floors, and its dependencies on this workspace's crates, with
+//! those of every other `toml` block, to the workspace's release.
 //!
 //! The manifest is the authority. Nothing in this module carries a version of
 //! its own; `REQUIRED` names the crates whose floor the README must state, and
@@ -33,12 +34,17 @@ const CRATE: &str = env!("CARGO_PKG_NAME");
 /// package name -- `gpui-pre` is named `gpui` in the manifest, and answers to
 /// its package name in both files.
 ///
-/// `gpui-kit` is a dev-dependency: it is what the showcase builds against, and
-/// the version a consumer reads in the Quick start.
+/// `gpui-kit` is a dependency: the crate roots name GPUI through it, and it is
+/// what the showcase builds against and the version a consumer reads in the
+/// Quick start.
 const REQUIRED: &[&str] = &["gpui-base", "gpui-component", "gpui-kit", "gpui-pre"];
 
 /// The row the table states for the toolchain, beside the crates.
 const RUST_VERSION: &str = "rust-version";
+
+/// The feature that moves the crate to another GPUI core rather than adding
+/// to it, which docs.rs must leave off: the documentation is gpui-pre's.
+const BACKEND_SWITCH: &str = "gpui-fast";
 
 /// What this crate requires, by the key the README's table names each floor
 /// with: a package name, or `rust-version`.
@@ -102,8 +108,8 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// version of its own.
 ///
 /// Three shapes appear in this workspace: `iced_core = "0.14"`,
-/// `gpui-kit = { version = "0.7.1", features = [..] }` and
-/// `gpui = { package = "gpui-pre", version = "0.3.8" }`, whose package name is
+/// `gpui-kit = { version = "0.7.3", features = [..] }` and
+/// `gpui = { package = "gpui-pre", version = "0.3.9" }`, whose package name is
 /// not its key. A dependency inherited from the workspace
 /// (`native-theme = { workspace = true }`) states no version and is not one of
 /// these floors.
@@ -160,6 +166,35 @@ fn section<'a>(manifest: &'a str, header: &str) -> Vec<&'a str> {
         }
     }
     lines
+}
+
+/// The features a manifest's `[features]` table declares, `default`
+/// excepted: the key of every line that is not a comment.
+fn manifest_features(manifest: &str) -> BTreeSet<String> {
+    section(manifest, "[features]")
+        .into_iter()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .filter_map(|line| line.split_once(" = "))
+        .map(|(name, _)| name.trim().to_string())
+        .filter(|name| name != "default")
+        .collect()
+}
+
+/// The lines of a manifest's `[package.metadata.docs.rs]` table that are not
+/// comments.
+fn docs_rs_lines(manifest: &str) -> Vec<&str> {
+    section(manifest, "[package.metadata.docs.rs]")
+        .into_iter()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect()
+}
+
+/// The `features` list of a manifest's `[package.metadata.docs.rs]` table,
+/// written on one line or over several.
+fn docs_rs_features(manifest: &str) -> Option<BTreeSet<String>> {
+    let table = format!("\n{}", docs_rs_lines(manifest).join("\n"));
+    let list = table.split_once("\nfeatures = [")?.1.split_once(']')?.0;
+    Some(list.split(',').filter_map(quoted).collect())
 }
 
 /// The string literal `value` opens with, if it opens with one.
@@ -270,6 +305,146 @@ fn verified_line(readme: &str) -> Option<(usize, &str)> {
     (line.trim_end() != "<!-- compat:end -->").then_some((ix + 1, line))
 }
 
+/// The `major.minor` of the workspace manifest's `version`, which every crate
+/// of the workspace takes (`version.workspace = true`): the requirement an
+/// application writes for this release.
+fn workspace_minor(workspace: &str) -> Option<String> {
+    let version = table_value(workspace, "[workspace.package]", "version")?;
+    let mut parts = version.split('.');
+    Some(format!("{}.{}", parts.next()?, parts.next()?))
+}
+
+/// The dependencies on this workspace's crates (`native-theme`,
+/// `native-theme-*`) the README's `toml` blocks state, as (line number,
+/// section, package, version), the section being the `## ` heading the block
+/// is under.
+fn readme_dependencies(readme: &str) -> Vec<(usize, &str, String, String)> {
+    let mut found = Vec::new();
+    let mut heading = "";
+    // The open code block, if any, and whether it is a `toml` one.
+    let mut block: Option<bool> = None;
+    for (ix, line) in readme.lines().enumerate() {
+        if let Some(info) = line.trim_start().strip_prefix("```") {
+            block = match block {
+                Some(_) => None,
+                None => Some(info.trim() == "toml"),
+            };
+            continue;
+        }
+        match block {
+            None => {
+                if let Some(title) = line.strip_prefix("## ") {
+                    heading = title.trim_end();
+                }
+            }
+            Some(true) => {
+                if let Some((package, version)) = dependency_on(line)
+                    && (package == "native-theme" || package.starts_with("native-theme-"))
+                {
+                    found.push((ix + 1, heading, package, version));
+                }
+            }
+            Some(false) => {}
+        }
+    }
+    found
+}
+
+/// The README's dependencies on this workspace's crates that do not name the
+/// release `minor`, as findings.
+fn stale_dependencies(readme: &str, minor: &str) -> Vec<String> {
+    readme_dependencies(readme)
+        .into_iter()
+        .filter(|(_, _, _, version)| version != minor)
+        .map(|(line, _, package, version)| {
+            format!("README.md:{line}: `{package}` is stated as {version}, this release is {minor}")
+        })
+        .collect()
+}
+
+/// The README's **Quick start**, and every other `toml` block of it, depends on
+/// this release: a version bump that leaves the README naming the previous
+/// minor fails here rather than being published.
+#[test]
+fn the_readme_depends_on_this_release() {
+    let minor = workspace_minor(WORKSPACE);
+    assert!(
+        minor.is_some(),
+        "the workspace manifest states no `[workspace.package]` `version` of the form major.minor.patch"
+    );
+    assert!(
+        readme_dependencies(README)
+            .iter()
+            .any(|(_, section, package, _)| *section == "Quick start" && package == CRATE),
+        "the README's Quick start states no `{CRATE}` dependency, so this test would pass vacuously"
+    );
+    if let Some(minor) = minor {
+        let findings = stale_dependencies(README, &minor);
+        assert!(
+            findings.is_empty(),
+            "the README depends on another release than the workspace's in {} place(s):\n{}",
+            findings.len(),
+            findings.join("\n")
+        );
+    }
+}
+
+/// The release test has to be able to fail: a block reader that found no
+/// dependency, or a minor read wrong, would agree with any README.
+#[test]
+fn the_release_parsers_do_their_jobs() {
+    assert_eq!(
+        workspace_minor("[workspace.package]\nversion = \"0.7.0\"\n").as_deref(),
+        Some("0.7")
+    );
+    assert_eq!(
+        workspace_minor("[workspace.package]\nversion = \"1\"\n"),
+        None
+    );
+
+    let readme = "## Quick start\n\
+                  \n\
+                  ```toml\n\
+                  [dependencies]\n\
+                  native-theme-gpui = { version = \"0.6\", features = [\"native\"] }\n\
+                  gpui-kit = \"0.7.3\"\n\
+                  ```\n\
+                  \n\
+                  native-theme = \"0.5\"\n\
+                  \n\
+                  ## Runtime theme change\n\
+                  \n\
+                  ```toml\n\
+                  native-theme = \"0.6\"\n\
+                  ```\n";
+    assert_eq!(
+        readme_dependencies(readme),
+        vec![
+            (
+                5,
+                "Quick start",
+                "native-theme-gpui".to_string(),
+                "0.6".to_string()
+            ),
+            (
+                14,
+                "Runtime theme change",
+                "native-theme".to_string(),
+                "0.6".to_string()
+            ),
+        ],
+        "another crate, and a line outside a `toml` block, are not dependencies on this workspace"
+    );
+    assert!(stale_dependencies(readme, "0.6").is_empty());
+    assert_eq!(
+        stale_dependencies(readme, "0.7"),
+        vec![
+            "README.md:5: `native-theme-gpui` is stated as 0.6, this release is 0.7".to_string(),
+            "README.md:14: `native-theme` is stated as 0.6, this release is 0.7".to_string(),
+        ]
+    );
+}
+
 /// The README's **Required** table states this crate's own floors, all of them
 /// and nothing else.
 #[test]
@@ -364,6 +539,57 @@ fn the_verified_line_is_the_stamps() {
              one run writes both, and neither is edited by hand"
         );
     }
+}
+
+/// docs.rs documents every feature but the backend switch, so the published
+/// page shows all of the crate's API on its default core; `all-features` would
+/// turn the switch on and document the crate on GPUI Fast.
+#[test]
+fn docs_rs_documents_every_feature_but_the_backend_switch() {
+    let mut expected = manifest_features(MANIFEST);
+    assert!(
+        expected.remove(BACKEND_SWITCH),
+        "Cargo.toml declares no `{BACKEND_SWITCH}` feature, so this test would pass vacuously"
+    );
+    let lines = docs_rs_lines(MANIFEST);
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.trim_start().starts_with("all-features")),
+        "Cargo.toml's [package.metadata.docs.rs] sets `all-features`, which turns `{BACKEND_SWITCH}` on"
+    );
+    assert_eq!(
+        docs_rs_features(MANIFEST),
+        Some(expected),
+        "Cargo.toml's [package.metadata.docs.rs] `features` is not the [features] table \
+         without `default` and `{BACKEND_SWITCH}`"
+    );
+}
+
+/// The two feature readers the docs.rs test rests on find what a manifest
+/// states, and nothing in a comment.
+#[test]
+fn the_feature_parsers_do_their_jobs() {
+    let manifest = "[package.metadata.docs.rs]\n\
+                    # features = [\"commented\"]\n\
+                    features = [\n    \"one\",\n    \"two\",\n]\n\
+                    \n\
+                    [features]\n\
+                    default = [\"one\"]\n\
+                    # three = []\n\
+                    one = []\n\
+                    two = [\"dep/two\"]\n";
+    let both: BTreeSet<String> = ["one", "two"].into_iter().map(String::from).collect();
+    assert_eq!(manifest_features(manifest), both);
+    assert_eq!(docs_rs_features(manifest), Some(both.clone()));
+    assert_eq!(
+        docs_rs_features("[package.metadata.docs.rs]\nfeatures = [\"one\", \"two\"]\n"),
+        Some(both)
+    );
+    assert_eq!(
+        docs_rs_features("[package.metadata.docs.rs]\nall-features = true\n"),
+        None
+    );
 }
 
 /// Both halves of the test above have to be real: a stamp parser that found no

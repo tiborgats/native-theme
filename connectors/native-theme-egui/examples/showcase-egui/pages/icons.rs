@@ -4,10 +4,10 @@
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
 
-use native_theme::icons::FreedesktopLoader;
-use native_theme::theme::{IconRole, IconSet, TransformAnimation};
+use native_theme::icons::{FreedesktopLoader, IconRole, TransformAnimation};
+use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
-use native_theme_egui::{ThemeAtlas, border_color, border_radius};
+use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -96,7 +96,7 @@ pub(crate) fn show(
         ),
     );
     let skeleton = native_theme_egui::convert::to_color32(t.button.background_color);
-    let radius = border_radius(t);
+    let radius = border_corner_radius(t);
     ui.horizontal_wrapped(|ui| {
         for (role, image) in images {
             let name = format!("{role:?}");
@@ -198,7 +198,7 @@ fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
     }
     match icon_theme {
         Some(theme) => format!("freedesktop ({theme})"),
-        None => match native_theme::theme::system_icon_theme() {
+        None => match native_theme::detect::system_icon_theme() {
             Ok(theme) => format!("freedesktop ({theme})"),
             Err(error) => format!("freedesktop (unavailable: {error})"),
         },
@@ -210,7 +210,7 @@ fn native_here(set: IconSet) -> bool {
     match set {
         IconSet::Freedesktop => cfg!(target_os = "linux"),
         IconSet::SfSymbols => cfg!(any(target_os = "macos", target_os = "ios")),
-        IconSet::SegoeIcons => cfg!(target_os = "windows"),
+        IconSet::SegoeFluent => cfg!(target_os = "windows"),
         _ => true,
     }
 }
@@ -231,7 +231,7 @@ fn icons_indicator(
     let (set, icon_theme) = chosen;
     let indicator = match set {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme.as_deref()),
-        set => native_theme::icons::load_icon_indicator(*set),
+        set => native_theme::icons::load_icon_indicator(*set, None),
     };
     let reduce_motion = atlas.accessibility().reduce_motion;
     let Some(anim) = indicator else {
@@ -285,7 +285,7 @@ fn icons_indicator(
             t.defaults.border.line_width,
             border_color(t),
         ))
-        .corner_radius(border_radius(t))
+        .corner_radius(border_corner_radius(t))
         .inner_margin(margin);
     demo::contained(reg, ui, "animated icon card", |ui, reg| {
         card.show(ui, |ui| {

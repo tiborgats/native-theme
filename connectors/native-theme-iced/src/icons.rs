@@ -1,18 +1,46 @@
 //! Icon conversion helpers for iced.
 //!
-//! Converts [`native_theme::theme::IconData`] variants into iced-compatible handles.
+//! Converts [`native_theme::icons::IconData`] variants into iced-compatible handles.
 //! Since iced separates raster images (`iced::widget::Image`) from SVG
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
+//!
+//! An icon by its role comes from [`SystemTheme::icon`](native_theme::SystemTheme::icon),
+//! in the theme's icon set and the colour given; pass `None` to
+//! [`to_svg_handle`] for it, since `icon` has coloured it already:
+//!
+//! ```no_run
+//! use iced::widget::{image, svg};
+//! use native_theme_iced::icons::{to_image_handle, to_svg_handle};
+//! use native_theme_iced::{IconRole, SystemTheme, SystemThemeExt, icon_sizes};
+//!
+//! let sys = SystemTheme::from_system()?;
+//! let loaded = sys.to_iced_theme();
+//! let fg = loaded.resolved.defaults.text_color;
+//! if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+//!     let size = icon_sizes(&loaded.resolved).toolbar;
+//!     let _icon: Option<iced::Element<'_, ()>> =
+//!         match (to_svg_handle(&data, None), to_image_handle(&data)) {
+//!             (Some(h), _) => Some(svg(h).width(size).height(size).into()),
+//!             (_, Some(h)) => Some(image(h).width(size).height(size).into()),
+//!             _ => None,
+//!         };
+//! }
+//! # Ok::<(), native_theme_iced::Error>(())
+//! ```
 
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
-use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
+use std::borrow::Cow;
+
+use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, load_custom_icon,
+};
 
 /// Converted animation frames with timing metadata.
 ///
 /// Returned by [`animated_frames_to_svg_handles`]. Contains the
 /// SVG handles and the per-frame duration needed to drive playback.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct AnimatedSvgHandles {
     /// SVG handles ready for iced rendering.
     pub handles: Vec<iced_core::svg::Handle>,
@@ -28,15 +56,7 @@ pub struct AnimatedSvgHandles {
 #[must_use]
 pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => Some(iced_core::image::Handle::from_rgba(
-            *width,
-            *height,
-            data.clone(),
-        )),
+        IconData::Rgba(rgba) => Some(image_handle(rgba.clone())),
         _ => None,
     }
 }
@@ -45,22 +65,16 @@ pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
 ///
 /// Returns `Some(Handle)` for [`IconData::Svg`] data, or `None` for
 /// [`IconData::Rgba`]. When `color` is `Some`, colorizes the SVG for
-/// monochrome icon sets (Material, Lucide). Pass `None` for multi-color
-/// system icons to preserve their native palette.
+/// monochrome icon sets (Material, Lucide) through
+/// [`colorize_monochrome_svg`]. Pass `None` for multi-color system icons to
+/// preserve their native palette.
 #[must_use]
 pub fn to_svg_handle(
     data: &IconData,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(cow) => {
-            let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(cow, c)
-            } else {
-                cow.to_vec()
-            };
-            Some(iced_core::svg::Handle::from_memory(final_bytes))
-        }
+        IconData::Svg(svg) => Some(svg_handle(Cow::Borrowed(svg), color)),
         _ => None,
     }
 }
@@ -68,64 +82,42 @@ pub fn to_svg_handle(
 /// Load a custom RGBA icon from an [`IconProvider`] and convert to an iced image handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). When `color`
-/// is `Some`, a system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named
-/// by the provider is loaded in `color`: an SF Symbol or a Segoe glyph arrives as
-/// RGBA in that colour instead of its fixed black or white.
+/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). The icon is
+/// loaded through [`load_custom_icon`] in `color`: an SF Symbol or a Segoe glyph
+/// arrives as RGBA in that colour instead of its fixed black or white.
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
-    to_image_handle(&data)
+    into_image_handle(load_custom_icon(
+        provider,
+        icon_set,
+        color.map(to_rgba),
+        None,
+    )?)
 }
 
 /// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is RGBA. When `color` is `Some`, colorizes monochrome SVGs, and a
-/// system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named by the
-/// provider is loaded in `color`.
+/// icon is RGBA. The icon is loaded through [`load_custom_icon`], which colours
+/// each set its own way: a Material or Lucide icon, or the provider's own SVG,
+/// through the monochrome colouriser, a freedesktop icon only where its
+/// foreground is left to the caller (a symbolic icon's placeholders, a
+/// `currentColor` the icon sets no `color` for), so a full-colour one keeps
+/// its own palette and one whose stylesheet sets its colour keeps that.
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
-    to_svg_handle(&data, color)
-}
-
-/// Internal helper: load an icon from a provider using the per-set loaders.
-///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
-/// set's icon is loaded in `color` (its monochrome glyphs arrive in the colour
-/// they are loaded in); a bundled set goes through [`load_icon`]. This
-/// preserves the `?Sized` bound on the public API.
-fn load_custom_via_builder(
-    provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
-    color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    use native_theme::theme::IconSet;
-    // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
-            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
-            set => load_icon(name, set),
-        }
-    {
-        return Some(data);
-    }
-    // Step 2: Try bundled SVG from provider
-    if let Some(svg) = provider.icon_svg(icon_set) {
-        return Some(IconData::Svg(svg));
-    }
-    None
+    into_svg_handle(
+        load_custom_icon(provider, icon_set, color.map(to_rgba), None)?,
+        None,
+    )
 }
 
 /// Convert all frames of an [`AnimatedIcon::Frames`] to iced SVG handles.
@@ -194,7 +186,7 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// Returns a [`Radians`](iced_core::Radians) value representing the current
 /// rotation based on `elapsed` time and `duration_ms` (the full rotation
-/// period from [`native_theme::theme::TransformAnimation::Spin`]).
+/// period from [`native_theme::icons::TransformAnimation::Spin`]).
 ///
 /// The angle wraps around via modulo, so values of `elapsed` greater than
 /// `duration_ms` cycle correctly.
@@ -209,18 +201,29 @@ pub fn animated_frames_to_svg_handles(
 /// # Examples
 ///
 /// ```no_run
+/// use native_theme_iced::TransformAnimation;
 /// use native_theme_iced::icons::spin_rotation_radians;
 ///
+/// # fn spin(anim: &native_theme_iced::AnimatedIcon) {
 /// let elapsed = std::time::Duration::from_millis(500);
-/// let angle = spin_rotation_radians(elapsed, 1000);
-/// // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
+/// if let Some(TransformAnimation::Spin { duration_ms }) = anim.animation() {
+///     let angle = spin_rotation_radians(elapsed, duration_ms.get());
+///     // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
+/// }
+/// # }
 /// ```
 #[must_use]
 pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> iced_core::Radians {
     if duration_ms == 0 {
         return iced_core::Radians(0.0);
     }
-    let progress = (elapsed.as_millis() as f32).rem_euclid(duration_ms as f32) / duration_ms as f32;
+    // The remainder in integers: an f32 of the milliseconds steps by 128 ms
+    // twelve days in.
+    let position = elapsed
+        .as_millis()
+        .checked_rem(u128::from(duration_ms))
+        .unwrap_or(0);
+    let progress = position as f32 / duration_ms as f32;
     iced_core::Radians(progress * std::f32::consts::TAU)
 }
 
@@ -228,11 +231,7 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
 #[must_use]
 pub fn into_image_handle(data: IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => Some(iced_core::image::Handle::from_rgba(width, height, data)),
+        IconData::Rgba(rgba) => Some(image_handle(rgba)),
         _ => None,
     }
 }
@@ -244,140 +243,43 @@ pub fn into_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(cow) => {
-            let final_bytes: Vec<u8> = if let Some(c) = color {
-                colorize_monochrome_svg(&cow, c)
-            } else {
-                cow.into_owned()
-            };
-            Some(iced_core::svg::Handle::from_memory(final_bytes))
-        }
+        IconData::Svg(svg) => Some(svg_handle(svg, color)),
         _ => None,
     }
 }
 
-/// An iced colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
-fn color_to_rgb(color: iced_core::Color) -> [u8; 3] {
-    [
-        (color.r.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (color.g.clamp(0.0, 1.0) * 255.0).round() as u8,
-        (color.b.clamp(0.0, 1.0) * 255.0).round() as u8,
-    ]
+/// The image handle of `rgba`'s pixels, for [`to_image_handle`] and
+/// [`into_image_handle`].
+fn image_handle(rgba: RgbaData) -> iced_core::image::Handle {
+    let (width, height) = (rgba.width(), rgba.height());
+    iced_core::image::Handle::from_rgba(width, height, rgba.into_data())
 }
 
-/// Colorize a **monochrome** SVG icon with the given color.
-///
-/// Works correctly for bundled icon sets (Material, Lucide) which use
-/// `currentColor` or implicit black fills. For multi-color SVGs from
-/// freedesktop system themes, use [`to_svg_handle()`] instead to
-/// preserve the original icon colors.
-///
-/// Note: Only RGB channels are used; the alpha channel is discarded during
-/// hex conversion. For transparency, use `Svg::opacity()` on the rendered element.
-///
-/// ## Replacement strategy
-///
-/// 1. If `currentColor` appears anywhere in the SVG, it is replaced globally
-///    (not scoped to individual attributes). This correctly handles `fill`,
-///    `stroke`, `stop-color`, etc. For monochrome icons this is the desired
-///    behavior. Multi-color SVGs should not use this function.
-///
-/// 2. Explicit black fills and strokes (`"black"`, `"#000000"`, `"#000"`)
-///    are replaced in both `fill=` and `stroke=` attributes.
-///
-/// 3. If no replacements are found and the root `<svg>` tag lacks a `fill=`
-///    attribute, a `fill` is injected. Note: if the root tag has `fill="none"`
-///    (common in stroke-based SVGs), no injection occurs -- the explicit black
-///    stroke replacements from step 2 handle colorization instead.
-///
-/// ## Limitations
-///
-/// - Colors in CSS `style` attributes (e.g., `style="fill:black"`) are not
-///   replaced (except `currentColor` which is caught by step 1).
-/// - Only the first `<svg` in the document is considered for fill injection.
-///   SVGs with `<svg` inside comments could cause incorrect injection, though
-///   this is extremely unlikely with real icon files.
-fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
-    let [r, g, b] = color_to_rgb(color);
-    let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
+/// The SVG handle of `svg`, coloured in `color` where given, for
+/// [`to_svg_handle`] and [`into_svg_handle`].
+fn svg_handle(svg: Cow<'_, [u8]>, color: Option<iced_core::Color>) -> iced_core::svg::Handle {
+    iced_core::svg::Handle::from_memory(match color {
+        Some(c) => colorize_monochrome_svg(&svg, to_rgba(c)),
+        None => svg.into_owned(),
+    })
+}
 
-    // Validate UTF-8 before attempting string operations. Non-UTF-8 SVGs
-    // (e.g., legacy Latin-1 encoded system icons) pass through unmodified
-    // rather than being corrupted by lossy replacement.
-    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
-        return svg_bytes.to_vec();
-    };
-
-    // Replace currentColor (handles Lucide-style SVGs).
-    // This is a global replacement that covers fill, stroke, stop-color, etc.
-    if svg_str.contains("currentColor") {
-        return svg_str.replace("currentColor", &hex).into_bytes();
-    }
-
-    // Replace explicit black fills and strokes (handles third-party SVGs).
-    // Stroke replacements handle outline-style icons that use stroke="black".
-    let fill_hex = format!("fill=\"{}\"", hex);
-    let stroke_hex = format!("stroke=\"{}\"", hex);
-    let replaced = svg_str
-        .replace("fill=\"black\"", &fill_hex)
-        .replace("fill=\"#000000\"", &fill_hex)
-        .replace("fill=\"#000\"", &fill_hex)
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
-    if replaced != svg_str {
-        return replaced.into_bytes();
-    }
-
-    // No currentColor or explicit black found -- inject fill into the root
-    // <svg> tag (handles Material-style SVGs with implicit black fill).
-    if let Some(pos) = svg_str.find("<svg")
-        && let Some(tail) = svg_str.get(pos..)
-        && let Some(close) = tail.find('>')
-    {
-        let tag_end = pos.saturating_add(close);
-        if let Some(tag) = svg_str.get(pos..tag_end)
-            && !tag.contains("fill=")
-        {
-            // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let is_self_closing = tag_end > 0
-                && svg_str
-                    .as_bytes()
-                    .get(tag_end.saturating_sub(1))
-                    .is_some_and(|&b| b == b'/');
-            let inject_pos = if is_self_closing {
-                tag_end.saturating_sub(1)
-            } else {
-                tag_end
-            };
-            if let Some(before) = svg_str.get(..inject_pos)
-                && let Some(after) = svg_str.get(inject_pos..)
-            {
-                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
-                result.push_str(before);
-                result.push_str(&format!(" fill=\"{}\"", hex));
-                result.push_str(after);
-                return result.into_bytes();
-            }
-        }
-    }
-
-    svg_bytes.to_vec()
+/// An iced colour as an opaque [`native_theme::Rgba`], each channel clamped to
+/// `0.0..=1.0`.
+fn to_rgba(color: iced_core::Color) -> native_theme::Rgba {
+    let channel = |c: f32| (c.clamp(0.0, 1.0) * 255.0).round() as u8;
+    native_theme::Rgba::rgb(channel(color.r), channel(color.g), channel(color.b))
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::theme::IconData;
+    use native_theme::icons::IconData;
 
     #[test]
     fn to_image_handle_with_rgba_returns_some() {
-        let data = IconData::Rgba {
-            width: 24,
-            height: 24,
-            data: vec![0u8; 24 * 24 * 4],
-        };
+        let data = IconData::rgba(24, 24, vec![0u8; 24 * 24 * 4]).unwrap();
         assert!(to_image_handle(&data).is_some());
     }
 
@@ -395,12 +297,16 @@ mod tests {
 
     #[test]
     fn to_svg_handle_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![255u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![255u8; 16 * 16 * 4]).unwrap();
         assert!(to_svg_handle(&data, None).is_none());
+    }
+
+    /// The text of an SVG handle made from bytes.
+    fn svg_text(handle: &iced_core::svg::Handle) -> String {
+        let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
+            panic!("the SVG is not in memory");
+        };
+        String::from_utf8(bytes.to_vec()).unwrap()
     }
 
     #[test]
@@ -413,33 +319,26 @@ mod tests {
         let handle = to_svg_handle(&data, Some(color));
         assert!(handle.is_some());
 
-        // Verify the colorization happened by checking the internal SVG
-        let colored = colorize_monochrome_svg(
-            b"<svg><path stroke=\"currentColor\" fill=\"currentColor\"/></svg>",
-            color,
-        );
-        let result = String::from_utf8(colored).unwrap();
+        // Verify the colorization happened by checking the handle's SVG
+        let result = svg_text(&handle.unwrap());
         assert!(result.contains("#ff0000"));
         assert!(!result.contains("currentColor"));
     }
 
     #[test]
     fn to_svg_handle_colored_injects_fill_for_material_style() {
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>".to_vec();
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(
+            b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>",
+        ));
         let color = iced_core::Color::from_rgb(0.0, 0.5, 1.0);
 
-        let colored = colorize_monochrome_svg(&svg, color);
-        let result = String::from_utf8(colored).unwrap();
+        let result = svg_text(&to_svg_handle(&data, Some(color)).unwrap());
         assert!(result.contains("fill=\"#0080ff\""));
     }
 
     #[test]
     fn to_svg_handle_colored_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap();
         let color = iced_core::Color::WHITE;
         assert!(to_svg_handle(&data, Some(color)).is_none());
     }
@@ -449,7 +348,7 @@ mod tests {
     #[derive(Debug)]
     struct TestSvgProvider;
 
-    impl native_theme::theme::IconProvider for TestSvgProvider {
+    impl native_theme::icons::IconProvider for TestSvgProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -466,7 +365,7 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::theme::IconProvider for EmptyProvider {
+    impl native_theme::icons::IconProvider for EmptyProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -529,22 +428,73 @@ mod tests {
 
     #[test]
     fn custom_icon_helpers_accept_dyn_provider() {
-        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestSvgProvider);
+        let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestSvgProvider);
         let result =
             custom_icon_to_svg_handle(&*boxed, native_theme::theme::IconSet::Material, None);
         assert!(result.is_some());
     }
 
-    #[test]
-    fn colorize_svg_preserves_existing_fill() {
-        let svg = b"<svg fill=\"red\"><path d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
+    /// Names `folder` for the freedesktop set and has no SVG of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[derive(Debug)]
+    struct FolderProvider;
 
-        let colored = colorize_monochrome_svg(svg, color);
-        let result = String::from_utf8(colored).unwrap();
-        // Should not inject a second fill since one already exists
-        assert!(result.contains("fill=\"red\""));
-        assert!(!result.contains("#00ff00"));
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    impl native_theme::icons::IconProvider for FolderProvider {
+        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
+            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        }
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            None
+        }
+    }
+
+    /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
+    /// its body `fill:currentColor`, the accent its stylesheet states, under
+    /// a fill of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    const FULL_COLOUR_FOLDER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.ColorScheme-Accent { color: #3daee9 }</style><path style="fill:currentColor" class="ColorScheme-Accent" d="M2 3h12l2 2h14v24H1V10h1z"/><path style="fill:#ffffff;fill-opacity:0.2" d="M14 3l1 3h15V5H16z"/></svg>"##;
+
+    /// A full-colour freedesktop icon loaded for a colour comes back as the
+    /// theme has it: the colour is for a symbolic icon, and a second pass
+    /// through the monochrome colouriser repainted the folder's body in it.
+    /// The theme is a fixture in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is() {
+        const NAME: &str = "icons::tests::custom_icon_to_svg_handle_leaves_a_full_colour_freedesktop_icon_as_it_is";
+        if crate::icon_fixture::in_child() {
+            let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+            let handle = custom_icon_to_svg_handle(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+            )
+            .expect("the fixture theme has the folder");
+            let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
+                panic!("the icon is not in memory");
+            };
+            assert_eq!(
+                std::str::from_utf8(bytes).unwrap(),
+                FULL_COLOUR_FOLDER,
+                "the full-colour icon was recoloured"
+            );
+            return;
+        }
+        crate::icon_fixture::run(NAME, "full-colour", |icons| {
+            let theme = icons.join("full-colour");
+            std::fs::create_dir_all(theme.join("places")).unwrap();
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
+                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )
+            .unwrap();
+            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER).unwrap();
+        });
     }
 
     // --- animated icon tests ---
@@ -572,7 +522,7 @@ mod tests {
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::transform(
             IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
-            native_theme::theme::TransformAnimation::Spin {
+            native_theme::icons::TransformAnimation::Spin {
                 duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
             },
         );
@@ -593,11 +543,7 @@ mod tests {
     #[test]
     fn animated_frames_rgba_only_returns_none() {
         let anim = AnimatedIcon::frames(
-            vec![IconData::Rgba {
-                width: 16,
-                height: 16,
-                data: vec![0u8; 16 * 16 * 4],
-            }],
+            vec![IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap()],
             std::num::NonZeroU32::new(80).expect("test constant"),
         )
         .expect("non-empty frames");
@@ -641,25 +587,8 @@ mod tests {
     }
 
     #[test]
-    fn colorize_replaces_explicit_black_fill() {
-        let svg = b"<svg><path fill=\"black\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
     fn into_image_handle_with_rgba() {
-        let data = IconData::Rgba {
-            width: 24,
-            height: 24,
-            data: vec![0u8; 24 * 24 * 4],
-        };
+        let data = IconData::rgba(24, 24, vec![0u8; 24 * 24 * 4]).unwrap();
         assert!(into_image_handle(data).is_some());
     }
 
@@ -677,11 +606,7 @@ mod tests {
 
     #[test]
     fn into_svg_handle_with_rgba_returns_none() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0u8; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap();
         assert!(into_svg_handle(data, None).is_none());
     }
 
@@ -690,11 +615,7 @@ mod tests {
         let anim = AnimatedIcon::frames(
             vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
-                IconData::Rgba {
-                    width: 16,
-                    height: 16,
-                    data: vec![0u8; 16 * 16 * 4],
-                },
+                IconData::rgba(16, 16, vec![0u8; 16 * 16 * 4]).unwrap(),
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
             std::num::NonZeroU32::new(80).expect("test constant"),
@@ -705,100 +626,6 @@ mod tests {
         let handles = result.unwrap();
         // RGBA frame should be filtered out, leaving 2 SVG frames
         assert_eq!(handles.handles.len(), 2);
-    }
-
-    #[test]
-    fn colorize_self_closing_svg_produces_valid_xml() {
-        let svg = b"<svg xmlns='http://www.w3.org/2000/svg'/>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // Should inject fill before '/', not between '/' and '>'
-        assert!(
-            result_str.contains("fill=\"#") && result_str.ends_with("/>"),
-            "self-closing SVG should remain valid XML, got: {}",
-            result_str
-        );
-        assert!(
-            !result_str.contains("/ fill="),
-            "fill should not be between / and >, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_000000() {
-        let svg = b"<svg><path fill=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#00ff00\""),
-            "fill=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_short() {
-        let svg = b"<svg><path fill=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#0000ff\""),
-            "fill=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#ff0000\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_000000() {
-        let svg = b"<svg><path stroke=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#00ff00\""),
-            "stroke=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_short() {
-        let svg = b"<svg><path stroke=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#0000ff\""),
-            "stroke=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_non_utf8_returns_original_bytes() {
-        // SVG bytes with an invalid UTF-8 sequence (0xFF is never valid UTF-8)
-        let svg: Vec<u8> = b"<svg>\xff<path d=\"M0 0\"/></svg>".to_vec();
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(&svg, color);
-        // Should return the original bytes unchanged, not corrupt them
-        assert_eq!(result, svg, "non-UTF-8 SVG should pass through unmodified");
     }
 
     #[test]
@@ -815,42 +642,6 @@ mod tests {
         assert!(result.is_some(), "should produce handles with color");
     }
 
-    // Issue 14.3: colorize with mixed fill attributes (both black and non-black)
-    #[test]
-    fn colorize_mixed_fill_attributes() {
-        // SVG with both fill="black" (should be replaced) and fill="red" (should be preserved)
-        let svg = b"<svg><rect fill=\"black\" width=\"10\" height=\"10\"/><rect fill=\"red\" width=\"10\" height=\"10\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("fill=\"red\""),
-            "fill=\"red\" should be preserved, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 14.3: colorize with non-black explicit fills (fill="white", fill="#FFF")
-    #[test]
-    fn colorize_non_black_fills_preserved() {
-        let svg = b"<svg fill=\"white\"><path d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // fill="white" is not black, should not be replaced by phases 1-2.
-        // Phase 3 (root fill injection) should be skipped since fill= already exists.
-        assert!(
-            result_str.contains("fill=\"white\""),
-            "fill=\"white\" should be preserved, got: {}",
-            result_str
-        );
-    }
-
     // Issue 14.3: spin_rotation_radians with very large elapsed (wraps correctly)
     #[test]
     fn spin_rotation_large_elapsed_wraps() {
@@ -863,6 +654,19 @@ mod tests {
         assert!(
             result.0.abs() < 0.01,
             "very large elapsed should wrap to near-zero, got {}",
+            result.0
+        );
+    }
+
+    /// Fourteen days and 50 ms in, a 1000 ms turn is a twentieth of the way
+    /// round: the remainder is taken before the cast to f32, whose step at
+    /// 1.2e9 ms is 128 ms.
+    #[test]
+    fn spin_rotation_is_exact_two_weeks_in() {
+        let result = spin_rotation_radians(std::time::Duration::from_millis(1_209_600_050), 1000);
+        assert!(
+            (result.0 - 0.1 * std::f32::consts::PI).abs() < 1e-4,
+            "expected 0.1π, got {}",
             result.0
         );
     }

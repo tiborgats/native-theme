@@ -9,8 +9,8 @@ set -euo pipefail
 #
 # NOTE: On macOS/Windows, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
-#     --theme material --variant dark --icon-set material \
-#     --tab basic --screenshot connectors/native-theme-iced/docs/assets/macos-material-dark.png
+#     --theme material-3 --variant dark --icon-set material \
+#     --tab basic --screenshot connectors/native-theme-iced/docs/assets/macos-material-3-dark.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -25,13 +25,13 @@ DELAY=3
 
 # Linux-native presets with matching icon sets (3 themes × dark+light)
 # Format: theme:variant:icon-set. kde-breeze names its freedesktop theme per
-# variant, breeze / breeze-dark (kde-breeze.toml:9, :317); `--icon-set <theme>`
+# variant, breeze / breeze-dark (kde-breeze.toml:16, :410); `--icon-set <theme>`
 # picks that installed theme, while `freedesktop` would mean the desktop's own.
 THEMES=(
     "kde-breeze:dark:breeze-dark"
     "kde-breeze:light:breeze"
-    "material:dark:material"
-    "material:light:material"
+    "material-3:dark:material"
+    "material-3:light:material"
     "catppuccin-mocha:dark:lucide"
     "catppuccin-mocha:light:lucide"
 )

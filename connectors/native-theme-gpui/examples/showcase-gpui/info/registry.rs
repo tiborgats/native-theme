@@ -11,8 +11,8 @@ use gpui::{
 use super::WidgetInfo;
 
 /// How long a new choice must stay the choice before it replaces what is
-/// shown. The model states no hover delay (docs/todo.md, "A sidebar width
-/// and a tooltip delay are missing from the model"); this is the showcase's.
+/// shown: the showcase's own. The model's `tooltip.show_delay_ms` is how long
+/// a tooltip waits, and Widget Info is not a tooltip.
 pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 
 #[derive(Default)]
@@ -151,7 +151,7 @@ impl InfoRegistry {
     ///
     /// A target that was not drawn is no longer hovered. gpui sends no hover
     /// end to an element it stopped drawing, and drops that element's state
-    /// with the frame (gpui-pre `window.rs:1146-1150`); drawn again under the
+    /// with the frame (gpui-pre `window.rs:1196-1200`); drawn again under the
     /// pointer, it starts from not hovered and reports the hover anew
     /// (`elements/div.rs:3154-3163`). Nor does a frame that only takes a
     /// target away send any hover change, so the choice is revisited here.
@@ -217,7 +217,7 @@ fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut Ap
 /// The root's first child: its prepaint bumps the epoch before any target
 /// records its bounds in the same frame (spec §4.2), and its paint runs
 /// after every prepaint of the frame, deferred draws included (gpui-pre
-/// `window.rs:3586-3619`).
+/// `window.rs:3710-3745`).
 pub fn epoch_marker(ui: &Entity<InfoRegistry>) -> impl IntoElement {
     let (on_prepaint, on_paint) = (ui.clone(), ui.clone());
     canvas(

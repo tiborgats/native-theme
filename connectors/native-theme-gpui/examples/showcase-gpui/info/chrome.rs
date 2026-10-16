@@ -1,5 +1,7 @@
 //! What the window's chrome reports about itself (spec §2).
 
+use std::time::Duration;
+
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::theme::ResolvedPadding;
@@ -13,9 +15,9 @@ use crate::support::ChromeIcon;
 /// window's title bar where the window was granted client-side decorations.
 /// Its geometry line is recorded by `native_info` where `demo::title_bar`
 /// applies the builder.
-pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
-    // macOS draws no window controls of upstream's (title_bar.rs:254-256).
-    let info = title_bar_colours(t, cfg!(not(target_os = "macos")));
+pub fn title_bar(t: &Theme, label: &str, inactive: bool) -> WidgetInfo {
+    // macOS draws no window controls of upstream's (title_bar.rs:256-258).
+    let info = title_bar_colours(t, cfg!(not(target_os = "macos")), inactive);
     let info = if cfg!(target_os = "macos") {
         info
     } else {
@@ -24,7 +26,7 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
             super::own_icons("the window controls' WindowMinimize, WindowMaximize or WindowRestore, and WindowClose (title_bar.rs, ControlIcon)"),
         )
     };
-    title_bar_notes(info)
+    title_bar_notes(info, inactive)
     .instance(
         "window",
         "the window asked the window manager to draw its frame, and was granted client-side decorations instead -- a Wayland compositor that offers none, as GNOME's Mutter, leaves the frame to the application -- so this bar is the window's title bar, and Root draws the rest of the frame (window_border.rs, WindowBorder)",
@@ -59,8 +61,8 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
 /// builder.
 pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     // Upstream draws its controls on Windows in any window, on Linux only in
-    // a client-decorated one, and on macOS never (title_bar.rs:254-270).
-    let info = title_bar_colours(t, cfg!(target_os = "windows"));
+    // a client-decorated one, and on macOS never (title_bar.rs:256-272).
+    let info = title_bar_colours(t, cfg!(target_os = "windows"), false);
     let info = if cfg!(target_os = "windows") {
         info.not_themeable(
             "own icons",
@@ -69,7 +71,7 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     } else {
         info
     };
-    title_bar_notes(info)
+    title_bar_notes(info, false)
         .instance(
             "sample",
             "the window manager draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is where the window manager leaves the frame to the application",
@@ -95,21 +97,27 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
 }
 
 /// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
-/// its window controls' colours.
-fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("TitleBar")
-        .color(claim(
+/// its window controls' colours. `inactive` is whether
+/// `geometry::title_bar_inactive` refined it, whose geometry line then names
+/// the fill.
+fn title_bar_colours(t: &Theme, controls: bool, inactive: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("TitleBar");
+    let info = if inactive {
+        info
+    } else {
+        info.color(claim(
             "bg",
             "title_bar",
             t.title_bar,
-            "gpui-component/title_bar.rs:340",
+            "gpui-component/title_bar.rs:343",
         ))
-        .color(claim(
-            "border",
-            "title_bar_border",
-            t.title_bar_border,
-            "gpui-component/title_bar.rs:338",
-        ));
+    };
+    let info = info.color(claim(
+        "border",
+        "title_bar_border",
+        t.title_bar_border,
+        "gpui-component/title_bar.rs:341",
+    ));
     if !controls {
         return info;
     }
@@ -117,56 +125,64 @@ fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
         "window control text",
         "foreground",
         t.foreground,
-        "gpui-component/title_bar.rs:217",
+        "gpui-component/title_bar.rs:219",
     ))
     .color(claim(
         "control hover",
         "secondary_hover",
         t.secondary_hover,
-        "gpui-component/title_bar.rs:181",
+        "gpui-component/title_bar.rs:182",
     ))
     .color(claim(
         "control hover icon",
         "secondary_foreground",
         t.secondary_foreground,
-        "gpui-component/title_bar.rs:172",
+        "gpui-component/title_bar.rs:173",
     ))
     .color(claim(
         "control pressed",
         "secondary_active",
         t.secondary_active,
-        "gpui-component/title_bar.rs:190",
+        "gpui-component/title_bar.rs:191",
     ))
     .color(claim(
         "close hover",
         "danger",
         t.danger,
-        "gpui-component/title_bar.rs:179",
+        "gpui-component/title_bar.rs:180",
     ))
     .color(claim(
         "close hover icon",
         "danger_foreground",
         t.danger_foreground,
-        "gpui-component/title_bar.rs:170",
+        "gpui-component/title_bar.rs:171",
     ))
     .color(claim(
         "close pressed",
         "danger_active",
         t.danger_active,
-        "gpui-component/title_bar.rs:188",
+        "gpui-component/title_bar.rs:189",
     ))
 }
 
-/// What cannot be given to a `TitleBar`.
-fn title_bar_notes(info: WidgetInfo) -> WidgetInfo {
-    info.not_themeable(
+/// What cannot be given to a `TitleBar`; `inactive` as
+/// `title_bar_colours`'.
+fn title_bar_notes(info: WidgetInfo, inactive: bool) -> WidgetInfo {
+    let info = info.not_themeable(
         "height",
         "TITLE_BAR_HEIGHT, 34px, and settable: TitleBar applies the caller's refinement after it (title_bar.rs, TitleBar). The model states no title-bar height -- our gap. Only the window controls stay 34px wide",
-    )
-    .not_themeable(
-        "fill",
-        "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)",
-    )
+    );
+    if inactive {
+        info.config(
+            "fill",
+            "a gradient between window.inactive_title_bar_background and background, upstream's gradient drawn from the inactive colour, which geometry::title_bar_inactive gives the bar while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
+        )
+    } else {
+        info.not_themeable(
+            "fill",
+            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.inactive_title_bar_background, through geometry::title_bar_inactive",
+        )
+    }
 }
 
 /// What the application's menus sit in, and so what shows through them.
@@ -321,7 +337,7 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu separator",
         "border",
         t.border,
-        "gpui-component/menu/popup_menu.rs:1257",
+        "gpui-component/menu/popup_menu.rs:1276",
     ))
     .config(
         "menu border-radius",
@@ -397,7 +413,7 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component 0.7.1's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component 0.7.3's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .not_themeable(
             "edge",
@@ -424,7 +440,9 @@ pub fn toolbar(
 /// The status bar's panel toggle (spec §3.2, S4), running `action` and
 /// showing `icon` of the icon theme named `set`, selected while its panel is
 /// `open`, which `state` describes. Its icon-size line is recorded where
-/// `demo::panel_toggle` applies the builder.
+/// `demo::panel_toggle` applies the builder; `tooltip_delay` is the delay its
+/// tooltip is given, the theme's `tooltip.show_delay_ms`.
+#[allow(clippy::too_many_arguments)]
 pub fn panel_toggle(
     t: &Theme,
     action: &'static str,
@@ -433,6 +451,7 @@ pub fn panel_toggle(
     open: bool,
     state: &'static str,
     tooltip_styled: bool,
+    tooltip_delay: Option<Duration>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(match (drawn, open) {
@@ -452,7 +471,7 @@ pub fn panel_toggle(
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         )
     };
-    let info = action_tooltip(info, t, tooltip_styled);
+    let info = action_tooltip(info, t, tooltip_styled, tooltip_delay);
     let info = if drawn {
         info.not_themeable(
             "icon",
@@ -611,13 +630,13 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
             "active underline",
             "primary",
             t.primary,
-            "gpui-component/tab/tab_bar.rs:275",
+            "gpui-component/tab/tab_bar.rs:277",
         ))
         .color(claim(
             "bottom rule",
             "border",
             t.border,
-            "gpui-component/tab/tab_bar.rs:512",
+            "gpui-component/tab/tab_bar.rs:553",
         ))
         .not_themeable(
             "tab fill",
@@ -625,7 +644,7 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
         )
         .not_themeable(
             "fill",
-            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:268-275). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:270-277). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
         )
         .not_themeable(
             "corners",
@@ -711,13 +730,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
         GhostContent::Icon => (
@@ -725,13 +744,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -739,13 +758,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1007",
+                "gpui-component/button/button.rs:1024",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1184",
+                "gpui-component/button/button.rs:1201",
             ),
         ),
     };
@@ -761,27 +780,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1223",
+        "gpui-component/button/button.rs:1240",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1168-1174).
+/// in dark mode (button/button.rs:1185-1191).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1171",
+            "gpui-component/button/button.rs:1188",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1169",
+            "gpui-component/button/button.rs:1186",
         )
     }
 }
@@ -843,7 +862,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         ))
         .not_themeable(
             "font colour",
-            "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
+            "Tier U, not an absence: combo_box.font.color is modelled, and the iOS preset states one of its own (systemBlue, an iOS select's text); it is carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
         )
         .not_themeable(
             "rows",
@@ -917,13 +936,15 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`. Its icon-size line is
-/// recorded where `demo::toolbar_button` applies the builder.
+/// recorded where `demo::toolbar_button` applies the builder; `tooltip_delay`
+/// is the delay its tooltip is given, the theme's `tooltip.show_delay_ms`.
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
     icon: &ChromeIcon,
     set: &str,
     tooltip_styled: bool,
+    tooltip_delay: Option<Duration>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -931,7 +952,12 @@ pub fn toolbar_button(
     } else {
         "Ghost, labelled"
     });
-    let info = action_tooltip(super::buttons::native_ghost(info, t), t, tooltip_styled)
+    let info = action_tooltip(
+        super::buttons::native_ghost(info, t),
+        t,
+        tooltip_styled,
+        tooltip_delay,
+    )
         .not_themeable(
             "fill",
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
@@ -965,21 +991,36 @@ pub fn toolbar_button(
 /// What a chrome Button's tooltip paints: built by the application on the
 /// element around the Button (`demo::action_tooltip`) and refined by
 /// `geometry::tooltip` where `styled`, whose line the helper records;
-/// upstream's colours where no native theme refined it.
-fn action_tooltip(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
+/// upstream's colours where no native theme refined it. `delay` is the
+/// theme's `tooltip.show_delay_ms`, which the element is given.
+fn action_tooltip(
+    info: WidgetInfo,
+    t: &Theme,
+    styled: bool,
+    delay: Option<Duration>,
+) -> WidgetInfo {
     let info = if styled {
         info
     } else {
         info.colors(super::feedback::tooltip_colours(t, true))
     };
-    info.instance(
+    let info = info.instance(
         "tooltip",
         "Tooltip::element with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. The text is the element, refined by geometry::tooltip_content where a native theme is installed, so it wraps within tooltip.max_width; a key binding beside it is not counted in that width",
-    )
-    .not_themeable(
-        "tooltip delay",
-        "gpui's own tooltip, set on an element rather than through the Button, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay",
-    )
+);
+    match delay {
+        Some(delay) => info.config(
+            "tooltip delay",
+            format!(
+                "tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
+                delay.as_millis()
+            ),
+        ),
+        None => info.not_themeable(
+            "tooltip delay",
+            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed",
+        ),
+    }
 }
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
@@ -1132,12 +1173,17 @@ pub fn resize_handle(
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
 /// the surface, its edge, and the backdrop behind it; and what upstream
 /// builds around the parts it is given. `close_button` is whether the Dialog
-/// draws its close button, `reported` the parts that report it, and
-/// `reduce_motion` gpui's reduced motion while it is drawn.
+/// draws its close button, `reported` the parts that report it,
+/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance`
+/// whether it enters as `geometry::dialog_entrance` gives the theme's
+/// `dialog.entrance`, and `styled` whether `geometry::dialog` refined it,
+/// whose geometry line then names the surface's fill and edge.
 pub(super) fn dialog_surface(
     info: WidgetInfo,
     t: &Theme,
     reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
     close_button: bool,
     reported: &str,
 ) -> WidgetInfo {
@@ -1149,49 +1195,57 @@ pub(super) fn dialog_surface(
     } else {
         info
     };
+    // geometry::dialog paints the surface and its edge with
+    // dialog.background_color and dialog.border.color, which no ThemeColor
+    // field holds, over upstream's.
+    let info = if styled {
+        info
+    } else {
+        info.color(claim(
+            "bg",
+            "background",
+            t.background,
+            "gpui-component/dialog/dialog.rs:720",
+        ))
+        .color(claim(
+            "border",
+            "border",
+            t.border,
+            "gpui-component/dialog/dialog.rs:722",
+        ))
+        .not_themeable(
+            "fill",
+            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.background_color where a native theme is installed",
+        )
+    };
     info.color(claim(
-        "bg",
-        "background",
-        t.background,
-        "gpui-component/dialog/dialog.rs:669",
-    ))
-    .color(claim(
-        "border",
-        "border",
-        t.border,
-        "gpui-component/dialog/dialog.rs:671",
-    ))
-    .color(claim(
         "backdrop",
         "overlay",
         t.overlay,
-        "gpui-component/dialog/dialog.rs:324",
+        "gpui-component/dialog/dialog.rs:327",
     ))
-    .not_themeable(
-        "fill",
-        "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog)",
-    )
     .not_themeable(
         "width",
         "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog_max_width caps it",
     )
     .not_themeable(
         "animation",
-        if reduce_motion {
-            "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)"
-        } else {
-            "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)"
+        match (entrance, reduce_motion) {
+            (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)",
+            (false, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION)",
+            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would fade in place over the motion tokens' duration_normal on their easing_enter -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; gpui-pre/elements/animation.rs, AnimationExt)",
+            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, not a literal: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance)",
         },
     )
     .instance(
         "unreported",
         if close_button {
             format!(
-                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
             )
         } else {
             format!(
-                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
             )
         },
     )
@@ -1200,12 +1254,15 @@ pub(super) fn dialog_surface(
 /// The command palette's Dialog (spec §2.8), drawn while gpui's
 /// `reduce_motion` is as given. Its geometry lines are recorded where
 /// `demo::command_palette` applies the builders; its info target is the
-/// title, because the Command fills the rest of its content.
-pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
+/// title, because the Command fills the rest of its content. `entrance` as
+/// `dialog_surface`'s.
+pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bool) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("Command Palette"),
         t,
         reduce_motion,
+        entrance,
+        styled,
         true,
         "the title and the content",
     )
@@ -1215,7 +1272,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:636; gpui-base dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base dialog.rs:613)",
     )
 }
 
@@ -1343,7 +1400,7 @@ pub(super) fn sheet_surface(
             "backdrop",
             "overlay",
             t.overlay,
-            "gpui-component/dialog/dialog.rs:324",
+            "gpui-component/dialog/dialog.rs:327",
         ))
         .not_themeable(
             "fill",
@@ -1512,20 +1569,20 @@ pub fn preference_switch(
             "track",
             "primary",
             t.primary,
-            "gpui-component/switch.rs:175",
+            "gpui-component/switch.rs:183",
         )),
         (false, false) => info.color(claim(
             "track",
             "switch",
             t.switch,
-            "gpui-component/switch.rs:176",
+            "gpui-component/switch.rs:184",
         )),
     };
     info.color(claim(
         "thumb",
         "switch_thumb",
         t.switch_thumb,
-        "gpui-component/switch.rs:182",
+        "gpui-component/switch.rs:190",
     ))
     .not_themeable(
         "size",
@@ -1552,12 +1609,21 @@ pub fn preference_switch(
 /// The About dialog (spec §2.8). Its geometry lines are recorded where
 /// `demo::about` applies the builders; its title and its content report it.
 /// `gapped` is whether the installed theme states the gap between its lines,
-/// `reduce_motion` gpui's reduced motion while it is drawn.
-pub fn about_dialog(t: &Theme, gapped: bool, reduce_motion: bool) -> WidgetInfo {
+/// `reduce_motion` gpui's reduced motion while it is drawn, `entrance` and
+/// `styled` as `dialog_surface`'s.
+pub fn about_dialog(
+    t: &Theme,
+    gapped: bool,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("About"),
         t,
         reduce_motion,
+        entrance,
+        styled,
         true,
         "the title and the content",
     )

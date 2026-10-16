@@ -95,10 +95,10 @@ prop_compose! {
         use_pt in any::<bool>(),
         weight in proptest::option::of(100u16..900u16),
         lh_raw in proptest::option::of(0.5f32..3.0),
+        lh_use_pt in any::<bool>(),
     ) -> TextScaleEntry {
         let size = size_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
-        // line_height must use the same unit as size for TryFrom consistency
-        let line_height = lh_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
+        let line_height = lh_raw.map(|v| if lh_use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
         TextScaleEntry { size, weight, line_height }
     }
 }
@@ -324,6 +324,13 @@ fn arb_dialog_button_order() -> impl Strategy<Value = DialogButtonOrder> {
     ]
 }
 
+fn arb_dialog_entrance() -> impl Strategy<Value = DialogEntranceStyle> {
+    prop_oneof![
+        Just(DialogEntranceStyle::ScaleFade),
+        Just(DialogEntranceStyle::FadeRise),
+    ]
+}
+
 fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
     (
         proptest::option::of(arb_rgba()),
@@ -334,6 +341,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(8.0f32..128.0),
         proptest::option::of(arb_dialog_button_order()),
+        proptest::option::of(arb_dialog_entrance()),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_widget_border_spec()),
@@ -348,6 +356,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
                 gap,
                 icon_sz,
                 order,
+                entrance,
                 title_font,
                 body_font,
                 border,
@@ -361,10 +370,61 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
                     button_gap: gap,
                     icon_size: icon_sz,
                     button_order: order,
+                    entrance,
                     title_font,
                     body_font,
                     border,
                 }
+            },
+        )
+}
+
+// ── TooltipTheme strategy ───────────────────────────────────────────────────
+
+fn arb_tooltip_theme() -> impl Strategy<Value = TooltipTheme> {
+    (
+        proptest::option::of(arb_rgba()),
+        proptest::option::of(0.0f32..1000.0),
+        proptest::option::of(any::<u16>()),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_widget_border_spec()),
+    )
+        .prop_map(|(bg, max_w, show_delay, font, border)| TooltipTheme {
+            background_color: bg,
+            max_width: max_w,
+            show_delay,
+            font,
+            border,
+        })
+}
+
+// ── ListTheme strategy ──────────────────────────────────────────────────────
+
+fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
+    (
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 9..=9),
+        proptest::option::of(0.0f32..200.0),
+        proptest::option::of(1.0f32..200.0),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_font_spec()),
+        proptest::option::of(arb_widget_border_spec()),
+    )
+        .prop_map(
+            |(colors, row_h, header_h, item_font, header_font, border)| ListTheme {
+                background_color: colors[0],
+                alternate_row_background: colors[1],
+                selection_background: colors[2],
+                selection_text_color: colors[3],
+                header_background: colors[4],
+                grid_color: colors[5],
+                row_height: row_h,
+                header_height: header_h,
+                hover_background: colors[6],
+                hover_text_color: colors[7],
+                disabled_text_color: colors[8],
+                item_font,
+                header_font,
+                border,
             },
         )
 }
@@ -374,7 +434,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
 fn arb_icon_set() -> impl Strategy<Value = IconSet> {
     prop_oneof![
         Just(IconSet::SfSymbols),
-        Just(IconSet::SegoeIcons),
+        Just(IconSet::SegoeFluent),
         Just(IconSet::Freedesktop),
         Just(IconSet::Material),
         Just(IconSet::Lucide),
@@ -405,9 +465,11 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
         arb_input_theme(),
         arb_checkbox_theme(),
         arb_dialog_theme(),
+        arb_tooltip_theme(),
+        arb_list_theme(),
     )
         .prop_map(
-            |(defaults, text_scale, window, button, input, checkbox, dialog)| {
+            |(defaults, text_scale, window, button, input, checkbox, dialog, tooltip, list)| {
                 ThemeMode {
                     defaults,
                     text_scale,
@@ -416,10 +478,11 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     input,
                     checkbox,
                     dialog,
+                    tooltip,
+                    list,
                     // Remaining widgets use defaults -- exercises their empty round-trip paths
                     text_area: TextAreaTheme::default(),
                     menu: MenuTheme::default(),
-                    tooltip: TooltipTheme::default(),
                     scrollbar: ScrollbarTheme::default(),
                     slider: SliderTheme::default(),
                     progress_bar: ProgressBarTheme::default(),
@@ -427,7 +490,6 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     sidebar: SidebarTheme::default(),
                     toolbar: ToolbarTheme::default(),
                     status_bar: StatusBarTheme::default(),
-                    list: ListTheme::default(),
                     popover: PopoverTheme::default(),
                     splitter: SplitterTheme::default(),
                     separator: SeparatorTheme::default(),

@@ -42,7 +42,8 @@ pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(1280.0, 720.0);
 
 /// How long a new Widget Info choice must stay the choice before it is shown. The model
-/// states no hover delay (spec §10.4); this is the gpui showcase's
+/// states no such value (spec §10.4): its `tooltip.show_delay_ms` is how long a tooltip waits,
+/// and Widget Info is not a tooltip. This is the gpui showcase's
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs:16`).
 pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_millis(250);
 

@@ -3,7 +3,11 @@
 
 use gpui_component::theme::Theme;
 
-use super::{WidgetInfo, claim, px_text};
+use super::{
+    WidgetInfo,
+    chrome::{GhostContent, ghost_colours},
+    claim, px_text,
+};
 use crate::demo::{DecorationKind, HeadingLevel, TextSize, WeightKind};
 
 /// One level of the showcase's own heading ladder: plain text in a div, no
@@ -231,19 +235,19 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "edge",
             "input",
             t.input,
-            "gpui-component/input/input.rs:788",
+            "gpui-component/input/input.rs:798",
         ))
         // Painted at a literal 85% of the style block's border
-        // (gpui-base input/base/element.rs:3093).
+        // (gpui-base input/base/element.rs:3121).
         .color(claim(
             "indent guides, border at 85%",
             "border",
             t.border.opacity(0.85),
-            "gpui-base/input/base/element.rs:3093",
+            "gpui-base/input/base/element.rs:3121",
         ))
         // Unhighlighted text is painted in the colour the element inherits
         // (gpui-base input/base/element.rs:2542), not the style block's
-        // foreground, and Input sets none (input/input.rs:706): so the
+        // foreground, and Input sets none (input/input.rs:707): so the
         // colour the showcase sets on its window.
         .color(claim(
             "unhighlighted text, inherited",
@@ -270,7 +274,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-component/input/input.rs:559",
         ))
         // The current line's number takes the style block's foreground
-        // (gpui-base input/base/element.rs:2892).
+        // (gpui-base input/base/element.rs:2920).
         .color(claim(
             "current line number",
             "foreground",
@@ -347,5 +351,151 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
         )
         .not_themeable("style source", "a TextView reads no theme field itself: gpui-component builds a TextViewStyle from the theme once and the view takes it (text/mod.rs)")
         .not_themeable("inline code", "accent again -- the menu highlight, shared with menu rows, Toggle and a hovered ghost button (Tier U)")
-        .not_themeable("heading sizes", "2, 1.5, 1.25, 1.125, 1 and 1 times a fixed 14px, not the platform's font: gpui-base sizes a heading from literals (gpui-base/text/node.rs, BlockNode::Heading), and base_text_view_style installs no heading refinement over them (text/mod.rs, base_text_view_style; gpui-base/text/style.rs, with_heading). The weights are literals too, bold down to medium")
+        .not_themeable("heading sizes", "1.8, 4/3, 17/15, 1, 14/15 and 13/15 times the font size the view inherits, which follows the platform's: gpui-base scales a heading from literals (gpui-base/text/node.rs, heading_metrics, lines 2867-2876; body_font_size), and base_text_view_style installs no heading refinement over them (text/mod.rs, base_text_view_style; gpui-base/text/style.rs, with_heading). Every level is semibold, a literal too, and the sixth takes muted_foreground (gpui-base/text/node.rs, BlockNode::Heading, lines 3903-3906)")
+        .not_themeable("link underline", "always drawn, a 1px hairline in the link colour at 0.4 alpha (gpui-base/text/node.rs, link_underline, lines 2841-2847), so link.underline_enabled = false cannot be honoured")
+        .not_themeable("selection text", "the glyphs' own colour: the selection, in the selection token, paints under the glyphs (gpui-base/text/inline.rs, paint_selection, lines 1007 and 1018), so the selection's text colour cannot be honoured")
+}
+
+/// The `Diff` over the showcase's one-file patch, its hovered line and line
+/// number highlighted.
+pub fn diff(t: &Theme) -> WidgetInfo {
+    let rem = t.font_size.as_f32();
+    let mono = t.mono_font_size.as_f32();
+    WidgetInfo::new("Diff")
+        .variant("unified")
+        .color(claim(
+            "bg",
+            "background",
+            t.background,
+            "gpui-component/diff/mod.rs:718",
+        ))
+        // The file name, the hunk's code where no syntax colour lands, and
+        // the header's text inherit the frame's colour.
+        .color(claim(
+            "text",
+            "foreground",
+            t.foreground,
+            "gpui-component/diff/mod.rs:719",
+        ))
+        .color(claim(
+            "edge",
+            "border",
+            t.border,
+            "gpui-component/diff/mod.rs:722",
+        ))
+        .color(claim(
+            "file header rule",
+            "border",
+            t.border,
+            "gpui-component/diff/mod.rs:1117",
+        ))
+        .color(claim(
+            "file header counts",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/diff/mod.rs:1116",
+        ))
+        .colors(ghost_colours(t, GhostContent::Icon))
+        .color(claim(
+            "hunk separator, at 35%",
+            "muted",
+            t.muted.opacity(0.35),
+            "gpui-component/diff/mod.rs:933",
+        ))
+        .color(claim(
+            "hunk separator text",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/diff/mod.rs:935",
+        ))
+        .color(claim(
+            "line numbers",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/diff/mod.rs:1301",
+        ))
+        .color(claim(
+            "hovered line number",
+            "foreground",
+            t.foreground,
+            "gpui-component/diff/mod.rs:1302",
+        ))
+        // A changed line's colour is read once, as `status`, and then
+        // painted as its sign, its fill at 12% (diff/mod.rs:1681-1683) and
+        // its changed words at 30% (:1481).
+        .color(claim(
+            "removed sign",
+            "danger",
+            t.danger,
+            "gpui-component/diff/mod.rs:1576",
+        ))
+        .color(claim(
+            "removed line, at 12%",
+            "danger",
+            t.danger.opacity(0.12),
+            "gpui-component/diff/mod.rs:1576",
+        ))
+        .color(claim(
+            "removed words, at 30%",
+            "danger",
+            t.danger.opacity(0.3),
+            "gpui-component/diff/mod.rs:1576",
+        ))
+        .color(claim(
+            "added sign",
+            "success",
+            t.success,
+            "gpui-component/diff/mod.rs:1578",
+        ))
+        .color(claim(
+            "added line, at 12%",
+            "success",
+            t.success.opacity(0.12),
+            "gpui-component/diff/mod.rs:1578",
+        ))
+        .color(claim(
+            "added words, at 30%",
+            "success",
+            t.success.opacity(0.3),
+            "gpui-component/diff/mod.rs:1578",
+        ))
+        .color(claim(
+            "hovered line and line number",
+            "list_hover",
+            t.list_hover,
+            "gpui-component/diff/mod.rs:1686",
+        ))
+        .color(claim(
+            "selected lines",
+            "selection",
+            t.selection,
+            "gpui-component/diff/mod.rs:1684",
+        ))
+        .color(claim(
+            "selected text",
+            "selection",
+            t.selection,
+            "gpui-component/diff/selection.rs:283",
+        ))
+        .config(
+            "mono font",
+            format!("mono_font_family: {}", t.mono_font_family),
+        )
+        .config(
+            "code size",
+            format!(
+                "{}px: rem × mono_font_size / 16, at a rem of {}px and a mono_font_size of {}px",
+                px_text(rem * mono / 16.0),
+                px_text(rem),
+                px_text(mono)
+            ),
+        )
+        .not_themeable("code size", "the code is sized rem × mono_font_size / 16 and its rows 1.6 times that (diff/mod.rs, render_diff), so it is mono_font_size only where the rem is 16px: a smaller platform font makes the code smaller than the platform's monospace size. No builder reaches it without changing every other monospace text; an upstream item")
+        .not_themeable("alphas", "the 12% of a changed line's fill (diff/mod.rs, code_line: lines 1681-1683), the 30% of its changed words (diff/mod.rs, line_highlights: line 1481) and the 35% of the hunk separator (diff/mod.rs, render_hunk_separator: line 933) are upstream literals over the theme's colours")
+        .not_themeable("syntax colors", "highlight_theme: default_light / default_dark per color mode (diff/mod.rs, line_highlights)")
+        .not_themeable("collapse button", "the icon, hover and pressed swatches are the file header's ghost collapse Button, which the widget builds and no refinement reaches (diff/mod.rs, render_file_header)")
+        .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight on the file header's collapse button (diff/mod.rs, render_file_header)"))
+        .instance("hover", "DiffHoverHighlight::Both, set by the showcase: upstream highlights nothing by default (diff/mod.rs, DiffHoverHighlight)")
+        .instance("add-annotation button", "none: it is shown only when on_add_annotation is set (diff/mod.rs, add_annotation_button: line 1508), and this one is not. It would paint primary, primary_foreground and radius (lines 1537-1539)")
+        .instance("conflict sides", "none: only a file read by DiffFile::parse_conflicts is conflicted (diff/conflict.rs, parse_conflicts: lines 264-265), and this patch is read by DiffFile::parse. Its current side would be tinted success and its incoming side info (diff/mod.rs, conflict_tint: lines 1098-1099)")
 }

@@ -15,6 +15,13 @@
 //! cargo run -p native-theme-iced --example showcase-iced
 //! ```
 //!
+//! To have it follow the OS theme's changes while its colour mode is System,
+//! add the `watch` feature, which `native_theme_iced::theme_changes` needs:
+//!
+//! ```sh
+//! cargo run -p native-theme-iced --example showcase-iced --features watch
+//! ```
+//!
 //! # What to look for
 //!
 //! - Sidebar switches theme presets, color modes, and icon sets at runtime —
@@ -51,16 +58,15 @@ use iced_aw::{Card, ContextMenu, SelectionList, Spinner, TabBar, TabLabel, Tabs}
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
+    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
+    MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
+    fill_current_color, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, ArrowSide, IconData, IconRole, IconSet, LayoutTheme, ResolvedFontSpec,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
+    ArrowSide, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedTheme,
 };
-use native_theme_iced::icons::{
-    AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
-};
+use native_theme_iced::icons::{spin_rotation_radians, to_svg_handle};
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{
@@ -68,8 +74,7 @@ use native_theme_iced::{
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, PoisonError};
+use std::sync::{Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
@@ -169,6 +174,7 @@ mod probes {
     pub const COMBO_BOX: &str = "probe-combo-box";
     pub const SLIDER: &str = "probe-slider";
     pub const VERTICAL_SLIDER: &str = "probe-vertical-slider";
+    pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
     #[cfg(feature = "iced_aw")]
     pub const SELECTION_LIST: &str = "probe-selection-list";
 }
@@ -1326,12 +1332,12 @@ fn load_all_icons(
     let theme = choice.freedesktop_theme();
     let is_system_set = matches!(
         set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
     );
 
     // Foreground color for GTK symbolic icons (Adwaita, Yaru, etc.), SF Symbols, Segoe glyphs
     let tc = resolved.defaults.text_color;
-    let fg = Some([tc.r, tc.g, tc.b]);
+    let fg = Some(tc);
 
     // For system icon sets, pre-load the Material set so we can detect fallbacks
     let material_icons: Vec<Option<IconData>> = if is_system_set {
@@ -1358,10 +1364,10 @@ fn load_all_icons(
                 IconSet::Material => MaterialLoader::new(role).load(),
                 IconSet::Lucide => LucideLoader::new(role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
+                IconSet::SegoeFluent => SegoeFluentLoader::new(role).color_opt(fg).load(),
                 _ => None,
             };
-            let name = native_theme::theme::icon_name(role, set);
+            let name = native_theme::icons::icon_name(role, set);
             let source = match (&data, is_system_set) {
                 (None, _) => IconSource::NotFound,
                 (Some(_), false) => IconSource::Bundled,
@@ -1396,18 +1402,55 @@ fn load_all_icons(
 // Animated icon cache builder
 // ---------------------------------------------------------------------------
 
+/// A frame-based indicator's frames as the Icons page draws them, each
+/// [`indicator_svg_handle`]'s, and the period of each frame.
+#[derive(Debug, Clone)]
+struct FrameHandles {
+    handles: Vec<iced_core::svg::Handle>,
+    frame_duration_ms: u32,
+}
+
+/// Whether the Icons page tints `icon_set`'s animated indicator in the text
+/// colour: the bundled monochrome sets (Material, Lucide), which `Spinner`
+/// recolours too. A freedesktop indicator keeps its own colours, as in
+/// `Spinner` (see [`indicator_svg_handle`]).
+fn indicator_tinted(icon_set: IconSet) -> bool {
+    matches!(icon_set, IconSet::Material | IconSet::Lucide)
+}
+
+/// One frame of `icon_set`'s animated indicator as an SVG handle, coloured as
+/// `Spinner` colours it but for the tint, which the Icons page applies when
+/// it draws ([`indicator_tinted`]): a freedesktop frame's `currentColor`
+/// filled in with `text_color` where the document sets no `color` of its own
+/// (core's `fill_current_color`), any other frame as it is. `None` where the
+/// frame is not SVG.
+fn indicator_svg_handle(
+    data: &IconData,
+    icon_set: IconSet,
+    text_color: native_theme::Rgba,
+) -> Option<iced_core::svg::Handle> {
+    match (icon_set, data) {
+        (IconSet::Freedesktop, IconData::Svg(bytes)) => Some(iced_core::svg::Handle::from_memory(
+            fill_current_color(bytes, text_color).into_owned(),
+        )),
+        _ => to_svg_handle(data, None),
+    }
+}
+
 /// Build the animation caches for the spinner of `icon_set`: for a
 /// freedesktop set, the spinner of `freedesktop_theme` (the system's where
 /// `None`), so the page never shows another theme's spinner; none where the
-/// theme has none.
+/// theme has none. Each frame is [`indicator_svg_handle`]'s, `text_color`
+/// being the theme's `defaults.text_color`.
 ///
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
 fn build_animation_caches(
     icon_set: native_theme::theme::IconSet,
     freedesktop_theme: Option<&str>,
+    text_color: native_theme::Rgba,
 ) -> (
-    Vec<(String, AnimatedSvgHandles)>,          // animated_frames
+    Vec<(String, FrameHandles)>,                // animated_frames
     Vec<usize>,                                 // animated_frame_indices
     Vec<Duration>,                              // animated_frame_elapsed
     Vec<(String, iced_core::svg::Handle, u32)>, // animated_spins
@@ -1420,26 +1463,30 @@ fn build_animation_caches(
     let mut animated_static = Vec::new();
 
     let set_name = icon_set.name().to_string();
+    let handle_of = |data: &IconData| indicator_svg_handle(data, icon_set, text_color);
     {
-        let indicator = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::load_indicator(freedesktop_theme),
-            other => load_icon_indicator(other),
-        };
-        if let Some(anim) = indicator {
+        if let Some(anim) = load_icon_indicator(icon_set, freedesktop_theme) {
             // Cache static first-frame for reduced motion
-            if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
+            if let Some(handle) = handle_of(anim.first_frame()) {
                 animated_static.push((set_name.clone(), handle));
             }
 
             match &anim {
-                AnimatedIcon::Frames(_) => {
-                    if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
+                AnimatedIcon::Frames(data) => {
+                    // Only SVG frames, as `animated_frames_to_svg_handles`
+                    // keeps them: the page draws each through `svg`.
+                    let handles: Vec<_> = data.frames().iter().filter_map(handle_of).collect();
+                    if !handles.is_empty() {
+                        let anim_handles = FrameHandles {
+                            handles,
+                            frame_duration_ms: data.frame_duration_ms().get(),
+                        };
                         animated_frames.push((set_name.clone(), anim_handles));
                     }
                 }
                 AnimatedIcon::Transform(data) => {
                     if let TransformAnimation::Spin { duration_ms } = data.animation()
-                        && let Some(handle) = to_svg_handle(data.icon(), None)
+                        && let Some(handle) = handle_of(data.icon())
                     {
                         animated_spins.push((set_name.clone(), handle, duration_ms.get()));
                     }
@@ -1625,8 +1672,8 @@ struct State {
     installed_themes: Vec<String>,
 
     // Animated Icons state
-    /// Cached SVG handles for frame-based animations: (set_name, AnimatedSvgHandles).
-    animated_frames: Vec<(String, AnimatedSvgHandles)>,
+    /// Cached SVG handles for frame-based animations: (set_name, FrameHandles).
+    animated_frames: Vec<(String, FrameHandles)>,
     /// Current frame index per frame-based animation.
     animated_frame_indices: Vec<usize>,
     /// Elapsed time tracker per frame-based animation (for correct per-animation timing).
@@ -1657,11 +1704,10 @@ struct State {
     /// fails.
     detect_icon_theme: fn() -> native_theme::Result<String>,
 
-    // Theme watcher (runtime dark/light toggle detection)
-    /// Flag set by the ThemeSubscription background thread when the OS theme changes.
-    theme_change_flag: Arc<AtomicBool>,
-    /// RAII guard keeping the theme watcher background thread alive.
-    _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
+    /// Whether `subscription` watches the OS theme
+    /// (`native_theme_iced::theme_changes`) while the colour mode is System.
+    #[cfg(feature = "watch")]
+    watch_os_theme: bool,
 }
 
 impl Default for State {
@@ -1768,7 +1814,11 @@ impl State {
             animation_start,
             reduced_motion,
             animated_static,
-        ) = build_animation_caches(anim_set, icon_set_choice.freedesktop_theme());
+        ) = build_animation_caches(
+            anim_set,
+            icon_set_choice.freedesktop_theme(),
+            resolved.defaults.text_color,
+        );
         let basic_spinner = native_theme_iced::Spinner::new(
             &resolved,
             anim_set,
@@ -1789,23 +1839,15 @@ impl State {
             1
         };
 
-        // Start theme watcher for runtime dark/light toggle detection.
-        // Skip in screenshot mode — the watcher's background thread cleanup
+        // Watch the OS theme for runtime dark/light toggle detection.
+        // Not in screenshot mode — the watcher's background thread cleanup
         // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
-        // Skip under `cargo test` too: a file watch on the desktop's own
+        // Not under `cargo test` either: a file watch on the desktop's own
         // configuration is host I/O, and nothing the self-tests assert
         // depends on it.
-        let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let is_screenshot = CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
-        let _theme_watcher = if is_screenshot || cfg!(test) {
-            None
-        } else {
-            let flag_clone = theme_change_flag.clone();
-            native_theme::watch::on_theme_change(move |_event| {
-                flag_clone.store(true, Ordering::Release);
-            })
-            .ok()
-        };
+        #[cfg(feature = "watch")]
+        let watch_os_theme =
+            !cfg!(test) && !CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
 
         let mut state = Self {
             current_choice: fallback_choice
@@ -1912,9 +1954,9 @@ impl State {
             screenshot_countdown: 0,
             error_message: initial_error,
             read_system_theme,
-            detect_icon_theme: native_theme::theme::system_icon_theme,
-            theme_change_flag,
-            _theme_watcher,
+            detect_icon_theme: native_theme::detect::system_icon_theme,
+            #[cfg(feature = "watch")]
+            watch_os_theme,
         };
 
         if let Some(cli) = CLI_ARGS.get() {
@@ -2107,8 +2149,11 @@ impl State {
         let anim_set = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let (af, afi, afe, asp, astart, rm, ast) =
-            build_animation_caches(anim_set, self.icon_set_choice.freedesktop_theme());
+        let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(
+            anim_set,
+            self.icon_set_choice.freedesktop_theme(),
+            self.current_resolved.defaults.text_color,
+        );
         self.animated_frames = af;
         self.animated_frame_indices = afi;
         self.animated_frame_elapsed = afe;
@@ -2277,9 +2322,6 @@ enum Message {
     /// OS capture of the window with its frame.
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     CaptureFrame(iced::Size, f32),
-
-    // Theme watcher
-    ThemeWatcherTick,
 }
 
 // ---------------------------------------------------------------------------
@@ -2723,10 +2765,6 @@ fn update_inner(state: &mut State, message: Message) {
         #[cfg(feature = "iced_aw")]
         Message::AwActionChosen(what) => state.aw_last_action = what,
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
-        Message::ThemeWatcherTick if state.theme_change_flag.swap(false, Ordering::AcqRel) => {
-            native_theme::detect::invalidate_caches();
-            state.rebuild_theme();
-        }
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
             for (i, (_, anim_handles)) in state.animated_frames.iter().enumerate() {
@@ -3807,27 +3845,6 @@ struct ChromeIcons {
     system: bool,
 }
 
-/// `PanelLeft`'s freedesktop name: `sidebar-show` on the GTK desktops,
-/// `sidebar-expand-left` on the others (native-theme-gpui `src/icons.rs`,
-/// `freedesktop_name_for_gpui_icon`).
-#[cfg(target_os = "linux")]
-fn panel_left_name() -> &'static str {
-    use native_theme::detect::LinuxDesktop;
-    match native_theme::detect::detect_linux_desktop() {
-        LinuxDesktop::Gnome
-        | LinuxDesktop::Budgie
-        | LinuxDesktop::Cinnamon
-        | LinuxDesktop::Mate
-        | LinuxDesktop::Xfce => "sidebar-show",
-        _ => "sidebar-expand-left",
-    }
-}
-
-#[cfg(not(target_os = "linux"))]
-fn panel_left_name() -> &'static str {
-    "sidebar-expand-left"
-}
-
 /// Load the chrome's icons from `choice`, as `load_all_icons` loads the Icons
 /// page's: a freedesktop theme's recoloured where they are symbolic.
 fn load_chrome_icons(
@@ -3838,7 +3855,7 @@ fn load_chrome_icons(
     let set = choice.effective_icon_set(theme_icon_set);
     let theme = choice.freedesktop_theme();
     let tc = resolved.defaults.text_color;
-    let fg = Some([tc.r, tc.g, tc.b]);
+    let fg = Some(tc);
     let freedesktop = |loader: FreedesktopLoader<'_>| {
         let loader = loader.color_opt(fg);
         match theme {
@@ -3846,11 +3863,14 @@ fn load_chrome_icons(
             None => loader.load(),
         }
     };
-    // By gpui-component name: its Lucide, Material and freedesktop names.
-    let named = |lucide: &str, material: &str, desktop: &str| match set {
+    // By gpui-component name: its Lucide and Material names, and its
+    // freedesktop names (native-theme-gpui `freedesktop_name_candidates`),
+    // each looked up in the one theme, which has whichever its convention
+    // names: Breeze's `sidebar-expand-left`, Adwaita's `sidebar-show`.
+    let named = |lucide: &str, material: &str, desktop: &'static [&'static str]| match set {
         IconSet::Lucide => LucideLoader::new(lucide).load(),
         IconSet::Material => MaterialLoader::new(material).load(),
-        IconSet::Freedesktop => freedesktop(FreedesktopLoader::new(desktop)),
+        IconSet::Freedesktop => freedesktop(FreedesktopLoader::any(desktop)),
         _ => None,
     };
     let by_role = |role: IconRole| match set {
@@ -3858,14 +3878,18 @@ fn load_chrome_icons(
         IconSet::Material => MaterialLoader::new(role).load(),
         IconSet::Lucide => LucideLoader::new(role).load(),
         IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
-        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
+        IconSet::SegoeFluent => SegoeFluentLoader::new(role).color_opt(fg).load(),
         _ => None,
     };
     ChromeIcons {
-        palette: named("square-terminal", "terminal", "utilities-terminal"),
-        reload: named("rotate-cw", "rotate_right", "object-rotate-right"),
+        palette: named("square-terminal", "terminal", &["utilities-terminal"]),
+        reload: named("rotate-cw", "rotate_right", &["object-rotate-right"]),
         preferences: by_role(IconRole::ActionSettings),
-        panel: named("panel-left", "side_navigation", panel_left_name()),
+        panel: named(
+            "panel-left",
+            "side_navigation",
+            &["sidebar-expand-left", "sidebar-show"],
+        ),
         close: by_role(IconRole::WindowClose),
         copy: by_role(IconRole::ActionCopy),
         paste: by_role(IconRole::ActionPaste),
@@ -3873,7 +3897,7 @@ fn load_chrome_icons(
         folder: by_role(IconRole::FolderOpen),
         system: matches!(
             set,
-            IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+            IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
         ),
     }
 }
@@ -4130,7 +4154,8 @@ fn chrome_tooltip<'a>(
         tooltip::Position::Bottom,
     )
     .gap(gap.widget)
-    .style(styles::tooltip(resolved));
+    .style(styles::tooltip(resolved))
+    .show_delay(resolved);
     match tooltip_padding(resolved) {
         Some(padding) => tip.padding(padding).into(),
         None => tip.into(),
@@ -5088,10 +5113,8 @@ fn caption_text<'a>(
 /// `sidebar.font.color`.
 fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) -> text::Text<'a> {
     let resolved = &state.current_resolved;
-    let heading = ResolvedTextScaleEntry {
-        weight: HEADING_WEIGHT,
-        ..resolved.text_scale.caption.clone()
-    };
+    let mut heading = resolved.text_scale.caption.clone();
+    heading.weight = HEADING_WEIGHT;
     text(content)
         .role(&heading, resolved, &state.accessibility)
         .color(to_color(resolved.sidebar.font.color))
@@ -5236,13 +5259,20 @@ fn element_title(element: &ShowcaseElement) -> String {
 }
 
 /// A leaf's value as the theme holds it, and its colour where it is one. The
-/// leaf is the registry's path (`button.border.padding_top_px`); the resolved
-/// theme spells the same field without the unit and with the padding's
-/// sides nested (`button.border.padding.top`). The layout distances, the
-/// icon set and the icon theme are not in `ResolvedTheme`: they are read
-/// where the showcase keeps them.
+/// leaf is the registry's path (`button.border.padding_top_px`,
+/// `tooltip.show_delay_ms`); the resolved theme spells the same field
+/// without the unit and with the padding's sides nested
+/// (`button.border.padding.top`). The layout distances, the icon set and the
+/// icon theme are not in `ResolvedTheme`: they are read where the showcase
+/// keeps them.
 fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Option<Color>) {
-    let px = leaf.ends_with("_px");
+    let unit = if leaf.ends_with("_px") {
+        Some("px")
+    } else if leaf.ends_with("_ms") {
+        Some("ms")
+    } else {
+        None
+    };
     if let Some(field) = leaf.strip_prefix("layout.") {
         let l = &state.layout;
         let stated = match field {
@@ -5271,7 +5301,10 @@ fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Optio
         _ => {}
     }
     let found = leaf.split('.').try_fold(values, |node, segment| {
-        let segment = segment.strip_suffix("_px").unwrap_or(segment);
+        let segment = segment
+            .strip_suffix("_px")
+            .or_else(|| segment.strip_suffix("_ms"))
+            .unwrap_or(segment);
         match segment.strip_prefix("padding_") {
             Some(side) => node.get("padding").and_then(|p| p.get(side)),
             None => node.get(segment),
@@ -5279,25 +5312,23 @@ fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Optio
     });
     match found {
         None => (NOT_STATED.to_string(), None),
-        Some(value) => value_text(value, px),
+        Some(value) => value_text(value, unit),
     }
 }
 
 /// A value of the resolved theme as Widget Info writes it: a colour as its
-/// `#rrggbb[aa]`, a size in px, a font as its family, the size its source
-/// stated and its weight, a text-scale entry as its size and weight.
-fn value_text(value: &toml::Value, px: bool) -> (String, Option<Color>) {
-    let number = |v: f32| {
-        if px {
-            format!("{v} px")
-        } else {
-            format!("{v}")
-        }
+/// `#rrggbb[aa]`, a number in `unit` (px for a size, ms for a duration)
+/// where its leaf has one, a font as its family, the size its source stated
+/// and its weight, a text-scale entry as its size and weight.
+fn value_text(value: &toml::Value, unit: Option<&str>) -> (String, Option<Color>) {
+    let number = |v: String| match unit {
+        Some(unit) => format!("{v} {unit}"),
+        None => v,
     };
     match value {
         toml::Value::String(s) => (s.clone(), hex_color(s)),
-        toml::Value::Float(f) => (number(*f as f32), None),
-        toml::Value::Integer(i) => (if px { format!("{i} px") } else { i.to_string() }, None),
+        toml::Value::Float(f) => (number(format!("{}", *f as f32)), None),
+        toml::Value::Integer(i) => (number(i.to_string()), None),
         toml::Value::Boolean(b) => (b.to_string(), None),
         toml::Value::Table(t) => (compound_text(t), None),
         other => (other.to_string(), None),
@@ -5517,7 +5548,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
     let class = if ghost {
         "ghost_button"
     } else if toggle_on {
-        "toggle_on (styles::button's Pressed look)"
+        "styles::button_toggle"
     } else if under("basic.buttons.primary") {
         "styles::button_primary"
     } else {
@@ -5549,13 +5580,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("button", "hover_text_color") => format!("{class}: the Hovered text_color").into(),
         ("button", "checked_background") => {
-            "toggle_on: the fill at rest, the Pressed fill where unstated".into()
+            "styles::button_toggle: the checked fill, the Pressed fill where unstated".into()
         }
         ("button", "checked_text_color") => {
-            "toggle_on: text_color at rest, the Pressed one where unstated".into()
+            "styles::button_toggle: the checked text_color, the Pressed one where unstated".into()
         }
         ("button", "active_background") if toggle_on => {
-            "toggle_on: the fill at rest where checked_background is unstated, composited over button.background_color".into()
+            "styles::button_toggle: the checked fill where checked_background is unstated, composited over button.background_color".into()
         }
         ("button", "active_background") if ghost => {
             "ghost_button: the Pressed fill, and the fill while selected".into()
@@ -5564,7 +5595,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             format!("{class}: the Pressed fill, composited over the rest fill").into()
         }
         ("button", "active_text_color") if toggle_on => {
-            "toggle_on: text_color at rest where checked_text_color is unstated".into()
+            "styles::button_toggle: the checked text_color where checked_text_color is unstated".into()
         }
         ("button", "active_text_color") => format!("{class}: the Pressed text_color").into(),
         ("button", "primary_background") => {
@@ -5928,6 +5959,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "header_font.color") => "the header cells' text colour".into(),
         ("list", "header_background") => "the header row container's background".into(),
         ("list", "grid_color") => "the grid lines' colour (rules between the cells)".into(),
+        ("list", "header_height_px") => {
+            "list_header_height: the header row's height; a row's where unstated".into()
+        }
+        ("list", "row_height_px") if under("basic.table.header") => {
+            "the header row's height where list.header_height is unstated; the label's \
+             line box and padding where both are"
+                .into()
+        }
         ("list", "row_height_px") => {
             "a row's height; the label's line box and padding where unstated".into()
         }
@@ -5982,9 +6021,15 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("expander", "frame_enabled") => {
             "one frame round header and body, or none; each header framed where unstated".into()
         }
-        ("expander", "border.color") => "styles::expander / the frame: border.color".into(),
-        ("expander", "border.corner_radius_px") => "styles::expander / the frame: border.radius".into(),
-        ("expander", "border.line_width_px") => "styles::expander / the frame: border.width".into(),
+        ("expander", "border.color") => {
+            "styles::expander / styles::expander_frame: border.color".into()
+        }
+        ("expander", "border.corner_radius_px") => {
+            "styles::expander / styles::expander_frame: border.radius".into()
+        }
+        ("expander", "border.line_width_px") => {
+            "styles::expander / styles::expander_frame: border.width".into()
+        }
         ("expander", f) if side(f).is_some() => {
             "padding_inside_border: the header's padding, the side plus the line width".into()
         }
@@ -6001,6 +6046,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("tooltip", "font") => "the tip's text size and theme_font".into(),
         ("tooltip", "font.color") => "styles::tooltip: container::Style::text_color".into(),
         ("tooltip", "max_width_px") => "the tip container's max_width".into(),
+        ("tooltip", "show_delay_ms") => {
+            "tooltip_show_delay: Tooltip::delay; iced's own, none, where unstated".into()
+        }
         ("tooltip", "border.color") => "styles::tooltip: border.color".into(),
         ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
         ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
@@ -6026,7 +6074,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
         // ---- defaults, text scale, icons ----
         ("defaults", "line_height") => {
-            "the text's LineHeight::Relative (line_height_multiplier)".into()
+            "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.color") => "the text's colour: the palette's text".into(),
@@ -6165,14 +6213,17 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     };
     let layout = &state.layout;
     let config = [
-        ("radius", px(native_theme_iced::border_radius(resolved))),
+        (
+            "radius",
+            px(native_theme_iced::border_corner_radius(resolved)),
+        ),
         (
             "radius_lg",
-            px(native_theme_iced::border_radius_lg(resolved)),
+            px(native_theme_iced::border_corner_radius_lg(resolved)),
         ),
         (
             "scrollbar",
-            px(native_theme_iced::scrollbar_width(resolved)),
+            px(native_theme_iced::scrollbar_groove_width(resolved)),
         ),
         (
             "scrollbar overlay",
@@ -6828,31 +6879,6 @@ enum Push {
     On,
 }
 
-/// A toggle button that is on, at rest and under the pointer:
-/// `button.checked_background` and `.checked_text_color`
-/// (docs/platform-facts.md §2.3), and where the theme states none the
-/// button's pressed look, `style`'s `Pressed` (`button.active_background` and
-/// `.active_text_color`). Disabled stays `style`'s.
-fn toggle_on(
-    resolved: &ResolvedTheme,
-    style: impl Fn(&Theme, button::Status) -> button::Style,
-) -> impl Fn(&Theme, button::Status) -> button::Style {
-    let b = &resolved.button;
-    let fill = b.checked_background.map(to_color);
-    let label = b.checked_text_color.map(to_color);
-    move |theme, status| match status {
-        button::Status::Disabled => style(theme, status),
-        _ => {
-            let pressed = style(theme, button::Status::Pressed);
-            button::Style {
-                background: fill.map(iced::Background::Color).or(pressed.background),
-                text_color: label.unwrap_or(pressed.text_color),
-                ..pressed
-            }
-        }
-    }
-}
-
 /// The list's ids of a checkbox or a radio button and of its parts: the
 /// indicator, the label, and the mark (a check mark, a radio dot) where the
 /// list names one.
@@ -6976,7 +7002,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
-            .style(toggle_on(resolved, styles::button(resolved)))
+            .style(styles::button_toggle(resolved, true))
             .padding(btn_pad),
         };
         // At its own width even where its row runs past the column, as the
@@ -7011,7 +7037,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         tooltip::Position::Bottom,
     )
     .gap(sp.xs)
-    .style(styles::tooltip(resolved));
+    .style(styles::tooltip(resolved))
+    .show_delay(resolved);
     let tip = match tip_padding {
         Some(padding) => tip.padding(padding),
         None => tip,
@@ -7087,7 +7114,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
                 .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
+                .text_line_height(native_theme_iced::line_height(resolved))
                 .font(theme_font(&c.font))
                 // Drawn on the page, the window's background, which a
                 // disabled box is faded over as one widget.
@@ -7264,7 +7291,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     Message::BasicRadioSelected,
                 )
                 .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
+                .text_line_height(native_theme_iced::line_height(resolved))
                 .font(theme_font(&c.font)),
                 state.basic_radio == value,
             ),
@@ -7953,9 +7980,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let x = &resolved.expander;
     // The header's padding: inside its own border where it draws one; where
     // the theme states whether the expander is framed the header draws none
-    // ([`unframed_when_stated`]) -- a framed one sits inside the item's
-    // frame, `expander.border.line_width` in -- so the stated sides are its
-    // padding as they are.
+    // (`styles::expander`) -- a framed one sits inside the item's frame,
+    // `styles::expander_frame`, `expander.border.line_width` in -- so the
+    // stated sides are its padding as they are.
     let x_pad = match x.frame_enabled {
         Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
         None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
@@ -8003,10 +8030,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ))
         .padding(x_pad)
         .width(Fill)
-        .style(unframed_when_stated(
-            styles::expander(resolved),
-            x.frame_enabled,
-        ))
+        .style(styles::expander(resolved))
         .on_press(toggle);
         match listed_part(id, "header") {
             Some(header_id) => Element::from(tagged(header_id, head)),
@@ -8018,11 +8042,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let body_inset = x
         .content_indent
         .unwrap_or(x_pad.left + x.arrow_icon_size + arrow_gap);
-    let frame = iced::Border {
-        color: to_color(x.border.color),
-        width: x.border.line_width,
-        radius: x.border.corner_radius.into(),
-    };
     let item = move |id: &'static str,
                      head: Element<'a, Message>,
                      body: Option<&'a str>|
@@ -8040,10 +8059,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             Some(true) => container(item)
                 .padding(x.border.line_width)
                 .width(Length::Fixed(BASIC_WIDE))
-                .style(move |_: &Theme| container::Style {
-                    border: frame,
-                    ..container::Style::default()
-                })
+                .style(styles::expander_frame(resolved))
                 .into(),
             _ => container(item).width(Length::Fixed(BASIC_WIDE)).into(),
         };
@@ -8184,7 +8200,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 button(
                     rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
                         .size(scaled_text_size(link.font.size, a11y))
-                        .line_height(native_theme_iced::line_height_multiplier(resolved))
+                        .line_height(native_theme_iced::line_height(resolved))
                         .font(theme_font(&link.font))
                 )
                 .on_press(Message::ButtonPressed)
@@ -8294,7 +8310,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// The Basic page's table (Basic v3), built from containers: iced_widget's
 /// `table` has no style setter (iced_widget 0.14.2 `src/table.rs:149-196`),
 /// so its separators, header and rows could not take `list.*`. A header row
-/// `Name | Size` on `list.header_background` in `list.header_font`, two
+/// `Name | Size` on `list.header_background` in `list.header_font`,
+/// `list.header_height` tall where the theme states it, else as a row, two
 /// rows in `list.item_font` -- the second selected, in
 /// `list.selection_background` and `.selection_text_color` -- each
 /// `list.row_height` tall, or its
@@ -8359,7 +8376,9 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         };
         cell.width(Length::FillPortion(1)).into()
     };
-    let head_h = height(&l.header_font);
+    // `list.header_height` where the theme states it; else the header is a row.
+    let head_h =
+        native_theme_iced::list_header_height(resolved).unwrap_or_else(|| height(&l.header_font));
     let head_ink = to_color(l.header_font.color);
     let head_fill = to_color(l.header_background);
     let header = tagged(
@@ -8420,30 +8439,6 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             }),
     )
     .into()
-}
-
-/// `style` with no border where the theme states whether the expander is
-/// framed (`frame`): a framed expander's frame holds its header and its body
-/// together, and an unframed one has none (docs/platform-facts.md §2.27), so
-/// the header draws no border of its own. Where the theme states nothing the
-/// header keeps `styles::expander`'s border.
-fn unframed_when_stated(
-    style: impl Fn(&Theme, button::Status) -> button::Style + Clone,
-    frame: Option<bool>,
-) -> impl Fn(&Theme, button::Status) -> button::Style + Clone {
-    move |theme, status| {
-        let s = style(theme, status);
-        match frame {
-            Some(_) => button::Style {
-                border: iced::Border {
-                    width: 0.0,
-                    ..s.border
-                },
-                ..s
-            },
-            None => s,
-        }
-    }
 }
 
 /// `style` with a transparent glyph where the theme states the check mark's
@@ -8906,6 +8901,8 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     let i = &resolved.input;
     let radius = i.border.corner_radius;
     let radius_s = format!("{radius:.0}px");
+    let area = &resolved.text_area;
+    let area_radius_s = format!("{:.0}px", area.border.corner_radius);
 
     let header = section_header(
         "Text Inputs",
@@ -8984,6 +8981,11 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
             state,
             "TextEditor (multi-line)",
             &[
+                (
+                    "border",
+                    "text_area.border.color",
+                    to_color(area.border.color),
+                ),
                 ("bg", "input.background_color", to_color(i.background_color)),
                 ("text", "input.font.color", to_color(i.font.color)),
                 (
@@ -8993,7 +8995,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 ),
             ],
             &[
-                ("border-radius", &radius_s),
+                ("border-radius", &area_radius_s),
                 (
                     "text",
                     font_row("input.font", &resolved.input.font).as_str(),
@@ -9807,6 +9809,10 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let card_pad = native_theme_iced::padding_or(&card.border.padding, Padding::ZERO);
     let card_radius_s = format!("{card_radius:.0}px");
     let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
+    let delay_s = match native_theme_iced::tooltip_show_delay(resolved) {
+        Some(delay) => format!("{}ms, tooltip.show_delay", delay.as_millis()),
+        None => "none, iced's own (tooltip.show_delay unstated)".to_string(),
+    };
     let line_width_s = format!("{:.0}px", sep.line_width);
 
     let header = section_header(
@@ -9914,7 +9920,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("gap", "set per widget instance"),
-                ("delay", "none"),
+                ("delay", &delay_s),
                 ("max width", "iced wraps the tip's own content element"),
             ],
         ),
@@ -9930,7 +9936,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Top,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Bottom").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9940,7 +9947,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Bottom,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Left").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9950,7 +9958,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Left,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
                 tooltip(
                     button(text("Hover: Right").typeset(&resolved.button.font, a11y))
                         .on_press(Message::ButtonPressed)
@@ -9960,7 +9969,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     tooltip::Position::Right,
                 )
                 .gap(sp.xs)
-                .style(styles::tooltip(resolved)),
+                .style(styles::tooltip(resolved))
+                .show_delay(resolved),
             ]
             .spacing(sp.m),
         ]
@@ -10102,7 +10112,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     let swatch_border = native_theme_iced::border_color(resolved);
     let swatch_bw = resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_radius(resolved);
+    let swatch_r = native_theme_iced::border_corner_radius(resolved);
     let swatch_frame = iced::Border {
         color: swatch_border,
         width: swatch_bw,
@@ -10176,30 +10186,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     // ---- PaneGrid: splits the platform's splitter theme paints ----
 
-    let pane_style = {
-        let hovered = to_color(sp_th.hover_color);
-        let divider_width = sp_th.divider_width;
-        move |theme: &Theme| {
-            let iced = pane_grid::default(theme);
-            pane_grid::Style {
-                // The model states no drop-target highlight, so the region
-                // iced paints under a dragged pane stays iced's own.
-                hovered_region: iced.hovered_region,
-                // A picked split is a split being dragged; SplitterTheme
-                // states an idle and a hovered color and no dragged one, so
-                // that one line is iced's (spec §3.2).
-                picked_split: pane_grid::Line {
-                    color: iced.picked_split.color,
-                    width: divider_width,
-                },
-                hovered_split: pane_grid::Line {
-                    color: hovered,
-                    width: divider_width,
-                },
-            }
-        }
-    };
-
     let panes = pane_grid(&state.panes, |pane, label, _is_maximized| {
         let focused = state.focused_pane == Some(pane);
         let title = format!("Pane {label}");
@@ -10246,16 +10232,23 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     .on_click(Message::PaneClicked)
     .on_drag(Message::PaneDragged)
     .on_resize(sp_th.divider_width, Message::PaneResized)
-    .style(pane_style);
+    .style(styles::pane_grid(resolved));
 
     let pane_demo = hoverable(
         widget_tooltip(
             "PaneGrid",
-            &[(
-                "hovered split",
-                "splitter.hover_color",
-                to_color(sp_th.hover_color),
-            )],
+            &[
+                (
+                    "hovered split",
+                    "splitter.hover_color",
+                    to_color(sp_th.hover_color),
+                ),
+                (
+                    "picked split",
+                    "splitter.hover_color",
+                    to_color(sp_th.hover_color),
+                ),
+            ],
             &[
                 ("split width", &divider_width_s),
                 ("pane surface", "styles::container_card"),
@@ -10273,11 +10266,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 (
                     "drop region",
                     "the model states no drop-target highlight — iced's own",
-                ),
-                (
-                    "picked split",
-                    "SplitterTheme states no dragged color — iced's own, at the \
-                     platform's width",
                 ),
                 (
                     "splitter.divider_color",
@@ -10333,39 +10321,61 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         ),
     ];
 
+    // iced pads each row of a table by `padding_y` above and below its
+    // tallest cell (iced_widget 0.14.2 `src/table.rs:259`, `:312`), so a
+    // header cell is `list.header_height` less that padding where the theme
+    // states one, and its text's own height where it states none, as the
+    // rows' cells are.
+    let cell_pad_y = sp.xs;
+    let header_height = native_theme_iced::list_header_height(resolved);
+    let header_height_s = match header_height {
+        Some(h) => format!("{h:.0}px, list.header_height"),
+        None => "its text's (list.header_height unstated)".to_string(),
+    };
+    let header_cell = |title: &'static str| -> Element<'_, Message> {
+        let label = text(title).typeset(&resolved.list.header_font, a11y);
+        match header_height {
+            Some(h) => container(label)
+                .height(Length::Fixed((h - 2.0 * cell_pad_y).max(0.0)))
+                .align_y(iced::Center)
+                .into(),
+            None => label.into(),
+        }
+    };
     let scale_table = table(
         [
             table::column(
-                text("text_scale role").typeset(&resolved.list.header_font, a11y),
+                probe(
+                    probes::LAYOUT_TABLE_HEADER,
+                    Length::Shrink,
+                    header_cell("text_scale role"),
+                ),
                 {
                     let cell = resolved.list.item_font.clone();
                     move |r: ScaleRow| text(r.0).typeset(&cell, a11y)
                 },
             )
             .width(Length::Fixed(160.0)),
-            table::column(text("size").typeset(&resolved.list.header_font, a11y), {
+            table::column(header_cell("size"), {
                 let cell = resolved.list.item_font.clone();
                 move |r: ScaleRow| text(r.1).typeset(&cell, a11y)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("weight").typeset(&resolved.list.header_font, a11y), {
+            table::column(header_cell("weight"), {
                 let cell = resolved.list.item_font.clone();
                 move |r: ScaleRow| text(r.2).typeset(&cell, a11y)
             })
             .width(Length::Fixed(90.0)),
-            table::column(
-                text("line height").typeset(&resolved.list.header_font, a11y),
-                {
-                    let cell = resolved.list.item_font.clone();
-                    move |r: ScaleRow| text(r.3).typeset(&cell, a11y)
-                },
-            )
+            table::column(header_cell("line height"), {
+                let cell = resolved.list.item_font.clone();
+                move |r: ScaleRow| text(r.3).typeset(&cell, a11y)
+            })
             .width(Length::Fixed(110.0)),
         ],
         scale_rows,
     )
     .padding_x(sp.s)
-    .padding_y(sp.xs)
+    .padding_y(cell_pad_y)
     .separator_x(sep.line_width)
     .separator_y(sep.line_width)
     .width(Fill);
@@ -10390,6 +10400,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                     "header",
                     font_row("list.header_font", &resolved.list.header_font).as_str(),
                 ),
+                ("header height", &header_height_s),
                 (
                     "cells",
                     font_row("list.item_font", &resolved.list.item_font).as_str(),
@@ -11638,6 +11649,14 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     let icon_px = resolved.defaults.icon_sizes.large;
     let title = text("Animated Icons").role(section_title(ts), resolved, a11y);
     let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
+    // The bundled monochrome indicators in the text colour; a freedesktop one
+    // in its own colours, its `currentColor` filled in when it was cached.
+    let tint = indicator_tinted(
+        state
+            .icon_set_choice
+            .effective_icon_set(state.current_icon_set),
+    )
+    .then_some(fg_color);
 
     // Collect spinner columns into a row
     let mut spinners: Vec<Element<'a, Message>> = Vec::new();
@@ -11648,9 +11667,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             let icon = svg(handle.clone())
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!("{} - Static (reduced motion)", set_name)).role(
                 &ts.caption,
                 resolved,
@@ -11670,9 +11687,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             let icon = svg(anim_handles.handles[frame_idx].clone())
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!(
                 "{} - Frames: {} ({}ms)",
                 set_name,
@@ -11695,9 +11710,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
                 .rotation(iced::Rotation::Floating(angle))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+                .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
             let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).role(
                 &ts.caption,
                 resolved,
@@ -11845,7 +11858,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let extended = state.current_theme.extended_palette();
     let swatch_border = native_theme_iced::border_color(&state.current_resolved);
     let swatch_bw = state.current_resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
+    let swatch_r = native_theme_iced::border_corner_radius(&state.current_resolved);
     let swatch_frame = iced::Border {
         color: swatch_border,
         width: swatch_bw,
@@ -12279,7 +12292,24 @@ impl Typeset for iced::widget::Text<'_> {
         // The theme's line height, where iced's own is 1.3 times the size
         // (`LineHeight::default`).
         self.typeset(font, a11y)
-            .line_height(native_theme_iced::line_height_multiplier(resolved))
+            .line_height(native_theme_iced::line_height(resolved))
+    }
+}
+
+/// Gives a tooltip the theme's show delay.
+trait ShowDelay {
+    /// The tip waits `tooltip.show_delay` before it opens
+    /// ([`native_theme_iced::tooltip_show_delay`]) where the theme states
+    /// one; where it states none, iced's own delay, none, stays.
+    fn show_delay(self, resolved: &ResolvedTheme) -> Self;
+}
+
+impl ShowDelay for iced::widget::Tooltip<'_, Message> {
+    fn show_delay(self, resolved: &ResolvedTheme) -> Self {
+        match native_theme_iced::tooltip_show_delay(resolved) {
+            Some(delay) => self.delay(delay),
+            None => self,
+        }
     }
 }
 
@@ -12721,10 +12751,14 @@ fn subscription(state: &State) -> Subscription<Message> {
     subs.push(iced::keyboard::listen().filter_map(shortcut));
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
 
-    // Theme watcher: poll the atomic flag set by on_theme_change() callback.
-    // Only active when color mode is System and the watcher started successfully.
-    if matches!(state.color_mode, AppColorMode::System) && state._theme_watcher.is_some() {
-        subs.push(iced::time::every(Duration::from_millis(500)).map(|_| Message::ThemeWatcherTick));
+    // The OS theme's changes, while the colour mode is System; a watcher that
+    // cannot start yields its error, which leaves the theme as it is.
+    #[cfg(feature = "watch")]
+    if matches!(state.color_mode, AppColorMode::System) && state.watch_os_theme {
+        subs.push(
+            native_theme_iced::theme_changes()
+                .filter_map(|changed| changed.ok().map(|_| Message::ReloadSystemTheme)),
+        );
     }
 
     // Screenshot countdown timer
@@ -12890,8 +12924,8 @@ mod tests {
             eprintln!("macos_system_font_is_in_the_font_database: not macOS, nothing to check");
             return;
         }
-        let (_, resolved) =
-            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
+            .expect("macos-monterey resolves");
         let font = &resolved.defaults.font;
         let family = native_theme_iced::system_font_family(font);
         let held = {
@@ -12922,8 +12956,8 @@ mod tests {
             eprintln!("macos_mono_font_in_the_font_database: not macOS, nothing to check");
             return;
         }
-        let (_, resolved) =
-            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
+            .expect("macos-monterey resolves");
         let mono = &resolved.defaults.mono_font;
         let family = native_theme_iced::system_font_family(mono);
         let held = {
@@ -14040,8 +14074,10 @@ mod tests {
                 &mut state,
                 Message::IconSetSelected(IconSetChoice::Freedesktop(name.clone())),
             );
-            let expected = FreedesktopLoader::load_indicator(Some(&name))
-                .and_then(|anim| to_svg_handle(anim.first_frame(), None));
+            let text_color = state.current_resolved.defaults.text_color;
+            let expected = FreedesktopLoader::load_indicator(Some(&name)).and_then(|anim| {
+                indicator_svg_handle(anim.first_frame(), IconSet::Freedesktop, text_color)
+            });
             let spinners = state.animated_frames.len() + state.animated_spins.len();
             assert_eq!(
                 state.animated_static.first().map(|(_, handle)| handle),
@@ -14066,14 +14102,48 @@ mod tests {
     #[test]
     fn a_freedesktop_theme_without_a_spinner_gets_none() {
         let theme = "no-such-icon-theme";
-        let (frames, _, _, spins, _, _, statics) =
-            build_animation_caches(IconSet::Freedesktop, Some(theme));
+        let (frames, _, _, spins, _, _, statics) = build_animation_caches(
+            IconSet::Freedesktop,
+            Some(theme),
+            State::default().current_resolved.defaults.text_color,
+        );
         assert!(
             frames.is_empty() && spins.is_empty() && statics.is_empty(),
             "{theme} has a spinner: {} frame animations, {} spins, {} static frames",
             frames.len(),
             spins.len(),
             statics.len()
+        );
+    }
+
+    /// The Icons page draws a freedesktop indicator as `Spinner` does, in its
+    /// own colours with its `currentColor` in the text colour, and tints only
+    /// the bundled monochrome sets'.
+    #[test]
+    fn the_icons_page_colours_an_indicator_as_the_spinner_does() {
+        let text_color = State::default().current_resolved.defaults.text_color;
+        let symbolic = br#"<svg><path fill="currentColor"/></svg>"#;
+        let data = IconData::Svg(Cow::Borrowed(&symbolic[..]));
+        let filled = format!(
+            r##"<svg><path fill="#{:02x}{:02x}{:02x}"/></svg>"##,
+            text_color.r, text_color.g, text_color.b
+        );
+        assert_eq!(
+            indicator_svg_handle(&data, IconSet::Freedesktop, text_color),
+            Some(iced_core::svg::Handle::from_memory(filled.into_bytes())),
+            "a freedesktop frame's currentColor is not the text colour"
+        );
+        for set in [IconSet::Material, IconSet::Lucide] {
+            assert_eq!(
+                indicator_svg_handle(&data, set, text_color),
+                to_svg_handle(&data, None),
+                "{set:?}: a bundled frame is changed before the page tints it"
+            );
+            assert!(indicator_tinted(set), "{set:?} is not tinted");
+        }
+        assert!(
+            !indicator_tinted(IconSet::Freedesktop),
+            "a freedesktop indicator is tinted, losing its own colours"
         );
     }
 
@@ -14305,6 +14375,7 @@ mod tests {
                 "styles::button_success",
                 "styles::button_warning",
                 "styles::button_link",
+                "styles::button_toggle",
                 "styles::segment",
                 "styles::expander",
                 "ghost_button",
@@ -14620,7 +14691,13 @@ mod tests {
     /// size, below its own description.
     #[test]
     fn page_and_section_titles_take_their_defined_roles() {
-        for preset in ["kde-breeze", "adwaita", "macos-sonoma", "windows-11"] {
+        for preset in [
+            "kde-breeze",
+            "adwaita",
+            "macos-monterey",
+            "macos-tahoe",
+            "windows-11",
+        ] {
             for is_dark in [false, true] {
                 let at = format!("{preset} (dark: {is_dark})");
                 let resolved = match native_theme_iced::from_preset(preset, is_dark) {
@@ -14814,14 +14891,14 @@ mod tests {
 
     /// The Basic tab's tooltip takes `tooltip.border.padding` plus the border
     /// line where the theme states all four sides alike (kde-breeze's 3,
-    /// macos-sonoma's 4), and iced's own padding where it does not: iced's
+    /// macos-monterey's 4), and iced's own padding where it does not: iced's
     /// `Tooltip::padding` is one number, and adwaita states 10 and 6,
     /// windows-11 9, 6 and 8.
     #[test]
     fn the_basic_tooltip_takes_a_uniform_stated_padding() {
         for (preset, expected) in [
             ("kde-breeze", Some(3.0 + 1.0)),
-            ("macos-sonoma", Some(4.0 + 0.5)),
+            ("macos-monterey", Some(4.0 + 0.5)),
             ("adwaita", None),
             ("windows-11", None),
         ] {
@@ -14841,6 +14918,121 @@ mod tests {
         }
     }
 
+    /// The Basic tab's tooltip waits `tooltip.show_delay` before it opens:
+    /// the pointer resting on its button, the bubble is drawn at once where
+    /// the theme states no delay (catppuccin-mocha: iced's own, none), once
+    /// the delay has passed where it states a short one, and not yet where
+    /// it states a long one. iced's `Tooltip` opens on the first event after
+    /// the delay (iced_widget 0.14.2 `src/tooltip.rs:223-245`), and a
+    /// snapshot sends one, `RedrawRequested`.
+    #[test]
+    fn the_basic_tooltip_waits_the_themes_show_delay() {
+        for (delay, opens) in [(None, true), (Some(1_u16), true), (Some(60_000), false)] {
+            let (theme, mut resolved) =
+                match native_theme_iced::from_preset("catppuccin-mocha", false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("catppuccin-mocha: {error}"),
+                };
+            assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
+            resolved.tooltip.show_delay = delay;
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let at = match drawn_layout().get("basic.buttons.tooltip") {
+                Some(rect) => rect.center(),
+                None => panic!("the tooltip's button is not drawn"),
+            };
+            assert!(
+                !drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                "{delay:?}: the bubble is drawn before the pointer is on the button"
+            );
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            std::thread::sleep(Duration::from_millis(2));
+            for _ in 0..3 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            assert_eq!(
+                drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                opens,
+                "{delay:?}: whether the bubble is drawn with the pointer on the button"
+            );
+        }
+    }
+
+    /// The Basic table's header row is `list.header_height` tall where the
+    /// theme states one (adwaita, material-3), else as tall as before
+    /// (catppuccin-mocha): `list.row_height`, or its line box in the header
+    /// font and `list.border.padding`. The Layout page's iced `table` makes
+    /// its header cells that height less the table's own `padding_y` above
+    /// and below, and leaves them their text's height where the theme states
+    /// none, as its rows are.
+    #[test]
+    fn the_tables_headers_take_the_themes_header_height() {
+        for preset in ["adwaita", "material-3", "catppuccin-mocha"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let stated = native_theme_iced::list_header_height(&r);
+            assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
+            let l = &r.list;
+            let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
+            let row = l
+                .row_height
+                .unwrap_or(l.header_font.size * r.defaults.line_height + pad.y());
+            let want = stated.unwrap_or(row);
+
+            let mut state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+            // A selector goes through the whole tree, as the dump's `Survey` does.
+            let _ = texts(&mut ui);
+            let header = match surveyed_layout().get("basic.table.header") {
+                Some(rect) => *rect,
+                None => panic!("{preset}: the Basic table's header is not laid out"),
+            };
+            assert!(
+                (header.height - want).abs() < 0.01,
+                "{preset}: the Basic table's header is {} tall, want {want}",
+                header.height
+            );
+            drop(ui);
+
+            state.active_tab = Tab::Layout;
+            let mut ui = interface(&state);
+            let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+            let want = match stated {
+                Some(h) => h - 2.0 * SP.xs,
+                None => height_of(&mut ui, "text_scale role"),
+            };
+            assert!(
+                (cell.height - want).abs() < 0.01,
+                "{preset}: the Layout table's header cell is {} tall, want {want}",
+                cell.height
+            );
+        }
+    }
+
     /// The Basic tab's push button, text field and drop-down are laid out at
     /// the minimum sizes the theme states (`button.min_width` and
     /// `.min_height`, `input.min_height`, `combo_box.min_height`), or at their
@@ -14848,7 +15040,7 @@ mod tests {
     /// are through `native_theme_gpui::geometry` and the platform's own are.
     #[test]
     fn basic_controls_take_the_stated_minimum_sizes() {
-        for preset in ["kde-breeze", "adwaita", "material"] {
+        for preset in ["kde-breeze", "adwaita", "material-3"] {
             let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
@@ -14924,7 +15116,7 @@ mod tests {
 
     /// The Basic page's column rule, the gpui and egui pages' too: five
     /// columns under a preset whose widest fixed-width control fits a fifth
-    /// of the page, four under material (its drop-down is 210 wide), three
+    /// of the page, four under material-3 (its drop-down is 210 wide), three
     /// where not even four fit; each arrangement holds every group once, a
     /// column's groups in reading order.
     #[test]
@@ -14933,7 +15125,7 @@ mod tests {
             ("kde-breeze", 979.0, 5),
             ("adwaita", 979.0, 5),
             ("catppuccin-mocha", 976.0, 5),
-            ("material", 976.0, 4),
+            ("material-3", 976.0, 4),
             ("kde-breeze", 400.0, 3),
         ] {
             let mut state = State::default();
@@ -15075,7 +15267,7 @@ mod tests {
     /// three rows of the list, each `list.row_height` or its content.
     #[test]
     fn basic_composites_take_the_stated_sizes() {
-        for preset in ["kde-breeze", "material", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "adwaita"] {
             let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
@@ -15195,7 +15387,7 @@ mod tests {
         for (preset, is_dark) in [
             ("kde-breeze", false),
             ("kde-breeze", true),
-            ("material", true),
+            ("material-3", true),
         ] {
             let resolved = match native_theme_iced::from_preset(preset, is_dark) {
                 Ok((_, resolved)) => resolved,
@@ -15239,14 +15431,14 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("showcase-iced-spinner-{}", std::process::id()));
         let pi = std::f32::consts::PI;
-        for preset in ["kde-breeze", "material", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "adwaita"] {
             let resolved = match native_theme_iced::from_preset(preset, false) {
                 Ok((_, resolved)) => resolved,
                 Err(error) => panic!("{preset}: {error}"),
             };
             let s = &resolved.spinner;
             let fill = to_color(s.fill_color).into_rgba8();
-            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeIcons, None);
+            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeFluent, None);
             assert!(!spinner.is_indicator(), "{preset}: Segoe has no indicator");
             for (n, elapsed) in [0.0, 0.25, 0.5, 1.0, pi, 2.0 * pi, 6.3, 7.0, 3.0 * pi]
                 .into_iter()
@@ -15596,16 +15788,41 @@ mod tests {
         );
     }
 
+    /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is
+    /// the resolved theme's `tooltip.show_delay`, with ` ms`.
+    #[test]
+    fn a_ms_leaf_reads_its_value() {
+        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let delay = resolved.tooltip.show_delay;
+        assert!(delay.is_some(), "kde-breeze states a tooltip delay");
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            ..State::default()
+        };
+        let values = match toml::Value::try_from(&state.current_resolved) {
+            Ok(values) => values,
+            Err(error) => panic!("the resolved theme as TOML: {error}"),
+        };
+        assert_eq!(
+            Some(leaf_value(&state, &values, "tooltip.show_delay_ms").0),
+            delay.map(|ms| format!("{ms} ms"))
+        );
+    }
+
     /// The Basic page never needs sideways scrolling under the presets and
-    /// modes the captures take (kde-breeze, material, catppuccin-mocha and
+    /// modes the captures take (kde-breeze, material-3, catppuccin-mocha and
     /// adwaita, light and dark): laid out in the page area of a 1280 x 720
     /// window, every element ends inside the page's scroll area, and the page
     /// has the columns its rule counts from the content panel's width. It may
-    /// be taller than its area (material is): it then scrolls, and the test
+    /// be taller than its area (material-3 is): it then scrolls, and the test
     /// reports by how much.
     #[test]
     fn the_basic_page_fits_the_window_across() {
-        for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+        for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
             for dark in [false, true] {
                 let mut state = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),
@@ -15740,13 +15957,12 @@ mod tests {
         };
         let button_line = line_of(resolved.button.font.size * factor);
         let body_line = resolved.defaults.font.size * factor * resolved.defaults.line_height;
+        let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+        accessibility.text_scaling_factor = factor;
         let state = State {
             current_theme: theme,
             current_resolved: resolved,
-            accessibility: native_theme_iced::AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..native_theme_iced::AccessibilityPreferences::default()
-            },
+            accessibility,
             active_tab: Tab::Buttons,
             ..State::default()
         };
@@ -15771,7 +15987,7 @@ mod tests {
         for &(family, weight, monospaced) in faces {
             db.push_face_info(fontdb::FaceInfo {
                 id: fontdb::ID::dummy(),
-                source: fontdb::Source::Binary(Arc::new(Vec::<u8>::new())),
+                source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
                 index: 0,
                 families: vec![(family.to_string(), fontdb::Language::English_UnitedStates)],
                 post_script_name: format!("{family}-{weight}"),
@@ -16137,7 +16353,7 @@ mod tests {
     #[test]
     fn the_page_tabs_scroll_with_no_bar_over_their_labels() {
         let mut scrolled = 0;
-        for preset in ["macos-sonoma", "kde-breeze"] {
+        for preset in ["macos-monterey", "kde-breeze"] {
             for width in [1024.0, 512.0] {
                 let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                     Ok(installed) => installed,
@@ -16877,5 +17093,121 @@ thing(0);
     /// The 1-based line the given offset sits on.
     fn line_at(source: &str, at: usize) -> usize {
         source[..at].lines().count().max(1)
+    }
+
+    /// Names the fixture's root in the child process `in_fixture` starts.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    const FIXTURE_ROOT: &str = "NATIVE_THEME_ICED_SHOWCASE_ICON_FIXTURE";
+
+    /// Runs the test `name` again in a child process whose only icon
+    /// themes are those `write` puts in the icons dir it is given, on
+    /// `desktop` (its `XDG_CURRENT_DESKTOP`), and asserts that it passed
+    /// there: the icon dirs are read once per process, so a fixture theme
+    /// needs a process of its own, as the connector's own `icon_fixture`
+    /// tests start one.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn in_fixture(
+        name: &str,
+        desktop: &str,
+        write: impl FnOnce(&std::path::Path) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
+        /// Removes the fixture's directory however the test ends.
+        struct RemoveOnDrop(std::path::PathBuf);
+        impl Drop for RemoveOnDrop {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        let guard = RemoveOnDrop(std::env::temp_dir().join(format!(
+            "native-theme-iced-showcase-icon-fixture-{}-{}-{desktop}",
+            std::process::id(),
+            name.replace("::", "-")
+        )));
+        let root = &guard.0;
+        let _ = std::fs::remove_dir_all(root);
+        let icons = root.join("share/icons");
+        std::fs::create_dir_all(&icons)?;
+        std::fs::create_dir_all(root.join("home/.config"))?;
+        write(&icons)?;
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args(["--exact", name, "--nocapture", "--test-threads=1"])
+            .env(FIXTURE_ROOT, root)
+            .env("HOME", root.join("home"))
+            .env("XDG_DATA_HOME", root.join("home/.local/share"))
+            .env("XDG_DATA_DIRS", root.join("share"))
+            .env("XDG_CONFIG_HOME", root.join("home/.config"))
+            .env("XDG_CONFIG_DIRS", root.join("etc/xdg"))
+            .env("XDG_CURRENT_DESKTOP", desktop)
+            .output()?;
+        drop(guard);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            output.status.success() && stdout.contains("1 passed"),
+            "{stdout}{stderr}"
+        );
+        Ok(())
+    }
+
+    /// Writes the theme `name` into `icons_dir`, its one scalable
+    /// directory holding each of `icons` as `<icon>.svg`.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn write_scalable_theme(
+        icons_dir: &std::path::Path,
+        name: &str,
+        icons: &[&str],
+    ) -> std::io::Result<()> {
+        const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+        let theme = icons_dir.join(name);
+        std::fs::create_dir_all(theme.join("actions"))?;
+        std::fs::write(
+            theme.join("index.theme"),
+            format!(
+                "[Icon Theme]\nName={name}\nDirectories=actions\n\n\
+                 [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
+            ),
+        )?;
+        for icon in icons {
+            std::fs::write(theme.join(format!("actions/{icon}.svg")), SVG)?;
+        }
+        Ok(())
+    }
+
+    /// The side-panel toggle's freedesktop icon loads from the icon theme
+    /// chosen under whichever name that theme has, on any desktop:
+    /// Adwaita's `sidebar-show-symbolic` (`gtk-names`) and Breeze's
+    /// `sidebar-expand-left` (`breeze-names`), on Sway and on GNOME (the
+    /// egui showcase's twin, M7-15). The themes are fixtures in a child
+    /// process.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<()> {
+        const NAME: &str = "tests::the_panel_icon_loads_from_a_theme_of_either_convention";
+        if std::env::var_os(FIXTURE_ROOT).is_some() {
+            let (_, resolved) =
+                native_theme_iced::from_preset("adwaita", false).expect("adwaita resolves");
+            let loaded: Vec<(&str, bool)> = ["gtk-names", "breeze-names"]
+                .into_iter()
+                .map(|theme| {
+                    let choice = IconSetChoice::Freedesktop(theme.to_string());
+                    let icons = load_chrome_icons(&choice, &resolved, IconSet::Freedesktop);
+                    (theme, icons.panel.is_some())
+                })
+                .collect();
+            assert_eq!(
+                loaded,
+                [("gtk-names", true), ("breeze-names", true)],
+                "on {:?}",
+                std::env::var("XDG_CURRENT_DESKTOP")
+            );
+            return Ok(());
+        }
+        for desktop in ["sway", "GNOME"] {
+            in_fixture(NAME, desktop, |icons| {
+                write_scalable_theme(icons, "gtk-names", &["sidebar-show-symbolic"])?;
+                write_scalable_theme(icons, "breeze-names", &["sidebar-expand-left"])
+            })?;
+        }
+        Ok(())
     }
 }

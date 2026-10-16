@@ -1,25 +1,27 @@
 //! Gate: the native themes state what their platform documents
 //! (spec `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
 //!
-//! One row per (platform, widget) gives every padding side, and for the
-//! toolbar its `bar_height` and `item_gap`, for the tab bar its `item_gap`,
-//! for the menu and the list their `row_height`, for the expander its
-//! `arrow_gap` and `content_indent`, and for the combobox its
-//! `arrow_area_width` where the
-//! platform gives one number, as `Some(v)` where `docs/platform-facts.md`
-//! documents a value for that platform and `None` where it does not, or where
-//! a ruling leaves it unstated. Each row cites the platform-facts lines it
-//! reads.
+//! One row per (preset, widget) gives every padding side, and for the toolbar
+//! its `bar_height` and `item_gap`, for the tab bar its `item_gap`, for the
+//! menu and the list their `row_height`, for the list its `header_height`,
+//! for the expander its `arrow_gap` and `content_indent`, and for the
+//! combobox its `arrow_area_width` where the platform gives one number, as
+//! `Some(v)` where `docs/platform-facts.md` documents a value for that
+//! platform and `None` where it does not, or where a ruling leaves it
+//! unstated. Each row cites the platform-facts lines it reads. Rows are keyed
+//! by preset, not by platform: a cell that tags its values by OS version
+//! gives each value to that version's preset (platform-facts' Conventions),
+//! so a platform's next generation gets rows of its own.
 //!
 //! Presets that platform-facts does not cover (the colour schemes, and the
-//! `ios` platform preset, which no platform-facts column documents) state
+//! `ios-13` platform preset, which no platform-facts column documents) state
 //! none of these sizes: nothing cites a source for them, so the toolkit's own
 //! stand. The Material column counts a material-web or Compose implementation
 //! constant cited at a pinned line, which its cells tag **(impl)**, as
 //! documented, as the KDE and GNOME columns count a Breeze or libadwaita
 //! source constant.
 //!
-//! A second table, one row per (platform, field), gives the text scale's
+//! A second table, one row per (preset, field), gives the text scale's
 //! sizes and weights, the dialog title font's size and weight, the slider's
 //! `track_height` and `thumb_diameter`, the progress bar's `track_height`,
 //! the checkbox's `radio_dot_diameter`, `check_mark_stroke_width` and
@@ -30,21 +32,20 @@
 //! Every row is checked in both variants against two resolutions:
 //!
 //! - **static**: the platform's full preset;
-//! - **live**: the full preset, the `-live` preset merged over it, then the
-//!   reader's size constants merged over that, in `pipeline.rs`'s order.
+//! - **live**: the full preset with the reader's size constants merged over
+//!   it, in `pipeline.rs`'s order.
 //!
-//! The KDE and Windows readers return one variant (`ReaderOutput::Single`),
-//! so the real pipeline applies their constants to the active variant only
-//! and takes the inactive variant from the full preset, which the static
-//! resolution covers. The live resolution here applies the constants to each
-//! variant in turn, as the pipeline does when that variant is the active one.
-//! The macOS reader fills both variants. GNOME's reader states no sizes.
-//! Material has no reader and no `-live` preset, so only its static
+//! The KDE reader returns one variant (`ReaderOutput::Single`), so the real
+//! pipeline applies its constants to the active variant only and takes the
+//! inactive variant from the full preset, which the static resolution covers.
+//! The live resolution here applies the constants to each variant in turn, as
+//! the pipeline does when that variant is the active one. GNOME's reader
+//! states no sizes, the Windows and macOS readers only what the OS reports,
+//! which no row here covers, and Material has no reader, so only their static
 //! resolution is checked.
 //!
-//! This lives inside the crate because the reader constants
-//! (`kde_metrics::populate_widget_sizing`, `windows::winui3_widget_sizing`,
-//! `macos::macos_widget_defaults`) are `pub(crate)`.
+//! This lives inside the crate because the KDE reader's constants
+//! (`kde_metrics::populate_widget_sizing`) are `pub(crate)`.
 
 use crate::model::border::ResolvedPadding;
 use crate::resolve::ResolutionContext;
@@ -52,50 +53,42 @@ use crate::{ColorMode, ResolvedTheme, Theme, ThemeMode};
 
 const PLATFORM_FACTS: &str = include_str!("../../../docs/platform-facts.md");
 
+/// The native presets the gate checks, each a platform's generation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Platform {
-    Kde,
-    Gnome,
-    Macos,
-    Windows,
-    Material,
+enum NativePreset {
+    KdeBreeze,
+    Adwaita,
+    MacosMonterey,
+    MacosTahoe,
+    Windows11,
+    Material3,
 }
 
-impl Platform {
-    const ALL: [Platform; 5] = [
-        Platform::Kde,
-        Platform::Gnome,
-        Platform::Macos,
-        Platform::Windows,
-        Platform::Material,
+impl NativePreset {
+    const ALL: [NativePreset; 6] = [
+        NativePreset::KdeBreeze,
+        NativePreset::Adwaita,
+        NativePreset::MacosMonterey,
+        NativePreset::MacosTahoe,
+        NativePreset::Windows11,
+        NativePreset::Material3,
     ];
 
-    fn preset(self) -> &'static str {
+    fn key(self) -> &'static str {
         match self {
-            Platform::Kde => "kde-breeze",
-            Platform::Gnome => "adwaita",
-            Platform::Macos => "macos-sonoma",
-            Platform::Windows => "windows-11",
-            Platform::Material => "material",
+            NativePreset::KdeBreeze => "kde-breeze",
+            NativePreset::Adwaita => "adwaita",
+            NativePreset::MacosMonterey => "macos-monterey",
+            NativePreset::MacosTahoe => "macos-tahoe",
+            NativePreset::Windows11 => "windows-11",
+            NativePreset::Material3 => "material-3",
         }
     }
 
-    /// The `-live` preset the platform's reader merges over; `None` for a
-    /// platform no reader serves.
-    fn live_preset(self) -> Option<&'static str> {
-        match self {
-            Platform::Kde => Some("kde-breeze-live"),
-            Platform::Gnome => Some("adwaita-live"),
-            Platform::Macos => Some("macos-sonoma-live"),
-            Platform::Windows => Some("windows-11-live"),
-            Platform::Material => None,
-        }
-    }
-
-    /// The resolutions the gate checks: static, and live where the platform
-    /// has a `-live` preset.
+    /// The resolutions the gate checks: static, and live where the
+    /// platform's reader states sizes.
     fn resolutions(self) -> &'static [bool] {
-        match self.live_preset() {
+        match self.reader_constants() {
             Some(_) => &[false, true],
             None => &[false],
         }
@@ -104,18 +97,16 @@ impl Platform {
     /// The reader's size constants as the sparse variant the reader returns.
     fn reader_constants(self) -> Option<ThemeMode> {
         match self {
-            Platform::Kde => {
+            NativePreset::KdeBreeze => {
                 let mut v = ThemeMode::default();
                 crate::kde_metrics::populate_widget_sizing(&mut v);
                 Some(v)
             }
-            Platform::Gnome | Platform::Material => None,
-            Platform::Macos => Some(crate::macos::macos_widget_defaults()),
-            Platform::Windows => {
-                let mut v = ThemeMode::default();
-                crate::windows::winui3_widget_sizing(&mut v);
-                Some(v)
-            }
+            NativePreset::Adwaita
+            | NativePreset::Material3
+            | NativePreset::Windows11
+            | NativePreset::MacosMonterey
+            | NativePreset::MacosTahoe => None,
         }
     }
 }
@@ -144,7 +135,7 @@ const fn trbl(t: f32, r: f32, b: f32, l: f32) -> Sides {
 }
 
 struct Row {
-    platform: Platform,
+    preset: NativePreset,
     widget: &'static str,
     padding: Sides,
     /// platform-facts.md lines this row reads: the padding rows, or the
@@ -163,14 +154,14 @@ impl Row {
 }
 
 const fn row(
-    platform: Platform,
+    preset: NativePreset,
     widget: &'static str,
     padding: Sides,
     lines: &'static [usize],
     note: &'static str,
 ) -> Row {
     Row {
-        platform,
+        preset,
         widget,
         padding,
         lines,
@@ -179,170 +170,202 @@ const fn row(
     }
 }
 
-use Platform::{Gnome, Kde, Macos, Material, Windows};
+use NativePreset::{Adwaita, KdeBreeze, MacosMonterey, MacosTahoe, Material3, Windows11};
 
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
-    // --- KDE (kde-breeze, kde-breeze-live, kde_metrics) ---
-    row(Kde, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(Kde, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
-    row(Kde, "input", axes(6.0, 7.0), &[1196, 1197], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
-    row(Kde, "text_area", all(5.0), &[1639, 1640], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
-    row(Kde, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Kde, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
+    // --- KDE (kde-breeze, kde_metrics) ---
+    row(KdeBreeze, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(KdeBreeze, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
+    row(KdeBreeze, "input", axes(6.0, 7.0), &[1196, 1197], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
+    row(KdeBreeze, "text_area", all(5.0), &[1642, 1643], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
+    row(KdeBreeze, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(KdeBreeze, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
         .with(&[("row_height", None, 1234)]),
-    row(Kde, "tooltip", all(3.0), &[1257, 1258], "ToolTip_FrameWidth = 3"),
-    row(Kde, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Kde, "tab", axes(4.0, 8.0), &[1318, 1319], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
-        .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Kde, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    row(KdeBreeze, "tooltip", all(3.0), &[1257, 1258], "ToolTip_FrameWidth = 3"),
+    row(KdeBreeze, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(KdeBreeze, "tab", axes(4.0, 8.0), &[1319, 1320], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
+        .with(&[("item_gap", Some(0.0), 1327)]),
+    row(KdeBreeze, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
     Row {
-        platform: Kde,
+        preset: KdeBreeze,
         widget: "toolbar",
         padding: all(6.0),
-        lines: &[1353, 1354],
+        lines: &[1354, 1355],
         note: "ToolBar_ItemMargin = 6 on all four sides (qtoolbarlayout.cpp:87-89)",
-        extra: &[("bar_height", None, 1351), ("item_gap", Some(0.0), 1352)],
+        extra: &[("bar_height", None, 1352), ("item_gap", Some(0.0), 1353)],
     },
-    row(Kde, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1372, 1373], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
-    row(Kde, "list", axes(1.0, 2.0), &[1390, 1391], "2; 1")
-        .with(&[("row_height", None, 1389)]),
-    row(Kde, "popover", NONE, &[1412, 1413], "(none)"),
-    row(Kde, "dialog", all(10.0), &[1491, 1492], "Layout_TopLevelMarginWidth = 10"),
-    row(Kde, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1552, 1557], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
-        .with(&[("arrow_area_width", Some(20.0), 1554)]),
-    row(Kde, "segmented_control", NONE, &[1571, 1576], "tab bar as proxy, not the platform's value"),
-    row(Kde, "card", NONE, &[1592, 1593], "(none)"),
-    row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined")
-        .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(20.0), 1615)]),
-    // --- GNOME (adwaita, adwaita-live; the reader states no sizes) ---
-    row(Gnome, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(Gnome, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
-    row(Gnome, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
-    row(Gnome, "text_area", all(0.0), &[1639, 1640], "textview: no padding, GtkTextView margins 0"),
-    row(Gnome, "checkbox", all(3.0), &[1216, 1217], "check { padding: 3px }"),
-    row(Gnome, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0")
+    row(KdeBreeze, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1373, 1374], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
+    row(KdeBreeze, "list", axes(1.0, 2.0), &[1392, 1393], "2; 1")
+        .with(&[("row_height", None, 1390), ("header_height", None, 1391)]),
+    row(KdeBreeze, "popover", NONE, &[1414, 1415], "(none)"),
+    row(KdeBreeze, "dialog", all(10.0), &[1493, 1494], "Layout_TopLevelMarginWidth = 10"),
+    row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1555, 1560], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
+        .with(&[("arrow_area_width", Some(20.0), 1557)]),
+    row(KdeBreeze, "segmented_control", NONE, &[1574, 1579], "tab bar as proxy, not the platform's value"),
+    row(KdeBreeze, "card", NONE, &[1595, 1596], "(none)"),
+    row(KdeBreeze, "expander", NONE, &[1610, 1611], "(none), app-defined")
+        .with(&[("arrow_gap", Some(9.0), 1617), ("content_indent", Some(20.0), 1618)]),
+    // --- GNOME (adwaita; the reader states no sizes) ---
+    row(Adwaita, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(Adwaita, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
+    row(Adwaita, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
+    row(Adwaita, "text_area", all(0.0), &[1642, 1643], "textview: no padding, GtkTextView margins 0"),
+    row(Adwaita, "checkbox", all(3.0), &[1216, 1217], "check { padding: 3px }"),
+    row(Adwaita, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0")
         .with(&[("row_height", Some(32.0), 1234)]),
-    row(Gnome, "tooltip", axes(6.0, 10.0), &[1257, 1258], "10; 6"),
-    row(Gnome, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Gnome, "tab", axes(3.0, 12.0), &[1318, 1319], "12; 3")
-        .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Gnome, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    row(Adwaita, "tooltip", axes(6.0, 10.0), &[1257, 1258], "10; 6"),
+    row(Adwaita, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(Adwaita, "tab", axes(3.0, 12.0), &[1319, 1320], "12; 3")
+        .with(&[("item_gap", Some(0.0), 1327)]),
+    row(Adwaita, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
     Row {
-        platform: Gnome,
+        preset: Adwaita,
         widget: "toolbar",
         padding: all(6.0),
-        lines: &[1353, 1354],
+        lines: &[1354, 1355],
         note: ".toolbar { padding: 6px }",
-        extra: &[("bar_height", None, 1351), ("item_gap", Some(6.0), 1352)],
+        extra: &[("bar_height", None, 1352), ("item_gap", Some(6.0), 1353)],
     },
-    row(Gnome, "status_bar", axes(6.0, 10.0), &[1372, 1373], "statusbar { padding: 6px 10px }"),
-    row(Gnome, "list", all(2.0), &[1390, 1391], "plain list context: 2")
-        .with(&[("row_height", None, 1389)]),
-    row(Gnome, "popover", all(8.0), &[1412, 1413], "popover > contents { padding: 8px }"),
-    row(Gnome, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1491, 1492], "24; 32 top / 24 bottom"),
-    row(Gnome, "combo_box", axes(5.0, 10.0), &[1552, 1557], "base button rule, the dropdown's button has a box child: 10; 5")
-        .with(&[("arrow_area_width", None, 1554)]),
-    row(Gnome, "segmented_control", axes(0.0, 8.0), &[1571, 1576], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
-    row(Gnome, "card", NONE, &[1592, 1593], "(none), app-defined"),
-    row(Gnome, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
-        .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
-    // --- macOS (macos-sonoma, macos-sonoma-live, macos_widget_defaults) ---
-    row(Macos, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
-    row(Macos, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
-    row(Macos, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
-    row(Macos, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Macos, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
+    row(Adwaita, "status_bar", axes(6.0, 10.0), &[1373, 1374], "statusbar { padding: 6px 10px }"),
+    row(Adwaita, "list", all(2.0), &[1392, 1393], "plain list context: 2")
+        .with(&[("row_height", None, 1390), ("header_height", Some(30.0), 1391)]),
+    row(Adwaita, "popover", all(8.0), &[1414, 1415], "popover > contents { padding: 8px }"),
+    row(Adwaita, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1493, 1494], "24; 32 top / 24 bottom"),
+    row(Adwaita, "combo_box", axes(5.0, 10.0), &[1555, 1560], "base button rule, the dropdown's button has a box child: 10; 5")
+        .with(&[("arrow_area_width", None, 1557)]),
+    row(Adwaita, "segmented_control", axes(0.0, 8.0), &[1574, 1579], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
+    row(Adwaita, "card", NONE, &[1595, 1596], "(none), app-defined"),
+    row(Adwaita, "expander", axes(8.0, 14.0), &[1610, 1611], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
+        .with(&[("arrow_gap", Some(9.0), 1617), ("content_indent", Some(0.0), 1618)]),
+    // --- macOS 12-15 (macos-monterey; the reader states no sizes) ---
+    row(MacosMonterey, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(MacosMonterey, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
+    row(MacosMonterey, "input", all(2.0), &[1196, 1197], "2; 2 top / 2 bottom (API, the macOS 14.8.9 probe)"),
+    row(MacosMonterey, "text_area", NONE, &[1642, 1643], "(none): textContainerInset's default is not stated"),
+    row(MacosMonterey, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(MacosMonterey, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
         .with(&[("row_height", Some(22.0), 1234)]),
-    row(Macos, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
-    row(Macos, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Macos, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)")
-        .with(&[("item_gap", None, 1326)]),
-    row(Macos, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    row(MacosMonterey, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
+    row(MacosMonterey, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(MacosMonterey, "tab", axes(4.0, 12.0), &[1319, 1320], "12; 4 (measured)")
+        .with(&[("item_gap", None, 1327)]),
+    row(MacosMonterey, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
     Row {
-        platform: Macos,
+        preset: MacosMonterey,
         widget: "toolbar",
         padding: axes(0.0, 8.0),
-        lines: &[1353, 1354],
+        lines: &[1354, 1355],
         note: "8 (measured); 0",
-        extra: &[("bar_height", Some(38.0), 1351), ("item_gap", Some(8.0), 1352)],
+        extra: &[("bar_height", Some(38.0), 1352), ("item_gap", Some(8.0), 1353)],
     },
-    row(Macos, "status_bar", NONE, &[1372, 1373], "(none): no window status bar"),
-    row(Macos, "list", all(4.0), &[1390, 1391], "4; 4 (measured)")
-        .with(&[("row_height", Some(24.0), 1389)]),
-    row(Macos, "popover", NONE, &[1412, 1413], "(none)"),
-    row(Macos, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
-    row(Macos, "combo_box", [Some(3.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; ~3 (measured)")
-        .with(&[("arrow_area_width", None, 1554)]),
-    row(Macos, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
-    row(Macos, "card", NONE, &[1592, 1593], "(none)"),
-    row(Macos, "expander", NONE, &[1607, 1608], "(none), app-defined")
-        .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
-    // --- Windows (windows-11, windows-11-live, winui3_widget_sizing) ---
-    row(Windows, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(Windows, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
-    row(Windows, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),
-    row(Windows, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1639, 1640], "the same TextBox: TextControlThemePadding=10,5,6,6"),
-    row(Windows, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Windows, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom")
-        .with(&[("row_height", Some(23.0), 1234)]),
-    row(Windows, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1257, 1258], "ToolTipBorderPadding=9,6,9,8"),
-    row(Windows, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
-        .with(&[("item_gap", Some(0.0), 1326)]),
-    row(Windows, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
+    row(MacosMonterey, "status_bar", NONE, &[1373, 1374], "(none): no window status bar"),
+    row(MacosMonterey, "list", all(4.0), &[1392, 1393], "4; 4 (measured)")
+        .with(&[("row_height", Some(24.0), 1390), ("header_height", Some(28.0), 1391)]),
+    row(MacosMonterey, "popover", NONE, &[1414, 1415], "(none)"),
+    row(MacosMonterey, "dialog", all(20.0), &[1493, 1494], "~20 (measured)"),
+    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1555, 1560], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
+        .with(&[("arrow_area_width", None, 1557)]),
+    row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1574, 1579], "horizontal is a range; ~3 (measured)"),
+    row(MacosMonterey, "card", NONE, &[1595, 1596], "(none)"),
+    row(MacosMonterey, "expander", NONE, &[1610, 1611], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1617), ("content_indent", None, 1618)]),
+    // --- macOS 26 (macos-tahoe; the "macOS 26:" values; ❓ is None) ---
+    row(MacosTahoe, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(MacosTahoe, "button", axes(4.0, 12.0), &[1171, 1172], "macOS 26: 12; 4 top / 4 bottom (API, the macOS 26.6.2 probe)"),
+    row(MacosTahoe, "input", all(4.0), &[1196, 1197], "macOS 26: 4; 4 top / 4 bottom (API)"),
+    row(MacosTahoe, "text_area", NONE, &[1642, 1643], "(none): textContainerInset's default is not stated"),
+    row(MacosTahoe, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(MacosTahoe, "menu", NONE, &[1235, 1236], "macOS 26 ❓")
+        .with(&[("row_height", None, 1234)]),
+    row(MacosTahoe, "tooltip", NONE, &[1257, 1258], "macOS 26 ❓"),
+    row(MacosTahoe, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(MacosTahoe, "tab", NONE, &[1319, 1320], "macOS 26 ❓")
+        .with(&[("item_gap", None, 1327)]),
+    row(MacosTahoe, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
     Row {
-        platform: Windows,
-        widget: "toolbar",
-        padding: trbl(0.0, 0.0, 0.0, 4.0),
-        lines: &[1353, 1354],
-        note: "Padding=\"4,0,0,0\"",
-        extra: &[("bar_height", Some(48.0), 1351), ("item_gap", Some(0.0), 1352)],
-    },
-    row(Windows, "status_bar", NONE, &[1372, 1373], "(none): not specified"),
-    row(Windows, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1390, 1391], "Padding=16,0,12,0")
-        .with(&[("row_height", Some(40.0), 1389)]),
-    row(Windows, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1412, 1413], "FlyoutContentPadding=16,15,16,17"),
-    row(Windows, "dialog", all(24.0), &[1491, 1492], "ContentDialogPadding=24"),
-    row(Windows, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1552, 1557], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
-        .with(&[("arrow_area_width", Some(38.0), 1554)]),
-    row(Windows, "segmented_control", NONE, &[1571, 1576], "(none)"),
-    row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
-    row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0")
-        .with(&[("arrow_gap", Some(30.0), 1614), ("content_indent", Some(16.0), 1615)]),
-    // --- Material (material; no reader, no -live preset) ---
-    row(Material, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
-    row(Material, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
-    row(Material, "input", all(15.0), &[1196, 1197], "outlined field 16 from the edge, less the 1 outline; the same down"),
-    row(Material, "text_area", all(15.0), &[1639, 1640], "the outlined field's 16 less the 1 outline; the same down"),
-    row(Material, "checkbox", NONE, &[1216, 1217], "(none): the mark fills the box"),
-    row(Material, "menu", [None, Some(16.0), None, Some(16.0)], &[1235, 1236], "16 (md-menu-item); vertical left to the row height: the cell's 14 is (derived), material-web's item 12, latest 8")
-        .with(&[("row_height", Some(48.0), 1234)]),
-    row(Material, "tooltip", axes(4.0, 8.0), &[1257, 1258], "Compose PlainTooltipHorizontalPadding 8; PlainTooltipVerticalPadding 4"),
-    row(Material, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Material, "tab", [None, Some(16.0), None, Some(16.0)], &[1318, 1319], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
-        .with(&[("item_gap", None, 1326)]),
-    row(Material, "sidebar", NONE, &[1330], "§2.12 has no padding row"),
-    Row {
-        platform: Material,
+        preset: MacosTahoe,
         widget: "toolbar",
         padding: NONE,
-        lines: &[1353, 1354],
-        note: "v0_192 has no app-bar space token (latest's 4 not taken); none",
-        extra: &[("bar_height", Some(64.0), 1351), ("item_gap", None, 1352)],
+        lines: &[1354, 1355],
+        note: "macOS 26 ❓",
+        extra: &[("bar_height", None, 1352), ("item_gap", None, 1353)],
     },
-    row(Material, "status_bar", NONE, &[1372, 1373], "(none): M3 has no status bar"),
-    row(Material, "list", [None, Some(16.0), None, Some(16.0)], &[1390, 1391], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
-        .with(&[("row_height", None, 1389)]),
-    row(Material, "popover", axes(8.0, 0.0), &[1412, 1413], "the menu container pads 8 top and bottom, 0 at the sides"),
-    row(Material, "dialog", all(24.0), &[1491, 1492], "material-web dialog 24; 24 top / 24 bottom"),
-    row(Material, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1552, 1557], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
-        .with(&[("arrow_area_width", None, 1554)]),
-    row(Material, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1571, 1576], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
-    row(Material, "card", NONE, &[1592, 1593], "(app-defined)"),
-    row(Material, "expander", NONE, &[1607, 1608], "(none): M3 has no expander")
-        .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
+    row(MacosTahoe, "status_bar", NONE, &[1373, 1374], "(none): no window status bar"),
+    row(MacosTahoe, "list", NONE, &[1392, 1393], "macOS 26 ❓")
+        .with(&[("row_height", Some(24.0), 1390), ("header_height", Some(28.0), 1391)]),
+    row(MacosTahoe, "popover", NONE, &[1414, 1415], "(none)"),
+    row(MacosTahoe, "dialog", NONE, &[1493, 1494], "macOS 26 ❓"),
+    row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1555, 1560], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
+        .with(&[("arrow_area_width", None, 1557)]),
+    row(MacosTahoe, "segmented_control", NONE, &[1574, 1579], "macOS 26 ❓"),
+    row(MacosTahoe, "card", NONE, &[1595, 1596], "(none)"),
+    row(MacosTahoe, "expander", NONE, &[1610, 1611], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1617), ("content_indent", None, 1618)]),
+    // --- Windows (windows-11; the reader states no sizes) ---
+    row(Windows11, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
+    row(Windows11, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
+    row(Windows11, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),
+    row(Windows11, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1642, 1643], "the same TextBox: TextControlThemePadding=10,5,6,6"),
+    row(Windows11, "checkbox", NONE, &[1216, 1217], "(none)"),
+    row(Windows11, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom")
+        .with(&[("row_height", Some(23.0), 1234)]),
+    row(Windows11, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1257, 1258], "ToolTipBorderPadding=9,6,9,8"),
+    row(Windows11, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(Windows11, "tab", axes(3.0, 8.0), &[1319, 1320], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
+        .with(&[("item_gap", Some(0.0), 1327)]),
+    row(Windows11, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
+    Row {
+        preset: Windows11,
+        widget: "toolbar",
+        padding: trbl(0.0, 0.0, 0.0, 4.0),
+        lines: &[1354, 1355],
+        note: "Padding=\"4,0,0,0\"",
+        extra: &[("bar_height", Some(48.0), 1352), ("item_gap", Some(0.0), 1353)],
+    },
+    row(Windows11, "status_bar", NONE, &[1373, 1374], "(none): not specified"),
+    row(Windows11, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1392, 1393], "Padding=16,0,12,0")
+        .with(&[("row_height", Some(40.0), 1390), ("header_height", None, 1391)]),
+    row(Windows11, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1414, 1415], "FlyoutContentPadding=16,15,16,17"),
+    row(Windows11, "dialog", all(24.0), &[1493, 1494], "ContentDialogPadding=24"),
+    row(Windows11, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1555, 1560], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
+        .with(&[("arrow_area_width", Some(38.0), 1557)]),
+    row(Windows11, "segmented_control", NONE, &[1574, 1579], "(none)"),
+    row(Windows11, "card", all(12.0), &[1595, 1596], "12 (convention)"),
+    row(Windows11, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1610, 1611], "header context: ExpanderHeaderPadding=16,0,0,0")
+        .with(&[("arrow_gap", Some(30.0), 1617), ("content_indent", Some(16.0), 1618)]),
+    // --- Material (material-3; no reader) ---
+    row(Material3, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
+    row(Material3, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
+    row(Material3, "input", all(15.0), &[1196, 1197], "outlined field 16 from the edge, less the 1 outline; the same down"),
+    row(Material3, "text_area", all(15.0), &[1642, 1643], "the outlined field's 16 less the 1 outline; the same down"),
+    row(Material3, "checkbox", NONE, &[1216, 1217], "(none): the mark fills the box"),
+    row(Material3, "menu", [None, Some(16.0), None, Some(16.0)], &[1235, 1236], "16 (md-menu-item); vertical left to the row height: the cell's 14 is (derived), material-web's item 12, latest 8")
+        .with(&[("row_height", Some(48.0), 1234)]),
+    row(Material3, "tooltip", axes(4.0, 8.0), &[1257, 1258], "Compose PlainTooltipHorizontalPadding 8; PlainTooltipVerticalPadding 4"),
+    row(Material3, "progress_bar", NONE, &[1298], "§2.10 has no padding row"),
+    row(Material3, "tab", [None, Some(16.0), None, Some(16.0)], &[1319, 1320], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
+        .with(&[("item_gap", None, 1327)]),
+    row(Material3, "sidebar", NONE, &[1331], "§2.12 has no padding row"),
+    Row {
+        preset: Material3,
+        widget: "toolbar",
+        padding: NONE,
+        lines: &[1354, 1355],
+        note: "v0_192 has no app-bar space token (latest's 4 not taken); none",
+        extra: &[("bar_height", Some(64.0), 1352), ("item_gap", None, 1353)],
+    },
+    row(Material3, "status_bar", NONE, &[1373, 1374], "(none): M3 has no status bar"),
+    row(Material3, "list", [None, Some(16.0), None, Some(16.0)], &[1392, 1393], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
+        .with(&[("row_height", None, 1390), ("header_height", Some(56.0), 1391)]),
+    row(Material3, "popover", axes(8.0, 0.0), &[1414, 1415], "the menu container pads 8 top and bottom, 0 at the sides"),
+    row(Material3, "dialog", all(24.0), &[1493, 1494], "material-web dialog 24; 24 top / 24 bottom"),
+    row(Material3, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1555, 1560], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
+        .with(&[("arrow_area_width", None, 1557)]),
+    row(Material3, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1574, 1579], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
+    row(Material3, "card", NONE, &[1595, 1596], "(app-defined)"),
+    row(Material3, "expander", NONE, &[1610, 1611], "(none): M3 has no expander")
+        .with(&[("arrow_gap", None, 1617), ("content_indent", None, 1618)]),
 ];
 
 /// Every widget whose border carries padding.
@@ -423,8 +446,8 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
 /// four padding sides, and the widget's further fields (`bar_height` and
 /// `item_gap` for the toolbar, `item_gap` for the tab bar, `row_height` for
-/// the menu and the list, `arrow_gap` and `content_indent` for the expander,
-/// `arrow_area_width` for the combobox).
+/// the menu and the list, `header_height` for the list, `arrow_gap` and
+/// `content_indent` for the expander, `arrow_area_width` for the combobox).
 fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
         "window" => &v.window.border,
@@ -467,7 +490,10 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
             sizes.push(("content_indent", v.expander.content_indent));
         }
         "menu" => sizes.push(("row_height", v.menu.row_height)),
-        "list" => sizes.push(("row_height", v.list.row_height)),
+        "list" => {
+            sizes.push(("row_height", v.list.row_height));
+            sizes.push(("header_height", v.list.header_height));
+        }
         "combo_box" => sizes.push(("arrow_area_width", v.combo_box.arrow_area_width)),
         _ => {}
     }
@@ -484,6 +510,7 @@ fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Optio
         ("expander", "content_indent") => Some(theme.expander.content_indent),
         ("menu", "row_height") => Some(theme.menu.row_height),
         ("list", "row_height") => Some(theme.list.row_height),
+        ("list", "header_height") => Some(theme.list.header_height),
         ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
         _ => None,
     }
@@ -495,44 +522,35 @@ fn resolve(variant: ThemeMode) -> Result<ResolvedTheme, String> {
         .map_err(|e| format!("resolution failed: {e}"))
 }
 
-/// The static resolution's input: the platform's full preset, unresolved.
-fn static_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
-    let full = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
+/// The static resolution's input: the full preset, unresolved.
+fn static_variant(preset: NativePreset, mode: ColorMode) -> Result<ThemeMode, String> {
+    let full = Theme::preset(preset.key()).map_err(|e| e.to_string())?;
     full.into_variant(mode).map_err(|e| e.to_string())
 }
 
-/// The live resolution's input, unresolved: the full preset, the `-live`
-/// preset merged over it, then the reader's size constants.
-fn live_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
-    let live = platform
-        .live_preset()
-        .ok_or_else(|| format!("{} has no -live preset", platform.preset()))?;
-    let mut merged = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
-    merged.merge(&Theme::preset(live).map_err(|e| e.to_string())?);
-    let mut variant = merged.into_variant(mode).map_err(|e| e.to_string())?;
-    if let Some(reader) = platform.reader_constants() {
+/// The live resolution's input, unresolved: the full preset with the
+/// reader's size constants merged over it.
+fn live_variant(preset: NativePreset, mode: ColorMode) -> Result<ThemeMode, String> {
+    let mut variant = static_variant(preset, mode)?;
+    if let Some(reader) = preset.reader_constants() {
         variant.merge(&reader);
     }
     Ok(variant)
 }
 
-fn gate_variant(platform: Platform, mode: ColorMode, live: bool) -> Result<ThemeMode, String> {
+fn gate_variant(preset: NativePreset, mode: ColorMode, live: bool) -> Result<ThemeMode, String> {
     if live {
-        live_variant(platform, mode)
+        live_variant(preset, mode)
     } else {
-        static_variant(platform, mode)
+        static_variant(preset, mode)
     }
 }
 
-fn source(platform: Platform, live: bool) -> String {
+fn source(preset: NativePreset, live: bool) -> String {
     if live {
-        format!(
-            "{} + {} + reader constants",
-            platform.preset(),
-            platform.live_preset().unwrap_or("no -live preset")
-        )
+        format!("{} + reader constants", preset.key())
     } else {
-        platform.preset().to_string()
+        preset.key().to_string()
     }
 }
 
@@ -559,17 +577,17 @@ fn cite(lines: &[usize]) -> String {
 #[test]
 fn native_themes_state_documented_sizes() {
     let mut failures = Vec::new();
-    for platform in Platform::ALL {
+    for preset in NativePreset::ALL {
         for (mode, variant) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
-            for &live in platform.resolutions() {
-                let theme = match gate_variant(platform, mode, live).and_then(resolve) {
+            for &live in preset.resolutions() {
+                let theme = match gate_variant(preset, mode, live).and_then(resolve) {
                     Ok(t) => t,
                     Err(e) => {
-                        failures.push(format!("{} {variant}: {e}", source(platform, live)));
+                        failures.push(format!("{} {variant}: {e}", source(preset, live)));
                         continue;
                     }
                 };
-                for row in ROWS.iter().filter(|r| r.platform == platform) {
+                for row in ROWS.iter().filter(|r| r.preset == preset) {
                     let Some(got) = padding(&theme, row.widget) else {
                         failures.push(format!("unknown widget `{}`", row.widget));
                         continue;
@@ -581,7 +599,7 @@ fn native_themes_state_documented_sizes() {
                                 "{}.border.padding_{side}: {} {variant}: resolved {:?}, \
                                  platform-facts gives {:?} ({}; {})",
                                 row.widget,
-                                source(platform, live),
+                                source(preset, live),
                                 got[i],
                                 row.padding[i],
                                 cite(row.lines),
@@ -596,7 +614,7 @@ fn native_themes_state_documented_sizes() {
                                 "{}.{field}: {} {variant}: resolved {:?}, \
                                  platform-facts gives {expected:?} ({})",
                                 row.widget,
-                                source(platform, live),
+                                source(preset, live),
                                 got.flatten(),
                                 cite(&[line]),
                             ));
@@ -615,17 +633,17 @@ fn native_themes_state_documented_sizes() {
 }
 
 #[test]
-fn every_platform_and_widget_has_one_row() {
-    for platform in Platform::ALL {
+fn every_preset_and_widget_has_one_row() {
+    for preset in NativePreset::ALL {
         for widget in WIDGETS {
             let n = ROWS
                 .iter()
-                .filter(|r| r.platform == platform && r.widget == widget)
+                .filter(|r| r.preset == preset && r.widget == widget)
                 .count();
-            assert_eq!(n, 1, "{platform:?} {widget}: {n} rows");
+            assert_eq!(n, 1, "{preset:?} {widget}: {n} rows");
         }
     }
-    assert_eq!(ROWS.len(), Platform::ALL.len() * WIDGETS.len());
+    assert_eq!(ROWS.len(), NativePreset::ALL.len() * WIDGETS.len());
 }
 
 /// Each cited line is the row it claims to be, inside the widget's section:
@@ -640,7 +658,7 @@ fn every_citation_names_its_platform_facts_row() {
             assert!(
                 facts_heading(n).starts_with(&title),
                 "{:?} {}: platform-facts.md:{n} is outside §{}",
-                row.platform,
+                row.preset,
                 row.widget,
                 section(row.widget),
             );
@@ -651,7 +669,7 @@ fn every_citation_names_its_platform_facts_row() {
                 text.starts_with("| `border.padding_") || text.starts_with(&title),
                 "{:?} {}: platform-facts.md:{n} is neither a padding row nor the \
                  section heading: {text:?}",
-                row.platform,
+                row.preset,
                 row.widget,
             );
         }
@@ -660,64 +678,15 @@ fn every_citation_names_its_platform_facts_row() {
             assert!(
                 text.starts_with(&format!("| `{field}`")),
                 "{:?} {}.{field}: platform-facts.md:{n} is not the `{field}` row: {text:?}",
-                row.platform,
+                row.preset,
                 row.widget,
             );
         }
     }
 }
 
-/// The live resolution merges the `-live` preset under the reader constants,
-/// so a `-live` value a reader overrides never reaches the gate above. Each
-/// full preset and its `-live` twin therefore state the same sizes (the
-/// padding sides and the further fields), in both variants.
-#[test]
-fn full_and_live_presets_state_the_same_sizes() {
-    let mut failures = Vec::new();
-    for platform in Platform::ALL {
-        let Some(live_name) = platform.live_preset() else {
-            continue;
-        };
-        for mode in [ColorMode::Light, ColorMode::Dark] {
-            let variant = |name: &str| {
-                Theme::preset(name)
-                    .and_then(|t| t.into_variant(mode))
-                    .map_err(|e| format!("{name} {mode:?}: {e}"))
-            };
-            let (full, live) = match (variant(platform.preset()), variant(live_name)) {
-                (Ok(f), Ok(l)) => (f, l),
-                (f, l) => {
-                    failures.extend(f.err().into_iter().chain(l.err()));
-                    continue;
-                }
-            };
-            for widget in WIDGETS {
-                let (Some(f), Some(l)) = (stated_sizes(&full, widget), stated_sizes(&live, widget))
-                else {
-                    failures.push(format!("unknown widget `{widget}`"));
-                    continue;
-                };
-                for ((key, f), (_, l)) in f.iter().zip(&l) {
-                    if f != l {
-                        failures.push(format!(
-                            "{widget}.{key} {mode:?}: {} states {f:?}, {live_name} states {l:?}",
-                            platform.preset(),
-                        ));
-                    }
-                }
-            }
-        }
-    }
-    assert!(
-        failures.is_empty(),
-        "{} full/live disagreements:\n{}",
-        failures.len(),
-        failures.join("\n")
-    );
-}
-
 /// Presets that platform-facts does not cover: the colour schemes, and the
-/// `ios` platform preset, which no platform-facts column documents.
+/// `ios-13` platform preset, which no platform-facts column documents.
 const UNSOURCED_PRESETS: [&str; 11] = [
     "catppuccin-latte",
     "catppuccin-frappe",
@@ -729,12 +698,30 @@ const UNSOURCED_PRESETS: [&str; 11] = [
     "one-dark",
     "solarized",
     "tokyo-night",
-    "ios",
+    "ios-13",
 ];
 
+/// Every bundled preset is a `NativePreset` with rows or an unsourced preset,
+/// so no preset escapes the gates that iterate those two lists.
+#[test]
+fn every_bundled_preset_is_native_or_unsourced() {
+    let mut gated: Vec<&str> = NativePreset::ALL
+        .iter()
+        .map(|p| p.key())
+        .chain(UNSOURCED_PRESETS)
+        .collect();
+    gated.sort_unstable();
+    let mut bundled: Vec<&str> = crate::presets::list_presets()
+        .iter()
+        .map(|info| info.key)
+        .collect();
+    bundled.sort_unstable();
+    assert_eq!(gated, bundled);
+}
+
 /// A preset platform-facts does not cover cites no source for a size, so it
-/// states no padding side, `row_height`, `bar_height`, `item_gap` or
-/// `arrow_area_width`, and the toolkit's own sizes stand.
+/// states no padding side, `row_height`, `header_height`, `bar_height`,
+/// `item_gap` or `arrow_area_width`, and the toolkit's own sizes stand.
 #[test]
 fn unsourced_presets_state_no_gated_size() {
     let mut failures = Vec::new();
@@ -787,7 +774,7 @@ enum Want {
 }
 
 struct FieldRow {
-    platform: Platform,
+    preset: NativePreset,
     /// `text_scale.<role>.size` / `.weight`, `dialog.title_font.size` /
     /// `.weight`, `slider.track_height`, `slider.thumb_diameter`,
     /// `progress_bar.track_height`, `checkbox.radio_dot_diameter`,
@@ -802,14 +789,14 @@ struct FieldRow {
 }
 
 const fn field(
-    platform: Platform,
+    preset: NativePreset,
     field: &'static str,
     want: Want,
     line: usize,
     note: &'static str,
 ) -> FieldRow {
     FieldRow {
-        platform,
+        preset,
         field,
         want,
         line,
@@ -822,104 +809,123 @@ use Want::{BodyTimes, Pt, Px, Unstated, Weight};
 #[rustfmt::skip]
 const FIELD_ROWS: &[FieldRow] = &[
     // --- KDE ---
-    field(Kde, "text_scale.caption.size", Pt(8.0), 1435, "smallestReadableFont; its default is 8pt (:573)"),
-    field(Kde, "text_scale.caption.weight", Weight(400), 1435, "smallestReadableFont; its default is 400 (:573)"),
-    field(Kde, "text_scale.section_heading.size", BodyTimes(1.20), 1436, "Kirigami Heading level 2: body × 1.20"),
-    field(Kde, "text_scale.section_heading.weight", Weight(400), 1436, "Font.Normal unless type: Primary"),
-    field(Kde, "text_scale.dialog_title.size", BodyTimes(1.35), 1437, "Kirigami Heading level 1: body × 1.35"),
-    field(Kde, "text_scale.dialog_title.weight", Weight(400), 1437, "Font.Normal unless type: Primary"),
-    field(Kde, "text_scale.display.size", Unstated, 1438, "(none): resolves from the body font"),
-    field(Kde, "text_scale.display.weight", Unstated, 1438, "(none): resolves from the body font"),
-    field(Kde, "dialog.title_font.size", Unstated, 1496, "← defaults.font"),
-    field(Kde, "dialog.title_font.weight", Unstated, 1497, "← defaults.font"),
-    field(Kde, "slider.track_height", Px(6.0), 1292, "Slider_GrooveThickness = 6"),
-    field(Kde, "slider.thumb_diameter", Px(20.0), 1293, "Slider_ControlThickness = 20"),
-    field(Kde, "progress_bar.track_height", Px(6.0), 1303, "ProgressBar_Thickness = 6"),
-    field(Kde, "checkbox.radio_dot_diameter", Px(6.0), 1220, "renderRadioButton: radius (18 - 12) / 2 = 3"),
-    field(Kde, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "the check pen: PenWidth::Frame * 2 = 2.002"),
-    field(Kde, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: CheckBox_Size for both"),
-    field(Kde, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: one handle in both states"),
-    field(Kde, "tab.active_indicator_width", Px(3.0), 1328, "TabBar_ActiveEffectSize = 3"),
+    field(KdeBreeze, "text_scale.caption.size", Pt(8.0), 1437, "smallestReadableFont; its default is 8pt (:573)"),
+    field(KdeBreeze, "text_scale.caption.weight", Weight(400), 1437, "smallestReadableFont; its default is 400 (:573)"),
+    field(KdeBreeze, "text_scale.section_heading.size", BodyTimes(1.20), 1438, "Kirigami Heading level 2: body × 1.20"),
+    field(KdeBreeze, "text_scale.section_heading.weight", Weight(400), 1438, "Font.Normal unless type: Primary"),
+    field(KdeBreeze, "text_scale.dialog_title.size", BodyTimes(1.35), 1439, "Kirigami Heading level 1: body × 1.35"),
+    field(KdeBreeze, "text_scale.dialog_title.weight", Weight(400), 1439, "Font.Normal unless type: Primary"),
+    field(KdeBreeze, "text_scale.display.size", Unstated, 1440, "(none): resolves from the body font"),
+    field(KdeBreeze, "text_scale.display.weight", Unstated, 1440, "(none): resolves from the body font"),
+    field(KdeBreeze, "dialog.title_font.size", Unstated, 1498, "← defaults.font"),
+    field(KdeBreeze, "dialog.title_font.weight", Unstated, 1499, "← defaults.font"),
+    field(KdeBreeze, "slider.track_height", Px(6.0), 1293, "Slider_GrooveThickness = 6"),
+    field(KdeBreeze, "slider.thumb_diameter", Px(20.0), 1294, "Slider_ControlThickness = 20"),
+    field(KdeBreeze, "progress_bar.track_height", Px(6.0), 1304, "ProgressBar_Thickness = 6"),
+    field(KdeBreeze, "checkbox.radio_dot_diameter", Px(6.0), 1220, "renderRadioButton: radius (18 - 12) / 2 = 3"),
+    field(KdeBreeze, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "the check pen: PenWidth::Frame * 2 = 2.002"),
+    field(KdeBreeze, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: CheckBox_Size for both"),
+    field(KdeBreeze, "switch.unchecked_thumb_diameter", Unstated, 1477, "← thumb_diameter: one handle in both states"),
+    field(KdeBreeze, "tab.active_indicator_width", Px(3.0), 1329, "TabBar_ActiveEffectSize = 3"),
     // --- GNOME ---
-    field(Gnome, "text_scale.caption.size", Pt(9.0), 1435, ".caption: ≈9pt"),
-    field(Gnome, "text_scale.caption.weight", Weight(400), 1435, ".caption: 400"),
-    field(Gnome, "text_scale.section_heading.size", Pt(11.0), 1436, ".heading: 11pt"),
-    field(Gnome, "text_scale.section_heading.weight", Weight(700), 1436, ".heading: 700"),
-    field(Gnome, "text_scale.dialog_title.size", Pt(15.0), 1437, ".title-2: ≈15pt"),
-    field(Gnome, "text_scale.dialog_title.weight", Weight(800), 1437, ".title-2: 800"),
-    field(Gnome, "text_scale.display.size", Pt(20.0), 1438, ".title-1: ≈20pt"),
-    field(Gnome, "text_scale.display.weight", Weight(800), 1438, ".title-1: 800"),
-    field(Gnome, "dialog.title_font.size", Pt(15.0), 1496, "136% of base ≈15pt (.title-2)"),
-    field(Gnome, "dialog.title_font.weight", Weight(800), 1497, "800 (.title-2)"),
-    field(Gnome, "slider.track_height", Px(10.0), 1292, "libadwaita .scale: 10"),
-    field(Gnome, "slider.thumb_diameter", Px(20.0), 1293, "libadwaita: 20"),
-    field(Gnome, "progress_bar.track_height", Px(8.0), 1303, "libadwaita .progressbar: 8"),
-    field(Gnome, "checkbox.radio_dot_diameter", Px(8.0), 1220, "bullet.svg: a circle of radius 4"),
-    field(Gnome, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "check.svg (1.10.0): a stroke 2 wide"),
-    field(Gnome, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: one check, radio rule"),
-    field(Gnome, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: one slider rule"),
-    field(Gnome, "tab.active_indicator_width", Px(4.0), 1328, "_notebook.scss: inset 0 -4px"),
+    field(Adwaita, "text_scale.caption.size", Pt(9.0), 1437, ".caption: ≈9pt"),
+    field(Adwaita, "text_scale.caption.weight", Weight(400), 1437, ".caption: 400"),
+    field(Adwaita, "text_scale.section_heading.size", Pt(11.0), 1438, ".heading: 11pt"),
+    field(Adwaita, "text_scale.section_heading.weight", Weight(700), 1438, ".heading: 700"),
+    field(Adwaita, "text_scale.dialog_title.size", Pt(15.0), 1439, ".title-2: ≈15pt"),
+    field(Adwaita, "text_scale.dialog_title.weight", Weight(800), 1439, ".title-2: 800"),
+    field(Adwaita, "text_scale.display.size", Pt(20.0), 1440, ".title-1: ≈20pt"),
+    field(Adwaita, "text_scale.display.weight", Weight(800), 1440, ".title-1: 800"),
+    field(Adwaita, "dialog.title_font.size", Pt(15.0), 1498, "136% of base ≈15pt (.title-2)"),
+    field(Adwaita, "dialog.title_font.weight", Weight(800), 1499, "800 (.title-2)"),
+    field(Adwaita, "slider.track_height", Px(10.0), 1293, "libadwaita .scale: 10"),
+    field(Adwaita, "slider.thumb_diameter", Px(20.0), 1294, "libadwaita: 20"),
+    field(Adwaita, "progress_bar.track_height", Px(8.0), 1304, "libadwaita .progressbar: 8"),
+    field(Adwaita, "checkbox.radio_dot_diameter", Px(8.0), 1220, "bullet.svg: a circle of radius 4"),
+    field(Adwaita, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "check.svg (1.10.0): a stroke 2 wide"),
+    field(Adwaita, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: one check, radio rule"),
+    field(Adwaita, "switch.unchecked_thumb_diameter", Unstated, 1477, "← thumb_diameter: one slider rule"),
+    field(Adwaita, "tab.active_indicator_width", Px(4.0), 1329, "_notebook.scss: inset 0 -4px"),
     // --- macOS ---
-    field(Macos, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
-    field(Macos, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
-    field(Macos, "text_scale.section_heading.size", Pt(13.0), 1436, ".headline: 13pt"),
-    field(Macos, "text_scale.section_heading.weight", Weight(700), 1436, ".headline: 700"),
-    field(Macos, "text_scale.dialog_title.size", Pt(22.0), 1437, ".title1: 22pt"),
-    field(Macos, "text_scale.dialog_title.weight", Weight(400), 1437, ".title1: 400"),
-    field(Macos, "text_scale.display.size", Pt(26.0), 1438, ".largeTitle: 26pt"),
-    field(Macos, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
-    field(Macos, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
-    field(Macos, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
-    field(Macos, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
-    field(Macos, "slider.thumb_diameter", Px(21.0), 1293, "NSSlider knob: 21"),
-    field(Macos, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
-    field(Macos, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
-    field(Macos, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
-    field(Macos, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
-    field(Macos, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: not published"),
-    field(Macos, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
+    field(MacosMonterey, "text_scale.caption.size", Pt(10.0), 1437, ".caption1: 10pt"),
+    field(MacosMonterey, "text_scale.caption.weight", Weight(400), 1437, ".caption1: 400"),
+    field(MacosMonterey, "text_scale.section_heading.size", Pt(13.0), 1438, ".headline: 13pt"),
+    field(MacosMonterey, "text_scale.section_heading.weight", Weight(700), 1438, ".headline: 700"),
+    field(MacosMonterey, "text_scale.dialog_title.size", Pt(22.0), 1439, ".title1: 22pt"),
+    field(MacosMonterey, "text_scale.dialog_title.weight", Weight(400), 1439, ".title1: 400"),
+    field(MacosMonterey, "text_scale.display.size", Pt(26.0), 1440, ".largeTitle: 26pt"),
+    field(MacosMonterey, "text_scale.display.weight", Weight(400), 1440, ".largeTitle: 400"),
+    field(MacosMonterey, "dialog.title_font.size", Pt(13.0), 1498, "emphasized system font: systemFontSize, 13pt"),
+    field(MacosMonterey, "dialog.title_font.weight", Weight(700), 1499, "emphasized system font: Bold (700)"),
+    field(MacosMonterey, "slider.track_height", Px(4.0), 1293, "macOS 14-15: NSSlider 4 (API)"),
+    field(MacosMonterey, "slider.thumb_diameter", Px(20.0), 1294, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
+    field(MacosMonterey, "progress_bar.track_height", Px(6.0), 1304, "NSProgressIndicator: 6"),
+    field(MacosMonterey, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
+    field(MacosMonterey, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
+    field(MacosMonterey, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
+    field(MacosMonterey, "switch.unchecked_thumb_diameter", Unstated, 1477, "← thumb_diameter: not published"),
+    field(MacosMonterey, "tab.active_indicator_width", Unstated, 1329, "(none): no line"),
+    // --- macOS 26 ---
+    field(MacosTahoe, "text_scale.caption.size", Pt(10.0), 1437, ".caption1: 10pt, the same on 26"),
+    field(MacosTahoe, "text_scale.caption.weight", Weight(400), 1437, ".caption1: 400"),
+    field(MacosTahoe, "text_scale.section_heading.size", Pt(13.0), 1438, ".headline: 13pt"),
+    field(MacosTahoe, "text_scale.section_heading.weight", Weight(700), 1438, ".headline: 700"),
+    field(MacosTahoe, "text_scale.dialog_title.size", Pt(22.0), 1439, ".title1: 22pt"),
+    field(MacosTahoe, "text_scale.dialog_title.weight", Weight(400), 1439, ".title1: 400"),
+    field(MacosTahoe, "text_scale.display.size", Pt(26.0), 1440, ".largeTitle: 26pt"),
+    field(MacosTahoe, "text_scale.display.weight", Weight(400), 1440, ".largeTitle: 400"),
+    field(MacosTahoe, "dialog.title_font.size", Pt(13.0), 1498, "macOS 26 ❓: macos-monterey's 13pt, carried"),
+    field(MacosTahoe, "dialog.title_font.weight", Weight(700), 1499, "macOS 26 ❓: macos-monterey's Bold (700), carried"),
+    field(MacosTahoe, "slider.track_height", Px(6.0), 1293, "macOS 26: 6 (API)"),
+    field(MacosTahoe, "slider.thumb_diameter", Px(16.0), 1294, "macOS 26: the 20 x 16 capsule, 16 across the track"),
+    field(MacosTahoe, "progress_bar.track_height", Px(8.0), 1304, "macOS 26: 8 (measured)"),
+    field(MacosTahoe, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
+    field(MacosTahoe, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): not published"),
+    field(MacosTahoe, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: not published"),
+    field(MacosTahoe, "switch.unchecked_thumb_diameter", Unstated, 1477, "← thumb_diameter: not published"),
+    field(MacosTahoe, "tab.active_indicator_width", Unstated, 1329, "(none): no line"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
     // Windows reader's font_dpi is 96 (`windows::LOGICAL_DPI`), as is the
     // gate's, so they resolve to the epx below at any display scale.
-    field(Windows, "text_scale.caption.size", Px(12.0), 1435, "Caption: 12epx"),
-    field(Windows, "text_scale.caption.weight", Weight(400), 1435, "Caption: 400"),
-    field(Windows, "text_scale.section_heading.size", Px(20.0), 1436, "Subtitle: 20epx"),
-    field(Windows, "text_scale.section_heading.weight", Weight(600), 1436, "Subtitle: 600"),
-    field(Windows, "text_scale.dialog_title.size", Px(28.0), 1437, "Title: 28epx"),
-    field(Windows, "text_scale.dialog_title.weight", Weight(600), 1437, "Title: 600"),
-    field(Windows, "text_scale.display.size", Px(68.0), 1438, "Display: 68epx"),
-    field(Windows, "text_scale.display.weight", Weight(600), 1438, "Display: 600"),
-    field(Windows, "dialog.title_font.size", Px(20.0), 1496, "20px (ContentDialog template)"),
-    field(Windows, "dialog.title_font.weight", Weight(600), 1497, "SemiBold (600)"),
-    field(Windows, "slider.track_height", Px(4.0), 1292, "WinUI3: 4"),
-    field(Windows, "slider.thumb_diameter", Px(18.0), 1293, "WinUI3: 18"),
-    field(Windows, "progress_bar.track_height", Px(1.0), 1303, "the groove, ProgressBarTrackHeight: 1"),
-    field(Windows, "checkbox.radio_dot_diameter", Px(12.0), 1220, "RadioButtonCheckGlyphSize: 12"),
-    field(Windows, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): a font glyph"),
-    field(Windows, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: OuterEllipse 20 as CheckBoxSize 20"),
-    field(Windows, "switch.unchecked_thumb_diameter", Unstated, 1475, "← thumb_diameter: SwitchKnobOff 12 as SwitchKnobOn 12"),
-    field(Windows, "tab.active_indicator_width", Unstated, 1328, "(none): no line"),
+    field(Windows11, "text_scale.caption.size", Px(12.0), 1437, "Caption: 12epx"),
+    field(Windows11, "text_scale.caption.weight", Weight(400), 1437, "Caption: 400"),
+    field(Windows11, "text_scale.section_heading.size", Px(20.0), 1438, "Subtitle: 20epx"),
+    field(Windows11, "text_scale.section_heading.weight", Weight(600), 1438, "Subtitle: 600"),
+    field(Windows11, "text_scale.dialog_title.size", Px(28.0), 1439, "Title: 28epx"),
+    field(Windows11, "text_scale.dialog_title.weight", Weight(600), 1439, "Title: 600"),
+    field(Windows11, "text_scale.display.size", Px(68.0), 1440, "Display: 68epx"),
+    field(Windows11, "text_scale.display.weight", Weight(600), 1440, "Display: 600"),
+    field(Windows11, "dialog.title_font.size", Px(20.0), 1498, "20px (ContentDialog template)"),
+    field(Windows11, "dialog.title_font.weight", Weight(600), 1499, "SemiBold (600)"),
+    field(Windows11, "slider.track_height", Px(4.0), 1293, "WinUI3: 4"),
+    field(Windows11, "slider.thumb_diameter", Px(18.0), 1294, "WinUI3: 18"),
+    field(Windows11, "progress_bar.track_height", Px(1.0), 1304, "the groove, ProgressBarTrackHeight: 1"),
+    field(Windows11, "checkbox.radio_dot_diameter", Px(12.0), 1220, "RadioButtonCheckGlyphSize: 12"),
+    field(Windows11, "checkbox.check_mark_stroke_width", Unstated, 1221, "(none): a font glyph"),
+    field(Windows11, "checkbox.radio_indicator_width", Unstated, 1222, "← indicator_width: OuterEllipse 20 as CheckBoxSize 20"),
+    field(Windows11, "switch.unchecked_thumb_diameter", Unstated, 1477, "← thumb_diameter: SwitchKnobOff 12 as SwitchKnobOn 12"),
+    field(Windows11, "tab.active_indicator_width", Unstated, 1329, "(none): no line"),
     // --- Material (dp = logical pixels, rem × 16) ---
-    field(Material, "text_scale.caption.size", Px(12.0), 1435, "body-small: 12"),
-    field(Material, "text_scale.caption.weight", Weight(400), 1435, "body-small: 400"),
-    field(Material, "text_scale.section_heading.size", Px(16.0), 1436, "title-medium: 16"),
-    field(Material, "text_scale.section_heading.weight", Weight(500), 1436, "title-medium: 500"),
-    field(Material, "text_scale.dialog_title.size", Px(24.0), 1437, "headline-small: 24"),
-    field(Material, "text_scale.dialog_title.weight", Weight(400), 1437, "headline-small: 400"),
-    field(Material, "text_scale.display.size", Px(36.0), 1438, "display-small: 36"),
-    field(Material, "text_scale.display.weight", Weight(400), 1438, "display-small: 400"),
-    field(Material, "dialog.title_font.size", Px(24.0), 1496, "comp.dialog headline-size: 24"),
-    field(Material, "dialog.title_font.weight", Weight(400), 1497, "headline-small-weight: 400"),
-    field(Material, "slider.track_height", Px(4.0), 1292, "active/inactive-track-height: 4"),
-    field(Material, "slider.thumb_diameter", Px(20.0), 1293, "handle-width/height: 20"),
-    field(Material, "progress_bar.track_height", Px(4.0), 1303, "linear track-height: 4"),
-    field(Material, "checkbox.radio_dot_diameter", Px(10.0), 1220, "material-web radio.ts: inner circle r = 5"),
-    field(Material, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "material-web $_mark-stroke: 2px"),
-    field(Material, "checkbox.radio_indicator_width", Px(20.0), 1222, "comp.radio-button icon-size: 20"),
-    field(Material, "switch.unchecked_thumb_diameter", Px(16.0), 1475, "unselected-handle-width/height: 16"),
-    field(Material, "tab.active_indicator_width", Px(3.0), 1328, "active-indicator-height: 3"),
+    field(Material3, "text_scale.caption.size", Px(12.0), 1437, "body-small: 12"),
+    field(Material3, "text_scale.caption.weight", Weight(400), 1437, "body-small: 400"),
+    field(Material3, "text_scale.section_heading.size", Px(16.0), 1438, "title-medium: 16"),
+    field(Material3, "text_scale.section_heading.weight", Weight(500), 1438, "title-medium: 500"),
+    field(Material3, "text_scale.dialog_title.size", Px(24.0), 1439, "headline-small: 24"),
+    field(Material3, "text_scale.dialog_title.weight", Weight(400), 1439, "headline-small: 400"),
+    field(Material3, "text_scale.display.size", Px(36.0), 1440, "display-small: 36"),
+    field(Material3, "text_scale.display.weight", Weight(400), 1440, "display-small: 400"),
+    field(Material3, "dialog.title_font.size", Px(24.0), 1498, "comp.dialog headline-size: 24"),
+    field(Material3, "dialog.title_font.weight", Weight(400), 1499, "headline-small-weight: 400"),
+    field(Material3, "slider.track_height", Px(4.0), 1293, "active/inactive-track-height: 4"),
+    field(Material3, "slider.thumb_diameter", Px(20.0), 1294, "handle-width/height: 20"),
+    field(Material3, "progress_bar.track_height", Px(4.0), 1304, "linear track-height: 4"),
+    field(Material3, "checkbox.radio_dot_diameter", Px(10.0), 1220, "material-web radio.ts: inner circle r = 5"),
+    field(Material3, "checkbox.check_mark_stroke_width", Px(2.0), 1221, "material-web $_mark-stroke: 2px"),
+    field(Material3, "checkbox.radio_indicator_width", Px(20.0), 1222, "comp.radio-button icon-size: 20"),
+    field(Material3, "switch.unchecked_thumb_diameter", Px(16.0), 1477, "unselected-handle-width/height: 16"),
+    field(Material3, "tab.active_indicator_width", Px(3.0), 1329, "active-indicator-height: 3"),
 ];
 
 /// Every field a [`FieldRow`] may name.
@@ -1031,15 +1037,15 @@ fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
     })
 }
 
-/// The gate's variants of one platform, unresolved: `(source, variant name, variant)`.
-fn gate_variants(platform: Platform) -> Vec<Result<(String, &'static str, ThemeMode), String>> {
+/// The gate's variants of one preset, unresolved: `(source, variant name, variant)`.
+fn gate_variants(preset: NativePreset) -> Vec<Result<(String, &'static str, ThemeMode), String>> {
     let mut out = Vec::new();
     for (mode, name) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
-        for &live in platform.resolutions() {
+        for &live in preset.resolutions() {
             out.push(
-                gate_variant(platform, mode, live)
-                    .map(|v| (source(platform, live), name, v))
-                    .map_err(|e| format!("{} {name}: {e}", source(platform, live))),
+                gate_variant(preset, mode, live)
+                    .map(|v| (source(preset, live), name, v))
+                    .map_err(|e| format!("{} {name}: {e}", source(preset, live))),
             );
         }
     }
@@ -1051,8 +1057,8 @@ fn gate_variants(platform: Platform) -> Vec<Result<(String, &'static str, ThemeM
 #[test]
 fn native_themes_state_documented_fields() {
     let mut failures = Vec::new();
-    for platform in Platform::ALL {
-        for variant in gate_variants(platform) {
+    for preset in NativePreset::ALL {
+        for variant in gate_variants(preset) {
             let (source, name, variant) = match variant {
                 Ok(v) => v,
                 Err(e) => {
@@ -1068,7 +1074,7 @@ fn native_themes_state_documented_fields() {
                 }
             };
             let body = theme.defaults.font.size;
-            for row in FIELD_ROWS.iter().filter(|r| r.platform == platform) {
+            for row in FIELD_ROWS.iter().filter(|r| r.preset == preset) {
                 let at = format!(
                     "{}: {source} {name} ({}; {})",
                     row.field,
@@ -1122,20 +1128,20 @@ fn windows_reader_font_dpi_is_the_gates() {
 }
 
 #[test]
-fn every_platform_and_field_has_one_row() {
-    for platform in Platform::ALL {
+fn every_preset_and_field_has_one_row() {
+    for preset in NativePreset::ALL {
         for f in FIELDS {
             let n = FIELD_ROWS
                 .iter()
-                .filter(|r| r.platform == platform && r.field == f)
+                .filter(|r| r.preset == preset && r.field == f)
                 .count();
-            assert_eq!(n, 1, "{platform:?} {f}: {n} rows");
+            assert_eq!(n, 1, "{preset:?} {f}: {n} rows");
         }
     }
     for f in FIELDS {
         assert!(field_cell(f).is_some(), "{f}: no platform-facts cell");
     }
-    assert_eq!(FIELD_ROWS.len(), Platform::ALL.len() * FIELDS.len());
+    assert_eq!(FIELD_ROWS.len(), NativePreset::ALL.len() * FIELDS.len());
 }
 
 /// Each field row cites its own cell's line, inside the cell's section.
@@ -1146,7 +1152,7 @@ fn every_field_citation_names_its_platform_facts_row() {
         assert!(
             facts_heading(row.line).starts_with(&format!("### {section} ")),
             "{:?} {}: platform-facts.md:{} is outside §{section}",
-            row.platform,
+            row.preset,
             row.field,
             row.line,
         );
@@ -1154,40 +1160,40 @@ fn every_field_citation_names_its_platform_facts_row() {
         assert!(
             text.starts_with(&format!("| `{key}`")),
             "{:?} {}: platform-facts.md:{} is not the `{key}` row: {text:?}",
-            row.platform,
+            row.preset,
             row.field,
             row.line,
         );
     }
 }
 
-/// Platform-facts gives no desktop platform's text-scale line height, so no
-/// desktop preset states one and the resolver computes it from
+/// Platform-facts gives no other desktop platform's text-scale line height, so
+/// no other desktop preset states one and the resolver computes it from
 /// `defaults.line_height` (E5). Material's typescale states each style's line
-/// height (platform-facts §2.19), so the material preset states them.
+/// height (platform-facts §2.19), and so does WinUI 3's type ramp
+/// (platform-facts §1.2.1), so the material-3 and windows-11 presets state them.
 #[test]
 fn native_presets_state_no_text_scale_line_height() {
     let mut failures = Vec::new();
-    for platform in Platform::ALL {
-        if platform == Material {
+    for preset in NativePreset::ALL {
+        if preset == Material3 || preset == NativePreset::Windows11 {
             continue;
         }
-        for name in std::iter::once(platform.preset()).chain(platform.live_preset()) {
-            for mode in [ColorMode::Light, ColorMode::Dark] {
-                let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        failures.push(format!("{name} {mode:?}: {e}"));
-                        continue;
-                    }
-                };
-                for role in ["caption", "section_heading", "dialog_title", "display"] {
-                    if let Some(lh) = stated_entry(&variant, role).and_then(|e| e.line_height) {
-                        failures.push(format!(
-                            "{name} {mode:?}: states text_scale.{role}.line_height = {lh:?}, \
-                             with no source"
-                        ));
-                    }
+        let name = preset.key();
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) => v,
+                Err(e) => {
+                    failures.push(format!("{name} {mode:?}: {e}"));
+                    continue;
+                }
+            };
+            for role in ["caption", "section_heading", "dialog_title", "display"] {
+                if let Some(lh) = stated_entry(&variant, role).and_then(|e| e.line_height) {
+                    failures.push(format!(
+                        "{name} {mode:?}: states text_scale.{role}.line_height = {lh:?}, \
+                         with no source"
+                    ));
                 }
             }
         }
@@ -1201,33 +1207,34 @@ fn native_presets_state_no_text_scale_line_height() {
 }
 
 /// The expander's structure per platform, from platform-facts §2.27: the
-/// arrow's side (`:1613`) and whether a frame holds header and content
-/// (`:1616`); `None` where the cell states none.
+/// arrow's side (`:1616`) and whether a frame holds header and content
+/// (`:1619`); `None` where the cell states none.
 #[rustfmt::skip]
-const EXPANDER_STRUCTURE: [(Platform, Option<crate::model::ArrowSide>, Option<bool>); 5] = [
-    (Kde, Some(crate::model::ArrowSide::Leading), Some(false)),
-    (Gnome, Some(crate::model::ArrowSide::Trailing), Some(true)),
-    (Macos, Some(crate::model::ArrowSide::Leading), None),
-    (Windows, Some(crate::model::ArrowSide::Trailing), Some(true)),
-    (Material, None, None),
+const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 6] = [
+    (KdeBreeze, Some(crate::model::ArrowSide::Leading), Some(false)),
+    (Adwaita, Some(crate::model::ArrowSide::Trailing), Some(true)),
+    (MacosMonterey, Some(crate::model::ArrowSide::Leading), None),
+    (MacosTahoe, Some(crate::model::ArrowSide::Leading), None),
+    (Windows11, Some(crate::model::ArrowSide::Trailing), Some(true)),
+    (Material3, None, None),
 ];
 
 /// The native themes state the expander's side and frame as platform-facts
 /// gives them, static and live, and no other preset states either.
 #[test]
 fn native_themes_state_the_expanders_structure() {
-    assert!(facts_line(1613).starts_with("| `arrow_side`"));
-    assert!(facts_line(1616).starts_with("| `frame_enabled`"));
+    assert!(facts_line(1616).starts_with("| `arrow_side`"));
+    assert!(facts_line(1619).starts_with("| `frame_enabled`"));
     let mut failures = Vec::new();
-    for (platform, side, frame) in EXPANDER_STRUCTURE {
-        for variant in gate_variants(platform) {
+    for (preset, side, frame) in EXPANDER_STRUCTURE {
+        for variant in gate_variants(preset) {
             match variant.and_then(|(source, name, v)| resolve(v).map(|t| (source, name, t))) {
                 Ok((source, name, t)) => {
                     let got = (t.expander.arrow_side, t.expander.frame_enabled);
                     if got != (side, frame) {
                         failures.push(format!(
                             "{source} {name}: expander side and frame {got:?}, \
-                             platform-facts gives {:?} (docs/platform-facts.md:1613, :1616)",
+                             platform-facts gives {:?} (docs/platform-facts.md:1616, :1619)",
                             (side, frame)
                         ));
                     }
@@ -1249,5 +1256,110 @@ fn native_themes_state_the_expanders_structure() {
             }
         }
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// One soft field per native preset against platform-facts' row at `line`,
+/// static and live, and the unsourced presets stating none: the mismatches.
+fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
+    field: &str,
+    line: usize,
+    want: &[(NativePreset, Option<T>)],
+    resolved: fn(&ResolvedTheme) -> Option<T>,
+    stated: fn(&ThemeMode) -> Option<T>,
+) -> Vec<String> {
+    let mut failures = Vec::new();
+    for preset in NativePreset::ALL {
+        let n = want.iter().filter(|(p, _)| *p == preset).count();
+        if n != 1 {
+            failures.push(format!("{preset:?}: {n} rows for {field}"));
+        }
+    }
+    for &(preset, expected) in want {
+        for variant in gate_variants(preset) {
+            match variant.and_then(|(source, name, v)| resolve(v).map(|t| (source, name, t))) {
+                Ok((source, name, t)) => {
+                    let got = resolved(&t);
+                    if got != expected {
+                        failures.push(format!(
+                            "{source} {name}: {field} {got:?}, platform-facts gives \
+                             {expected:?} (docs/platform-facts.md:{line})"
+                        ));
+                    }
+                }
+                Err(e) => failures.push(e),
+            }
+        }
+    }
+    for name in UNSOURCED_PRESETS {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) => {
+                    if let Some(got) = stated(&v) {
+                        failures.push(format!(
+                            "{name} {mode:?}: states {field} = {got:?}, with no source"
+                        ));
+                    }
+                }
+                Err(e) => failures.push(format!("{name} {mode:?}: {e}")),
+            }
+        }
+    }
+    failures
+}
+
+/// The tooltip's show delay per platform, in milliseconds, from
+/// platform-facts §2.7 (`:1264`); `None` where the cell states none.
+#[rustfmt::skip]
+const TOOLTIP_SHOW_DELAY: [(NativePreset, Option<u16>); 6] = [
+    (KdeBreeze, Some(700)),
+    (Adwaita, Some(500)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(800)),
+    (Material3, Some(0)),
+];
+
+/// The native themes state the tooltip's show delay as platform-facts gives
+/// it, static and live, and no other preset states one.
+#[test]
+fn native_themes_state_the_tooltip_show_delay() {
+    assert!(facts_line(1264).starts_with("| `show_delay`"));
+    assert!(facts_heading(1264).starts_with("### 2.7 "));
+    let failures = soft_field_failures(
+        "tooltip.show_delay_ms",
+        1264,
+        &TOOLTIP_SHOW_DELAY,
+        |t| t.tooltip.show_delay,
+        |v| v.tooltip.show_delay,
+    );
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// The dialog's entrance per platform, from platform-facts §2.22 (`:1506`);
+/// `None` where the cell states none.
+#[rustfmt::skip]
+const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>); 6] = [
+    (KdeBreeze, Some(crate::model::DialogEntranceStyle::FadeRise)),
+    (Adwaita, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+    (Material3, Some(crate::model::DialogEntranceStyle::ScaleFade)),
+];
+
+/// The native themes state the dialog's entrance as platform-facts gives it,
+/// static and live, and no other preset states one.
+#[test]
+fn native_themes_state_the_dialog_entrance() {
+    assert!(facts_line(1506).starts_with("| `entrance`"));
+    assert!(facts_heading(1506).starts_with("### 2.22 "));
+    let failures = soft_field_failures(
+        "dialog.entrance",
+        1506,
+        &DIALOG_ENTRANCE,
+        |t| t.dialog.entrance,
+        |v| v.dialog.entrance,
+    );
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

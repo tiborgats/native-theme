@@ -1,6 +1,6 @@
 //! Demo helpers the pages share.
 
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{cell::Cell, num::NonZeroU32, rc::Rc, time::Duration};
 
 use gpui::DefiniteLength;
 use gpui::{
@@ -40,9 +40,10 @@ use gpui_component::{
     date_picker::{DatePicker, DatePickerState},
     description_list::DescriptionList,
     dialog::{
-        AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter,
-        DialogTitle,
+        AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogEntrance,
+        DialogFooter, DialogTitle,
     },
+    diff::{Diff, DiffHoverHighlight, DiffState},
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
@@ -160,39 +161,50 @@ fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
 /// the application's menus (`app_menus`) where the platform has no menu bar
 /// of its own, and quitting
 /// the application from its close button: the window's title bar, where the
-/// window was granted client-side decorations (spec S8).
+/// window was granted client-side decorations (spec S8). While the window is
+/// not `active` it is refined by `geometry::title_bar_inactive` as well.
 pub(crate) fn title_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     label: impl Into<SharedString>,
     menus: &Entity<MenuBar>,
+    active: bool,
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
-    let mut bar_info = info::title_bar(cx.theme(), &label);
+    // After `geometry::title_bar`: the inactive window's fill and text,
+    // over upstream's gradient (title_bar.rs:342-346).
+    let inactive = (!active)
+        .then(|| native_geometry(cx, geometry::title_bar_inactive))
+        .flatten();
+    let mut bar_info = info::title_bar(cx.theme(), &label, inactive.is_some());
     let bar = native_info(
         TitleBar::new(),
         cx,
         geometry::title_bar,
         "title_bar",
         &mut bar_info,
-    )
-    // Linux only: upstream drops the handler on every other platform
-    // (title_bar.rs:95-104). On Windows the OS acts on the X itself; macOS
-    // draws its own controls.
-    .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
-    // Plain text, not a Label: `Label::render` sets `foreground` on its own
-    // element (label.rs:211), which would hide the title-bar font's colour
-    // `geometry::title_bar` just gave the bar.
-    .child(label)
-    .when(cfg!(not(target_os = "macos")), |bar| {
-        bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
-    });
+    );
+    if inactive.is_some() {
+        bar_info = bar_info.geometry("title_bar_inactive");
+    }
+    let bar = refined(bar, inactive.as_ref())
+        // Linux only: upstream drops the handler on every other platform
+        // (title_bar.rs:96-105). On Windows the OS acts on the X itself; macOS
+        // draws its own controls.
+        .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
+        // Plain text, not a Label: `Label::render` sets `foreground` on its own
+        // element (label.rs:211), which would hide the title-bar font's colour
+        // `geometry::title_bar` just gave the bar.
+        .child(label)
+        .when(cfg!(not(target_os = "macos")), |bar| {
+            bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
+        });
     bar.info(ui, "chrome-title-bar", bar_info)
 }
 
 /// A menu title's side and top/bottom padding where `menu.border.padding`
 /// states no side: upstream's for a title of its `AppMenuBar`, a Small
-/// compact Button (button/button.rs:672-674, `px_1p5`) given `py_0p5`
+/// compact Button (button/button.rs:683-685, `px_1p5`) given `py_0p5`
 /// (menu/app_menu_bar.rs:266).
 const MENU_TITLE_PADDING_X: Rems = rems(0.375);
 const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
@@ -200,13 +212,13 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// A menu row's side padding where `menu.border.padding` states no side,
 /// and its height where neither `menu.row_height` nor a vertical padding
 /// side is stated: upstream's `PopupMenu` row at the default Size
-/// (menu/popup_menu.rs:1216, `INNER_PADDING`; :1221, the item height).
+/// (menu/popup_menu.rs:1226, `INNER_PADDING`; :1231, the item height).
 const MENU_ROW_PADDING_X: Pixels = px(8.);
 const MENU_ROW_HEIGHT: Pixels = px(26.);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
-/// between a row's label and its shortcut (menu/popup_menu.rs:1487-1489,
-/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1325, `gap_3`); the model states
+/// between a row's label and its shortcut (menu/popup_menu.rs:1506-1508,
+/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1344, `gap_3`); the model states
 /// none of them.
 const MENU_POPUP_PADDING: Rems = rems(0.25);
 const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
@@ -214,7 +226,7 @@ const MENU_POPUP_MIN_WIDTH: Rems = rems(8.);
 const MENU_SHORTCUT_GAP: Rems = rems(0.75);
 
 /// A menu separator's thickness without a native theme: upstream's
-/// `PopupMenu` separator (menu/popup_menu.rs:1256, `border_b(px(2.))`).
+/// `PopupMenu` separator (menu/popup_menu.rs:1275, `border_b(px(2.))`).
 /// With one, it is `separator.line_width`.
 const MENU_SEPARATOR: Pixels = px(2.);
 
@@ -222,7 +234,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.7.1 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.7.3 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -740,7 +752,7 @@ const MENU_TITLES: [&str; 4] = [
 
 impl Render for MenuBar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let native = cx.native_theme().and_then(|nt| nt.native(cx));
+        let native = cx.native();
         let look = native.as_ref().map(MenuLook::of);
         let open = self.open;
         let menus = app_menu_rows();
@@ -807,7 +819,7 @@ fn app_menus(
     host: info::MenuHost,
     menus: &Entity<MenuBar>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let menus_info = info::app_menus(cx.theme(), host, native.as_ref().map(|n| n.resolved));
     div()
         .child(menus.clone())
@@ -965,7 +977,7 @@ pub(crate) fn status_bar(
     widget_gap: Option<Pixels>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut bar_info = info::status_bar(cx.theme(), styled);
     let text_line = native_value(cx, |n| line_height_of(&n, &n.resolved.status_bar.font));
     // Its top edge `status_bar.border.line_width` thick, over upstream's
@@ -1030,7 +1042,7 @@ pub(crate) fn preset_combobox(
     cx: &App,
     state: &Entity<ComboboxState<PresetDelegate>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut combobox_info = info::preset_combobox(cx.theme(), native.as_ref().map(|n| n.resolved));
     let combobox = native_info(
         Combobox::new(state)
@@ -1055,7 +1067,7 @@ pub(crate) fn color_mode_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::color_mode_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
@@ -1077,7 +1089,7 @@ pub(crate) fn icon_set_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::icon_set_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
@@ -1117,7 +1129,7 @@ pub(crate) struct ToolbarButton<'a> {
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
-/// (button/button.rs:615-618, 725-729), and the size an `Icon` is given last
+/// (button/button.rs:626-629, 736-740), and the size an `Icon` is given last
 /// wins over its style (icon.rs:187-193).
 pub(crate) fn toolbar_button(
     ui: &Entity<InfoRegistry>,
@@ -1134,7 +1146,8 @@ pub(crate) fn toolbar_button(
         about,
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
-    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled);
+    let delay = tooltip_delay(cx);
+    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled, delay);
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -1161,6 +1174,7 @@ pub(crate) fn toolbar_button(
         button_info,
     )
     .tooltip(tip)
+    .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// One ghost icon Button of the Buttons page's component `Toolbar`.
@@ -1176,7 +1190,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.7.1's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.7.3's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap and padding sides the theme states, and no fallback or edge,
 /// since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
@@ -1253,6 +1267,14 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
     });
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+/// The installed theme's `tooltip.show_delay_ms`, for GPUI's own
+/// `.tooltip()` on an element, which waits GPUI's 500 ms unless the element
+/// is given another (gpui-pre `elements/div.rs:53, 1708`); `None` where the
+/// theme states none or no native theme is installed.
+pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
+    native_value(cx, |n| native_theme_gpui::tooltip_show_delay(n.resolved)).flatten()
 }
 
 /// A tooltip reading `text` and the key binding of `action`, built by the
@@ -1334,7 +1356,9 @@ pub(crate) fn panel_toggle(
         state,
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
-    let mut button_info = info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled);
+    let delay = tooltip_delay(cx);
+    let mut button_info =
+        info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled, delay);
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -1363,6 +1387,7 @@ pub(crate) fn panel_toggle(
         button_info,
     )
     .tooltip(tip)
+    .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// The gap between the theme settings' rows, and between each row's label
@@ -1416,7 +1441,7 @@ fn sidebar_label(
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let text_div = match &native {
         Some(n) => font_text(n, &n.resolved.sidebar.font, text),
         None => div().text_sm().child(text),
@@ -1664,11 +1689,11 @@ pub(crate) enum TabBarKind {
 /// the index of the tab clicked.
 ///
 /// Upstream's Underline bar pads neither itself nor its tabs (tab/tab.rs:
-/// 79-81, tab/tab_bar.rs:393-402), leaving the inset to its container, so
+/// 79-81, tab/tab_bar.rs:395-404), leaving the inset to its container, so
 /// the bar takes `container_margin`, the installed layout's
 /// `geometry::container_margin`, on its left and right, as the side panel's
 /// settings and the inspector's content do. Its bottom rule is drawn by an
-/// absolute child at the bar's full size (tab_bar.rs:497-507), so it still
+/// absolute child at the bar's full size (tab_bar.rs:538-548), so it still
 /// runs from edge to edge. Where the layout states no margin, upstream's
 /// none stands.
 #[allow(clippy::too_many_arguments)]
@@ -1699,7 +1724,7 @@ pub(crate) fn tab_bar(
             info::page_tab_bar(cx.theme()),
         ),
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
@@ -1829,7 +1854,8 @@ fn native_tab_bar(
         TabBarKind::Pages => ("page-tabs", "chrome-page-tabs", true, NATIVE_TAB_BAR_MENU),
     };
     let mut bar_info = info::layout::native_tab_row(n.resolved, variant)
-        .instance("padding", info::tab_bar_padding(container_margin));
+        .instance("padding", info::tab_bar_padding(container_margin))
+        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled just into view (widgets::TabBar, ScrollHandle::scroll_to_item)");
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
     }
@@ -1955,7 +1981,7 @@ pub(crate) fn tab_row(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
         let tabs: Vec<(&'static str, &'static str)> =
@@ -2030,7 +2056,7 @@ pub(crate) fn segmented(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let control_info = info::layout::segmented(
         cx.theme(),
         labels,
@@ -2160,10 +2186,10 @@ pub(crate) fn resize_handles(
         move |handle: &ResizeHandleContext, _window: &mut Window, cx: &mut App| {
             // One call per handle, in panel order, every frame: each panel
             // after the first builds the handle on its left edge as it
-            // renders (resizable/panel.rs:363-368), and each handle calls
+            // renders (resizable/panel.rs:374-379), and each handle calls
             // this once as it lays itself out (resizable/resize_handle.rs:
             // 194-203). A panel given `visible(false)` returns before it
-            // builds its handle (resizable/panel.rs:302) and would shift the
+            // builds its handle (resizable/panel.rs:307) and would shift the
             // count, so an absent panel is left out of the group instead.
             let ix = next.get();
             next.set(ix + 1);
@@ -2186,7 +2212,7 @@ pub(crate) fn resize_handles(
             // lays out no wider than HANDLE_SIZE; `splitter.hover_color`
             // under the pointer, through the group upstream names the
             // handle (resizable/resize_handle.rs, `ResizeHandle`).
-            let native = cx.native_theme().and_then(|nt| nt.native(cx));
+            let native = cx.native();
             let splitter = native.as_ref().map(|n| {
                 let s = &n.resolved.splitter;
                 (px(s.divider_width), info::stated(s.hover_color))
@@ -2235,10 +2261,25 @@ pub(crate) fn resize_handles(
 // Overlays (spec §2.8) and the theme-error Alert (spec §2.5)
 // ---------------------------------------------------------------------------
 
-/// `dialog` refined by `geometry::dialog` and capped at
-/// `geometry::dialog_max_width`, each recorded in `info` where it applies.
+/// The entrance `geometry::dialog_entrance` gives the installed theme's
+/// `dialog.entrance`, for every Dialog and AlertDialog the showcase opens;
+/// `None` where the theme states none, and the dialog keeps upstream's.
+fn themed_entrance(cx: &App) -> Option<DialogEntrance> {
+    native_value(cx, geometry::dialog_entrance).flatten()
+}
+
+/// `dialog` refined by `geometry::dialog`, capped at
+/// `geometry::dialog_max_width` and entering as `geometry::dialog_entrance`
+/// gives, each recorded in `info` where it applies.
 fn dialog_frame(dialog: Dialog, cx: &App, info: &mut WidgetInfo) -> Dialog {
     let dialog = native_info(dialog, cx, geometry::dialog, "dialog", info);
+    let dialog = match themed_entrance(cx) {
+        Some(entrance) => {
+            *info = std::mem::take(info).geometry("dialog_entrance");
+            dialog.entrance(entrance)
+        }
+        None => dialog,
+    };
     match native_value(cx, geometry::dialog_max_width) {
         Some(width) => {
             *info = std::mem::take(info).geometry("dialog_max_width");
@@ -2322,7 +2363,12 @@ pub(crate) fn command_palette(
     set: SharedString,
 ) -> Dialog {
     let groups = palette_groups(groups);
-    let mut dialog_info = info::palette_dialog(cx.theme(), cx.reduce_motion());
+    let mut dialog_info = info::palette_dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+        cx.native().is_some(),
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
@@ -2357,7 +2403,13 @@ pub(crate) fn about(
     compatibility: &'static str,
     gap: Option<Pixels>,
 ) -> Dialog {
-    let mut dialog_info = info::about_dialog(cx.theme(), gap.is_some(), cx.reduce_motion());
+    let mut dialog_info = info::about_dialog(
+        cx.theme(),
+        gap.is_some(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+        cx.native().is_some(),
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -2851,7 +2903,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         icon,
     } = spec;
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let drawn = icon.as_ref().and_then(SampleIcon::icon);
     let mut button_info =
         info::buttons::button(cx.theme(), kind, state, drawn.is_some(), None, styled);
@@ -2874,8 +2926,8 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         &mut button_info,
     );
     // The platform's disabled pair, which upstream's disabled style replays
-    // the caller's refinement over (button/button.rs:797-803); a Button that
-    // is not disabled must not take it, since it lands at rest too (:733).
+    // the caller's refinement over (button/button.rs:808-814); a Button that
+    // is not disabled must not take it, since it lands at rest too (:744).
     let disabled_pair = (state == ButtonState::Disabled)
         .then(|| native_geometry(cx, geometry::button_disabled))
         .flatten();
@@ -2930,7 +2982,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
 
 /// A Default Button at `size`, left without `geometry::button`: this row
 /// shows upstream's own size scale, which the refinement would overrule
-/// (button/button.rs:669-684, then :733).
+/// (button/button.rs:680-695, then :744).
 pub(crate) fn sized_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2973,7 +3025,7 @@ pub(crate) fn button_group(
 
 /// A `DropdownButton` whose Button, of `kind`, reads `label`, opening
 /// `menu`. Neither half takes `geometry::button`: the DropdownButton joins
-/// their corners itself (button/dropdown_button.rs:174-207).
+/// their corners itself (button/dropdown_button.rs:187-224).
 pub(crate) fn dropdown_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3013,7 +3065,7 @@ pub(crate) fn toggle(
     on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut toggle_info = info::buttons::toggle(
         cx.theme(),
         icon.shown(),
@@ -3040,7 +3092,7 @@ pub(crate) fn toggle_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut group_info = info::buttons::toggle_group(cx.theme(), styled);
     if styled {
         group_info = group_info.geometry("toggle");
@@ -3121,7 +3173,7 @@ fn text_field(
     tokens: bool,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut input_info = info::inputs::input(cx.theme(), field, styled);
     if disabled {
         input_info = input_info.variant("disabled");
@@ -3140,7 +3192,7 @@ fn text_field(
         InputField::Refined => {
             let input = native_info(input, cx, geometry::input, "input", &mut input_info);
             // The platform's fill for the state the field is built in, after
-            // upstream's (input/input.rs:785, then :793).
+            // upstream's (input/input.rs:795, then :803).
             let fill = native_geometry(cx, |n| geometry::input_fill(n, disabled));
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
@@ -3149,6 +3201,12 @@ fn text_field(
             if let (true, Some(r), Some(fill)) = (disabled, resolved, &fill) {
                 input_info = info::inputs::disabled_input_surface(input_info);
                 let none = cx.theme().transparent;
+                // The fill goes under the field; the disabled text colour
+                // stays on it, where the editor reads it.
+                let input = match fill.text.color {
+                    Some(ink) => input.text_color(ink),
+                    None => input,
+                };
                 return faded_surface(&r.input.border, fill, input.bg(none).border_color(none))
                     .w(width)
                     .info(ui, id, input_info)
@@ -3166,7 +3224,7 @@ fn text_field(
             input
         }
         // Through the caller's style, which Input applies after its own
-        // height and line height (input/input.rs:773-777, then :793).
+        // height and line height (input/input.rs:783-787, then :803).
         InputField::HeightOnly => native_info(
             input,
             cx,
@@ -3190,9 +3248,9 @@ const INPUT_GROUP: &str = "input-surface";
 /// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
 /// `Input` is `Styled` only (input/input.rs:529) and its root's one state is
-/// `focused` (:747-754), so it has no hover edge of its own: the field is
+/// `focused` (:757-764), so it has no hover edge of its own: the field is
 /// left without a fill or an edge colour (its caller's style lands after its
-/// own, :793) and an absolute box under it, the field's size, paints them.
+/// own, :803) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
     r: &native_theme_gpui::ResolvedTheme,
@@ -3226,7 +3284,7 @@ fn input_surface(
 /// unfaded.
 ///
 /// The fill is a box of its own inside the line, not under it: gpui fades
-/// each primitive it paints on its own (gpui-pre src/window.rs:4553-4561,
+/// each primitive it paints on its own (gpui-pre src/window.rs:4687-4695,
 /// `paint_quad`), and a quad draws its border over its own background
 /// (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`), so a faded control whose
 /// fill lay under its line would show the fill through the faded line,
@@ -3392,7 +3450,7 @@ pub(crate) fn input_groups(
     );
     frame.padding = StyleRefinement::default().padding;
     // `InputGroupButton::new` is a ghost button that upstream repaints,
-    // inside a group, with a hover of `theme.muted` (`input/group.rs:544-583`):
+    // inside a group, with a hover of `theme.muted` (`input/group.rs:551-590`):
     // a grey that under Breeze is barely distinguishable from the field,
     // while every button around it hovers blue. A custom variant makes
     // upstream skip that repaint.
@@ -3479,7 +3537,7 @@ pub(crate) fn number_input(
     width: Pixels,
 ) -> Stateful<Div> {
     let mut number_info = info::inputs::number_input(cx.theme());
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let Some(n) = native else {
         return NumberInput::new(state)
             .placeholder("Enter a number")
@@ -3616,7 +3674,7 @@ const RADIO_GROUP_GAP: Rems = rems(0.75);
 /// `RadioGroup::child` takes `impl Into<Radio>`, so a `&str` child would
 /// build a `Radio` with no refinement; built here instead, each row carries
 /// the platform's label gap and font. The group overwrites the id
-/// (`radio.rs:403`), not the style.
+/// (`radio.rs:411`), not the style.
 pub(crate) fn radio_group(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3774,7 +3832,7 @@ pub(crate) fn switch(
             .info(ui, id, switch_info)
             .debug_selector(move || id.into());
     }
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let resolved = native.as_ref().map(|n| n.resolved);
     let checked_background = native_color(cx, |n| n.resolved.switch.checked_background);
     Switch::new(id)
@@ -3791,27 +3849,45 @@ pub(crate) fn switch(
         .debug_selector(move || id.into())
 }
 
-/// A `Slider` over `state`, `width` wide.
+/// A `Slider` over `state` along `axis`, `length` long: its width, or a
+/// vertical one's height. A range state draws a thumb at each end.
 pub(crate) fn slider(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     state: &Entity<SliderState>,
-    width: Pixels,
+    axis: Axis,
+    length: Pixels,
 ) -> Stateful<Div> {
+    let vertical = axis == Axis::Vertical;
+    let range = state.read(cx).value().is_range();
     #[cfg(feature = "widgets")]
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::Slider::new(state)
-            .w(width)
+            .axis(axis)
+            .map(|slider| {
+                if vertical {
+                    slider.h(length)
+                } else {
+                    slider.w(length)
+                }
+            })
             .when_some(elements::part_observer(ui, id), |slider, observer| {
                 slider.on_part_bounds(observer)
             })
-            .info(ui, id, info::inputs::native_slider(r))
+            .info(ui, id, info::inputs::native_slider(r, vertical, range))
             .debug_selector(move || id.into());
     }
     Slider::new(state)
-        .w(width)
-        .info(ui, id, info::inputs::slider(cx.theme()))
+        .when(vertical, |slider| slider.vertical())
+        .map(|slider| {
+            if vertical {
+                slider.h(length)
+            } else {
+                slider.w(length)
+            }
+        })
+        .info(ui, id, info::inputs::slider(cx.theme(), vertical, range))
         .debug_selector(move || id.into())
 }
 
@@ -3865,7 +3941,7 @@ pub(crate) fn select(
     placeholder: &'static str,
     width: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state).placeholder(placeholder).w(width),
@@ -3882,10 +3958,11 @@ pub(crate) fn select(
 
 /// A drop-down trigger's edge, `combo_box.border.color`, and no fill of its
 /// own, for a `Select` or a `Combobox` that is not disabled, or `None`
-/// before `apply` ran: [`combo_surface`] paints the fill under it. The
-/// trigger paints `input_background()` and `input` first and refines itself
-/// with the caller's style after (select.rs, `Select::render`; combobox.rs,
-/// `Combobox::render`), so these land over them.
+/// before `apply` ran: [`combo_surface`] paints `geometry::combo_box_fill`'s
+/// fill under it. The trigger paints `input_background()` and `input` first
+/// and refines itself with the caller's style after (select.rs,
+/// `Select::render`; combobox.rs, `Combobox::render`), so these land over
+/// them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
     // with (select.rs:542).
@@ -3899,8 +3976,10 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 }
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:
-/// `combo_box.background_color`, and under the pointer
-/// `combo_box.hover_background` over it, rounded as the trigger is
+/// `geometry::combo_box_fill`'s fill, `combo_box.background_color`, moved
+/// under the trigger so that under the pointer `combo_box.hover_background`
+/// can be laid over it as the connector lays its layers
+/// (`native_theme_gpui::layer_over`), rounded as the trigger is
 /// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
 /// sets no hover (select.rs:535-553; combobox.rs:981-998) and neither
 /// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:795), so the
@@ -3908,18 +3987,18 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
     let look = native_value(cx, |n| {
         let c = &n.resolved.combo_box;
-        let fill = info::stated(c.background_color);
         (
-            fill,
-            c.hover_background
-                .map(|hover| fill.blend(info::stated(hover))),
+            geometry::combo_box_fill(n, false).background,
+            c.hover_background.map(|hover| {
+                native_theme_gpui::layer_over(info::stated(c.background_color), info::stated(hover))
+            }),
             px(c.border.corner_radius.max(0.0)),
         )
     });
     match look {
         Some((fill, hover, radius)) => div()
             .rounded(radius)
-            .bg(fill)
+            .when_some(fill, |surface, fill| surface.bg(fill))
             .when_some(hover, |surface, hover| {
                 surface.hover(move |style| style.bg(hover))
             })
@@ -4035,9 +4114,10 @@ pub(crate) fn description_list(
         )
 }
 
-/// The striped, bordered `DataTable` over `state`, `height` tall. Its rows
-/// report themselves through the delegate, which builds them with
-/// `data_table_header` and `data_table_row`.
+/// The striped, bordered `DataTable` over `state`, `height` tall, its header
+/// row `geometry::list_header_height` tall where the theme states one and
+/// its body rows' height otherwise. Its rows report themselves through the
+/// delegate, which builds them with `data_table_header` and `data_table_row`.
 pub(crate) fn data_table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -4050,15 +4130,17 @@ pub(crate) fn data_table(
         (delegate.rows.len(), delegate.columns.len())
     };
     // What `native_value` and `.native` apply the builders under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
+    let header = native_value(cx, geometry::list_header_height).flatten();
     DataTable::new(state)
         .with_size(native_value(cx, geometry::data_table_size).unwrap_or_default())
+        .when_some(header, DataTable::header_row_height)
         .stripe(true)
         .bordered(true)
         .info(
             ui,
             id,
-            info::data::data_table(cx.theme(), rows, columns, styled),
+            info::data::data_table(cx.theme(), rows, columns, styled, header.is_some()),
         )
         .native(cx, geometry::table)
         .h(height)
@@ -4081,14 +4163,14 @@ pub(crate) enum DataTableRow {
 /// reported it to the delegate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct BodyRow {
-    /// An odd row of a striped table (table/state.rs:2009).
+    /// An odd row of a striped table (table/state.rs:2042).
     pub striped: bool,
     /// The last of the delegate's rows.
     pub last: bool,
     /// The table's selected row.
     pub selected: bool,
     /// The table is selecting rows, so it paints its selected row as one
-    /// (table/state.rs:497, 2243); a column selection keeps the selected row but
+    /// (table/state.rs:498, 2277); a column selection keeps the selected row but
     /// not its fill.
     pub selection_shown: bool,
     pub right_clicked: bool,
@@ -4279,7 +4361,7 @@ pub(crate) fn list(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut list_info = info::data::list(
         state.read(cx).delegate().items.len(),
         native.as_ref().map(|n| n.resolved),
@@ -4397,7 +4479,7 @@ impl RenderOnce for ListRow {
         let id = format!("{}-{}", self.prefix, self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
         // What `native_info` applies the builder under.
-        let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+        let styled = cx.native().is_some();
         let mut row_info = info::data::list_row(cx.theme(), &self.label, state, styled);
         // A selected row's text in `list.selection_text_color`, over the
         // list font's colour `geometry::list_item` gives every row: the row
@@ -4405,13 +4487,10 @@ impl RenderOnce for ListRow {
         // (list/list_item.rs, `RenderOnce for ListItem`).
         let selected_text = self
             .selected
-            .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+            .then(|| native_geometry(cx, geometry::list_item_selected))
             .flatten();
         if selected_text.is_some() {
-            row_info = row_info.config(
-                "selected text",
-                "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
-            );
+            row_info = row_info.geometry("list_item_selected");
         }
         // A row under the pointer lettered in `list.hover_text_color`: the
         // ListItem's own hover sets its fill alone, inside render
@@ -4434,7 +4513,7 @@ impl RenderOnce for ListRow {
             "list_item",
             &mut row_info,
         )
-        .when_some(selected_text, |item, text| item.text_color(text))
+        .map(|item| refined(item, selected_text.as_ref()))
         // Clear of the List's scrollbar where the theme's is not an overlay:
         // the List draws its bar over its rows (list/list.rs, `List::render`),
         // where a scrollbar that is not an overlay takes the room beside them
@@ -4470,7 +4549,7 @@ pub(crate) fn tree(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut tree_info = info::data::tree(native.as_ref().map(|n| n.resolved));
     let fill = native_color(cx, |n| n.resolved.list.background_color);
     let rows = ui.clone();
@@ -4513,17 +4592,14 @@ fn tree_row(
 ) -> ListItem {
     let id = format!("data-tree-row-{ix}");
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
     // As a List row's: a selected row's text in `list.selection_text_color`.
     let selected_text = selected
-        .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+        .then(|| native_geometry(cx, geometry::list_item_selected))
         .flatten();
     if selected_text.is_some() {
-        row_info = row_info.config(
-            "selected text",
-            "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
-        );
+        row_info = row_info.geometry("list_item_selected");
     }
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
@@ -4532,7 +4608,7 @@ fn tree_row(
         "list_item",
         &mut row_info,
     )
-    .when_some(selected_text, |item, text| item.text_color(text));
+    .map(|item| refined(item, selected_text.as_ref()));
     let ui = ui.clone();
     // Plain text, as the List's rows.
     item.child(label)
@@ -4715,7 +4791,7 @@ pub(crate) fn action_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -4845,29 +4921,37 @@ pub(crate) fn severity_alert(
         .debug_selector(move || id.into())
 }
 
-/// A `Progress` bar at `value` percent, refined by `geometry::progress`;
-/// `label` names it in its info, as the page's label beside it does.
+/// A `Progress` bar at `value` percent, or loading (indeterminate) where
+/// `value` is `None`, refined by `geometry::progress`; `label` names it in
+/// its info, as the page's label beside it does.
 pub(crate) fn progress(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     label: &'static str,
-    value: f32,
+    value: Option<f32>,
 ) -> Stateful<Div> {
     #[cfg(feature = "widgets")]
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::ProgressBar::new(id)
-            .value(value)
+            .value(value.unwrap_or_default())
+            .loading(value.is_none())
             .accessibility_label(label)
             .when_some(elements::part_observer(ui, id), |bar, observer| {
                 bar.on_part_bounds(observer)
             })
-            .info(ui, id, info::feedback::native_progress(r, label, value))
+            .info(
+                ui,
+                id,
+                info::feedback::native_progress(r, label, value, cx.reduce_motion()),
+            )
             .debug_selector(move || id.into());
     }
     let mut bar_info = info::feedback::progress(cx.theme(), label, value, cx.reduce_motion());
     native_info(
-        Progress::new(id).value(value),
+        Progress::new(id)
+            .value(value.unwrap_or_default())
+            .loading(value.is_none()),
         cx,
         geometry::progress,
         "progress",
@@ -4960,13 +5044,14 @@ impl SpinnerKind {
 /// page's icons come: their set (`None` for gpui-component's own icons), the
 /// freedesktop theme they load from (`None`: the system's), and whether the
 /// set has an indicator (the Icons page's animated icons, loaded the same
-/// way).
+/// way) and whether it is one icon that spins rather than frames.
 #[derive(Clone, Default)]
 #[cfg_attr(not(feature = "widgets"), allow(dead_code))]
 pub(crate) struct SpinnerIcons {
     pub(crate) set: Option<IconSet>,
     pub(crate) theme: Option<SharedString>,
     pub(crate) indicator: bool,
+    pub(crate) spins: bool,
 }
 
 /// A `Spinner` of `kind`; the theme-drawn one draws `icons`' indicator.
@@ -5002,7 +5087,7 @@ pub(crate) fn spinner(
             None => (kind.size(), false),
         },
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let spinner_info = info::feedback::spinner(
         cx.theme(),
         kind,
@@ -5310,7 +5395,15 @@ pub(crate) fn tooltip_button(
     label: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, label, text);
+    let mut tooltip_info = info::feedback::tooltip(
+        cx.theme(),
+        false,
+        false,
+        tooltip_delay(cx),
+        gpui_base::TooltipDefaults::global(cx),
+        label,
+        text,
+    );
     let button = labelled(
         ui,
         cx,
@@ -5332,7 +5425,7 @@ pub(crate) fn tooltip_button(
 /// tooltip the application builds itself, reading `text`.
 ///
 /// `Button::tooltip` takes a string and builds the tooltip itself
-/// (`button/button.rs:403`), so the only way to a refined one is to build
+/// (`button/button.rs:405`), so the only way to a refined one is to build
 /// it: that is what `geometry::tooltip` documents, and the one place the
 /// platform's tooltip padding, radius and text colour reach the popup. The
 /// width is the content element's, through `Tooltip::element`: on the
@@ -5347,7 +5440,16 @@ pub(crate) fn built_tooltip_button(
 ) -> Stateful<Div> {
     let style = native_geometry(cx, geometry::tooltip);
     let content = native_geometry(cx, geometry::tooltip_content);
-    let mut tooltip_info = info::feedback::tooltip(cx.theme(), true, style.is_some(), label, text);
+    let delay = tooltip_delay(cx);
+    let mut tooltip_info = info::feedback::tooltip(
+        cx.theme(),
+        true,
+        style.is_some(),
+        delay,
+        gpui_base::TooltipDefaults::global(cx),
+        label,
+        text,
+    );
     let button = native_info(
         Button::new(id),
         cx,
@@ -5372,6 +5474,7 @@ pub(crate) fn built_tooltip_button(
             )
             .build(window, cx)
         })
+        .when_some(delay, |button, delay| button.tooltip_show_delay(delay))
 }
 
 /// A Default Button reading `label`, refined by `geometry::button`, whose
@@ -5800,6 +5903,23 @@ pub(crate) fn markdown(
         .debug_selector(move || id.into())
 }
 
+/// A `Diff` over `state`, `height` tall, its hovered line and line number
+/// highlighted. `Diff` is `Styled` and refines its frame last, so the height
+/// stands.
+pub(crate) fn diff(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<DiffState>,
+    height: Pixels,
+) -> Stateful<Div> {
+    Diff::new(state)
+        .hover_highlight(DiffHoverHighlight::Both)
+        .h(height)
+        .info(ui, id, info::typography::diff(cx.theme()))
+        .debug_selector(move || id.into())
+}
+
 // ---------------------------------------------------------------------------
 // The Layout page
 // ---------------------------------------------------------------------------
@@ -5917,7 +6037,7 @@ pub(crate) fn separator(
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
         SeparatorKind::Vertical => Separator::vertical(),
     };
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let line = native_color(cx, |n| n.resolved.separator.line_color);
     separator
         .when_some(line, |separator, line| separator.color(line))
@@ -5978,7 +6098,7 @@ pub(crate) fn group_box(
     about: &'static str,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut box_info =
         info::layout::group_box(cx.theme(), kind, styled, title).instance("content", about);
     // `GroupBox::content_style` takes a refinement rather than being one.
@@ -6012,7 +6132,7 @@ pub(crate) fn card(
     width: Pixels,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let mut card_info = info::layout::card(
         cx.theme(),
         native.as_ref().map(|n| n.resolved),
@@ -6086,7 +6206,7 @@ pub(crate) fn scroll_area(
     items: usize,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
     let viewport = native_info(
         div()
@@ -6132,7 +6252,12 @@ pub(crate) fn accordion(
     id: &'static str,
     items: [(&'static str, &'static str, SharedString); 3],
 ) -> Stateful<Div> {
-    let mut accordion_info = info::layout::accordion(cx.theme(), cx.reduce_motion(), items.len());
+    let mut accordion_info = info::layout::accordion(
+        cx.theme(),
+        cx.reduce_motion(),
+        items.len(),
+        cx.native().is_some(),
+    );
     // `AccordionItem::title_style` takes a refinement rather than being one.
     let title_style = native_info(
         StyleRefinement::default(),
@@ -6141,17 +6266,35 @@ pub(crate) fn accordion(
         "accordion_title",
         &mut accordion_info,
     );
+    let edge = native_geometry(cx, geometry::accordion);
+    let hover = native_geometry(cx, geometry::accordion_hover);
+    if hover.is_some() {
+        accordion_info = accordion_info.geometry("accordion_hover");
+    }
     items
         .into_iter()
         .enumerate()
         .fold(
-            Accordion::new(id),
+            // The edge colour lands on the Accordion's card and on each
+            // item's line (accordion.rs:108-114, :380-384).
+            native_info(
+                Accordion::new(id),
+                cx,
+                geometry::accordion,
+                "accordion",
+                &mut accordion_info,
+            ),
             |accordion, (ix, (title, answer_id, answer))| {
                 accordion.item(|item| {
-                    item.title_style(title_style.clone())
+                    let item = refined(item, edge.as_ref())
+                        .title_style(title_style.clone())
                         .title(title)
                         .open(ix == 0)
-                        .child(label(ui, cx, answer_id, answer))
+                        .child(label(ui, cx, answer_id, answer));
+                    match hover.clone() {
+                        Some(hover) => item.hover(move |_| hover),
+                        None => item,
+                    }
                 })
             },
         )
@@ -6184,7 +6327,7 @@ pub(crate) fn expander(
     gap: Option<Pixels>,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     if let Some(n) = &native {
         let spec = ExpanderSpec {
             id,
@@ -6716,7 +6859,7 @@ fn field_input(
     state: &Entity<InputState>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut input_info = info::inputs::input(cx.theme(), InputField::Refined, styled);
     native_info(
         Input::new(state),
@@ -6901,7 +7044,7 @@ pub(crate) fn overlay_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::overlays::trigger(cx.theme(), overlay, styled);
     let button = labelled(
         ui,
@@ -6935,8 +7078,14 @@ pub(crate) fn confirm_dialog(
     gap: Option<Pixels>,
     icon: &SampleIcon,
 ) -> Dialog {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut dialog_info = info::overlays::dialog(cx.theme(), cx.reduce_motion(), styled, icon);
+    let styled = cx.native().is_some();
+    let mut dialog_info = info::overlays::dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        themed_entrance(cx).is_some(),
+        styled,
+        icon,
+    );
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -7017,8 +7166,9 @@ pub(crate) fn confirm_dialog(
         })
 }
 
-/// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`
-/// and capped at `geometry::dialog_max_width`, with `icon`, of the chosen
+/// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`,
+/// capped at `geometry::dialog_max_width` and entering as
+/// `geometry::dialog_entrance` gives, with `icon`, of the chosen
 /// icon theme -- none where that theme has none -- a title, a description,
 /// and Keep and Discard buttons. It reports itself on the icon, the title
 /// and the description, the parts the showcase builds.
@@ -7028,11 +7178,25 @@ pub(crate) fn alert_dialog(
     alert: AlertDialog,
     icon: &SampleIcon,
 ) -> AlertDialog {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled, icon);
+    let styled = cx.native().is_some();
+    let entrance = themed_entrance(cx);
+    let mut alert_info = info::overlays::alert_dialog(
+        cx.theme(),
+        cx.reduce_motion(),
+        entrance.is_some(),
+        styled,
+        icon,
+    );
     let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
+    let alert = match entrance {
+        Some(entrance) => {
+            alert_info = alert_info.geometry("dialog_entrance");
+            alert.entrance(entrance)
+        }
+        None => alert,
+    };
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
-    // surface through the refinement (dialog/dialog.rs:677).
+    // surface through the refinement (dialog/dialog.rs:728).
     let alert = match native_value(cx, geometry::dialog_max_width) {
         Some(width) => {
             alert_info = alert_info.geometry("dialog_max_width");
@@ -7107,7 +7271,7 @@ pub(crate) fn popover(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut popover_info = info::overlays::popover(cx.theme(), styled);
     let trigger = labelled(
         ui,
@@ -7172,7 +7336,7 @@ pub(crate) fn hover_card(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut card_info = info::overlays::hover_card(cx.theme(), styled);
     let trigger = labelled(
         ui,
@@ -7697,7 +7861,7 @@ pub(crate) enum AnimatedKind {
     /// Frame by frame: `count` frames, `duration_ms` each.
     Frames { count: usize, duration_ms: u32 },
     /// One SVG turned a full circle every `duration_ms`.
-    Spin { duration_ms: u32 },
+    Spin { duration_ms: NonZeroU32 },
 }
 
 /// An animated icon, with what the page draws it from.
@@ -7709,7 +7873,10 @@ pub(crate) enum AnimatedArt<'a> {
         duration_ms: u32,
     },
     /// The SVG to turn.
-    Spin { svg: &'a [u8], duration_ms: u32 },
+    Spin {
+        svg: &'a [u8],
+        duration_ms: NonZeroU32,
+    },
 }
 
 /// A card holding the animated icon `set` ships as `art`, in the
@@ -7935,7 +8102,7 @@ pub(crate) fn swatch(
 ) -> Stateful<Div> {
     let t = cx.theme();
     // What the connector writes the colours under.
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let native = cx.native();
     let value = info::theme_map::row(t, token).value;
     let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
     let label = SharedString::from(format!("{} {}", value.field, hsla_to_hex(value.value)));
@@ -8057,7 +8224,7 @@ pub(crate) fn toggle_button(
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -8102,7 +8269,7 @@ pub(crate) fn icon_button(
     drawn: &(ChromeIcon, Option<IconName>),
     listed: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let styled = cx.native().is_some();
     let icon = role_icon_of(drawn);
     let mut button_info = info::buttons::button(
         cx.theme(),
@@ -8250,6 +8417,8 @@ struct TableLine {
     font: (Pixels, FontWeight, Pixels, Hsla),
     fill: Option<Hsla>,
     closed: bool,
+    /// The row's height where it is not a body row's.
+    height: Option<Pixels>,
 }
 
 /// The Basic page's table, `width` wide across its outer border, laid out
@@ -8261,7 +8430,9 @@ struct TableLine {
 /// padded by the four `list.border.padding` sides (none on a side the theme
 /// leaves unstated) and every row `list.row_height` tall where the theme
 /// states it, else its line -- its font's size by `defaults.line_height` --
-/// and that padding; the header in `list.header_background` and
+/// and that padding, the header `list.header_height` tall where the theme
+/// states it (`geometry::list_header_height`), else as a row is; the header
+/// in `list.header_background` and
 /// `list.header_font`, the rows in `list.item_font`, the row at `selected`
 /// in `list.selection_background` and `selection_text_color`; a
 /// `list.grid_color` line `separator.line_width`
@@ -8278,7 +8449,7 @@ pub(crate) fn files_table(
     selected: usize,
     width: Pixels,
 ) -> Stateful<Div> {
-    let Some(n) = cx.native_theme().and_then(|nt| nt.native(cx)) else {
+    let Some(n) = cx.native() else {
         let [(first, _), (second, _)] = head;
         return table(ui, cx, id, "Files", [first, second], rows);
     };
@@ -8336,7 +8507,7 @@ pub(crate) fn files_table(
             h_flex()
                 .relative()
                 .w_full()
-                .h(height(line_height))
+                .h(spec.height.unwrap_or_else(|| height(line_height)))
                 .text_size(size)
                 .font_weight(weight)
                 .line_height(line_height)
@@ -8356,18 +8527,23 @@ pub(crate) fn files_table(
                 })
         };
     let [first, second] = head;
+    let header_height = geometry::list_header_height(n);
+    let header_info = info::data::table_header(t, &format!("{}, {}", first.0, second.0));
+    let header_info = if header_height.is_some() {
+        header_info.geometry("list_header_height")
+    } else {
+        header_info
+    };
     let header = row(TableLine {
         cells: [first.0, second.0],
         listed: [Some(first.1), Some(second.1)],
         font: font(&l.header_font, colour(l.header_font.color)),
         fill: Some(colour(l.header_background)),
         closed: true,
+        height: header_height,
     })
-    .info(
-        ui,
-        SharedString::from(format!("{id}-header")),
-        info::data::table_header(t, &format!("{}, {}", first.0, second.0)),
-    )
+    .info(ui, SharedString::from(format!("{id}-header")), header_info)
+    .debug_selector(move || format!("{id}-header"))
     .w_full();
     let body = rows.iter().enumerate().map(|(ix, cells)| {
         let (fill, text) = if ix == selected {
@@ -8387,6 +8563,7 @@ pub(crate) fn files_table(
             font: font(&l.item_font, text),
             fill,
             closed: false,
+            height: None,
         })
         .id(("table-row", ix))
         .when(ix != selected, |row| {

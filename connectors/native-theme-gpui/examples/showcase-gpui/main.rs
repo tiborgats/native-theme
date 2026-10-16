@@ -12,6 +12,13 @@
 //! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
 //!
+//! To have it follow the OS theme's changes while its colour mode is System,
+//! add the `watch` feature, which `native_theme_gpui::on_theme_change` needs:
+//!
+//! ```sh
+//! cargo run -p native-theme-gpui --example showcase-gpui --features watch
+//! ```
+//!
 //! # What to look for
 //!
 //! - The side panel's theme settings switch theme presets, color modes and
@@ -39,6 +46,10 @@
 //! helpers, icon loading and delegates the pages share. Within a file,
 //! section-divider blocks (`// ─────`) separate one widget category, page or
 //! view from the next.
+
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
 
 mod app;
 mod chrome;
@@ -731,7 +742,7 @@ const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 /// `--pointer` and `--press`: hands the window a pointer move to `at` every
 /// `HELD_POINTER_PERIOD`, and after `HELD_PRESS_AFTER` a press of the primary
 /// button there when `press`, through `Window::dispatch_event`, the entry the
-/// platform's own input takes (gpui-pre 0.3.8 `src/window.rs`), until the
+/// platform's own input takes (gpui-pre 0.3.9 `src/window.rs`), until the
 /// window closes.
 fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bool) {
     let position = gpui::point(px(f32::from(at.0)), px(f32::from(at.1)));
@@ -1452,7 +1463,7 @@ fn main() {
             app::init(cx);
 
             // Centred on whole pixels: `Bounds::centered` centres on the display's visible
-            // bounds (gpui-pre 0.3.8 `src/geometry.rs:740-749`), which exclude the macOS menu
+            // bounds (gpui-pre 0.3.9 `src/geometry.rs:740-749`), which exclude the macOS menu
             // bar, so the origin can fall on a half pixel, and AppKit then grows the window to
             // whole pixels -- the 720 px content came out 721 px on the macOS runner
             // (screenshots run 36352884582).
@@ -1509,12 +1520,12 @@ fn main() {
                 #[cfg(target_os = "macos")]
                 {
                     // Whether gpui's font names hold the stated monospace
-                    // family, "SF Mono" under macos-sonoma: UNVERIFIED (egui
+                    // family, "SF Mono" under macos-monterey: UNVERIFIED (egui
                     // spec §15). Printed for Task 39's log, never asserted.
                     // In the application because a `#[gpui::test]` cannot
                     // ask: `TestAppContext::build` gives gpui's
-                    // `NoopTextSystem` (gpui-pre 0.3.8
-                    // src/app/test_context.rs:131, src/platform/test/platform.rs:125-132).
+                    // `NoopTextSystem` (gpui-pre 0.3.9
+                    // src/app/test_context.rs:131, src/platform/test/platform.rs:127-134).
                     {
                         let mono = showcase_entity.read(cx).original_mono_font.family.clone();
                         let names = cx.text_system().all_font_names();

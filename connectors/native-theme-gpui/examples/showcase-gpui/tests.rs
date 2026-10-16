@@ -5,6 +5,11 @@
 //! workflow change. They build the real `Showcase` on GPUI's headless test
 //! platform — the same view, the same `Root`, the same window width `main`
 //! opens — and drive it with real input.
+//!
+//! A helper that draws calls `window.refresh()` before `window.draw(cx)`, as
+//! `draw` does: on GPUI Fast (the `gpui-fast` feature) a frame otherwise
+//! reuses the subtrees no view notified and keeps the last frame's
+//! `debug_bounds`, so an absence test would find an element no longer drawn.
 
 use gpui::{
     AbsoluteLength, AnyWindowHandle, App, Bounds, DefiniteLength, Entity, Focusable as _, Length,
@@ -79,7 +84,7 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// through `build_with_platform` and exposes no setter
-/// (`gpui-pre-0.3.8/src/app/test_context.rs:127-139`, `:171-175`) — so
+/// (`gpui-pre-0.3.9/src/app/test_context.rs:127-139`, `:171-175`) — so
 /// gpui-component's own `IconName` SVGs resolve to nothing. The pages still
 /// lay out, which is what these tests measure; the showcase's native icons
 /// do not come from the asset source at all, they are decoded into
@@ -123,7 +128,15 @@ fn open_with(
 /// Lay the window out and paint it, which is what fills `debug_bounds`,
 /// and check that no frame drawn so far drew two info targets under one id.
 fn draw(cx: &mut VisualTestContext) {
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    // A full frame: GPUI Fast reuses the subtrees no view notified, and in
+    // test mode a partly reused frame keeps every bound the last frame drew
+    // (gpui-fast 0.1.7/0.1.8 src/fast/retained.rs:1360-1371), so an element no
+    // longer drawn would still be found. On gpui-pre it only marks the window
+    // dirty.
+    cx.update(|window, cx| {
+        window.refresh();
+        window.draw(cx).clear(cx)
+    });
     let twice = ids_drawn_twice(cx);
     assert!(
         twice.is_empty(),
@@ -257,14 +270,12 @@ fn use_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &
 /// draws its scrollbars as overlays; a zero width means no native theme is
 /// installed, which the caller asserts against.
 fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pixels, bool) {
-    read(cx, showcase, |_this, cx| {
-        match cx.native_theme().and_then(|nt| nt.native(cx)) {
-            Some(n) => (
-                px(native_theme_gpui::scrollbar_width(n.resolved)),
-                n.resolved.scrollbar.overlay_mode,
-            ),
-            None => (px(0.), false),
-        }
+    read(cx, showcase, |_this, cx| match cx.native() {
+        Some(n) => (
+            px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
+            n.resolved.scrollbar.overlay_mode,
+        ),
+        None => (px(0.), false),
     })
 }
 
@@ -282,7 +293,7 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     // kde-breeze puts its groove beside the content; macOS overlays its
     // own, and must not lose a strip of width to it.
-    for preset in ["kde-breeze", "macos-sonoma"] {
+    for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Inputs);
         let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
@@ -371,9 +382,10 @@ fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
 }
 
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
-/// (setting/page.rs:227-253, scroll/scrollable.rs:19-29) and reserves only its
-/// own `px_4`; kde-breeze's groove is 21px, wider than that, so without a
-/// gutter on the group the bar covers the rows.
+/// (setting/page.rs:227-255, scroll/scrollable.rs:19-29) and reserves only the
+/// `px_4` each group's row is wrapped in, inside the list (:239-243);
+/// kde-breeze's groove is 21px, wider than that, so without a gutter on the
+/// group the bar covers the rows.
 #[gpui::test]
 fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -465,7 +477,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 /// Table, List and Tree are framed alike, and by the list theme.
 ///
 /// The `DataTable` draws a frame of its own from `Theme::radius` and
-/// `Theme::border` (gpui-component `src/table/data_table.rs:167-171`); the
+/// `Theme::border` (gpui-component `src/table/data_table.rs:181-185`); the
 /// `List` and the `Tree` draw none — both only refine a plain `div()`
 /// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
 /// `RenderOnce for Tree`) — so the box around them is the showcase's own
@@ -480,7 +492,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["material", "windows-11"] {
+    for preset in ["material-3", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
         let native = read(&mut cx, &showcase, |_this, cx| {
             let b = |f: fn(&native_theme::theme::ResolvedWidgetBorder) -> f32| {
@@ -1113,8 +1125,7 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         let model = read(&mut cx, &showcase, |_this, cx| {
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
+            cx.native()
                 .map(|n| (n.resolved.toolbar.bar_height, n.resolved.toolbar.item_gap))
         });
         assert!(
@@ -1247,9 +1258,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     };
     let toolbar_padding = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |_this, cx| {
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
-                .map(|n| n.resolved.toolbar.border.padding)
+            cx.native().map(|n| n.resolved.toolbar.border.padding)
         })
     };
     for preset in ["kde-breeze", "windows-11"] {
@@ -1367,9 +1376,9 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// A native preset is resolved at its own platform's DPI, as the seams test
 /// does (tests/seams.rs, `NATIVE`): macOS at 72, where a point is a pixel
 /// (native-theme `detect.rs`, `detect_system_font_dpi`), the others at 96.
-/// A native preset is only offered on its own platform, so macos-sonoma
+/// A native preset is only offered on its own platform, so macos-monterey
 /// resolved on a 96 DPI Linux host is not a configuration the showcase
-/// shows; ios is offered on macOS too (its `platforms` are `macos` and
+/// shows; ios-13 is offered on macOS too (its `platforms` are `macos` and
 /// `ios`), so it is resolved at 72. A colour-scheme preset, offered
 /// everywhere (no `platforms`), keeps the host's DPI (`None`), as
 /// `ResolutionContext::from_system` reads it.
@@ -1393,7 +1402,7 @@ fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
 /// at `dpi`, or at the host's DPI where it is `None`, with the text scaled by
 /// `text_scale`: the point sizes it states become pixels at that DPI, as they
 /// do on the platform whose DPI it is. The accessibility preferences are
-/// otherwise the defaults, not the host's: `AccessibilityPreferences::from_system`,
+/// otherwise the defaults, not the host's: `native_theme::detect::accessibility_preferences`,
 /// which the showcase's own preset path reads, would scale the text by
 /// whatever the desktop the test runs on is set to (native-theme-gpui
 /// lib.rs, `to_theme`).
@@ -1422,10 +1431,8 @@ fn use_preset_scaled(
                 ..native_theme::ResolutionContext::for_tests()
             })
             .expect("the preset resolves");
-        let prefs = native_theme::AccessibilityPreferences {
-            text_scaling_factor: text_scale,
-            ..native_theme::AccessibilityPreferences::default()
-        };
+        let mut prefs = native_theme::AccessibilityPreferences::default();
+        prefs.text_scaling_factor = text_scale;
         native_theme_gpui::apply(
             native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
             &resolved,
@@ -1486,7 +1493,14 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         (CHROME_LABEL_ICON_THEME, PROBE_ICON_THEME),
     ];
     let presets = side_panel_presets();
-    for native in ["kde-breeze", "adwaita", "macos-sonoma", "ios", "windows-11"] {
+    for native in [
+        "kde-breeze",
+        "adwaita",
+        "macos-monterey",
+        "macos-tahoe",
+        "ios-13",
+        "windows-11",
+    ] {
         assert!(
             presets
                 .iter()
@@ -2296,7 +2310,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
 }
 
 /// The splitter's line takes a margin of neither panel: where the theme
-/// states it wider than the handle's own 1px line (material, 4px), the side
+/// states it wider than the handle's own 1px line (material-3, 4px), the side
 /// panel keeps that strip clear, so its content ends where the line starts,
 /// and the line reaches no further into the content panel than the handle's
 /// own line does.
@@ -2304,7 +2318,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
 fn the_splitter_line_keeps_off_both_panels(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let slack = device_pixel(&mut cx);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         let line = bounds_of(&mut cx, CHROME_SPLITTER_LINE);
         let side = bounds_of(&mut cx, CHROME_SIDE_PANEL);
@@ -2439,7 +2453,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     use native_theme::color::Rgba;
     use native_theme_gpui::ResolvedTheme;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let expect = |cx: &mut VisualTestContext, pick: fn(&ResolvedTheme) -> Rgba| {
@@ -2475,7 +2489,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 r.progress_bar.track_color
             }),
         ] {
-            // A transparent leaf paints no box (material's unchecked box has
+            // A transparent leaf paints no box (material-3's unchecked box has
             // no container, docs/platform-facts.md §2.5).
             let want = expect(&mut cx, pick).filter(|c| !c.is_transparent());
             assert_eq!(
@@ -2487,6 +2501,56 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     }
 }
 
+/// Both tables draw their header row `list.header_height` tall where the
+/// theme states it (adwaita, 30), and as tall as a body row is drawn where it
+/// does not (kde-breeze, which states no header height): the Data page's
+/// `DataTable` at `geometry::data_table_size`'s row height, the Basic page's
+/// table at `list.row_height`, or else its padding and the header font's line,
+/// on the pixel grid.
+#[gpui::test]
+fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["adwaita", "kde-breeze"] {
+        use_preset(&mut cx, &showcase, preset);
+        let (stated, data_row, basic_row) = read(&mut cx, &showcase, |_, cx| {
+            native_value(cx, |n| {
+                let l = &n.resolved.list;
+                let pad = &l.border.padding;
+                let line = native_theme_gpui::scaled_text_size(l.header_font.size, n.accessibility)
+                    * n.resolved.defaults.line_height;
+                (
+                    geometry::list_header_height(n),
+                    geometry::data_table_size(n).table_row_height(),
+                    px(l.row_height
+                        .unwrap_or(pad.top.unwrap_or(0.) + line + pad.bottom.unwrap_or(0.))),
+                )
+            })
+        })
+        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
+        assert_eq!(
+            stated.is_some(),
+            preset == "adwaita",
+            "precondition: {preset}'s header height"
+        );
+        show(&mut cx, &showcase, Page::Data);
+        assert_eq!(
+            bounds_of(&mut cx, DATA_TABLE_HEADER).size.height,
+            stated.unwrap_or(data_row),
+            "{preset}: the DataTable's header row"
+        );
+        show(&mut cx, &showcase, Page::Basic);
+        // Laid out on the pixel grid: a padding-and-line height rounds.
+        let (drawn, want) = (
+            bounds_of(&mut cx, "basic-table-header").size.height,
+            stated.unwrap_or(basic_row),
+        );
+        assert!(
+            (drawn.as_f32() - want.as_f32()).abs() < 0.5,
+            "{preset}: the Basic table's header row is {drawn:?}, not {want:?}"
+        );
+    }
+}
+
 /// The Basic expander draws what `expander.*` states (ISSUES D8): each title
 /// row `header_height` tall, its arrow `arrow_icon_size` across; and the
 /// Basic card is padded by `layout.container_margin` where `card.border`
@@ -2494,7 +2558,7 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let (header, arrow, card_padding) = read(&mut cx, &showcase, |_, cx| {
@@ -2552,12 +2616,12 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
 /// filled with `tab.background_color` and outlined in nothing, and nothing
 /// in the row is painted in the accent that upstream's Underline bar marks
 /// it with, under a preset whose unselected tab differs from its bar
-/// (kde-breeze) and one whose does not (material).
+/// (kde-breeze) and one whose does not (material-3).
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let (active, idle, edge) = read(&mut cx, &showcase, |_, cx| {
@@ -2657,7 +2721,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 }
 
 /// Upstream's Underline TabBar pads neither itself nor its tabs
-/// (tab/tab.rs:79-81, tab/tab_bar.rs:393-402): it leaves the inset to the
+/// (tab/tab.rs:79-81, tab/tab_bar.rs:395-404): it leaves the inset to the
 /// container it is in. So each of the showcase's two TabBars is inset by
 /// `layout.container_margin`, the padding the side panel's settings and the
 /// inspector's content take: its first tab starts that far from the edge of
@@ -3006,7 +3070,7 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1295, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1312, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -3107,10 +3171,12 @@ fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
 
 /// The presets the Sidebar samples' icons are checked under: every native
 /// preset and one colour-scheme preset.
-const SIDEBAR_ICON_PRESETS: [&str; 5] = [
+const SIDEBAR_ICON_PRESETS: [&str; 7] = [
     "kde-breeze",
     "adwaita",
-    "macos-sonoma",
+    "macos-monterey",
+    "macos-tahoe",
+    "ios-13",
     "windows-11",
     "nord",
 ];
@@ -3137,7 +3203,7 @@ const SIDEBAR_ICON_PRESETS: [&str; 5] = [
 /// - expanded, where every row is `h_7` whatever its icon
 ///   (sidebar/menu.rs:323), the icon is no taller than that: 1.75 rem at the
 ///   rem the `WindowState` root plugin installs, the theme's font size
-///   (root.rs:436). The items'
+///   (root.rs:440). The items'
 ///   measured heights are checked to be that row. The icon's is a model
 ///   check, not a measurement: an icon taller than its row overflows it
 ///   without moving any bound a test can read.
@@ -3504,9 +3570,7 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
-            .map(|n| n.resolved.status_bar.border.padding)
+        cx.native().map(|n| n.resolved.status_bar.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
@@ -3571,8 +3635,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let right_padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
+        cx.native()
             .and_then(|n| n.resolved.status_bar.border.padding.right)
     });
     assert!(
@@ -3675,7 +3738,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
 /// `text_sm`, sizing.rs:340, without a native theme) plus the theme's button
-/// padding, or the `px_2` on either side (button/button.rs:672-674) where it
+/// padding, or the `px_2` on either side (button/button.rs:683-685) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
@@ -3794,7 +3857,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
 }
 
 /// The boxes painted in the tooltip's fill in the last frame: upstream fills
-/// a tooltip with `popover` (tooltip.rs:113-114), and the connector's
+/// a tooltip with `popover` (tooltip.rs:114-115), and the connector's
 /// `geometry::tooltip` refinement repaints it in `tooltip.background_color`.
 fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
@@ -3839,13 +3902,13 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
 /// action is bound to Ctrl+B (Cmd+B on macOS), and the tooltip is wider while the action has
 /// that binding than once the bindings are gone -- upstream's Tooltip adds
 /// the binding's Kbd beside the text only where the action has one
-/// (tooltip.rs:94-106, :133-141). The tooltip's text is not readable from
+/// (tooltip.rs:95-107, :134-142). The tooltip's text is not readable from
 /// the test's frame, so its width is what shows the Kbd.
 #[gpui::test]
 fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    // A tooltip fades in (tooltip.rs:178-181); without motion it is drawn
+    // A tooltip fades in (tooltip.rs:179-182); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
     let cases: [(&'static str, Box<dyn gpui::Action>, String); 1] = [(
@@ -4001,7 +4064,7 @@ fn settle_on(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1037). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1054). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -4054,8 +4117,7 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let expected = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
+        cx.native()
             .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
     });
     let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
@@ -4114,7 +4176,7 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
 
 /// The Basic page's column rule, the iced and egui showcases' too: under a
 /// preset whose widest fixed-width control fits a fifth of the page, five
-/// columns; under material, whose drop-down is 210 wide, four; and each
+/// columns; under material-3, whose drop-down is 210 wide, four; and each
 /// arrangement holds every group once, a column's groups in reading order.
 #[test]
 fn the_basic_page_counts_its_columns_from_the_theme() {
@@ -4137,7 +4199,7 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
         ("kde-breeze", 979.0, 5),
         ("adwaita", 979.0, 5),
         ("catppuccin-mocha", 976.0, 5),
-        ("material", 976.0, 4),
+        ("material-3", 976.0, 4),
     ] {
         let r = resolved(preset);
         assert!(r.is_ok(), "{r:?}");
@@ -4173,14 +4235,14 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
 }
 
 /// The Basic page lays its groups out as the three showcases do: under
-/// kde-breeze five columns, under material four, left to right, each a stack
+/// kde-breeze five columns, under material-3 four, left to right, each a stack
 /// of its groups in order, every group its heading over its controls, and
 /// every control the page shows drawn.
 #[gpui::test]
 fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
     use crate::pages::basic::{BASIC_GROUPS, basic_arrangement};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for (preset, count) in [("material", 4), ("kde-breeze", 5)] {
+    for (preset, count) in [("material-3", 4), ("kde-breeze", 5)] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let mut previous_left = None;
@@ -4294,7 +4356,7 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let r = read(&mut cx, &showcase, |_, cx| {
@@ -4363,7 +4425,7 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
     use crate::demo::SpinnerKind;
     use native_theme_gpui::widgets::SpinnerLook;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Feedback);
         let r = read(&mut cx, &showcase, |_, cx| {
@@ -4435,13 +4497,13 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
 /// The Basic page never needs sideways scrolling under the Linux presets the
 /// captures take, in both modes: every control ends inside the scroll area,
 /// and the page lays out the columns its rule counts from the content
-/// panel's width. It may be taller than the scroll area (material is), and
+/// panel's width. It may be taller than the scroll area (material-3 is), and
 /// then scrolls, at rest at the top; the test reports by how much.
 #[gpui::test]
 fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
     use crate::pages::basic::basic_column_count;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         for mode in ["Light", "Dark"] {
             run_menu_item(&mut cx, "Theme", mode);
@@ -4572,11 +4634,11 @@ fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
 /// wide in `splitter.divider_color`; a menu title under the pointer fills
 /// with `menu.hover_background`, opens its menu, and a row of it runs its
 /// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
-/// Under material dark, whose splitter is wider than upstream's 1px line.
+/// Under material-3 dark, whose splitter is wider than upstream's 1px line.
 #[gpui::test]
 fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "material");
+    use_preset(&mut cx, &showcase, "material-3");
     run_menu_item(&mut cx, "Theme", "Dark");
     show(&mut cx, &showcase, Page::Basic);
     let stated =
@@ -4717,7 +4779,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
         );
         // The builder's fills, which its unit test holds to the two fields.
         let (fill, disabled_fill) = read(&mut cx, &showcase, |_this, cx| {
-            match cx.native_theme().and_then(|nt| nt.native(cx)) {
+            match cx.native() {
                 Some(n) => {
                     let solid = |r: gpui::StyleRefinement| {
                         r.background
@@ -4767,7 +4829,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1334-1338) -- in
+/// `input_background()` at half opacity (button/button.rs:1351-1355) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -4817,10 +4879,8 @@ fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestApp
 /// Set the text-scaling factor the connector lays controls out at, and draw
 /// the frame that follows.
 fn scale_text(cx: &mut VisualTestContext, factor: f32) {
-    let prefs = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: factor,
-        ..Default::default()
-    };
+    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
     cx.run_until_parked();
     draw(cx);
@@ -4901,8 +4961,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:196-200), 4px
-/// itself included (`radius >= px(4.)`, switch.rs:196).
+/// under 4px, the track's own height from 4px up (switch.rs:204-208), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:204).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4982,7 +5042,7 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
             let c = &n.resolved.combo_box;
             let fill = crate::info::stated(c.background_color);
             c.hover_background
-                .map_or(fill, |hover| fill.blend(crate::info::stated(hover)))
+                .map_or(fill, |hover| source_over(fill, crate::info::stated(hover)))
         })
     });
     assert_eq!(
@@ -5315,6 +5375,39 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
     );
 }
 
+/// The Typography page's `Diff` sample is one file's patch that removes and
+/// adds lines: `parse` reads it whole, so the `unwrap_or_default` the
+/// showcase builds its state with never stands in for it.
+#[gpui::test]
+fn the_diff_sample_parses_to_one_file(_cx: &mut TestAppContext) {
+    let files = gpui_component::diff::DiffFile::parse(crate::support::DIFF_SAMPLE);
+    let counts = files.as_ref().ok().map(|files| {
+        files
+            .iter()
+            .map(|file| (file.additions(), file.deletions()))
+            .collect::<Vec<_>>()
+    });
+    assert!(
+        counts.as_ref().is_some_and(|counts| counts.len() == 1
+            && counts
+                .iter()
+                .all(|&(added, removed)| added > 0 && removed > 0)),
+        "the Diff sample is not one file with added and removed lines: {counts:?} ({:?})",
+        files.err()
+    );
+}
+
+/// The Typography page shows a `Diff`.
+#[gpui::test]
+fn the_typography_page_shows_a_diff(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    assert!(
+        cx.debug_bounds("typography-diff").is_some(),
+        "the Typography page renders no `typography-diff`"
+    );
+}
+
 /// Two GroupBoxes of different variants show different infos (spec
 /// §4.3.2): the Normal one and the Outline one each report their own
 /// variant, not one info for the whole gallery.
@@ -5464,6 +5557,101 @@ fn a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog(cx: &m
         animation.as_deref().is_some_and(|t| t.starts_with("none")),
         "motion is reduced, and the Dialog's animation note does not say it appears at once: {animation:?}"
     );
+}
+
+/// The showcase applies the theme's dialog entrance and tooltip delay, and
+/// says so: under kde-breeze, which states both, the Overlays page's Dialog
+/// and AlertDialog record `geometry::dialog_entrance` and a toolbar Button's
+/// tooltip delay is the theme's 700ms; under catppuccin-mocha, which states
+/// neither, the dialogs keep upstream's slide and the tooltip gpui's 500ms
+/// (Review Focus 2). Motion is reduced, so the entrance is named and not
+/// drawn.
+#[gpui::test]
+fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    // A sliding Dialog is not where its bounds were laid out until it lands.
+    without_motion(&mut cx);
+    for (preset, stated) in [("kde-breeze", true), ("catppuccin-mocha", false)] {
+        use_preset(&mut cx, &showcase, preset);
+        let (entrance, delay) = read(&mut cx, &showcase, |_, cx| {
+            native_value(cx, |n| {
+                (
+                    geometry::dialog_entrance(n),
+                    native_theme_gpui::tooltip_show_delay(n.resolved),
+                )
+            })
+        })
+        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
+        assert_eq!(
+            (entrance.is_some(), delay.is_some()),
+            (stated, stated),
+            "precondition: what {preset} states"
+        );
+
+        let button = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
+        let note = |notes: &[crate::info::Note]| {
+            notes
+                .iter()
+                .find(|n| n.what == "tooltip delay")
+                .map(|n| n.text.clone())
+        };
+        let (config, fixed) = button
+            .as_ref()
+            .map(|info| (note(&info.config), note(&info.not_themeable)))
+            .unwrap_or_default();
+        if stated {
+            assert!(
+                config.as_deref().is_some_and(|t| t.contains("700ms")) && fixed.is_none(),
+                "{preset}: the toolbar Button's tooltip delay is not the theme's: {config:?} / {fixed:?}"
+            );
+        } else {
+            assert!(
+                fixed.as_deref().is_some_and(|t| t.starts_with("500ms")) && config.is_none(),
+                "{preset}: the toolbar Button's tooltip delay is not gpui's: {config:?} / {fixed:?}"
+            );
+        }
+
+        // Every kind of dialog the showcase opens: the Dialog (the palette's
+        // and the About dialog's take the same `demo::dialog_frame`) and the
+        // AlertDialog, which applies the entrance itself.
+        for (trigger, selector) in [
+            (OVERLAYS_DIALOG_TRIGGER, "overlays-dialog-title"),
+            (PROBE_ALERT_DIALOG, "overlays-alert-dialog-title"),
+        ] {
+            show(&mut cx, &showcase, Page::Overlays);
+            click(&mut cx, trigger);
+            draw(&mut cx);
+            assert!(
+                a_dialog_is_open(&mut cx),
+                "{preset}: {trigger} opened no dialog"
+            );
+            let dialog = settle_on(&mut cx, &showcase, selector);
+            let recorded = dialog.as_ref().is_some_and(|info| {
+                info.config
+                    .iter()
+                    .any(|n| n.text.starts_with("geometry::dialog_entrance:"))
+            });
+            let animation = dialog.as_ref().and_then(|info| {
+                info.not_themeable
+                    .iter()
+                    .find(|n| n.what == "animation")
+                    .map(|n| n.text.clone())
+            });
+            assert_eq!(
+                recorded, stated,
+                "{preset}: {selector}'s geometry::dialog_entrance line: {dialog:?}"
+            );
+            assert!(
+                animation
+                    .as_deref()
+                    .is_some_and(|t| t.contains("DialogEntrance::Fade") == stated),
+                "{preset}: {selector}'s animation note: {animation:?}"
+            );
+            cx.update(|window, cx| window.close_dialog(cx));
+            cx.run_until_parked();
+            draw(&mut cx);
+        }
+    }
 }
 
 /// The Overlays page's two Sheets show different infos (spec §4.3.2): the
@@ -5726,7 +5914,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             .iter()
             .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path);
         let expected = match entry {
-            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
                 ChromeIcon::Loaded(n, bytes.clone())
             }
             Some((n, ..)) => ChromeIcon::Missing(n),
@@ -6008,7 +6196,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             .iter()
             .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path)
         {
-            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
                 ChromeIcon::Loaded(n, bytes.clone())
             }
             Some((n, ..)) => ChromeIcon::Missing(n),
@@ -6223,7 +6411,7 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
-/// (gpui-component 0.7.1): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.7.3): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
@@ -6231,8 +6419,9 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// arrows, the MessageScroller's jump button, an Alert's and a
 /// Notification's severity icon, a Spinner's Loader, the Marker's spinner,
 /// an Accordion's chevrons, the Carousel's controls, the Breadcrumb's
-/// separators, the Editor's fold buttons, and an Attachment's status glyph
-/// (Ban when failed, a Spinner while uploading or processing).
+/// separators, the Editor's fold buttons, the Diff's collapse button, the
+/// DataTable's sort button, and an Attachment's status glyph (Ban when
+/// failed, a Spinner while uploading or processing).
 #[gpui::test]
 fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
     use crate::demo::{ButtonKind, MarkerKind, Severity, SheetSide, SpinnerKind};
@@ -6261,7 +6450,10 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("icon-theme Select", chrome::icon_set_select(&t, None)),
         ("command palette", chrome::command_palette(&t, "set")),
         ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
-        ("About Dialog", chrome::about_dialog(&t, false, false)),
+        (
+            "About Dialog",
+            chrome::about_dialog(&t, false, false, false, false),
+        ),
         ("Settings", layout::settings(&t)),
         ("Pagination", data::pagination(&t, false, 1, 12, false)),
         ("MessageScroller", data::message_scroller(&t, 3)),
@@ -6278,15 +6470,17 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Marker spinner",
             feedback::marker(&t, MarkerKind::Spinner, "text", false, None),
         ),
-        ("Accordion", layout::accordion(&t, false, 3)),
+        ("Accordion", layout::accordion(&t, false, 3, false)),
         ("Carousel", layout::carousel(&t, false)),
         (
             "Breadcrumb",
             layout::breadcrumb(&t, &[Page::Buttons], Page::Layout),
         ),
-        ("Dialog", overlays::dialog(&t, false, false, &icon)),
+        ("Dialog", overlays::dialog(&t, false, false, false, &icon)),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
+        ("Diff", typography::diff(&t)),
+        ("DataTable", data::data_table(&t, 5, 3, false, false)),
         (
             "failed Attachment",
             data::attachment(&t, AttachmentStatus::Failed, "file", false, &icon),
@@ -6339,6 +6533,29 @@ fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
 /// gpui paints a bordered box as its fill and, apart, its border strips over
 /// a transparent fill (gpui-pre window.rs, Window::paint_quad), so the fill
 /// is the largest quad inside the element's bounds that is not transparent.
+/// `layer` over `base`, straight-alpha source-over in sRGB, written out here
+/// so a layered fill the showcase paints is checked against the rule rather
+/// than against `native_theme_gpui::layer_over`, which it calls.
+fn source_over(base: gpui::Hsla, layer: gpui::Hsla) -> gpui::Hsla {
+    if layer.a >= 1.0 {
+        return layer;
+    }
+    if layer.a <= 0.0 {
+        return base;
+    }
+    let (b, l) = (gpui::Rgba::from(base), gpui::Rgba::from(layer));
+    let under = b.a * (1.0 - l.a);
+    let a = l.a + under;
+    let mix = |below: f32, above: f32| ((above * l.a) + (below * under)) / a;
+    gpui::Rgba {
+        r: mix(b.r, l.r),
+        g: mix(b.g, l.g),
+        b: mix(b.b, l.b),
+        a,
+    }
+    .into()
+}
+
 fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {
@@ -6542,7 +6759,7 @@ fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
                 effective,
                 this.icon_set_choice.freedesktop_theme(),
                 Some(theme),
-                Some([fc.r, fc.g, fc.b]),
+                Some(fc),
             ),
         )
     });
@@ -6586,12 +6803,11 @@ fn installed_preferences(
 fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
-    let os = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.25,
-        reduce_motion: false,
-        high_contrast: true,
-        reduce_transparency: true,
-    };
+    let mut os = native_theme_gpui::AccessibilityPreferences::default();
+    os.text_scaling_factor = 1.25;
+    os.reduce_motion = false;
+    os.high_contrast = true;
+    os.reduce_transparency = true;
     cx.update(|_window, cx| {
         let ui = showcase.read(cx).info_ui.clone();
         crate::demo::change_preferences(&ui, cx, |overrides| {
@@ -6604,12 +6820,11 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
         });
     });
     cx.run_until_parked();
-    let chosen = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.75,
-        reduce_motion: true,
-        high_contrast: false,
-        reduce_transparency: os.reduce_transparency,
-    };
+    let mut chosen = native_theme_gpui::AccessibilityPreferences::default();
+    chosen.text_scaling_factor = 1.75;
+    chosen.reduce_motion = true;
+    chosen.high_contrast = false;
+    chosen.reduce_transparency = os.reduce_transparency;
     assert_eq!(
         installed_preferences(&mut cx, &showcase).map(|p| (
             p.text_scaling_factor,
@@ -6658,12 +6873,11 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
 fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
-    let changed = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        reduce_motion: true,
-        high_contrast: true,
-        reduce_transparency: true,
-    };
+    let mut changed = native_theme_gpui::AccessibilityPreferences::default();
+    changed.text_scaling_factor = 1.5;
+    changed.reduce_motion = true;
+    changed.high_contrast = true;
+    changed.reduce_transparency = true;
     assert_ne!(
         installed_preferences(&mut cx, &showcase).as_ref(),
         Some(&changed),
@@ -6729,10 +6943,7 @@ fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
         "--variant {variant} alone did not install the theme in that mode"
     );
     assert!(
-        read(&mut cx, &showcase, |_this, cx| cx
-            .native_theme()
-            .and_then(|nt| nt.native(cx))
-            .is_some()),
+        read(&mut cx, &showcase, |_this, cx| cx.native().is_some()),
         "--variant {variant} alone left no native variant installed for its mode"
     );
 }
@@ -7301,7 +7512,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
                     .cloned()
                     .unwrap_or_default(),
                 this.error_message.clone(),
-                cx.native_theme().and_then(|nt| nt.native(cx)).is_some(),
+                cx.native().is_some(),
             )
         });
         assert_eq!(name, key, "--theme {key} did not install it");
@@ -7634,9 +7845,7 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     use_preset(&mut cx, &showcase, "nord");
     let (item_gap, widget_gap) = read(&mut cx, &showcase, |this, cx| {
         (
-            cx.native_theme()
-                .and_then(|nt| nt.native(cx))
-                .map(|n| n.resolved.toolbar.item_gap),
+            cx.native().map(|n| n.resolved.toolbar.item_gap),
             geometry::widget_gap(&this.layout),
         )
     });
@@ -7705,12 +7914,11 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
 #[gpui::test]
 fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let prefs = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        reduce_motion: false,
-        high_contrast: true,
-        reduce_transparency: false,
-    };
+    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
+    prefs.reduce_motion = false;
+    prefs.high_contrast = true;
+    prefs.reduce_transparency = false;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
     cx.run_until_parked();
     let items = read(&mut cx, &showcase, crate::chrome::status_environment);
@@ -8106,12 +8314,7 @@ fn the_palette_reports_itself(cx: &mut TestAppContext) {
 fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let unset = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.0,
-        reduce_motion: false,
-        high_contrast: false,
-        reduce_transparency: false,
-    };
+    let unset = native_theme_gpui::AccessibilityPreferences::DEFAULT;
     cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&unset, cx));
     cx.run_until_parked();
     assert!(
@@ -8233,16 +8436,16 @@ fn the_about_dialog_follows_a_theme_switch(cx: &mut TestAppContext) {
     draw(&mut cx);
     let breeze = gap_of(&mut cx, &showcase);
     assert_eq!(Some(gap_between(&mut cx)), breeze);
-    use_preset(&mut cx, &showcase, "macos-sonoma");
+    use_preset(&mut cx, &showcase, "macos-monterey");
     draw(&mut cx);
-    let sonoma = gap_of(&mut cx, &showcase);
+    let monterey = gap_of(&mut cx, &showcase);
     assert_ne!(
-        breeze, sonoma,
+        breeze, monterey,
         "the two presets state the same gap, so the switch proves nothing"
     );
     assert_eq!(
         Some(gap_between(&mut cx)),
-        sonoma,
+        monterey,
         "the open About dialog kept the gap of the theme it opened under"
     );
 }
@@ -8278,17 +8481,15 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
 /// padding (spec §3.6), the reported defect. Under kde-breeze that is
 /// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
 /// the frame's inner edge: upstream draws the frame with `border_1`
-/// (dialog/dialog.rs:670) and pads each section inside it with the
-/// refinement's sides (dialog/dialog.rs:589-601, :705-707).
+/// (dialog/dialog.rs:721) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:635-647, :756-758).
 #[gpui::test]
 fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     without_motion(&mut cx);
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native_theme()
-            .and_then(|nt| nt.native(cx))
-            .map(|n| n.resolved.dialog.border.padding)
+        cx.native().map(|n| n.resolved.dialog.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
@@ -8944,6 +9145,29 @@ fn a_leaf_value_reads_as_the_showcases_agreed() {
             );
         }
     }
+}
+
+/// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is the
+/// resolved theme's `tooltip.show_delay`, with ` ms`.
+#[test]
+fn a_ms_leaf_reads_its_value() {
+    use crate::info::values::leaf_value;
+    let theme = native_theme::theme::Theme::preset("kde-breeze").expect("the preset loads");
+    let layout = theme.layout.clone();
+    let resolved = theme
+        .into_variant(native_theme::theme::ColorMode::Light)
+        .expect("the preset has the variant")
+        .into_resolved(&native_theme::ResolutionContext::for_tests())
+        .expect("the preset resolves");
+    let delay = resolved
+        .tooltip
+        .show_delay
+        .expect("kde-breeze states a tooltip delay");
+    let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
+    assert_eq!(
+        leaf_value("tooltip.show_delay_ms", &json, &layout, None).text,
+        format!("{delay} ms")
+    );
 }
 
 #[gpui::test]

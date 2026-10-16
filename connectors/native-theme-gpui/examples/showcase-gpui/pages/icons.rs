@@ -3,7 +3,8 @@
 use gpui::{AnyElement, App, Context, IntoElement, ParentElement, Styled, div, prelude::*};
 use gpui_component::{IconName, IconNamed as _, h_flex, v_flex};
 
-use native_theme::theme::{IconSet, icon_name as native_icon_name};
+use native_theme::icons::icon_name as native_icon_name;
+use native_theme::theme::IconSet;
 
 use crate::app::Showcase;
 use crate::demo::{self, AnimatedArt, IconArt, IconCell, IconSizeContext};

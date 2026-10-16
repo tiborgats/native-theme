@@ -69,7 +69,7 @@ caller's `StyleRefinement` after its own geometry (`geometry::<widget>` +
 `refine_style`), **S** = the widget honours `Size::Size(px)`, **B** = a
 widget-specific builder takes the value; "upstream" = an inner element the
 caller's style cannot reach, listed with the line that makes it so (spec §14).
-The remaining upstream items are the v0.6.3 PR list in `ROADMAP.md`.
+The remaining upstream items are the v0.7.2 PR list in `ROADMAP.md`.
 
 v0.6.1 (gpui-component 0.7.1): the button's label size reaches a Button through
 a child label (`geometry::button_label`), a `Toggle`'s text through
@@ -669,3 +669,54 @@ the button and list rows list are per-side `pt`/`pr`/`pb`/`pl` now, set
 only where stated, and the input's padding, listed as inner, is delivered
 too: upstream pads the input's root before the caller's refinement. The toolbar row predates `geometry::toolbar`,
 which sets `bar_height` as a minimum height only where it is stated.
+
+## Note: gpui-component 0.7.3
+
+Appended 2026-10-14; the text above is left as written, its citations at
+gpui-component 0.6.4. In v0.7.0 the connector moves to gpui-component,
+gpui-base and gpui-kit 0.7.3 on gpui-pre 0.3.9, and the citations below are
+at 0.7.3.
+
+- **No upstream item above is resolved.** Every item of `ROADMAP.md`'s v0.7.2
+  list was re-read at 0.7.3: `Tab`'s render still writes its own height,
+  radius and text size into the style bag (`tab/tab.rs:801-808`, unchanged),
+  `DataTable` is still not `Styled`, and the base-palette fields of
+  `ThemeConfigColors` are still private (`theme/schema.rs:643-677`, unchanged).
+- **New receivers.** 0.7.3 adds three that the rows above have no column for:
+  `DataTable::header_row_height` (`table/data_table.rs:129`; the header row
+  otherwise takes the body row height), gpui-base's `TooltipDefaults`, a
+  global with a show delay of 500 ms and a grace period of 300 ms
+  (gpui-base `tooltip.rs:58-108`), with a per-trigger `tooltip_show_delay`
+  on `Button` (`button/button.rs:422`), and `Dialog::entrance`
+  (`dialog/dialog.rs:526`). v0.7.0's G2 is to add theme values for the list
+  header height, the tooltip show delay and the dialog entrance.
+- **TextView.** gpui-component builds TextView's defaults from the theme
+  (`text/mod.rs:35-62`): its foreground, muted foreground, link, selection,
+  code background, border and table-head colours, and inline code's
+  `accent` background (`text/mod.rs:57-60`), which the connector maps,
+  and its body text scales from the rem, which the connector sets from
+  `defaults.font.size`; the connector installs nothing for it. Its headings
+  keep TextView's ratios to the body size. Not honoured:
+  `link.underline_enabled = false` (TextView always underlines a link), the
+  selection's text colour (the selection paints under the glyphs), and a rule
+  colour of its own (the horizontal rule paints `border`, gpui-base
+  `text/node.rs:4033`); the last is on the v0.7.2 list.
+- **`Diff`** is new in 0.7.3, and the gpui showcase's Typography page shows it.
+  The row, in the table's columns:
+
+| Widget | native-theme fields | Connector uses | Gap | v0.7.0 |
+|--------|---------------------|----------------|-----|--------|
+| diff (gpui-component `Diff`; no native-theme widget) | defaults.mono_font (family, **size**) and the colours behind the `ThemeColor` fields it paints | `mono_font_family`, `mono_font_size`, `radius` and the mapped `background`, `foreground`, `border`, `muted`, `muted_foreground`, `list_hover`, `selection`, `danger`, `success`, `info`, `primary`, `primary_foreground` | the code size | colours and family delivered; the code size upstream: it is `rem × mono_font_size / 16` (`diff/mod.rs:456`), so it is the theme's monospace size only when the UI font size, the rem (`font_size`, from `defaults.font.size`), is 16 px |
+
+## Note: v0.7.0's G2
+
+Appended 2026-10-14; the text above is left as written. G2 added the three
+values the 0.7.3 note names to the model, and the connector applies each
+through one of the new receivers. The tooltip, dialog and list rows above gain
+them, in the table's columns:
+
+| Widget | native-theme fields | Connector uses | Gap | v0.7.0 |
+|--------|---------------------|----------------|-----|--------|
+| tooltip | **show_delay** (`tooltip.show_delay_ms`) | `apply` installs it as gpui-base's `TooltipDefaults` show delay, keeping the grace period, and the observer installs it again after an upstream rebuild; `tooltip_show_delay` for GPUI's own `.tooltip()` | GPUI's `.tooltip()` waits its own 500 ms unless the element is given the delay (gpui-pre `src/elements/div.rs:53`, `:1708`) | delivered for every tooltip gpui-component's overlay shows (`Button::tooltip` among them) |
+| dialog | **entrance** (`dialog.entrance`) | `geometry::dialog_entrance` for `Dialog::entrance` and `AlertDialog::entrance` | gpui-component has no scaling and no rising entrance (`dialog/entrance.rs:12-25`): `scale_fade` and `fade_rise` are both drawn as `DialogEntrance::Fade` | delivered as an approximation; a scaling entrance is on the v0.7.2 list |
+| list | **header_height** (`list.header_height_px`) | `geometry::list_header_height` for `DataTable::header_row_height` | none | delivered; `None` where the theme states none, and the header keeps the body rows' height |

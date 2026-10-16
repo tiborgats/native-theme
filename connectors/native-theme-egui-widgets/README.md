@@ -13,7 +13,7 @@ from a hardcoded value or does not draw them at all. This crate draws those:
 | `slider::Slider` | a slider knob in its own colour: egui paints the resting knob in the rail's |
 | `spinner::Spinner` | a spinner at the theme's stroke: `egui::Spinner` hardcodes its stroke width; where the icon set has an animated indicator, that is drawn |
 | `segmented_control::SegmentedControl` | a segmented control: egui has none |
-| `wrap::link`, `wrap::hyperlink` | a link in its hover, pressed, disabled and visited colours |
+| `links::link`, `links::hyperlink` | a link in its hover, pressed, disabled and visited colours |
 | `combo_box::ComboBox` | a drop-down at the height the theme states, with the open chevron the platforms draw: egui's square arrow box can make its own taller, and its arrow is a filled triangle |
 | `radio_button::RadioButton` | a radio button's dot at the size the theme states: egui sizes it from the check mark's box |
 | `progress_bar::ProgressBar` | a progress bar with the outline the theme states: egui's draws none |
@@ -23,6 +23,19 @@ Every widget reads the `ResolvedTheme` of the atlas the connector installed,
 in the colour scheme egui is drawing, and contains no colour, radius or
 metric of its own. With no atlas installed, each renders as egui's own
 counterpart.
+
+## Quick start
+
+Add the connector, with the OS readers (`native`), and this crate:
+
+```toml
+[dependencies]
+eframe = "0.36.2"
+native-theme-egui = { version = "0.7", features = ["native"] }
+native-theme-egui-widgets = "0.7"
+```
+
+Install the connector's atlas (its README's Quick start), then add a widget:
 
 ```rust,no_run
 use native_theme_egui_widgets::connector::egui;
@@ -43,8 +56,16 @@ site.
 ## Features
 
 The connector's, forwarded one to one, with the connector's default set:
-`material-icons`, `lucide-icons`, `system-icons`, `system-fonts` (default)
-and `svg-rasterize`. This crate adds none of its own.
+`material-icons`, `lucide-icons`, `system-icons`, `system-fonts` (default),
+and `svg-rasterize`, `native` (the OS readers) and `watch` (`ThemeWatcher`),
+off by default as there. This crate adds none of its own.
+
+## Compatibility
+
+Built for egui 0.36.2, which it reaches through the connector, with
+`rust-version = "1.95"`, as the connector; the connector's
+[Compatibility](../native-theme-egui/README.md#compatibility) section has the
+floors and the versions verified.
 
 ## Limits
 

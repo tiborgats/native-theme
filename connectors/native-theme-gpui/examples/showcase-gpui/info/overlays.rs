@@ -61,12 +61,20 @@ fn dialog_corners(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 /// `reduce_motion` is as given. `styled` is whether a native theme's geometry
 /// reached it, which decides the description's colour and the corners. Its
 /// geometry lines are recorded where `demo::confirm_dialog` applies the
-/// builders.
-pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
+/// builders; `entrance` as `chrome::dialog_surface`'s.
+pub fn dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+    icon: &SampleIcon,
+) -> WidgetInfo {
     let info = dialog_surface(
         WidgetInfo::new("Dialog").variant("Confirm Action"),
         t,
         reduce_motion,
+        entrance,
+        styled,
         true,
         "the title, the content and the footer",
     );
@@ -102,7 +110,7 @@ pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -
         )
         .instance(
             "closes",
-            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:636; gpui-base dialog.rs:613)",
+            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base dialog.rs:613)",
         )
 }
 
@@ -126,14 +134,22 @@ pub fn dialog_close(t: &Theme, styled: bool) -> WidgetInfo {
 
 /// The AlertDialog the page's Discard changes… Button opens, drawn while
 /// gpui's `reduce_motion` is as given, showing `icon` of the chosen icon
-/// theme; `styled` as `dialog`'s. Its geometry lines are recorded where
-/// `demo::alert_dialog` applies the builders.
-pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
+/// theme; `styled` and `entrance` as `dialog`'s. Its geometry lines are
+/// recorded where `demo::alert_dialog` applies the builders.
+pub fn alert_dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: bool,
+    styled: bool,
+    icon: &SampleIcon,
+) -> WidgetInfo {
     dialog_corners(
         dialog_surface(
             WidgetInfo::new("AlertDialog"),
             t,
             reduce_motion,
+            entrance,
+            styled,
             false,
             if icon.shown() {
                 "the icon, the title and the description"
@@ -154,11 +170,15 @@ pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleI
         "confirm button",
         "button_danger",
         t.button_danger,
-        "gpui-component/button/button.rs:981",
+        "gpui-component/button/button.rs:998",
     ))
     .not_themeable(
         "surface",
-        "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, so its fill is background and not the popover colour the panel had claimed",
+        if styled {
+            "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, which geometry::dialog fills with dialog.background_color"
+        } else {
+            "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, so its fill is background and not the popover colour the panel had claimed"
+        },
     )
     .not_themeable(
         "footer",
@@ -336,7 +356,10 @@ pub fn context_menu(t: &Theme) -> WidgetInfo {
             "surface",
             "a ContextMenu is a PopupMenu wrapper and reads no theme field itself (menu/context_menu.rs)",
         )
-        .instance("trigger", "right-click (MouseButton::Right)")
+        .instance(
+            "trigger",
+            "right-click (MouseButton::Right), or a long press on a touch screen (menu/context_menu.rs, open_menu)",
+        )
         .instance(
             "trait",
             "ContextMenuExt, on any InteractiveElement + ParentElement + Styled (menu/context_menu.rs, ContextMenuExt)",

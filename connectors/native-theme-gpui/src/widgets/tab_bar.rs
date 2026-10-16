@@ -4,15 +4,16 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement as _, IntoElement,
-    ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement as _,
-    StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px, transparent_black,
+    AnyElement, App, ElementId, Hsla, InteractiveElement as _, IntoElement, ParentElement, Pixels,
+    RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _, StyleRefinement,
+    Styled, Window, div, prelude::FluentBuilder as _, px, transparent_black,
 };
 use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, font_text, length, over, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
@@ -21,6 +22,7 @@ const TAB_PADDING: f32 = 12.;
 
 /// What a tab bar paints, from `TabTheme`.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct TabLook {
     /// `tab.bar_background`: the bar behind the tabs.
     pub bar: Hsla,
@@ -59,7 +61,7 @@ pub struct TabLook {
     pub padding_bottom: Option<Pixels>,
     /// `tab.item_gap`: the space between neighbouring tabs; where the theme
     /// states none, gpui-component's for its `TabVariant::Tab`, none
-    /// (tab/tab_bar.rs:366-369).
+    /// (tab/tab_bar.rs:368-371).
     pub gap: Pixels,
     /// The line that marks the selected tab, where the theme states its
     /// colour, width and side.
@@ -71,6 +73,7 @@ pub struct TabLook {
 /// (docs/platform-facts.md §2.11: Breeze's `Highlight` strip on top,
 /// libadwaita's accent and Material's `primary` at the bottom).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct TabIndicator {
     /// `tab.active_indicator_color`.
     pub color: Hsla,
@@ -82,7 +85,7 @@ pub struct TabIndicator {
 
 /// The space between tabs where `tab.item_gap` is unstated: gpui-component
 /// lays the tabs of its default variant, `TabVariant::Tab`, with no gap
-/// (tab/tab_bar.rs:366-369).
+/// (tab/tab_bar.rs:368-371).
 const TAB_GAP: f32 = 0.;
 
 /// A stated side, `None` where it is unstated, or `Err` where it is not a
@@ -204,10 +207,11 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// (tab/tab.rs, `TabVariant`), whatever the platform draws. Every tab is at
 /// least `min_width` by `min_height`, padded by the stated `border.padding`
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
-/// size and weight, `item_gap` from its neighbours (none where unstated, as
-/// gpui-component's). The tabs scroll sideways where they do not fit, or
-/// wrap onto a further row with [`wrap`](Self::wrap); a
-/// [`suffix`](Self::suffix) follows them.
+/// family, size, weight and style, `item_gap` from its neighbours (none
+/// where unstated, as gpui-component's). The tabs scroll sideways where they
+/// do not fit, a clicked tab into view
+/// ([`track_scroll`](Self::track_scroll)), or wrap onto a further row with
+/// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them.
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
 /// inset. Without a native theme, or with a length that is not finite, it
@@ -221,6 +225,7 @@ pub struct TabBar {
     style: StyleRefinement,
     observer: Option<PartBounds>,
     wrap: bool,
+    scroll: Option<ScrollHandle>,
 }
 
 impl TabBar {
@@ -236,6 +241,7 @@ impl TabBar {
             style: StyleRefinement::default(),
             observer: None,
             wrap: false,
+            scroll: None,
         }
     }
 
@@ -268,10 +274,32 @@ impl TabBar {
         self
     }
 
-    /// Called with the index of the tab clicked.
+    /// Called with the index of the tab clicked, after the bar has asked for
+    /// that tab to be scrolled into view on the next frame
+    /// ([`track_scroll`](Self::track_scroll)).
     #[must_use]
     pub fn on_click(mut self, handler: impl Fn(&usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Rc::new(handler));
+        self
+    }
+
+    /// Tracks the tabs' sideways scroll with `handle`. Without one, the bar
+    /// keeps a handle of its own.
+    ///
+    /// Where an [`on_click`](Self::on_click) handler is set, a click on a tab
+    /// asks the handle to scroll the tab at that index into view
+    /// (`ScrollHandle::scroll_to_item`) before the handler runs. The scroll
+    /// lands when the next frame lays the tabs out: the handler still sees
+    /// the old offset and the tab's old bounds, a reveal it asks for itself
+    /// replaces the bar's, and a handler that reorders or removes tabs
+    /// reveals whichever tab is then at that index. Under
+    /// [`wrap`](Self::wrap) the tabs do not scroll, so a click reveals
+    /// nothing. A change of the selection, the tabs or the layout scrolls
+    /// nothing, as in gpui-component's `TabBar::track_scroll`
+    /// (tab/tab_bar.rs:124-128); use `handle` to reveal a tab otherwise.
+    #[must_use]
+    pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
+        self.scroll = Some(handle.clone());
         self
     }
 
@@ -301,6 +329,7 @@ impl TabBar {
                 }
             }))
             .selected_index(self.selected)
+            .when_some(self.scroll.as_ref(), |bar, handle| bar.track_scroll(handle))
             .when_some(on_click, |bar, on_click| {
                 bar.on_click(move |ix, window, cx| on_click(ix, window, cx))
             })
@@ -317,21 +346,31 @@ impl Styled for TabBar {
 }
 
 impl RenderOnce for TabBar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let Some(look) = cx.native().and_then(|n| TabLook::of(n.resolved)) else {
             return self.fallback();
         };
-        let Some(look) = TabLook::of(n.resolved) else {
+        // Without a tracked handle the bar keeps one, to reveal a clicked
+        // tab, as gpui-component's does (tab/tab_bar.rs:429-437).
+        let scroll = self.scroll.clone().unwrap_or_else(|| {
+            window
+                .use_keyed_state(format!("{}-scroll", self.id), cx, |_, _| {
+                    ScrollHandle::new()
+                })
+                .read(cx)
+                .clone()
+        });
+        let view = window.current_view();
+        // Read again: the keyed handle took `cx` mutably.
+        let Some(n) = cx.native() else {
             return self.fallback();
         };
-        let font = &n.resolved.tab.font;
-        let (size, weight) = (text_size(font.size, n), FontWeight(f32::from(font.weight)));
-        let line_height = n.resolved.defaults.line_height;
         let total = self.tabs.len();
         let selected = self.selected;
         let observer = self.observer.clone();
         let tabs = self.tabs.into_iter().enumerate().map(|(ix, tab)| {
             let on_click = self.on_click.clone();
+            let scroll = scroll.clone();
             let is_selected = ix == selected;
             BaseTab::new(ix)
                 .selected(is_selected)
@@ -362,15 +401,7 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                // One line of `tab.font` tall: its size by
-                // `defaults.line_height`, the line box the model states.
-                .child(
-                    div()
-                        .text_size(size)
-                        .line_height(gpui::relative(line_height))
-                        .font_weight(weight)
-                        .child(tab.label),
-                )
+                .child(font_text(&n.resolved.tab.font, n).child(tab.label))
                 .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
                     tab.relative().child(indicator(line, &look))
                 })
@@ -380,7 +411,11 @@ impl RenderOnce for TabBar {
                         .map(|o| part_bounds(Part::Tab(ix), o, look.border_width)),
                 )
                 .when_some(on_click, |tab, on_click| {
-                    tab.on_click(move |_, window, cx| on_click(&ix, window, cx))
+                    tab.on_click(move |_, window, cx| {
+                        scroll.scroll_to_item(ix);
+                        cx.notify(view);
+                        on_click(&ix, window, cx)
+                    })
                 })
                 .when_some(tab.selector, |tab, selector| {
                     tab.debug_selector(|| selector)
@@ -401,6 +436,7 @@ impl RenderOnce for TabBar {
                 }
             })
             .gap(look.gap)
+            .track_scroll(&scroll)
             .children(tabs);
         div()
             .id(self.id)

@@ -24,7 +24,7 @@
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
 //! `egui::Spinner`, [`segmented_control::SegmentedControl`] as unscoped
-//! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
+//! buttons, the [`links`] functions as egui's `Link` and `Hyperlink`,
 //! [`combo_box::ComboBox`] as `egui::ComboBox`, [`radio_button::RadioButton`]
 //! as `egui::RadioButton`, [`progress_bar::ProgressBar`] as
 //! `egui::ProgressBar`, [`expander::Expander`] as `egui::CollapsingHeader`.
@@ -47,6 +47,13 @@
 //! are inherent methods, which Rust resolves before a trait's, so a trait
 //! method of the same name would be silently ignored at every call site.
 //!
+//! # Spec citations
+//!
+//! A `spec §N` in these docs cites section N of the crate's design specification,
+//! [`docs/archive/todo_egui-widgets-spec.md`](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_egui-widgets-spec.md)
+//! in the repository, which the published crate does not include; a citation of another
+//! document, such as `docs/platform-facts.md`, names it.
+//!
 //! # Tiers
 //!
 //! Each widget's documentation names its tier — what this crate owns, and so
@@ -67,12 +74,21 @@
 //! colours of its own on GNOME. Under `ui.add_enabled(false, w)` the fade is
 //! the calling `Ui`'s, which egui applied before the widget's scope opened.
 //!
-//! A [`switch::Switch`] or [`radio_button::RadioButton`] built with
-//! `.enabled(false)` is faded as one widget over its backdrop, the window's
+//! A [`switch::Switch`], [`radio_button::RadioButton`] or [`slider::Slider`]
+//! built with `.enabled(false)` or added to a disabled `Ui`, and a
+//! [`segmented_control::SegmentedControl`] (which has no `.enabled(..)`) added
+//! to a disabled `Ui`, is faded as one widget over its backdrop, the window's
 //! `defaults.background_color` unless `.backdrop(..)` names another
-//! ([`fade::fade_as_one`]): its thumb or dot keeps its colour on the track or
-//! circle, and the whole fades, as libadwaita's `filter: Opacity(..)` does,
-//! where egui's per-shape fade would show the thumb through the faded track.
+//! ([`fade::fade_as_one`]): its thumb, dot or segment keeps its colour on the
+//! track, circle or outline, a knob its own over the backdrop, and the whole
+//! fades, as libadwaita's `filter: Opacity(..)` does, where egui's per-shape
+//! fade would show the thumb through the faded track. Under a disabled `Ui`
+//! the fade is that `Ui`'s `disabled_alpha`, the one level of fade egui gave
+//! the painter taken back; a `Ui` disabled twice, or restyled after it was
+//! disabled, keeps the rest. A checked radio button opens the connector's
+//! `SelectedDisabled` scope: where
+//! the theme states no `checkbox.disabled_background` it is its checked self,
+//! the checked fill and its dot, faded.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -87,6 +103,7 @@
 pub mod combo_box;
 pub mod expander;
 pub mod fade;
+pub mod links; // Tier W: `link`, `hyperlink`
 pub mod parts;
 pub mod progress_bar;
 pub mod radio_button;
@@ -94,7 +111,6 @@ pub mod segmented_control;
 pub mod slider;
 pub mod spinner;
 pub mod switch;
-pub mod wrap; // Tier W: `link`, `hyperlink`
 
 mod scope;
 
@@ -102,3 +118,8 @@ pub use native_theme_egui as connector;
 
 #[cfg(test)]
 mod tests;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;

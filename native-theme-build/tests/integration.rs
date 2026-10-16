@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use native_theme_build::IconGenerator;
 
@@ -9,12 +10,18 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
+/// A new, empty directory for one caller: the counter keeps two tests that
+/// pass the same `suffix`, which run in parallel, out of each other's way.
 fn create_temp_dir(suffix: &str) -> PathBuf {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
     let dir = std::env::temp_dir().join(format!(
-        "native_theme_integ_{suffix}_{}",
-        std::process::id()
+        "native_theme_integ_{suffix}_{}_{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
     ));
-    if let Err(e) = fs::remove_dir_all(&dir) {
+    if let Err(e) = fs::remove_dir_all(&dir)
+        && e.kind() != std::io::ErrorKind::NotFound
+    {
         eprintln!("test cleanup warning: {e}");
     }
     fs::create_dir_all(&dir).unwrap();
@@ -45,11 +52,13 @@ fn write_file(dir: &Path, path: &str, content: &str) {
 /// Helper: run the pipeline on a single fixture TOML file.
 fn generate_fixture(toml_path: &Path) -> native_theme_build::GenerateOutput {
     let out = create_temp_dir("fixture_out");
-    IconGenerator::new()
+    let output = IconGenerator::new()
         .source(toml_path)
         .output_dir(&out)
         .generate()
-        .unwrap_or_else(|e| panic!("expected no errors: {e}"))
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+    let _ = fs::remove_dir_all(&out);
+    output
 }
 
 // =============================================================================
@@ -60,22 +69,22 @@ fn generate_fixture(toml_path: &Path) -> native_theme_build::GenerateOutput {
 fn happy_path_generates_correct_enum() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
-    assert!(!output.code.is_empty(), "expected generated code");
+    assert!(!output.code().is_empty(), "expected generated code");
 
     // Check enum name is PascalCase of "sample-icon"
     assert!(
-        output.code.contains("pub enum SampleIcon"),
+        output.code().contains("pub enum SampleIcon"),
         "should have PascalCase enum name. code:\n{}",
-        output.code
+        output.code()
     );
 
     // Check variants
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
 }
@@ -86,8 +95,8 @@ fn happy_path_has_icon_provider_impl() {
 
     assert!(
         output
-            .code
-            .contains("impl native_theme::theme::IconProvider for SampleIcon"),
+            .code()
+            .contains("impl native_theme::icons::IconProvider for SampleIcon"),
         "should have IconProvider impl"
     );
 }
@@ -97,13 +106,13 @@ fn happy_path_icon_name_material() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
         ),
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
         ),
         "should have Material icon_name arm for SkipForward"
@@ -115,13 +124,13 @@ fn happy_path_icon_name_sf_symbols() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
         ),
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
-        output.code.contains(
+        output.code().contains(
             "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
         ),
         "should have SfSymbols icon_name arm for SkipForward"
@@ -134,17 +143,17 @@ fn happy_path_icon_svg_bundled_only() {
 
     // Material (bundled) should have include_bytes! arms
     assert!(
-        output.code.contains("include_bytes!"),
+        output.code().contains("include_bytes!"),
         "should have include_bytes! for bundled material SVGs"
     );
     assert!(
-        output.code.contains("material/play_pause.svg"),
+        output.code().contains("material/play_pause.svg"),
         "should reference material/play_pause.svg in include_bytes! path"
     );
 
     // sf-symbols (system) should NOT have include_bytes! arms
     assert!(
-        !output.code.contains("SfSymbols) => Some(include_bytes!"),
+        !output.code().contains("SfSymbols) => Some(include_bytes!"),
         "system themes should not have include_bytes! arms"
     );
 }
@@ -154,15 +163,15 @@ fn happy_path_has_const_all() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output.code.contains("pub const ALL: &[Self]"),
+        output.code().contains("pub const ALL: &[Self]"),
         "should have const ALL"
     );
     assert!(
-        output.code.contains("Self::PlayPause"),
+        output.code().contains("Self::PlayPause"),
         "ALL should contain PlayPause variant"
     );
     assert!(
-        output.code.contains("Self::SkipForward"),
+        output.code().contains("Self::SkipForward"),
         "ALL should contain SkipForward variant"
     );
 }
@@ -172,7 +181,7 @@ fn happy_path_output_filename() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert_eq!(
-        output.output_path.file_name().unwrap().to_str().unwrap(),
+        output.output_path().file_name().unwrap().to_str().unwrap(),
         "sample_icon.rs"
     );
 }
@@ -181,10 +190,10 @@ fn happy_path_output_filename() {
 fn happy_path_size_report() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
-    assert_eq!(output.role_count, 2);
-    assert_eq!(output.bundled_theme_count, 1);
-    assert_eq!(output.svg_count, 2);
-    assert!(output.total_svg_bytes > 0);
+    assert_eq!(output.role_count(), 2);
+    assert_eq!(output.bundled_theme_count(), 1);
+    assert_eq!(output.svg_count(), 2);
+    assert!(output.total_svg_bytes() > 0);
 }
 
 // =============================================================================
@@ -302,7 +311,7 @@ bundled-themes = ["material"]
         errors
             .errors()
             .iter()
-            .any(|e| matches!(e, native_theme_build::BuildError::MissingSvg { path } if path.contains("skip_next.svg"))),
+            .any(|e| matches!(e, native_theme_build::BuildError::MissingSvg { path, role } if path.contains("skip_next.svg") && role == "skip-forward")),
         "should have MissingSvg for 'skip_next.svg': {errors:?}",
     );
 
@@ -353,22 +362,25 @@ bundled-themes = ["material"]
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
     assert!(
-        output.code.contains("pub enum AllIcons"),
+        output.code().contains("pub enum AllIcons"),
         "should use override enum name"
     );
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause from file A"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward from file B"
     );
 
     // #61: Roles from the first source should appear before roles from the second
-    let play_pos = output.code.find("PlayPause").expect("PlayPause not found");
+    let play_pos = output
+        .code()
+        .find("PlayPause")
+        .expect("PlayPause not found");
     let skip_pos = output
-        .code
+        .code()
         .find("SkipForward")
         .expect("SkipForward not found");
     assert!(
@@ -377,7 +389,7 @@ bundled-themes = ["material"]
     );
 
     assert_eq!(
-        output.output_path.file_name().unwrap().to_str().unwrap(),
+        output.output_path().file_name().unwrap().to_str().unwrap(),
         "all_icons.rs"
     );
 
@@ -416,55 +428,110 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "expected generated code");
+    assert!(!output.code().is_empty(), "expected generated code");
 
     // Verify cfg-gated DE dispatch
     assert!(
-        output.code.contains("#[cfg(target_os = \"linux\")]"),
+        output.code().contains("#[cfg(target_os = \"linux\")]"),
         "should have cfg linux gate. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
         output
-            .code
-            .contains("native_theme::detect::parse_linux_desktop("),
-        "should call parse_linux_desktop. code:\n{}",
-        output.code
+            .code()
+            .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
+        "should read the desktop native-theme's readers use. code:\n{}",
+        output.code()
     );
     assert!(
         output
-            .code
+            .code()
             .contains("native_theme::detect::LinuxDesktop::Kde => Some(\"view-visible\")"),
         "should have KDE-specific arm. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("_ => Some(\"view-reveal\")"),
+        output.code().contains("_ => Some(\"view-reveal\")"),
         "should have default wildcard arm. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("#[cfg(not(target_os = \"linux\"))]"),
+        output.code().contains("#[cfg(not(target_os = \"linux\"))]"),
         "should have cfg not-linux gate. code:\n{}",
-        output.code
+        output.code()
     );
 
     // #89: Verify DE-specific match arms reference the expected DE names
     assert!(
-        output.code.contains("Kde"),
+        output.code().contains("Kde"),
         "should contain Kde variant in DE dispatch. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("view-visible"),
+        output.code().contains("view-visible"),
         "should contain KDE-specific icon name 'view-visible'. code:\n{}",
-        output.code
+        output.code()
     );
     assert!(
-        output.code.contains("view-reveal"),
+        output.code().contains("view-reveal"),
         "should contain default icon name 'view-reveal'. code:\n{}",
-        output.code
+        output.code()
     );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+#[test]
+fn de_aware_compositor_keys_dispatch() {
+    let dir = create_temp_dir("de_compositor_keys");
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "de-test"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    write_file(
+        &dir,
+        "freedesktop/mapping.toml",
+        r#"
+reveal = { cosmic = "cosmic-reveal", hyprland = "hypr-reveal", sway = "sway-reveal", river = "river-reveal", niri = "niri-reveal", wayfire = "wayfire-reveal", default = "view-reveal" }
+"#,
+    );
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    assert!(
+        output
+            .warnings()
+            .iter()
+            .all(|w| !w.contains("unrecognized")),
+        "every key is a desktop native-theme detects: {:?}",
+        output.warnings()
+    );
+    for (variant, name) in [
+        ("CosmicDe", "cosmic-reveal"),
+        ("Hyprland", "hypr-reveal"),
+        ("Sway", "sway-reveal"),
+        ("River", "river-reveal"),
+        ("Niri", "niri-reveal"),
+        ("Wayfire", "wayfire-reveal"),
+    ] {
+        let arm = format!("native_theme::detect::LinuxDesktop::{variant} => Some(\"{name}\")");
+        assert!(
+            output.code().contains(&arm),
+            "missing `{arm}`. code:\n{}",
+            output.code()
+        );
+    }
 
     if let Err(e) = fs::remove_dir_all(&dir) {
         eprintln!("test cleanup warning: {e}");
@@ -487,7 +554,7 @@ system-themes = ["freedesktop"]
         &dir,
         "freedesktop/mapping.toml",
         r#"
-reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
+reveal = { unity = "unity-reveal", default = "view-reveal" }
 "#,
     );
 
@@ -497,26 +564,26 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
         .generate()
         .unwrap_or_else(|e| panic!("warnings should not be errors: {e}"));
 
-    // Warnings should mention cosmic and unrecognized (checked separately for resilience)
+    // Warnings should mention unity and unrecognized (checked separately for resilience)
     assert!(
-        output.warnings.iter().any(|w| w.contains("cosmic")),
-        "should mention 'cosmic': {:?}",
-        output.warnings
+        output.warnings().iter().any(|w| w.contains("unity")),
+        "should mention 'unity': {:?}",
+        output.warnings()
     );
     assert!(
-        output.warnings.iter().any(|w| w.contains("unrecognized")),
+        output.warnings().iter().any(|w| w.contains("unrecognized")),
         "should mention 'unrecognized': {:?}",
-        output.warnings
+        output.warnings()
     );
 
-    assert!(!output.code.is_empty(), "code should still be generated");
+    assert!(!output.code().is_empty(), "code should still be generated");
 
-    // Since "cosmic" maps to None in de_key_to_variant, no DE-specific arms generated,
+    // Since "unity" maps to None in de_key_to_variant, no DE-specific arms generated,
     // so the DeAware value collapses to a simple arm using the default
     assert!(
-        output.code.contains("Some(\"view-reveal\")"),
+        output.code().contains("Some(\"view-reveal\")"),
         "should use default value. code:\n{}",
-        output.code
+        output.code()
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -622,14 +689,14 @@ bundled-themes = ["material"]
     // The include_bytes! path should be relative to the base_dir (themes/),
     // not relative to the TOML file's parent directory (config/).
     assert!(
-        output.code.contains("include_bytes!"),
+        output.code().contains("include_bytes!"),
         "should have include_bytes! directives"
     );
     // With base_dir set to themes/, the path should reference material/play_pause.svg
     assert!(
-        output.code.contains("material/play_pause.svg"),
+        output.code().contains("material/play_pause.svg"),
         "include_bytes! path should reference material/play_pause.svg. code:\n{}",
-        output.code
+        output.code()
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -644,91 +711,221 @@ fn golden_syntax_check() {
 
     // Contains enum keyword
     assert!(
-        output.code.contains("enum"),
+        output.code().contains("enum"),
         "generated code should contain 'enum' keyword"
     );
 
     // Contains fn icon_name (trait impl method, not pub)
     assert!(
-        output.code.contains("fn icon_name"),
+        output.code().contains("fn icon_name"),
         "generated code should contain 'fn icon_name'"
     );
 
     // Contains fn icon_svg (bundled theme present, so SVG function should exist)
     assert!(
-        output.code.contains("fn icon_svg"),
+        output.code().contains("fn icon_svg"),
         "generated code should contain 'fn icon_svg'"
     );
 
     // Braces are balanced
-    let open_braces = output.code.chars().filter(|&c| c == '{').count();
-    let close_braces = output.code.chars().filter(|&c| c == '}').count();
+    let open_braces = output.code().chars().filter(|&c| c == '{').count();
+    let close_braces = output.code().chars().filter(|&c| c == '}').count();
     assert_eq!(
         open_braces, close_braces,
         "braces should be balanced: {{ = {open_braces}, }} = {close_braces}"
     );
 }
 
-/// #33: Verify generated code compiles by writing a temp Cargo project and running `cargo check`.
-///
-/// This goes beyond `golden_syntax_check` (string matching) by actually invoking the
-/// Rust compiler. Skips gracefully if `cargo` is unavailable or the build fails for
-/// environmental reasons (e.g., missing toolchain components in CI).
-#[test]
-fn compile_generated_code() {
-    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+/// Writes `files` under `src/` of two crates of a temp Cargo workspace, one
+/// on edition 2015 (a Cargo.toml without `edition`) and one on 2021, each
+/// with native-theme as a path dependency and the fixture SVGs (the
+/// `include_bytes!` paths reference `CARGO_MANIFEST_DIR`), and runs
+/// `cargo check --workspace` on it, so native-theme is built once. Returns
+/// the compiler's stderr when the check fails, and `Ok` when `cargo` is not
+/// available or native-theme is not beside this crate, as in the published
+/// crate, which holds this crate alone.
+fn cargo_check(suffix: &str, files: &[(&str, &str)]) -> Result<(), String> {
+    const EDITIONS: [&str; 2] = ["2015", "2021"];
 
-    let dir = create_temp_dir("compile_check");
-    let src_dir = dir.join("src");
-    fs::create_dir_all(&src_dir).unwrap();
-
-    // Write the generated code as lib.rs
-    fs::write(src_dir.join("lib.rs"), &output.code).unwrap();
-
-    // Copy fixture SVGs so include_bytes! paths resolve (they reference CARGO_MANIFEST_DIR)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let fixture_src = manifest_dir.join("tests/fixtures");
-    if fixture_src.exists() {
-        copy_dir_recursive(&fixture_src, &dir.join("tests/fixtures"));
-    }
-
-    // Write a minimal Cargo.toml with native-theme as a path dependency
     let native_theme_path = manifest_dir.join("../native-theme");
-    let cargo_toml = format!(
-        r#"[package]
-name = "compile-check"
+    if !native_theme_path.join("Cargo.toml").is_file() {
+        eprintln!(
+            "skipping cargo check: {} is absent; it runs in the native-theme workspace",
+            native_theme_path.display()
+        );
+        return Ok(());
+    }
+    let dir = create_temp_dir(suffix);
+
+    for edition in EDITIONS {
+        let crate_dir = dir.join(format!("edition-{edition}"));
+        let src_dir = crate_dir.join("src");
+        fs::create_dir_all(&src_dir).unwrap();
+        for (name, content) in files {
+            fs::write(src_dir.join(name), content).unwrap();
+        }
+        if fixture_src.exists() {
+            copy_dir_recursive(&fixture_src, &crate_dir.join("tests/fixtures"));
+        }
+        let cargo_toml = format!(
+            r#"[package]
+name = "compile-check-{edition}"
 version = "0.0.0"
-edition = "2021"
+edition = "{edition}"
 
 [dependencies]
 native-theme = {{ path = "{}" }}
 "#,
-        native_theme_path.display()
-    );
-    fs::write(dir.join("Cargo.toml"), cargo_toml).unwrap();
+            native_theme_path.display()
+        );
+        fs::write(crate_dir.join("Cargo.toml"), cargo_toml).unwrap();
+    }
+    let members = EDITIONS
+        .iter()
+        .map(|edition| format!("\"edition-{edition}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
+    fs::write(
+        dir.join("Cargo.toml"),
+        format!("[workspace]\nmembers = [{members}]\nresolver = \"2\"\n"),
+    )
+    .unwrap();
 
-    // Run cargo check
     let result = std::process::Command::new("cargo")
-        .args(["check", "--quiet"])
+        .args(["check", "--quiet", "--workspace"])
         .current_dir(&dir)
         .output();
 
-    // Clean up
     let _ = fs::remove_dir_all(&dir);
 
     match result {
-        Ok(output_cmd) => {
-            if !output_cmd.status.success() {
-                let stderr = String::from_utf8_lossy(&output_cmd.stderr);
-                panic!(
-                    "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
-                    output.code
-                );
-            }
+        Ok(output_cmd) if !output_cmd.status.success() => {
+            Err(String::from_utf8_lossy(&output_cmd.stderr).into_owned())
         }
+        Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("skipping compile_generated_code: cargo not available ({e})");
+            eprintln!("skipping cargo check: cargo not available ({e})");
+            Ok(())
         }
+    }
+}
+
+/// #33: Verify generated code compiles by writing a temp Cargo project and running `cargo check`.
+///
+/// This goes beyond `golden_syntax_check` (string matching) by actually invoking the
+/// Rust compiler. Skips gracefully if `cargo` is unavailable.
+#[test]
+fn compile_generated_code() {
+    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+    // A DE-aware mapping: `icon_name` binds the desktop native-theme reads
+    let desktop = generate_fixture(&fixtures_dir().join("desktop-icons.toml"));
+    assert!(desktop.code().contains("let de ="), "{}", desktop.code());
+
+    // The generated code as lib.rs, under the lint a crate that `include!`s
+    // it into a public module meets; an unused `de` would be an error
+    let lib_rs = format!(
+        "#![deny(missing_docs, unused)]\n//! compile check\n{}\n\
+         /// DE-aware icons.\npub mod desktop {{\ninclude!(\"desktop_icons.rs\");\n}}\n",
+        output.code()
+    );
+    if let Err(stderr) = cargo_check(
+        "compile_check",
+        &[("lib.rs", &lib_rs), ("desktop_icons.rs", desktop.code())],
+    ) {
+        panic!(
+            "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}\n--- desktop ---\n{}",
+            output.code(),
+            desktop.code()
+        );
+    }
+}
+
+/// Two generated files `include!`d into one module compile together, as
+/// does an enum named `option` (whose `pub enum Option` shadows the
+/// prelude's) with base derives also given by path, and on Unix the
+/// `include_bytes!` paths of a directory whose name has a `"` and a `\`.
+#[test]
+fn compile_generated_files_in_one_module() {
+    // Each file gets a directory whose mappings hold only its roles (an
+    // unmapped role or an unknown one is an error); the include_bytes!
+    // paths point into it, so it stays until the check has run.
+    let generate = |name: &str, roles: &[&str], derives: &[&str]| {
+        // On Unix a `"` and a `\` may be part of a directory name
+        let quoted = if cfg!(unix) { "_we\"ird\\dir" } else { "" };
+        let dir = create_temp_dir(&format!("one_module_{name}{quoted}"));
+        for theme in ["material", "sf-symbols"] {
+            copy_dir_recursive(&fixtures_dir().join(theme), &dir.join(theme));
+            let mapping = fs::read_to_string(dir.join(theme).join("mapping.toml")).unwrap();
+            let kept: String = mapping
+                .lines()
+                .filter(|line| roles.iter().any(|r| line.starts_with(&format!("{r} "))))
+                .map(|line| format!("{line}\n"))
+                .collect();
+            fs::write(dir.join(theme).join("mapping.toml"), kept).unwrap();
+        }
+        let roles_list = roles
+            .iter()
+            .map(|r| format!("\"{r}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        write_file(
+            &dir,
+            "icons.toml",
+            &format!(
+                "name = \"{name}\"\nroles = [{roles_list}]\n\
+                 bundled-themes = [\"material\"]\nsystem-themes = [\"sf-symbols\"]\n"
+            ),
+        );
+        let mut generator = IconGenerator::new()
+            .source(dir.join("icons.toml"))
+            .output_dir(&dir);
+        for derive in derives {
+            generator = generator.derive(derive);
+        }
+        let code = generator
+            .generate()
+            .unwrap_or_else(|e| panic!("{name}: expected no errors: {e}"))
+            .code()
+            .to_string();
+        (code, dir)
+    };
+    let (media, media_dir) = generate("media-icons", &["play-pause"], &[]);
+    let (nav, nav_dir) = generate("nav-icons", &["skip-forward"], &[]);
+    let (option, option_dir) = generate(
+        "option",
+        &["play-pause", "skip-forward"],
+        &["core::hash::Hash", "std::fmt::Debug", "core::clone::Clone"],
+    );
+
+    let lib_rs = "#![deny(missing_docs)]\n\
+                  //! compile check\n\
+                  /// Two generated files in one module.\n\
+                  pub mod icons {\n\
+                  include!(\"media_icons.rs\");\n\
+                  include!(\"nav_icons.rs\");\n\
+                  }\n\
+                  /// An enum named `Option`.\n\
+                  pub mod option {\n\
+                  include!(\"option.rs\");\n\
+                  }\n";
+    let result = cargo_check(
+        "one_module_check",
+        &[
+            ("lib.rs", lib_rs),
+            ("media_icons.rs", &media),
+            ("nav_icons.rs", &nav),
+            ("option.rs", &option),
+        ],
+    );
+    for dir in [media_dir, nav_dir, option_dir] {
+        let _ = fs::remove_dir_all(dir);
+    }
+    if let Err(stderr) = result {
+        panic!(
+            "generated code failed to compile:\n{stderr}\n\n--- media ---\n{media}\n--- nav ---\n{nav}\n--- option ---\n{option}"
+        );
     }
 }
 
@@ -757,23 +954,23 @@ system-themes = ["freedesktop"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     // System theme should not have include_bytes!
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
     // DE-aware mapping should generate DE dispatch code
     assert!(
-        output.code.contains("media-playback-start"),
+        output.code().contains("media-playback-start"),
         "should contain KDE-specific icon name"
     );
 
@@ -806,17 +1003,17 @@ system-themes = ["segoe-fluent"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
 
@@ -850,18 +1047,18 @@ system-themes = ["lucide"]
         .generate()
         .unwrap_or_else(|e| panic!("expected no errors: {e}"));
 
-    assert!(!output.code.is_empty(), "should generate code");
+    assert!(!output.code().is_empty(), "should generate code");
     assert!(
-        output.code.contains("PlayPause"),
+        output.code().contains("PlayPause"),
         "should have PlayPause variant"
     );
     assert!(
-        output.code.contains("SkipForward"),
+        output.code().contains("SkipForward"),
         "should have SkipForward variant"
     );
     // System theme should not have include_bytes!
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system theme should not have embedded SVGs"
     );
 
@@ -896,14 +1093,14 @@ system-themes = ["freedesktop"]
 
     // System-only themes should NOT generate include_bytes! calls
     assert!(
-        !output.code.contains("include_bytes!"),
+        !output.code().contains("include_bytes!"),
         "system-only theme should not embed SVG data via include_bytes!. code:\n{}",
-        output.code,
+        output.code(),
     );
 
     // The icon_svg function should exist but only return None for system themes
     assert!(
-        output.code.contains("icon_svg"),
+        output.code().contains("icon_svg"),
         "generated code should contain icon_svg function",
     );
 

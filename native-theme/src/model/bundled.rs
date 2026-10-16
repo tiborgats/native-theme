@@ -4,7 +4,7 @@
 // embeds SVG files at compile time and makes them available via
 // `bundled_icon_svg()`. Without features, the function always returns None.
 
-use super::icons::{IconRole, IconSet};
+use super::icons::{IconRole, IconSet, icon_name};
 
 /// Returns the raw SVG bytes for a bundled icon, if the corresponding
 /// feature flag is enabled.
@@ -25,159 +25,20 @@ use super::icons::{IconRole, IconSet};
 /// equivalent public-API call:
 ///
 /// ```
-/// use native_theme::icons::SfSymbolsLoader;
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::MaterialLoader;
+/// use native_theme::icons::IconRole;
 ///
-/// // SfSymbols is not a bundled set on non-macOS targets; the loader returns None.
-/// let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
-/// assert!(result.is_none());
+/// // Material is bundled with the `material-icons` feature; the loader returns None without it.
+/// let result = MaterialLoader::new(IconRole::ActionCopy).load();
+/// assert_eq!(result.is_some(), cfg!(feature = "material-icons"));
 /// ```
 #[must_use]
-#[allow(unreachable_patterns, unused_variables)]
+#[cfg_attr(
+    not(any(feature = "material-icons", feature = "lucide-icons")),
+    allow(dead_code)
+)]
 pub(crate) fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]> {
-    match set {
-        #[cfg(feature = "material-icons")]
-        IconSet::Material => material_svg(role),
-
-        #[cfg(feature = "lucide-icons")]
-        IconSet::Lucide => lucide_svg(role),
-
-        _ => None,
-    }
-}
-
-#[cfg(feature = "material-icons")]
-#[allow(unreachable_patterns)]
-fn material_svg(role: IconRole) -> Option<&'static [u8]> {
-    match role {
-        // Dialog / Alert (6)
-        IconRole::DialogWarning => Some(include_bytes!("../../icons/material/warning.svg")),
-        IconRole::DialogError => Some(include_bytes!("../../icons/material/error.svg")),
-        IconRole::DialogInfo => Some(include_bytes!("../../icons/material/info.svg")),
-        IconRole::DialogQuestion => Some(include_bytes!("../../icons/material/help.svg")),
-        IconRole::DialogSuccess => Some(include_bytes!("../../icons/material/check_circle.svg")),
-        IconRole::Shield => Some(include_bytes!("../../icons/material/shield.svg")),
-
-        // Window Controls (4)
-        IconRole::WindowClose => Some(include_bytes!("../../icons/material/close.svg")),
-        IconRole::WindowMinimize => Some(include_bytes!("../../icons/material/minimize.svg")),
-        IconRole::WindowMaximize => Some(include_bytes!("../../icons/material/open_in_full.svg")),
-        IconRole::WindowRestore => {
-            Some(include_bytes!("../../icons/material/close_fullscreen.svg"))
-        }
-
-        // Common Actions (14)
-        IconRole::ActionSave => Some(include_bytes!("../../icons/material/save.svg")),
-        IconRole::ActionDelete => Some(include_bytes!("../../icons/material/delete.svg")),
-        IconRole::ActionCopy => Some(include_bytes!("../../icons/material/content_copy.svg")),
-        IconRole::ActionPaste => Some(include_bytes!("../../icons/material/content_paste.svg")),
-        IconRole::ActionCut => Some(include_bytes!("../../icons/material/content_cut.svg")),
-        IconRole::ActionUndo => Some(include_bytes!("../../icons/material/undo.svg")),
-        IconRole::ActionRedo => Some(include_bytes!("../../icons/material/redo.svg")),
-        IconRole::ActionSearch => Some(include_bytes!("../../icons/material/search.svg")),
-        IconRole::ActionSettings => Some(include_bytes!("../../icons/material/settings.svg")),
-        IconRole::ActionEdit => Some(include_bytes!("../../icons/material/edit.svg")),
-        IconRole::ActionAdd => Some(include_bytes!("../../icons/material/add.svg")),
-        IconRole::ActionRemove => Some(include_bytes!("../../icons/material/remove.svg")),
-        IconRole::ActionRefresh => Some(include_bytes!("../../icons/material/refresh.svg")),
-        IconRole::ActionPrint => Some(include_bytes!("../../icons/material/print.svg")),
-
-        // Navigation (6)
-        IconRole::NavBack => Some(include_bytes!("../../icons/material/arrow_back.svg")),
-        IconRole::NavForward => Some(include_bytes!("../../icons/material/arrow_forward.svg")),
-        IconRole::NavUp => Some(include_bytes!("../../icons/material/arrow_upward.svg")),
-        IconRole::NavDown => Some(include_bytes!("../../icons/material/arrow_downward.svg")),
-        IconRole::NavHome => Some(include_bytes!("../../icons/material/home.svg")),
-        IconRole::NavMenu => Some(include_bytes!("../../icons/material/menu.svg")),
-
-        // Files / Places (5)
-        IconRole::FileGeneric => Some(include_bytes!("../../icons/material/description.svg")),
-        IconRole::FolderClosed => Some(include_bytes!("../../icons/material/folder.svg")),
-        IconRole::FolderOpen => Some(include_bytes!("../../icons/material/folder_open.svg")),
-        IconRole::TrashEmpty => Some(include_bytes!("../../icons/material/delete.svg")),
-        IconRole::TrashFull => Some(include_bytes!("../../icons/material/delete.svg")), // reuse delete
-
-        // Status (3)
-        IconRole::StatusBusy => Some(include_bytes!("../../icons/material/progress_activity.svg")),
-        IconRole::StatusCheck => Some(include_bytes!("../../icons/material/check.svg")),
-        IconRole::StatusError => Some(include_bytes!("../../icons/material/error.svg")), // reuse error
-
-        // System (4)
-        IconRole::UserAccount => Some(include_bytes!("../../icons/material/person.svg")),
-        IconRole::Notification => Some(include_bytes!("../../icons/material/notifications.svg")),
-        IconRole::Help => Some(include_bytes!("../../icons/material/help.svg")), // reuse help
-        IconRole::Lock => Some(include_bytes!("../../icons/material/lock.svg")),
-
-        _ => None, // #[non_exhaustive] forward compat
-    }
-}
-
-#[cfg(feature = "lucide-icons")]
-#[allow(unreachable_patterns)]
-fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
-    match role {
-        // Dialog / Alert (6)
-        IconRole::DialogWarning => Some(include_bytes!("../../icons/lucide/triangle-alert.svg")),
-        IconRole::DialogError => Some(include_bytes!("../../icons/lucide/circle-x.svg")),
-        IconRole::DialogInfo => Some(include_bytes!("../../icons/lucide/info.svg")),
-        IconRole::DialogQuestion => Some(include_bytes!(
-            "../../icons/lucide/circle-question-mark.svg"
-        )),
-        IconRole::DialogSuccess => Some(include_bytes!("../../icons/lucide/circle-check.svg")),
-        IconRole::Shield => Some(include_bytes!("../../icons/lucide/shield.svg")),
-
-        // Window Controls (4)
-        IconRole::WindowClose => Some(include_bytes!("../../icons/lucide/x.svg")),
-        IconRole::WindowMinimize => Some(include_bytes!("../../icons/lucide/minimize.svg")),
-        IconRole::WindowMaximize => Some(include_bytes!("../../icons/lucide/maximize.svg")),
-        IconRole::WindowRestore => Some(include_bytes!("../../icons/lucide/minimize-2.svg")),
-
-        // Common Actions (14)
-        IconRole::ActionSave => Some(include_bytes!("../../icons/lucide/save.svg")),
-        IconRole::ActionDelete => Some(include_bytes!("../../icons/lucide/trash.svg")),
-        IconRole::ActionCopy => Some(include_bytes!("../../icons/lucide/copy.svg")),
-        IconRole::ActionPaste => Some(include_bytes!("../../icons/lucide/clipboard-paste.svg")),
-        IconRole::ActionCut => Some(include_bytes!("../../icons/lucide/scissors.svg")),
-        IconRole::ActionUndo => Some(include_bytes!("../../icons/lucide/undo-2.svg")),
-        IconRole::ActionRedo => Some(include_bytes!("../../icons/lucide/redo-2.svg")),
-        IconRole::ActionSearch => Some(include_bytes!("../../icons/lucide/search.svg")),
-        IconRole::ActionSettings => Some(include_bytes!("../../icons/lucide/settings.svg")),
-        IconRole::ActionEdit => Some(include_bytes!("../../icons/lucide/pencil.svg")),
-        IconRole::ActionAdd => Some(include_bytes!("../../icons/lucide/plus.svg")),
-        IconRole::ActionRemove => Some(include_bytes!("../../icons/lucide/minus.svg")),
-        IconRole::ActionRefresh => Some(include_bytes!("../../icons/lucide/refresh-cw.svg")),
-        IconRole::ActionPrint => Some(include_bytes!("../../icons/lucide/printer.svg")),
-
-        // Navigation (6)
-        IconRole::NavBack => Some(include_bytes!("../../icons/lucide/chevron-left.svg")),
-        IconRole::NavForward => Some(include_bytes!("../../icons/lucide/chevron-right.svg")),
-        IconRole::NavUp => Some(include_bytes!("../../icons/lucide/chevron-up.svg")),
-        IconRole::NavDown => Some(include_bytes!("../../icons/lucide/chevron-down.svg")),
-        IconRole::NavHome => Some(include_bytes!("../../icons/lucide/house.svg")),
-        IconRole::NavMenu => Some(include_bytes!("../../icons/lucide/menu.svg")),
-
-        // Files / Places (5)
-        IconRole::FileGeneric => Some(include_bytes!("../../icons/lucide/file.svg")),
-        IconRole::FolderClosed => Some(include_bytes!("../../icons/lucide/folder-closed.svg")),
-        IconRole::FolderOpen => Some(include_bytes!("../../icons/lucide/folder-open.svg")),
-        IconRole::TrashEmpty => Some(include_bytes!("../../icons/lucide/trash.svg")),
-        IconRole::TrashFull => Some(include_bytes!("../../icons/lucide/trash.svg")), // reuse trash
-
-        // Status (3)
-        IconRole::StatusBusy => Some(include_bytes!("../../icons/lucide/loader.svg")),
-        IconRole::StatusCheck => Some(include_bytes!("../../icons/lucide/check.svg")),
-        IconRole::StatusError => Some(include_bytes!("../../icons/lucide/circle-x.svg")), // reuse circle-x
-
-        // System (4)
-        IconRole::UserAccount => Some(include_bytes!("../../icons/lucide/user.svg")),
-        IconRole::Notification => Some(include_bytes!("../../icons/lucide/bell.svg")),
-        IconRole::Help => Some(include_bytes!(
-            "../../icons/lucide/circle-question-mark.svg"
-        )), // reuse
-        IconRole::Lock => Some(include_bytes!("../../icons/lucide/lock.svg")),
-
-        _ => None, // #[non_exhaustive] forward compat
-    }
+    icon_name(role, set).and_then(|name| bundled_icon_by_name(name, set))
 }
 
 /// Returns raw SVG bytes for a bundled icon looked up by its canonical name
@@ -195,11 +56,11 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// per-set loader from [`crate::icons`] constructed with a string name:
 ///
 /// ```
-/// use native_theme::icons::SfSymbolsLoader;
+/// use native_theme::icons::LucideLoader;
 ///
-/// // SfSymbols is not a bundled set; no in-crate name lookup succeeds.
-/// let result = SfSymbolsLoader::new("check").load();
-/// assert!(result.is_none());
+/// // Lucide is bundled with the `lucide-icons` feature; the loader returns None without it.
+/// let result = LucideLoader::new("check").load();
+/// assert_eq!(result.is_some(), cfg!(feature = "lucide-icons"));
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]
@@ -235,7 +96,7 @@ mod tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn material_icons_cover_all_roles() {
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             let svg = bundled_icon_svg(role, IconSet::Material);
             assert!(svg.is_some(), "Material icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();
@@ -268,7 +129,7 @@ mod tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn lucide_icons_cover_all_roles() {
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             let svg = bundled_icon_svg(role, IconSet::Lucide);
             assert!(svg.is_some(), "Lucide icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();
@@ -296,6 +157,22 @@ mod tests {
         );
     }
 
+    #[test]
+    #[cfg(any(feature = "material-icons", feature = "lucide-icons"))]
+    fn every_role_with_a_name_has_the_bundled_file_of_that_name() {
+        for set in [IconSet::Material, IconSet::Lucide] {
+            for role in IconRole::ALL.iter().copied() {
+                if let Some(name) = icon_name(role, set) {
+                    assert_eq!(
+                        bundled_icon_svg(role, set),
+                        bundled_icon_by_name(name, set),
+                        "{role:?} in {set:?}"
+                    );
+                }
+            }
+        }
+    }
+
     // === Non-feature-gated tests ===
 
     #[test]
@@ -309,8 +186,8 @@ mod tests {
             "Freedesktop should not be a bundled set"
         );
         assert!(
-            bundled_icon_svg(IconRole::ActionCopy, IconSet::SegoeIcons).is_none(),
-            "SegoeIcons should not be a bundled set"
+            bundled_icon_svg(IconRole::ActionCopy, IconSet::SegoeFluent).is_none(),
+            "SegoeFluent should not be a bundled set"
         );
     }
 
@@ -350,7 +227,7 @@ mod tests {
     fn by_name_non_bundled_sets_return_none() {
         assert!(bundled_icon_by_name("check", IconSet::SfSymbols).is_none());
         assert!(bundled_icon_by_name("check", IconSet::Freedesktop).is_none());
-        assert!(bundled_icon_by_name("check", IconSet::SegoeIcons).is_none());
+        assert!(bundled_icon_by_name("check", IconSet::SegoeFluent).is_none());
     }
 
     #[test]

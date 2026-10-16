@@ -106,6 +106,30 @@ pub(crate) struct FontInheritanceInfo {
 }
 inventory::collect!(FontInheritanceInfo);
 
+/// Uniform inheritance registry.
+///
+/// Populated by `#[derive(ThemeWidget)]`: one row per field that declares
+/// `#[theme(inherit_from = "...")]`. Consumed by the drift test
+/// `uniform_rules_all_accounted_for` in `inheritance.rs::tests`, which
+/// asserts each such `docs/inheritance-rules.toml [uniform]` rule names the
+/// same source as the attribute.
+///
+/// Fields carry `#[cfg_attr(not(test), allow(dead_code))]` — see
+/// [`BorderInheritanceInfo`] for rationale.
+pub(crate) struct UniformInheritanceInfo {
+    /// Snake_case widget name (e.g., "button", "segmented_control").
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub widget_name: &'static str,
+    /// Name of the field on the widget Option struct (e.g., `"icon_size"`,
+    /// not the serialized `"icon_size_px"`).
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub field: &'static str,
+    /// The `inherit_from` path as written (e.g., `"defaults.accent_color"`).
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub inherit_from: &'static str,
+}
+inventory::collect!(UniformInheritanceInfo);
+
 use crate::model::ThemeMode;
 use crate::model::resolved::ResolvedTheme;
 
@@ -213,6 +237,8 @@ impl ThemeMode {
     ///
     /// # Errors
     ///
+    /// Returns [`crate::Error::ResolutionInvalid`] with the one path
+    /// `context.font_dpi` if `ctx.font_dpi` is not finite and positive.
     /// Returns [`crate::Error::ResolutionIncomplete`] if any fields
     /// remain `None` after resolution, or
     /// [`crate::Error::ResolutionInvalid`] if range checks fail.

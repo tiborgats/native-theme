@@ -7,14 +7,17 @@
 
 use egui::Button;
 use egui::widget_style::{Classes, WidgetState};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::IconRole;
+use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, text_area_frame,
+    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_height,
+    text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
 use native_theme_egui_widgets::fade::fade_as_one;
+use native_theme_egui_widgets::links;
 use native_theme_egui_widgets::parts::Parts;
 use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
@@ -22,7 +25,6 @@ use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_egui_widgets::wrap;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -518,16 +520,10 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
-    // The disabled box is checked. Where the theme states a disabled fill it is the `Disabled`
-    // cell's; where it states none the platform dims by opacity alone
-    // (docs/platform-facts.md §2.1.6), so the box is the checked (`Selected`) cell's, faded by
-    // its `disabled_alpha`, `checkbox.disabled_opacity`: egui's cells are one variant each.
+    // The disabled box is checked: the `SelectedDisabled` cell, the checked box with the
+    // theme's disabled fill where it states one, faded as one by its `disabled_alpha`,
+    // `checkbox.disabled_opacity` (docs/platform-facts.md §2.1.6).
     heading(reg, ui, "basic.checkboxes.heading", "Checkboxes");
-    let disabled_variant = if t.checkbox.disabled_background.is_some() {
-        RoleVariant::Disabled
-    } else {
-        RoleVariant::Selected
-    };
     for (label, checked, variant, enabled, kind, id) in [
         (
             "Unchecked",
@@ -548,7 +544,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         (
             "Disabled",
             true,
-            disabled_variant,
+            RoleVariant::SelectedDisabled,
             false,
             "checkbox (disabled)",
             "basic.checkboxes.disabled",
@@ -557,17 +553,8 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            // A checked box is bordered in `checkbox.border.color`, disabled too: egui's
-            // `Disabled` cell serves a checked and an unchecked box alike and carries the
-            // unchecked border, so the disabled checked box takes the checked one per call.
-            if checked && !enabled && variant == RoleVariant::Disabled {
-                let border = to_color32(t.checkbox.border.color);
-                let widgets = &mut ui.visuals_mut().widgets;
-                widgets.noninteractive.bg_stroke.color = border;
-                widgets.inactive.bg_stroke.color = border;
-            }
             let text = demo::lined(ui, label, egui::TextStyle::Body);
-            let r = if !enabled && variant == RoleVariant::Selected {
+            let r = if !enabled {
                 let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
                     // The check box faded as one over the page (the companion crate's rule,
@@ -577,7 +564,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                 })
                 .inner
             } else {
-                ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()))
+                ui.add(egui::Checkbox::new(&mut value, text.clone()))
             };
             parts = checkbox_parts(ui, &r, text, checked);
             r
@@ -1073,7 +1060,7 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
     });
     reg.amend_last(|i| {
@@ -1599,7 +1586,8 @@ fn paint_cell_text(
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
 /// stripes), so it is painted here as the list's rows are: the header in
-/// `list.header_background` and `list.header_font`, the rows `row_metrics` tall in
+/// `list.header_background` and `list.header_font`, `list_header_height` tall where the theme
+/// states it and `row_metrics` tall else, the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
 /// `list.selection_text_color`; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
@@ -1620,7 +1608,11 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                 demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
             );
             let (row_height, inset, line) = row_metrics(t, &item_font, egui::Vec2::ZERO);
-            let (header_height, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
+            let (header_row, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
+            // `list.header_height` where the theme states it, on the layout grid as the rows
+            // are; else the header is a row
+            let header_height =
+                list_header_height(t).map_or(header_row, egui::emath::GuiRounding::round_ui);
             let grid = to_color32(l.grid_color);
             let grid_width = t.separator.line_width;
             let frame = list_frame(l);

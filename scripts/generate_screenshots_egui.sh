@@ -10,8 +10,8 @@ set -euo pipefail
 # NOTE: On macOS/Windows, use the showcase's built-in self-capture, which
 # writes the window with its title bar as a PNG, as gpui's and iced's do:
 #   cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
-#     --theme macos-sonoma --variant light --icon-set system \
-#     --tab basic --screenshot connectors/native-theme-egui/docs/assets/macos-macos-sonoma-light.png
+#     --theme macos-monterey --variant light --icon-set system \
+#     --tab basic --screenshot connectors/native-theme-egui/docs/assets/macos-macos-monterey-light.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
 #
 # --all-features: the showcase is built with every connector feature, as the
@@ -29,13 +29,13 @@ DELAY=3
 
 # Linux-native presets with matching icon sets (3 themes × dark+light).
 # Format: theme:variant:icon-set. kde-breeze names its freedesktop theme per
-# variant, breeze / breeze-dark (kde-breeze.toml:9, :317); `--icon-set <theme>`
+# variant, breeze / breeze-dark (kde-breeze.toml:16, :410); `--icon-set <theme>`
 # picks that installed theme, while `freedesktop` would mean the desktop's own.
 THEMES=(
     "kde-breeze:dark:breeze-dark"
     "kde-breeze:light:breeze"
-    "material:dark:material"
-    "material:light:material"
+    "material-3:dark:material"
+    "material-3:light:material"
     "catppuccin-mocha:dark:lucide"
     "catppuccin-mocha:light:lucide"
 )

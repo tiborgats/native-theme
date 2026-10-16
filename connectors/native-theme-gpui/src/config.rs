@@ -5,8 +5,8 @@
 //! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
 //! fields (see [`theme_color_to_config_colors`]).
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations in this module are verified against gpui-component 0.7.3,
+//! gpui-base 0.7.3 and gpui-pre 0.3.9.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -34,11 +34,9 @@ pub fn to_theme_config(
 ) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
-    let s = crate::text_scale_factor(prefs);
 
-    // Issue 14: clamp radius to non-negative before rounding
-    let radius = d.border.corner_radius.max(0.0).round() as usize;
-    let radius_lg = d.border.corner_radius_lg.max(0.0).round() as usize;
+    let radius = d.border.corner_radius.round() as usize;
+    let radius_lg = d.border.corner_radius_lg.round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
     let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
@@ -63,9 +61,9 @@ pub fn to_theme_config(
         // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
         // scaled sizes.
         font_family: Some(crate::font_family(&d.font.family)),
-        font_size: Some(d.font.size * s),
+        font_size: Some(prefs.scaled(d.font.size)),
         mono_font_family: Some(crate::font_family(&d.mono_font.family)),
-        mono_font_size: Some(d.mono_font.size * s),
+        mono_font_size: Some(prefs.scaled(d.mono_font.size)),
 
         radius: Some(radius),
         radius_lg: Some(radius_lg),
@@ -90,7 +88,7 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// `ThemeColor` has 139 fields (gpui-component 0.7.1
+/// `ThemeColor` has 139 fields (gpui-component 0.7.3
 /// `src/theme/theme_color.rs:59-343`) and `ThemeConfigColors` 140: the same
 /// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
 /// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,
@@ -440,21 +438,6 @@ mod tests {
             config.colors.accent.is_some(),
             "colors.accent should be populated"
         );
-    }
-
-    // Issue 14: negative radius should clamp to 0
-    #[test]
-    fn negative_radius_clamped() {
-        // We can't easily set a negative radius in a resolved theme (validation
-        // prevents it), so just verify the formula works on the positive path.
-        let resolved = test_resolved();
-        let config = to_theme_config(
-            &resolved,
-            "Clamp",
-            GpuiThemeMode::Dark,
-            &AccessibilityPreferences::default(),
-        );
-        assert!(config.radius.unwrap() < 1000, "radius should be reasonable");
     }
 
     // Issue 70: radius against a known preset value (non-tautological)

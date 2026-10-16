@@ -26,16 +26,19 @@ impl ThemeMode {
     /// # Arguments
     ///
     /// * `font_dpi` -- Font DPI for pt-to-px conversion (e.g. 96.0 on
-    ///   Linux/Windows, 72.0 on macOS).
+    ///   Linux/Windows, 72.0 on macOS); finite and positive.
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::ResolutionIncomplete`] if any required fields
-    /// are still `None` after resolution. Returns
+    /// Returns [`crate::Error::ResolutionInvalid`] with the one path
+    /// `context.font_dpi` if `font_dpi` is not finite and positive, before
+    /// any field is read. Returns [`crate::Error::ResolutionIncomplete`] if
+    /// any required fields are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
     #[doc(hidden)]
     pub fn validate_with_dpi(&self, font_dpi: f32) -> crate::Result<ResolvedTheme> {
+        validate_helpers::check_font_dpi(font_dpi)?;
         let mut missing = Vec::new();
         let dpi = font_dpi;
 
@@ -166,7 +169,12 @@ impl ThemeMode {
 
         // --- Phase 2: range checks on fully-validated data (separate Vec) ---
         let mut range_errors: Vec<crate::error::RangeViolation> = Vec::new();
-        validate_helpers::check_defaults_ranges(&defaults, &text_scale, &mut range_errors);
+        validate_helpers::check_defaults_ranges(
+            &defaults,
+            &text_scale,
+            &self.text_scale,
+            &mut range_errors,
+        );
         window.check_ranges("window", &mut range_errors);
         button.check_ranges("button", &mut range_errors);
         input.check_ranges("input", &mut range_errors);
@@ -190,6 +198,7 @@ impl ThemeMode {
         spinner.check_ranges("spinner", &mut range_errors);
         combo_box.check_ranges("combo_box", &mut range_errors);
         segmented_control.check_ranges("segmented_control", &mut range_errors);
+        card.check_ranges("card", &mut range_errors);
         expander.check_ranges("expander", &mut range_errors);
         link.check_ranges("link", &mut range_errors);
 

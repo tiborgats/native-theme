@@ -1,0 +1,246 @@
+# Exceptions to scripts/check_connector_parity.py's two rules, one entry per
+# (connector, name), each with the reason the rule does not fit. The script's
+# docstring states the rules; an entry that no longer matches what it excepts
+# is stale and fails the check.
+#
+#   kind = "name"       a one-field function the naming rule does not fit:
+#                       it returns something other than the leaf's value
+#   kind = "undecided"  a function the script cannot classify: it passes the
+#                       theme on whole
+#   kind = "absent"     the connector has no accessor that a sibling has
+#   kind = "unlike"     the connector has a function of the accessor's name
+#                       that is not it: another signature or meaning
+#
+# Paths without a crate are the connector's own (`src/...`); upstream code is
+# cited at the version the workspace builds against.
+
+# ── name ────────────────────────────────────────────────────────────────────
+
+[[exception]]
+connector = "iced"
+name = "pick_list_handle"
+kind = "name"
+reason = "a widget part, not the leaf's value: the drop-down chevron `PickList::handle` takes, an iced `Handle` of the renderer's own icon font, set at `combo_box.arrow_icon_size`"
+
+[[exception]]
+connector = "gpui"
+name = "is_dark_resolved"
+kind = "name"
+reason = "a derived flag, not the leaf's value: whether `defaults.background_color`'s HSL lightness is below 0.5"
+
+[[exception]]
+connector = "egui"
+name = "window_title_bar_font"
+kind = "name"
+reason = "an egui `FontId`, the font `window.title_bar_font` is drawn in, of which egui takes the size (scaled, egui's own `Heading` size where it is degenerate); named after the font, as `text_role_font` and `list_header_font` are"
+
+[[exception]]
+connector = "egui"
+name = "list_header_font"
+kind = "name"
+reason = "an egui `FontId`, the font `list.header_font` is drawn in, of which egui takes the size (scaled, egui's own `Body` size where it is degenerate); named after the font, as `text_role_font` and `window_title_bar_font` are"
+
+[[exception]]
+connector = "egui"
+name = "expander_icon"
+kind = "name"
+reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none"
+
+# ── absent: gpui ────────────────────────────────────────────────────────────
+# `to_theme` writes these leaves into gpui-component's `Theme` (its
+# `ThemeConfig` fields) and `ThemeColor`, which a gpui application reads
+# through `cx.theme()`; the connector's accessors are for leaves with no
+# receiver there.
+
+[[exception]]
+connector = "gpui"
+name = "border_color"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `ThemeColor::border` (src/colors.rs, `ResolvedColors::border`, `assign_core`); the application reads `cx.theme().border`"
+
+[[exception]]
+connector = "gpui"
+name = "border_corner_radius"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `Theme::radius`, clamped to non-negative; the application reads `cx.theme().radius`"
+
+[[exception]]
+connector = "gpui"
+name = "border_corner_radius_lg"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `Theme::radius_lg`, clamped to non-negative; the application reads `cx.theme().radius_lg`"
+
+[[exception]]
+connector = "gpui"
+name = "focus_ring_color"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `ThemeColor::ring` (src/colors.rs, `assign_core`); the application reads `cx.theme().ring`"
+
+[[exception]]
+connector = "gpui"
+name = "font_family"
+kind = "unlike"
+reason = "`to_theme` writes it to gpui-component's `Theme::font_family`, through the crate's `font_family(&Arc<str>)`, which turns any family into the name gpui is asked to draw and so takes a family, not the theme"
+
+[[exception]]
+connector = "gpui"
+name = "font_size"
+kind = "absent"
+reason = "`to_theme` writes it, scaled by the text-scaling factor, to gpui-component's `Theme::font_size`, the window rem; the application reads `cx.theme().font_size`"
+
+[[exception]]
+connector = "gpui"
+name = "mono_font_family"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `Theme::mono_font_family`, through the crate's `font_family(&Arc<str>)`; the application reads `cx.theme().mono_font_family`"
+
+[[exception]]
+connector = "gpui"
+name = "mono_font_size"
+kind = "absent"
+reason = "`to_theme` writes it, scaled by the text-scaling factor, to gpui-component's `Theme::mono_font_size`; the application reads `cx.theme().mono_font_size`"
+
+[[exception]]
+connector = "gpui"
+name = "info_color"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `ThemeColor::info` (src/colors.rs, `assign_status`); the application reads `cx.theme().info`"
+
+[[exception]]
+connector = "gpui"
+name = "info_text_color"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `ThemeColor::info_foreground` (src/colors.rs, `assign_status`); the application reads `cx.theme().info_foreground`"
+
+[[exception]]
+connector = "gpui"
+name = "warning_text_color"
+kind = "absent"
+reason = "`to_theme` writes it to gpui-component's `ThemeColor::warning_foreground` (src/colors.rs, `assign_status`); the application reads `cx.theme().warning_foreground`"
+
+[[exception]]
+connector = "gpui"
+name = "link_color"
+kind = "absent"
+reason = "gpui-component's `ThemeColor::link` takes `link.font.color`, which inherits it (docs/inheritance-rules.toml, `link.font.color`), so the link's own colour is the one gpui draws; the application reads `cx.theme().link`"
+
+[[exception]]
+connector = "gpui"
+name = "selection_background"
+kind = "absent"
+reason = "it reaches gpui-component's row selections, `ThemeColor::list_active` and `sidebar_accent`, through `list.selection_background` and `sidebar.selection_background`, which inherit it (docs/inheritance-rules.toml); `ThemeColor::selection` is the input's text selection, `input.selection_background` (src/colors.rs, `ResolvedColors::selection`)"
+
+[[exception]]
+connector = "gpui"
+name = "list_header_height"
+kind = "absent"
+reason = "the crate root has none: the receiver is `geometry::list_header_height(Native<'_>) -> Option<Pixels>` (src/geometry.rs), a style builder for `DataTable::header_row_height`, beside `data_table_size`, which the script does not scan"
+
+# ── absent: iced ────────────────────────────────────────────────────────────
+
+[[exception]]
+connector = "iced"
+name = "border_line_width"
+kind = "absent"
+reason = "no iced style reads it: each takes its widget's own `border.line_width`, which inherits it (docs/inheritance-rules.toml, `line_width.inherits_from`); an application drawing a border of its own reads `resolved.defaults.border.line_width`, as the showcase's swatch does"
+
+[[exception]]
+connector = "iced"
+name = "border_opacity"
+kind = "absent"
+reason = "the model has already folded it into every border colour it states (`border_color`'s doc), so it carries nothing an iced style or application could apply"
+
+[[exception]]
+connector = "iced"
+name = "border_shadow_enabled"
+kind = "absent"
+reason = "the model states a shadow colour but no offset or blur, so every iced style keeps iced's own `shadow` (src/styles.rs, `button`'s and `menu`'s docs) and nothing reads the flag"
+
+[[exception]]
+connector = "iced"
+name = "dialog_button_order"
+kind = "absent"
+reason = "iced has no dialog widget (iced_widget 0.14.2 and iced_aw 0.14.1 offer none), so the connector styles none; an application laying out its own button row reads `resolved.dialog.button_order`"
+
+[[exception]]
+connector = "iced"
+name = "dialog_button_gap"
+kind = "absent"
+reason = "iced has no dialog widget (iced_widget 0.14.2 and iced_aw 0.14.1 offer none), so the connector styles none; an application laying out its own button row reads `resolved.dialog.button_gap`"
+
+[[exception]]
+connector = "iced"
+name = "disabled_text_color"
+kind = "absent"
+reason = "no iced style reads it: each takes its widget's own `disabled_text_color` (`button.disabled_text_color` in src/styles.rs, `button`), which inherits it (docs/inheritance-rules.toml)"
+
+[[exception]]
+connector = "iced"
+name = "focus_ring_width"
+kind = "absent"
+reason = "iced draws no focus ring: a focused widget shows its `Focused` style's border, so nothing in iced takes a ring's width (examples/showcase-iced.rs, the `focus_ring_*` route); an application drawing its own ring reads `resolved.defaults.focus_ring_width`"
+
+[[exception]]
+connector = "iced"
+name = "focus_ring_offset"
+kind = "absent"
+reason = "iced draws no focus ring: a focused widget shows its `Focused` style's border, so nothing in iced takes a ring's offset (examples/showcase-iced.rs, the `focus_ring_*` route); an application drawing its own ring reads `resolved.defaults.focus_ring_offset`"
+
+[[exception]]
+connector = "iced"
+name = "selection_inactive_background"
+kind = "absent"
+reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection"
+
+[[exception]]
+connector = "iced"
+name = "selection_text_color"
+kind = "absent"
+reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
+
+# ── absent: egui ────────────────────────────────────────────────────────────
+# The egui accessors are the values no `Style` field carries (src/lib.rs,
+# "Where the theme reaches"); these leaves the atlas writes into the `Style`,
+# where egui itself reads them (src/mapping.md lists each sink).
+
+[[exception]]
+connector = "egui"
+name = "border_line_width"
+kind = "absent"
+reason = "the atlas writes it to `visuals.widgets.noninteractive.bg_stroke.width` and `visuals.window_stroke.width` (src/style/base.rs; src/mapping.md, `defaults.border.line_width`)"
+
+[[exception]]
+connector = "egui"
+name = "border_opacity"
+kind = "absent"
+reason = "the model has already folded it into every border colour it states, so it carries nothing to apply (src/mapping.md, `defaults.border.opacity`: UNMAPPABLE, source-void)"
+
+[[exception]]
+connector = "egui"
+name = "border_shadow_enabled"
+kind = "absent"
+reason = "the atlas derives `visuals.popup_shadow` from it, `Shadow::NONE` where it is false (src/style/derived.rs; src/mapping.md, `defaults.border.shadow_enabled`)"
+
+[[exception]]
+connector = "egui"
+name = "dialog_button_gap"
+kind = "absent"
+reason = "the atlas writes it to the dialog role's `spacing.item_spacing.x` (src/style/roles.rs; src/mapping.md, `dialog.button_gap`: SCOPED), which a button row inside `native_scope(Role::Dialog, ..)` takes"
+
+[[exception]]
+connector = "egui"
+name = "link_color"
+kind = "absent"
+reason = "the atlas writes it to `visuals.hyperlink_color` (src/style/base.rs; src/mapping.md, `defaults.link_color`: DIRECT), which egui's `Hyperlink` and `Link` draw in"
+
+[[exception]]
+connector = "egui"
+name = "selection_background"
+kind = "absent"
+reason = "the atlas writes it to `visuals.selection.bg_fill` (src/style/base.rs; src/mapping.md, `defaults.selection_background`: DIRECT)"
+
+[[exception]]
+connector = "egui"
+name = "selection_text_color"
+kind = "absent"
+reason = "the atlas writes it to `visuals.selection.stroke.color` (src/style/base.rs; src/mapping.md, `defaults.selection_text_color`: DIRECT)"

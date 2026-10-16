@@ -2,13 +2,14 @@
 //!
 //! Tests: idempotency, preset+merge overlay, with_overlay re-derivation,
 //! pick_variant/into_variant fallback, ThemeMode/Theme is_empty,
-//! Rgba f32 quantization, live preset sync, lint_toml on all presets,
+//! Rgba f32 quantization, lint_toml on all presets,
 //! and bundled SVG content validation.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use native_theme::color::Rgba;
 use native_theme::error::Error;
+use native_theme::icons::IconRole;
 use native_theme::theme::*;
 
 // ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ fn preset_unknown_preset_returns_err() {
 
 #[test]
 fn overlay_accent_change_re_derives_widget_fields() {
-    let theme = Theme::preset("material").unwrap();
+    let theme = Theme::preset("material-3").unwrap();
     let mut variant = theme.dark.clone().unwrap();
     let original_accent = variant.defaults.accent_color.unwrap();
 
@@ -154,93 +155,6 @@ fn rgba_f32_quantization_behavior() {
     let arr2 = exact.to_f32_array();
     assert_eq!(arr2[0], 0.0, "0.0 should round-trip exactly");
     assert_eq!(arr2[1], 1.0, "1.0 should round-trip exactly");
-}
-
-// ---------------------------------------------------------------------------
-// Issue 8a: Live preset sync test
-// ---------------------------------------------------------------------------
-
-#[test]
-fn live_presets_geometry_matches_full_presets() {
-    let pairs = [
-        ("adwaita", "adwaita-live"),
-        ("kde-breeze", "kde-breeze-live"),
-        ("macos-sonoma", "macos-sonoma-live"),
-        ("windows-11", "windows-11-live"),
-    ];
-
-    for (full_name, live_name) in pairs {
-        let full = Theme::preset(full_name).unwrap();
-        let live = Theme::preset(live_name).unwrap();
-
-        for (label, full_var, live_var) in [
-            (
-                "light",
-                full.light.as_ref().unwrap(),
-                live.light.as_ref().unwrap(),
-            ),
-            (
-                "dark",
-                full.dark.as_ref().unwrap(),
-                live.dark.as_ref().unwrap(),
-            ),
-        ] {
-            // Geometry fields: radius, radius_lg, frame_width
-            assert_eq!(
-                full_var.defaults.border.corner_radius, live_var.defaults.border.corner_radius,
-                "{full_name} {label} radius mismatch with live"
-            );
-            assert_eq!(
-                full_var.defaults.border.corner_radius_lg,
-                live_var.defaults.border.corner_radius_lg,
-                "{full_name} {label} radius_lg mismatch with live"
-            );
-            if live_name == "windows-11-live" {
-                // The Windows reader provides it (SM_CXBORDER), and a live
-                // preset omits what its reader provides.
-                assert_eq!(
-                    live_var.defaults.border.line_width, None,
-                    "{live_name} {label} states line_width, which the reader provides"
-                );
-            } else {
-                assert_eq!(
-                    full_var.defaults.border.line_width, live_var.defaults.border.line_width,
-                    "{full_name} {label} frame_width mismatch with live"
-                );
-            }
-            // REMOVED: spacing comparison (ThemeSpacing deleted in Plan 01)
-            // Button geometry
-            assert_eq!(
-                full_var.button.min_height, live_var.button.min_height,
-                "{full_name} {label} button.min_height mismatch with live"
-            );
-            let sides = |v: &native_theme::theme::ThemeMode| {
-                v.button.border.as_ref().map(|b| {
-                    (
-                        b.padding_top,
-                        b.padding_right,
-                        b.padding_bottom,
-                        b.padding_left,
-                    )
-                })
-            };
-            assert_eq!(
-                sides(full_var),
-                sides(live_var),
-                "{full_name} {label} button padding (top, right, bottom, left) mismatch with live"
-            );
-            // Input geometry
-            assert_eq!(
-                full_var.input.min_height, live_var.input.min_height,
-                "{full_name} {label} input.min_height mismatch with live"
-            );
-            // Scrollbar
-            assert_eq!(
-                full_var.scrollbar.groove_width, live_var.scrollbar.groove_width,
-                "{full_name} {label} scrollbar.width mismatch with live"
-            );
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -407,8 +321,8 @@ fn theme_spec_with_one_variant_is_not_empty() {
 #[test]
 #[cfg(feature = "material-icons")]
 fn bundled_material_svg_starts_with_svg_tag() {
-    use native_theme::icons::MaterialLoader;
-    for role in IconRole::ALL {
+    use native_theme::icons::{IconData, MaterialLoader};
+    for role in IconRole::ALL.iter().copied() {
         if let Some(data) = MaterialLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
@@ -427,8 +341,8 @@ fn bundled_material_svg_starts_with_svg_tag() {
 #[test]
 #[cfg(feature = "lucide-icons")]
 fn bundled_lucide_svg_starts_with_svg_tag() {
-    use native_theme::icons::LucideLoader;
-    for role in IconRole::ALL {
+    use native_theme::icons::{IconData, LucideLoader};
+    for role in IconRole::ALL.iter().copied() {
         if let Some(data) = LucideLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
@@ -451,7 +365,7 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 // G3 (Phase 93-03): the original test asserted that `bundled_icon_svg`
 // (bundled lookup) has no entries for non-bundled sets. With the per-set
 // loaders, the equivalent observable behaviour is that platform-native sets
-// (SfSymbols, SegoeIcons) return None on the wrong OS. Freedesktop is
+// (SfSymbols, SegoeFluent) return None on the wrong OS. Freedesktop is
 // no longer asserted None here because on Linux with `system-icons`
 // FreedesktopLoader intentionally DOES load icons via the filesystem.
 
@@ -459,7 +373,7 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 #[cfg(not(target_os = "macos"))]
 fn sf_symbols_returns_none_on_non_macos() {
     use native_theme::icons::SfSymbolsLoader;
-    for role in IconRole::ALL {
+    for role in IconRole::ALL.iter().copied() {
         assert!(
             SfSymbolsLoader::new(role).load().is_none(),
             "SfSymbols should not load on non-macOS for {role:?}"
@@ -469,12 +383,12 @@ fn sf_symbols_returns_none_on_non_macos() {
 
 #[test]
 #[cfg(not(target_os = "windows"))]
-fn segoe_icons_returns_none_on_non_windows() {
-    use native_theme::icons::SegoeIconsLoader;
-    for role in IconRole::ALL {
+fn segoe_fluent_returns_none_on_non_windows() {
+    use native_theme::icons::SegoeFluentLoader;
+    for role in IconRole::ALL.iter().copied() {
         assert!(
-            SegoeIconsLoader::new(role).load().is_none(),
-            "SegoeIcons should not load on non-Windows for {role:?}"
+            SegoeFluentLoader::new(role).load().is_none(),
+            "SegoeFluent should not load on non-Windows for {role:?}"
         );
     }
 }
@@ -562,8 +476,8 @@ fn a_negative_padding_side_is_a_validation_error() {
             assert!(
                 errors
                     .iter()
-                    .any(|e| e.path == "button.border.padding_bottom" && e.value == -1.0),
-                "no violation names button.border.padding_bottom: {errors:?}"
+                    .any(|e| e.path == "button.border.padding_bottom_px" && e.value == -1.0),
+                "no violation names button.border.padding_bottom_px: {errors:?}"
             );
         }
         other => panic!("a negative padding side must be a range violation, got {other:?}"),
@@ -572,14 +486,14 @@ fn a_negative_padding_side_is_a_validation_error() {
 
 #[test]
 fn toolbar_bar_height_is_none_where_absent() {
-    let mut v = Theme::preset("macos-sonoma")
+    let mut v = Theme::preset("macos-monterey")
         .unwrap()
         .into_variant(ColorMode::Light)
         .unwrap();
     let stated = resolve_mode(v.clone()).unwrap().toolbar.bar_height;
     assert!(
         stated.is_some(),
-        "precondition: macos-sonoma states a bar height"
+        "precondition: macos-monterey states a bar height"
     );
     v.toolbar.bar_height = None;
     assert_eq!(resolve_mode(v.clone()).unwrap().toolbar.bar_height, None);
@@ -598,9 +512,41 @@ fn a_negative_bar_height_is_a_validation_error() {
         matches!(
             resolve_mode(v),
             Err(Error::ResolutionInvalid { ref errors })
-                if errors.iter().any(|e| e.path == "toolbar.bar_height")
+                if errors.iter().any(|e| e.path == "toolbar.bar_height_px")
         ),
         "a stated negative bar height must still be range-checked"
+    );
+}
+
+#[test]
+fn a_header_height_of_zero_or_less_is_a_validation_error() {
+    for height in [0.0, -1.0] {
+        let mut v = Theme::preset("adwaita")
+            .unwrap()
+            .into_variant(ColorMode::Light)
+            .unwrap();
+        v.list.header_height = Some(height);
+        assert!(
+            matches!(
+                resolve_mode(v),
+                Err(Error::ResolutionInvalid { ref errors })
+                    if errors.iter().any(|e| e.path == "list.header_height_px")
+            ),
+            "a header height of {height} must be a range violation"
+        );
+    }
+}
+
+#[test]
+fn a_show_delay_past_u16_fails_to_load() {
+    let max = Theme::from_toml("[light.tooltip]\nshow_delay_ms = 65535\n").unwrap();
+    assert_eq!(max.light.and_then(|v| v.tooltip.show_delay), Some(u16::MAX));
+    assert!(
+        matches!(
+            Theme::from_toml("[light.tooltip]\nshow_delay_ms = 70000\n"),
+            Err(Error::Toml(_))
+        ),
+        "a show delay past u16::MAX milliseconds must be a TOML error"
     );
 }
 
@@ -638,9 +584,9 @@ fn a_negative_row_height_or_arrow_area_width_is_a_validation_error() {
     match resolve_mode(v) {
         Err(Error::ResolutionInvalid { errors }) => {
             for path in [
-                "menu.row_height",
-                "list.row_height",
-                "combo_box.arrow_area_width",
+                "menu.row_height_px",
+                "list.row_height_px",
+                "combo_box.arrow_area_width_px",
             ] {
                 assert!(
                     errors.iter().any(|e| e.path == path),

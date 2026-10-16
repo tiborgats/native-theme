@@ -20,6 +20,8 @@ pub enum BuildError {
     MissingSvg {
         /// Filesystem path to the missing SVG.
         path: String,
+        /// The role whose mapping names the SVG.
+        role: String,
     },
     /// A role in a mapping file is not declared in the master TOML.
     UnknownRole {
@@ -83,6 +85,8 @@ pub enum BuildError {
         name: String,
         /// Why the identifier is invalid.
         reason: String,
+        /// The master TOML file that declares the name, if known.
+        source_file: Option<String>,
     },
     /// Two different role names produce the same PascalCase enum variant.
     IdentifierCollision {
@@ -99,6 +103,8 @@ pub enum BuildError {
     ThemeOverlap {
         /// The overlapping theme name.
         theme: String,
+        /// The master TOML file that lists the theme in both, if known.
+        source_file: Option<String>,
     },
     /// A role name appears more than once in a single config file.
     DuplicateRoleInFile {
@@ -113,6 +119,8 @@ pub enum BuildError {
         theme: String,
         /// Which list contains the duplicate (`"bundled-themes"` or `"system-themes"`).
         list: String,
+        /// Path to the master TOML file containing the duplicate.
+        file: String,
     },
     /// A mapping value contains characters that are invalid for an icon name.
     InvalidIconName {
@@ -122,8 +130,10 @@ pub enum BuildError {
         role: String,
         /// Path to the mapping file.
         mapping_file: String,
-        /// The first offending character, if identified.
+        /// The first character that breaks the rule, if one does.
         offending: Option<char>,
+        /// The rule the name breaks.
+        reason: String,
     },
     /// A bundled theme has a DE-aware mapping, creating a semantic mismatch
     /// between `icon_name()` (which returns a DE-specific name) and `icon_svg()`
@@ -133,6 +143,8 @@ pub enum BuildError {
         theme: String,
         /// The role with the DE-aware mapping.
         role: String,
+        /// Path to the mapping file.
+        mapping_file: String,
     },
     /// The `crate_path` value is not a valid Rust path.
     InvalidCratePath {
@@ -156,8 +168,8 @@ impl fmt::Display for BuildError {
             Self::MissingRole { role, mapping_file } => {
                 write!(f, "role \"{role}\" is missing from {mapping_file}")
             }
-            Self::MissingSvg { path } => {
-                write!(f, "SVG file not found: {path}")
+            Self::MissingSvg { path, role } => {
+                write!(f, "SVG file not found for role \"{role}\": {path}")
             }
             Self::UnknownRole { role, mapping_file } => {
                 write!(
@@ -199,8 +211,16 @@ impl fmt::Display for BuildError {
             Self::IoOther { message } => {
                 write!(f, "{message}")
             }
-            Self::InvalidIdentifier { name, reason } => {
-                write!(f, "invalid identifier \"{name}\": {reason}")
+            Self::InvalidIdentifier {
+                name,
+                reason,
+                source_file,
+            } => {
+                write!(f, "invalid identifier \"{name}\"")?;
+                if let Some(file) = source_file {
+                    write!(f, " in {file}")?;
+                }
+                write!(f, ": {reason}")
             }
             Self::IdentifierCollision {
                 role_a,
@@ -217,23 +237,31 @@ impl fmt::Display for BuildError {
                 }
                 Ok(())
             }
-            Self::ThemeOverlap { theme } => {
+            Self::ThemeOverlap { theme, source_file } => {
                 write!(
                     f,
                     "theme \"{theme}\" appears in both bundled-themes and system-themes"
-                )
+                )?;
+                if let Some(file) = source_file {
+                    write!(f, " in {file}")?;
+                }
+                Ok(())
             }
             Self::DuplicateRoleInFile { role, file } => {
                 write!(f, "role \"{role}\" appears more than once in {file}")
             }
-            Self::DuplicateTheme { theme, list } => {
-                write!(f, "theme \"{theme}\" appears more than once in {list}")
+            Self::DuplicateTheme { theme, list, file } => {
+                write!(
+                    f,
+                    "theme \"{theme}\" appears more than once in {list} of {file}"
+                )
             }
             Self::InvalidIconName {
                 name,
                 role,
                 mapping_file,
                 offending,
+                reason,
             } => {
                 write!(
                     f,
@@ -242,15 +270,16 @@ impl fmt::Display for BuildError {
                 if let Some(ch) = offending {
                     write!(f, " (contains '\\u{{{:04X}}}')", *ch as u32)?;
                 }
-                write!(
-                    f,
-                    ": names must be non-empty and free of control characters"
-                )
+                write!(f, ": {reason}")
             }
-            Self::BundledDeAware { theme, role } => {
+            Self::BundledDeAware {
+                theme,
+                role,
+                mapping_file,
+            } => {
                 write!(
                     f,
-                    "bundled theme \"{theme}\" has DE-aware mapping for role \"{role}\": \
+                    "bundled theme \"{theme}\" has DE-aware mapping for role \"{role}\" in {mapping_file}: \
                      bundled themes can only embed one SVG per role, but DE-aware mappings \
                      declare multiple icon names. Use a system theme for DE-aware icons"
                 )
@@ -271,13 +300,12 @@ impl std::error::Error for BuildError {}
 ///
 /// Wraps a `Vec<BuildError>` and provides [`emit_cargo_errors()`](Self::emit_cargo_errors)
 /// for printing each error as a `cargo::error=` directive. Also carries
-/// `rerun_paths` so callers can emit `cargo::rerun-if-changed` directives
-/// even on failure.
+/// [`rerun_paths()`](Self::rerun_paths) so callers can emit
+/// `cargo::rerun-if-changed` directives even on failure.
 #[derive(Debug, Clone)]
 pub struct BuildErrors {
     errors: Vec<BuildError>,
-    /// Paths that cargo should watch for changes, even when the build fails.
-    pub rerun_paths: Vec<std::path::PathBuf>,
+    rerun_paths: Vec<std::path::PathBuf>,
 }
 
 impl fmt::Display for BuildErrors {
@@ -363,6 +391,12 @@ impl BuildErrors {
     /// Return a borrowed slice of the contained errors.
     pub fn errors(&self) -> &[BuildError] {
         &self.errors
+    }
+
+    /// Return the paths that cargo should watch for changes, even when the
+    /// build fails.
+    pub fn rerun_paths(&self) -> &[std::path::PathBuf] {
+        &self.rerun_paths
     }
 
     /// Consume this collection and return the inner `Vec<BuildError>`.

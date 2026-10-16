@@ -3,9 +3,10 @@
 # Derived from docs/platform-facts.md Chapter 2 (§2.1–§2.28).
 # Property names match the platform-facts.md table first-column entries exactly.
 #
-# Each widget lists ALL fields from its platform-facts table. A Rust test
-# should verify every field in this file exists in the corresponding struct,
-# and every field in the struct exists in this file.
+# Each widget lists ALL fields from its platform-facts table. The test
+# `property_registry_keys_match_derive_inventory` (native-theme/src/model/mod.rs)
+# verifies every key in this file exists in the corresponding struct, and
+# every serialized field of the struct exists in this file.
 #
 # Source: docs/platform-facts.md  (2026-04-06 snapshot)
 # Struct: native-theme/src/model/
@@ -17,7 +18,8 @@
 # Composite types used in property definitions below. Scalar types:
 #   "color"  — Rgba color value
 #   "f32"    — 32-bit float (dimensions in logical pixels, ratios)
-#   "u16"    — 16-bit unsigned int (CSS font-weight: 400=Normal, 700=Bold)
+#   "u16"    — 16-bit unsigned int (CSS font-weight: 400=Normal, 700=Bold;
+#              integer milliseconds for an `_ms` key)
 #   "bool"   — boolean
 #   "string" — UTF-8 string
 #   "enum"   — enumerated value (variants noted in comments)
@@ -72,7 +74,7 @@ panel_px                     = "f32"
 [_structures.TextScaleEntry]
 # One entry in the text scale ramp (§2.19).
 # Exactly one of size_pt or size_px must be set (same as Font.size_*).
-# Exactly one of line_height_pt or line_height_px must be set (same unit as size).
+# Exactly one of line_height_pt or line_height_px must be set; its unit need not match size's.
 size_pt                      = "f32"
 size_px                      = "f32"
 weight                       = "u16"
@@ -120,20 +122,12 @@ focus_ring_offset_px         = "f32"
 # §2.1.6 Global Geometry (border.* fields are inside the Border sub-struct)
 border                       = "border"
 disabled_opacity             = "f32"
-# §2.1.7 Accessibility
-text_scaling_factor          = "f32"
-reduce_motion                = "bool"
-high_contrast                = "bool"
-reduce_transparency          = "bool"
+# §2.1.7 Accessibility: OS-detected, not TOML theme data; lives on
+# AccessibilityPreferences (native-theme/src/lib.rs), not ThemeDefaults.
 # §2.1.8 Icon Sizes
 icon_sizes                   = "icon_sizes"
 # §2.1.9 Icon Theme
 icon_theme                   = "string"
-# NOTE: defaults.spacing (ThemeSpacing T-shirt scale xxs..xxl) exists in
-# the code but is NOT a platform theme property. All platform spacing
-# values are captured as direct per-widget fields in §2.3–§2.28, and as
-# layout container defaults in [layout] (§2.20). The T-shirt scale should
-# be removed from the code. See todo_v0.5.5.md Spacing Design Analysis.
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.19 Text Scale (TextScale)
@@ -148,7 +142,10 @@ section_heading              = "text_scale_entry"
 dialog_title                 = "text_scale_entry"
 display                      = "text_scale_entry"
 
-# ─── Top-level ThemeVariant fields (structural, not from §2.x tables) ────
+# ─── Top-level Theme fields (structural, not from §2.x tables) ──────────
+# icon_set is a field of `Theme`, not of `ThemeMode`: one icon set for both
+# variants. The table keeps its `theme_variant` name, which
+# docs/showcase-elements.toml cites (`theme_variant.icon_set`).
 
 [theme_variant]
 icon_set                     = "enum"
@@ -263,6 +260,7 @@ border                       = "border"
 background_color             = "color"
 font                         = "font"
 max_width_px                 = "f32"
+show_delay_ms                = "u16"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -374,6 +372,7 @@ header_font                  = "font"
 header_background            = "color"
 grid_color                   = "color"
 row_height_px                = "f32"
+header_height_px             = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
 disabled_text_color          = "color"
@@ -413,8 +412,11 @@ line_width_px                = "f32"
 # GtkBox, StackPanel). These are the values a layout manager uses when
 # the developer does not specify explicit spacing.
 #
-# NOT YET IMPLEMENTED — struct and presets do not exist yet.
-# Currently only documented in platform-facts.md §2.20.
+# Implemented as `Theme.layout` (`LayoutTheme`, model/widgets/mod.rs): a
+# top-level [layout] table shared by both variants, not a per-variant
+# widget. Every bundled preset states it; `SystemTheme.layout` carries the
+# reader's values merged over the preset's, unresolved (a field neither
+# states stays `None`). Values: platform-facts.md §2.20.
 # No platform exposes these as user-configurable settings; all values
 # are compile-time constants or design guidelines.
 
@@ -457,7 +459,8 @@ max_width_px                 = "f32"
 min_height_px                = "f32"
 max_height_px                = "f32"
 button_gap_px                = "f32"
-button_order                 = "enum"   # PrimaryRight | PrimaryLeft | KdeLayout | GnomeLayout
+button_order                 = "enum"   # PrimaryRight | PrimaryLeft
+entrance                     = "enum"   # ScaleFade | FadeRise
 title_font                   = "font"
 icon_size_px                 = "f32"
 border                       = "border"

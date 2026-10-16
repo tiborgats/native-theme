@@ -38,7 +38,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Text area
     let border = variant.text_area.border.get_or_insert_default();
-    // platform-facts.md:1639-1640 (§2.29): inside the 1px frame line,
+    // platform-facts.md:1642-1643 (§2.29): inside the 1px frame line,
     // Frame_FrameWidth 2 plus QTextDocument's documentMargin 4
     border.padding_left = Some(5.0); // Frame_FrameWidth + 4 - 1
     border.padding_right = Some(5.0); // Frame_FrameWidth + 4 - 1
@@ -64,10 +64,10 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
-    // platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge
+    // platform-facts.md:1327 (§2.11): QTabBar lays the tabs edge to edge
     variant.tab.item_gap = Some(0.0);
     let border = variant.tab.border.get_or_insert_default();
-    // platform-facts.md:1318-1319 (§2.11)
+    // platform-facts.md:1319-1320 (§2.11)
     border.padding_left = Some(8.0); // TabBar_TabMarginWidth
     border.padding_right = Some(8.0); // TabBar_TabMarginWidth
     border.padding_top = Some(4.0); // TabBar_TabMarginHeight
@@ -92,14 +92,14 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // List
     let border = variant.list.border.get_or_insert_default();
-    // platform-facts.md:1390-1391 (§2.15)
+    // platform-facts.md:1392-1393 (§2.15)
     border.padding_left = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_right = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_top = Some(1.0); // ItemView_ItemMarginTop
     border.padding_bottom = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
-    // platform-facts.md:1352 (§2.13)
+    // platform-facts.md:1353 (§2.13)
     variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing
 
     // Splitter

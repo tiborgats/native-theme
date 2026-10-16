@@ -1,6 +1,9 @@
 //! What the Feedback page's widgets report about themselves (spec §3.4).
 
+use std::time::Duration;
+
 use gpui::transparent_white;
+use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
@@ -138,9 +141,10 @@ pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
     )
 }
 
-/// A `Progress` bar at `value` percent, labelled `label` beside it, drawn
-/// while gpui's `reduce_motion` is as given.
-pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> WidgetInfo {
+/// A `Progress` bar at `value` percent, or loading where `value` is `None`,
+/// labelled `label` beside it, drawn while gpui's `reduce_motion` is as
+/// given.
+pub fn progress(t: &Theme, label: &str, value: Option<f32>, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Progress")
         .color(claim(
             "bar",
@@ -155,6 +159,14 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
             "gpui-component/progress/progress.rs:86",
         ))
         .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's");
+    let Some(value) = value else {
+        return loading(
+            info,
+            reduce_motion,
+            "progress/progress.rs, Progress::render",
+        )
+        .instance("label", label.to_string());
+    };
     let info = if reduce_motion {
         info.instance("reduced motion", "on, so a change of value jumps to it, unanimated (gpui-base/motion.rs, transition_with_status)")
     } else {
@@ -164,22 +176,48 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
         .instance("label", label.to_string())
 }
 
-/// A theme-drawn `widgets::ProgressBar` at `value` (spec §2.5 of
-/// docs/archive/todo_gpui-widgets-spec.md).
+/// A loading bar's motion, `source` the upstream code that runs it: the
+/// sweep, or under reduced motion the still fill.
+fn loading(info: WidgetInfo, reduce_motion: bool, source: &str) -> WidgetInfo {
+    let info = info
+        .variant("loading")
+        .instance("value", "none: indeterminate, so a screen reader is given no value (gpui-base progress.rs, Progress::indeterminate)");
+    if reduce_motion {
+        info.instance("reduced motion", format!("on, so the fill stands still in the middle of the track, 0.325 of it in from either end ({source})"))
+    } else {
+        info.instance("motion", format!("the fill sweeps the track once a second, eased in and out ({source}, \"progress-loading\")"))
+    }
+}
+
+/// A theme-drawn `widgets::ProgressBar` at `value`, or loading where `value`
+/// is `None` (spec §2.5 of docs/archive/todo_gpui-widgets-spec.md), drawn
+/// while gpui's `reduce_motion` is as given.
 #[cfg(feature = "widgets")]
-pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo {
+pub fn native_progress(
+    r: &ResolvedTheme,
+    label: &str,
+    value: Option<f32>,
+    reduce_motion: bool,
+) -> WidgetInfo {
     let p = &r.progress_bar;
-    WidgetInfo::new("ProgressBar")
+    let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:49"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:48"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:47"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
+        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:77"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
-        .not_themeable("animation", "gpui-component's eased transition to a new value (progress/progress.rs, Progress): native-theme models no motion")
-        .instance("value", format!("{value}%"))
-        .instance("label", label.to_string())
+        .not_themeable("animation", "gpui-component's eased transition to a new value, and a loading bar's sweep (progress/progress.rs, Progress): native-theme models no motion");
+    let info = match value {
+        Some(value) => info.instance("value", format!("{value}%")),
+        None => loading(
+            info,
+            reduce_motion,
+            "native-theme-gpui widgets/progress.rs, after gpui-component's progress/progress.rs",
+        ),
+    };
+    info.instance("label", label.to_string())
 }
 
 /// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind`, drawn while
@@ -223,10 +261,21 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:415",
+                "native-theme-gpui/widgets/spinner.rs:463",
             ))
+        } else if icons.spins {
+            // An SVG element draws the icon's alpha mask in its text colour
+            // (gpui-pre 0.3.9 src/svg_renderer.rs:241-250,
+            // src/window.rs:5007, :5032), the only element gpui turns.
+            info.color(claim(
+                "indicator",
+                "text_color",
+                stated(r.defaults.text_color),
+                "native-theme-gpui/widgets/spinner.rs:464",
+            ))
+            .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
-            info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
+            info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is defaults.text_color (native-theme/icons.rs, fill_current_color)")
         };
         return info
             .not_themeable("motion", "the indicator's own frames or turn (native-theme's AnimatedIcon); native-theme models no motion")
@@ -237,7 +286,7 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:89"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:91"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
@@ -596,8 +645,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4553-4560 for fills and edges, :4697 and
-    // :4746 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre window.rs:4687-4694 for fills and edges, :4831 and
+    // :4880 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| {
@@ -724,8 +773,19 @@ pub fn marker(
 /// page, where nothing of the showcase can wrap it. `built` is whether the
 /// application built the tooltip itself; `styled` is whether it is refined
 /// by `geometry::tooltip`, whose lines are recorded where
-/// `demo::built_tooltip_button` applies it.
-pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) -> WidgetInfo {
+/// `demo::built_tooltip_button` applies it; `delay` is the theme's
+/// `tooltip.show_delay_ms`, which the showcase gives a built tooltip's
+/// element, and `defaults` the application-wide `TooltipDefaults` a
+/// `Button::tooltip` waits, where `apply` installed that delay.
+pub fn tooltip(
+    t: &Theme,
+    built: bool,
+    styled: bool,
+    delay: Option<Duration>,
+    defaults: TooltipDefaults,
+    label: &str,
+    text: &str,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Tooltip")
         .variant(if built {
             "built by the application"
@@ -746,12 +806,24 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
+    let info = match (built, delay) {
+        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1708)", delay.as_millis())),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (false, _) => info,
+    };
     let info = if built {
-        info.not_themeable("delay", "gpui's own tooltip, set on an element rather than through Button::tooltip, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay, though the platforms do -- our model's gap")
-            .not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
+        info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
     } else {
-        info.not_themeable("delay", "500ms, and fixed for a Button's tooltip: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), whose SHOW_DELAY is a module const (gpui-base/tooltip.rs, SHOW_DELAY). native-theme states no hover delay, though the platforms do -- our model's gap")
+        let (show, grace) = (
+            defaults.show_delay().as_millis(),
+            defaults.grace_period().as_millis(),
+        );
+        let info = match delay {
+            Some(_) => info.config("delay", format!("tooltip.show_delay_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 422)")),
+            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 422). The theme states no tooltip.show_delay_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
+        };
+        info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
     };
     info.instance(
@@ -772,13 +844,13 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/tooltip.rs:114",
+            "gpui-component/tooltip.rs:115",
         ),
         claim(
             "tooltip border",
             "border",
             t.border,
-            "gpui-component/tooltip.rs:118",
+            "gpui-component/tooltip.rs:119",
         ),
     ];
     if text {
@@ -786,7 +858,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/tooltip.rs:115",
+            "gpui-component/tooltip.rs:116",
         ));
     }
     claims

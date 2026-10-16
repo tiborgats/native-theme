@@ -26,14 +26,14 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   The splitter colours reach the handles gpui-base draws itself — groups built
   with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
   colours at gpui-base's 1 px width, the hover colour only while dragged — not
-  gpui-component 0.7.1's own `h_resizable` / `v_resizable`, `Settings`' divider
+  gpui-component 0.7.3's own `h_resizable` / `v_resizable`, `Settings`' divider
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
-  the native heights, paddings, radii, borders and text sizes for the widgets
+  the native heights, paddings, radii, borders and fonts for the widgets
   where gpui-component applies the caller's style after its own — and the
-  native text colour for the seven whose label would otherwise be left to a
-  token of upstream's.
+  native colours for the widgets whose text, fill or edge would otherwise be
+  left to a token of upstream's.
 - **Theme-drawn widgets** (feature `widgets`): a checkbox, radio, switch,
   slider, progress bar, spinner, tab bar and separator built on gpui-base's
   headless primitives and painted from the resolved theme, for the parts
@@ -53,10 +53,11 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
   from is unchanged between the two releases. It was audited again against
   0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
-  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`. Since 0.6.1
-  the tables end in a wildcard: an `IconName` newer than this crate maps to
-  no icon, and the test module's exhaustive list is what reports it. The
-  audit is repeated on every gpui-component bump.
+  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`; 0.7.3's list is
+  0.7.1's, 106 variants. Since 0.6.1 the tables end in a wildcard: an
+  `IconName` newer than this crate maps to no icon, and the test module's
+  exhaustive list is what reports it. The audit is repeated on every
+  gpui-component bump.
 
 ## How it fits
 
@@ -70,10 +71,10 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.7.1 |
-| `gpui-base` | 0.7.1 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.8 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.7.1 |
+| `gpui-component` | 0.7.3 |
+| `gpui-base` | 0.7.3 |
+| `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.9 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.7.3 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
@@ -89,7 +90,7 @@ this connector's tests, clippy, docs and the widget-coverage script against. The
 script writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against gpui-base 0.7.1, gpui-component 0.7.1, gpui-kit 0.7.1, gpui-kit-assets 0.7.1 and gpui-pre 0.3.8 on 2026-10-08.
+Verified against gpui-base 0.7.3, gpui-component 0.7.3, gpui-fast 0.1.8, gpui-fast-apple 0.1.8, gpui-fast-linux 0.1.8, gpui-fast-macos 0.1.8, gpui-fast-macros 0.1.8, gpui-fast-platform 0.1.8, gpui-fast-web 0.1.8, gpui-fast-wgpu 0.1.8, gpui-fast-windows 0.1.8, gpui-kit 0.7.3, gpui-kit-assets 0.7.3 and gpui-pre 0.3.9 on 2026-10-14.
 <!-- compat:end -->
 
 **After that** — newer releases are tested nightly by the dependency canary
@@ -98,17 +99,18 @@ the CHANGELOG.
 
 ## Quick start
 
+Add the crate to your `Cargo.toml`, with the OS readers (`native`):
+
 ```toml
 [dependencies]
-native-theme = "0.6"
-native-theme-gpui = "0.6"
-gpui-kit = "0.7.1"        # or gpui-component + gpui-base + gpui-pre directly
+native-theme-gpui = { version = "0.6", features = ["native"] }
+gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
 gpui_kit::application().run(|cx| {
     gpui_kit::init(cx);
-    match native_theme::SystemTheme::from_system() {
+    match native_theme_gpui::SystemTheme::from_system() {
         Ok(sys) => native_theme_gpui::apply_system_theme(&sys, cx),
         Err(_) => {
             let prefs = native_theme_gpui::AccessibilityPreferences::from_system();
@@ -129,9 +131,20 @@ the dialogs, sheets and notifications. A window opened before
 `gpui_kit::init` gets no `WindowState` — the root plugin `init` registers,
 which hosts them and sets the window's rem — so its first `open_dialog`,
 `open_sheet` or `notifications` call panics with upstream's "component window
-state is missing" (gpui-component `src/root.rs:112, 126`), and text scaling
-fails silently, the rem staying gpui's default (`src/root.rs:21, 434-436`;
+state is missing" (gpui-component `src/root.rs:112, 130`), and text scaling
+fails silently, the rem staying gpui's default (`src/root.rs:21, 438-440`;
 gpui-base `src/root.rs:44-45`).
+
+gpui-base's `Root` paints no background of its own (gpui-base
+`src/root.rs:280-310`). The root plugin `gpui_kit::init` registers fills the
+root of every window `gpui_kit::open_window` opens with the theme's
+`background`, the theme's `window.background_color`, and draws its text in
+the theme's font and `foreground` (gpui-component `src/root.rs:444-452`). A
+view opened with gpui's own `cx.open_window`, outside that root, has no
+background until the application paints `cx.theme().background` on it. A
+surface the theme states translucent, such as windows-11's sidebar
+(`#f3f3f300`, WinUI's docked `NavigationView` pane), shows that background
+through it.
 
 Call `gpui_kit::init` (or `gpui_component::init`) **before** `apply`, as
 upstream requires before any component is used. `apply` initialises the styled
@@ -140,10 +153,14 @@ theme to upstream's default.
 
 ### Light and dark under a preset
 
-```rust,ignore
-use native_theme_gpui::{AccessibilityPreferences, apply, from_preset};
+The OS accessibility preferences come from native-theme's detection cache
+(`native_theme::detect`), which needs a `native-theme` dependency of its own
+(see [Runtime theme change](#runtime-theme-change)):
 
-let prefs = AccessibilityPreferences::from_system();
+```rust,ignore
+use native_theme_gpui::{apply, from_preset};
+
+let prefs = native_theme::detect::accessibility_preferences();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);
@@ -174,16 +191,29 @@ variant.
   the application keeping `resolved`; always forwards reduce-motion.
 - **`from_preset(name, is_dark, &prefs)`** — load a bundled preset. `is_dark`
   is explicit because some presets (`solarized`, `gruvbox`) have ambiguous
-  lightness. Pass `&AccessibilityPreferences::default()` for no scaling, or
-  `AccessibilityPreferences::from_system()` to honour the OS preferences under a
-  preset.
-- **`from_system()`** — the OS theme as `(theme, resolved, is_dark)` without
-  installing it.
+  lightness; the theme is built in the mode of the variant resolved
+  (`Resolved::mode`), so a light-only preset asked for dark gives a light
+  theme. Pass `&AccessibilityPreferences::default()` for no scaling, or
+  `native_theme::detect::accessibility_preferences()` to honour the OS
+  preferences under a preset: the cached reading, for a preset switch (the
+  first call after a system read may still run the reduced-motion detection,
+  about 3 ms measured on one KDE machine; every later call returns the cached
+  block in nanoseconds). `AccessibilityPreferences::from_system()` reads them
+  afresh, running the platform reader each time.
+- **`from_system()`** — the OS theme as a `Loaded` (`theme`, `resolved`,
+  `mode`, `accessibility`, `icon_set`, `icon_theme`; `#[non_exhaustive]`, so
+  read it by field) without installing it; `SystemThemeExt::to_gpui_theme`
+  gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "Display Name", is_dark, &prefs)`** — the underlying
-  mapping if you already have a `ResolvedTheme`.
-- **`cx.native_theme()`** (`ActiveNativeTheme`) — the installed `NativeTheme`;
-  `.native(cx)` gives the `Native { resolved, accessibility }` view the geometry
-  builders take, for the mode gpui-component currently shows.
+  mapping if you already have a `ResolvedTheme`; `is_dark` is the theme's mode,
+  `Resolved::mode` of the variant `Theme::resolve` resolved or `SystemTheme::mode`.
+- **`cx.native()`** (`ActiveNativeTheme`) — the `Native { resolved, accessibility }`
+  view the geometry builders take, for the mode gpui-component currently shows;
+  `cx.native_theme()` is the installed `NativeTheme`.
+- **`layer_over(base, layer)`** — the connector's state-layer composite
+  (source-over, straight alpha): the filled buttons' hover and pressed fills
+  and the widgets' hover states are a theme layer over the fill it covers, so
+  a layered state an application draws itself matches them through it.
 
 ## Per-widget geometry
 
@@ -197,7 +227,7 @@ use gpui::{ParentElement, Styled, div};
 use gpui_component::{StyledExt, button::Button};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 
-let button = match cx.native_theme().and_then(|t| t.native(cx)) {
+let button = match cx.native() {
     Some(n) => Button::new("save")
         .refine_style(&geometry::button(n))
         .child(
@@ -215,7 +245,13 @@ on an inner element after the button's refinement, `text_sm` at
 `Size::Medium`, and `button_label` gives the child the platform's size.
 
 Text sizes carry the accessibility text-scaling factor; widths, paddings,
-radii and icon sizes do not (that is what the platform toolkit does).
+radii and icon sizes do not (that is what the platform toolkit does). Every
+builder that sets a text size also sets the platform's `defaults.line_height`,
+so wrapped text in a tooltip or a dialog is spaced by the platform's metric,
+not gpui's default (the golden ratio) or a dialog title's 1.25, and the font's
+family (through `font_family`, as the installed theme's own) and style, so a
+family or a slant the platform states for a menu, a toolbar or a title bar —
+the KDE reader states all three — arrives.
 
 Padding is per side, and a builder sets only the sides the theme states: an
 unstated side leaves the widget's own padding in place.
@@ -225,7 +261,10 @@ Control heights follow one rule in `button`, `input`, `select`, `combobox`,
 as the control's line height and is its stated height (`h`) at a text-scaling
 factor of 1 or less, in place of upstream's own (a `Select` or `Combobox`
 trigger's `h_8`); above 1 the stated height is a minimum and the height is
-automatic, so the control grows around its drawn text and padding. The rule
+automatic, so the control grows around its drawn text and padding. A
+`DataTable` row and header (`data_table_size`, `list_header_height`) follow it
+too: above 1 they are at least the scaled text's line box and upstream's own
+cell padding, since a `Size` is a fixed height. The rule
 is for single-line controls: refine a multi-line `Input` or a `Textarea` with
 `text_area`, which sets no height (the rows the field holds size it). To give
 one a fixed height, set it after the builder as `Styled::h(input, height)`,
@@ -238,18 +277,22 @@ A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
 element with a token of its own before applying the refinement and re-applies
 its state colours after it or on a child, or upstream sets no colour on that
-element at all. Seven do. Three displace a visibly different colour:
+element at all. Twelve do. Five displace a visibly different colour:
 `status_bar` and `dialog_description` displace upstream's `muted_foreground`,
-`tooltip` displaces `popover_foreground`. Three displace `foreground`:
-`list_item`, `radio` and `select`. `title_bar` displaces nothing — upstream
-paints the bar's fill and border and sets no text colour. Those four change no
-pixel under any bundled preset — a widget that states no `font.color` inherits
+`tooltip` displaces `popover_foreground`, and `input` and `text_area` the
+window's `foreground`, which a field's text inherits and the macOS presets'
+`input.font.color` differs from. Four displace `foreground`:
+`list_item`, `radio`, `select` and `accordion_title`. `title_bar`,
+`dialog_title` and `toolbar` displace nothing — upstream sets no text colour
+on the title bar, a dialog's title or a toolbar. Those seven change no
+pixel under any bundled preset but ios-13, whose `select` text is the accent —
+a widget that states no `font.color` inherits
 the window's, and `foreground` is fed from that same field — but they carry it
 so that a source which *does* state, say, a list row colour, or the title bar
 colour the KDE reader takes from `[WM] activeForeground`, is honoured instead
 of silently overridden.
 
-The remaining builders set size and weight only and leave the colour to the
+The remaining builders set the font alone and leave the colour to the
 token. `checkbox` and `combobox` are the near misses: upstream paints both from
 `foreground`, but a `Checkbox` label is re-coloured by its own wrapper and both
 apply their disabled colour *before* the refinement, so a carried colour would
@@ -260,33 +303,40 @@ test over every preset and mode says so.
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element — `button_label` reaches it on a child label; the outline/ghost/link/text variants take the native border too) |
-| `button_label` | `button.font` size and weight, `defaults.line_height` | the label passed as a `Button`'s child |
-| `toggle` | `button.font` size and weight, `defaults.line_height` | `Toggle` |
-| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:774-776`) |
+| `button_label` | `button.font`, `defaults.line_height` | the label passed as a `Button`'s child |
+| `toggle` | `button.font`, `defaults.line_height` | `Toggle` |
+| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:267-288`, `input/number_input.rs:158-165`, `input/input.rs:784-786`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
-| `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated) and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement |
+| `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated), `input.disabled_text_color` and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement. The disabled text colour is what gpui-base then draws at half its alpha, as it draws every disabled field's text |
+| `combo_box_fill(n, disabled)` | `combo_box.background_color`; disabled, `combo_box.disabled_background` (or `combo_box.background_color` where it is not stated), `combo_box.disabled_text_color` and `combo_box.disabled_opacity` | `Select`, `Combobox`, after `select` or `combobox`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a trigger as it fills an `Input`. The disabled text colour reaches a `Combobox`'s selected text; a `Select`'s title mutes itself when disabled |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
-| `link` | `link.underline_enabled`, `link.font` size and weight | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
+| `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
+| `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius` | the frame of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border of its own, while `DataTable` draws one from the same values through `Theme`, so this is what makes the three agree. It also clips to the radius, because a row's selected fill would otherwise show through the rounded corners. A tree is a list view — the model has no tree theme |
-| `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
+| `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font`, `defaults.line_height` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius` | `Popover` |
-| `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
-| `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
-| `table` | `list.item_font` | declarative `Table` |
-| `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated | `DataTable::with_size`; with `table` on the container for the cell text |
+| `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
+| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
+| `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
+| `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |
+| `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding | `DataTable::with_size`; with `table` on the container for the cell text |
+| `list_header_height` | `list.header_height`; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height` and upstream's cell padding — the header's text is drawn in the container's font, which `table` sets | `DataTable::header_row_height`. `None` where the theme states none, and the header keeps the body rows' height |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
-| `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
-| `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
+| `accordion_title` | `expander.header_height`, `expander.font.color` | `AccordionItem::title_style` |
+| `accordion` | `expander.border.color` | `Accordion` and each `AccordionItem`: the colour of the card a bordered Accordion draws and of the line under each item but the last |
+| `accordion_hover` | `expander.hover_background` (where stated) | `AccordionItem::hover`, as `item.hover(\|_\| geometry::accordion_hover(n))`; nothing where the theme states no hover, so the row stays at rest |
+| `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform), `defaults.line_height` on the row (the label column keeps upstream's 1.25) | `Checkbox`, `Radio` |
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
-| `title_bar` | `window.title_bar_font` | `TitleBar` |
-| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements, or gpui-component 0.7.1's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. No edge: the platforms state none |
+| `title_bar` | `window.title_bar_font`, `defaults.line_height` | `TitleBar` |
+| `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.7.3's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. No edge: the platforms state none |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
@@ -357,8 +407,8 @@ role, and paints every part from the theme leaf that states it:
 |---|---|---|
 | `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
-| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps | a rail of its fill at 20% alpha, a thumb of its own size |
-| `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width | a track of its fill at 20% alpha |
+| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size |
+| `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
 | `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
 | `TabBar`, `Tab` | `tab.*`: the bar, an unselected tab's fill and label, the hover in place of that fill, the selected tab's fill, label and `tab.border` outline (the selected tab only, rounded on its top corners), sizes, padding, the gap between tabs (`item_gap`) and font | an idle tab painted transparent, and a primary underline or a frame of its own on the selected one |
 | `Separator` | a line `separator.line_width` thick in `separator.line_color` | a line a literal 1px thick |
@@ -393,7 +443,10 @@ Separator::horizontal();
 
 The spinner loads its indicator once per set, icon theme, colour and size,
 and keeps it for the life of the application. `TabBar` leaves the bar's own
-style to the caller (`Styled`): a rule under it, its inset.
+style to the caller (`Styled`): a rule under it, its inset. Where an
+`on_click` handler is set, a clicked tab the bar clips is scrolled into view
+on the next frame; `TabBar::track_scroll(&handle)` gives the bar the
+application's own `ScrollHandle`, to reveal a tab otherwise.
 
 ## How re-application works
 
@@ -407,6 +460,20 @@ private and the variant's config cannot carry them. It absorbs the notification 
 and repairs the handle colours if another effect rebuilt the base theme in the
 meantime; the scrollbar styles are opaque upstream, so a rebuild that happens
 to leave the handle colours unchanged is repaired at the next one.
+
+`apply` also installs the theme's `tooltip.show_delay_ms` as gpui-base's
+application-wide `TooltipDefaults` show delay, which every tooltip shown
+through gpui-component's tooltip overlay waits (a `Button::tooltip`'s, among
+others), and keeps the grace period installed. Where the theme states no
+delay, the application's comes back: the one installed before the connector's
+first write, or set by the application since (gpui-base's 500 ms where it set
+none). The observer installs it again after every upstream rebuild, so a mode
+switch through `Theme::change` or `sync_system_appearance` brings the new
+mode's variant's delay. A delay is told apart by value: an application delay
+equal to the one the connector last wrote is taken for the connector's. GPUI's
+own `.tooltip()` on an element does not read `TooltipDefaults`: it waits
+GPUI's 500 ms unless the element is given `tooltip_show_delay(&resolved)`
+through `StatefulInteractiveElement::tooltip_show_delay`.
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12
@@ -435,7 +502,9 @@ gpui-component 0.7.0, whose own switch gained one).
 
 ## Features
 
-All six are on by default; `default-features = false` is the way to narrow.
+The first six are on by default; `default-features = false` is the way to
+narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
+(see [Backends](#backends)). `native` and `watch` are off, as in native-theme.
 
 | Feature | Enables |
 |---|---|
@@ -445,6 +514,14 @@ All six are on by default; `default-features = false` is the way to narrow.
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+| `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
+| `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
+
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` (opt-in) watches with a reader feature only.
 
 Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
 gpui the SVG bytes (colorized first when a colour is given) as an
@@ -471,6 +548,60 @@ let customised = sys.with_overlay(&overlay)?;
 apply_system_theme(&customised, cx);
 ```
 
+### Runtime theme change
+
+With the `watch` feature, `on_theme_change(window, cx, f)` runs `f` on gpui's
+foreground, with the window and the `App`, each time the OS theme changes,
+for as long as the returned `ThemeSubscription` is held and the window is
+open. Register it on the application's longest-lived window, the main
+window: once that window closes, events stop. In `f`, clear native-theme's
+detection caches, read the theme again and apply it. The caches hold the font
+DPI, dark mode, the icon theme and the accessibility preferences, so a
+re-read without `invalidate_caches()` gets the old ones. Naming
+`native_theme::detect` needs native-theme itself:
+
+```toml
+[dependencies]
+native-theme = "0.6"
+native-theme-gpui = { version = "0.6", features = ["native", "watch"] }
+```
+
+```rust,ignore
+use native_theme_gpui::{SystemTheme, ThemeSubscription, apply_system_theme, on_theme_change};
+
+struct MyView {
+    // The watcher stops when this is dropped.
+    _theme_watcher: Option<ThemeSubscription>,
+}
+
+// In the main window's view constructor, with `window: &mut Window` and
+// `cx: &mut Context<MyView>`: a watcher that cannot start (a desktop with
+// none) returns its error, and `ok()` drops it.
+let _theme_watcher = on_theme_change(window, cx, |_event, _window, cx| {
+    native_theme::detect::invalidate_caches();
+    if let Ok(sys) = SystemTheme::from_system() {
+        apply_system_theme(&sys, cx);
+    }
+})
+.ok();
+```
+
+Read again with the entry point the application used: one that pinned a
+preset with `SystemTheme::from_system_with_preset` reads with it again, or
+`from_system()` picks the running OS version's preset:
+
+```rust,ignore
+let sys = SystemTheme::from_system_with_preset("macos-monterey")?;
+apply_system_theme(&sys, cx);
+```
+
+`apply_system_theme` stores both variants, so gpui-component's
+`Theme::sync_system_appearance` keeps switching between the new theme's light
+and dark palettes after it. KDE Plasma, GNOME and Budgie, macOS and Windows
+are watched; on another Linux desktop, or without a reader feature,
+`on_theme_change` returns `Error::WatchUnavailable`, and
+`Error::ReaderFailed` where the watcher cannot start.
+
 ### Custom icons
 
 For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build):
@@ -482,32 +613,100 @@ use native_theme::theme::IconSet;
 let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material, None, None);
 ```
 
-### Animated spinners
+### Role icons
+
+An icon by its role, in the theme's icon set and text colour:
+`SystemTheme::icon` loads it from the set the theme names — a freedesktop
+icon from that colour mode's icon theme — and colours it, a freedesktop icon
+only where its foreground is left to the caller (a symbolic icon, a
+`currentColor` the icon sets no colour for), so a full-colour one keeps its
+own palette. An icon the set does not have is `None`; nothing is substituted.
+`icons::icon_name` is another thing: the `IconName` of gpui-component's
+bundled Lucide glyph, whatever the theme's set.
 
 ```rust,ignore
-use native_theme::theme::AnimatedIcon;
-use native_theme::icons::MaterialLoader;
-use native_theme::detect::prefers_reduced_motion;
-use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
+use gpui::{Styled, img, px};
+use native_theme_gpui::icons::to_image_source;
+use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
 
-if let Some(anim) = MaterialLoader::load_indicator() {
-    if prefers_reduced_motion() {
-        let static_icon = to_image_source(anim.first_frame(), None, None);
-    } else {
-        match &anim {
-            AnimatedIcon::Frames(_) => {
-                // Cache this — do not call on every frame tick.
-                let sources = animated_frames_to_image_sources(&anim, None, None);
-            }
-            AnimatedIcon::Transform(_) => {
-                let spinner = gpui::svg().path("spinner.svg");
-                let element = with_spin_animation(spinner, "loading", 1000);
-            }
-            _ => {}
-        }
+let sys = SystemTheme::from_system()?;
+let resolved = sys.pick(sys.mode);
+let fg = resolved.defaults.text_color;
+if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+    let logical = icon_sizes(resolved).toolbar;
+    let physical = (logical * window.scale_factor()).round() as u32;
+    // `None`: `sys.icon` has coloured the icon already.
+    if let Some(source) = to_image_source(&data, None, Some(physical)) {
+        let icon = img(source).size(px(logical));
     }
 }
 ```
+
+An SVG icon is rasterized at the size given; a raster one comes at the size
+its loader looked it up at, which `SystemTheme::icon` states. The `icons`
+module documentation has the same recipe as a compiled example.
+
+### Animated spinners
+
+The theme-drawn `widgets::Spinner` draws the icon set's indicator itself (see
+[Theme-drawn widgets](#theme-drawn-widgets)). To draw one of your own, load the
+indicator of the theme's set and convert it, coloured as that set is coloured:
+
+```rust,ignore
+use gpui::{IntoElement, Styled, px};
+use gpui_component::ActiveTheme;
+use native_theme::detect::prefers_reduced_motion;
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
+
+let loaded = native_theme_gpui::from_system()?;
+// The text colour: a Material or Lucide frame is tinted it, and a freedesktop
+// frame's `currentColor` takes it where the frame sets no colour of its own.
+let text = cx.theme().foreground;
+let diameter = px(loaded.resolved.spinner.diameter);
+if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
+    match &anim {
+        AnimatedIcon::Frames(_) => {
+            // Cache this — do not call on every frame tick.
+            if let Some(frames) =
+                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(text), None)
+            {
+                let element = if prefers_reduced_motion() {
+                    // The first frame, standing still.
+                    frames.sources.first().cloned().map(gpui::img)
+                } else {
+                    // On each tick of `frames.frame_duration_ms`, the next of
+                    // `frames.sources`, through `gpui::img`.
+                    None
+                };
+            }
+        }
+        AnimatedIcon::Transform(_) => {
+            // The icon carries its SVG and its period; the SVG element draws
+            // the icon's shape in its text colour.
+            if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
+                (anim.icon(), anim.animation())
+            {
+                let icon = gpui::svg().data(bytes).size(diameter).text_color(text);
+                let element = if prefers_reduced_motion() {
+                    icon.into_any_element()
+                } else {
+                    with_spin_animation(icon, "loading", *duration_ms).into_any_element()
+                };
+            }
+        }
+        _ => {}
+    }
+}
+```
+
+`animated_frames_to_image_sources_for` colours each frame as its set does:
+it tints a Material or Lucide frame through the monochrome colouriser, fills
+a freedesktop frame's `currentColor` only where the document sets no `color`
+of its own (Breeze's `process-working` keeps its stylesheet's), and draws an
+SF Symbols or Segoe Fluent frame, and any RGBA frame, as it is.
+`animated_frames_to_image_sources(&anim, color, size)` puts every SVG frame
+through the monochrome colouriser, which suits a bundled set's frames only.
 
 With `svg-rasterize` (see [Features](#features)), every `ImageSource` the
 `icons` module builds is an `ImageSource::Render`: an image gpui draws from as
@@ -522,22 +721,51 @@ change that re-colorizes them — should drop each replaced source that way
 before letting go of it. `examples/showcase-gpui/support.rs` does it in
 `release_sources`.
 
-## GPUI as `gpui-pre`
+## Backends
 
-gpui-component 0.7 depends on GPUI published as the **`gpui-pre`** package:
-snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
-`0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
-arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.8" }`) so its `Hsla`, `Pixels`
-and `StyleRefinement` are gpui-component's types. Outside the `widgets`
-module its GPUI surface is small: colours and lengths (`Hsla`, `Rgba`,
-`Pixels`), `StyleRefinement`, images (`ImageSource`, `RenderImage`, and
-`Image` / `ImageFormat` without `svg-rasterize`), the `svg` spin animation,
-and `App` / `Global`; the `widgets` module draws elements of its own with
-GPUI's element API. To freeze a snapshot in an
-application, pin
-`gpui-pre = "=0.3.N"` there; a library must not, because an exact pin would
-conflict with any other dependency wanting a later snapshot.
+GPUI Kit 0.7.3 builds on one of two GPUI cores: **gpui-pre**, its default,
+and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
+rendering and layout), which its `gpui-fast` feature selects. The two cores'
+types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
+across the build graph: once a crate's `gpui-fast` feature is on, it is on for
+every user of that crate. gpui-kit, gpui-component and gpui-base each have
+one, and they must switch together, or one crate's GPUI types are not the
+other's.
+
+This crate names GPUI through gpui-kit (`extern crate gpui_kit as gpui;`, the
+alias gpui-kit documents), so it is built on the core gpui-kit is built on:
+
+- An application on **gpui-pre** needs nothing: it is the default.
+- An application on **GPUI Fast** through gpui-kit
+  (`gpui-kit = { version = "0.7.3", features = ["gpui-fast"] }`, with gpui-kit's
+  default `component` feature) needs nothing more either: this crate follows
+  gpui-kit.
+- Any other application on **GPUI Fast** (one that depends on gpui-component
+  rather than on gpui-kit, or uses gpui-kit without its `component` feature)
+  enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and
+  `gpui-component/gpui-fast` together. Turning on `gpui-component/gpui-fast`
+  alone leaves gpui-kit on gpui-pre, and gpui-kit itself then fails to
+  compile.
+
+The gpui-pre crates stay in the build on GPUI Fast as well: gpui-component and
+gpui-base depend on them either way. The documentation on docs.rs is built on
+gpui-pre. This crate's tests run on GPUI Fast with
+`cargo test -p native-theme-gpui --features gpui-fast --all-targets`: the
+`--all-targets` leaves the doctests out, since each is a crate of its own that
+names gpui-pre as `gpui`, not GPUI through gpui-kit.
+
+**gpui-pre** is GPUI as the gpui-kit maintainer publishes it: snapshots of
+Zed's `main` branch, republished as `0.3.N` patch bumps every other Sunday.
+Breaking changes from Zed therefore arrive as patch releases. This crate's
+manifest names the package (`gpui = { package = "gpui-pre", … }`) at the
+floor in [Compatibility](#compatibility). Outside the `widgets` module its
+GPUI surface is small: colours and lengths (`Hsla`, `Rgba`, `Pixels`),
+`StyleRefinement`, images (`ImageSource`, `RenderImage`, and `Image` /
+`ImageFormat` without `svg-rasterize`), the `svg` spin animation, and `App` /
+`Global`; the `widgets` module draws elements of its own with GPUI's element
+API. To freeze a snapshot in an application, pin `gpui-pre = "=0.3.N"` there;
+a library must not, because an exact pin would conflict with any other
+dependency wanting a later snapshot.
 
 ## What gets mapped
 
@@ -553,18 +781,26 @@ conflict with any other dependency wanting a later snapshot.
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
   colours from the splitter, which gpui-base's own resizables draw (not
   gpui-component's, `Settings` or dock edges).
+- **Tooltip delay** — `tooltip.show_delay_ms`, installed as gpui-base's
+  application-wide `TooltipDefaults` show delay (*How re-application works*).
+  The dialog entrance and the `DataTable` header height are builders the
+  application applies, `geometry::dialog_entrance` and
+  `geometry::list_header_height` (*Per-widget geometry*).
 - **Icons** — every gpui-component `IconName` (106 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names
   Material Symbols Outlined files (`StarOff` has none), the freedesktop table
   names Breeze/Adwaita icons. `None` means the set has no equivalent; nothing
   is substituted. 31 of the 42 `IconRole` variants map to `IconName`
-  (`icons::icon_name`).
+  (`icons::icon_name`); a role's icon in the theme's own set is
+  `SystemTheme::icon` (see [Role icons](#role-icons)).
 
 ## Showcase
 
 ```sh
 cargo run -p native-theme-gpui --example showcase-gpui
+# following the OS theme's changes, through `on_theme_change`:
+cargo run -p native-theme-gpui --example showcase-gpui --features watch
 ```
 
 Displays every gpui-component widget themed with native-theme presets, with
@@ -625,6 +861,8 @@ pointer, and the primary button, at a point of the window),
 ![macOS Sonoma Dark](docs/assets/macos-macos-sonoma-dark.png)
 
 ### Windows
+
+The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Server 2025 (build 26100): GitHub has no x64 Windows 11 image. On that image the OS reports the same metrics, fonts and system colours as Windows 11 25H2 (build 26200), except the animation and drop-shadow settings, which are off on Server.
 
 ![Windows 11 Light](docs/assets/windows-windows-11-light.png)
 

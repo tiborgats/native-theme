@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::IconRole;
+/// use native_theme::icons::IconRole;
 ///
 /// let role = IconRole::ActionSave;
 /// match role {
@@ -35,7 +35,7 @@ use serde::{Deserialize, Serialize};
 /// }
 ///
 /// // Iterate all roles
-/// assert_eq!(IconRole::ALL.len(), 42);
+/// assert!(IconRole::ALL.iter().any(|role| role.name() == "action-save"));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -155,7 +155,7 @@ impl IconRole {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::theme::IconRole;
+    /// use native_theme::icons::IconRole;
     ///
     /// assert_eq!(IconRole::ActionSave.name(), "action-save");
     /// assert_eq!(IconRole::DialogWarning.name(), "dialog-warning");
@@ -217,8 +217,8 @@ impl IconRole {
 
     /// All icon role variants, useful for iteration and exhaustive testing.
     ///
-    /// Contains exactly 42 variants, one for each role, in declaration order.
-    pub const ALL: [IconRole; 42] = [
+    /// Contains every variant, one for each role, in declaration order.
+    pub const ALL: &'static [IconRole] = &[
         // Dialog (6)
         Self::DialogWarning,
         Self::DialogError,
@@ -279,14 +279,17 @@ impl IconRole {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::IconData;
+/// use native_theme::icons::IconData;
 /// use std::borrow::Cow;
 ///
 /// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// assert_eq!(svg.bytes(), b"<svg></svg>");
 ///
-/// let rgba = IconData::Rgba { width: 16, height: 16, data: vec![0; 16*16*4] };
+/// let rgba = IconData::rgba(16, 16, vec![0; 16 * 16 * 4]).unwrap();
 /// assert_eq!(rgba.bytes().len(), 16 * 16 * 4);
+///
+/// // A buffer that is not `width × height × 4` bytes is refused.
+/// assert_eq!(IconData::rgba(16, 16, vec![]), None);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -300,17 +303,21 @@ pub enum IconData {
     Svg(Cow<'static, [u8]>),
 
     /// Rasterized RGBA pixels (from macOS/Windows system APIs).
-    Rgba {
-        /// Image width in pixels.
-        width: u32,
-        /// Image height in pixels.
-        height: u32,
-        /// Raw RGBA pixel data (4 bytes per pixel, row-major).
-        data: Vec<u8>,
-    },
+    ///
+    /// Built with [`IconData::rgba`], which checks the buffer's length.
+    Rgba(RgbaData),
 }
 
 impl IconData {
+    /// Build an [`IconData::Rgba`] from `width × height` RGBA pixels.
+    ///
+    /// Returns `None` unless `data` holds exactly `width × height × 4` bytes
+    /// (4 bytes per pixel, row-major), or when that product overflows `usize`.
+    #[must_use]
+    pub fn rgba(width: u32, height: u32, data: Vec<u8>) -> Option<Self> {
+        RgbaData::new(width, height, data).map(IconData::Rgba)
+    }
+
     /// Borrow the underlying bytes regardless of variant or ownership.
     ///
     /// For `Svg`, returns the SVG content bytes.
@@ -319,8 +326,89 @@ impl IconData {
     pub fn bytes(&self) -> &[u8] {
         match self {
             IconData::Svg(cow) => cow,
-            IconData::Rgba { data, .. } => data,
+            IconData::Rgba(rgba) => rgba.data(),
         }
+    }
+}
+
+/// Rasterized RGBA pixels whose buffer holds exactly `width × height × 4` bytes.
+///
+/// The payload of [`IconData::Rgba`]. The fields are private, so every value
+/// went through [`IconData::rgba`]'s length check; deserializing checks it too.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::icons::IconData;
+///
+/// let icon = IconData::rgba(2, 1, vec![255, 0, 0, 255, 0, 0, 255, 255]).unwrap();
+/// if let IconData::Rgba(rgba) = &icon {
+///     assert_eq!((rgba.width(), rgba.height()), (2, 1));
+///     assert_eq!(rgba.data().len(), 2 * 4);
+/// }
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawRgbaData")]
+pub struct RgbaData {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl RgbaData {
+    fn new(width: u32, height: u32, data: Vec<u8>) -> Option<Self> {
+        let len = usize::try_from(width)
+            .ok()?
+            .checked_mul(usize::try_from(height).ok()?)?
+            .checked_mul(4)?;
+        (data.len() == len).then_some(Self {
+            width,
+            height,
+            data,
+        })
+    }
+
+    /// Image width in pixels.
+    #[must_use]
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Image height in pixels.
+    #[must_use]
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Raw RGBA pixel data (4 bytes per pixel, row-major), `width × height × 4` bytes.
+    #[must_use]
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Take the raw RGBA pixel data.
+    #[must_use]
+    pub fn into_data(self) -> Vec<u8> {
+        self.data
+    }
+}
+
+/// [`RgbaData`]'s serialized shape, checked by [`RgbaData::try_from`].
+#[derive(Deserialize)]
+struct RawRgbaData {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+}
+
+impl TryFrom<RawRgbaData> for RgbaData {
+    type Error = String;
+
+    fn try_from(raw: RawRgbaData) -> Result<Self, Self::Error> {
+        let (width, height, len) = (raw.width, raw.height, raw.data.len());
+        Self::new(width, height, raw.data).ok_or_else(|| {
+            format!("RGBA data of {len} bytes does not match {width} x {height} x 4 bytes")
+        })
     }
 }
 
@@ -352,9 +440,10 @@ impl IconData {
 pub enum IconSet {
     /// Apple SF Symbols (macOS, iOS).
     SfSymbols,
-    /// Microsoft Segoe Fluent Icons (Windows).
-    #[serde(rename = "segoe-fluent")]
-    SegoeIcons,
+    /// Microsoft Segoe Fluent Icons (Windows): the font's glyphs (Segoe MDL2
+    /// Assets on Windows 10, same code points) and the shell's stock icons
+    /// (`SHGetStockIconInfo`, `LoadIconW`).
+    SegoeFluent,
     /// freedesktop Icon Naming Specification (Linux).
     Freedesktop,
     /// Google Material Symbols.
@@ -380,7 +469,7 @@ impl IconSet {
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "sf-symbols" => Some(Self::SfSymbols),
-            "segoe-fluent" => Some(Self::SegoeIcons),
+            "segoe-fluent" => Some(Self::SegoeFluent),
             "freedesktop" => Some(Self::Freedesktop),
             "material" => Some(Self::Material),
             "lucide" => Some(Self::Lucide),
@@ -393,7 +482,7 @@ impl IconSet {
     pub fn name(&self) -> &'static str {
         match self {
             Self::SfSymbols => "sf-symbols",
-            Self::SegoeIcons => "segoe-fluent",
+            Self::SegoeFluent => "segoe-fluent",
             Self::Freedesktop => "freedesktop",
             Self::Material => "material",
             Self::Lucide => "lucide",
@@ -422,7 +511,8 @@ impl IconSet {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::{IconProvider, IconSet};
+/// use native_theme::icons::IconProvider;
+/// use native_theme::theme::IconSet;
 /// use std::borrow::Cow;
 ///
 /// #[derive(Debug)]
@@ -473,7 +563,8 @@ impl IconProvider for IconRole {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::{IconSet, IconRole, icon_name};
+/// use native_theme::icons::{IconRole, icon_name};
+/// use native_theme::theme::IconSet;
 ///
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::SfSymbols), Some("doc.on.doc"));
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));
@@ -484,492 +575,12 @@ impl IconProvider for IconRole {
 pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
     match set {
         IconSet::SfSymbols => sf_symbols_name(role),
-        IconSet::SegoeIcons => segoe_name(role),
+        IconSet::SegoeFluent => segoe_name(role),
         IconSet::Freedesktop => freedesktop_name(role),
         IconSet::Material => material_name(role),
         IconSet::Lucide => lucide_name(role),
         _ => None,
     }
-}
-
-/// Detect the native icon set for the current operating system.
-///
-/// Returns the platform-appropriate icon set at runtime using `cfg!()` macros:
-/// - macOS / iOS: [`IconSet::SfSymbols`]
-/// - Windows: [`IconSet::SegoeIcons`]
-/// - Linux: [`IconSet::Freedesktop`]
-/// - Other: [`IconSet::Material`] (safe cross-platform fallback)
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::theme::{IconSet, system_icon_set};
-///
-/// let set = system_icon_set();
-/// // On Linux, this returns Freedesktop
-/// ```
-#[must_use]
-pub fn system_icon_set() -> IconSet {
-    if cfg!(any(target_os = "macos", target_os = "ios")) {
-        IconSet::SfSymbols
-    } else if cfg!(target_os = "windows") {
-        IconSet::SegoeIcons
-    } else if cfg!(target_os = "linux") {
-        IconSet::Freedesktop
-    } else {
-        IconSet::Material
-    }
-}
-
-/// Detect the icon theme name for the current platform (cached).
-///
-/// Returns the name of the icon theme that provides the actual icon files:
-/// - **macOS / iOS:** `"sf-symbols"` (no user-configurable icon theme)
-/// - **Windows:** `"segoe-fluent"` (no user-configurable icon theme)
-/// - **Linux:** DE-specific detection (e.g., `"breeze-dark"`, `"Adwaita"`)
-/// - **Other:** an error; there is no icon theme to detect
-///
-/// On Linux, the detection method depends on the desktop environment:
-/// - KDE: reads `[Icons] Theme` from `kdeglobals`, then from
-///   `kdedefaults/kdeglobals`
-/// - GNOME/Budgie: `gsettings get org.gnome.desktop.interface icon-theme`
-/// - Cinnamon: `gsettings get org.cinnamon.desktop.interface icon-theme`
-/// - XFCE: `xfconf-query -c xsettings -p /Net/IconThemeName`
-/// - MATE: `gsettings get org.mate.interface icon-theme`
-/// - LXQt: reads `icon_theme` from `~/.config/lxqt/lxqt.conf`
-/// - Unknown: tries KDE, then GNOME gsettings
-///
-/// No theme stands in for one that cannot be detected: the error says why,
-/// and what to do without a theme is the caller's decision.
-///
-/// Delegates to [`DetectionContext::icon_theme()`](crate::detect::DetectionContext::icon_theme)
-/// which caches the outcome, a failure included, and supports per-field
-/// invalidation via [`invalidate_caches()`](crate::detect::invalidate_caches).
-///
-/// # Errors
-///
-/// - [`Error::ReaderFailed`](crate::Error::ReaderFailed) with `reader`
-///   `"icon-theme"` on Linux when no source names a theme. Its message names
-///   each source tried and why it gave no name: the config directory could
-///   not be resolved (`$XDG_CONFIG_HOME` and `$HOME` both unset or empty), a
-///   file could not be read or lacks the key, or a command was not found,
-///   exited unsuccessfully or printed no name. On an unrecognised desktop it
-///   names both attempts, KDE's and GNOME's.
-/// - [`Error::PlatformUnsupported`](crate::Error::PlatformUnsupported) on a
-///   platform other than Linux, macOS, iOS and Windows.
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::theme::system_icon_theme;
-///
-/// match system_icon_theme() {
-///     // On a KDE system with Breeze Dark: "breeze-dark"; on macOS: "sf-symbols"
-///     Ok(theme) => println!("icon theme: {theme}"),
-///     Err(e) => println!("no icon theme: {e}"),
-/// }
-/// ```
-pub fn system_icon_theme() -> crate::Result<String> {
-    crate::detect::system().icon_theme()
-}
-
-/// Detect the icon theme name for the current platform without caching.
-///
-/// Unlike [`system_icon_theme()`], this function queries the OS every time it
-/// is called and never caches the result. Use this when polling for icon theme
-/// changes (e.g., the user switches from Breeze to Breeze Dark in system
-/// settings).
-///
-/// See [`system_icon_theme()`] for platform behavior details.
-///
-/// # Errors
-///
-/// As [`system_icon_theme()`].
-pub fn detect_icon_theme() -> crate::Result<String> {
-    detect_icon_theme_outcome().map_err(|failure| failure.to_error())
-}
-
-/// [`detect_icon_theme()`]'s outcome in the form the detection cache keeps.
-#[allow(unreachable_code)]
-pub(crate) fn detect_icon_theme_outcome() -> Result<String, IconThemeFailure> {
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    {
-        return Ok("sf-symbols".to_string());
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        return Ok("segoe-fluent".to_string());
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        detect_linux_icon_theme()
-    }
-
-    #[cfg(not(any(
-        target_os = "linux",
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "ios"
-    )))]
-    {
-        Err(IconThemeFailure::Unsupported(std::env::consts::OS))
-    }
-}
-
-/// One source's failure to name an icon theme: the source, and why it gave
-/// no name.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub(crate) struct SourceFailure {
-    source: String,
-    reason: String,
-}
-
-impl std::fmt::Display for SourceFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.source, self.reason)
-    }
-}
-
-/// Why no icon theme was detected: each source tried, in order, with why it
-/// gave no name. The source of the
-/// [`Error::ReaderFailed`](crate::Error::ReaderFailed) a failed detection
-/// reports.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub(crate) struct IconThemeUndetected(Vec<SourceFailure>);
-
-impl std::fmt::Display for IconThemeUndetected {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut sources = self.0.iter();
-        if let Some(first) = sources.next() {
-            write!(f, "{first}")?;
-        }
-        for failure in sources {
-            write!(f, "; {failure}")?;
-        }
-        Ok(())
-    }
-}
-
-impl std::error::Error for IconThemeUndetected {}
-
-/// A failed icon-theme detection as the detection cache keeps it. Unlike
-/// [`crate::Error`] it is `Clone`, so the cache can hand out the failure it
-/// holds; [`to_error`](Self::to_error) builds the error from it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum IconThemeFailure {
-    /// No source named a theme.
-    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-    Undetected(IconThemeUndetected),
-    /// The platform has no icon theme to detect.
-    #[cfg_attr(
-        any(
-            target_os = "linux",
-            target_os = "windows",
-            target_os = "macos",
-            target_os = "ios"
-        ),
-        allow(dead_code)
-    )]
-    Unsupported(&'static str),
-}
-
-impl IconThemeFailure {
-    /// The error [`system_icon_theme()`] and [`detect_icon_theme()`] report.
-    pub(crate) fn to_error(&self) -> crate::Error {
-        match self {
-            Self::Undetected(undetected) => crate::Error::ReaderFailed {
-                reader: "icon-theme",
-                source: Box::new(undetected.clone()),
-            },
-            Self::Unsupported(platform) => crate::Error::PlatformUnsupported { platform },
-        }
-    }
-
-    /// A failure with `reason`, for tests of the code that keeps and
-    /// reports failures.
-    #[cfg(test)]
-    pub(crate) fn for_tests(reason: &str) -> Self {
-        Self::Undetected(IconThemeUndetected(vec![SourceFailure {
-            source: "test".to_string(),
-            reason: reason.to_string(),
-        }]))
-    }
-}
-
-/// The schema GNOME, and the desktops that follow its settings, keep the
-/// icon theme in.
-#[cfg(target_os = "linux")]
-const GNOME_INTERFACE_SCHEMA: &str = "org.gnome.desktop.interface";
-
-/// Linux icon theme detection, dispatched by desktop environment.
-#[cfg(target_os = "linux")]
-fn detect_linux_icon_theme() -> Result<String, IconThemeFailure> {
-    use crate::detect::LinuxDesktop;
-
-    let found = match crate::detect::detect_linux_desktop() {
-        LinuxDesktop::Kde => detect_kde_icon_theme(),
-        LinuxDesktop::Gnome
-        | LinuxDesktop::Budgie
-        | LinuxDesktop::Hyprland
-        | LinuxDesktop::Sway
-        | LinuxDesktop::River
-        | LinuxDesktop::Niri
-        | LinuxDesktop::Wayfire
-        | LinuxDesktop::CosmicDe => gsettings_icon_theme(GNOME_INTERFACE_SCHEMA),
-        LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
-        LinuxDesktop::Xfce => detect_xfce_icon_theme(),
-        LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
-        LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
-        LinuxDesktop::Unknown => {
-            return unknown_desktop_icon_theme(detect_kde_icon_theme, || {
-                gsettings_icon_theme(GNOME_INTERFACE_SCHEMA)
-            });
-        }
-    };
-    found.map_err(|failure| IconThemeFailure::Undetected(IconThemeUndetected(vec![failure])))
-}
-
-/// The icon theme of a desktop that is not recognised: KDE's, else GNOME's.
-/// Where both fail, the failure names both attempts.
-#[cfg(target_os = "linux")]
-fn unknown_desktop_icon_theme(
-    kde: impl FnOnce() -> Result<String, SourceFailure>,
-    gnome: impl FnOnce() -> Result<String, SourceFailure>,
-) -> Result<String, IconThemeFailure> {
-    let kde_failure = match kde() {
-        Ok(theme) => return Ok(theme),
-        Err(failure) => failure,
-    };
-    let gnome_failure = match gnome() {
-        Ok(theme) => return Ok(theme),
-        Err(failure) => failure,
-    };
-    Err(IconThemeFailure::Undetected(IconThemeUndetected(vec![
-        kde_failure,
-        gnome_failure,
-    ])))
-}
-
-/// The failure of a config-file source when there is no config directory.
-#[cfg(target_os = "linux")]
-fn config_dir_unresolved(source: &str) -> SourceFailure {
-    SourceFailure {
-        source: source.to_string(),
-        reason: "the config directory is unresolved: $XDG_CONFIG_HOME and $HOME are both \
-                 unset or empty"
-            .to_string(),
-    }
-}
-
-/// Read the icon theme from KDE's kdeglobals INI file.
-#[cfg(target_os = "linux")]
-fn detect_kde_icon_theme() -> Result<String, SourceFailure> {
-    kde_icon_theme(xdg_config_dir().as_deref(), |path| {
-        std::fs::read_to_string(path)
-    })
-}
-
-/// `[Icons] Theme` from `kdeglobals` in `config_dir`, then from
-/// `kdedefaults/kdeglobals` (Plasma 6 stores distro defaults there,
-/// including the icon theme), each file read by `read`.
-///
-/// Uses simple line parsing — no `configparser` dependency required — so this
-/// works without the `kde` feature enabled.
-#[cfg(target_os = "linux")]
-fn kde_icon_theme(
-    config_dir: Option<&std::path::Path>,
-    read: impl Fn(&std::path::Path) -> std::io::Result<String>,
-) -> Result<String, SourceFailure> {
-    const SOURCE: &str = "KDE kdeglobals";
-    let config_dir = config_dir.ok_or_else(|| config_dir_unresolved(SOURCE))?;
-    let paths = [
-        config_dir.join("kdeglobals"),
-        config_dir.join("kdedefaults").join("kdeglobals"),
-    ];
-
-    let mut reasons = Vec::new();
-    for path in &paths {
-        match read(path) {
-            Ok(content) => match ini_value(&content, "Icons", "Theme") {
-                Some(theme) => return Ok(theme),
-                None => reasons.push(format!(
-                    "{}: `[Icons] Theme` is absent or empty",
-                    path.display()
-                )),
-            },
-            Err(e) => reasons.push(format!("{}: unreadable ({e})", path.display())),
-        }
-    }
-    Err(SourceFailure {
-        source: SOURCE.to_string(),
-        reason: reasons.join(", "),
-    })
-}
-
-/// Query gsettings for icon-theme with the given schema.
-#[cfg(target_os = "linux")]
-fn gsettings_icon_theme(schema: &str) -> Result<String, SourceFailure> {
-    gsettings_icon_theme_from(
-        schema,
-        std::process::Command::new("gsettings")
-            .args(["get", schema, "icon-theme"])
-            .output(),
-    )
-}
-
-/// The icon theme in `gsettings get <schema> icon-theme`'s `output`, which
-/// prints it quoted (`'Adwaita'`).
-#[cfg(target_os = "linux")]
-fn gsettings_icon_theme_from(
-    schema: &str,
-    output: std::io::Result<std::process::Output>,
-) -> Result<String, SourceFailure> {
-    command_icon_theme(
-        format!("`gsettings get {schema} icon-theme`"),
-        output,
-        |printed| printed.trim().trim_matches('\''),
-    )
-}
-
-/// `xfconf-query`'s arguments that print XFCE's icon theme.
-#[cfg(target_os = "linux")]
-const XFCONF_ICON_THEME_ARGS: [&str; 4] = ["-c", "xsettings", "-p", "/Net/IconThemeName"];
-
-/// Read icon theme from XFCE's xfconf-query.
-#[cfg(target_os = "linux")]
-fn detect_xfce_icon_theme() -> Result<String, SourceFailure> {
-    xfce_icon_theme_from(
-        std::process::Command::new("xfconf-query")
-            .args(XFCONF_ICON_THEME_ARGS)
-            .output(),
-    )
-}
-
-/// The icon theme in `xfconf-query -c xsettings -p /Net/IconThemeName`'s
-/// `output`.
-#[cfg(target_os = "linux")]
-fn xfce_icon_theme_from(
-    output: std::io::Result<std::process::Output>,
-) -> Result<String, SourceFailure> {
-    command_icon_theme(
-        format!("`xfconf-query {}`", XFCONF_ICON_THEME_ARGS.join(" ")),
-        output,
-        str::trim,
-    )
-}
-
-/// The icon theme the command `source` names printed, taken out of its
-/// `output` by `parse`, or why there is none.
-#[cfg(target_os = "linux")]
-fn command_icon_theme(
-    source: String,
-    output: std::io::Result<std::process::Output>,
-    parse: fn(&str) -> &str,
-) -> Result<String, SourceFailure> {
-    let reason = match output {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => "command not found".to_string(),
-        Err(e) => format!("could not run ({e})"),
-        Ok(output) if !output.status.success() => {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            match stderr.trim() {
-                "" => format!("unsuccessful ({})", output.status),
-                stderr => format!("unsuccessful ({}): {stderr}", output.status),
-            }
-        }
-        Ok(output) => match String::from_utf8(output.stdout) {
-            Err(_) => "printed output that is not UTF-8".to_string(),
-            Ok(printed) => match parse(&printed) {
-                "" => "printed no theme name".to_string(),
-                theme => return Ok(theme.to_string()),
-            },
-        },
-    };
-    Err(SourceFailure { source, reason })
-}
-
-/// Read icon theme from LXQt's config file.
-#[cfg(target_os = "linux")]
-fn detect_lxqt_icon_theme() -> Result<String, SourceFailure> {
-    lxqt_icon_theme(xdg_config_dir().as_deref(), |path| {
-        std::fs::read_to_string(path)
-    })
-}
-
-/// `icon_theme` from `lxqt/lxqt.conf` in `config_dir`, read by `read`.
-///
-/// LXQt uses a flat `key=value` format (no section headers for the icon_theme
-/// key), so we scan for the bare `icon_theme=` prefix.
-#[cfg(target_os = "linux")]
-fn lxqt_icon_theme(
-    config_dir: Option<&std::path::Path>,
-    read: impl Fn(&std::path::Path) -> std::io::Result<String>,
-) -> Result<String, SourceFailure> {
-    const SOURCE: &str = "LXQt lxqt.conf";
-    let config_dir = config_dir.ok_or_else(|| config_dir_unresolved(SOURCE))?;
-    let path = config_dir.join("lxqt").join("lxqt.conf");
-    let failure = |reason: String| SourceFailure {
-        source: SOURCE.to_string(),
-        reason: format!("{}: {reason}", path.display()),
-    };
-
-    let content = read(&path).map_err(|e| failure(format!("unreadable ({e})")))?;
-    content
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix("icon_theme="))
-        .map(str::trim)
-        .find(|value| !value.is_empty())
-        .map(str::to_string)
-        .ok_or_else(|| failure("`icon_theme` is absent or empty".to_string()))
-}
-
-/// Resolve `$XDG_CONFIG_HOME`, falling back to `$HOME/.config`.
-///
-/// Returns `None` when both `$XDG_CONFIG_HOME` and `$HOME` are unset,
-/// avoiding a bogus `/tmp/.config` fallback.
-#[cfg(target_os = "linux")]
-fn xdg_config_dir() -> Option<std::path::PathBuf> {
-    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
-        && !config_home.is_empty()
-    {
-        return Some(std::path::PathBuf::from(config_home));
-    }
-    std::env::var("HOME")
-        .ok()
-        .filter(|h| !h.is_empty())
-        .map(|h| std::path::PathBuf::from(h).join(".config"))
-}
-
-/// Read a value from INI `content` by section and key.
-///
-/// Simple line-based parser — no external crate needed. Handles `[Section]`
-/// headers and `Key=Value` lines. Returns `None` if the section/key is
-/// missing or the value is empty.
-#[cfg(target_os = "linux")]
-fn ini_value(content: &str, section: &str, key: &str) -> Option<String> {
-    let target_section = format!("[{}]", section);
-    let mut in_section = false;
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('[') {
-            in_section = trimmed == target_section;
-            continue;
-        }
-        if in_section && let Some(value) = trimmed.strip_prefix(key) {
-            let value = value.trim_start();
-            if let Some(value) = value.strip_prefix('=') {
-                let value = value.trim();
-                if !value.is_empty() {
-                    return Some(value.to_string());
-                }
-            }
-        }
-    }
-    None
 }
 
 // --- Private mapping functions ---
@@ -1423,7 +1034,7 @@ mod tests {
 
     #[test]
     fn icon_role_all_no_duplicates() {
-        let all = &IconRole::ALL;
+        let all = IconRole::ALL;
         for (i, role) in all.iter().enumerate() {
             for (j, other) in all.iter().enumerate() {
                 if i != j {
@@ -1473,23 +1084,64 @@ mod tests {
     #[test]
     fn icon_data_rgba_construct_and_match() {
         let pixels = vec![255, 0, 0, 255]; // 1 red pixel
-        let data = IconData::Rgba {
-            width: 1,
-            height: 1,
-            data: pixels.clone(),
-        };
+        let data = IconData::rgba(1, 1, pixels.clone()).unwrap();
         match data {
-            IconData::Rgba {
-                width,
-                height,
-                data,
-            } => {
-                assert_eq!(width, 1);
-                assert_eq!(height, 1);
-                assert_eq!(data, pixels);
+            IconData::Rgba(rgba) => {
+                assert_eq!(rgba.width(), 1);
+                assert_eq!(rgba.height(), 1);
+                assert_eq!(rgba.data(), pixels.as_slice());
+                assert_eq!(rgba.into_data(), pixels);
             }
             _ => panic!("Expected Rgba variant"),
         }
+    }
+
+    #[test]
+    fn icon_data_rgba_rejects_a_buffer_of_the_wrong_length() {
+        assert_eq!(IconData::rgba(16, 16, vec![]), None);
+        assert_eq!(IconData::rgba(1, 1, vec![0; 3]), None);
+        assert_eq!(IconData::rgba(1, 1, vec![0; 5]), None);
+        assert_eq!(IconData::rgba(2, 3, vec![0; 2 * 3 * 4 - 1]), None);
+        assert!(IconData::rgba(2, 3, vec![0; 2 * 3 * 4]).is_some());
+        assert!(IconData::rgba(0, 0, vec![]).is_some());
+    }
+
+    #[test]
+    fn icon_data_rgba_rejects_an_overflowing_size() {
+        assert_eq!(IconData::rgba(u32::MAX, u32::MAX, vec![]), None);
+    }
+
+    #[test]
+    fn icon_data_rgba_serializes_as_before() {
+        let icon = IconData::rgba(1, 1, vec![255, 0, 0, 255]).unwrap();
+        let json = serde_json::to_string(&icon).unwrap();
+        assert_eq!(
+            json,
+            r#"{"Rgba":{"width":1,"height":1,"data":[255,0,0,255]}}"#
+        );
+        let back: IconData = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, icon);
+
+        let toml_text = toml::to_string(&icon).unwrap();
+        let back: IconData = toml::from_str(&toml_text).unwrap();
+        assert_eq!(back, icon);
+    }
+
+    #[test]
+    fn icon_data_rgba_deserialize_rejects_a_short_buffer() {
+        let json = r#"{"Rgba":{"width":16,"height":16,"data":[0,0,0,0]}}"#;
+        let err = serde_json::from_str::<IconData>(json).unwrap_err();
+        assert!(
+            err.to_string().contains("16 x 16 x 4"),
+            "unexpected error: {err}"
+        );
+
+        let toml_text = "[Rgba]\nwidth = 16\nheight = 16\ndata = [0, 0, 0, 0]\n";
+        let err = toml::from_str::<IconData>(toml_text).unwrap_err();
+        assert!(
+            err.to_string().contains("16 x 16 x 4"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
@@ -1501,11 +1153,7 @@ mod tests {
 
     #[test]
     fn icon_data_derives_clone() {
-        let data = IconData::Rgba {
-            width: 16,
-            height: 16,
-            data: vec![0; 16 * 16 * 4],
-        };
+        let data = IconData::rgba(16, 16, vec![0; 16 * 16 * 4]).unwrap();
         let cloned = data.clone();
         assert_eq!(data, cloned);
     }
@@ -1531,7 +1179,7 @@ mod tests {
     fn icon_set_from_name_segoe_fluent() {
         assert_eq!(
             IconSet::from_name("segoe-fluent"),
-            Some(IconSet::SegoeIcons)
+            Some(IconSet::SegoeFluent)
         );
     }
 
@@ -1565,7 +1213,7 @@ mod tests {
 
     #[test]
     fn icon_set_name_segoe_fluent() {
-        assert_eq!(IconSet::SegoeIcons.name(), "segoe-fluent");
+        assert_eq!(IconSet::SegoeFluent.name(), "segoe-fluent");
     }
 
     #[test]
@@ -1587,7 +1235,7 @@ mod tests {
     fn icon_set_from_name_name_round_trip() {
         let sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -1644,7 +1292,7 @@ mod tests {
     #[test]
     fn icon_name_segoe_action_copy() {
         assert_eq!(
-            icon_name(IconRole::ActionCopy, IconSet::SegoeIcons),
+            icon_name(IconRole::ActionCopy, IconSet::SegoeFluent),
             Some("Copy")
         );
     }
@@ -1711,14 +1359,14 @@ mod tests {
     #[test]
     fn icon_name_segoe_dialog_success() {
         assert_eq!(
-            icon_name(IconRole::DialogSuccess, IconSet::SegoeIcons),
+            icon_name(IconRole::DialogSuccess, IconSet::SegoeFluent),
             Some("CheckMark")
         );
     }
 
     #[test]
     fn icon_name_segoe_status_busy_is_none() {
-        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SegoeIcons), None);
+        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SegoeFluent), None);
     }
 
     #[test]
@@ -1775,7 +1423,7 @@ mod tests {
             Some("xmark.circle.fill")
         );
         assert_eq!(
-            icon_name(IconRole::DialogError, IconSet::SegoeIcons),
+            icon_name(IconRole::DialogError, IconSet::SegoeFluent),
             Some("SIID_ERROR")
         );
         assert_eq!(
@@ -1799,7 +1447,7 @@ mod tests {
             Some("house")
         );
         assert_eq!(
-            icon_name(IconRole::NavHome, IconSet::SegoeIcons),
+            icon_name(IconRole::NavHome, IconSet::SegoeFluent),
             Some("Home")
         );
         assert_eq!(
@@ -1829,9 +1477,9 @@ mod tests {
         // Segoe: 42 - 1 None (StatusBusy) = 41 Some
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
+            .filter(|r| icon_name(**r, IconSet::SegoeFluent).is_some())
             .count();
-        assert_eq!(some_count, 41, "Segoe Icons should have 41 mappings");
+        assert_eq!(some_count, 41, "Segoe Fluent should have 41 mappings");
     }
 
     #[test]
@@ -1862,14 +1510,6 @@ mod tests {
             .filter(|r| icon_name(**r, IconSet::Lucide).is_some())
             .count();
         assert_eq!(some_count, 42, "Lucide should have 42 mappings");
-    }
-
-    // === system_icon_set() tests ===
-
-    #[test]
-    #[cfg(target_os = "linux")]
-    fn system_icon_set_returns_freedesktop_on_linux() {
-        assert_eq!(system_icon_set(), IconSet::Freedesktop);
     }
 
     // === IconProvider trait tests ===
@@ -1924,7 +1564,7 @@ mod tests {
         // All 42 IconRole variants implement IconProvider -- iterate and call icon_name
         for role in IconRole::ALL {
             // All 42 roles are mapped for Material
-            let _name = IconProvider::icon_name(&role, IconSet::Material);
+            let _name = IconProvider::icon_name(role, IconSet::Material);
             // Just verifying it doesn't panic
         }
     }
@@ -1946,7 +1586,7 @@ mod tests {
         &[
             (IconSet::SfSymbols, IconRole::FolderOpen),
             (IconSet::SfSymbols, IconRole::StatusBusy),
-            (IconSet::SegoeIcons, IconRole::StatusBusy),
+            (IconSet::SegoeFluent, IconRole::StatusBusy),
         ]
     }
 
@@ -1955,11 +1595,11 @@ mod tests {
         let gaps = known_gaps();
         let system_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
         ];
         for &set in &system_sets {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 let is_known_gap = gaps.contains(&(set, role));
                 let is_mapped = icon_name(role, set).is_some();
                 if !is_known_gap {
@@ -1977,7 +1617,7 @@ mod tests {
     fn all_roles_have_bundled_svg() {
         use crate::bundled_icon_svg;
         for set in [IconSet::Material, IconSet::Lucide] {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 assert!(
                     bundled_icon_svg(role, set).is_some(),
                     "{role:?} has no bundled SVG for {set:?}"
@@ -1991,21 +1631,21 @@ mod tests {
     #[test]
     fn icon_name_exhaustive_all_sets() {
         // Material: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Material).is_some(),
                 "Material must map {role:?} to Some"
             );
         }
         // Lucide: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Lucide).is_some(),
                 "Lucide must map {role:?} to Some"
             );
         }
         // Freedesktop: all 42
-        for role in IconRole::ALL {
+        for role in IconRole::ALL.iter().copied() {
             assert!(
                 icon_name(role, IconSet::Freedesktop).is_some(),
                 "Freedesktop must map {role:?} to Some"
@@ -2014,7 +1654,7 @@ mod tests {
         // Segoe: at least 41 (StatusBusy is None)
         let segoe_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
+            .filter(|r| icon_name(**r, IconSet::SegoeFluent).is_some())
             .count();
         assert!(
             segoe_count >= 41,
@@ -2036,13 +1676,13 @@ mod tests {
     fn icon_name_returns_nonempty_strings() {
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
         ];
         for set in all_sets {
-            for role in IconRole::ALL {
+            for role in IconRole::ALL.iter().copied() {
                 if let Some(name) = icon_name(role, set) {
                     assert!(
                         !name.is_empty(),
@@ -2061,7 +1701,7 @@ mod tests {
         // from_name(), this test fails.
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -2112,7 +1752,7 @@ mod tests {
     fn icon_set_serde_matches_name() {
         let all_sets = [
             IconSet::SfSymbols,
-            IconSet::SegoeIcons,
+            IconSet::SegoeFluent,
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
@@ -2137,289 +1777,7 @@ mod tests {
         let svg = IconData::Svg(Cow::Borrowed(b"<svg/>"));
         assert_eq!(svg.bytes(), b"<svg/>");
 
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![1, 2, 3, 4],
-        };
+        let rgba = IconData::rgba(1, 1, vec![1, 2, 3, 4]).unwrap();
         assert_eq!(rgba.bytes(), &[1, 2, 3, 4]);
-    }
-}
-
-#[cfg(test)]
-#[cfg(target_os = "linux")]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod icon_theme_detection_tests {
-    use super::*;
-    use std::os::unix::process::ExitStatusExt;
-    use std::path::{Path, PathBuf};
-    use std::process::{ExitStatus, Output};
-
-    fn missing(_: &Path) -> std::io::Result<String> {
-        Err(std::io::Error::from(std::io::ErrorKind::NotFound))
-    }
-
-    fn printed(stdout: &str) -> std::io::Result<Output> {
-        Ok(Output {
-            status: ExitStatus::from_raw(0),
-            stdout: stdout.as_bytes().to_vec(),
-            stderr: Vec::new(),
-        })
-    }
-
-    fn exited_1(stderr: &str) -> std::io::Result<Output> {
-        Ok(Output {
-            status: ExitStatus::from_raw(1 << 8),
-            stdout: Vec::new(),
-            stderr: stderr.as_bytes().to_vec(),
-        })
-    }
-
-    fn not_found() -> std::io::Result<Output> {
-        Err(std::io::Error::from(std::io::ErrorKind::NotFound))
-    }
-
-    // === KDE: kdeglobals ===
-
-    #[test]
-    fn kde_without_a_config_dir_names_kdeglobals_and_the_config_dir() {
-        let failure = kde_icon_theme(None, missing).unwrap_err().to_string();
-        assert!(failure.contains("kdeglobals"), "got: {failure}");
-        assert!(failure.contains("config directory"), "got: {failure}");
-        assert!(failure.contains("XDG_CONFIG_HOME"), "got: {failure}");
-    }
-
-    #[test]
-    fn kde_with_no_readable_file_names_both_files() {
-        let dir = PathBuf::from("/cfg");
-        let failure = kde_icon_theme(Some(&dir), missing).unwrap_err().to_string();
-        assert!(failure.contains("/cfg/kdeglobals"), "got: {failure}");
-        assert!(
-            failure.contains("/cfg/kdedefaults/kdeglobals"),
-            "got: {failure}"
-        );
-        assert!(failure.contains("unreadable"), "got: {failure}");
-    }
-
-    #[test]
-    fn kde_with_no_icons_theme_key_says_the_key_is_absent() {
-        let dir = PathBuf::from("/cfg");
-        let failure = kde_icon_theme(Some(&dir), |_: &Path| {
-            Ok("[General]\nTheme=not-this-one\n".to_string())
-        })
-        .unwrap_err()
-        .to_string();
-        assert!(failure.contains("kdeglobals"), "got: {failure}");
-        assert!(
-            failure.contains("`[Icons] Theme` is absent or empty"),
-            "got: {failure}"
-        );
-    }
-
-    #[test]
-    fn kde_takes_the_defaults_file_where_kdeglobals_lacks_the_key() {
-        let dir = PathBuf::from("/cfg");
-        let theme = kde_icon_theme(Some(&dir), |path: &Path| {
-            if path.ends_with("kdedefaults/kdeglobals") {
-                Ok("[Icons]\nTheme=breeze-dark\n".to_string())
-            } else {
-                Ok("[General]\n".to_string())
-            }
-        });
-        assert_eq!(theme, Ok("breeze-dark".to_string()));
-    }
-
-    // === gsettings ===
-
-    #[test]
-    fn gsettings_not_found_names_the_command() {
-        let failure = gsettings_icon_theme_from("org.gnome.desktop.interface", not_found())
-            .unwrap_err()
-            .to_string();
-        assert!(
-            failure.contains("gsettings get org.gnome.desktop.interface icon-theme"),
-            "got: {failure}"
-        );
-        assert!(failure.contains("command not found"), "got: {failure}");
-    }
-
-    #[test]
-    fn gsettings_nonzero_exit_gives_the_status_and_stderr() {
-        let failure = gsettings_icon_theme_from(
-            "org.mate.interface",
-            exited_1("No such schema “org.mate.interface”\n"),
-        )
-        .unwrap_err()
-        .to_string();
-        assert!(
-            failure.contains("gsettings get org.mate.interface icon-theme"),
-            "got: {failure}"
-        );
-        assert!(
-            failure.contains("unsuccessful (exit status: 1)"),
-            "got: {failure}"
-        );
-        assert!(failure.contains("No such schema"), "got: {failure}");
-    }
-
-    #[test]
-    fn gsettings_empty_output_says_it_printed_no_name() {
-        let failure = gsettings_icon_theme_from("org.cinnamon.desktop.interface", printed("''\n"))
-            .unwrap_err()
-            .to_string();
-        assert!(
-            failure.contains("gsettings get org.cinnamon.desktop.interface icon-theme"),
-            "got: {failure}"
-        );
-        assert!(failure.contains("printed no theme name"), "got: {failure}");
-    }
-
-    #[test]
-    fn gsettings_output_is_unquoted() {
-        assert_eq!(
-            gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'\n")),
-            Ok("Adwaita".to_string())
-        );
-    }
-
-    // === XFCE: xfconf-query ===
-
-    #[test]
-    fn xfconf_not_found_names_the_command() {
-        let failure = xfce_icon_theme_from(not_found()).unwrap_err().to_string();
-        assert!(
-            failure.contains("xfconf-query -c xsettings -p /Net/IconThemeName"),
-            "got: {failure}"
-        );
-        assert!(failure.contains("command not found"), "got: {failure}");
-    }
-
-    #[test]
-    fn xfconf_nonzero_exit_gives_the_status() {
-        let failure = xfce_icon_theme_from(exited_1("")).unwrap_err().to_string();
-        assert!(failure.contains("xfconf-query"), "got: {failure}");
-        assert!(
-            failure.contains("unsuccessful (exit status: 1)"),
-            "got: {failure}"
-        );
-    }
-
-    #[test]
-    fn xfconf_empty_output_says_it_printed_no_name() {
-        let failure = xfce_icon_theme_from(printed("\n")).unwrap_err().to_string();
-        assert!(failure.contains("xfconf-query"), "got: {failure}");
-        assert!(failure.contains("printed no theme name"), "got: {failure}");
-    }
-
-    #[test]
-    fn xfconf_output_is_trimmed() {
-        assert_eq!(
-            xfce_icon_theme_from(printed("elementary\n")),
-            Ok("elementary".to_string())
-        );
-    }
-
-    // === LXQt: lxqt.conf ===
-
-    #[test]
-    fn lxqt_without_a_config_dir_names_lxqt_conf_and_the_config_dir() {
-        let failure = lxqt_icon_theme(None, missing).unwrap_err().to_string();
-        assert!(failure.contains("lxqt.conf"), "got: {failure}");
-        assert!(failure.contains("config directory"), "got: {failure}");
-    }
-
-    #[test]
-    fn lxqt_unreadable_file_names_the_file() {
-        let dir = PathBuf::from("/cfg");
-        let failure = lxqt_icon_theme(Some(&dir), missing)
-            .unwrap_err()
-            .to_string();
-        assert!(failure.contains("/cfg/lxqt/lxqt.conf"), "got: {failure}");
-        assert!(failure.contains("unreadable"), "got: {failure}");
-    }
-
-    #[test]
-    fn lxqt_without_the_key_says_the_key_is_absent() {
-        let dir = PathBuf::from("/cfg");
-        let failure = lxqt_icon_theme(Some(&dir), |_: &Path| Ok("theme=frost\n".to_string()))
-            .unwrap_err()
-            .to_string();
-        assert!(failure.contains("/cfg/lxqt/lxqt.conf"), "got: {failure}");
-        assert!(
-            failure.contains("`icon_theme` is absent or empty"),
-            "got: {failure}"
-        );
-    }
-
-    #[test]
-    fn lxqt_reads_the_icon_theme_key() {
-        let dir = PathBuf::from("/cfg");
-        assert_eq!(
-            lxqt_icon_theme(Some(&dir), |_: &Path| Ok(
-                "[General]\nicon_theme=Papirus\n".to_string()
-            )),
-            Ok("Papirus".to_string())
-        );
-    }
-
-    // === Unknown desktop: KDE, then GNOME ===
-
-    #[test]
-    fn unknown_desktop_error_names_both_attempts() {
-        let error = unknown_desktop_icon_theme(
-            || kde_icon_theme(None, missing),
-            || gsettings_icon_theme_from("org.gnome.desktop.interface", not_found()),
-        )
-        .unwrap_err()
-        .to_error();
-        let message = error.to_string();
-        assert!(message.contains("kdeglobals"), "got: {message}");
-        assert!(
-            message.contains("gsettings get org.gnome.desktop.interface icon-theme"),
-            "got: {message}"
-        );
-        assert!(
-            matches!(
-                error,
-                crate::Error::ReaderFailed {
-                    reader: "icon-theme",
-                    ..
-                }
-            ),
-            "got: {error:?}"
-        );
-    }
-
-    #[test]
-    fn unknown_desktop_takes_kde_first() {
-        let dir = PathBuf::from("/cfg");
-        let theme = unknown_desktop_icon_theme(
-            || {
-                kde_icon_theme(Some(&dir), |_: &Path| {
-                    Ok("[Icons]\nTheme=breeze\n".to_string())
-                })
-            },
-            || gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'")),
-        );
-        assert_eq!(theme, Ok("breeze".to_string()));
-    }
-
-    #[test]
-    fn unknown_desktop_takes_gnome_where_kde_fails() {
-        let theme = unknown_desktop_icon_theme(
-            || kde_icon_theme(None, missing),
-            || gsettings_icon_theme_from("org.gnome.desktop.interface", printed("'Adwaita'")),
-        );
-        assert_eq!(theme, Ok("Adwaita".to_string()));
-    }
-
-    // === The public result ===
-
-    #[test]
-    fn system_icon_theme_is_a_name_or_the_reason_for_none() {
-        match system_icon_theme() {
-            Ok(theme) => assert!(!theme.is_empty(), "detection named an empty theme"),
-            Err(e) => assert!(!e.to_string().is_empty(), "a failure gave no reason"),
-        }
     }
 }

@@ -39,10 +39,17 @@ system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 system-fonts = ["native-theme/system-fonts"]  # enables `system_font_family`
 
+# The OS readers, off by default as in native-theme: without one,
+# `from_system()` is the platform preset on Linux and an error on macOS and
+# Windows. native-theme's finer `kde`, `portal`, `macos` and `windows` pick one.
+native = ["native-theme/native"]
+watch = ["native-theme/watch", "dep:iced_futures"]  # enables `theme_changes`
+
 [dependencies]
 native-theme.workspace = true
 iced_core = "0.14"
 iced_widget = { version = "0.14", optional = true }
+iced_futures = { version = "0.14", optional = true }
 iced_aw = { version = "0.14", optional = true, default-features = false, features = [
     "card",
     "menu",

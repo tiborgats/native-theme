@@ -29,11 +29,12 @@
 //! Upstream citations in this module are read at iced_aw 0.14.1, with
 //! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
+use super::border_of;
 use crate::palette::to_color;
 use iced_aw::style::Status;
+use iced_core::Background;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;
-use iced_core::{Background, Border};
 use iced_widget::container;
 use native_theme::theme::ResolvedTheme;
 
@@ -132,11 +133,7 @@ pub fn menu(
     let panel = to_color(m.background_color);
     let highlight = to_color(m.hover_background);
 
-    let border = Border {
-        color: to_color(m.border.color),
-        width: m.border.line_width,
-        radius: Radius::new(m.border.corner_radius),
-    };
+    let border = border_of(&m.border);
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
@@ -436,7 +433,7 @@ pub fn selection_list(
 }
 
 /// The platform's own spinner, for the container a `Spinner` is wrapped in:
-/// `container(Spinner::new()).style(styles::aw::spinner(&resolved))`.
+/// `container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))`.
 ///
 /// It styles a container because `iced_aw` 0.14.1 gives `Spinner` no `Style`,
 /// no `Catalog` and no style setter at all (`spinner.rs:16-66`): it paints its

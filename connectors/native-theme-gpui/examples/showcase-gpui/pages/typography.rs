@@ -242,5 +242,7 @@ impl Showcase {
                 "typography-markdown",
                 MARKDOWN_SAMPLE,
             ))
+            .child(demo::heading(ui, cx, "typography-heading-diff", "Diff"))
+            .child(demo::diff(ui, cx, "typography-diff", &self.diff_state, px(240.0)).occlude())
     }
 }

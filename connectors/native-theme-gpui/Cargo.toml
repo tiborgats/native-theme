@@ -5,8 +5,9 @@ edition.workspace = true
 license.workspace = true
 # NOT inherited: the gpui-pre closure declares a higher floor than the
 # workspace. Set to the lowest toolchain that compiles the library; measured
-# 2026-10-06 on the 0.7.1 closure: 1.95.0 builds, 1.94.0 fails on
-# std::hint::cold_path in gpui-pre 0.3.8 (src/profiler.rs:473).
+# 2026-10-12 on the 0.7.3 closure: 1.95.0 builds; 1.94.0 fails on
+# std::hint::cold_path in gpui-pre (src/profiler.rs:473, measured on 0.3.8,
+# the line unchanged in 0.3.9).
 rust-version = "1.95.0"
 repository.workspace = true
 homepage.workspace = true
@@ -21,7 +22,10 @@ description = "gpui toolkit connector for native-theme"
 # targets would render the same page minus those items at the cost of the
 # first-ever cross-target docs build of gpui-pre's macOS and Windows platform
 # crates.
-all-features = true
+# Every feature but `gpui-fast` (`all-features` would turn it on): the page
+# documents the crate on its default core, gpui-pre. src/compat.rs holds the
+# list to the [features] table.
+features = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts", "native", "watch"]
 
 [features]
 default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
@@ -37,61 +41,75 @@ svg-rasterize = ["native-theme/svg-rasterize"]
 # the platform substitutes for it (`native_theme::fonts::substitute_family`,
 # fontconfig on Linux), not in gpui's own fallback list.
 system-fonts = ["native-theme/system-fonts"]
+# `gpui-fast`: build on GPUI Kit's GPUI Fast backend instead of gpui-pre.
+# gpui-kit's own `gpui-fast` turns on gpui-base's; it reaches gpui-component's
+# only weakly (`gpui-component?/gpui-fast`), with gpui-kit's `component`
+# feature, which this crate leaves off, so it is named here.
+gpui-fast = ["gpui-kit/gpui-fast", "gpui-component/gpui-fast"]
+# The OS readers, off by default as in native-theme: without one,
+# `from_system()` is the platform preset on Linux and an error on macOS and
+# Windows. native-theme's finer `kde`, `portal`, `macos` and `windows` pick one.
+native = ["native-theme/native"]
+watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 
 [dependencies]
 # GPUI under the package name gpui-component uses, so both edges unify.
-# gpui-component 0.7.1 depends on `gpui-pre = "=0.3.8"` (an exact pin), so
-# 0.3.8 is the only version that resolves with it. gpui-component does not
-# re-export gpui, so the connector names it. Caret: an exact pin in a library
-# would conflict with any consumer whose other dependencies want a later
-# snapshot.
-gpui = { package = "gpui-pre", version = "0.3.8" }
+# gpui-component 0.7.3 depends on `gpui-pre = "=0.3.9"` (an exact pin), so
+# 0.3.9 is the only version that resolves with it. gpui-component does not
+# re-export gpui. The crate roots name GPUI through gpui-kit (below); this
+# dependency stays for the doctests, each a crate of its own that names
+# `gpui`. Caret: an exact pin in a library would conflict with any consumer
+# whose other dependencies want a later snapshot.
+gpui = { package = "gpui-pre", version = "0.3.9" }
 # A hard floor: 0.7.1 added IconName::Mic and IconName::Square, which the
 # icon tables name.
-gpui-component = "0.7.1"
+gpui-component = "0.7.3"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported), and the headless primitives
 # the `widgets` feature builds on (Tabs, the slider and progress parts).
-gpui-base = "0.7.1"
+gpui-base = "0.7.3"
+# The crate roots name GPUI through gpui-kit (`extern crate gpui_kit as gpui;`),
+# which re-exports whichever core it is built on, so the connector follows an
+# application that turns on `gpui-kit/gpui-fast`. No default features: the
+# library needs neither gpui-kit's component layer nor its assets.
+gpui-kit = { version = "0.7.3", default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
-# background. Pinned to the version gpui-pre 0.3.8 resolves, because the two
-# have to be the same `image` for the `Frame` type to match; no default
-# features, since the connector encodes and decodes nothing itself.
+# background. Pinned to the version both GPUI backends resolve (gpui-pre
+# 0.3.9 and gpui-fast 0.1.7/0.1.8 each ask for `image` 0.25.1 and up, which resolves
+# to 0.25.10), because the connector's `image` and GPUI's have to be the same
+# for the `Frame` type to match; no default features, since the connector
+# encodes and decodes nothing itself.
 image = { version = "0.25.10", default-features = false }
 native-theme = { workspace = true }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-native-theme = { workspace = true, features = ["linux"] }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-native-theme = { workspace = true, features = ["macos"] }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-native-theme = { workspace = true, features = ["windows"] }
+# `on_theme_change`'s channel from the watcher's thread to the task that runs
+# on gpui's foreground. Already in Cargo.lock as gpui-pre's dependency
+# (`futures = "0.3.34"`); `std` holds the `mpsc` channel.
+futures = { version = "0.3.34", optional = true, default-features = false, features = ["std"] }
 
 [dev-dependencies]
-# Headless App for the apply/observer tests (#[gpui::test], TestAppContext).
-gpui = { package = "gpui-pre", version = "0.3.8", features = ["test-support"] }
 # The showcase uses the facade an application would: application(), init(),
 # open_window(), and the Lucide assets under gpui_kit::assets.
 # tree-sitter-rust: the grammar for the showcase's code editor section.
-gpui-kit = { version = "0.7.1", features = ["tree-sitter-rust"] }
-native-theme = { workspace = true, features = ["watch"] }
+# test-support: `#[gpui::test]` and TestAppContext through the alias.
+gpui-kit = { version = "0.7.3", features = ["tree-sitter-rust", "test-support"] }
+# The OS readers and the watcher, so the showcase, tests/seams.rs and every
+# test build read the OS theme without the `native` feature named.
+native-theme = { workspace = true, features = ["native", "watch"] }
 # Field-by-field completeness check of ThemeColor via its Serialize impl,
 # and the showcase's layout dump (`--dump-layout`).
 serde_json = "1.0.151"
 # The showcase reads docs/showcase-elements.toml, the elements the three
 # showcases share. Already in Cargo.lock as native-theme's dependency.
 toml = { workspace = true }
+# `png`: the icon tests write a PNG-only freedesktop fixture theme, and the
+# showcase's window captures on macOS and Windows write and read back PNGs.
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
-# `png`: the showcase reads back the size of the PNG `screencapture` wrote.
-image = { version = "0.25.10", default-features = false, features = ["png"] }
 objc2 = "0.6.4"
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
-image = { version = "0.25.10", default-features = false, features = ["png"] }
 windows = { version = "0.62.2", default-features = false, features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",

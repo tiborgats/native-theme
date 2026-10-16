@@ -1268,6 +1268,25 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// A rebuild that fails keeps the installed atlas and its fonts as they were: installing it
+/// again does not register the semibold faces a second time beside the first ones.
+#[test]
+fn a_failed_rebuild_keeps_the_installed_fonts() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let faces = |h: &Harness<'_, App>| h.ctx.fonts(|f| f.definitions().font_data.len());
+    let before = faces(&harness);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.theme = ThemeChoice::Preset("no-such-preset".to_string());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().theme_error.is_some(),
+        "the rebuild must fail"
+    );
+    assert_eq!(faces(&harness), before);
+}
+
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
 /// installs once, when it ends, not on every pass it moves the value.
 #[test]
@@ -1724,7 +1743,7 @@ fn the_icons_page_has_the_gpui_showcases_sections() {
         .count();
     assert_eq!(
         names,
-        native_theme::theme::IconRole::ALL.len(),
+        native_theme::icons::IconRole::ALL.len(),
         "a named cell per role"
     );
     let headings: Vec<egui::accesskit::NodeId> = records
@@ -1910,10 +1929,10 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 /// The Basic page's check boxes and radio buttons, and the rows they sit in, are as tall as the
 /// indicator the theme states or their label, not a push button's `button.min_height`: the
 /// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
-/// material 18 under 40).
+/// material-3 18 under 40).
 #[test]
 fn basic_checkbox_and_radio_rows_fit_the_indicator() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -1984,10 +2003,10 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
 /// field is filled with `input.disabled_background` at `input.disabled_opacity`, its frame
 /// built in the disabled cell; and
 /// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
-/// (kde-breeze states it, material does not).
+/// (kde-breeze states it, material-3 does not).
 #[test]
 fn the_basic_page_applies_the_per_call_leaves() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2035,7 +2054,7 @@ fn the_basic_page_applies_the_per_call_leaves() {
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // kde-breeze states it; material's outlined field has no disabled container
+        // kde-breeze states it; material-3's outlined field has no disabled container
         // (docs/platform-facts.md §2.4), so it keeps its enabled fill (`None`, the enabled
         // background). egui fades the disabled field by `input.disabled_opacity` on top
         // (docs/platform-facts.md §2.1.6): 1.0 on both.
@@ -2076,6 +2095,83 @@ fn the_basic_page_applies_the_per_call_leaves() {
             vec![t.link.underline_enabled],
             "{preset}: the link's underline at rest is not link.underline_enabled"
         );
+    }
+}
+
+/// The tables' header rows are `list_header_height` tall where the theme states one
+/// (material-3), else as tall as before (catppuccin-mocha): on the Basic page's painted table
+/// (its `basic.table.header` place) a row of the header font, `list.border.padding` above and
+/// below its line (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages'
+/// `TableBuilder`s a body row, egui's own `interact_size.y` where the theme states no
+/// `list.row_height`. There the header pushes the first body row down by its height, or its
+/// tallest cell where that is taller (egui_extras `layout.rs:165`), and the spacing after a row
+/// (`:181`).
+/// A body row is no measure: it grows to a cell that wraps, as the Theme Map's leaf names do.
+#[test]
+fn the_tables_headers_take_the_themes_header_height() {
+    for preset in ["material-3", TEST_PRESET] {
+        let mut basic = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        basic.run_steps(4);
+        let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+        let stated = native_theme_egui::list_header_height(&t);
+        assert_eq!(
+            stated.is_some(),
+            preset == "material-3",
+            "{preset}: the preset's header height"
+        );
+        let l = &t.list;
+        let header_row = l.row_height.unwrap_or(
+            l.header_font.size * t.defaults.line_height
+                + l.border.padding.top.unwrap_or(0.0)
+                + l.border.padding.bottom.unwrap_or(0.0),
+        );
+        let want = stated.unwrap_or(header_row);
+        let placed = basic.state().registry.places()["basic.table.header"];
+        assert!(
+            (placed.height() - want).abs() <= 0.5,
+            "{preset}: the Basic table's header is {} tall, want {want}",
+            placed.height()
+        );
+
+        // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
+        // scheme (src/style/roles.rs, `row_height`)
+        let own = egui::Theme::Light.default_style().spacing.interact_size.y;
+        let row = l.row_height.unwrap_or(own);
+        let header = stated.unwrap_or(row);
+        for (tab, header_kind, cell_kind) in [
+            ("data", "table header", "table cell"),
+            ("theme-map", "theme map header", "theme map cell"),
+        ] {
+            let mut page = open(
+                egui::Theme::Light,
+                cli(&[("--theme", preset), ("--tab", tab)]),
+            );
+            page.run_steps(4);
+            let records = page.state().registry.records();
+            let of_kind = |kind: &'static str| records.iter().filter(move |r| r.info.kind == kind);
+            let top = |kind| {
+                of_kind(kind)
+                    .map(|r| r.rect.top())
+                    .fold(f32::INFINITY, f32::min)
+            };
+            // a row is as tall as its tallest cell where that is more than it is given
+            let content = of_kind(header_kind)
+                .map(|r| r.rect.height())
+                .fold(0.0, f32::max);
+            let header = header.max(content);
+            // the List scope keeps the base style's `item_spacing` (mapping.toml writes it in no
+            // List cell)
+            let gap = page.ctx.global_style().spacing.item_spacing.y;
+            let pushed = top(cell_kind) - top(header_kind);
+            assert!(
+                (pushed - (header + gap)).abs() <= 0.5,
+                "{preset} {tab}: the header pushes the first row {pushed}, want {header} and \
+                 the {gap} gap"
+            );
+        }
     }
 }
 
@@ -2381,7 +2477,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         named,
         "the controls are listed per group, in order"
     );
-    for (preset, expected) in [("kde-breeze", 5), ("material", 4), (TEST_PRESET, 5)] {
+    for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), (TEST_PRESET, 5)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2457,7 +2553,7 @@ fn the_basic_page_has_every_group_in_its_column() {
                 }
             }
         }
-        // The list's rows, which a page that scrolls may show only in part (material's).
+        // The list's rows, which a page that scrolls may show only in part (material-3's).
         if harness.state().page_scrolls {
             continue;
         }
@@ -2504,11 +2600,11 @@ fn the_basic_page_has_every_group_in_its_column() {
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
 /// both modes, under the four presets the captures compare: every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
-/// be taller than its area (material is): it then scrolls, and the test reports it.
+/// be taller than its area (material-3 is): it then scrolls, and the test reports it.
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
-    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
@@ -2795,10 +2891,9 @@ fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
-    harness.state_mut().settings.prefs = Some(AccessibilityPreferences {
-        reduce_motion: true,
-        ..AccessibilityPreferences::default()
-    });
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    harness.state_mut().settings.prefs = Some(prefs);
     harness.state_mut().install(&ctx);
     harness
         .state_mut()
@@ -3571,18 +3666,20 @@ fn every_role_and_surface_is_demonstrated() {
         harness.run_steps(2);
         collect(&harness);
     }
-    // The variants a role carries: `Normal` always; `selected` or `disabled` where the
-    // manifest declares a sink in that cell (§13.1's `variant`).
+    // The variants a role carries: `Normal` always; every other variant where the manifest
+    // declares a sink in that cell (§13.1's `variant`).
     let mut missing = Vec::new();
     for role in native_theme_egui::Role::all() {
         let key = role.key();
         let mut variants = vec!["normal"];
-        for v in ["selected", "disabled"] {
-            if manifest.rows.iter().any(|r| {
-                r.sinks
-                    .iter()
-                    .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
-            }) {
+        for v in RoleVariant::all().iter().map(|v| v.key()) {
+            if v != "normal"
+                && manifest.rows.iter().any(|r| {
+                    r.sinks
+                        .iter()
+                        .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
+                })
+            {
                 variants.push(v);
             }
         }
@@ -3872,6 +3969,25 @@ fn style_literals(source: &str) -> Vec<String> {
     out
 }
 
+/// A `_ms` leaf of the list reads as a `_px` one does: `tooltip.show_delay_ms` shows the
+/// resolved theme's `tooltip.show_delay` with " ms" and finds its `mapping.toml` row,
+/// `tooltip.show_delay`.
+#[test]
+fn a_ms_leaf_reads_its_value() {
+    let prefs = AccessibilityPreferences::default();
+    let (atlas, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset builds");
+    let delay = atlas.resolved_for(egui::Theme::Light).tooltip.show_delay;
+    assert!(delay.is_some(), "kde-breeze states a tooltip delay");
+    let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
+    let shown = crate::info::listed_value(&json, "tooltip.show_delay_ms")
+        .map(|v| crate::info::leaf_text("tooltip.show_delay_ms", &v));
+    assert_eq!(shown, delay.map(|ms| format!("{ms} ms")));
+    assert_eq!(
+        crate::info::mapping_key("tooltip.show_delay_ms"),
+        "tooltip.show_delay"
+    );
+}
+
 /// `docs/showcase-elements.toml`, as the showcase reads it.
 fn listed_elements() -> Vec<crate::elements::ShowcaseElement> {
     let elements = crate::elements::showcase_elements();
@@ -4060,4 +4176,135 @@ fn the_layout_dump_is_the_lists_object() {
     assert_eq!(window["x"], 0.0);
     assert_eq!(window["w"], f64::from(crate::WINDOW_SIZE.x));
     assert_eq!(window["h"], f64::from(crate::WINDOW_SIZE.y));
+}
+
+// --- The chrome's icons from a fixture icon theme --------------------------------------------
+
+/// Names the fixture's root in the child process `in_fixture` starts.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+const FIXTURE_ROOT: &str = "NATIVE_THEME_EGUI_SHOWCASE_ICON_FIXTURE";
+
+/// Runs the test `name` again in a child process whose only icon themes are those `write` puts
+/// in the icons dir it is given, on `desktop` (its `XDG_CURRENT_DESKTOP`), and asserts that it
+/// passed there: the icon dirs are read once per process, so a fixture theme needs a process of
+/// its own, as the connector's own `icon_fixture` tests start one.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+fn in_fixture(
+    name: &str,
+    desktop: &str,
+    write: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    /// Removes the fixture's directory however the test ends.
+    struct RemoveOnDrop(std::path::PathBuf);
+    impl Drop for RemoveOnDrop {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let guard = RemoveOnDrop(std::env::temp_dir().join(format!(
+        "native-theme-egui-showcase-icon-fixture-{}-{}-{desktop}",
+        std::process::id(),
+        name.replace("::", "-")
+    )));
+    let root = &guard.0;
+    let _ = std::fs::remove_dir_all(root);
+    let icons = root.join("share/icons");
+    std::fs::create_dir_all(&icons)?;
+    std::fs::create_dir_all(root.join("home/.config"))?;
+    write(&icons)?;
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", name, "--nocapture", "--test-threads=1"])
+        .env(FIXTURE_ROOT, root)
+        .env("HOME", root.join("home"))
+        .env("XDG_DATA_HOME", root.join("home/.local/share"))
+        .env("XDG_DATA_DIRS", root.join("share"))
+        .env("XDG_CONFIG_HOME", root.join("home/.config"))
+        .env("XDG_CONFIG_DIRS", root.join("etc/xdg"))
+        .env("XDG_CURRENT_DESKTOP", desktop)
+        .output()?;
+    drop(guard);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success() && stdout.contains("1 passed"),
+        "{stdout}{stderr}"
+    );
+    Ok(())
+}
+
+/// Writes the theme `name` into `icons`, its one scalable directory holding each of `icons` as
+/// `<icon>.svg`.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+fn write_scalable_theme(icons_dir: &Path, name: &str, icons: &[&str]) -> std::io::Result<()> {
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    let theme = icons_dir.join(name);
+    std::fs::create_dir_all(theme.join("actions"))?;
+    std::fs::write(
+        theme.join("index.theme"),
+        format!(
+            "[Icon Theme]\nName={name}\nDirectories=actions\n\n\
+             [actions]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
+        ),
+    )?;
+    for icon in icons {
+        std::fs::write(theme.join(format!("actions/{icon}.svg")), SVG)?;
+    }
+    Ok(())
+}
+
+/// M7-15: the side-panel toggle's freedesktop icon loads from the icon theme the chrome chose
+/// under whichever name that theme has, on any desktop: Adwaita's `sidebar-show-symbolic`
+/// (`gtk-names`) and Breeze's `sidebar-expand-left` (`breeze-names`), on Sway and on GNOME. The
+/// themes are fixtures in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<()> {
+    const NAME: &str = "tests::the_panel_icon_loads_from_a_theme_of_either_convention";
+    if std::env::var_os(FIXTURE_ROOT).is_some() {
+        let ctx = egui::Context::default();
+        let mut loaded = Vec::new();
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            for theme in ["gtk-names", "breeze-names"] {
+                let image = crate::demo::named_image(
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some(theme),
+                    16.0,
+                );
+                loaded.push((theme, image.is_some()));
+            }
+        });
+        // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
+        out.textures_delta.clear();
+        assert_eq!(
+            loaded,
+            [("gtk-names", true), ("breeze-names", true)],
+            "on {:?}",
+            std::env::var("XDG_CURRENT_DESKTOP")
+        );
+        // Its alt text names the icon, whichever name each theme holds it under.
+        let harness = Harness::new_ui(|ui| {
+            for theme in ["gtk-names", "breeze-names"] {
+                if let Some(image) = crate::demo::named_image(
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some(theme),
+                    16.0,
+                ) {
+                    ui.add(image);
+                }
+            }
+        });
+        assert_eq!(harness.get_all_by_label("panel-left").count(), 2);
+        return Ok(());
+    }
+    for desktop in ["sway", "GNOME"] {
+        in_fixture(NAME, desktop, |icons| {
+            write_scalable_theme(icons, "gtk-names", &["sidebar-show-symbolic"])?;
+            write_scalable_theme(icons, "breeze-names", &["sidebar-expand-left"])
+        })?;
+    }
+    Ok(())
 }

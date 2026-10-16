@@ -1,7 +1,10 @@
 //! Demo helpers: each applies one seam and records the instance it drew (spec §10.4).
 
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader};
-use native_theme::theme::{IconRole, IconSet};
+use std::borrow::Cow;
+
+use native_theme::Rgba;
+use native_theme::icons::{FreedesktopLoader, IconProvider, IconRole};
+use native_theme::theme::IconSet;
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -790,14 +793,11 @@ impl PanelSeams {
     }
 }
 
-/// An icon of `role` from the chosen set and theme at `size` points (§10.4's icon rule, §9.2):
-/// a freedesktop icon is read from `icon_theme` — the chosen theme; the OS's own only when the
-/// choice is `system`, which passes `None` — in the text colour
-/// (`FreedesktopLoader::{new, theme, size, color, load}`, `native-theme/src/icons.rs:127`, `:157`,
-/// `:137`, `:143`, `:177`); an SF Symbol or a Segoe glyph is loaded in the text colour too
-/// (`SfSymbolsLoader::color`, `native-theme/src/icons.rs:283`; `SegoeIconsLoader::color`,
-/// `:353`); a bundled icon is tinted the text colour. `None` where the set or theme lacks it:
-/// the caller shows it as absent, never from another set.
+/// An icon of `role` from the chosen set and theme at `size` points (§10.4's icon rule, §9.2),
+/// in the text colour: `icons::custom_icon_to_image` with the role for its provider, a
+/// freedesktop icon read from `icon_theme` — the chosen theme; the OS's own only when the
+/// choice is `system`, which passes `None` — and every system set's at `size`. `None` where
+/// the set or theme lacks it: the caller shows it as absent, never from another set.
 pub(crate) fn role_image(
     ui: &egui::Ui,
     role: IconRole,
@@ -805,34 +805,29 @@ pub(crate) fn role_image(
     icon_theme: Option<&str>,
     size: f32,
 ) -> Option<egui::Image<'static>> {
-    let text = ui.visuals().text_color();
-    let [r, g, b, _] = text.to_srgba_unmultiplied();
-    let mut key = icons::IconKey::role(role, set).size(size);
-    let data = match set {
-        IconSet::Freedesktop => {
-            // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
-            let mut loader = FreedesktopLoader::new(role)
-                .size(size.round() as u16)
-                .color([r, g, b]);
-            if let Some(name) = icon_theme {
-                loader = loader.theme(name);
-                key = key.icon_theme(name);
-            }
-            loader.load()?
-        }
-        IconSet::SfSymbols => SfSymbolsLoader::new(role).color([r, g, b]).load()?,
-        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color([r, g, b]).load()?,
-        _ => {
-            key = key.tint(text);
-            native_theme::icons::load_icon(role, set)?
-        }
-    };
-    icons::to_image(ui.ctx(), &key, &data)
+    let key = chrome_key(icons::IconKey::role(role, set), ui, icon_theme, size);
+    icons::custom_icon_to_image(ui.ctx(), &role, &key)
         .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
 }
 
+/// `key` at `size`, from `icon_theme` where one is chosen, tinted the `Ui`'s text colour: a
+/// freedesktop icon, an SF Symbol and a Segoe glyph are loaded in it, a bundled one coloured
+/// (`IconKey::tint`).
+fn chrome_key(
+    key: icons::IconKey,
+    ui: &egui::Ui,
+    icon_theme: Option<&str>,
+    size: f32,
+) -> icons::IconKey {
+    let key = key.size(size).tint(ui.visuals().text_color());
+    match icon_theme {
+        Some(name) => key.icon_theme(name),
+        None => key,
+    }
+}
+
 /// A chrome icon the gpui showcase draws by a gpui-component `IconName` that no `IconRole` stands
-/// for (`showcase-gpui/support.rs:503-538`), loaded by the name native-theme-gpui gives it in
+/// for (`showcase-gpui/support.rs:503-538`), loaded by the names native-theme-gpui gives it in
 /// each set (parity rule R5).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ChromeIcon {
@@ -842,53 +837,57 @@ pub(crate) enum ChromeIcon {
 }
 
 impl ChromeIcon {
-    /// The icon's name in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:230`,
-    /// `:244`, `:250`; Material `:365`, `:379`, `:385`; freedesktop `:485`, `:490`, `:680-686`,
-    /// the last by desktop, as GTK desktops and KDE name it apart); `None` in a set that has
-    /// none — SF Symbols and Segoe Fluent here — where the button shows its label instead.
-    fn name(self, set: IconSet) -> Option<&'static str> {
+    /// The icon's alt text, the same in every set and theme: the gpui-component `IconName` it
+    /// stands for, as Lucide spells it (`connectors/native-theme-gpui/src/icons.rs:282`,
+    /// `:296`, `:303`), a name that describes it rather than the file a set or theme holds it
+    /// under (`icons::custom_icon_to_image_source`'s doc).
+    fn alt_text(self) -> &'static str {
+        match self {
+            Self::SquareTerminal => "square-terminal",
+            Self::RotateCw => "rotate-cw",
+            Self::PanelLeft => "panel-left",
+        }
+    }
+
+    /// The icon's names in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:282`,
+    /// `:296`, `:303`; Material `:426`, `:440`, `:447`; freedesktop
+    /// `freedesktop_name_candidates`, `:593`, `:599`, `:640`, where Breeze's
+    /// `sidebar-expand-left` and Adwaita's `sidebar-show` name one icon, so the icon theme has
+    /// whichever its convention names); empty in a set that has none — SF Symbols and Segoe
+    /// Fluent here — where the button shows its label instead.
+    fn names(self, set: IconSet) -> &'static [&'static str] {
         match (self, set) {
-            (Self::SquareTerminal, IconSet::Lucide) => Some("square-terminal"),
-            (Self::SquareTerminal, IconSet::Material) => Some("terminal"),
-            (Self::SquareTerminal, IconSet::Freedesktop) => Some("utilities-terminal"),
-            (Self::RotateCw, IconSet::Lucide) => Some("rotate-cw"),
-            (Self::RotateCw, IconSet::Material) => Some("rotate_right"),
-            (Self::RotateCw, IconSet::Freedesktop) => Some("object-rotate-right"),
-            (Self::PanelLeft, IconSet::Lucide) => Some("panel-left"),
-            (Self::PanelLeft, IconSet::Material) => Some("side_navigation"),
-            (Self::PanelLeft, IconSet::Freedesktop) => Some(if gtk_desktop() {
-                "sidebar-show"
-            } else {
-                "sidebar-expand-left"
-            }),
-            _ => None,
+            (Self::SquareTerminal, IconSet::Lucide) => &["square-terminal"],
+            (Self::SquareTerminal, IconSet::Material) => &["terminal"],
+            (Self::SquareTerminal, IconSet::Freedesktop) => &["utilities-terminal"],
+            (Self::RotateCw, IconSet::Lucide) => &["rotate-cw"],
+            (Self::RotateCw, IconSet::Material) => &["rotate_right"],
+            (Self::RotateCw, IconSet::Freedesktop) => &["object-rotate-right"],
+            (Self::PanelLeft, IconSet::Lucide) => &["panel-left"],
+            (Self::PanelLeft, IconSet::Material) => &["side_navigation"],
+            (Self::PanelLeft, IconSet::Freedesktop) => &["sidebar-expand-left", "sidebar-show"],
+            _ => &[],
         }
     }
 }
 
-/// Whether the desktop names its icons as GNOME's Adwaita does, as native-theme-gpui decides it
-/// (`connectors/native-theme-gpui/src/icons.rs:437-445`).
-#[cfg(target_os = "linux")]
-fn gtk_desktop() -> bool {
-    use native_theme::detect::LinuxDesktop;
-    matches!(
-        native_theme::detect::detect_linux_desktop(),
-        LinuxDesktop::Gnome
-            | LinuxDesktop::Budgie
-            | LinuxDesktop::Cinnamon
-            | LinuxDesktop::Mate
-            | LinuxDesktop::Xfce
-    )
-}
+/// A chrome icon is a provider of its first name in each set, for `icons::custom_icon_to_image`;
+/// it has no SVG of its own.
+impl IconProvider for ChromeIcon {
+    fn icon_name(&self, set: IconSet) -> Option<&str> {
+        self.names(set).first().copied()
+    }
 
-/// No freedesktop icon theme is read outside Linux.
-#[cfg(not(target_os = "linux"))]
-fn gtk_desktop() -> bool {
-    false
+    fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+        None
+    }
 }
 
 /// `icon` from the chosen set and theme at `size` points, loaded and coloured as `role_image`
-/// loads a role's; `None` where the set or theme lacks it, never another set's icon.
+/// loads a role's; a freedesktop icon under the first of its names the icon theme has, each
+/// looked up in that one theme (`FreedesktopLoader::any`, `native-theme/src/icons.rs:243`), as
+/// the gpui showcase loads it. Its alt text is `ChromeIcon::alt_text`, whichever name loaded.
+/// `None` where the set or theme lacks it, never another set's icon.
 pub(crate) fn named_image(
     ui: &egui::Ui,
     icon: ChromeIcon,
@@ -896,26 +895,28 @@ pub(crate) fn named_image(
     icon_theme: Option<&str>,
     size: f32,
 ) -> Option<egui::Image<'static>> {
-    let name = icon.name(set)?;
-    let text = ui.visuals().text_color();
-    let [r, g, b, _] = text.to_srgba_unmultiplied();
-    let mut key = icons::IconKey::name(name, set).size(size);
-    let data = if set == IconSet::Freedesktop {
+    let key = chrome_key(
+        icons::IconKey::name(icon.alt_text(), set),
+        ui,
+        icon_theme,
+        size,
+    );
+    let image = if set == IconSet::Freedesktop {
+        let [r, g, b, _] = ui.visuals().text_color().to_srgba_unmultiplied();
         // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
-        let mut loader = FreedesktopLoader::new(name)
-            .size(size.round() as u16)
-            .color([r, g, b]);
-        if let Some(theme) = icon_theme {
-            loader = loader.theme(theme);
-            key = key.icon_theme(theme);
+        let loader = FreedesktopLoader::any(icon.names(set))
+            .size(size.round() as u32)
+            .color(Rgba::rgb(r, g, b));
+        let data = match icon_theme {
+            Some(theme) => loader.theme(theme),
+            None => loader,
         }
-        loader.load()?
+        .load()?;
+        icons::to_image(ui.ctx(), &key, &data)
     } else {
-        key = key.tint(text);
-        native_theme::icons::load_icon(name, set)?
+        icons::custom_icon_to_image(ui.ctx(), &icon, &key)
     };
-    icons::to_image(ui.ctx(), &key, &data)
-        .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+    image.map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
 }
 
 /// The `FontFamily::Name` the showcase registers the OS's semibold face under. Application
@@ -978,14 +979,15 @@ impl Semibold {
                 }
             }
             // The family the connector's font plan draws the body in: the theme's where the OS
-            // has it, else the platform's substitute (`native_theme::fonts::substitute_family`,
-            // fontconfig's on Linux), as `FontPlan::from_system` takes it.
+            // has it, else the platform's substitute
+            // (`native_theme::fonts::substitute_family_cached`, fontconfig's on Linux), as
+            // `FontPlan::from_system` takes it.
             let drawn = if native_theme::fonts::system_face(&body.family, body.weight, body.style)
                 .is_some()
             {
                 body.family.to_string()
             } else {
-                native_theme::fonts::substitute_family(&body.family)
+                native_theme::fonts::substitute_family_cached(&body.family)
                     .unwrap_or_else(|| body.family.to_string())
             };
             for (weight, family) in families {

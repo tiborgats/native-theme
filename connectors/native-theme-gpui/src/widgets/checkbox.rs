@@ -4,9 +4,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Axis, Bounds, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StyleRefinement,
-    Styled, Window, canvas, div, fill, point, prelude::FluentBuilder as _, px, relative, svg,
+    AnyElement, App, Axis, Bounds, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window,
+    canvas, div, fill, point, prelude::FluentBuilder as _, px, svg,
 };
 use gpui_base::{
     Checkbox as BaseCheckbox, Radio as BaseRadio, RadioGroup as BaseRadioGroup, spring,
@@ -16,7 +16,8 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, font_text, length, over, part_bounds};
+use crate::ActiveNativeTheme;
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -24,8 +25,10 @@ use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, t
 const HOVER_GROUP: &str = "native-theme-checkbox";
 
 /// What a checkbox or a radio paints, per state, from `CheckboxTheme`
-/// (spec §2.1). The render reads only this; the tests check it leaf by leaf.
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.1). The render reads only
+/// this; the tests check it leaf by leaf.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct CheckboxLook {
     /// `checkbox.indicator_width`: the square's side, or the circle's
     /// diameter (docs/platform-facts.md:980).
@@ -41,8 +44,9 @@ pub struct CheckboxLook {
     /// The indicator's fill in this state.
     pub fill: Hsla,
     /// The fill while the pointer is over the control: `hover_background`
-    /// composited over the unchecked fill, and only for an enabled, unchecked
-    /// control -- the model states no hover for a checked one.
+    /// composited over the unchecked fill, or that fill at rest where the
+    /// theme states no hover, and only for an enabled, unchecked control --
+    /// the model states no hover for a checked one.
     pub hover_fill: Option<Hsla>,
     /// The indicator's border colour in this state.
     pub border: Hsla,
@@ -78,15 +82,16 @@ impl CheckboxLook {
     ///
     /// The reading of `CheckboxTheme` is the iced connector's
     /// (`native-theme-iced` `styles::checkbox`), so the two draw one control:
-    /// both soft fills copy `background_color` when unstated; a checked box is
-    /// bordered in `border.color`, an unchecked one in
-    /// `unchecked_border_color`; `disabled_background` replaces the fill in
-    /// either state, and there the mark takes `disabled_text_color`, because
-    /// `indicator_color` is the colour stated for a foreground on the accent
-    /// the disabled fill no longer shows. Where no disabled fill is stated the
-    /// platform dims by opacity alone, and a disabled box is its enabled self.
-    /// Either way a disabled control is faded by `checkbox.disabled_opacity`
-    /// (docs/platform-facts.md §2.1.6).
+    /// an unstated unchecked fill copies `background_color`, and an unstated
+    /// hover leaves that fill at rest; a checked box is bordered in
+    /// `border.color`, an unchecked one in `unchecked_border_color`;
+    /// `disabled_background` replaces the fill in either state, and there the
+    /// mark takes `disabled_text_color`, because `indicator_color` is the
+    /// colour stated for a foreground on the accent the disabled fill no longer
+    /// shows. Where no disabled fill is stated the platform dims by opacity
+    /// alone, and a disabled box is its enabled self. Either way a disabled
+    /// control is faded by `checkbox.disabled_opacity` (docs/platform-facts.md
+    /// §2.1.6).
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         Self::sized(
@@ -126,10 +131,8 @@ impl CheckboxLook {
             _ => enabled_fill,
         };
         let hover_fill = (!checked && !disabled).then(|| {
-            over(
-                unchecked,
-                color(c.hover_background.unwrap_or(c.background_color)),
-            )
+            c.hover_background
+                .map_or(unchecked, |hover| over(unchecked, color(hover)))
         });
         let border = if checked {
             color(c.border.color)
@@ -202,7 +205,7 @@ impl CheckboxLook {
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
 
 /// The parts a checkbox and a radio share.
-struct Parts {
+pub(super) struct Parts {
     id: ElementId,
     label: Option<SharedString>,
     checked: bool,
@@ -210,9 +213,15 @@ struct Parts {
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
     backdrop: Option<Hsla>,
+    accessibility_label: Option<SharedString>,
+    tab_stop: bool,
+    tab_index: isize,
+    style: StyleRefinement,
 }
 
 impl Parts {
+    /// gpui-base's own tab order: a tab stop at index 0
+    /// (gpui-base 0.7.3 checkbox.rs:76-77, radio.rs:72-73).
     fn new(id: ElementId) -> Self {
         Self {
             id,
@@ -222,22 +231,73 @@ impl Parts {
             on_change: None,
             observer: None,
             backdrop: None,
+            accessibility_label: None,
+            tab_stop: true,
+            tab_index: 0,
+            style: StyleRefinement::default(),
         }
     }
 
-    /// The look of this control faded as one over its backdrop:
-    /// [`CheckboxLook::faded_over`] the backdrop the caller gave, or the
-    /// window's, `defaults.background_color`.
-    fn faded(&self, look: CheckboxLook, resolved: &ResolvedTheme) -> CheckboxLook {
-        look.faded_over(
+    /// The control drawn from the theme: the look `of` gives, faded as one
+    /// over the backdrop the caller gave or the window's,
+    /// `defaults.background_color` ([`CheckboxLook::faded_over`]); its
+    /// indicator, round when `round`, and its label in `checkbox.font`, in
+    /// the row `base` builds from these parts and the row's focus handle --
+    /// the control's headless primitive, styled as the row the pointer hovers
+    /// and the focus ring follows, the caller's style refined onto it after
+    /// the widget's own, as gpui-component refines its checkbox's
+    /// (checkbox.rs:291). Without a native theme or a finite look it hands
+    /// the parts back, for gpui-component's control.
+    fn render<E>(
+        mut self,
+        of: fn(&ResolvedTheme, bool, bool) -> Option<CheckboxLook>,
+        round: bool,
+        window: &mut Window,
+        cx: &mut App,
+        base: impl FnOnce(Self, &gpui::FocusHandle) -> E,
+    ) -> Result<E, Box<Self>>
+    where
+        E: Styled + ParentElement + InteractiveElement + IntoElement,
+    {
+        let Some(n) = cx.native() else {
+            return Err(Box::new(self));
+        };
+        let Some(look) = of(n.resolved, self.checked, self.disabled) else {
+            return Err(Box::new(self));
+        };
+        let look = look.faded_over(
             self.backdrop
-                .unwrap_or_else(|| color(resolved.defaults.background_color)),
-        )
+                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
+        );
+        let text = font_text(&n.resolved.checkbox.font, n);
+        let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
+        let focus_handle = window
+            .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
+            .read(cx)
+            .clone();
+        let focused = focus_handle.is_focused(window);
+        let style = std::mem::take(&mut self.style);
+        Ok(base(self, &focus_handle)
+            .debug_selector(|| "native-checkbox-row".into())
+            .group(HOVER_GROUP)
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(look.label_gap)
+            // The row the focus ring follows, as gpui-component rounds it
+            // (checkbox.rs:287).
+            .rounded(px(f32::from(cx.theme().radius) / 2.))
+            .when(focused, |row| row.focus_ring_style(window, cx))
+            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+            .opacity(look.opacity)
+            .child(indicator)
+            .children(label)
+            .refine_style(&style))
     }
 }
 
 /// gpui-component's check mark, the Lucide `check` icon it draws as
-/// `IconName::Check` (gpui-kit-assets 0.7.1 `assets/icons/check.svg`,
+/// `IconName::Check` (gpui-kit-assets 0.7.3 `assets/icons/check.svg`,
 /// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
 /// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
 const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];
@@ -325,17 +385,17 @@ fn stroked_check_bounds(size: f32, stroke: f32) -> (f32, f32, f32, f32) {
 }
 
 /// The indicator box, its mark and the label of a checkbox or radio in
-/// `look`, round when `round`.
+/// `look`, round when `round`, the label in `text`.
 fn indicator_and_label(
     parts: &Parts,
     look: &CheckboxLook,
     round: bool,
-    font: (Pixels, FontWeight, f32),
+    text: gpui::Div,
     window: &mut Window,
     cx: &mut App,
 ) -> (AnyElement, Option<AnyElement>) {
     // gpui-component fades the mark in and out on a spring rather than
-    // swapping it (checkbox.rs:186-192); gpui holds it still under reduced
+    // swapping it (checkbox.rs:194-200); gpui holds it still under reduced
     // motion.
     let opacity = spring(
         (parts.id.clone(), "mark"),
@@ -438,13 +498,8 @@ fn indicator_and_label(
     .child(mark)
     .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
     .into_any_element();
-    let (size, weight, line_height) = font;
     let label = parts.label.clone().map(|label| {
-        div()
-            .relative()
-            .text_size(size)
-            .font_weight(weight)
-            .line_height(relative(line_height))
+        text.relative()
             .text_color(look.label)
             .debug_selector(|| "native-checkbox-label".into())
             .child(label)
@@ -455,13 +510,16 @@ fn indicator_and_label(
 }
 
 /// A checkbox whose indicator, mark, label and states are `CheckboxTheme`'s
-/// (spec §2.1), on gpui-base's headless `Checkbox`: click, Enter and Space
-/// toggle it, a pointer press does not move focus, a disabled one is inert,
-/// and it reports itself as a checkbox with its toggled state.
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.1), on gpui-base's headless
+/// `Checkbox`: click, Enter and Space toggle it, a pointer press does not
+/// move focus, a disabled one is inert, and it reports itself as a checkbox
+/// with its toggled state.
 ///
 /// Controlled, as gpui-component's: [`Checkbox::on_change`] receives the
-/// requested value, and the owner writes it back. Without a native theme it
-/// renders gpui-component's `Checkbox`.
+/// requested value, and the owner writes it back. Its `Styled` style refines
+/// the row, after the widget's own: the row's layout, box and spacing; the
+/// indicator and the label set their own colours and text. Without a native
+/// theme it renders gpui-component's `Checkbox`.
 pub struct Checkbox {
     parts: Parts,
 }
@@ -476,7 +534,7 @@ impl Checkbox {
     }
 
     /// The label drawn beside the indicator, and the name a screen reader
-    /// announces.
+    /// announces where [`Checkbox::accessibility_label`] gives none.
     #[must_use]
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.parts.label = Some(label.into());
@@ -521,12 +579,40 @@ impl Checkbox {
         self
     }
 
-    fn fallback(self) -> AnyElement {
-        let parts = self.parts;
+    /// The name a screen reader announces, where it is not the label drawn
+    /// beside the indicator or no label is drawn; the drawn label stays as
+    /// it is.
+    #[must_use]
+    pub fn accessibility_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.parts.accessibility_label = Some(label.into());
+        self
+    }
+
+    /// Whether Tab stops on it; `true` by default.
+    #[must_use]
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.parts.tab_stop = tab_stop;
+        self
+    }
+
+    /// Its place in its tab group's Tab order; `0` by default.
+    #[must_use]
+    pub fn tab_index(mut self, tab_index: isize) -> Self {
+        self.parts.tab_index = tab_index;
+        self
+    }
+
+    fn fallback(parts: Parts) -> AnyElement {
         gpui_component::checkbox::Checkbox::new(parts.id)
             .when_some(parts.label, |checkbox, label| checkbox.label(label))
+            .when_some(parts.accessibility_label, |checkbox, label| {
+                checkbox.accessibility_label(label)
+            })
             .checked(parts.checked)
             .disabled(parts.disabled)
+            .tab_stop(parts.tab_stop)
+            .tab_index(parts.tab_index)
+            .refine_style(&parts.style)
             .when_some(parts.on_change, |checkbox, on_change| {
                 checkbox.on_click(move |checked, window, cx| on_change(checked, window, cx))
             })
@@ -534,62 +620,45 @@ impl Checkbox {
     }
 }
 
+impl Styled for Checkbox {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.parts.style
+    }
+}
+
+impl Checkbox {
+    /// The theme-drawn row on gpui-base's checkbox, or the parts back where
+    /// gpui-component's checkbox is drawn instead.
+    pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseCheckbox, Box<Parts>> {
+        self.parts
+            .render(CheckboxLook::of, false, window, cx, |parts, focus| {
+                let checked = parts.checked;
+                BaseCheckbox::new(parts.id)
+                    .checked(checked)
+                    .disabled(parts.disabled)
+                    .track_focus(focus)
+                    .tab_stop(parts.tab_stop)
+                    .tab_index(parts.tab_index)
+                    .when_some(
+                        parts.accessibility_label.or(parts.label),
+                        |checkbox, name| checkbox.accessibility_label(name),
+                    )
+                    .when_some(parts.on_change, |checkbox, on_change| {
+                        checkbox.on_change(move |_, _, window, cx| {
+                            window.prevent_default();
+                            on_change(&!checked, window, cx);
+                        })
+                    })
+            })
+    }
+}
+
 impl RenderOnce for Checkbox {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
-            return self.fallback();
-        };
-        let Some(look) = CheckboxLook::of(n.resolved, self.parts.checked, self.parts.disabled)
-        else {
-            return self.fallback();
-        };
-        let look = self.parts.faded(look, n.resolved);
-        let font = &n.resolved.checkbox.font;
-        let font = (
-            text_size(font.size, n),
-            FontWeight(f32::from(font.weight)),
-            n.resolved.defaults.line_height,
-        );
-        let (indicator, label) = indicator_and_label(&self.parts, &look, false, font, window, cx);
-        let Parts {
-            id,
-            label: name,
-            checked,
-            disabled,
-            on_change,
-            observer: _,
-            backdrop: _,
-        } = self.parts;
-        let focus_handle = window
-            .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
-            .read(cx)
-            .clone();
-        let focused = focus_handle.is_focused(window);
-        BaseCheckbox::new(id)
-            .checked(checked)
-            .disabled(disabled)
-            .track_focus(&focus_handle)
-            .when_some(name, |checkbox, name| checkbox.accessibility_label(name))
-            .when_some(on_change, |checkbox, on_change| {
-                checkbox.on_change(move |_, _, window, cx| {
-                    window.prevent_default();
-                    on_change(&!checked, window, cx);
-                })
-            })
-            .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap(look.label_gap)
-            // The row the focus ring follows, as gpui-component rounds it
-            // (checkbox.rs:279).
-            .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when(focused, |row| row.focus_ring_style(window, cx))
-            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .opacity(look.opacity)
-            .child(indicator)
-            .children(label)
-            .into_any_element()
+        match self.row(window, cx) {
+            Ok(row) => row.into_any_element(),
+            Err(parts) => Self::fallback(*parts),
+        }
     }
 }
 
@@ -598,7 +667,8 @@ impl RenderOnce for Checkbox {
 /// one requests `true`; a checked one does nothing. The mark is a dot
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
 /// circle (:1220); where the theme states no dot size (macOS publishes none),
-/// it is gpui-component's own check glyph (radio.rs:239).
+/// it is gpui-component's own check glyph (radio.rs:247). Its `Styled` style
+/// refines the row, as [`Checkbox`]'s does.
 pub struct Radio {
     parts: Parts,
     position: Option<(usize, usize)>,
@@ -614,7 +684,8 @@ impl Radio {
         }
     }
 
-    /// The label drawn beside the indicator.
+    /// The label drawn beside the circle, and the name a screen reader
+    /// announces where [`Radio::accessibility_label`] gives none.
     #[must_use]
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.parts.label = Some(label.into());
@@ -667,12 +738,40 @@ impl Radio {
         self
     }
 
-    fn fallback(self) -> AnyElement {
-        let parts = self.parts;
+    /// The name a screen reader announces, where it is not the label drawn
+    /// beside the circle or no label is drawn; the drawn label stays as
+    /// it is.
+    #[must_use]
+    pub fn accessibility_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.parts.accessibility_label = Some(label.into());
+        self
+    }
+
+    /// Whether Tab stops on it; `true` by default.
+    #[must_use]
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.parts.tab_stop = tab_stop;
+        self
+    }
+
+    /// Its place in its tab group's Tab order; `0` by default.
+    #[must_use]
+    pub fn tab_index(mut self, tab_index: isize) -> Self {
+        self.parts.tab_index = tab_index;
+        self
+    }
+
+    fn fallback(parts: Parts) -> AnyElement {
         gpui_component::radio::Radio::new(parts.id)
             .when_some(parts.label, |radio, label| radio.label(label))
+            .when_some(parts.accessibility_label, |radio, label| {
+                radio.accessibility_label(label)
+            })
             .checked(parts.checked)
             .disabled(parts.disabled)
+            .tab_stop(parts.tab_stop)
+            .tab_index(parts.tab_index)
+            .refine_style(&parts.style)
             .when_some(parts.on_change, |radio, on_change| {
                 radio.on_click(move |checked, window, cx| on_change(checked, window, cx))
             })
@@ -680,63 +779,47 @@ impl Radio {
     }
 }
 
+impl Styled for Radio {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.parts.style
+    }
+}
+
+impl Radio {
+    /// The theme-drawn row on gpui-base's radio, or the parts back where
+    /// gpui-component's radio is drawn instead.
+    pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseRadio, Box<Parts>> {
+        let position = self.position;
+        self.parts
+            .render(CheckboxLook::radio, true, window, cx, |parts, focus| {
+                BaseRadio::new(parts.id)
+                    .checked(parts.checked)
+                    .disabled(parts.disabled)
+                    .track_focus(focus)
+                    .tab_stop(parts.tab_stop)
+                    .tab_index(parts.tab_index)
+                    .when_some(parts.accessibility_label.or(parts.label), |radio, name| {
+                        radio.accessibility_label(name)
+                    })
+                    .when_some(position, |radio, (position, size)| {
+                        radio.set_position(position, size)
+                    })
+                    .when_some(parts.on_change, |radio, on_change| {
+                        radio.on_change(move |next, _, window, cx| {
+                            window.prevent_default();
+                            on_change(&next, window, cx);
+                        })
+                    })
+            })
+    }
+}
+
 impl RenderOnce for Radio {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
-            return self.fallback();
-        };
-        let Some(look) = CheckboxLook::radio(n.resolved, self.parts.checked, self.parts.disabled)
-        else {
-            return self.fallback();
-        };
-        let look = self.parts.faded(look, n.resolved);
-        let font = &n.resolved.checkbox.font;
-        let font = (
-            text_size(font.size, n),
-            FontWeight(f32::from(font.weight)),
-            n.resolved.defaults.line_height,
-        );
-        let (indicator, label) = indicator_and_label(&self.parts, &look, true, font, window, cx);
-        let Parts {
-            id,
-            label: name,
-            checked,
-            disabled,
-            on_change,
-            observer: _,
-            backdrop: _,
-        } = self.parts;
-        let focus_handle = window
-            .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
-            .read(cx)
-            .clone();
-        let focused = focus_handle.is_focused(window);
-        BaseRadio::new(id)
-            .checked(checked)
-            .disabled(disabled)
-            .track_focus(&focus_handle)
-            .when_some(name, |radio, name| radio.accessibility_label(name))
-            .when_some(self.position, |radio, (position, size)| {
-                radio.set_position(position, size)
-            })
-            .when_some(on_change, |radio, on_change| {
-                radio.on_change(move |next, _, window, cx| {
-                    window.prevent_default();
-                    on_change(&next, window, cx);
-                })
-            })
-            .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap(look.label_gap)
-            .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when(focused, |row| row.focus_ring_style(window, cx))
-            .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
-            .opacity(look.opacity)
-            .child(indicator)
-            .children(label)
-            .into_any_element()
+        match self.row(window, cx) {
+            Ok(row) => row.into_any_element(),
+            Err(parts) => Self::fallback(*parts),
+        }
     }
 }
 
@@ -787,17 +870,20 @@ impl Styled for RadioGroup {
 impl RenderOnce for RadioGroup {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let total = self.radios.len();
-        let flex = match self.axis {
-            Axis::Vertical => div().flex().flex_col(),
-            Axis::Horizontal => div().flex().flex_row(),
-        };
-        BaseRadioGroup::new(self.id).axis(self.axis).child(
-            flex.refine_style(&self.style).children(
-                self.radios
-                    .into_iter()
-                    .enumerate()
-                    .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
-            ),
+        let group = BaseRadioGroup::new(self.id)
+            .axis(self.axis)
+            .debug_selector(|| "native-radio-group".into())
+            .flex();
+        match self.axis {
+            Axis::Vertical => group.flex_col(),
+            Axis::Horizontal => group.flex_row(),
+        }
+        .refine_style(&self.style)
+        .children(
+            self.radios
+                .into_iter()
+                .enumerate()
+                .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
         )
     }
 }

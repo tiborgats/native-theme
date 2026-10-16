@@ -2,9 +2,8 @@
 //! and every field of a `styles::*` output, the native value each must equal,
 //! and the contrast report of spec section 7.
 //!
-//! Test-only. The rows are asserted over the sixteen presets in both modes --
-//! the four `*-live.toml` files are geometry-only merge bases and are not in
-//! `Theme::list_presets()`. The contrast report prints both ratios and asserts
+//! Test-only. The rows are asserted over the seventeen presets of
+//! `Theme::list_presets()` in both modes. The contrast report prints both ratios and asserts
 //! nothing: iced, not the connector, chooses the background a text input is
 //! painted on. The assertion lives over `styles::*`, where we control both
 //! colors.
@@ -12,7 +11,10 @@
 //! The coverage tripwire (section 5.2) closes the table: every field it walks
 //! -- by exhaustive destructuring, so an upstream addition fails to compile
 //! here first -- must appear in exactly one of the rows, `DERIVED` and
-//! `UNREACHABLE`.
+//! `UNREACHABLE`. Its converse walks the model rather than the output:
+//! `every_colour_leaf_reaches_a_row_or_is_named` splices every colour leaf of
+//! `ResolvedTheme` and requires each to move a row's native side, or to be
+//! named by `UNREAD_COLOURS` or `UNREACHABLE`.
 
 use crate::extended::contrast_ratio;
 use crate::palette::to_color;
@@ -21,6 +23,8 @@ use iced_core::Color;
 use iced_core::theme::Theme;
 use iced_core::theme::palette::{Danger, Extended, Pair, Primary, Secondary, Success, Warning};
 use native_theme::color::Rgba;
+#[cfg(feature = "iced_aw")]
+use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "widgets")]
 use crate::styles;
@@ -30,8 +34,8 @@ use iced_core::{Background, Border, border::Radius};
 use iced_widget::overlay::menu;
 #[cfg(feature = "widgets")]
 use iced_widget::{
-    button, checkbox, container, pick_list, progress_bar, radio, rule, scrollable, slider,
-    text_editor, text_input, toggler,
+    button, checkbox, container, pane_grid, pick_list, progress_bar, radio, rule, scrollable,
+    slider, text_editor, text_input, toggler,
 };
 
 // `styles::aw` and its rows are gated on `iced_aw`, which implies `widgets`.
@@ -50,6 +54,8 @@ mod rows;
 use derived::{
     DERIVED, SECONDARY_LABEL_AS_STATED, SECONDARY_LABEL_SUBSTITUTED, UNREACHABLE, Unreachable,
 };
+#[cfg(feature = "iced_aw")]
+use derived::{UNREAD_COLOURS, Unread, UnreadColour};
 use pairs::*;
 use rows::*;
 
@@ -68,6 +74,18 @@ struct Row {
     get: fn(&Theme, &ResolvedTheme) -> Color,
     /// Preset keys where this row does not hold, each with its reason.
     exceptions: &'static [(&'static str, &'static str)],
+}
+
+/// One row of the accessor contract: a colour a crate-root function hands the
+/// consumer, and the native leaf it must be.
+///
+/// Both sides are an `Option` for the one accessor that returns a widget,
+/// `tab_indicator_line`, which draws nothing where the theme states no line:
+/// its row compares the strip's colour, `None` where no strip is drawn.
+struct AccessorRow {
+    accessor: &'static str,
+    native: fn(&ResolvedTheme) -> Option<Color>,
+    get: fn(&ResolvedTheme) -> Option<Color>,
 }
 
 /// One row of the style contract: a field of one `styles::*` output, the
@@ -398,11 +416,10 @@ fn check_radius_rows<S: Copy + std::fmt::Debug>(
 /// border row, its contrast pair and its field enumerator.
 ///
 /// `styles::button_primary`, `button_danger`, `button_success` and
-/// `button_warning` are the same function four times over -- they differ only
-/// in the idle pair they paint and in which of iced's own classes fills their
-/// hovered and pressed states -- so their contract is written once here and
-/// instantiated four times. `$fill` and `$label` are accessors of the idle
-/// pair, `fn(&ResolvedTheme) -> Rgba`.
+/// `button_warning` are the same function four times over at rest and
+/// disabled -- they differ only in the idle pair they paint -- so their
+/// contract is written once here and instantiated four times. `$fill` and
+/// `$label` are accessors of the idle pair, `fn(&ResolvedTheme) -> Rgba`.
 macro_rules! class_button_contract {
     (
         $rows:ident, $borders:ident, $pairs:ident, $fields:ident,
@@ -432,10 +449,10 @@ macro_rules! class_button_contract {
             get: |t, r, s| $style(r)(t, s).border,
         }];
 
-        /// Only `CLASS_BUTTON_NATIVE_STATUSES`: in the other two the function
-        /// decides neither the fill nor the label -- both are iced's own class
-        /// -- so there is no native pair to compare against and section 7's
-        /// rule has nothing to say.
+        /// Only `CLASS_BUTTON_NATIVE_STATUSES`: in the other two the native
+        /// fields state neither the fill nor the label -- both are iced's
+        /// derivation -- so there is no native pair to compare against and
+        /// section 7's rule has nothing to say.
         #[cfg(feature = "widgets")]
         const $pairs: &[StylePair<button::Status>] = &[StylePair {
             what: $what,
@@ -916,6 +933,31 @@ fn every_palette_slot_equals_its_native_field() -> native_theme::Result<()> {
 }
 
 #[test]
+fn every_accessor_returns_its_native_leaf() -> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    for c in &combinations {
+        for row in ACCESSOR_ROWS {
+            let (native, got) = ((row.native)(&c.resolved), (row.get)(&c.resolved));
+            if native != got {
+                failures.push(format!(
+                    "{} on {}: {got:?}, the native leaf is {native:?}",
+                    row.accessor,
+                    c.label()
+                ));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} accessor check(s) failed:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[test]
 fn palette_contrast_report() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut below_aa = 0usize;
@@ -1173,6 +1215,17 @@ fn button_style_fields(style: &button::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `button::Style` `styles::button_toggle` emits.
+#[cfg(feature = "widgets")]
+fn button_toggle_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::button_toggle", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::button_toggle.border"));
+    out
+}
+
 /// Every field of the `button::Style` `styles::button_link` emits.
 #[cfg(feature = "widgets")]
 fn button_link_style_fields(style: &button::Style) -> Vec<String> {
@@ -1416,6 +1469,34 @@ fn rule_style_fields(style: &rule::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `pane_grid::Style` the connector emits: two lines, a
+/// colour and a width each, and the drop-target highlight, a background and an
+/// iced `Border`.
+#[cfg(feature = "widgets")]
+fn pane_grid_style_fields(style: &pane_grid::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::pane_grid", pane_grid::Style {
+        @nested hovered_region, picked_split, hovered_split
+    });
+    leaves_under!(
+        out,
+        hovered_region,
+        "styles::pane_grid.hovered_region",
+        pane_grid::Highlight { background, @nested border }
+    );
+    out.extend(border_fields(
+        border,
+        "styles::pane_grid.hovered_region.border",
+    ));
+    for (line, prefix) in [
+        (picked_split, "styles::pane_grid.picked_split"),
+        (hovered_split, "styles::pane_grid.hovered_split"),
+    ] {
+        leaves_under!(out, line, prefix, pane_grid::Line { color, width });
+    }
+    out
+}
+
 /// Every field of the `card::Style` the connector emits. A card's border is
 /// three bare fields rather than an iced `Border`, so there is nothing to walk.
 #[cfg(feature = "iced_aw")]
@@ -1577,6 +1658,11 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
             button::Status::Active,
         )));
+        out.extend(button_toggle_style_fields(&styles::button_toggle(
+            resolved, true,
+        )(
+            theme, button::Status::Active
+        )));
         out.extend(text_input_style_fields(&styles::text_input(resolved)(
             theme,
             text_input::Status::Active,
@@ -1614,6 +1700,7 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
         )));
         out.extend(rule_style_fields(&styles::rule(resolved)(theme)));
+        out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
         // Two functions emit a `container::Style`, so the one walker runs
         // twice under two prefixes.
         out.extend(container_fields(
@@ -1639,6 +1726,10 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
             button::Status::Active,
         )));
+        out.extend(container_fields(
+            &styles::expander_frame(resolved)(theme),
+            "styles::expander_frame",
+        ));
     }
     #[cfg(feature = "iced_aw")]
     {
@@ -1688,11 +1779,11 @@ fn rows_claiming(field: &str) -> usize {
 }
 
 #[test]
-fn the_contract_covers_sixteen_presets_in_both_modes() -> native_theme::Result<()> {
+fn the_contract_covers_seventeen_presets_in_both_modes() -> native_theme::Result<()> {
     assert_eq!(
         combinations()?.len(),
-        32,
-        "the contract asserts over 16 presets x 2 modes; a shrinking preset \
+        34,
+        "the contract asserts over 17 presets x 2 modes; a shrinking preset \
          list must not silently narrow it"
     );
     Ok(())
@@ -1834,8 +1925,8 @@ fn every_unreachable_value_is_one_a_preset_loses() -> native_theme::Result<()> {
     Ok(())
 }
 
-/// The `extended.secondary.base.text` entry's "31 of 32", counted rather than
-/// asserted in prose.
+/// The `extended.secondary.base.text` entry's figures, how many labels are
+/// substituted and which are not, counted rather than asserted in prose.
 ///
 /// The entry says `Pair::new` does not emit the label the connector hands it:
 /// it runs `readable()` against the placeholder fill, and the platform's own
@@ -1845,7 +1936,7 @@ fn every_unreachable_value_is_one_a_preset_loses() -> native_theme::Result<()> {
 /// are declared beside the sentence, so a preset added to the bundle moves
 /// the count and fails here instead of leaving the prose stale.
 #[test]
-fn readable_substitutes_the_secondary_label_on_every_combination_but_one()
+fn readable_substitution_of_the_secondary_label_matches_the_declared_count()
 -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut substituted = Vec::new();
@@ -2317,9 +2408,11 @@ fn every_status_list_names_each_status_once() {
     for (what, statuses) in [
         ("PROGRESS_BAR_STATUSES", PROGRESS_BAR_STATUSES),
         ("RULE_STATUSES", RULE_STATUSES),
+        ("PANE_GRID_STATUSES", PANE_GRID_STATUSES),
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
         ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
+        ("EXPANDER_FRAME_STATUSES", EXPANDER_FRAME_STATUSES),
     ] {
         assert_eq!(
             statuses,
@@ -2329,22 +2422,27 @@ fn every_status_list_names_each_status_once() {
         );
     }
 
-    // A segment is a button that is selected or not: every button status,
-    // once for each.
-    for selected in [false, true] {
-        for status in BUTTON_STATUSES {
-            assert!(
-                SEGMENT_STATUSES.contains(&(selected, *status)),
-                "SEGMENT_STATUSES does not list {status:?} with selected = \
-                 {selected}, so no segment row covers it"
-            );
+    // A segment is a button that is selected or not, and a toggle button one
+    // that is checked or not: every button status, once for each.
+    for (what, statuses) in [
+        ("SEGMENT_STATUSES", SEGMENT_STATUSES),
+        ("BUTTON_TOGGLE_STATUSES", BUTTON_TOGGLE_STATUSES),
+    ] {
+        for on in [false, true] {
+            for status in BUTTON_STATUSES {
+                assert!(
+                    statuses.contains(&(on, *status)),
+                    "{what} does not list {status:?} with {on}, so no row \
+                     covers it"
+                );
+            }
         }
+        assert_eq!(
+            statuses.len(),
+            2 * BUTTON_STATUSES.len(),
+            "{what} must name each state exactly once"
+        );
     }
-    assert_eq!(
-        SEGMENT_STATUSES.len(),
-        2 * BUTTON_STATUSES.len(),
-        "SEGMENT_STATUSES must name each state exactly once"
-    );
     let all = [
         styles::SegmentPosition::First,
         styles::SegmentPosition::Middle,
@@ -2452,11 +2550,13 @@ fn every_status_list_names_each_status_once() {
 #[cfg(feature = "widgets")]
 #[test]
 fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_theme::Result<()> {
-    // The model states an accent or a status color and its label and no
-    // variant of either for a hovered or a pressed button, so those two states
-    // are iced's own class, read at run time (spec section 3.3). That is a
-    // claim about the emitted value, so it is asserted rather than left to the
-    // rows, which cover only `CLASS_BUTTON_NATIVE_STATUSES`.
+    // The model states a status color and its label and no variant of
+    // either for a hovered or a pressed button, so those two states are
+    // iced's own class, read at run time (spec section 3.3). That is a claim
+    // about the emitted value, so it is asserted rather than left to the
+    // rows, which cover only `CLASS_BUTTON_NATIVE_STATUSES`. The primary
+    // button is iced's derivation from its own fill instead, asserted by
+    // `a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill`.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
@@ -2464,15 +2564,10 @@ fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_the
     for c in &combinations {
         for (what, ours, theirs) in [
             (
-                "styles::button_primary",
-                &styles::button_primary(&c.resolved)
-                    as &dyn Fn(&Theme, button::Status) -> button::Style,
-                button::primary as fn(&Theme, button::Status) -> button::Style,
-            ),
-            (
                 "styles::button_danger",
-                &styles::button_danger(&c.resolved),
-                button::danger,
+                &styles::button_danger(&c.resolved)
+                    as &dyn Fn(&Theme, button::Status) -> button::Style,
+                button::danger as fn(&Theme, button::Status) -> button::Style,
             ),
             (
                 "styles::button_success",
@@ -2735,52 +2830,140 @@ fn a_dragged_slider_handle_takes_its_fill_from_iced() -> native_theme::Result<()
     Ok(())
 }
 
+/// The statuses in which `styles::button_primary` paints what iced's own
+/// `button::primary` paints from a primary slot holding the primary pair.
+/// Disabled is `class_button`'s faded pair, which the rows cover.
+#[cfg(feature = "widgets")]
+const PRIMARY_AS_ICED_STATUSES: &[button::Status] = &[
+    button::Status::Active,
+    button::Status::Hovered,
+    button::Status::Pressed,
+];
+
+/// The iced theme `to_theme` builds from `r` with its accent pair replaced by
+/// the primary pair, so its palette's primary slot is
+/// `button.primary_background` and that slot's label `.primary_text_color`:
+/// the theme under which iced's own `button::primary` is the oracle for
+/// `styles::button_primary`.
+#[cfg(feature = "widgets")]
+fn primary_slot_theme(r: &ResolvedTheme) -> Theme {
+    let mut primary = r.clone();
+    primary.defaults.accent_color = r.button.primary_background;
+    primary.defaults.accent_text_color = r.button.primary_text_color;
+    let theme = crate::to_theme(&primary, "primary slot");
+    assert_eq!(
+        theme.palette().primary,
+        to_color(r.button.primary_background),
+        "the oracle's primary slot must hold button.primary_background"
+    );
+    assert_eq!(
+        theme.extended_palette().primary.base.text,
+        to_color(r.button.primary_text_color),
+        "the oracle's primary label must be button.primary_text_color"
+    );
+    theme
+}
+
+/// Where `styles::button_primary(r)` under `theme` differs from iced's own
+/// `button::primary` under [`primary_slot_theme`], one line per field, and
+/// how many fields were compared.
+#[cfg(feature = "widgets")]
+fn primary_vs_iced(what: &str, theme: &Theme, r: &ResolvedTheme) -> (Vec<String>, usize) {
+    let oracle = primary_slot_theme(r);
+    let style = styles::button_primary(r);
+    let mut failures = Vec::new();
+    let mut checks = 0;
+    for &status in PRIMARY_AS_ICED_STATUSES {
+        let emitted = style(theme, status);
+        let iced = button::primary(&oracle, status);
+        checks += 1;
+        if emitted.background != iced.background {
+            failures.push(format!(
+                "{what}: styles::button_primary.background ({status:?}) is {:?}, \
+                 button::primary from button.primary_background gives {:?}",
+                emitted.background, iced.background
+            ));
+        }
+        checks += 1;
+        if emitted.text_color != iced.text_color {
+            failures.push(format!(
+                "{what}: styles::button_primary.text_color ({status:?}) is {}, \
+                 button::primary from button.primary_text_color gives {}",
+                show(emitted.text_color),
+                show(iced.text_color)
+            ));
+        }
+    }
+    (failures, checks)
+}
+
 #[cfg(feature = "widgets")]
 #[test]
-fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
-    // `styles::button_primary` paints `button.primary_background` at rest and
-    // hands its hovered and pressed states to `button::primary`, which
-    // strengthens `palette.primary` -- that is, `defaults.accent_color`. The
-    // two are the same color in every bundled preset, which is what makes the
-    // handover sound: iced's derivation starts from the fill the function
-    // itself painted. This pins that premise, because nothing else would
-    // notice if a preset broke it.
+fn a_primary_button_that_is_not_the_accent_hovers_from_its_own_fill() -> native_theme::Result<()> {
+    // A live Windows theme states `AccentFillColorDefault` as the primary
+    // fill and the system accent as `defaults.accent_color`, so the two differ
+    // there. The hovered and pressed fills are iced's derivation from the
+    // primary's own fill, not from the palette slot the accent fills, and the
+    // label is the primary's own, not the accent's.
+    // Dark, because there the danger label (`#000000e4`) is not the accent's
+    // (`#000000`); in light both are white.
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Dark)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    resolved.button.primary_background = resolved.defaults.danger_color;
+    resolved.button.primary_text_color = resolved.defaults.danger_text_color;
+    assert_ne!(
+        resolved.button.primary_background, resolved.defaults.accent_color,
+        "the primary fill must differ from the accent, or this proves nothing"
+    );
+    assert_ne!(
+        resolved.button.primary_text_color, resolved.defaults.accent_text_color,
+        "the primary label must differ from the accent's, or this proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "windows-11");
+
+    let (failures, checks) = primary_vs_iced("windows-11/dark, edited", &theme, &resolved);
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} primary-button fields differ from iced's own class \
+         painted from the primary pair:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    assert_ne!(
+        styles::button_primary(&resolved)(&theme, button::Status::Hovered).background,
+        button::primary(&theme, button::Status::Hovered).background,
+        "the hovered fill must not be iced's strengthened accent"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_primary_button_takes_its_hovered_and_pressed_states_from_its_own_fill()
+-> native_theme::Result<()> {
+    // The model states no hovered and no pressed primary fill, so those two
+    // states are iced's derivation (spec section 3.3) -- applied to the
+    // primary pair, `button.primary_background` and `.primary_text_color`,
+    // not to `palette.primary`, which carries `defaults.accent_color`. The
+    // oracle is iced's own `button::primary` under a theme whose primary slot
+    // holds that pair, at rest as well. The rows cover only
+    // `CLASS_BUTTON_NATIVE_STATUSES`, so the claim is asserted here.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
 
     for c in &combinations {
-        let r = &c.resolved;
-        for (what, ours, accent) in [
-            (
-                "button.primary_background vs defaults.accent_color",
-                r.button.primary_background,
-                r.defaults.accent_color,
-            ),
-            (
-                "button.primary_text_color vs defaults.accent_text_color",
-                r.button.primary_text_color,
-                r.defaults.accent_text_color,
-            ),
-        ] {
-            checks += 1;
-            if ours != accent {
-                failures.push(format!(
-                    "{}: {what} -- {} and {}, so a hovered primary button would \
-                     belong to a different color than its idle fill: iced \
-                     strengthens the palette slot, which carries the accent",
-                    c.label(),
-                    show(to_color(ours)),
-                    show(to_color(accent))
-                ));
-            }
-        }
+        let (failed, compared) = primary_vs_iced(&c.label(), &c.theme, &c.resolved);
+        failures.extend(failed);
+        checks += compared;
     }
 
-    println!("primary pair vs accent pair: {checks} field checks");
+    println!("primary button vs iced's own class from the primary pair: {checks} field checks");
     assert!(
         failures.is_empty(),
-        "{} of {checks} primary/accent pairs differ:\n{}",
+        "{} of {checks} primary-button fields differ from iced's own class \
+         painted from the primary pair:\n{}",
         failures.len(),
         failures.join("\n")
     );
@@ -3019,6 +3202,13 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut ran,
     );
     check_style_rows(RULE_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(PANE_GRID_ROWS, &combinations, &mut failures, &mut ran);
+    check_scalar_rows(
+        PANE_GRID_SCALAR_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     check_style_rows(TOOLTIP_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3044,6 +3234,19 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_scalar_rows(SEGMENT_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(EXPANDER_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(EXPANDER_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        EXPANDER_FRAME_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_style_rows(BUTTON_TOGGLE_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        BUTTON_TOGGLE_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3195,6 +3398,13 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     check_style_pairs(TOOLTIP_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(SEGMENT_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(EXPANDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(
+        BUTTON_TOGGLE_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_pairs(AW_CARD_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
@@ -3246,6 +3456,29 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     for line in &below_aa {
         println!("{line}");
     }
+
+    // The disabled checked checkbox's mark on its fill, the range docs/todo.md
+    // quotes for the platforms' own disabled pair (printed, not asserted).
+    let disabled = checkbox::Status::Disabled { is_checked: true };
+    let mut range: Option<(f32, f32)> = None;
+    let mut measured = 0usize;
+    for pair in CHECKBOX_PAIRS.iter().filter(|p| p.what == "checkbox mark") {
+        for c in &combinations {
+            if let Ok((fg, bg, surface)) = (pair.emitted)(&c.theme, &c.resolved, disabled) {
+                let ratio = pair_ratio(fg, bg, surface);
+                measured += 1;
+                range =
+                    Some(range.map_or((ratio, ratio), |(lo, hi)| (lo.min(ratio), hi.max(ratio))));
+            }
+        }
+    }
+    if let Some((lo, hi)) = range {
+        println!(
+            "disabled checked checkbox mark on its fill: {lo:.2}-{hi:.2}:1 over {measured} of {} \
+             combinations",
+            combinations.len()
+        );
+    }
     assert!(
         failures.is_empty(),
         "{} of {} style pairs are worse than the platform's own:\n{}",
@@ -3259,19 +3492,25 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
 #[cfg(feature = "widgets")]
 #[test]
 fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_theme::Result<()> {
-    // Windows 11 light states a translucent hover layer, so this preset shows
-    // the difference between layering and replacing (section 3.2).
-    let resolved = native_theme::theme::Theme::preset("windows-11")?
+    // A translucent hover layer shows the difference between layering and
+    // replacing (section 3.2). No bundled preset states one since M2b Step 7b
+    // (windows-11 states WinUI's replacing fill flattened,
+    // native-theme/src/presets/windows-11.toml:127), so the fixture is
+    // windows-11 light with that brush as the resource gives it,
+    // `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1179).
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    resolved.button.hover_background = Rgba::new(0xf9, 0xf9, 0xf9, 0x80);
     let theme = crate::to_theme(&resolved, "windows-11");
 
     let raw = to_color(resolved.button.hover_background);
     let expected = over(raw, to_color(resolved.button.background_color));
     assert!(
         raw.a < 1.0 && expected != raw,
-        "this preset no longer states a translucent hover layer, so it no \
-         longer tests compositing: raw {}, composited {}",
+        "the fixture's hover layer, ControlFillColorSecondary #80F9F9F9 \
+         set above, no longer differs from its composite over windows-11's \
+         button fill, so it no longer tests compositing: raw {}, composited {}",
         show(raw),
         show(expected)
     );
@@ -3322,6 +3561,201 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
 
 #[cfg(feature = "widgets")]
 #[test]
+fn a_checked_toggle_button_paints_the_checked_pair_or_the_pressed_one() -> native_theme::Result<()>
+{
+    // windows-11 states WinUI's checked ToggleButton as the accent fill,
+    // #0067c0 with #ffffff (native-theme/src/presets/windows-11.toml:147-148).
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert_eq!(
+        (
+            resolved.button.checked_background,
+            resolved.button.checked_text_color
+        ),
+        (
+            Some(Rgba::new(0x00, 0x67, 0xc0, 0xff)),
+            Some(Rgba::new(0xff, 0xff, 0xff, 0xff))
+        ),
+        "windows-11 no longer states WinUI's checked pair"
+    );
+    let theme = crate::to_theme(&resolved, "windows-11");
+    let plain = styles::button(&resolved);
+    let on = styles::button_toggle(&resolved, true);
+    let off = styles::button_toggle(&resolved, false);
+    for status in [
+        button::Status::Active,
+        button::Status::Hovered,
+        button::Status::Pressed,
+    ] {
+        let style = on(&theme, status);
+        assert_eq!(
+            (flat(style.background), style.text_color),
+            (
+                Ok(to_color(Rgba::new(0x00, 0x67, 0xc0, 0xff))),
+                to_color(Rgba::new(0xff, 0xff, 0xff, 0xff))
+            ),
+            "a checked toggle paints button.checked_background and \
+             .checked_text_color ({status:?})"
+        );
+    }
+    for &status in BUTTON_STATUSES {
+        assert_eq!(
+            off(&theme, status),
+            plain(&theme, status),
+            "a toggle that is off is the plain button ({status:?})"
+        );
+    }
+
+    // Unstated, a checked toggle is the pressed pair
+    // (docs/inheritance-rules.toml, "the pressed pair shows a checked toggle").
+    resolved.button.checked_background = None;
+    resolved.button.checked_text_color = None;
+    let theme = crate::to_theme(&resolved, "windows-11");
+    let pressed = styles::button(&resolved)(&theme, button::Status::Pressed);
+    let on = styles::button_toggle(&resolved, true);
+    for status in [
+        button::Status::Active,
+        button::Status::Hovered,
+        button::Status::Pressed,
+    ] {
+        let style = on(&theme, status);
+        assert_eq!(
+            (style.background, style.text_color),
+            (pressed.background, pressed.text_color),
+            "an unstated checked pair falls back to the pressed one ({status:?})"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_disabled_expander_header_fades_by_the_defaults_opacity() -> native_theme::Result<()> {
+    // `ExpanderTheme` states no `disabled_opacity`, so a disabled header
+    // fades by `defaults.disabled_opacity` (docs/inheritance-rules.toml,
+    // the disabled-state note), which adwaita states as 0.5.
+    let resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let opacity = resolved.defaults.disabled_opacity;
+    assert!(
+        opacity < 1.0,
+        "adwaita no longer fades a disabled widget, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "adwaita");
+    let style = styles::expander(&resolved)(&theme, button::Status::Disabled);
+    assert_eq!(
+        style.text_color,
+        dim(to_color(resolved.expander.font.color), opacity),
+        "a disabled header's label is expander.font.color faded by \
+         defaults.disabled_opacity"
+    );
+    assert_eq!(
+        style.border.color,
+        dim(to_color(resolved.expander.border.color), opacity),
+        "a disabled header's outline is faded by defaults.disabled_opacity"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn an_expander_that_states_its_frame_draws_no_header_border() -> native_theme::Result<()> {
+    // kde-breeze states `frame_enabled = false`: KCollapsibleGroupBox paints
+    // the arrow and the title and nothing else (docs/platform-facts.md
+    // §2.27), so the header has no outline.
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert_eq!(
+        resolved.expander.frame_enabled,
+        Some(false),
+        "kde-breeze no longer states an unframed expander"
+    );
+    assert!(
+        resolved.expander.border.line_width > 0.0,
+        "kde-breeze's expander border has no width, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "kde-breeze");
+    let header = styles::expander(&resolved);
+    for &status in BUTTON_STATUSES {
+        assert_eq!(
+            header(&theme, status).border.width,
+            0.0,
+            "an expander whose frame the theme states draws no header border \
+             ({status:?})"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_hovered_split_is_the_splitters_hover_colour() -> native_theme::Result<()> {
+    // adwaita states `splitter.hover_color`, a colour iced's own pane grid
+    // does not paint: its hovered split is the palette's primary.
+    let resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let theme = crate::to_theme(&resolved, "adwaita");
+    let hover = to_color(resolved.splitter.hover_color);
+    assert_ne!(
+        iced_widget::pane_grid::default(&theme).hovered_split.color,
+        hover,
+        "adwaita's splitter hover is iced's own hovered split, so this test \
+         proves nothing"
+    );
+    assert_eq!(
+        styles::pane_grid(&resolved)(&theme).hovered_split.color,
+        hover,
+        "a hovered split is splitter.hover_color"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_text_editor_is_framed_by_the_text_areas_border() -> native_theme::Result<()> {
+    // Every bundled preset frames its text area as its input
+    // (`text_area.border` inherits `input.border`), and every one states a
+    // 1 px input border, so the text area here takes another real border of
+    // another preset: material-3's check box outline, 2 px wide.
+    let mut resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let donor = native_theme::theme::Theme::preset("material-3")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let (own, other) = (&resolved.input.border, &donor.checkbox.border);
+    assert!(
+        own.color != other.color
+            && own.line_width != other.line_width
+            && own.corner_radius != other.corner_radius,
+        "material-3's check box border no longer differs from adwaita's input \
+         border in colour, width and radius, so this test proves less than it \
+         says"
+    );
+    resolved.text_area.border.color = other.color;
+    resolved.text_area.border.line_width = other.line_width;
+    resolved.text_area.border.corner_radius = other.corner_radius;
+    let theme = crate::to_theme(&resolved, "adwaita");
+
+    let border = styles::text_editor(&resolved)(&theme, text_editor::Status::Active).border;
+    assert_eq!(
+        (border.color, border.width, border.radius),
+        (
+            to_color(other.color),
+            other.line_width,
+            Radius::new(other.corner_radius)
+        ),
+        "a text editor is framed by text_area.border, not input.border"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
 fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
     // The three `input.*` soft options, which `styles::text_input` and
     // `styles::text_editor` share. No bundled preset leaves them `None` after
@@ -3363,8 +3797,9 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
     for status in TEXT_EDITOR_STATUSES {
         assert_eq!(
             editor(&theme, *status).border.color,
-            border,
-            "the editor reads the same soft options ({status:?})"
+            to_color(resolved.text_area.border.color),
+            "the editor reads the same soft options, over its own border \
+             ({status:?})"
         );
     }
     assert_eq!(
@@ -3380,11 +3815,15 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
 #[test]
 fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
     // The twelve soft options the widget functions read: four `checkbox.*`
-    // (three of which `styles::radio` reads again through its own
-    // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and one
-    // `scrollbar.*`. No bundled preset leaves any of them `None` after
-    // resolution, so the rows cannot tell a right base-state field from a
-    // wrong one; the fallbacks are reached by clearing them here (section 3.2).
+    // (three of which `styles::radio` reads again, through the fills it
+    // shares with `styles::checkbox_over`), five `switch.*`, one
+    // `combo_box.*`, one `slider.*` and one `scrollbar.*`. A bundled preset
+    // rarely leaves them `None` after resolution, so the rows cannot tell a
+    // right base-state field from a wrong one; the fallbacks are reached by
+    // clearing them here (section 3.2).
+    // windows-11 states nine of them; the switch's disabled thumb, the
+    // slider's thumb hover and the scroll bar's pressed thumb have no source
+    // and are already `None`.
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
@@ -3397,12 +3836,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             && resolved.switch.hover_unchecked_background.is_some()
             && resolved.switch.disabled_checked_background.is_some()
             && resolved.switch.disabled_unchecked_background.is_some()
-            && resolved.switch.disabled_thumb_color.is_some()
-            && resolved.combo_box.hover_background.is_some()
-            && resolved.slider.thumb_hover_color.is_some()
-            && resolved.scrollbar.thumb_active_color.is_some(),
-        "this preset no longer states all twelve soft options, so clearing \
-         them proves nothing"
+            && resolved.combo_box.hover_background.is_some(),
+        "this preset no longer states the nine soft options it sources, so \
+         clearing them proves nothing"
     );
     // The thirteenth belongs to `styles::aw::tab_bar` and is read only when
     // that feature is on.
@@ -3438,8 +3874,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let scrollbars = styles::scrollable(&resolved);
 
     // Every base-state value of section 3.2's table, read straight from the
-    // model. A hover layer copies the base state and is then composited over
-    // the fill it covers, so the two cases are spelled out separately.
+    // model. A cleared hover layer is the fill it would cover, at rest.
     let box_fill = to_color(resolved.checkbox.background_color);
     let box_border = to_color(resolved.checkbox.border.color);
     let track_on = to_color(resolved.switch.checked_background);
@@ -3454,7 +3889,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let tab_fill = to_color(resolved.tab.background_color);
 
     // One entry per read site, not per model field: two functions reading the
-    // same option have two `unwrap_or` expressions.
+    // same option have two read expressions.
     let read_sites = [
         (
             "checkbox.unchecked_background -> checkbox.background_color",
@@ -3462,9 +3897,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             box_fill,
         ),
         (
-            "checkbox.hover_background -> checkbox.background_color",
+            "checkbox.hover_background -> the unchecked fill at rest",
             fill(boxes(&theme, checkbox::Status::Hovered { is_checked: false }).background),
-            over(box_fill, box_fill),
+            box_fill,
         ),
         // No disabled fill stated is the platform dimming by opacity alone
         // (docs/platform-facts.md §2.1.6): the box is its enabled self, the
@@ -3489,9 +3924,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             box_fill,
         ),
         (
-            "radio: checkbox.hover_background -> checkbox.background_color",
+            "radio: checkbox.hover_background -> the unselected fill at rest",
             fill(buttons(&theme, radio::Status::Hovered { is_selected: false }).background),
-            over(box_fill, box_fill),
+            box_fill,
         ),
         (
             "radio: checkbox.unchecked_border_color -> checkbox.border.color",
@@ -3501,12 +3936,12 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "switch.hover_checked_background -> switch.checked_background",
             fill(switches(&theme, toggler::Status::Hovered { is_toggled: true }).background),
-            over(track_on, track_on),
+            track_on,
         ),
         (
             "switch.hover_unchecked_background -> switch.unchecked_background",
             fill(switches(&theme, toggler::Status::Hovered { is_toggled: false }).background),
-            over(track_off, track_off),
+            track_off,
         ),
         (
             "switch.disabled_checked_background -> switch.checked_background",
@@ -3526,7 +3961,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         (
             "combo_box.hover_background -> combo_box.background_color",
             fill(fields(&theme, pick_list::Status::Hovered).background),
-            over(field_fill, field_fill),
+            field_fill,
         ),
         (
             "slider.thumb_hover_color -> slider.thumb_color",
@@ -3578,16 +4013,89 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     Ok(())
 }
 
+#[cfg(feature = "widgets")]
+#[test]
+fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
+    // macos-tahoe states a translucent drop-down field and a translucent off
+    // track, and no hover for either: a hovered one is the one at rest, not
+    // its fill composited over itself, which would double its alpha. The
+    // checkbox, the radio and the segment read the same rule, and are given
+    // the field's translucent fill and no hover here, since no bundled preset
+    // leaves theirs unset over a translucent fill; the unchecked box's fill is
+    // set apart from the checkbox's own, so that a hover falling back onto
+    // the latter is caught too.
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let mut resolved = native_theme::theme::Theme::preset("macos-tahoe")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        let translucent = resolved.combo_box.background_color;
+        assert!(
+            resolved.combo_box.hover_background.is_none()
+                && translucent.a < 255
+                && resolved.switch.hover_unchecked_background.is_none()
+                && resolved.switch.unchecked_background.a < 255
+                && resolved.checkbox.background_color != translucent,
+            "macos-tahoe ({mode:?}) no longer leaves a translucent field's or \
+             off track's hover unset, so this proves nothing"
+        );
+        resolved.checkbox.hover_background = None;
+        resolved.checkbox.unchecked_background = Some(translucent);
+        resolved.segmented_control.hover_background = None;
+        resolved.segmented_control.background_color = translucent;
+
+        let theme = crate::to_theme(&resolved, "macos-tahoe");
+        let idle = to_color(translucent);
+        assert_eq!(
+            styles::pick_list(&resolved)(&theme, pick_list::Status::Hovered).background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered field with no hover stated is \
+             the field at rest"
+        );
+        assert_eq!(
+            styles::toggler(&resolved)(&theme, toggler::Status::Hovered { is_toggled: false })
+                .background,
+            Background::Color(to_color(resolved.switch.unchecked_background)),
+            "macos-tahoe ({mode:?}): a hovered off track with no hover stated is \
+             the track at rest"
+        );
+        assert_eq!(
+            styles::checkbox(&resolved)(&theme, checkbox::Status::Hovered { is_checked: false })
+                .background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered unchecked box with no hover \
+             stated is the unchecked box"
+        );
+        assert_eq!(
+            styles::radio(&resolved)(&theme, radio::Status::Hovered { is_selected: false })
+                .background,
+            Background::Color(idle),
+            "macos-tahoe ({mode:?}): a hovered unselected radio with no hover \
+             stated is the unselected radio"
+        );
+        assert_eq!(
+            styles::segment(&resolved, false, styles::SegmentPosition::Only)(
+                &theme,
+                button::Status::Hovered
+            )
+            .background,
+            Some(Background::Color(idle)),
+            "macos-tahoe ({mode:?}): a hovered segment with no hover stated is \
+             the segment at rest"
+        );
+    }
+    Ok(())
+}
+
 #[cfg(feature = "iced_aw")]
 #[test]
 fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> {
     // The entry in the table above runs on windows-11, where `tab` states the
     // same color for an idle and for a selected tab, so a fallback onto the
     // wrong one of the two would pass it. No bundled preset states them
-    // differently any more (material's active tab is marked by an indicator,
+    // differently any more (material-3's active tab is marked by an indicator,
     // not a fill: docs/platform-facts.md §2.11), so the selected fill is set
     // apart here, to the preset's accent, and the copy is proved on that.
-    let mut resolved = native_theme::theme::Theme::preset("material")?
+    let mut resolved = native_theme::theme::Theme::preset("material-3")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     resolved.tab.active_background = resolved.defaults.accent_color;
@@ -3603,7 +4111,7 @@ fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> 
     );
 
     resolved.tab.hover_background = None;
-    let theme = crate::to_theme(&resolved, "material");
+    let theme = crate::to_theme(&resolved, "material-3");
     assert_eq!(
         fill(styles::aw::tab_bar(&resolved)(&theme, AwStatus::Hovered).tab_label_background),
         Ok(idle),
@@ -3639,10 +4147,32 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 }
 
 /// The presets whose platform states no link hover background
-/// (docs/platform-facts.md:1626, §2.28: macOS, KDE and GNOME), which they
-/// express as fully transparent.
+/// (docs/platform-facts.md:1629, §2.28: macOS, KDE and GNOME, and Windows,
+/// whose inline `Hyperlink` has no background), which they express as fully
+/// transparent.
 #[cfg(feature = "widgets")]
-const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-sonoma"];
+const LINK_HOVER_NONE: [&str; 5] = [
+    "kde-breeze",
+    "adwaita",
+    "macos-monterey",
+    "macos-tahoe",
+    "windows-11",
+];
+
+/// The combinations whose platform states a translucent button fill:
+/// `controlColor` is `#ffffff3f` in darkAqua
+/// (docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:408),
+/// macOS 26 draws the push button in `secondarySystemFillColor`'s value, `#00000014` light and
+/// `#ffffff14` dark, and WinUI 3's `ButtonBackground` is `ControlFillColorDefault`, `#B3FFFFFF`
+/// light and `#0FFFFFFF` dark (docs/platform-facts.md:1164).
+#[cfg(feature = "widgets")]
+const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
+    "macos-monterey/dark",
+    "macos-tahoe/light",
+    "macos-tahoe/dark",
+    "windows-11/light",
+    "windows-11/dark",
+];
 
 #[cfg(feature = "widgets")]
 #[test]
@@ -3652,6 +4182,10 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     let no_link_hover = combinations
         .iter()
         .filter(|c| LINK_HOVER_NONE.contains(&c.key))
+        .count();
+    let translucent_fill = combinations
+        .iter()
+        .filter(|c| TRANSLUCENT_BUTTON_FILL.contains(&c.label().as_str()))
         .count();
     for c in &combinations {
         let stated_none = LINK_HOVER_NONE.contains(&c.key);
@@ -3687,6 +4221,19 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         ];
         let base = to_color(r.button.background_color);
         let link_base = to_color(r.link.background_color);
+        let declared_translucent = TRANSLUCENT_BUTTON_FILL.contains(&c.label().as_str());
+        if declared_translucent != (base.a < 1.0) {
+            failures.push(format!(
+                "{}: button.background_color is {}, and the platform states {}",
+                c.label(),
+                show(base),
+                if declared_translucent {
+                    "a translucent one"
+                } else {
+                    "an opaque one"
+                }
+            ));
+        }
 
         for (name, layer) in layers {
             let label = format!("{}: {name}", c.label());
@@ -3761,12 +4308,20 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         // compute it the same way. Source-over is associative, so stacking a
         // layer on a base and then painting the pair on an opaque surface must
         // give what painting the base on the surface and then the layer gives.
-        // Both colors are real: windows-11 states `checkbox.unchecked_background`
-        // as a translucent fill and `link.hover_background` as a translucent
-        // layer.
-        if let Some(unchecked) = r.checkbox.unchecked_background {
-            let b = to_color(unchecked);
-            let l = to_color(r.link.hover_background);
+        // Both colors are WinUI 3's, as its resources give them: windows-11
+        // states `button.background_color` as `ControlFillColorDefault`
+        // (`#B3FFFFFF` light, `#0FFFFFFF` dark, docs/platform-facts.md:1164),
+        // and the layer is the pressed button's `ControlFillColorTertiary`
+        // (`#4DF9F9F9`, `#08FFFFFF`, :1179). The preset states that one
+        // flattened over the window, so it is set here, not read from it.
+        let pressed_as_given = match c.label().as_str() {
+            "windows-11/light" => Some(Rgba::new(0xf9, 0xf9, 0xf9, 0x4d)),
+            "windows-11/dark" => Some(Rgba::new(0xff, 0xff, 0xff, 0x08)),
+            _ => None,
+        };
+        if let Some(pressed) = pressed_as_given {
+            let b = to_color(r.button.background_color);
+            let l = to_color(pressed);
             let surface = to_color(r.defaults.background_color);
             let translucent = |x: Color| x.a > 0.0 && x.a < 1.0;
             if translucent(b) && translucent(l) && surface.a == 1.0 {
@@ -3816,24 +4371,29 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     );
     assert_eq!(
         opaque_bases,
-        combinations.len() * 4,
+        (combinations.len() - translucent_fill) * 4,
         "property (b) runs only over an opaque button.background_color, which \
-         every preset states as a six-digit hex; a translucent one would stop \
-         the property running"
+         every combination outside TRANSLUCENT_BUTTON_FILL states; another \
+         translucent one would stop the property running there"
     );
     assert!(
         opaque_layers >= combinations.len() * 2,
-        "property (c) needs an opaque layer: button.background_color and \
-         defaults.text_color are opaque in every preset, so it must run at \
-         least twice per combination, not {opaque_layers} times over {}",
+        "property (c) needs opaque layers: button.background_color and \
+         defaults.text_color are opaque in most combinations, though not in \
+         every one (macos-monterey and macos-tahoe state labelColor with \
+         alpha in both modes, windows-11 light its text color, and every \
+         TRANSLUCENT_BUTTON_FILL combination its button fill), so the floor \
+         is an aggregate, on average two opaque layers \
+         per combination, and it ran {opaque_layers} times over {} \
+         combinations",
         combinations.len()
     );
     assert!(
         interior_composites >= 2,
         "property (d) needs a translucent layer over a translucent base: \
-         windows-11 light and dark state both checkbox.unchecked_background \
-         and link.hover_background that way, so it must run at least twice, \
-         not {interior_composites} times"
+         windows-11 light and dark state button.background_color that way, \
+         under WinUI's ControlFillColorTertiary, so it must run at least \
+         twice, not {interior_composites} times"
     );
     assert!(
         failures.is_empty(),
@@ -3870,6 +4430,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::button_success(r));
     assert_clone(&styles::button_warning(r));
     assert_clone(&styles::button_link(r));
+    assert_clone(&styles::button_toggle(r, true));
     assert_clone(&styles::text_input(r));
     assert_clone(&styles::text_editor(r));
     assert_clone(&styles::checkbox(r));
@@ -3881,11 +4442,13 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::scrollable(r));
     assert_clone(&styles::progress_bar(r));
     assert_clone(&styles::rule(r));
+    assert_clone(&styles::pane_grid(r));
     assert_clone(&styles::tooltip(r));
     assert_clone(&styles::container_card(r));
     assert_clone(&styles::segmented_control(r));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
     assert_clone(&styles::expander(r));
+    assert_clone(&styles::expander_frame(r));
 
     // `styles::scrollbar` returns a value rather than a closure, and
     // `iced_widget::scrollable::Scrollbar` derives `Clone` and `Copy`
@@ -3902,5 +4465,505 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
         assert_clone(&styles::aw::spinner(r));
     }
 
+    Ok(())
+}
+
+/// Every leaf of a serialised `ResolvedTheme`, under its dotted path, with its
+/// value: the walk descends into objects and keeps everything else, a `null`
+/// (an unstated soft option) included. egui's `leaf_paths`
+/// (`native-theme-egui/src/mapping_tests.rs`) is the same walk.
+#[cfg(feature = "iced_aw")]
+fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
+    fn walk(prefix: &str, value: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, child) in map {
+                    let path = if prefix.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{prefix}.{key}")
+                    };
+                    walk(&path, child, out);
+                }
+            }
+            _ => out.push((prefix.to_owned(), value.clone())),
+        }
+    }
+    let mut out = Vec::new();
+    walk("", value, &mut out);
+    out
+}
+
+/// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
+/// theme; `None` where the leaf already holds it or does not take a colour.
+#[cfg(feature = "iced_aw")]
+fn spliced_colour(json: &serde_json::Value, leaf: &str, hex: &str) -> Option<ResolvedTheme> {
+    let pointer = format!("/{}", leaf.replace('.', "/"));
+    let value = serde_json::Value::String(hex.to_owned());
+    if json.pointer(&pointer)? == &value {
+        return None;
+    }
+    let mut b = json.clone();
+    *b.pointer_mut(&pointer)? = value;
+    serde_json::from_value(b).ok()
+}
+
+/// The colour leaves of one serialised theme: a leaf whose value is a colour,
+/// or a `null` a colour splices into -- an `Option<Rgba>` the theme leaves
+/// unstated.
+#[cfg(feature = "iced_aw")]
+fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
+    leaf_values(json)
+        .into_iter()
+        .filter(|(leaf, value)| match value {
+            serde_json::Value::String(s) => s.starts_with('#') && s.parse::<Rgba>().is_ok(),
+            serde_json::Value::Null => spliced_colour(json, leaf, "#123456").is_some(),
+            _ => false,
+        })
+        .map(|(leaf, _)| leaf)
+        .collect()
+}
+
+/// Every row of the contract on one theme, as text keyed by the row's name:
+/// each palette row, each style row over all of its statuses, and each
+/// accessor row. A colour spliced into the theme reaches a row when that
+/// row's native text changes.
+///
+/// The emitted side, what the connector builds, is read only where the theme
+/// is the one `to_theme` built from `r` -- once per leaf, on the splice that
+/// first moves a row -- and in the same text, so a row whose emitted text is
+/// not its native text is one the connector fills from another leaf.
+#[cfg(feature = "iced_aw")]
+#[derive(Default)]
+struct Reading {
+    native: BTreeMap<String, String>,
+    emitted: Option<BTreeMap<String, String>>,
+}
+
+#[cfg(feature = "iced_aw")]
+impl Reading {
+    fn put(&mut self, name: String, native: String, emitted: impl FnOnce() -> String) {
+        if let Some(map) = &mut self.emitted {
+            map.insert(name.clone(), emitted());
+        }
+        self.native.insert(name, native);
+    }
+
+    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let native = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(r, s)))
+                .collect();
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(color) => format!("{color:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
+        }
+    }
+
+    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let native = row
+                .statuses
+                .iter()
+                .map(|&s| {
+                    let b = (row.native)(r, s);
+                    format!("{:?} {:?} {:?};", b.color, b.width, Radius::new(b.radius))
+                })
+                .collect();
+            self.put(format!("{}.border", row.field), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| {
+                        let b = (row.get)(t, r, s);
+                        format!("{:?} {:?} {:?};", b.color, b.width, b.radius)
+                    })
+                    .collect()
+            });
+        }
+    }
+
+    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let native = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(r, s)))
+                .collect();
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(radius) => format!("{radius:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
+        }
+    }
+
+    fn scalar<S: Copy>(&mut self, rows: &[ScalarRow<S>], t: &Theme, r: &ResolvedTheme) {
+        for row in rows {
+            let native = row
+                .statuses
+                .iter()
+                .map(|&s| format!("{:?};", (row.native)(t, r, s)))
+                .collect();
+            self.put(row.field.to_owned(), native, || {
+                row.statuses
+                    .iter()
+                    .map(|&s| match (row.get)(t, r, s) {
+                        Ok(length) => format!("{length:?};"),
+                        Err(why) => format!("{why};"),
+                    })
+                    .collect()
+            });
+        }
+    }
+
+    /// Every row's native side on `r`. `t` is read by the one guarded scalar
+    /// row alone (`ScalarRow`'s doc), for iced's own value where the guard
+    /// fails, so the base combination's theme serves every splice of it: a
+    /// colour moves no length.
+    fn of(t: &Theme, r: &ResolvedTheme) -> Self {
+        Self::read(t, r, None)
+    }
+
+    /// Both sides of every row on `r`, under `t = to_theme(r, key)`. A
+    /// palette row's declared exception for `key` is a slot that may differ
+    /// from its native field there, so its emitted side is taken as given.
+    fn both(t: &Theme, key: &str, r: &ResolvedTheme) -> Self {
+        Self::read(t, r, Some(key))
+    }
+
+    fn read(t: &Theme, r: &ResolvedTheme, key: Option<&str>) -> Self {
+        let mut x = Self {
+            native: BTreeMap::new(),
+            emitted: key.map(|_| BTreeMap::new()),
+        };
+        for row in ROWS {
+            let native = format!("{:?}", to_color((row.native)(r)));
+            let excepted = key.is_some_and(|k| row.exceptions.iter().any(|(e, _)| *e == k));
+            let emitted = if excepted {
+                native.clone()
+            } else {
+                format!("{:?}", (row.get)(t, r))
+            };
+            x.put(row.slot.to_owned(), native, || emitted);
+        }
+        for row in ACCESSOR_ROWS {
+            x.put(
+                row.accessor.to_owned(),
+                format!("{:?}", (row.native)(r)),
+                || format!("{:?}", (row.get)(r)),
+            );
+        }
+        x.style(BUTTON_ROWS, t, r);
+        x.style(BUTTON_PRIMARY_ROWS, t, r);
+        x.style(BUTTON_DANGER_ROWS, t, r);
+        x.style(BUTTON_SUCCESS_ROWS, t, r);
+        x.style(BUTTON_WARNING_ROWS, t, r);
+        x.style(BUTTON_LINK_ROWS, t, r);
+        x.style(BUTTON_TOGGLE_ROWS, t, r);
+        x.style(TEXT_INPUT_ROWS, t, r);
+        x.style(TEXT_EDITOR_ROWS, t, r);
+        x.style(CHECKBOX_ROWS, t, r);
+        x.style(RADIO_ROWS, t, r);
+        x.style(TOGGLER_ROWS, t, r);
+        x.style(PICK_LIST_ROWS, t, r);
+        x.style(MENU_ROWS, t, r);
+        x.style(SLIDER_ROWS, t, r);
+        x.style(SCROLLABLE_ROWS, t, r);
+        x.style(PROGRESS_BAR_ROWS, t, r);
+        x.style(RULE_ROWS, t, r);
+        x.style(PANE_GRID_ROWS, t, r);
+        x.style(TOOLTIP_ROWS, t, r);
+        x.style(CONTAINER_CARD_ROWS, t, r);
+        x.style(SEGMENTED_CONTROL_ROWS, t, r);
+        x.style(SEGMENT_ROWS, t, r);
+        x.style(EXPANDER_ROWS, t, r);
+        x.border(BUTTON_BORDER_ROWS, t, r);
+        x.border(BUTTON_PRIMARY_BORDER_ROWS, t, r);
+        x.border(BUTTON_DANGER_BORDER_ROWS, t, r);
+        x.border(BUTTON_SUCCESS_BORDER_ROWS, t, r);
+        x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
+        x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
+        x.border(TEXT_INPUT_BORDER_ROWS, t, r);
+        x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
+        x.border(CHECKBOX_BORDER_ROWS, t, r);
+        x.border(PICK_LIST_BORDER_ROWS, t, r);
+        x.border(MENU_BORDER_ROWS, t, r);
+        x.border(PROGRESS_BAR_BORDER_ROWS, t, r);
+        x.border(TOOLTIP_BORDER_ROWS, t, r);
+        x.border(CONTAINER_CARD_BORDER_ROWS, t, r);
+        x.border(SEGMENTED_CONTROL_BORDER_ROWS, t, r);
+        x.border(EXPANDER_BORDER_ROWS, t, r);
+        x.border(EXPANDER_FRAME_BORDER_ROWS, t, r);
+        x.radius(TOGGLER_RADIUS_ROWS, t, r);
+        x.scalar(RADIO_SCALAR_ROWS, t, r);
+        x.scalar(TOGGLER_SCALAR_ROWS, t, r);
+        x.scalar(SLIDER_SCALAR_ROWS, t, r);
+        x.scalar(PANE_GRID_SCALAR_ROWS, t, r);
+        x.scalar(SEGMENT_SCALAR_ROWS, t, r);
+        x.style(AW_CARD_ROWS, t, r);
+        x.style(AW_MENU_ROWS, t, r);
+        x.style(AW_TAB_BAR_ROWS, t, r);
+        x.style(AW_SIDEBAR_ROWS, t, r);
+        x.style(AW_SELECTION_LIST_ROWS, t, r);
+        x.style(AW_SPINNER_ROWS, t, r);
+        x.border(AW_MENU_BORDER_ROWS, t, r);
+        x.radius(AW_TAB_BAR_RADIUS_ROWS, t, r);
+        x.scalar(AW_CARD_SCALAR_ROWS, t, r);
+        x.scalar(AW_TAB_BAR_SCALAR_ROWS, t, r);
+        x.scalar(AW_SIDEBAR_SCALAR_ROWS, t, r);
+        x.scalar(AW_SELECTION_LIST_SCALAR_ROWS, t, r);
+        x
+    }
+
+    /// The rows whose native side differs between two readings.
+    fn moved(&self, after: &Self) -> Vec<String> {
+        self.native
+            .iter()
+            .filter(|(name, value)| after.native.get(*name) != Some(*value))
+            .map(|(name, _)| name.clone())
+            .collect()
+    }
+
+    /// The rows of `names` whose emitted side is not their native side, each
+    /// with both texts.
+    fn drifted(&self, names: &[String]) -> Vec<String> {
+        names
+            .iter()
+            .filter_map(|name| {
+                let native = self.native.get(name);
+                let emitted = self.emitted.as_ref().and_then(|m| m.get(name));
+                (native != emitted).then(|| {
+                    format!(
+                        "{name} emits {} where its native side gives {}",
+                        emitted.map_or("nothing", String::as_str),
+                        native.map_or("nothing", String::as_str)
+                    )
+                })
+            })
+            .collect()
+    }
+}
+
+/// An opaque colour whose red, green and blue appear in no colour of `json`,
+/// so that no row can emit it by passing another leaf through: counting up
+/// from `#13579b` in the red channel.
+#[cfg(feature = "iced_aw")]
+fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
+    let taken: BTreeSet<(u8, u8, u8)> = leaf_values(json)
+        .into_iter()
+        .filter_map(|(_, value)| value.as_str().and_then(|s| s.parse::<Rgba>().ok()))
+        .map(|c| (c.r, c.g, c.b))
+        .collect();
+    (0x13..=u8::MAX)
+        .map(|red| (red, 0x57, 0x9b))
+        .find(|rgb| !taken.contains(rgb))
+        .unwrap_or((0x13, 0x57, 0x9b))
+}
+
+/// Whether `entry` -- a leaf, or a widget's name -- names `leaf`: the leaf
+/// itself, or a leaf under it (`list.header_font` names
+/// `list.header_font.color`).
+#[cfg(feature = "iced_aw")]
+fn names(entry: &str, leaf: &str) -> bool {
+    leaf == entry
+        || leaf
+            .strip_prefix(entry)
+            .is_some_and(|rest| rest.starts_with('.'))
+}
+
+/// M1-T7-03, iced's half: every colour leaf of `ResolvedTheme` reaches a
+/// contract row, or a table says why it does not.
+///
+/// The tripwire (`every_named_field_has_exactly_one_declared_source`) walks
+/// what the connector emits, so it cannot see a model value nothing reads.
+/// This walks the model instead. Each of the 34 preset/mode combinations is a
+/// base, and every colour leaf of the serialised theme -- a colour, or an
+/// unstated `Option<Rgba>` a colour splices into -- is spliced in turn with
+/// the leaf's value in another preset of the same mode (egui's T2 method) and
+/// with an opaque and a half-transparent sentinel no colour of the base
+/// shares its channels with, so neither a passthrough of another leaf nor a
+/// composite under an opaque layer hides the change. A leaf *reaches* a row
+/// when the row's native side moves, in at least one base: a soft option's
+/// fallback moves its row only where the option is unstated
+/// (`checkbox.background_color`, in 2 of the 34), which is why every base is
+/// read. A leaf that reaches a row is not spliced in the bases after.
+///
+/// A row's native closure could read a leaf the connector does not, where the
+/// two are equal in every bundled combination (`text_area.border` and
+/// `input.border` are), and then `every_style_field_equals_its_native_value`
+/// cannot tell. So on the splice that first moves a row, the iced theme is
+/// built from the spliced values and every row it moved must emit exactly
+/// its new native value: a row whose native side moves and whose emitted
+/// side does not fails, naming the leaf, the row and the base.
+///
+/// Every leaf that reaches no row must be named once, by `UNREAD_COLOURS` or
+/// `UNREACHABLE`. An entry of either that names a leaf a row reads is stale,
+/// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
+    let started = std::time::Instant::now();
+    let combinations = combinations()?;
+    let jsons: Vec<serde_json::Value> = combinations
+        .iter()
+        .filter_map(|c| serde_json::to_value(&c.resolved).ok())
+        .collect();
+    assert_eq!(
+        jsons.len(),
+        combinations.len(),
+        "every ResolvedTheme serialises"
+    );
+
+    let mut leaves: BTreeSet<String> = BTreeSet::new();
+    for json in &jsons {
+        leaves.extend(colour_leaves(json));
+    }
+
+    let mut failures = Vec::new();
+    // The rows each leaf first moved, in the first base it moved one in.
+    let mut reached: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let n = combinations.len();
+    for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
+        let base = Reading::of(&c.theme, &c.resolved);
+        let donor = (1..n)
+            .map(|k| (i + 2 * k) % n)
+            .find(|&j| combinations.get(j).is_some_and(|d| d.is_dark == c.is_dark))
+            .and_then(|j| jsons.get(j));
+        let (red, green, blue) = sentinel_rgb(json);
+        let sentinels = [
+            format!("#{red:02x}{green:02x}{blue:02x}"),
+            format!("#{red:02x}{green:02x}{blue:02x}80"),
+        ];
+        for leaf in &leaves {
+            if reached.contains_key(leaf) {
+                continue;
+            }
+            let pointer = format!("/{}", leaf.replace('.', "/"));
+            let from_donor = donor
+                .and_then(|d| d.pointer(&pointer))
+                .and_then(|v| v.as_str())
+                .map(str::to_owned);
+            for hex in from_donor.iter().chain(&sentinels) {
+                let Some(r) = spliced_colour(json, leaf, hex) else {
+                    continue;
+                };
+                let rows = base.moved(&Reading::of(&c.theme, &r));
+                if !rows.is_empty() {
+                    let built = crate::to_theme(&r, c.key);
+                    for drift in Reading::both(&built, c.key, &r).drifted(&rows) {
+                        failures.push(format!(
+                            "{leaf} on {} moves a row the connector does not fill \
+                             from it: {drift}",
+                            c.label()
+                        ));
+                    }
+                    reached.insert(leaf.clone(), rows);
+                    break;
+                }
+            }
+        }
+    }
+
+    let (mut by_rows, mut by_accessors, mut by_exact, mut by_prefix, mut by_unreachable) =
+        (0, 0, 0, 0, 0);
+    for leaf in &leaves {
+        let unread: Vec<&UnreadColour> = UNREAD_COLOURS
+            .iter()
+            .filter(|e| names(e.leaf, leaf))
+            .collect();
+        let unreachable: Vec<&str> = UNREACHABLE
+            .iter()
+            .map(|u| u.field)
+            .filter(|field| names(field, leaf))
+            .collect();
+        let named = unread.len() + unreachable.len();
+        match reached.get(leaf) {
+            Some(rows) => {
+                if rows
+                    .iter()
+                    .all(|row| ACCESSOR_ROWS.iter().any(|a| *row == a.accessor))
+                {
+                    by_accessors += 1;
+                } else {
+                    by_rows += 1;
+                }
+                if named > 0 {
+                    failures.push(format!(
+                        "{leaf}: reaches {} yet is named unread ({})",
+                        rows.join(", "),
+                        unread
+                            .iter()
+                            .map(|e| e.leaf)
+                            .chain(unreachable.iter().copied())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ));
+                }
+            }
+            None => match (unread.as_slice(), unreachable.as_slice()) {
+                ([entry], []) if entry.leaf == leaf.as_str() => by_exact += 1,
+                ([_], []) => by_prefix += 1,
+                ([], [_]) => by_unreachable += 1,
+                ([], []) => failures.push(format!(
+                    "{leaf}: reaches no row, and neither UNREAD_COLOURS nor \
+                     UNREACHABLE names it"
+                )),
+                _ => failures.push(format!("{leaf}: named {named} times")),
+            },
+        }
+    }
+
+    for entry in UNREAD_COLOURS {
+        if !leaves.iter().any(|leaf| names(entry.leaf, leaf)) {
+            failures.push(format!(
+                "UNREAD_COLOURS names {}, which is no colour leaf and no \
+                 prefix of one",
+                entry.leaf
+            ));
+        }
+        let (cited, needs) = match entry.why {
+            Unread::NoReceiver(evidence) | Unread::Ruled(evidence) => {
+                (evidence.contains(".rs:"), "an upstream file.rs:line")
+            }
+            Unread::Inherited(evidence) => (
+                evidence.contains("inheritance-rules.toml:"),
+                "a docs/inheritance-rules.toml line",
+            ),
+            Unread::NoWidget(reason) => (
+                !reason.is_empty() && !entry.leaf.contains('.') && !leaves.contains(entry.leaf),
+                "a reason, and a widget's name rather than a leaf",
+            ),
+        };
+        if !cited {
+            failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
+        }
+    }
+
+    println!(
+        "{} colour leaves: {by_rows} reach a style or palette row, {by_accessors} \
+         an accessor row only, {by_exact} named by an UNREAD_COLOURS leaf, \
+         {by_prefix} by an UNREAD_COLOURS widget, {by_unreachable} by \
+         UNREACHABLE; {:.2?}",
+        leaves.len(),
+        started.elapsed()
+    );
+    assert!(
+        failures.is_empty(),
+        "{} colour-leaf classification(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     Ok(())
 }

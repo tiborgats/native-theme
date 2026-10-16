@@ -3,10 +3,12 @@
 use std::fmt;
 
 #[cfg(target_os = "linux")]
-use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop, system_is_dark};
+use crate::detect::{LinuxDesktop, parse_linux_desktop};
 
+#[cfg(any(target_os = "linux", test))]
+use crate::ReaderOutput;
 use crate::model::Theme;
-use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
+use crate::{OverlaySource, ReaderResult, SystemTheme};
 
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
@@ -16,12 +18,10 @@ use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
 ///
 /// `ReaderOutput::Single` readers provide one variant; the pipeline
 /// fills the other from the full platform preset. `ReaderOutput::Dual`
-/// readers provide both; the pipeline uses both after merging.
-pub(crate) fn run_pipeline(
-    reader: ReaderResult,
-    preset_name: &str,
-    mode: crate::ColorMode,
-) -> crate::Result<SystemTheme> {
+/// readers provide both; the pipeline uses both after merging. Both kinds
+/// report which variant is OS-active through `is_dark`, which decides `mode`.
+pub(crate) fn run_pipeline(reader: ReaderResult, preset_name: &str) -> crate::Result<SystemTheme> {
+    let mode = reader.output.mode();
     let ReaderResult {
         output: reader_output,
         name: reader_name,
@@ -31,54 +31,71 @@ pub(crate) fn run_pipeline(
         accessibility,
     } = reader;
 
-    let live_preset = Theme::preset(preset_name)?;
+    // Build ONE resolution-time context for this theme-build. The reader
+    // may have supplied an authoritative font_dpi (e.g. KDE's, from `kcmfonts`' forceFontDPI);
+    // when it does, the context takes it and no DPI detection runs again.
+    // button_order + icon_theme are platform-detected as from_system()'s.
+    let context = match font_dpi {
+        Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(
+            dpi,
+            crate::detect::system_icon_theme(),
+        ),
+        None => crate::resolve::ResolutionContext::from_system(),
+    };
 
-    // For the inactive variant, load the full preset (with colors).
-    // Falls back to original name if not a live preset (e.g. user preset).
-    let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
-    debug_assert!(
-        full_preset_name != preset_name || !preset_name.ends_with("-live"),
-        "live preset '{preset_name}' should have -live suffix stripped"
+    let source = OverlaySource {
+        reader_output,
+        name: reader_name,
+        icon_set: reader_icon_set,
+        layout: reader_layout,
+        preset_name: preset_name.to_string(),
+        context,
+        overlay: None,
+    };
+    replay(source, mode, accessibility)
+}
+
+/// Merge and resolve what `source` holds: the platform preset provides the
+/// defaults, the reader output live OS data on top, the app's overlays (if
+/// any) their changes over both. Shared by [`run_pipeline`] and
+/// [`SystemTheme::with_overlay`], which replays its source with one more
+/// overlay.
+pub(crate) fn replay(
+    source: OverlaySource,
+    mode: crate::ColorMode,
+    accessibility: crate::AccessibilityPreferences,
+) -> crate::Result<SystemTheme> {
+    // A `Single` reader states no inactive variant, so the merge keeps the
+    // preset's own there; a `Dual` reader's two variants go over the preset's.
+    let mut merged = Theme::preset(&source.preset_name)?;
+    merged.merge(
+        &source
+            .reader_output
+            .to_theme(&source.name, source.icon_set, &source.layout),
     );
-    let full_preset = Theme::preset(full_preset_name)?;
-
-    // Reconstruct a Theme from the type-safe ReaderOutput for merge
-    let reader_as_theme = reader_output.to_theme(&reader_name, reader_icon_set, &reader_layout);
-
-    // Merge: full preset provides color/font defaults, live preset overrides
-    // geometry, reader output provides live OS data on top.
-    let mut merged = full_preset.clone();
-    merged.merge(&live_preset);
-    merged.merge(&reader_as_theme);
+    if let Some(overlay) = &source.overlay {
+        merged.merge(overlay);
+    }
 
     // Keep reader name if non-empty, else use preset name
-    let name = if reader_name.is_empty() {
+    let name = if source.name.is_empty() {
         merged.name.clone()
     } else {
-        reader_name.clone()
+        source.name.clone()
     };
 
     // Resolve icon_set from Theme level (shared across variants)
     let icon_set = merged
         .icon_set
-        .unwrap_or_else(crate::model::icons::system_icon_set);
-
-    // Build ONE resolution-time context for this theme-build. The reader
-    // may have supplied an authoritative font_dpi (e.g. KDE forceFontDPI);
-    // when it does we override ctx.font_dpi. button_order + icon_theme
-    // come from the from_system() defaults (platform-detected).
-    let mut ctx = crate::resolve::ResolutionContext::from_system();
-    if let Some(dpi) = font_dpi {
-        ctx.font_dpi = dpi;
-    }
+        .unwrap_or_else(crate::detect::system_icon_set);
 
     // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
     //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)
     //   Tier 2: shared Theme-level value (`Theme::icon_theme`)
-    //   Tier 3: runtime system detect (from `ctx.icon_theme`)
+    //   Tier 3: runtime system detect (from `context.icon_theme`)
     // Must read before variants are consumed by unwrap_or_default().
     // None where no tier names a theme: the TOML states none and detection
-    // failed (`ctx.icon_theme` is then None). No theme stands in for it.
+    // failed (`context.icon_theme` is then None). No theme stands in for it.
     // Both variants are resolved, kept by variant (`SystemTheme::icon_theme_for`);
     // `icon_theme` is the active mode's copy.
     let icon_theme_of =
@@ -87,7 +104,7 @@ pub(crate) fn run_pipeline(
                 .as_ref()
                 .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
                 .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
-                .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
+                .or_else(|| source.context.icon_theme.clone()) // tier 3: pre-detected system
         };
     let light_icon_theme = icon_theme_of(&merged.light);
     let dark_icon_theme = icon_theme_of(&merged.dark);
@@ -96,58 +113,34 @@ pub(crate) fn run_pipeline(
         crate::ColorMode::Dark => dark_icon_theme.clone(),
     };
 
-    // Shared across variants; read before the variants are moved out of `merged`.
-    let layout = merged.layout.clone();
+    // Shared across variants.
+    crate::resolve::validate_helpers::check_font_dpi(source.context.font_dpi)?;
+    crate::resolve::validate_helpers::check_layout(&merged.layout)?;
 
-    // Match on ReaderOutput for type-safe variant selection:
-    // Single: active variant from merged, inactive from full preset.
-    // Dual: both variants from merged.
-    let (light_variant, dark_variant) = match &reader_output {
-        ReaderOutput::Single { is_dark, .. } => {
-            if *is_dark {
-                (
-                    full_preset.light.unwrap_or_default(),
-                    merged.dark.unwrap_or_default(),
-                )
-            } else {
-                (
-                    merged.light.unwrap_or_default(),
-                    full_preset.dark.unwrap_or_default(),
-                )
-            }
-        }
-        ReaderOutput::Dual { .. } => (
-            merged.light.unwrap_or_default(),
-            merged.dark.unwrap_or_default(),
-        ),
-    };
-
-    let light = light_variant.into_resolved(&ctx)?;
-    let dark = dark_variant.into_resolved(&ctx)?;
-
-    // Build OverlaySource from the original reader data + pipeline parameters
-    let overlay_source = OverlaySource {
-        reader_output,
-        name: reader_name,
-        icon_set: reader_icon_set,
-        layout: reader_layout,
-        preset_name: preset_name.to_string(),
-        context: ctx,
-    };
+    let light = merged
+        .light
+        .unwrap_or_default()
+        .into_resolved(&source.context)
+        .map_err(|e| e.in_variant(crate::ColorMode::Light))?;
+    let dark = merged
+        .dark
+        .unwrap_or_default()
+        .into_resolved(&source.context)
+        .map_err(|e| e.in_variant(crate::ColorMode::Dark))?;
 
     Ok(SystemTheme {
         name,
         mode,
         light,
         dark,
-        overlay_source,
-        preset: full_preset_name.to_string(),
-        live_preset: preset_name.to_string(),
+        preset: source.preset_name.clone(),
+        overlay_source: source,
+        version_match: None,
         icon_set,
         icon_theme,
         light_icon_theme,
         dark_icon_theme,
-        layout,
+        layout: merged.layout,
         accessibility,
     })
 }
@@ -231,6 +224,16 @@ pub enum DiagnosticEntry {
         /// Human-readable description of what is lost.
         impact: &'static str,
     },
+    /// The running OS version and the preset of its generation (macOS and
+    /// Windows, with their reader feature).
+    OsGeneration {
+        /// The running OS version: macOS `major.minor.patch`, Windows `10.0.build`.
+        version: String,
+        /// The preset of that version's generation.
+        preset: &'static str,
+        /// How the version relates to the preset's generation.
+        version_match: VersionMatch,
+    },
 }
 
 impl DiagnosticEntry {
@@ -250,6 +253,7 @@ impl DiagnosticEntry {
             | Self::ToolMissing { name, .. } => name,
             Self::ConfigFound { name, .. } | Self::ConfigMissing { name, .. } => name,
             Self::FeatureEnabled(feature) | Self::FeatureDisabled { feature, .. } => feature,
+            Self::OsGeneration { .. } => "OS version",
         }
     }
 
@@ -270,6 +274,7 @@ impl DiagnosticEntry {
             Self::ConfigMissing { .. } => "not found",
             Self::FeatureEnabled(_) => "enabled",
             Self::FeatureDisabled { .. } => "disabled",
+            Self::OsGeneration { version, .. } => version.as_str(),
         }
     }
 
@@ -285,6 +290,11 @@ impl DiagnosticEntry {
             Self::ConfigFound { path, .. } | Self::ConfigMissing { path, .. } => {
                 Some(path.display().to_string())
             }
+            Self::OsGeneration {
+                preset,
+                version_match,
+                ..
+            } => Some(format!("{preset}, {version_match}")),
             _ => None,
         }
     }
@@ -313,6 +323,11 @@ impl fmt::Display for DiagnosticEntry {
             Self::FeatureDisabled { feature, impact } => {
                 write!(f, "{feature} support: disabled ({impact})")
             }
+            Self::OsGeneration {
+                version,
+                preset,
+                version_match,
+            } => write!(f, "OS version: {version} ({preset}, {version_match})"),
         }
     }
 }
@@ -320,35 +335,14 @@ impl fmt::Display for DiagnosticEntry {
 /// Structured information about the platform's default preset.
 ///
 /// Returned by [`platform_preset_name()`]. The `name` field is the
-/// user-facing preset name (e.g. `"macos-sonoma"`). The `is_live` field
-/// indicates whether the preset is a live preset (no colours or font
-/// families) used
-/// by the OS-first pipeline.
+/// user-facing preset name (e.g. `"macos-monterey"`), the preset the OS-first
+/// pipeline merges the platform reader's output over.
 ///
 /// `Display` returns the user-facing name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PlatformPreset {
-    /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-sonoma").
+    /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-monterey").
     pub name: &'static str,
-    /// Whether this is a live preset (the merge base for OS readers: no
-    /// colours or font families).
-    pub is_live: bool,
-}
-
-impl PlatformPreset {
-    /// Returns the internal live preset name (e.g. `"kde-breeze-live"`)
-    /// when `is_live` is true, or the plain name when not.
-    ///
-    /// This is used internally by the pipeline to look up the correct
-    /// preset entry; callers should use [`name`](Self::name) for display.
-    #[must_use]
-    pub fn live_name(&self) -> String {
-        if self.is_live {
-            format!("{}-live", self.name)
-        } else {
-            self.name.to_string()
-        }
-    }
 }
 
 impl fmt::Display for PlatformPreset {
@@ -357,79 +351,348 @@ impl fmt::Display for PlatformPreset {
     }
 }
 
+// =============================================================================
+// OS generations (M1-T1-01)
+// =============================================================================
+
+/// How the running OS version relates to the generation of the preset the
+/// pipeline merged the platform reader's output over
+/// ([`SystemTheme::version_match`](crate::SystemTheme::version_match)).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum VersionMatch {
+    /// The running version lies between the first version of the preset's
+    /// generation and the newest version its values were verified on.
+    Exact,
+    /// The running OS is newer than any version the preset was verified on:
+    /// the preset may carry an older look than the OS draws (macOS 27 under
+    /// `macos-tahoe`).
+    PresetOlder,
+    /// The running OS predates the preset's generation: the preset carries a
+    /// newer look than the OS draws (Windows 10 under `windows-11`).
+    PresetNewer,
+}
+
+impl VersionMatch {
+    /// A short label: `"exact"`, `"preset older than the OS"` or
+    /// `"preset newer than the OS"`.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Exact => "exact",
+            Self::PresetOlder => "preset older than the OS",
+            Self::PresetNewer => "preset newer than the OS",
+        }
+    }
+}
+
+impl fmt::Display for VersionMatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// An OS version as the generation tables compare it: macOS
+/// `major.minor.patch`, Windows `10.0.build`.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct OsVersion {
+    pub(crate) major: u32,
+    pub(crate) minor: u32,
+    pub(crate) build: u32,
+}
+
+impl OsVersion {
+    #[cfg_attr(
+        not(any(
+            all(target_os = "macos", feature = "macos"),
+            all(target_os = "windows", feature = "windows")
+        )),
+        allow(dead_code)
+    )]
+    pub(crate) const fn new(major: u32, minor: u32, build: u32) -> Self {
+        Self {
+            major,
+            minor,
+            build,
+        }
+    }
+}
+
+impl fmt::Display for OsVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.build)
+    }
+}
+
+/// One visual generation of a platform: the preset that carries its look,
+/// the first OS version of that look, and the newest version its values were
+/// verified on.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Generation {
+    pub(crate) preset: &'static str,
+    pub(crate) first: OsVersion,
+    pub(crate) last_verified: OsVersion,
+}
+
+/// A platform's generations, oldest first; never empty, `oldest` being a field.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct GenerationTable {
+    pub(crate) oldest: Generation,
+    /// The newer generations, in ascending order of `first`.
+    pub(crate) newer: &'static [Generation],
+    /// Every row's preset, oldest first: the names
+    /// [`SystemTheme::from_system_with_preset`](crate::SystemTheme::from_system_with_preset)
+    /// accepts on the platform.
+    pub(crate) keys: &'static [&'static str],
+}
+
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+impl GenerationTable {
+    /// The rows, oldest first.
+    fn rows(&self) -> impl Iterator<Item = Generation> + '_ {
+        std::iter::once(self.oldest).chain(self.newer.iter().copied())
+    }
+
+    /// The row whose preset is `preset`.
+    fn row(&self, preset: &str) -> Option<Generation> {
+        self.rows().find(|g| g.preset == preset)
+    }
+}
+
+/// macOS. `macos-monterey`: the look from macOS 12, whose AppKit release notes
+/// end the accent highlight of a clicked button (M2a Step 7, plan D8), verified
+/// on 14.8.9 and 15.7.9 by the OS probe; `macos-tahoe`: Liquid Glass from 26
+/// (M2a Step 1's version map), verified on 26.6.2 (`docs/evidence/os-probe/
+/// 2026-10-11-run-38129819806`). Apple's generations change at a major version,
+/// so [`macos_generation`] compares majors. macOS 27 refines Liquid Glass and
+/// gets no row until a preset is verified on it (plan D4): it maps to
+/// `macos-tahoe`, reported as [`VersionMatch::PresetOlder`].
+///
+/// Major version 16: early macOS 26 betas reported 16 to a binary built
+/// against the macOS 15 SDK ("When built against the 15 SDK or earlier, Tahoe
+/// returns 16 for compatibility with previous numbering and all existing
+/// apps", <https://eclecticlight.co/2025/06/13/is-tahoe-really-macos-26-or-16/>,
+/// 2025-06-13). From beta 3, `NSOperatingSystemVersion` reports 26 even for
+/// such a build (that page's comments, 2025-07-28); Apple Developer Forums
+/// thread 791906 reports the same for the `kern.osproductversion` sysctl
+/// (<https://developer.apple.com/forums/thread/791906>). No
+/// source covers what the released OS reports. If a major version 16 is ever
+/// read, this table gives `macos-monterey` with [`VersionMatch::PresetOlder`]
+/// (no OS probe verified 16), which `generation_tests` pins.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) const MACOS_GENERATIONS: GenerationTable = GenerationTable {
+    oldest: Generation {
+        preset: "macos-monterey",
+        first: OsVersion::new(12, 0, 0),
+        last_verified: OsVersion::new(15, 0, 0),
+    },
+    newer: &[Generation {
+        preset: "macos-tahoe",
+        first: OsVersion::new(26, 0, 0),
+        last_verified: OsVersion::new(26, 0, 0),
+    }],
+    keys: &["macos-monterey", "macos-tahoe"],
+};
+
+/// Windows. `windows-11`: the Fluent / WinUI 3 look from build 22000 (21H2;
+/// M2b Step 1's version map), verified on build 26200 (25H2, the OS probe's
+/// `windows-11-arm` image). Windows 10 has no preset of its own (M2b Step 7,
+/// plan D9: a documented limit): it gets `windows-11`, reported as
+/// [`VersionMatch::PresetNewer`].
+#[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+pub(crate) const WINDOWS_GENERATIONS: GenerationTable = GenerationTable {
+    oldest: Generation {
+        preset: "windows-11",
+        first: OsVersion::new(10, 0, 22000),
+        last_verified: OsVersion::new(10, 0, 26200),
+    },
+    newer: &[],
+    keys: &["windows-11"],
+};
+
+/// How `running` relates to `row`'s generation.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn version_match(row: &Generation, running: OsVersion) -> VersionMatch {
+    if running < row.first {
+        VersionMatch::PresetNewer
+    } else if running > row.last_verified {
+        VersionMatch::PresetOlder
+    } else {
+        VersionMatch::Exact
+    }
+}
+
+/// The generation of `running` in `table`: the newest row whose first version
+/// is not newer than `running`, or the oldest row where `running` predates
+/// them all; with how `running` relates to it.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn preset_for_version(
+    table: &GenerationTable,
+    running: OsVersion,
+) -> (PlatformPreset, VersionMatch) {
+    let row = table
+        .newer
+        .iter()
+        .rev()
+        .find(|g| g.first <= running)
+        .copied()
+        .unwrap_or(table.oldest);
+    (
+        PlatformPreset { name: row.preset },
+        version_match(&row, running),
+    )
+}
+
+/// `running` reduced to its major version, the macOS table's granularity.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) fn macos_major(running: OsVersion) -> OsVersion {
+    OsVersion::new(running.major, 0, 0)
+}
+
+/// The macOS generation of a running macOS version, by its major version.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) fn macos_generation(running: OsVersion) -> (PlatformPreset, VersionMatch) {
+    preset_for_version(&MACOS_GENERATIONS, macos_major(running))
+}
+
+/// The Windows generation of a running Windows build.
+#[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+pub(crate) fn windows_generation(running: OsVersion) -> (PlatformPreset, VersionMatch) {
+    preset_for_version(&WINDOWS_GENERATIONS, running)
+}
+
 /// Map a Linux desktop environment to its matching platform preset.
 ///
-/// This is the single source of truth for the DE-to-preset mapping used
-/// by [`from_system_inner()`] and [`platform_preset_name()`].
+/// [`select_reader`] and [`platform_preset_name()`] both map the refined
+/// desktop through it ([`crate::detect::refine_linux_desktop`]). For
+/// `Unknown`, [`select_reader`] first asks the portal backend (async D-Bus,
+/// with the `portal` feature) and uses its answer, KDE or GNOME, either way;
+/// only where no portal backend answers does it check for `kdeglobals`.
+/// [`platform_preset_name()`] cannot ask the portal: it takes the desktop a
+/// system read refined, and before one only the `kdeglobals` check, so with
+/// the `kde` and `portal` features the two can differ until then, in both
+/// directions where a portal backend answers: a KDE backend without
+/// `kdeglobals` gives `kde-breeze` in `from_system` and `adwaita` in
+/// [`platform_preset_name()`], a GNOME backend with `kdeglobals` gives
+/// `adwaita` in `from_system` and `kde-breeze` in [`platform_preset_name()`].
 ///
-/// - KDE -> `PlatformPreset { name: "kde-breeze", is_live: true }`
+/// - KDE -> `PlatformPreset { name: "kde-breeze" }`
 /// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
-///   -> `PlatformPreset { name: "adwaita", is_live: true }`
+///   -> `PlatformPreset { name: "adwaita" }`
 #[cfg(target_os = "linux")]
 pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
     match de {
-        LinuxDesktop::Kde => PlatformPreset {
-            name: "kde-breeze",
-            is_live: true,
-        },
-        _ => PlatformPreset {
-            name: "adwaita",
-            is_live: true,
-        },
+        LinuxDesktop::Kde => PlatformPreset { name: "kde-breeze" },
+        _ => PlatformPreset { name: "adwaita" },
     }
 }
 
 /// Map the current platform to its matching platform preset.
 ///
-/// Live presets state no colours and no font families: geometry, metrics,
-/// font and icon sizes, and (except `kde-breeze-live`) the theme-level
-/// `icon_theme`. They are used as the merge base in the OS-first pipeline. Use
-/// [`PlatformPreset::live_name()`] to get the internal live preset key.
+/// The preset is the merge base in the OS-first pipeline: the platform
+/// reader's output is merged over it.
 ///
-/// - macOS -> `PlatformPreset { name: "macos-sonoma", is_live: true }`
-/// - Windows -> `PlatformPreset { name: "windows-11", is_live: true }`
-/// - Linux KDE -> `PlatformPreset { name: "kde-breeze", is_live: true }`
-/// - Linux other/GNOME -> `PlatformPreset { name: "adwaita", is_live: true }`
-/// - Unknown platform -> `PlatformPreset { name: "adwaita", is_live: true }`
+/// - macOS -> the running version's generation: `macos-monterey` on 12 to 15,
+///   `macos-tahoe` on 26 and later; `macos-monterey` without the `macos`
+///   feature, which reads the version
+/// - Windows -> `PlatformPreset { name: "windows-11" }`, the one Windows generation
+/// - Linux KDE -> `PlatformPreset { name: "kde-breeze" }`; an unrecognised
+///   desktop with a `kdeglobals` file counts as KDE (with the `kde` feature)
+/// - Linux other/GNOME -> `PlatformPreset { name: "adwaita" }`
+/// - Unknown platform -> `PlatformPreset { name: "adwaita" }`
 ///
-/// Returns a [`PlatformPreset`] with the user-facing preset name and
-/// whether it is a live (geometry-only) preset. Showcase UIs use
-/// `preset.name` to build the "default (...)" label.
+/// On an unrecognised Linux desktop `from_system` first asks the portal
+/// backend over D-Bus (with the `portal` feature) and uses its answer, KDE
+/// or GNOME, either way; only where no portal backend answers does it check
+/// for `kdeglobals`. This synchronous function does not ask the portal: it
+/// takes the desktop the last system read (`from_system`, `from_system_async`,
+/// [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system))
+/// refined, until [`invalidate_caches()`](crate::detect::invalidate_caches);
+/// before one it runs only the `kdeglobals` check, so with the `kde` and
+/// `portal` features the two can then differ in both directions where a
+/// portal backend answers: a KDE backend without `kdeglobals` gives
+/// `kde-breeze` in `from_system` and `adwaita` here, a GNOME backend with
+/// `kdeglobals` gives `adwaita` in `from_system` and `kde-breeze` here.
+///
+/// Returns a [`PlatformPreset`] with the user-facing preset name. Showcase
+/// UIs use `preset.name` to build the "default (...)" label.
 ///
 /// # Examples
 ///
 /// ```
 /// let preset = native_theme::pipeline::platform_preset_name();
 /// println!("Platform preset: {}", preset.name);
-/// assert!(!preset.name.contains("-live"));
 /// ```
-#[allow(unreachable_code)]
 #[must_use]
 pub fn platform_preset_name() -> PlatformPreset {
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "macos"))]
     {
-        return PlatformPreset {
-            name: "macos-sonoma",
-            is_live: true,
-        };
+        macos_generation(crate::macos::os_version()).0
     }
-    #[cfg(target_os = "windows")]
+    // Without the reader feature the version cannot be read: the oldest
+    // generation's preset.
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
     {
-        return PlatformPreset {
-            name: "windows-11",
-            is_live: true,
-        };
+        PlatformPreset {
+            name: MACOS_GENERATIONS.oldest.preset,
+        }
+    }
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    {
+        windows_generation(crate::windows::os_version()).0
+    }
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    {
+        PlatformPreset {
+            name: WINDOWS_GENERATIONS.oldest.preset,
+        }
     }
     #[cfg(target_os = "linux")]
     {
-        linux_preset_for_de(detect_linux_desktop())
+        linux_preset_for_de(crate::detect::system().refined_linux_desktop_sync())
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        PlatformPreset {
-            name: "adwaita",
-            is_live: true,
-        }
+        PlatformPreset { name: "adwaita" }
     }
 }
 
@@ -448,8 +711,12 @@ pub fn platform_preset_name() -> PlatformPreset {
 /// - **Linux:** Reports detected desktop environment, `gsettings`
 ///   availability, `XDG_CURRENT_DESKTOP` value, and KDE config file
 ///   presence (when the `kde` feature is enabled).
-/// - **macOS:** Reports whether the `macos` feature is enabled.
-/// - **Windows:** Reports whether the `windows` feature is enabled.
+/// - **macOS:** Reports whether the `macos` feature is enabled and, with it,
+///   the running version and its generation's preset
+///   ([`DiagnosticEntry::OsGeneration`]).
+/// - **Windows:** Reports whether the `windows` feature is enabled and, with
+///   it, the running version and its generation's preset
+///   ([`DiagnosticEntry::OsGeneration`]).
 /// - **Other:** Reports that no platform detection is available.
 ///
 /// # Examples
@@ -485,10 +752,11 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         }
 
         // Check gsettings availability
-        match std::process::Command::new("gsettings")
-            .arg("--version")
-            .output()
-        {
+        match crate::detect::run_with_timeout(
+            "gsettings",
+            &["--version"],
+            crate::detect::SUBPROCESS_TIMEOUT,
+        ) {
             Ok(output) if output.status.success() => {
                 let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 diagnostics.push(DiagnosticEntry::ToolAvailable {
@@ -496,31 +764,34 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
                     version,
                 });
             }
-            Ok(_) => {
-                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
-            }
-            Err(_) => {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 diagnostics.push(DiagnosticEntry::ToolMissing {
                     name: "gsettings",
                     impact: "dark mode and icon theme detection may be limited",
                 });
+            }
+            Ok(_) | Err(_) => {
+                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
             }
         }
 
         // Check KDE config files
         #[cfg(feature = "kde")]
         {
-            let path = crate::kde::kdeglobals_path();
-            if path.exists() {
-                diagnostics.push(DiagnosticEntry::ConfigFound {
-                    name: "KDE kdeglobals",
-                    path,
-                });
-            } else {
-                diagnostics.push(DiagnosticEntry::ConfigMissing {
-                    name: "KDE kdeglobals",
-                    path,
-                });
+            match crate::kde::kdeglobals_path() {
+                Some(path) if path.exists() => {
+                    diagnostics.push(DiagnosticEntry::ConfigFound {
+                        name: "KDE kdeglobals",
+                        path,
+                    });
+                }
+                Some(path) => {
+                    diagnostics.push(DiagnosticEntry::ConfigMissing {
+                        name: "KDE kdeglobals",
+                        path,
+                    });
+                }
+                None => diagnostics.push(DiagnosticEntry::EnvVarMissing("HOME")),
             }
         }
 
@@ -548,7 +819,16 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         diagnostics.push(DiagnosticEntry::Platform("macOS"));
 
         #[cfg(feature = "macos")]
-        diagnostics.push(DiagnosticEntry::FeatureEnabled("macOS theme detection"));
+        {
+            diagnostics.push(DiagnosticEntry::FeatureEnabled("macOS theme detection"));
+            let running = crate::macos::os_version();
+            let (preset, version_match) = macos_generation(running);
+            diagnostics.push(DiagnosticEntry::OsGeneration {
+                version: running.to_string(),
+                preset: preset.name,
+                version_match,
+            });
+        }
 
         #[cfg(not(feature = "macos"))]
         diagnostics.push(DiagnosticEntry::FeatureDisabled {
@@ -562,7 +842,16 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         diagnostics.push(DiagnosticEntry::Platform("Windows"));
 
         #[cfg(feature = "windows")]
-        diagnostics.push(DiagnosticEntry::FeatureEnabled("Windows theme detection"));
+        {
+            diagnostics.push(DiagnosticEntry::FeatureEnabled("Windows theme detection"));
+            let running = crate::windows::os_version();
+            let (preset, version_match) = windows_generation(running);
+            diagnostics.push(DiagnosticEntry::OsGeneration {
+                version: running.to_string(),
+                preset: preset.name,
+                version_match,
+            });
+        }
 
         #[cfg(not(feature = "windows"))]
         diagnostics.push(DiagnosticEntry::FeatureDisabled {
@@ -608,15 +897,42 @@ fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<
     })
 }
 
+/// The platform reader [`select_reader`] picked, the preset its output merges
+/// over, and how the running OS version relates to that preset's generation.
+pub(crate) struct SelectedReader {
+    /// The platform reader.
+    pub(crate) reader: Box<dyn crate::reader::ThemeReader>,
+    /// The platform preset [`run_pipeline`] merges the reader's output over.
+    pub(crate) preset: &'static str,
+    /// `None` where the platform has no generation table (Linux).
+    pub(crate) version_match: Option<VersionMatch>,
+}
+
+impl SelectedReader {
+    /// A reader of a platform without a generation table (Linux).
+    #[cfg_attr(
+        not(all(target_os = "linux", any(feature = "kde", feature = "portal"))),
+        allow(dead_code)
+    )]
+    fn unversioned(reader: Box<dyn crate::reader::ThemeReader>, preset: &'static str) -> Self {
+        Self {
+            reader,
+            preset,
+            version_match: None,
+        }
+    }
+}
+
 /// Platform + DE + feature cascade that picks the appropriate
 /// [`crate::reader::ThemeReader`] impl for the current system.
 ///
 /// Returns `None` when no reader is available and the caller must fall back
 /// to a preset-only pipeline (non-KDE/GNOME Linux, unsupported platforms, or
-/// platforms whose reader feature is disabled). When `Some`, the companion
-/// `&'static str` is the `-live` preset name that should be passed to
-/// [`run_pipeline`] — the reader and the preset are tied because the preset
-/// is chosen from the detected DE.
+/// platforms whose reader feature is disabled). When `Some`, the
+/// [`SelectedReader`] names the platform preset to pass to [`run_pipeline`] —
+/// the reader and the preset are tied because the preset is chosen from the
+/// detected DE on Linux and from the running version's generation on macOS
+/// and Windows ([`preset_for_version`]).
 ///
 /// Per plan 94-03 §G8: the `Box<dyn ThemeReader>` trait object is object-safe
 /// only because the trait carries a `#[async_trait::async_trait]` annotation
@@ -624,12 +940,17 @@ fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<
 #[allow(unreachable_code)]
 #[allow(clippy::unnecessary_wraps)] // Option is part of the public contract.
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated dispatch.
-async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> {
+async fn select_reader() -> Option<SelectedReader> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
         {
-            return Some((Box::new(crate::macos::MacosReader), "macos-sonoma-live"));
+            let (preset, matched) = macos_generation(crate::macos::os_version());
+            return Some(SelectedReader {
+                reader: Box::new(crate::macos::MacosReader),
+                preset: preset.name,
+                version_match: Some(matched),
+            });
         }
         #[cfg(not(feature = "macos"))]
         return None;
@@ -639,7 +960,12 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
     {
         #[cfg(feature = "windows")]
         {
-            return Some((Box::new(crate::windows::WindowsReader), "windows-11-live"));
+            let (preset, matched) = windows_generation(crate::windows::os_version());
+            return Some(SelectedReader {
+                reader: Box::new(crate::windows::WindowsReader),
+                preset: preset.name,
+                version_match: Some(matched),
+            });
         }
         #[cfg(not(feature = "windows"))]
         return None;
@@ -647,69 +973,7 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 
     #[cfg(target_os = "linux")]
     {
-        let de = detect_linux_desktop();
-        match de {
-            #[cfg(all(feature = "kde", feature = "portal"))]
-            LinuxDesktop::Kde => {
-                return Some((
-                    Box::new(crate::gnome::GnomePortalKdeReader),
-                    "kde-breeze-live",
-                ));
-            }
-            #[cfg(all(feature = "kde", not(feature = "portal")))]
-            LinuxDesktop::Kde => {
-                return Some((Box::new(crate::kde::KdeReader), "kde-breeze-live"));
-            }
-            #[cfg(not(feature = "kde"))]
-            LinuxDesktop::Kde => return None,
-            #[cfg(feature = "portal")]
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                return Some((Box::new(crate::gnome::GnomeReader), "adwaita-live"));
-            }
-            #[cfg(not(feature = "portal"))]
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => return None,
-            LinuxDesktop::Xfce
-            | LinuxDesktop::Cinnamon
-            | LinuxDesktop::Mate
-            | LinuxDesktop::LxQt
-            | LinuxDesktop::Hyprland
-            | LinuxDesktop::Sway
-            | LinuxDesktop::River
-            | LinuxDesktop::Niri
-            | LinuxDesktop::Wayfire
-            | LinuxDesktop::CosmicDe => return None,
-            LinuxDesktop::Unknown => {
-                // Refine heuristic via D-Bus portal backend detection
-                #[cfg(feature = "portal")]
-                {
-                    if let Some(detected) = crate::gnome::detect_portal_backend().await {
-                        return match detected {
-                            #[cfg(feature = "kde")]
-                            LinuxDesktop::Kde => Some((
-                                Box::new(crate::gnome::GnomePortalKdeReader),
-                                "kde-breeze-live",
-                            )),
-                            #[cfg(not(feature = "kde"))]
-                            LinuxDesktop::Kde => None,
-                            LinuxDesktop::Gnome => {
-                                Some((Box::new(crate::gnome::GnomeReader), "adwaita-live"))
-                            }
-                            // detect_portal_backend only returns Kde or Gnome;
-                            // any future extension falls back to Adwaita preset.
-                            _ => None,
-                        };
-                    }
-                }
-                // Sync fallback: try kdeglobals, then Adwaita
-                #[cfg(feature = "kde")]
-                {
-                    if crate::kde::kdeglobals_path().exists() {
-                        return Some((Box::new(crate::kde::KdeReader), "kde-breeze-live"));
-                    }
-                }
-                return None;
-            }
-        }
+        return linux_reader(crate::detect::system().refined_linux_desktop().await);
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
@@ -718,13 +982,84 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
     }
 }
 
+/// A Linux platform reader.
+#[cfg(target_os = "linux")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LinuxReader {
+    /// [`crate::kde::KdeReader`].
+    #[cfg(feature = "kde")]
+    Kde,
+    /// [`crate::gnome::GnomePortalKdeReader`]: the KDE reader with the
+    /// portal's accent colour.
+    #[cfg(all(feature = "kde", feature = "portal"))]
+    PortalKde,
+    /// [`crate::gnome::GnomeReader`].
+    #[cfg(feature = "portal")]
+    Gnome,
+}
+
+/// The reader of `refined`, the refined desktop
+/// ([`crate::detect::refine_desktop`]) the watcher and the icon-theme
+/// detection also decide by: KDE's, with the portal's accent colour where the
+/// `portal` feature is on and `XDG_CURRENT_DESKTOP` or the portal backend
+/// named KDE; GNOME's for GNOME and Budgie; `None` for the other desktops and
+/// where the reader's feature is off. A KDE named by `kdeglobals` alone gets
+/// the plain KDE reader: no portal backend answered, so an accent read would
+/// ask a portal that is not KDE's, or wait out a second deadline.
+#[cfg(target_os = "linux")]
+fn linux_reader_kind(refined: crate::detect::RefinedDesktop) -> Option<LinuxReader> {
+    match refined.desktop {
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxDesktop::Kde if refined.by_kdeglobals => Some(LinuxReader::Kde),
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxDesktop::Kde => Some(LinuxReader::PortalKde),
+        #[cfg(all(feature = "kde", not(feature = "portal")))]
+        LinuxDesktop::Kde => Some(LinuxReader::Kde),
+        #[cfg(not(feature = "kde"))]
+        LinuxDesktop::Kde => None,
+        #[cfg(feature = "portal")]
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => Some(LinuxReader::Gnome),
+        #[cfg(not(feature = "portal"))]
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => None,
+        LinuxDesktop::Xfce
+        | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate
+        | LinuxDesktop::LxQt
+        | LinuxDesktop::Hyprland
+        | LinuxDesktop::Sway
+        | LinuxDesktop::River
+        | LinuxDesktop::Niri
+        | LinuxDesktop::Wayfire
+        | LinuxDesktop::CosmicDe
+        | LinuxDesktop::Unknown => None,
+    }
+}
+
+/// [`linux_reader_kind`]'s reader, with the preset of `refined`'s desktop.
+#[cfg(target_os = "linux")]
+// Without `kde` and `portal` there is no reader: `LinuxReader` has no variant.
+#[cfg_attr(not(any(feature = "kde", feature = "portal")), allow(unreachable_code))]
+fn linux_reader(refined: crate::detect::RefinedDesktop) -> Option<SelectedReader> {
+    let reader: Box<dyn crate::reader::ThemeReader> = match linux_reader_kind(refined)? {
+        #[cfg(feature = "kde")]
+        LinuxReader::Kde => Box::new(crate::kde::KdeReader),
+        #[cfg(all(feature = "kde", feature = "portal"))]
+        LinuxReader::PortalKde => Box::new(crate::gnome::GnomePortalKdeReader),
+        #[cfg(feature = "portal")]
+        LinuxReader::Gnome => Box::new(crate::gnome::GnomeReader),
+    };
+    Some(SelectedReader::unversioned(
+        reader,
+        linux_preset_for_de(refined.desktop).name,
+    ))
+}
+
 /// Single async implementation for all platforms. On Linux this may contain
 /// `.await` points (portal D-Bus calls); on macOS/Windows the future resolves
 /// immediately (no `.await` points).
 ///
 /// Called by:
-/// - `from_system()` via `pollster::block_on` on Linux, noop-waker single-poll
-///   on non-Linux.
+/// - `from_system()` via `pollster::block_on`.
 /// - `from_system_async()` via `.await`.
 ///
 /// Delegates platform detection to [`select_reader`]: when a reader is
@@ -733,19 +1068,15 @@ async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'stati
 #[allow(unreachable_code)]
 #[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated fallback.
 pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
-    if let Some((reader, preset_live)) = select_reader().await {
-        let result = reader.read().await?;
-        let mode = match &result.output {
-            ReaderOutput::Single { is_dark, .. } => {
-                if *is_dark {
-                    crate::ColorMode::Dark
-                } else {
-                    crate::ColorMode::Light
-                }
-            }
-            ReaderOutput::Dual { .. } => crate::ColorMode::Light,
-        };
-        return run_pipeline(result, preset_live, mode);
+    if let Some(selected) = select_reader().await {
+        let mut theme = read_through_pipeline(
+            selected.reader.as_ref(),
+            selected.preset,
+            crate::detect::system(),
+        )
+        .await?;
+        theme.version_match = selected.version_match;
+        return Ok(theme);
     }
 
     // Preset-only fallback paths — no reader available for this
@@ -766,42 +1097,161 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     }
     #[cfg(target_os = "linux")]
     {
-        let mode = if system_is_dark() {
-            crate::ColorMode::Dark
-        } else {
-            crate::ColorMode::Light
-        };
-        let preset_live = linux_preset_for_de(detect_linux_desktop()).live_name();
-        return run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode);
+        return linux_fallback(
+            platform_preset_name(),
+            crate::detect::detect_is_dark(),
+            readerless_accessibility(),
+        );
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         Err(crate::Error::PlatformUnsupported {
-            platform: "unsupported",
+            platform: std::env::consts::OS,
         })
     }
 }
 
-/// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
-/// runs the same platform reader `from_system_inner` would run and returns its
-/// accessibility block without merging or resolving a theme. Where no reader
-/// is available (or it fails) the defaults are used. `reduce_motion` is OR-ed
-/// with [`crate::detect::detect_reduced_motion`], a floor for the cases where
-/// no reader supplies it and it stays at its default: Linux outside KDE and
-/// GNOME, and macOS or Windows builds without their reader feature. A reader's
-/// own `true` is never downgraded (spec §11.2).
-pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
-    let mut prefs = match select_reader().await {
-        Some((reader, _preset)) => match reader.read().await {
-            Ok(result) => result.accessibility,
-            Err(_) => crate::AccessibilityPreferences::default(),
-        },
-        None => crate::AccessibilityPreferences::default(),
+/// The Linux theme where no reader is available: `preset` alone, as both
+/// the reader's output and the base it merges over, in the mode `is_dark`
+/// names, with `accessibility`. [`from_system_inner`] passes the uncached
+/// [`crate::detect::detect_is_dark`], as the readers read the mode fresh, and
+/// [`readerless_accessibility`], as [`reader_accessibility`] does.
+#[cfg(target_os = "linux")]
+fn linux_fallback(
+    preset: PlatformPreset,
+    is_dark: bool,
+    accessibility: crate::AccessibilityPreferences,
+) -> crate::Result<SystemTheme> {
+    let mode = if is_dark {
+        crate::ColorMode::Dark
+    } else {
+        crate::ColorMode::Light
     };
-    if !prefs.reduce_motion {
-        prefs.reduce_motion = crate::detect::detect_reduced_motion();
+    let mut reader = preset_as_reader(preset.name, mode)?;
+    reader.accessibility = accessibility;
+    run_pipeline(reader, preset.name)
+}
+
+/// Run `reader` and feed its output through [`run_pipeline`] onto `preset`.
+/// The reader's accessibility block is stored in `detection`, so
+/// [`crate::detect::accessibility_preferences`] need not run it again.
+async fn read_through_pipeline(
+    reader: &dyn crate::reader::ThemeReader,
+    preset: &str,
+    detection: &crate::detect::DetectionContext,
+) -> crate::Result<SystemTheme> {
+    let fill = detection.begin_reader_accessibility();
+    let result = reader.read().await?;
+    detection.store_reader_accessibility(fill, result.accessibility.clone());
+    run_pipeline(result, preset)
+}
+
+/// [`crate::SystemTheme::from_system_with_preset`]'s body: `preset` must be a
+/// generation of the running platform's table (M1-T1-04).
+#[allow(unreachable_code)]
+#[allow(clippy::needless_return)]
+// Explicit returns clarify cfg-gated dispatch.
+// Without the reader feature the name is never read: the feature error comes first.
+#[cfg_attr(
+    any(
+        all(target_os = "macos", not(feature = "macos")),
+        all(target_os = "windows", not(feature = "windows"))
+    ),
+    allow(unused_variables)
+)]
+pub(crate) async fn from_system_with_preset_inner(preset: &str) -> crate::Result<SystemTheme> {
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    {
+        return pinned_pipeline(
+            &MACOS_GENERATIONS,
+            macos_major(crate::macos::os_version()),
+            preset,
+            &crate::macos::MacosReader,
+            crate::detect::system(),
+        )
+        .await;
     }
-    prefs
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    {
+        return pinned_pipeline(
+            &WINDOWS_GENERATIONS,
+            crate::windows::os_version(),
+            preset,
+            &crate::windows::WindowsReader,
+            crate::detect::system(),
+        )
+        .await;
+    }
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "macos",
+            needed_for: "macOS theme detection",
+        });
+    }
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "windows",
+            needed_for: "Windows theme detection",
+        });
+    }
+    // No generation table, so no OS generations to choose between: Linux,
+    // whose readers read the installed style, BSD and other platforms.
+    Err(crate::Error::UnknownPreset {
+        name: preset.to_string(),
+        known: &[],
+    })
+}
+
+/// Run `reader` through the pipeline onto `preset`, a row of `table`, and
+/// report that row's generation against `running`.
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(dead_code)
+)]
+async fn pinned_pipeline(
+    table: &GenerationTable,
+    running: OsVersion,
+    preset: &str,
+    reader: &dyn crate::reader::ThemeReader,
+    detection: &crate::detect::DetectionContext,
+) -> crate::Result<SystemTheme> {
+    let Some(row) = table.row(preset) else {
+        return Err(crate::Error::UnknownPreset {
+            name: preset.to_string(),
+            known: table.keys,
+        });
+    };
+    let mut theme = read_through_pipeline(reader, row.preset, detection).await?;
+    theme.version_match = Some(version_match(&row, running));
+    Ok(theme)
+}
+
+/// Runs the same platform reader `from_system_inner` would run and returns its
+/// accessibility block without merging or resolving a theme. Where no reader
+/// is available (or it fails) [`readerless_accessibility`] is used.
+pub(crate) async fn reader_accessibility() -> crate::AccessibilityPreferences {
+    match select_reader().await {
+        Some(selected) => match selected.reader.read().await {
+            Ok(result) => result.accessibility,
+            Err(_) => readerless_accessibility(),
+        },
+        None => readerless_accessibility(),
+    }
+}
+
+/// The accessibility block where no reader supplies one: the defaults, with
+/// `reduce_motion` the platform's reduced-motion read, the one the readers
+/// make ([`crate::detect::detect_reduced_motion`]).
+fn readerless_accessibility() -> crate::AccessibilityPreferences {
+    crate::AccessibilityPreferences {
+        reduce_motion: crate::detect::detect_reduced_motion(),
+        ..Default::default()
+    }
 }
 
 // =============================================================================
@@ -882,7 +1332,7 @@ mod dispatch_tests {
         // GNOME desktop produces an Adwaita-named theme via the pure pipeline
         let preset = linux_preset_for_de(LinuxDesktop::Gnome);
         let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(theme.name, "Adwaita");
         Ok(())
     }
@@ -929,7 +1379,7 @@ ForegroundLink=41,128,185";
             accessibility: acc,
         };
         let preset = linux_preset_for_de(LinuxDesktop::Kde);
-        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(
             theme.name, "TestTheme",
             "should use KDE theme name from reader output"
@@ -942,12 +1392,186 @@ ForegroundLink=41,128,185";
         // Unknown DE without kdeglobals falls back to Adwaita preset
         let preset = linux_preset_for_de(LinuxDesktop::Unknown);
         let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, preset.name)?;
         assert_eq!(
             theme.name, "Adwaita",
             "should fall back to Adwaita without kdeglobals"
         );
         Ok(())
+    }
+
+    /// The preset's own theme: both variants straight from the preset.
+    fn preset_theme(preset: &str) -> SystemTheme {
+        let theme = Theme::preset(preset).unwrap();
+        let reader = ReaderResult {
+            output: ReaderOutput::Dual {
+                light: Box::new(theme.light.unwrap_or_default()),
+                dark: Box::new(theme.dark.unwrap_or_default()),
+                is_dark: false,
+            },
+            name: theme.name,
+            icon_set: theme.icon_set,
+            layout: theme.layout,
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+        run_pipeline(reader, preset).unwrap()
+    }
+
+    #[test]
+    fn the_fallback_on_kde_is_the_whole_breeze_preset() {
+        let expected = preset_theme("kde-breeze");
+        for is_dark in [false, true] {
+            let st = linux_fallback(
+                linux_preset_for_de(LinuxDesktop::Kde),
+                is_dark,
+                crate::AccessibilityPreferences::default(),
+            )
+            .unwrap();
+            assert_eq!(st.preset, "kde-breeze");
+            assert_eq!(st.name, expected.name, "is_dark {is_dark}");
+            assert_eq!(st.light, expected.light, "is_dark {is_dark}");
+            assert_eq!(st.dark, expected.dark, "is_dark {is_dark}");
+            assert_eq!(
+                st.icon_theme_for(crate::ColorMode::Light),
+                expected.icon_theme_for(crate::ColorMode::Light)
+            );
+            assert_eq!(
+                st.icon_theme_for(crate::ColorMode::Dark),
+                expected.icon_theme_for(crate::ColorMode::Dark)
+            );
+        }
+    }
+
+    #[test]
+    fn the_fallback_on_other_desktops_is_the_whole_adwaita_preset() {
+        let expected = preset_theme("adwaita");
+        let st = linux_fallback(
+            linux_preset_for_de(LinuxDesktop::Xfce),
+            true,
+            crate::AccessibilityPreferences::default(),
+        )
+        .unwrap();
+        assert_eq!(st.preset, "adwaita");
+        assert_eq!(st.name, expected.name);
+        assert_eq!(st.light, expected.light);
+        assert_eq!(st.dark, expected.dark);
+    }
+
+    #[test]
+    fn the_fallback_mode_is_the_dark_reading_it_is_given() {
+        let preset = || linux_preset_for_de(LinuxDesktop::Unknown);
+        let none = crate::AccessibilityPreferences::default;
+        assert_eq!(
+            linux_fallback(preset(), true, none()).unwrap().mode,
+            crate::ColorMode::Dark
+        );
+        assert_eq!(
+            linux_fallback(preset(), false, none()).unwrap().mode,
+            crate::ColorMode::Light
+        );
+    }
+
+    /// Without a reader the theme carries the accessibility block
+    /// `AccessibilityPreferences::from_system` reads there
+    /// (`readerless_accessibility`), so the two agree on reduced motion.
+    #[test]
+    fn the_fallback_carries_the_accessibility_it_is_given() {
+        let reduced = crate::AccessibilityPreferences {
+            reduce_motion: true,
+            ..Default::default()
+        };
+        let st = linux_fallback(
+            linux_preset_for_de(LinuxDesktop::Xfce),
+            false,
+            reduced.clone(),
+        )
+        .unwrap();
+        assert_eq!(st.accessibility, reduced);
+    }
+
+    #[test]
+    fn an_unknown_desktop_with_kdeglobals_maps_to_breeze() {
+        let preset = |de, exists| {
+            linux_preset_for_de(crate::detect::refine_linux_desktop(de, None, || exists)).name
+        };
+        assert_eq!(preset(LinuxDesktop::Unknown, true), "kde-breeze");
+        assert_eq!(preset(LinuxDesktop::Unknown, false), "adwaita");
+        assert_eq!(preset(LinuxDesktop::Kde, false), "kde-breeze");
+        assert_eq!(preset(LinuxDesktop::Gnome, true), "adwaita");
+        assert_eq!(preset(LinuxDesktop::Xfce, true), "adwaita");
+    }
+
+    /// The reader `linux_reader_kind` picks for an unrecognised desktop with
+    /// `portal_backend` and, or without, `kdeglobals`.
+    fn unknown_desktop_reader(
+        portal_backend: Option<LinuxDesktop>,
+        kdeglobals: bool,
+    ) -> Option<LinuxReader> {
+        linux_reader_kind(crate::detect::refine_desktop(
+            LinuxDesktop::Unknown,
+            portal_backend,
+            || kdeglobals,
+        ))
+    }
+
+    /// A KDE portal backend gets the KDE reader with the portal's accent,
+    /// `kdeglobals` or not, as `XDG_CURRENT_DESKTOP=KDE` does.
+    #[test]
+    #[cfg(all(feature = "kde", feature = "portal"))]
+    fn an_unknown_desktop_with_a_kde_portal_gets_the_kde_reader() {
+        for kdeglobals in [false, true] {
+            assert_eq!(
+                unknown_desktop_reader(Some(LinuxDesktop::Kde), kdeglobals),
+                Some(LinuxReader::PortalKde)
+            );
+        }
+        assert_eq!(
+            linux_reader_kind(crate::detect::refine_desktop(
+                LinuxDesktop::Kde,
+                None,
+                || false
+            )),
+            Some(LinuxReader::PortalKde)
+        );
+    }
+
+    /// A GNOME portal backend gets the GNOME reader, `kdeglobals` or not.
+    #[test]
+    #[cfg(feature = "portal")]
+    fn an_unknown_desktop_with_a_gnome_portal_gets_the_gnome_reader() {
+        for kdeglobals in [false, true] {
+            assert_eq!(
+                unknown_desktop_reader(Some(LinuxDesktop::Gnome), kdeglobals),
+                Some(LinuxReader::Gnome)
+            );
+        }
+    }
+
+    /// Without a portal answer, `kdeglobals` gets the plain KDE reader, with
+    /// or without the `portal` feature; with neither there is no reader.
+    #[test]
+    fn an_unknown_desktop_without_a_portal_answer() {
+        #[cfg(feature = "kde")]
+        assert_eq!(unknown_desktop_reader(None, true), Some(LinuxReader::Kde));
+        assert_eq!(unknown_desktop_reader(None, false), None);
+    }
+
+    /// A KDE reader merges over kde-breeze, the GNOME reader over adwaita.
+    #[test]
+    #[cfg(all(feature = "kde", feature = "portal"))]
+    fn the_linux_readers_presets() {
+        let preset = |portal_backend, kdeglobals| {
+            linux_reader(crate::detect::refine_desktop(
+                LinuxDesktop::Unknown,
+                portal_backend,
+                || kdeglobals,
+            ))
+            .map(|selected| selected.preset)
+        };
+        assert_eq!(preset(Some(LinuxDesktop::Kde), false), Some("kde-breeze"));
+        assert_eq!(preset(None, true), Some("kde-breeze"));
+        assert_eq!(preset(Some(LinuxDesktop::Gnome), true), Some("adwaita"));
     }
 
     // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --
@@ -1004,7 +1628,7 @@ ForegroundLink=41,128,185";
     fn from_system_returns_result() {
         // Test the pure pipeline directly instead of mocking env vars for from_system()
         let result = preset_as_reader("adwaita", crate::ColorMode::Light).unwrap();
-        let theme = run_pipeline(result, "adwaita-live", crate::ColorMode::Light)
+        let theme = run_pipeline(result, "adwaita")
             .expect("run_pipeline should succeed with adwaita preset");
         assert_eq!(theme.name, "Adwaita");
     }
@@ -1024,7 +1648,7 @@ mod pipeline_tests {
     use crate::model::{LayoutTheme, Theme, ThemeMode};
     use crate::{ReaderOutput, ReaderResult};
 
-    use super::{preset_as_reader, run_pipeline};
+    use super::{preset_as_reader, read_through_pipeline, run_pipeline};
 
     /// Helper: build a ReaderResult from a preset for testing.
     fn reader_from_preset(preset_name: &str) -> ReaderResult {
@@ -1033,6 +1657,7 @@ mod pipeline_tests {
             output: ReaderOutput::Dual {
                 light: Box::new(preset.light.clone().unwrap_or_default()),
                 dark: Box::new(preset.dark.clone().unwrap_or_default()),
+                is_dark: false,
             },
             name: preset.name,
             icon_set: preset.icon_set,
@@ -1044,10 +1669,29 @@ mod pipeline_tests {
 
     // --- run_pipeline() tests ---
 
+    /// The reader's font DPI goes into the context both variants share: one
+    /// that is not finite and positive is one violation, on
+    /// `context.font_dpi`, with no variant table.
+    #[test]
+    fn run_pipeline_rejects_a_bad_reader_font_dpi_once() {
+        for font_dpi in [0.0, -1.0, f32::NAN] {
+            let reader = ReaderResult {
+                font_dpi: Some(font_dpi),
+                ..reader_from_preset("kde-breeze")
+            };
+            let result = run_pipeline(reader, "kde-breeze");
+            let Err(crate::Error::ResolutionInvalid { errors }) = result else {
+                panic!("font_dpi {font_dpi}: expected ResolutionInvalid");
+            };
+            let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+            assert_eq!(paths, ["context.font_dpi"], "font_dpi {font_dpi}");
+        }
+    }
+
     #[test]
     fn test_run_pipeline_produces_both_variants() {
         let reader = reader_from_preset("catppuccin-mocha");
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "catppuccin-mocha");
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // Both light and dark exist as ResolvedTheme (non-Option)
@@ -1075,7 +1719,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "catppuccin-mocha");
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // The reader's accent should win over the preset's accent
@@ -1090,7 +1734,6 @@ mod pipeline_tests {
     fn test_run_pipeline_single_variant() {
         // Simulate a real OS reader that provides a complete dark variant
         // (like KDE's from_kde() would) but no light variant.
-        // Use a live preset so the inactive light variant gets the full preset.
         let full = Theme::preset("kde-breeze").unwrap();
         let mut dark_v = full.dark.clone().unwrap();
         // Override accent to prove reader values win (simulating OS-detected accent)
@@ -1108,7 +1751,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark);
+        let result = run_pipeline(reader, "kde-breeze");
         assert!(
             result.is_ok(),
             "run_pipeline should succeed with single variant"
@@ -1122,14 +1765,12 @@ mod pipeline_tests {
         );
         // Light should still exist (from full preset, which has colors)
         // If we get here, both variants validated successfully
-        assert_eq!(st.live_preset, "kde-breeze-live");
         assert_eq!(st.preset, "kde-breeze");
     }
 
     #[test]
     fn test_run_pipeline_inactive_variant_from_full_preset() {
-        // When reader provides only dark, light must come from the full preset
-        // (not the live preset, which has no colors and would fail validation).
+        // When reader provides only dark, light must come from the full preset.
         let full = Theme::preset("kde-breeze").unwrap();
 
         let reader = ReaderResult {
@@ -1144,7 +1785,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
 
         // The light variant should have colors from the full "kde-breeze" preset
         let full_light = full.light.unwrap();
@@ -1167,13 +1808,31 @@ mod pipeline_tests {
         // Simulates GNOME sync fallback: adwaita used as both reader and preset.
         // Double-merge is harmless: merge is idempotent for matching values.
         let reader = reader_from_preset("adwaita");
-        let result = run_pipeline(reader, "adwaita", crate::ColorMode::Light);
+        let result = run_pipeline(reader, "adwaita");
         assert!(
             result.is_ok(),
             "double-merge with same preset should succeed"
         );
         let st = result.unwrap();
         assert_eq!(st.name, "Adwaita");
+    }
+
+    /// Overlays stack: a later `with_overlay` keeps what an earlier one
+    /// stated (M3-10), and wins on a field both state.
+    #[test]
+    fn with_overlay_keeps_an_earlier_overlay() -> crate::Result<()> {
+        let st = run_pipeline(reader_from_preset("adwaita"), "adwaita")?;
+        let a = Theme::from_toml("[light.defaults]\naccent_color = \"#ff0000\"")?;
+        let b = Theme::from_toml("[light.defaults]\nbackground_color = \"#00ff00\"")?;
+        let both = st.with_overlay(&a)?.with_overlay(&b)?;
+        assert_eq!(both.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
+        assert_eq!(both.light.defaults.background_color, Rgba::rgb(0, 255, 0));
+
+        let c = Theme::from_toml("[light.defaults]\naccent_color = \"#0000ff\"")?;
+        let all = both.with_overlay(&c)?;
+        assert_eq!(all.light.defaults.accent_color, Rgba::rgb(0, 0, 255));
+        assert_eq!(all.light.defaults.background_color, Rgba::rgb(0, 255, 0));
+        Ok(())
     }
 
     // --- Single/Dual contract tests ---
@@ -1196,10 +1855,10 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
 
         // Dark variant should have reader's data (merged with preset).
-        // Light variant should come from the full preset (kde-breeze, not live).
+        // Light variant should come from the full preset (kde-breeze).
         let full_light = Theme::preset("kde-breeze").unwrap().light.unwrap();
         assert_eq!(
             st.light.defaults.accent_color,
@@ -1213,7 +1872,7 @@ mod pipeline_tests {
     fn test_dual_variant_uses_both_from_reader() {
         // Simulate macOS-style dual-variant reader: both variants provided.
         // The pipeline should use BOTH reader variants (merged with preset).
-        let full = Theme::preset("macos-sonoma").unwrap();
+        let full = Theme::preset("macos-monterey").unwrap();
         let custom_light_accent = Rgba::rgb(42, 100, 200);
         let custom_dark_accent = Rgba::rgb(200, 50, 50);
 
@@ -1226,6 +1885,7 @@ mod pipeline_tests {
             output: ReaderOutput::Dual {
                 light: Box::new(light_v),
                 dark: Box::new(dark_v),
+                is_dark: false,
             },
             name: "macOS Sonoma".into(),
             icon_set: full.icon_set,
@@ -1234,7 +1894,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(reader, "macos-sonoma-live", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "macos-monterey").unwrap();
 
         // Both variants should reflect the reader's custom accents (merged).
         assert_eq!(
@@ -1244,6 +1904,155 @@ mod pipeline_tests {
         assert_eq!(
             st.dark.defaults.accent_color, custom_dark_accent,
             "Dual: dark variant should have reader's dark accent"
+        );
+    }
+
+    /// A dual-variant reader in dark mode, standing in for the macOS reader
+    /// on an OS set to dark: both variants from the preset, `is_dark` true.
+    struct DarkDualReader;
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for DarkDualReader {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            let mut reader = reader_from_preset("macos-monterey");
+            if let ReaderOutput::Dual { is_dark, .. } = &mut reader.output {
+                *is_dark = true;
+            }
+            Ok(reader)
+        }
+    }
+
+    #[test]
+    fn dual_reader_mode_follows_is_dark() {
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(read_through_pipeline(
+            &DarkDualReader,
+            "macos-monterey",
+            &detection,
+        ))
+        .unwrap();
+        assert_eq!(
+            st.mode,
+            crate::ColorMode::Dark,
+            "a Dual reader reporting is_dark must give SystemTheme::mode Dark"
+        );
+    }
+
+    #[test]
+    fn a_pinned_older_generation_reports_preset_older() {
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(super::pinned_pipeline(
+            &super::MACOS_GENERATIONS,
+            super::OsVersion::new(26, 0, 0),
+            "macos-monterey",
+            &DarkDualReader,
+            &detection,
+        ))
+        .unwrap();
+        assert_eq!(st.preset, "macos-monterey");
+        assert_eq!(st.version_match, Some(super::VersionMatch::PresetOlder));
+        // with_overlay keeps the match (M1-T1-01 change 2)
+        let overlaid = st
+            .with_overlay(&Theme::from_toml("name = \"overlay\"").unwrap())
+            .unwrap();
+        assert_eq!(overlaid.version_match, st.version_match);
+    }
+
+    #[test]
+    fn a_pinned_name_outside_the_table_is_unknown() {
+        let detection = crate::detect::DetectionContext::new();
+        let result = pollster::block_on(super::pinned_pipeline(
+            &super::MACOS_GENERATIONS,
+            super::OsVersion::new(26, 0, 0),
+            "kde-breeze",
+            &DarkDualReader,
+            &detection,
+        ));
+        assert!(matches!(
+            result,
+            Err(crate::Error::UnknownPreset { known, .. }) if known == super::MACOS_GENERATIONS.keys
+        ));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_has_no_generation_to_pin() {
+        let result = pollster::block_on(super::from_system_with_preset_inner("adwaita"));
+        let err = result.err();
+        assert!(matches!(
+            err,
+            Some(crate::Error::UnknownPreset { known: [], .. })
+        ));
+        assert!(
+            err.is_some_and(|e| e
+                .to_string()
+                .contains("no OS generations to choose between")),
+            "pinning a preset on Linux says the platform has no OS generations to choose between"
+        );
+    }
+
+    /// A reader reporting a text-scaling factor of 1.5, standing in for any
+    /// platform reader.
+    struct ScaledTextReader;
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for ScaledTextReader {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            let mut reader = reader_from_preset("adwaita");
+            reader.accessibility.text_scaling_factor = 1.5;
+            Ok(reader)
+        }
+    }
+
+    #[test]
+    fn the_system_read_fills_the_accessibility_cache() {
+        let detection = crate::detect::DetectionContext::new();
+        let st = pollster::block_on(read_through_pipeline(
+            &ScaledTextReader,
+            "adwaita",
+            &detection,
+        ))
+        .unwrap();
+        let runs = std::cell::Cell::new(0);
+        let cached = detection.reader_accessibility_with(|| {
+            runs.set(runs.get() + 1);
+            crate::AccessibilityPreferences::default()
+        });
+        assert_eq!(runs.get(), 0, "the cache was empty after the system read");
+        assert_eq!(cached, st.accessibility);
+        assert_eq!(cached.text_scaling_factor, 1.5);
+    }
+
+    /// [`ScaledTextReader`], with the accessibility cache invalidated while
+    /// it reads, as a watcher does when the OS changes mid-read.
+    struct InvalidatedReader<'a>(&'a crate::detect::DetectionContext);
+
+    #[async_trait::async_trait]
+    impl crate::reader::ThemeReader for InvalidatedReader<'_> {
+        async fn read(&self) -> crate::Result<ReaderResult> {
+            self.0.invalidate_accessibility_preferences();
+            ScaledTextReader.read().await
+        }
+    }
+
+    #[test]
+    fn a_system_read_across_an_invalidation_leaves_the_cache_empty() {
+        let detection = crate::detect::DetectionContext::new();
+        pollster::block_on(read_through_pipeline(
+            &InvalidatedReader(&detection),
+            "adwaita",
+            &detection,
+        ))
+        .unwrap();
+        let runs = std::cell::Cell::new(0);
+        let _ = detection.reader_accessibility_with(|| {
+            runs.set(runs.get() + 1);
+            crate::AccessibilityPreferences::default()
+        });
+        assert_eq!(
+            runs.get(),
+            1,
+            "a block read before the invalidation was cached"
         );
     }
 
@@ -1278,7 +2087,7 @@ mod pipeline_tests {
         // With a reader that provides an empty variant (no per-variant override),
         // the resolver must fall through to tier 2 and produce "Adwaita".
         let reader = reader_with_empty_variant(false);
-        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "adwaita").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("Adwaita"),
@@ -1305,12 +2114,34 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
         // Adwaita preset has Theme.icon_theme = "Adwaita" after migration.
-        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        let st = run_pipeline(reader, "adwaita").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("custom-override"),
             "tier 1: per-variant icon_theme override must win over Theme-level"
         );
+    }
+
+    /// `with_overlay` replays the overlay through the same tiers and layout
+    /// as `run_pipeline`: an icon theme or a layout gap the overlay states
+    /// wins, and an overlay that states none keeps the base's.
+    #[test]
+    fn with_overlay_applies_the_overlays_icon_theme_and_layout() -> crate::Result<()> {
+        let st = run_pipeline(reader_from_preset("adwaita"), "adwaita")?;
+        let kept = st.with_overlay(&Theme::default())?;
+        assert_eq!(kept.icon_theme, st.icon_theme);
+        assert_eq!(kept.layout.widget_gap, st.layout.widget_gap);
+
+        let overlay =
+            Theme::from_toml("icon_theme = \"custom-override\"\n[layout]\nwidget_gap_px = 9.0")?;
+        let changed = st.with_overlay(&overlay)?;
+        assert_eq!(changed.icon_theme.as_deref(), Some("custom-override"));
+        assert_eq!(
+            changed.icon_theme_for(crate::ColorMode::Dark),
+            Some("custom-override")
+        );
+        assert_eq!(changed.layout.widget_gap, Some(9.0));
+        Ok(())
     }
 
     #[test]
@@ -1337,7 +2168,7 @@ mod pipeline_tests {
             font_dpi: None,
             accessibility: crate::AccessibilityPreferences::default(),
         };
-        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
+        let st = run_pipeline(reader, "kde-breeze").unwrap();
         assert_eq!(
             st.icon_theme.as_deref(),
             Some("breeze-dark"),
@@ -1410,14 +2241,13 @@ accent_color = "#0066cc"
 
     /// §11.1: `SystemTheme.layout` is the reader's layout merged field-wise over
     /// the preset's. On the preset-only path the reader *is* the full preset, so
-    /// the result equals full ⊕ live ⊕ full.
+    /// the result equals full ⊕ full.
     #[test]
     fn system_theme_layout_is_the_merged_preset_layout() -> crate::Result<()> {
         let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
-        let sys = run_pipeline(reader, "adwaita-live", crate::ColorMode::Light)?;
+        let sys = run_pipeline(reader, "adwaita")?;
 
         let mut expected = Theme::preset("adwaita")?.layout;
-        expected.merge(&Theme::preset("adwaita-live")?.layout);
         expected.merge(&Theme::preset("adwaita")?.layout);
 
         assert_eq!(sys.layout, expected);
@@ -1425,6 +2255,125 @@ accent_color = "#0066cc"
             sys.layout.widget_gap.is_some(),
             "adwaita defines all four layout keys (spec §1.3)"
         );
+        Ok(())
+    }
+
+    /// A layout value out of range fails the build, in `run_pipeline` and in
+    /// `with_overlay`. Layout is shared by both variants: the path has no
+    /// variant table.
+    #[test]
+    fn system_theme_layout_out_of_range_is_invalid() -> crate::Result<()> {
+        let mut reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        reader.layout.widget_gap = Some(-8.0);
+        let Err(crate::Error::ResolutionInvalid { errors }) = run_pipeline(reader, "adwaita")
+        else {
+            panic!("expected ResolutionInvalid");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["layout.widget_gap_px"]);
+
+        let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        let mut sys = run_pipeline(reader, "adwaita")?;
+        sys.overlay_source.layout.section_gap = Some(f32::NAN);
+        let Err(crate::Error::ResolutionInvalid { errors }) = sys.with_overlay(&Theme::default())
+        else {
+            panic!("expected ResolutionInvalid");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["layout.section_gap_px"]);
+        Ok(())
+    }
+
+    /// `SystemTheme::icon` and `icon_indicator` load a freedesktop icon from
+    /// the asked mode's variant theme, not the active one's, and keep doing so
+    /// when the public `mode` field is changed.
+    #[test]
+    fn icon_loads_from_the_modes_icon_theme() -> crate::Result<()> {
+        let mut theme = run_pipeline(reader_from_preset("kde-breeze"), "kde-breeze")?;
+        for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            theme.mode = active;
+            for (mode, expected) in [
+                (crate::ColorMode::Light, "breeze"),
+                (crate::ColorMode::Dark, "breeze-dark"),
+            ] {
+                let source =
+                    theme.with_icon_source(mode, |set, theme| (set, theme.map(str::to_owned)));
+                assert_eq!(
+                    source,
+                    (crate::IconSet::Freedesktop, Some(expected.to_owned())),
+                    "kde-breeze.toml:16 and :473 (active mode {active:?}, asked {mode:?})"
+                );
+                assert_eq!(theme.icon_theme_for(mode), Some(expected));
+            }
+        }
+        Ok(())
+    }
+
+    /// `SystemTheme::icon` and `icon_indicator` hand the mode's icon theme to
+    /// the freedesktop loader: under a light variant theme that is not
+    /// installed both load nothing (the loader searches no other theme), and
+    /// the dark mode loads what `breeze-dark` itself gives, installed or not.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn icon_and_indicator_load_from_the_modes_freedesktop_theme() -> crate::Result<()> {
+        use crate::icons::{FreedesktopLoader, IconRole, is_freedesktop_theme_available};
+
+        const MISSING: &str = "native-theme-no-such-theme";
+        assert!(!is_freedesktop_theme_available(MISSING));
+        let mut theme = run_pipeline(reader_from_preset("kde-breeze"), "kde-breeze")?;
+        theme.light_icon_theme = Some(std::borrow::Cow::Borrowed(MISSING));
+        let role = IconRole::ActionCopy;
+        for active in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            theme.mode = active;
+            assert_eq!(
+                theme.icon(role, crate::ColorMode::Light, None),
+                None,
+                "light icon from {MISSING} (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon_indicator(crate::ColorMode::Light),
+                None,
+                "light spinner from {MISSING} (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon(role, crate::ColorMode::Dark, None),
+                FreedesktopLoader::new(role).theme("breeze-dark").load(),
+                "dark icon from breeze-dark, kde-breeze.toml:473 (active mode {active:?})"
+            );
+            assert_eq!(
+                theme.icon_indicator(crate::ColorMode::Dark),
+                FreedesktopLoader::load_indicator(Some("breeze-dark")),
+                "dark spinner from breeze-dark (active mode {active:?})"
+            );
+        }
+        Ok(())
+    }
+
+    /// A Material system theme's icon comes back with the colour in its bytes.
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_of_a_material_theme_comes_back_in_the_colour() -> crate::Result<()> {
+        let theme = run_pipeline(reader_from_preset("material-3"), "material-3")?;
+        assert_eq!(
+            theme.icon_set,
+            crate::IconSet::Material,
+            "material-3.toml:9"
+        );
+        // Test fixture colour, not a theme value.
+        let color = Rgba::rgb(0x12, 0x34, 0x56);
+        for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            match theme.icon(crate::IconRole::ActionCopy, mode, Some(color)) {
+                Some(crate::IconData::Svg(svg)) => {
+                    let svg = String::from_utf8(svg.into_owned()).unwrap();
+                    assert!(svg.contains("#123456"), "{mode:?}: {svg}");
+                }
+                other => panic!("expected an SVG for {mode:?}, got {other:?}"),
+            }
+            assert!(
+                theme.icon_indicator(mode).is_some(),
+                "Material's spinner ({mode:?})"
+            );
+        }
         Ok(())
     }
 
@@ -1447,16 +2396,16 @@ accent_color = "#0066cc"
                 font_dpi: None,
                 accessibility: crate::AccessibilityPreferences::default(),
             };
-            let theme = run_pipeline(reader, "kde-breeze-live", mode)?;
+            let theme = run_pipeline(reader, "kde-breeze")?;
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Light),
                 Some("breeze"),
-                "kde-breeze.toml:9 names breeze for light (active mode {mode:?})"
+                "kde-breeze.toml:16 names breeze for light (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Dark),
                 Some("breeze-dark"),
-                "kde-breeze.toml:317 names breeze-dark for dark (active mode {mode:?})"
+                "kde-breeze.toml:473 names breeze-dark for dark (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(mode),
@@ -1543,23 +2492,22 @@ mod theme_reader_trait_tests {
     }
 
     /// `select_reader()` exists, is async, and returns an
-    /// `Option<(Box<dyn ThemeReader>, &'static str)>`.
+    /// `Option<SelectedReader>`.
     ///
-    /// On each platform with an available backend we expect `Some((_, live_preset))`;
+    /// On each platform with an available backend we expect `Some(selected)`;
     /// on platforms without one (non-Linux/macOS/Windows, or Linux with no
     /// compiled-in backend, or Linux-other-DE without portal) we expect `None`.
     ///
-    /// The companion `&'static str` is the `-live` preset name that `run_pipeline`
+    /// The selected reader carries the platform preset name that `run_pipeline`
     /// should use — kept in the same return type because the preset is chosen
-    /// from the DE detected by `select_reader` (KDE -> kde-breeze-live, GNOME ->
-    /// adwaita-live, macOS -> macos-sonoma-live, Windows -> windows-11-live).
+    /// from the DE detected by `select_reader` (KDE -> kde-breeze, GNOME ->
+    /// adwaita, macOS -> the running version's generation, Windows -> windows-11).
     #[test]
     fn select_reader_returns_platform_specific_impl() {
         // Call select_reader and observe the Option. The structural invariant
         // is that the function exists, is callable from a sync context via
-        // `pollster::block_on`, and returns the (reader, preset_live) tuple.
-        let picked: Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> =
-            pollster::block_on(super::select_reader());
+        // `pollster::block_on`, and returns the selected reader and its preset.
+        let picked: Option<super::SelectedReader> = pollster::block_on(super::select_reader());
 
         // Every cfg branch borrows `picked` (via `&picked`) rather than moving
         // it, so the final `drop(picked)` consumes it uniformly on all
@@ -1570,8 +2518,10 @@ mod theme_reader_trait_tests {
                 picked.is_some(),
                 "select_reader must return Some on macOS+macos"
             );
-            if let Some((_reader, preset)) = &picked {
-                assert_eq!(*preset, "macos-sonoma-live");
+            if let Some(selected) = &picked {
+                let (preset, matched) = super::macos_generation(crate::macos::os_version());
+                assert_eq!(selected.preset, preset.name);
+                assert_eq!(selected.version_match, Some(matched));
             }
         }
         #[cfg(all(target_os = "windows", feature = "windows"))]
@@ -1580,20 +2530,24 @@ mod theme_reader_trait_tests {
                 picked.is_some(),
                 "select_reader must return Some on windows+windows"
             );
-            if let Some((_reader, preset)) = &picked {
-                assert_eq!(*preset, "windows-11-live");
+            if let Some(selected) = &picked {
+                let (preset, matched) = super::windows_generation(crate::windows::os_version());
+                assert_eq!(selected.preset, preset.name);
+                assert_eq!(selected.version_match, Some(matched));
             }
         }
         #[cfg(all(target_os = "linux", feature = "kde", feature = "portal"))]
         {
-            // On linux+kde+portal, select_reader returns Some(GnomePortalKdeReader, "kde-breeze-live")
+            // On linux+kde+portal, select_reader returns Some(GnomePortalKdeReader, "kde-breeze")
             // whenever the active DE is KDE; for non-KDE DEs it may legitimately
             // return None (preset fallback). Assert the tuple shape regardless.
-            if let Some((_reader, preset)) = &picked {
+            if let Some(selected) = &picked {
                 assert!(
-                    *preset == "kde-breeze-live" || *preset == "adwaita-live",
-                    "select_reader on linux must return a known -live preset, got: {preset}"
+                    selected.preset == "kde-breeze" || selected.preset == "adwaita",
+                    "select_reader on linux must return a known platform preset, got: {}",
+                    selected.preset
                 );
+                assert_eq!(selected.version_match, None);
             }
         }
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -1604,5 +2558,166 @@ mod theme_reader_trait_tests {
             );
         }
         drop(picked);
+    }
+}
+
+/// The generation tables (M1-T1-01): pure functions of the version, tested on
+/// every platform; CI's macOS and Windows legs run the readers against them.
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod generation_tests {
+    use super::*;
+
+    /// The macOS preset of a running major version, as `select_reader` picks it.
+    fn macos_preset_for_version(major: u32) -> &'static str {
+        macos_generation(OsVersion::new(major, 0, 0)).0.name
+    }
+
+    #[test]
+    fn macos_preset_follows_the_os_generation() {
+        assert_eq!(macos_preset_for_version(12), "macos-monterey");
+        assert_eq!(macos_preset_for_version(14), "macos-monterey");
+        assert_eq!(macos_preset_for_version(15), "macos-monterey");
+        assert_eq!(macos_preset_for_version(26), "macos-tahoe");
+        // macOS 27 until a macos-golden-gate preset exists (D4)
+        assert_eq!(macos_preset_for_version(27), "macos-tahoe");
+        assert_eq!(
+            macos_generation(OsVersion::new(27, 0, 1)).1,
+            VersionMatch::PresetOlder
+        );
+        // 16: what early macOS 26 betas reported to a macOS 15 SDK build
+        assert_eq!(
+            macos_generation(OsVersion::new(16, 0, 0)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetOlder
+            )
+        );
+        // An unreadable version reads as 0.0.0
+        assert_eq!(
+            macos_generation(OsVersion::new(0, 0, 0)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetNewer
+            )
+        );
+    }
+
+    #[test]
+    fn macos_versions_inside_a_generation_match_exactly() {
+        for v in [
+            OsVersion::new(12, 0, 0),
+            OsVersion::new(14, 8, 9),
+            OsVersion::new(15, 7, 9),
+            OsVersion::new(26, 6, 2),
+        ] {
+            assert_eq!(macos_generation(v).1, VersionMatch::Exact, "{v}");
+        }
+        // Big Sur began the look, before Monterey's change to a clicked button
+        assert_eq!(
+            macos_generation(OsVersion::new(11, 7, 10)),
+            (
+                PlatformPreset {
+                    name: "macos-monterey"
+                },
+                VersionMatch::PresetNewer
+            )
+        );
+    }
+
+    #[test]
+    fn windows_preset_follows_the_build() {
+        // Windows 10 22H2: no preset of its own (M2b Step 7, D9)
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 19045)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetNewer
+            )
+        );
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 22000)).1,
+            VersionMatch::Exact
+        );
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 26200)).1,
+            VersionMatch::Exact
+        );
+        // 26H2 (26300): newer than the build the preset was verified on
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 26300)).1,
+            VersionMatch::PresetOlder
+        );
+        // 26H1 (28000)
+        assert_eq!(
+            windows_generation(OsVersion::new(10, 0, 28000)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetOlder
+            )
+        );
+        // A failed version read gives 0.0.0
+        assert_eq!(
+            windows_generation(OsVersion::new(0, 0, 0)),
+            (
+                PlatformPreset { name: "windows-11" },
+                VersionMatch::PresetNewer
+            )
+        );
+    }
+
+    #[test]
+    fn every_table_is_ordered_and_lists_its_keys() {
+        for table in [MACOS_GENERATIONS, WINDOWS_GENERATIONS] {
+            let rows: Vec<Generation> = table.rows().collect();
+            let keys: Vec<&str> = rows.iter().map(|g| g.preset).collect();
+            assert_eq!(keys, table.keys);
+            for g in &rows {
+                assert!(g.first <= g.last_verified, "{}", g.preset);
+            }
+            for (older, newer) in rows.iter().zip(rows.iter().skip(1)) {
+                assert!(
+                    older.last_verified < newer.first,
+                    "{} / {}",
+                    older.preset,
+                    newer.preset
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_generation_is_a_bundled_preset_of_its_platform() {
+        for (table, platform) in [
+            (MACOS_GENERATIONS, "macos"),
+            (WINDOWS_GENERATIONS, "windows"),
+        ] {
+            for key in table.keys {
+                assert!(crate::Theme::preset(key).is_ok(), "{key}");
+                let offered = crate::Theme::list_presets()
+                    .iter()
+                    .any(|p| p.key == *key && p.platforms.contains(&platform));
+                assert!(offered, "{key} is not offered on {platform}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_diagnostic_names_the_version_and_its_preset() {
+        let entry = DiagnosticEntry::OsGeneration {
+            version: OsVersion::new(27, 0, 1).to_string(),
+            preset: "macos-tahoe",
+            version_match: VersionMatch::PresetOlder,
+        };
+        assert_eq!(entry.name(), "OS version");
+        assert_eq!(entry.status(), "27.0.1");
+        assert_eq!(
+            entry.to_string(),
+            "OS version: 27.0.1 (macos-tahoe, preset older than the OS)"
+        );
     }
 }

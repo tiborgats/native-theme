@@ -5,7 +5,7 @@
 ## What it does
 
 Cross-platform theme data model with 24 semantic color roles, 26 per-widget
-themes, and 16 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
+themes, and 17 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
 (via `xdg-desktop-portal`), macOS, and Windows, and produces a fully populated
 `ResolvedTheme` any GUI toolkit can consume.
 
@@ -34,7 +34,7 @@ let sys = SystemTheme::from_system()?;
 let active = sys.pick(sys.mode);                 // &ResolvedTheme
 let accent = active.defaults.accent_color;       // Rgba (fully populated)
 let bg     = active.defaults.background_color;   // Rgba
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 For OS readers, enable the `native` feature (or an individual `kde` / `portal`
@@ -44,11 +44,13 @@ are needed to use bundled presets.
 ## Core concepts
 
 - **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`. Safe to hand to UI code.
+- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`. Safe to hand to UI code.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
-- **Preset** — a named bundled theme. 16 ship today:
-  - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios`
+- **Preset** — a named bundled theme. 17 ship today:
+  - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`, `macos-tahoe`, `material-3`, `ios-13`
   - *Community:* `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark`
+
+  `material-3` and `ios-13` have no OS reader; an application chooses them as a look. `material-3` suits any platform, and its Material Symbols icons load with the `material-icons` feature. `ios-13` is a look for desktop apps on macOS: its SF Symbols load only on macOS, so on every other platform, iOS included, its icons are `None` and are never replaced by another set.
 
   Enumerate with `Theme::list_presets()` or `Theme::list_presets_for_platform()`.
 
@@ -57,12 +59,12 @@ are needed to use bundled presets.
 ### Load a bundled preset
 
 ```rust
-use native_theme::theme::{ColorMode, Theme};
+use native_theme::{ColorMode, Theme};
 
 let theme = Theme::preset("catppuccin-mocha")?;
 let resolved = theme.resolve(ColorMode::Dark)?;
 let accent = resolved.variant.defaults.accent_color;  // Rgba
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 `theme.resolve(mode)` returns a `Resolved` wrapper containing `variant`
@@ -71,25 +73,24 @@ let accent = resolved.variant.defaults.accent_color;  // Rgba
 ### Layer user overrides on a preset
 
 ```rust
-use native_theme::theme::Theme;
+use native_theme::Theme;
 
 let mut theme = Theme::preset("nord")?;
 let overrides = Theme::from_toml(r##"
-    name = "My Nord"
     [light.defaults]
     accent_color = "#ff6600"
 "##)?;
 theme.merge(&overrides);
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 `merge` fills in only the fields present in the overlay; everything else stays
-from the base preset.
+from the base preset. An overlay needs no `name`: the base keeps its own.
 
 ### Apply an overlay to the OS theme at runtime
 
 ```rust,no_run
-use native_theme::{SystemTheme, theme::Theme};
+use native_theme::{SystemTheme, Theme};
 
 let sys = SystemTheme::from_system()?;
 let overlay = Theme::from_toml(r##"
@@ -97,7 +98,7 @@ let overlay = Theme::from_toml(r##"
     accent_color = "#ff6600"
 "##)?;
 let customised = sys.with_overlay(&overlay)?;
-# Ok::<(), native_theme::error::Error>(())
+# Ok::<(), native_theme::Error>(())
 ```
 
 ### Cheap dark-mode poll
@@ -112,6 +113,25 @@ if system_is_dark() {
 
 Cached, does not run the full theme-reader pipeline.
 
+### Watch for OS theme changes
+
+With the `watch` feature:
+
+```rust,no_run
+# #[cfg(feature = "watch")] {
+use native_theme::watch::on_theme_change;
+
+let _subscription = on_theme_change(|_event| {
+    // Runs on a background thread. The event carries no theme: tell the UI
+    // thread to call `detect::invalidate_caches()`, then
+    // `SystemTheme::from_system()` again.
+})?;
+# }
+# Ok::<(), native_theme::Error>(())
+```
+
+Keep the subscription alive: dropping it stops watching.
+
 ## Icon sets
 
 <p align="center">
@@ -122,9 +142,8 @@ Cached, does not run the full theme-reader pipeline.
 
 Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:
 
-```rust,ignore
-use native_theme::icons::{MaterialLoader, FreedesktopLoader};
-use native_theme::theme::IconRole;
+```rust,no_run
+use native_theme::icons::{FreedesktopLoader, IconRole, MaterialLoader};
 
 // Bundled set (no system dependencies).
 let copy = MaterialLoader::new(IconRole::ActionCopy).load();
@@ -137,7 +156,7 @@ let sys = FreedesktopLoader::new(IconRole::ActionCopy)
 
 Animated spinners respect the OS `prefers-reduced-motion` preference:
 
-```rust,ignore
+```rust,no_run
 use native_theme::icons::MaterialLoader;
 use native_theme::detect::prefers_reduced_motion;
 
@@ -178,6 +197,13 @@ native-theme = { version = "0.6", features = ["native"] }
 
 OS-specific dependencies are target-gated — `native` on macOS only pulls in
 macOS-related deps.
+
+The `macos` reader and the SF Symbols icons need macOS 11 or later: the
+reader reads each appearance's colours through
+[`performAsCurrentDrawingAppearance(_:)`](https://developer.apple.com/documentation/appkit/nsappearance/performascurrentdrawingappearance(_:))
+and the icons load through
+[`NSImage(systemSymbolName:accessibilityDescription:)`](https://developer.apple.com/documentation/appkit/nsimage/init(systemsymbolname:accessibilitydescription:)),
+both introduced in macOS 11.0.
 
 ## Links
 

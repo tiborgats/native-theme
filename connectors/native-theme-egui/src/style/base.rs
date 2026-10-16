@@ -1,5 +1,6 @@
 //! The base `Style` of one colour scheme (§3.4): §5.1's DIRECT rows, §5.9's base owners, the
-//! five `text_styles` sizes (§8.5), `layout.widget_gap` (§6.16) and the line spacing (§6.15).
+//! five `text_styles` sizes (§8.5), `layout.widget_gap` (§6.16), the line spacing (§6.15) and
+//! the tooltip delay.
 //! The five `WidgetVisuals` entries are `states::write_states`'s.
 
 use egui::TextStyle;
@@ -55,17 +56,16 @@ pub(crate) fn radius(
 }
 
 /// A border stroke: the colour as converted, the width over the sink's own (`to_stroke`'s
-/// rule, §7.2). `paths` are the colour's and the width's leaves. Every border colour is the
+/// rule, §7.2), a non-finite one reported for `width_path`. Every border colour is the
 /// final line colour: `defaults.border.opacity` is already folded into it, and no stroke
 /// multiplies it again (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`).
 pub(crate) fn stroke(
-    paths: [&'static str; 2],
+    width_path: &'static str,
     own: egui::Stroke,
     color: egui::Color32,
     width: f32,
     notes: &mut Vec<Note>,
 ) -> egui::Stroke {
-    let [_color_path, width_path] = paths;
     if !width.is_finite() {
         push_note(notes, Note::ValueSanitised { path: width_path });
     }
@@ -186,7 +186,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     v.window_stroke = stroke(
-        ["defaults.border.color", "defaults.border.line_width"],
+        "defaults.border.line_width",
         own.visuals.window_stroke,
         to_color32(d.border.color),
         d.border.line_width,
@@ -199,7 +199,19 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     v.window_fill = to_color32(t.menu.background_color); // base owner of window_fill (§5.9)
-    v.extreme_bg_color = to_color32(t.scrollbar.track_color);
+    // egui paints the scroll-bar groove from `extreme_bg_color`, at the three
+    // `*_background_opacity` when floating and at 1 when solid
+    // (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is fully
+    // transparent has no groove: its opacities are written 0 below, and the slot serves its other
+    // readers, `Frame::canvas` (`egui/src/containers/frame.rs:231`) and a role-less `ProgressBar`
+    // (`egui/src/widgets/progress_bar.rs:140`), with egui's own meaning of it, "e.g. TextEdit
+    // background" (`egui/src/style.rs:1513`). A solid bar keeps its stated track there.
+    let no_groove = t.scrollbar.overlay_mode && t.scrollbar.track_color.a == 0;
+    v.extreme_bg_color = to_color32(if no_groove {
+        t.input.background_color
+    } else {
+        t.scrollbar.track_color
+    });
     v.faint_bg_color = to_color32(t.list.alternate_row_background);
     v.text_edit_bg_color = Some(to_color32(t.input.background_color));
     v.text_cursor.stroke.color = to_color32(t.input.caret_color); // width stays egui's (§5.4)
@@ -270,6 +282,11 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     sp.scroll.foreground_color = false; // the handle reads `bg_fill` (§5.5)
+    if no_groove {
+        sp.scroll.dormant_background_opacity = 0.0;
+        sp.scroll.active_background_opacity = 0.0;
+        sp.scroll.interact_background_opacity = 0.0;
+    }
     sp.window_margin = margin(
         [
             "window.border.padding.top",
@@ -295,6 +312,12 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         }
     }
 
+    // the theme's milliseconds as egui's seconds (`egui/src/style.rs:928`); a theme that
+    // states no delay keeps egui's own
+    if let Some(ms) = t.tooltip.show_delay {
+        s.interaction.tooltip_delay = f32::from(ms) / 1000.0;
+    }
+
     use super::states::{
         BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource,
         TextSource, write_states,
@@ -307,7 +330,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     super::note_transparent_fill(w.noninteractive.bg_fill, "defaults.background_color", notes);
     w.noninteractive.weak_bg_fill = to_color32(d.background_color);
     w.noninteractive.bg_stroke = stroke(
-        ["defaults.border.color", "defaults.border.line_width"],
+        "defaults.border.line_width",
         own.visuals.widgets.noninteractive.bg_stroke,
         to_color32(d.border.color),
         d.border.line_width,
@@ -343,11 +366,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                paths: [
-                    "button.border.color",
-                    "button.border.corner_radius",
-                    "button.border.line_width",
-                ],
+                paths: ["button.border.corner_radius", "button.border.line_width"],
                 entries: BorderEntries::Interactive,
             }),
             open: OpenFrom::Inactive,
@@ -570,11 +589,83 @@ mod tests {
             assert_eq!(sp.slider_width, own.spacing.slider_width);
             assert_eq!(sp.default_area_size, own.spacing.default_area_size);
             assert_eq!(sp.indent, own.spacing.indent);
-            assert_eq!(s.interaction, own.interaction);
+            assert_eq!(
+                s.interaction.tooltip_delay,
+                t.tooltip
+                    .show_delay
+                    .map_or(own.interaction.tooltip_delay, |ms| f32::from(ms) / 1000.0),
+                "{preset}: tooltip.show_delay in seconds, else egui's own"
+            );
+            assert_eq!(
+                egui::style::Interaction {
+                    tooltip_delay: own.interaction.tooltip_delay,
+                    ..s.interaction.clone()
+                },
+                own.interaction,
+                "every other Interaction field is egui's own"
+            );
             assert_eq!(s.animation_time, own.animation_time);
             assert_eq!(s.override_font_id, None);
             assert_eq!(v.override_text_color, None);
         }
+    }
+
+    /// egui paints the scroll-bar groove from `extreme_bg_color`, at the three
+    /// `*_background_opacity` when floating and at 1 when solid
+    /// (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is
+    /// fully transparent has no groove: the opacities are 0 and the slot takes the input
+    /// background, egui's own meaning of it (`egui/src/style.rs:1513`). A solid bar's
+    /// transparent track (windows-11) and an opaque track (kde-breeze) stay in the slot.
+    #[test]
+    fn a_clear_overlay_track_leaves_the_slot_to_the_input_background() {
+        let opacities = |s: &egui::Style| {
+            let sc = &s.spacing.scroll;
+            [
+                sc.dormant_background_opacity,
+                sc.active_background_opacity,
+                sc.interact_background_opacity,
+            ]
+        };
+        for (preset, mode, scheme) in [
+            ("macos-monterey", ColorMode::Light, egui::Theme::Light),
+            ("macos-monterey", ColorMode::Dark, egui::Theme::Dark),
+            ("macos-tahoe", ColorMode::Light, egui::Theme::Light),
+        ] {
+            let t = resolved(preset, mode);
+            assert!(t.scrollbar.overlay_mode, "{preset}: an overlay bar");
+            assert_eq!(t.scrollbar.track_color.a, 0, "{preset}: a clear track");
+            let (s, notes) = build(scheme, &t, &LayoutTheme::default(), None);
+            assert!(notes.is_empty(), "{preset}: {notes:?}");
+            assert_eq!(
+                s.visuals.extreme_bg_color,
+                to_color32(t.input.background_color),
+                "{preset} {mode:?}"
+            );
+            assert_eq!(opacities(&s), [0.0; 3], "{preset} {mode:?}");
+        }
+        for (preset, mode, scheme) in [
+            ("kde-breeze", ColorMode::Light, egui::Theme::Light),
+            ("windows-11", ColorMode::Light, egui::Theme::Light),
+            ("windows-11", ColorMode::Dark, egui::Theme::Dark),
+        ] {
+            let t = resolved(preset, mode);
+            let (s, _) = build(scheme, &t, &LayoutTheme::default(), None);
+            assert_eq!(
+                s.visuals.extreme_bg_color,
+                to_color32(t.scrollbar.track_color),
+                "{preset} {mode:?}"
+            );
+            assert_eq!(
+                opacities(&s),
+                opacities(&scheme.default_style()),
+                "{preset} {mode:?}: egui's own"
+            );
+        }
+        let t = resolved("windows-11", ColorMode::Light);
+        assert!(
+            !t.scrollbar.overlay_mode && t.scrollbar.track_color.a == 0,
+            "windows-11 states its transparent track in solid mode"
+        );
     }
 
     /// §6.16: a stated gap is `Vec2::splat`, a `None` keeps egui's asymmetric default, a
@@ -602,6 +693,31 @@ mod tests {
                 path: "layout.widget_gap"
             }]
         );
+    }
+
+    /// `tooltip.show_delay` is milliseconds, egui's `tooltip_delay` seconds
+    /// (`egui/src/style.rs:928`); a theme that states none keeps egui's own.
+    #[test]
+    fn tooltip_delay_is_the_themes_in_seconds_or_egui_own() {
+        let own = egui::Theme::Light.default_style();
+        for (preset, ms) in [("kde-breeze", 700_u16), ("material-3", 0)] {
+            let t = resolved(preset, ColorMode::Light);
+            assert_eq!(t.tooltip.show_delay, Some(ms), "{preset}");
+            let (s, notes) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+            assert_eq!(
+                s.interaction.tooltip_delay,
+                f32::from(ms) / 1000.0,
+                "{preset}"
+            );
+            assert!(notes.is_empty(), "{preset}: {notes:?}");
+        }
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.tooltip.show_delay = Some(u16::MAX);
+        let (s, _) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(s.interaction.tooltip_delay, 65.535);
+        t.tooltip.show_delay = None;
+        let (s, _) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(s.interaction.tooltip_delay, own.interaction.tooltip_delay);
     }
 
     /// §6.15: the delta between the theme's line box and the row, floored at egui's 0.0.

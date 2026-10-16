@@ -1,6 +1,8 @@
 //! The Inputs page.
 
-use gpui::{Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px};
+use gpui::{
+    Axis, Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px,
+};
 use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme_gpui::geometry;
@@ -222,7 +224,36 @@ impl Showcase {
                 format!("Slider (value: {:.0})", self.slider_value),
             ))
             .child(
-                demo::slider(ui, cx, "inputs-slider", &self.slider_state, px(360.0)).self_start(),
+                demo::slider(
+                    ui,
+                    cx,
+                    "inputs-slider",
+                    &self.slider_state,
+                    Axis::Horizontal,
+                    px(360.0),
+                )
+                .self_start(),
+            )
+            // A range state's two thumbs, and the vertical axis.
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_center()
+                    .child(demo::slider(
+                        ui,
+                        cx,
+                        "inputs-slider-range",
+                        &self.range_slider_state,
+                        Axis::Horizontal,
+                        px(360.0),
+                    ))
+                    .child(demo::slider(
+                        ui,
+                        cx,
+                        "inputs-slider-vertical",
+                        &self.vertical_slider_state,
+                        Axis::Vertical,
+                        px(120.0),
+                    )),
             )
             .child(demo::heading(
                 ui,

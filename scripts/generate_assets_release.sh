@@ -178,6 +178,11 @@ fi
 
 # Download macOS and Windows screenshots
 info "Downloading macOS and Windows screenshots..."
+# Each job's OS-version sidecar, kept for the provenance stamp as
+# <toolkit>-<os>.txt; not an asset, so it goes nowhere under docs/. Made
+# before TMPDIR is reassigned: an exported TMPDIR would put it inside the
+# download directory, which is removed before the stamp is written.
+OS_VERSIONS=$(mktemp -d)
 TMPDIR=$(mktemp -d)
 gh run download "$RUN_ID" --dir "$TMPDIR"
 
@@ -198,6 +203,13 @@ for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-
         DOWNLOADED=$((DOWNLOADED + 1))
         echo "  $(basename "$f") → $(realpath --relative-to="$PROJECT_ROOT" "$dest")"
     done
+    sidecar=$(find "$artifact_dir" -maxdepth 1 -name '*-os-version.txt' -print -quit)
+    if [ -n "$sidecar" ]; then
+        cp "$sidecar" "$OS_VERSIONS/${base#screenshots-}.txt"
+        echo "  $(basename "$sidecar"): $(tr -d '\r' < "$sidecar")"
+    else
+        info "$base carries no OS-version sidecar; the stamp has no version from it"
+    fi
 done
 
 rm -rf "$TMPDIR"
@@ -210,7 +222,8 @@ ok "Downloaded $DOWNLOADED screenshots from CI"
 # ── Stamp the provenance ─────────────────────────────────────────────
 
 info "Recording provenance..."
-bash "$SCRIPT_DIR/update_provenance.sh" write
+bash "$SCRIPT_DIR/update_provenance.sh" write "$OS_VERSIONS"
+rm -rf "$OS_VERSIONS"
 ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 
 # ── Refresh the compatibility claim ──────────────────────────────────────

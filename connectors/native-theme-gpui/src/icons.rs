@@ -8,13 +8,52 @@
 //! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`Option<&str>`) |
 //! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`Option<&str>`) |
 //! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (`Option<&str>`, Linux only) |
+//! | [`freedesktop_name_candidates`] | Map [`IconName`] → freedesktop names to try in one theme (`&[&str]`, Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
-//! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
+//! | [`into_image_source`] | Consuming variant of [`to_image_source`] (an RGBA icon's buffer is not copied) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
 //! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
 //! | [`bundled_svg_to_image_source`] | Convert raw SVG bytes → [`ImageSource`] with optional color/size |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
+//! | [`animated_frames_to_image_sources_for`] | Convert an icon set's animation frames → [`AnimatedImageSources`], coloured as the set is |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
+//!
+//! # Role icons
+//!
+//! An icon by its role, in the theme's icon set and text colour:
+//! [`SystemTheme::icon`](native_theme::SystemTheme::icon) loads it from the
+//! set the theme names (a freedesktop icon from that colour mode's icon
+//! theme) and colours it, a freedesktop icon only where its foreground is
+//! left to the caller (a symbolic icon, a `currentColor` the icon sets no
+//! colour for), so a full-colour one keeps its own palette; [`to_image_source`]
+//! then converts it, given no colour of its own. An icon the set does not
+//! have is `None`; nothing is substituted. [`icon_name`] is another thing: the
+//! [`IconName`] of gpui-component's bundled Lucide glyph, whatever the
+//! theme's set.
+//!
+//! ```no_run
+//! use gpui::{Styled, img, px};
+//! use native_theme_gpui::icons::to_image_source;
+//! use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
+//!
+//! # fn role_icon(window: &gpui::Window) -> native_theme_gpui::Result<()> {
+//! let sys = SystemTheme::from_system()?;
+//! let resolved = sys.pick(sys.mode);
+//! let fg = resolved.defaults.text_color;
+//! if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
+//!     let logical = icon_sizes(resolved).toolbar;
+//!     let physical = (logical * window.scale_factor()).round() as u32;
+//!     // `None`: `sys.icon` has coloured the icon already.
+//!     if let Some(source) = to_image_source(&data, None, Some(physical)) {
+//!         let icon = img(source).size(px(logical));
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! An SVG icon is rasterized at the size given; a raster one comes at the
+//! size its loader looked it up at, which `SystemTheme::icon` states.
 //!
 //! Every [`ImageSource`] this module builds is an `ImageSource::Render`: an
 //! image gpui draws from as it stands, in the frame that asks for it. The
@@ -37,21 +76,28 @@ use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
-use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
+use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, fill_current_color,
+    load_custom_icon, load_icon,
+};
+use native_theme::theme::IconSet;
+use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 
 /// Converted animation frames with timing metadata.
 ///
-/// Returned by [`animated_frames_to_image_sources`]. Contains the
+/// Returned by [`animated_frames_to_image_sources`] and
+/// [`animated_frames_to_image_sources_for`]. Contains the
 /// rasterized frames and the per-frame duration needed to drive playback.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct AnimatedImageSources {
     /// Rasterized frames ready for gpui rendering.
     pub sources: Vec<ImageSource>,
-    /// Duration of each frame in milliseconds.
-    pub frame_duration_ms: u32,
+    /// Duration of each frame in milliseconds (non-zero, as the icon data's).
+    pub frame_duration_ms: NonZeroU32,
 }
 
 impl std::fmt::Debug for AnimatedImageSources {
@@ -81,12 +127,15 @@ impl std::fmt::Debug for AnimatedImageSources {
 ///
 /// # Examples
 ///
-/// ```ignore
-/// use native_theme::theme::IconRole;
+/// `IconName` has no `PartialEq`, so a variant is told by `matches!`:
+///
+/// ```
+/// use gpui_component::IconName;
+/// use native_theme::icons::IconRole;
 /// use native_theme_gpui::icons::icon_name;
 ///
-/// assert_eq!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert));
-/// assert_eq!(icon_name(IconRole::Shield), None);
+/// assert!(matches!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert)));
+/// assert!(icon_name(IconRole::Shield).is_none());
 /// ```
 #[must_use]
 pub fn icon_name(role: IconRole) -> Option<IconName> {
@@ -152,10 +201,11 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Lucide has no equivalent (today only
-/// `StarFill`, spec §10.2); every `Some` is Lucide's own file name
-/// (`LucideLoader::new(name)` resolves it).
+/// `StarFill`, `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md`
+/// §10.2); every `Some` is Lucide's own file name (`LucideLoader::new(name)`
+/// resolves it).
 #[must_use]
 pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
     Some(match icon {
@@ -283,7 +333,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Material Symbols has no equivalent
 /// (today only `StarOff`); every `Some` is a bundled Material Symbols Outlined
 /// 24px file.
@@ -420,31 +470,25 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
     })
 }
 
-/// Map a gpui-component [`IconName`] to its freedesktop icon name for the
-/// given desktop environment.
+/// Map a gpui-component [`IconName`] to one of its freedesktop names, chosen
+/// by desktop environment.
 ///
-/// Returns the best freedesktop name for the detected DE's naming
-/// convention. When KDE and GNOME use different names for the same
-/// concept, the DE parameter selects the right one. For freedesktop
-/// standard names (present in all themes), the DE is ignored.
+/// The name has to exist in the icon theme the icon is loaded from, which the
+/// desktop does not decide: the adwaita preset's `Adwaita` on KDE, or a
+/// GTK-convention theme on Sway, Hyprland or COSMIC, lacks the Breeze name
+/// this returns there for most icons the two conventions name apart (48 of
+/// the 50 in Adwaita and the AdwaitaLegacy it inherits, which has
+/// `emblem-favorite` and `applications-office` as rasters). Load through
+/// [`freedesktop_name_candidates`] instead, with
+/// [`FreedesktopLoader::any`](native_theme::icons::FreedesktopLoader::any) in
+/// the one theme in use.
 ///
-/// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) share the
-/// Adwaita/GNOME naming convention. Qt-based DEs (KDE, LxQt) and
-/// Unknown share the Breeze/KDE convention.
+/// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) get the GTK
+/// (Adwaita) name, every other desktop the Breeze name; where the two
+/// conventions agree the DE is ignored.
 ///
-/// ## Confidence levels
-///
-/// Each mapping is annotated with a confidence level:
-/// - `exact`: the freedesktop icon is semantically identical
-/// - `close`: same concept, minor visual difference
-/// - `approximate`: best available match, different metaphor
-///
-/// Covers all 106 gpui-component 0.7.1 `IconName` variants; a newer variant
-/// returns `None`. Returns `None` where the freedesktop icon naming
-/// specification has no name for the concept (today every variant has one,
-/// some only as a labelled `close` or `approximate` substitute: `StarOff` and
-/// `HeartOff` both take `non-starred`, the "not starred / not favourite"
-/// state).
+/// Returns `None` for an `IconName` newer than gpui-component 0.7.3, as
+/// [`freedesktop_name_candidates`] returns no name for it.
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
@@ -462,426 +506,171 @@ pub fn freedesktop_name_for_gpui_icon(
             | LinuxDesktop::Mate
             | LinuxDesktop::Xfce
     );
+    let candidates = freedesktop_name_candidates(icon);
+    if is_gtk {
+        candidates.last()
+    } else {
+        candidates.first()
+    }
+    .copied()
+}
 
-    Some(match icon {
+/// The freedesktop names a gpui-component [`IconName`] may have, for
+/// [`FreedesktopLoader::any`](native_theme::icons::FreedesktopLoader::any) in
+/// the one icon theme the icon is loaded from.
+///
+/// One name where the GTK (Adwaita) and Breeze conventions agree, else two:
+/// Breeze's, then GTK's. Which one exists is the icon theme's convention, not
+/// the desktop's. `FreedesktopLoader::any` searches the theme for every name
+/// before the theme it inherits from, so the theme's own icon wins: loaded
+/// name by name, Adwaita's `Heart` would be AdwaitaLegacy's raster
+/// `emblem-favorite`, not Adwaita's own `starred`. Every name is looked up in
+/// that one theme, so no icon comes from another set; a theme that has none
+/// of them has no icon for it.
+///
+/// ```ignore
+/// use native_theme::icons::FreedesktopLoader;
+/// use native_theme_gpui::icons::freedesktop_name_candidates;
+///
+/// let data = FreedesktopLoader::any(freedesktop_name_candidates(gpui_component::IconName::Eye))
+///     .theme("Adwaita")
+///     .load();
+/// ```
+///
+/// ## Confidence levels
+///
+/// Each mapping is annotated with a confidence level:
+/// - `exact`: the freedesktop icon is semantically identical
+/// - `close`: same concept, minor visual difference
+/// - `approximate`: best available match, different metaphor
+///
+/// Covers all 106 gpui-component 0.7.3 `IconName` variants; a newer variant
+/// returns an empty slice. Every variant has a name today, some only as a
+/// labelled `close` or `approximate` substitute: `StarOff` and `HeartOff`
+/// both take `non-starred`, the "not starred / not favourite" state.
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn freedesktop_name_candidates(icon: IconName) -> &'static [&'static str] {
+    match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        IconName::Ban => "action-unavailable", // exact: circle with a slash (Adwaita, Breeze)
-        IconName::Battery => "battery",        // exact
-        IconName::BookOpen => "help-contents", // close
-        IconName::Bot => "face-smile",         // approximate
-        IconName::ChevronDown => "go-down",    // close: full nav arrow, not disclosure chevron
-        IconName::ChevronLeft => "go-previous", // close
-        IconName::ChevronRight => "go-next",   // close
-        IconName::ChevronUp => "go-up",        // close
-        IconName::CircleAlert => "emblem-important", // close: Adwaita a circle with "!", Breeze a bare "!"
-        IconName::CircleX => "dialog-error",         // close
-        IconName::Copy => "edit-copy",               // exact
-        IconName::Dash => "list-remove",             // exact
-        IconName::Delete => "edit-delete",           // exact
-        IconName::File => "text-x-generic",          // exact
-        IconName::FileText => "text-x-generic",      // exact
-        IconName::Folder => "folder",                // exact
-        IconName::FolderClosed => "folder",          // exact
-        IconName::FolderOpen => "folder-open",       // exact
-        IconName::HardDrive => "drive-harddisk",     // exact
-        IconName::HeartOff => "non-starred", // approximate: un-favourite semantics, star metaphor
-        IconName::Info => "dialog-information", // exact
-        IconName::LayoutDashboard => "view-grid", // close
-        IconName::Map => "find-location",    // close
-        IconName::Maximize => "view-fullscreen", // exact
-        IconName::Menu => "open-menu",       // exact
-        IconName::Mic => "audio-input-microphone", // exact (Icon Naming Spec, Devices)
-        IconName::Minimize => "window-minimize", // exact
-        IconName::Minus => "list-remove",    // exact
-        IconName::Moon => "weather-clear-night", // close: dark mode toggle
-        IconName::Network => "network-workgroup", // close
-        IconName::Pause => "media-playback-pause", // exact
-        IconName::Play => "media-playback-start", // exact
-        IconName::Plus => "list-add",        // exact
-        IconName::Redo => "edit-redo",       // exact
-        IconName::Redo2 => "edit-redo",      // exact
-        IconName::RefreshCw => "view-refresh", // exact
-        IconName::Replace => "edit-find-replace", // exact
-        IconName::RotateCw => "object-rotate-right", // exact
-        IconName::Search => "edit-find",     // exact
-        IconName::Settings => "preferences-system", // exact
-        IconName::SortAscending => "view-sort-ascending", // exact
-        IconName::SortDescending => "view-sort-descending", // exact
-        IconName::Square => "media-playback-stop", // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
-        IconName::SquareTerminal => "utilities-terminal", // close
-        IconName::Star => "non-starred", // close: the hollow star, the "not starred" state; `starred` is StarFill's
-        IconName::StarFill => "starred", // exact: the filled "starred" state
-        IconName::StarOff => "non-starred", // approximate: freedesktop has no slashed star; the "not starred" state
-        IconName::Sun => "weather-clear",   // close: light mode toggle
-        IconName::TriangleAlert => "dialog-warning", // exact
-        IconName::Undo => "edit-undo",      // exact
-        IconName::Undo2 => "edit-undo",     // exact
-        IconName::User => "system-users",   // exact
-        IconName::WindowClose => "window-close", // exact
-        IconName::WindowMaximize => "window-maximize", // exact
-        IconName::WindowMinimize => "window-minimize", // exact
-        IconName::WindowRestore => "window-restore", // exact
+        IconName::Ban => &["action-unavailable"], // exact: circle with a slash (Adwaita, Breeze)
+        IconName::Battery => &["battery"],        // exact
+        IconName::BookOpen => &["help-contents"], // close
+        IconName::Bot => &["face-smile"],         // approximate
+        IconName::ChevronDown => &["go-down"],    // close: full nav arrow, not disclosure chevron
+        IconName::ChevronLeft => &["go-previous"], // close
+        IconName::ChevronRight => &["go-next"],   // close
+        IconName::ChevronUp => &["go-up"],        // close
+        IconName::CircleAlert => &["emblem-important"], // close: Adwaita a circle with "!", Breeze a bare "!"
+        IconName::CircleX => &["dialog-error"],         // close
+        IconName::Copy => &["edit-copy"],               // exact
+        IconName::Dash => &["list-remove"],             // exact
+        IconName::Delete => &["edit-delete"],           // exact
+        IconName::File => &["text-x-generic"],          // exact
+        IconName::FileText => &["text-x-generic"],      // exact
+        IconName::Folder => &["folder"],                // exact
+        IconName::FolderClosed => &["folder"],          // exact
+        IconName::FolderOpen => &["folder-open"],       // exact
+        IconName::HardDrive => &["drive-harddisk"],     // exact
+        IconName::HeartOff => &["non-starred"], // approximate: un-favourite semantics, star metaphor
+        IconName::Info => &["dialog-information"], // exact
+        IconName::LayoutDashboard => &["view-grid"], // close
+        IconName::Map => &["find-location"],    // close
+        IconName::Maximize => &["view-fullscreen"], // exact
+        IconName::Menu => &["open-menu"],       // exact
+        IconName::Mic => &["audio-input-microphone"], // exact (Icon Naming Spec, Devices)
+        IconName::Minimize => &["window-minimize"], // exact
+        IconName::Minus => &["list-remove"],    // exact
+        IconName::Moon => &["weather-clear-night"], // close: dark mode toggle
+        IconName::Network => &["network-workgroup"], // close
+        IconName::Pause => &["media-playback-pause"], // exact
+        IconName::Play => &["media-playback-start"], // exact
+        IconName::Plus => &["list-add"],        // exact
+        IconName::Redo => &["edit-redo"],       // exact
+        IconName::Redo2 => &["edit-redo"],      // exact
+        IconName::RefreshCw => &["view-refresh"], // exact
+        IconName::Replace => &["edit-find-replace"], // exact
+        IconName::RotateCw => &["object-rotate-right"], // exact
+        IconName::Search => &["edit-find"],     // exact
+        IconName::Settings => &["preferences-system"], // exact
+        IconName::SortAscending => &["view-sort-ascending"], // exact
+        IconName::SortDescending => &["view-sort-descending"], // exact
+        IconName::Square => &["media-playback-stop"], // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
+        IconName::SquareTerminal => &["utilities-terminal"], // close
+        IconName::Star => &["non-starred"], // close: the hollow star, the "not starred" state; `starred` is StarFill's
+        IconName::StarFill => &["starred"], // exact: the filled "starred" state
+        IconName::StarOff => &["non-starred"], // approximate: freedesktop has no slashed star; the "not starred" state
+        IconName::Sun => &["weather-clear"],   // close: light mode toggle
+        IconName::TriangleAlert => &["dialog-warning"], // exact
+        IconName::Undo => &["edit-undo"],      // exact
+        IconName::Undo2 => &["edit-undo"],     // exact
+        IconName::User => &["system-users"],   // exact
+        IconName::WindowClose => &["window-close"], // exact
+        IconName::WindowMaximize => &["window-maximize"], // exact
+        IconName::WindowMinimize => &["window-minimize"], // exact
+        IconName::WindowRestore => &["window-restore"], // exact
 
-        // --- Icons where KDE and GNOME both have names but they differ ---
-        IconName::ArrowDown => {
-            if is_gtk {
-                "go-bottom"
-            } else {
-                "go-down-skip"
-            }
-        } // close
-        IconName::ArrowLeft => {
-            if is_gtk {
-                "go-first"
-            } else {
-                "go-previous-skip"
-            }
-        } // close
-        IconName::ArrowRight => {
-            if is_gtk {
-                "go-last"
-            } else {
-                "go-next-skip"
-            }
-        } // close
-        IconName::ArrowUp => {
-            if is_gtk {
-                "go-top"
-            } else {
-                "go-up-skip"
-            }
-        } // close
-        IconName::BatteryCharging => {
-            if is_gtk {
-                "battery-full-charging"
-            } else {
-                "battery-100-charging"
-            }
-        } // close
-        IconName::BatteryFull => {
-            if is_gtk {
-                "battery-full"
-            } else {
-                "battery-100"
-            }
-        } // exact
-        IconName::BatteryLow => {
-            if is_gtk {
-                "battery-low"
-            } else {
-                "battery-020"
-            }
-        } // close
-        IconName::BatteryMedium => {
-            if is_gtk {
-                "battery-good"
-            } else {
-                "battery-050"
-            }
-        } // close
-        IconName::BatteryWarning => {
-            if is_gtk {
-                "battery-caution"
-            } else {
-                "battery-010"
-            }
-        } // close (GNOME) / approximate (KDE: near-empty level, no alert icon)
-        IconName::Calendar => {
-            if is_gtk {
-                "x-office-calendar"
-            } else {
-                "view-calendar"
-            }
-        } // exact
-        IconName::Check => {
-            if is_gtk {
-                "object-select"
-            } else {
-                "dialog-ok"
-            }
-        } // close
-        IconName::CircleCheck => {
-            if is_gtk {
-                "object-select"
-            } else {
-                "emblem-ok-symbolic"
-            }
-        } // close
-        IconName::CircleUser => {
-            if is_gtk {
-                "avatar-default"
-            } else {
-                "user-identity"
-            }
-        } // close
-        IconName::Close => {
-            if is_gtk {
-                "window-close"
-            } else {
-                "tab-close"
-            }
-        } // close
-        IconName::Cpu => {
-            if is_gtk {
-                "computer"
-            } else {
-                "cpu"
-            }
-        } // approximate (GNOME) / exact (KDE)
-        IconName::Ellipsis => {
-            if is_gtk {
-                "view-more-horizontal"
-            } else {
-                "overflow-menu"
-            }
-        } // exact
-        IconName::EllipsisVertical => {
-            if is_gtk {
-                "view-more"
-            } else {
-                "overflow-menu"
-            }
-        } // close: no vertical variant in KDE
-        IconName::Eye => {
-            if is_gtk {
-                "view-reveal"
-            } else {
-                "view-visible"
-            }
-        } // exact
-        IconName::EyeOff => {
-            if is_gtk {
-                "view-conceal"
-            } else {
-                "view-hidden"
-            }
-        } // exact
-        IconName::Frame => {
-            if is_gtk {
-                "selection-mode"
-            } else {
-                "select-rectangular"
-            }
-        } // close
-        IconName::Heart => {
-            if is_gtk {
-                "starred"
-            } else {
-                "emblem-favorite"
-            }
-        } // close
-        IconName::Loader => {
-            if is_gtk {
-                "content-loading"
-            } else {
-                "process-working"
-            }
-        } // exact
-        IconName::LoaderCircle => {
-            if is_gtk {
-                "content-loading"
-            } else {
-                "process-working"
-            }
-        } // exact
-        IconName::MemoryStick => {
-            if is_gtk {
-                "media-flash"
-            } else {
-                "memory"
-            }
-        } // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
-        IconName::Palette => {
-            if is_gtk {
-                "color-select"
-            } else {
-                "palette"
-            }
-        } // close
-        IconName::PanelLeft => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "sidebar-expand-left"
-            }
-        } // close
-        IconName::PanelLeftClose => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "view-left-close"
-            }
-        } // close
-        IconName::PanelLeftOpen => {
-            if is_gtk {
-                "sidebar-show"
-            } else {
-                "view-left-new"
-            }
-        } // close
-        IconName::PanelRight => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "sidebar-expand-right"
-            }
-        } // Breeze's pair of PanelLeft's sidebar-expand-left
-        IconName::PanelRightClose => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "view-right-close"
-            }
-        } // close
-        IconName::PanelRightOpen => {
-            if is_gtk {
-                "sidebar-show-right"
-            } else {
-                "view-right-new"
-            }
-        } // close
-        IconName::ResizeCorner => {
-            if is_gtk {
-                "list-drag-handle"
-            } else {
-                "drag-handle"
-            }
-        } // close
-        IconName::Settings2 => {
-            if is_gtk {
-                "preferences-other"
-            } else {
-                "configure"
-            }
-        } // close
+        // --- Icons where KDE and GNOME both have names but they differ:
+        // Breeze's first, then GTK's ---
+        IconName::ArrowDown => &["go-down-skip", "go-bottom"], // close
+        IconName::ArrowLeft => &["go-previous-skip", "go-first"], // close
+        IconName::ArrowRight => &["go-next-skip", "go-last"],  // close
+        IconName::ArrowUp => &["go-up-skip", "go-top"],        // close
+        IconName::BatteryCharging => &["battery-100-charging", "battery-full-charging"], // close
+        IconName::BatteryFull => &["battery-100", "battery-full"], // exact
+        IconName::BatteryLow => &["battery-020", "battery-low"], // close
+        IconName::BatteryMedium => &["battery-050", "battery-good"], // close
+        IconName::BatteryWarning => &["battery-010", "battery-caution"], // close (GNOME) / approximate (KDE: near-empty level, no alert icon)
+        IconName::Calendar => &["view-calendar", "x-office-calendar"],   // exact
+        IconName::Check => &["dialog-ok", "object-select"],              // close
+        IconName::CircleCheck => &["emblem-ok-symbolic", "object-select"], // close
+        IconName::CircleUser => &["user-identity", "avatar-default"],    // close
+        IconName::Close => &["tab-close", "window-close"],               // close
+        IconName::Cpu => &["cpu", "computer"], // approximate (GNOME) / exact (KDE)
+        IconName::Ellipsis => &["overflow-menu", "view-more-horizontal"], // exact
+        IconName::EllipsisVertical => &["overflow-menu", "view-more"], // close: no vertical variant in KDE
+        IconName::Eye => &["view-visible", "view-reveal"],             // exact
+        IconName::EyeOff => &["view-hidden", "view-conceal"],          // exact
+        IconName::Frame => &["select-rectangular", "selection-mode"],  // close
+        IconName::Heart => &["emblem-favorite", "starred"],            // close
+        IconName::Loader => &["process-working", "content-loading"],   // exact
+        IconName::LoaderCircle => &["process-working", "content-loading"], // exact
+        IconName::MemoryStick => &["memory", "media-flash"], // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
+        IconName::Palette => &["palette", "color-select"],   // close
+        IconName::PanelLeft => &["sidebar-expand-left", "sidebar-show"], // close
+        IconName::PanelLeftClose => &["view-left-close", "sidebar-show"], // close
+        IconName::PanelLeftOpen => &["view-left-new", "sidebar-show"], // close
+        IconName::PanelRight => &["sidebar-expand-right", "sidebar-show-right"], // Breeze's pair of PanelLeft's sidebar-expand-left
+        IconName::PanelRightClose => &["view-right-close", "sidebar-show-right"], // close
+        IconName::PanelRightOpen => &["view-right-new", "sidebar-show-right"],   // close
+        IconName::ResizeCorner => &["drag-handle", "list-drag-handle"],          // close
+        IconName::Settings2 => &["configure", "preferences-other"],              // close
 
         // --- Icons where GNOME uses a different (approximate) alternative ---
-        IconName::ALargeSmall => {
-            if is_gtk {
-                "zoom-in"
-            } else {
-                "format-font-size-more"
-            }
-        } // approximate
-        IconName::Asterisk => {
-            if is_gtk {
-                "starred"
-            } else {
-                "rating"
-            }
-        } // approximate
-        IconName::Bell => {
-            if is_gtk {
-                "alarm"
-            } else {
-                "notification-active"
-            }
-        } // close
-        IconName::Building2 => {
-            if is_gtk {
-                "network-workgroup"
-            } else {
-                "applications-office"
-            }
-        } // approximate
-        IconName::CaseSensitive => {
-            if is_gtk {
-                "format-text-rich"
-            } else {
-                "format-text-uppercase"
-            }
-        } // approximate
-        IconName::ChartPie => {
-            if is_gtk {
-                "x-office-spreadsheet"
-            } else {
-                "office-chart-pie"
-            }
-        } // approximate
-        IconName::ChevronsUpDown => {
-            if is_gtk {
-                "list-drag-handle"
-            } else {
-                "handle-sort"
-            }
-        } // close
-        IconName::ExternalLink => {
-            if is_gtk {
-                "insert-link"
-            } else {
-                "external-link"
-            }
-        } // close
-        IconName::GalleryVerticalEnd => {
-            if is_gtk {
-                "view-paged"
-            } else {
-                "view-list-icons"
-            }
-        } // approximate
-        IconName::Github => {
-            if is_gtk {
-                "applications-engineering"
-            } else {
-                "vcs-branch"
-            }
-        } // approximate
-        IconName::Globe => {
-            if is_gtk {
-                "web-browser"
-            } else {
-                "globe"
-            }
-        } // close
-        IconName::Inbox => {
-            if is_gtk {
-                "mail-send-receive"
-            } else {
-                "mail-folder-inbox"
-            }
-        } // close
-        IconName::Inspector => {
-            if is_gtk {
-                "preferences-system-details"
-            } else {
-                "code-context"
-            }
-        } // approximate
-        IconName::PanelBottom => {
-            if is_gtk {
-                "view-dual"
-            } else {
-                "view-split-top-bottom"
-            }
-        } // close
-        IconName::PanelBottomOpen => {
-            if is_gtk {
-                "view-dual"
-            } else {
-                "view-split-top-bottom"
-            }
-        } // close
-        IconName::ThumbsDown => {
-            if is_gtk {
-                "process-stop"
-            } else {
-                "rating-unrated"
-            }
-        } // approximate
-        IconName::ThumbsUp => {
-            if is_gtk {
-                "checkbox-checked"
-            } else {
-                "approved"
-            }
-        } // approximate
+        IconName::ALargeSmall => &["format-font-size-more", "zoom-in"], // approximate
+        IconName::Asterisk => &["rating", "starred"],                   // approximate
+        IconName::Bell => &["notification-active", "alarm"],            // close
+        IconName::Building2 => &["applications-office", "network-workgroup"], // approximate
+        IconName::CaseSensitive => &["format-text-uppercase", "format-text-rich"], // approximate
+        IconName::ChartPie => &["office-chart-pie", "x-office-spreadsheet"], // approximate
+        IconName::ChevronsUpDown => &["handle-sort", "list-drag-handle"], // close
+        IconName::ExternalLink => &["external-link", "insert-link"],    // close
+        IconName::GalleryVerticalEnd => &["view-list-icons", "view-paged"], // approximate
+        IconName::Github => &["vcs-branch", "applications-engineering"], // approximate
+        IconName::Globe => &["globe", "web-browser"],                   // close
+        IconName::Inbox => &["mail-folder-inbox", "mail-send-receive"], // close
+        IconName::Inspector => &["code-context", "preferences-system-details"], // approximate
+        IconName::PanelBottom => &["view-split-top-bottom", "view-dual"], // close
+        IconName::PanelBottomOpen => &["view-split-top-bottom", "view-dual"], // close
+        IconName::ThumbsDown => &["rating-unrated", "process-stop"],    // approximate
+        IconName::ThumbsUp => &["approved", "checkbox-checked"],        // approximate
         // An `IconName` newer than this table (upstream adds icons in patch
         // releases) draws nothing from this set rather than another set's
         // glyph. The test module's `variant_name` is the match without a
         // wildcard that makes the dependency canary report the newcomer.
         #[allow(unreachable_patterns)]
-        _ => return None,
-    })
+        _ => &[],
+    }
 }
 
 /// Default rasterization size for SVG icons.
@@ -894,7 +683,7 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 ///
 /// Values above this are clamped to prevent excessive memory allocation
 /// from a single icon render.
-const MAX_ICON_SIZE: u32 = 512;
+pub(crate) const MAX_ICON_SIZE: u32 = 512;
 
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
@@ -904,8 +693,9 @@ const MAX_ICON_SIZE: u32 = 512;
 /// # Parameters
 ///
 /// - `color`: If `Some`, colorizes monochrome SVGs with the given color
-///   (replaces `currentColor`, explicit black fills/strokes, or injects a fill
-///   attribute). Best for bundled icon sets (Material, Lucide). Pass `None`
+///   through [`colorize_monochrome_svg`] (replaces `currentColor`, explicit
+///   black fills/strokes, or injects a fill attribute). Best for bundled icon
+///   sets (Material, Lucide). Pass `None`
 ///   for system/OS icons to preserve their native palette.
 ///   RGBA icons are passed through unchanged regardless of this parameter --
 ///   the color's alpha channel is discarded during SVG colorization because
@@ -922,7 +712,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// of the feature: the source is an
 /// `ImageSource::Image(Image::from_bytes(ImageFormat::Svg, bytes))` holding
 /// the SVG bytes, colorized first when `color` is `Some`, and gpui decodes it
-/// with its own resvg (gpui-pre `src/platform.rs:3298-3301`). That costs two
+/// with its own resvg (gpui-pre `src/platform.rs:3351-3354`). That costs two
 /// things. gpui decodes it in the background, so an element holding it paints
 /// nothing the first time it comes up (gpui-pre `src/elements/img.rs:534-553`).
 /// And gpui chooses the raster size, twice the SVG's own size
@@ -936,8 +726,8 @@ const MAX_ICON_SIZE: u32 = 512;
 /// carries a decoded [`gpui::RenderImage`], which takes a tile in each
 /// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2983-2993`,
-/// `src/window.rs:5037-5048`); nothing releases it on its own. An application
+/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
+/// `src/window.rs:5175-5186`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
 /// before it lets go of it. Without `svg-rasterize`, an SVG icon's source is
@@ -947,11 +737,12 @@ const MAX_ICON_SIZE: u32 = 512;
 ///
 /// # Examples
 ///
-/// ```ignore
-/// use native_theme::theme::IconData;
+/// ```no_run
+/// use native_theme::icons::IconData;
 /// use native_theme_gpui::icons::to_image_source;
 /// use std::borrow::Cow;
 ///
+/// # let color = gpui::black();
 /// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// let source = to_image_source(&svg, None, None);         // uncolorized, 48px
 /// let colored = to_image_source(&svg, Some(color), None);  // colorized, 48px
@@ -963,22 +754,11 @@ pub fn to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    // Issue 28: clamp icon size to 1..=512
-    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
     match data {
-        IconData::Svg(bytes) => {
-            if let Some(c) = color {
-                let colored = colorize_svg(bytes, c);
-                svg_to_render_source(&colored, raster_size)
-            } else {
-                svg_to_render_source(bytes, raster_size)
-            }
+        IconData::Svg(bytes) => svg_bytes_to_image_source(bytes, color, size),
+        IconData::Rgba(rgba) => {
+            rgba_to_render_source(rgba.width(), rgba.height(), rgba.data().to_vec())
         }
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => rgba_to_render_source(*width, *height, data),
         _ => None,
     }
 }
@@ -986,9 +766,10 @@ pub fn to_image_source(
 /// Convert [`IconData`] to a gpui [`ImageSource`], consuming the data.
 ///
 /// This is the consuming variant of [`to_image_source()`]. It takes ownership
-/// of the `IconData` so the caller doesn't need to keep it alive. Internally
-/// delegates to [`to_image_source()`] -- the `Vec<u8>` is borrowed, not moved,
-/// because rasterization always produces new output buffers.
+/// of the `IconData` so the caller doesn't need to keep it alive. An RGBA
+/// icon's pixel buffer is converted in place and handed to gpui, not copied;
+/// an SVG is converted as [`to_image_source()`] converts it, since
+/// rasterization produces a new buffer.
 ///
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
 /// unknown variant).
@@ -1001,23 +782,38 @@ pub fn into_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    to_image_source(&data, color, size)
+    match data {
+        IconData::Rgba(rgba) => {
+            let (width, height) = (rgba.width(), rgba.height());
+            rgba_to_render_source(width, height, rgba.into_data())
+        }
+        other => to_image_source(&other, color, size),
+    }
 }
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Loads the provider's icon for `icon_set`, then converts it with
-/// [`to_image_source()`]. A system set's icon (`Freedesktop`, `SfSymbols`,
-/// `SegoeIcons`) named by the provider is loaded in `color` through
-/// [`FreedesktopLoader`], [`SfSymbolsLoader`] or [`SegoeIconsLoader`], since
-/// its monochrome glyphs arrive in the colour they are loaded in; a bundled
-/// set's goes through [`load_icon`].
+/// Loads the provider's icon for `icon_set` through [`load_custom_icon`] in
+/// `color` at `size`, then converts it with [`into_image_source()`] with no
+/// colour of its own. [`load_custom_icon`] colours each set its own way: an
+/// SF Symbol or a Segoe glyph is drawn in `color`, a Material or Lucide icon,
+/// or the provider's own SVG, goes through the monochrome colouriser, and a
+/// freedesktop icon is coloured where its foreground is left to the caller (a
+/// symbolic icon's placeholders, a `currentColor` the document sets no
+/// `color` for), so one whose stylesheet sets its colour (a Breeze
+/// `current-color-scheme`) keeps that colour and a full-colour one its own
+/// palette. `size`, clamped to
+/// `1..=512` as for an SVG, reaches the system sets' loaders too: a
+/// freedesktop icon is looked up at it, so a PNG one comes back from the
+/// theme's directory nearest it, an SF Symbol is configured at it in points
+/// and a Segoe glyph drawn at it in pixels, and the RGBA they return is
+/// handed to gpui at its own size.
 ///
 /// Returns `None` if the provider has no icon for the given set or if
 /// conversion fails.
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters,
-/// and for what an SVG becomes without the `svg-rasterize` feature.
+/// See [`to_image_source()`] for details on the `size` parameter, and for
+/// what an SVG becomes without the `svg-rasterize` feature.
 #[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
@@ -1025,37 +821,9 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_via_builder(provider, icon_set, color.map(hsla_to_rgb))?;
-    to_image_source(&data, color, size)
-}
-
-/// Internal helper: load an icon from a provider using the typed per-set loaders.
-///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
-/// set's icon is loaded in `color`; a bundled set goes through [`load_icon`].
-/// This preserves the `?Sized` bound on the public API.
-fn load_custom_via_builder(
-    provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
-    color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    use native_theme::theme::IconSet;
-    // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
-            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
-            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
-            set => load_icon(name, set),
-        }
-    {
-        return Some(data);
-    }
-    // Step 2: Try bundled SVG from provider
-    if let Some(svg) = provider.icon_svg(icon_set) {
-        return Some(IconData::Svg(svg));
-    }
-    None
+    let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
+    let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
+    into_image_source(data, None, size)
 }
 
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
@@ -1070,7 +838,7 @@ fn load_custom_via_builder(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use gpui_component::IconName;
 /// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::bundled_icon_to_image_source;
@@ -1118,11 +886,12 @@ pub fn bundled_svg_to_image_source(
     svg_bytes_to_image_source(svg_bytes, color, size)
 }
 
-/// Internal: rasterize SVG bytes to an [`ImageSource`] without copying to [`IconData`].
+/// Internal: rasterize SVG bytes to an [`ImageSource`] without copying to [`IconData`],
+/// coloured through [`colorize_monochrome_svg`] where `color` is given: the
+/// SVG path of [`to_image_source()`] and [`bundled_svg_to_image_source()`].
 ///
 /// Issue 27: avoids the heap copy that wrapping in `IconData::Svg(bytes.to_vec())`
-/// would incur. Uses the same colorize + rasterize logic as `to_image_source`'s
-/// SVG branch.
+/// would incur. Issue 28: the size is clamped to `1..=512`.
 fn svg_bytes_to_image_source(
     svg_bytes: &[u8],
     color: Option<Hsla>,
@@ -1130,7 +899,7 @@ fn svg_bytes_to_image_source(
 ) -> Option<ImageSource> {
     let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
     if let Some(c) = color {
-        let colored = colorize_svg(svg_bytes, c);
+        let colored = colorize_monochrome_svg(svg_bytes, to_rgba(c));
         svg_to_render_source(&colored, raster_size)
     } else {
         svg_to_render_source(svg_bytes, raster_size)
@@ -1142,6 +911,12 @@ fn svg_bytes_to_image_source(
 /// Returns `Some(AnimatedImageSources)` when the icon is the `Frames` variant,
 /// with one `ImageSource` per frame. Returns `None` for `Transform` variants
 /// or if any frame fails to convert.
+///
+/// When `color` is `Some`, every SVG frame goes through the monochrome
+/// colouriser, as in [`to_image_source()`]: the colour is for a monochrome
+/// bundled set's frames (Material, Lucide). Pass `None` for a system set's
+/// frames, which this colouriser would repaint over the theme's own colours,
+/// or colour them per set with [`animated_frames_to_image_sources_for()`].
 ///
 /// **All-or-nothing semantics:** if any single frame fails to rasterize, the
 /// entire animation returns `None`. This prevents timing glitches where a
@@ -1167,8 +942,8 @@ fn svg_bytes_to_image_source(
 /// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
 ///
-/// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
-///     load_icon_indicator(IconSet::Lucide)
+/// if let Some(AnimatedImageSources { sources, frame_duration_ms, .. }) =
+///     load_icon_indicator(IconSet::Lucide, None)
 ///         .and_then(|anim| animated_frames_to_image_sources(&anim, None, None))
 /// {
 ///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):
@@ -1182,21 +957,74 @@ pub fn animated_frames_to_image_sources(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<AnimatedImageSources> {
+    frames_to_image_sources(anim, |frame| to_image_source(frame, color, size))
+}
+
+/// Convert all frames of an [`AnimatedIcon::Frames`] of `set` to gpui
+/// [`ImageSource`]s, each SVG frame coloured as `set` colours it.
+///
+/// With `color` given, a Material or Lucide frame goes through
+/// [`colorize_monochrome_svg`], as in [`to_image_source()`]; a freedesktop
+/// frame has its `currentColor` filled in `color` only where the document
+/// sets no `color` of its own ([`fill_current_color`]), so a theme whose
+/// stylesheet sets one (Breeze's `process-working`, under
+/// `.ColorScheme-Text { color:#232629 }`) keeps it, and a symbolic frame
+/// whose `currentColor` nothing resolves is drawn in `color`, not black; an
+/// SF Symbols or Segoe Fluent frame, and any RGBA frame, is drawn as it is.
+/// With `color` `None` every frame is drawn as it is.
+///
+/// Otherwise as [`animated_frames_to_image_sources()`]: `None` for a
+/// `Transform` animation or if any frame fails to convert, and the result is
+/// for caching, not for every frame tick.
+///
+/// # Examples
+///
+/// ```no_run
+/// use native_theme::icons::load_icon_indicator;
+/// use native_theme::theme::IconSet;
+/// use native_theme_gpui::icons::animated_frames_to_image_sources_for;
+///
+/// # let text_color = gpui::black();
+/// let set = IconSet::Freedesktop;
+/// let frames = load_icon_indicator(set, None)
+///     .and_then(|anim| animated_frames_to_image_sources_for(set, &anim, Some(text_color), None));
+/// ```
+#[must_use]
+pub fn animated_frames_to_image_sources_for(
+    set: IconSet,
+    anim: &AnimatedIcon,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<AnimatedImageSources> {
+    let color = color.map(to_rgba);
+    frames_to_image_sources(anim, |frame| match frame {
+        IconData::Svg(bytes) => {
+            let svg = match (set, color) {
+                (IconSet::Material | IconSet::Lucide, Some(c)) => {
+                    Cow::Owned(colorize_monochrome_svg(bytes, c))
+                }
+                (IconSet::Freedesktop, Some(c)) => fill_current_color(bytes, c),
+                _ => Cow::Borrowed(bytes.as_ref()),
+            };
+            svg_bytes_to_image_source(&svg, None, size)
+        }
+        other => to_image_source(other, None, size),
+    })
+}
+
+/// Each frame of an [`AnimatedIcon::Frames`] through `convert`, all or
+/// nothing: `None` for a `Transform` animation or if any frame fails, so a
+/// dropped frame never makes the animation play faster.
+fn frames_to_image_sources(
+    anim: &AnimatedIcon,
+    convert: impl Fn(&IconData) -> Option<ImageSource>,
+) -> Option<AnimatedImageSources> {
     match anim {
         AnimatedIcon::Frames(data) => {
-            // FrameList is guaranteed non-empty by construction, so no
-            // is_empty() check needed.
-            // Issue 4: use map + collect::<Option<Vec<_>>> so the whole
-            // animation fails if any frame fails. This prevents timing
-            // glitches from silently dropped frames.
-            let sources: Option<Vec<ImageSource>> = data
-                .frames()
-                .iter()
-                .map(|f| to_image_source(f, color, size))
-                .collect();
+            let sources: Option<Vec<ImageSource>> = data.frames().iter().map(convert).collect();
             sources.map(|s| AnimatedImageSources {
                 sources: s,
-                frame_duration_ms: data.frame_duration_ms().get(),
+                frame_duration_ms: data.frame_duration_ms(),
             })
         }
         _ => None,
@@ -1209,7 +1037,7 @@ pub fn animated_frames_to_image_sources(
 /// milliseconds, repeating infinitely. Uses linear easing for constant-speed
 /// rotation suitable for loading spinners.
 ///
-/// `duration_ms` comes from [`native_theme::theme::TransformAnimation::Spin`].
+/// `duration_ms` comes from [`native_theme::icons::TransformAnimation::Spin`].
 /// `animation_id` must be unique among sibling animated elements (accepts
 /// `&'static str`, integer IDs, or any `impl Into<ElementId>`).
 ///
@@ -1219,27 +1047,43 @@ pub fn animated_frames_to_image_sources(
 /// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to a static icon when the user has requested reduced motion.
 ///
-/// A `duration_ms` of 0 produces a zero-duration animation -- caller's
-/// responsibility to pass valid durations.
+/// The period is a [`NonZeroU32`], as the icon data's is: gpui divides the
+/// elapsed time by it, and a zero period would make the rotation NaN, which
+/// a debug build asserts against (gpui-pre `src/elements/animation.rs`,
+/// `AnimationElement::request_layout`). A zero does not compile:
+///
+/// ```compile_fail,E0308
+/// use native_theme_gpui::icons::with_spin_animation;
+///
+/// let _ = with_spin_animation(gpui::svg(), "spin", 0);
+/// ```
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
+/// use native_theme::icons::{IconData, TransformAnimation, load_icon_indicator};
+/// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::with_spin_animation;
+/// use gpui::Styled;
 ///
-/// let spinner = gpui::svg().path("spinner.svg").size_6();
-/// let animated = with_spin_animation(spinner, "my-spinner", 1000);
-/// // Use `animated` as a child element in your gpui view
+/// if let Some(anim) = load_icon_indicator(IconSet::Material, None)
+///     && let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
+///         (anim.icon(), anim.animation())
+/// {
+///     let spinner = gpui::svg().data(bytes).size_6();
+///     let animated = with_spin_animation(spinner, "my-spinner", *duration_ms);
+///     // Use `animated` as a child element in your gpui view
+/// }
 /// ```
 #[must_use]
 pub fn with_spin_animation(
     element: Svg,
     animation_id: impl Into<gpui::ElementId>,
-    duration_ms: u32,
+    duration_ms: NonZeroU32,
 ) -> impl gpui::IntoElement {
     element.with_animation(
         animation_id,
-        Animation::new(Duration::from_millis(duration_ms as u64)).repeat(),
+        Animation::new(Duration::from_millis(u64::from(duration_ms.get()))).repeat(),
         |el, delta| el.with_transformation(Transformation::rotate(percentage(delta))),
     )
 }
@@ -1249,21 +1093,17 @@ pub fn with_spin_animation(
 /// Returns `None` if rasterization fails (corrupt SVG, empty data).
 #[cfg(feature = "svg-rasterize")]
 fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
-    let Ok(IconData::Rgba {
-        width,
-        height,
-        data,
-    }) = native_theme::rasterize::rasterize_svg(svg_bytes, size)
-    else {
+    let Ok(IconData::Rgba(rgba)) = native_theme::rasterize::rasterize_svg(svg_bytes, size) else {
         return None;
     };
-    rgba_to_render_source(width, height, &data)
+    let (width, height) = (rgba.width(), rgba.height());
+    rgba_to_render_source(width, height, rgba.into_data())
 }
 
 /// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
 ///
 /// Without `svg-rasterize` this crate has no rasterizer of its own; gpui
-/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3298-3301`),
+/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3351-3354`),
 /// in the background and at twice the SVG's own size
 /// (`src/svg_renderer.rs:81, 200-206`), so `size` is not used. The bytes are
 /// not parsed here: this returns `Some` for any input, and an SVG gpui cannot
@@ -1276,7 +1116,8 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
     ))))
 }
 
-/// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from.
+/// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from,
+/// converting the buffer in place.
 ///
 /// `ImageSource::Render` is answered from the value itself, in the frame that
 /// asks for it; `ImageSource::Image` goes through `window.use_asset`, which
@@ -1288,7 +1129,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// The pixels are converted the way gpui's own decoder converts them: it turns
 /// the decoded image into RGBA8 and then swaps each pixel's first and third
 /// byte, leaving a BGRA buffer, and premultiplies nothing (gpui-pre
-/// `src/platform.rs:3187-3201`, the `RenderImage` it builds at `:3306`).
+/// `src/platform.rs:3240-3254`, the `RenderImage` it builds at `:3359`).
 ///
 /// Returns `None` for zero dimensions, for a buffer whose length is not
 /// `width × height × 4`, and for dimensions whose product overflows.
@@ -1296,25 +1137,24 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// A [`RenderImage`] the caller keeps holds a tile in each window's sprite
 /// atlas from the first frame that draws it, and nothing releases that tile on
 /// its own: gpui frees one only through `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:2983-2993`,
-/// `src/window.rs:5037-5048`), which its own image cache calls when it evicts
+/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
+/// `src/window.rs:5175-5186`), which its own image cache calls when it evicts
 /// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should hand each replaced source to `App::drop_image`
 /// before dropping it, or the old tiles stay for the life of the window.
-fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSource> {
+fn rgba_to_render_source(width: u32, height: u32, mut pixels: Vec<u8>) -> Option<ImageSource> {
     if width == 0 || height == 0 {
         return None;
     }
     let expected = (width as usize)
         .checked_mul(height as usize)?
         .checked_mul(4)?;
-    if rgba.len() != expected {
+    if pixels.len() != expected {
         return None;
     }
     // `as_chunks_mut::<4>()` yields `[u8; 4]` pixels, so the destructuring is
     // irrefutable and needs no indexing.
-    let mut pixels = rgba.to_vec();
     for [r, _g, b, _a] in pixels.as_chunks_mut::<4>().0 {
         std::mem::swap(r, b);
     }
@@ -1324,105 +1164,15 @@ fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSo
     ]))))
 }
 
-/// An `Hsla` colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
-fn hsla_to_rgb(color: Hsla) -> [u8; 3] {
+/// An `Hsla` colour as an opaque [`native_theme::Rgba`], each channel
+/// clamped to `0.0..=1.0`.
+fn to_rgba(color: Hsla) -> native_theme::Rgba {
     let rgba: gpui::Rgba = color.into();
-    [
+    native_theme::Rgba::rgb(
         (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8,
         (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
         (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
-    ]
-}
-
-/// Rewrite SVG bytes to use the given color for strokes and fills.
-///
-/// Handles four SVG color patterns (in order):
-/// 1. **`currentColor`** -- replaced with the hex color (Lucide-style SVGs).
-/// 2. **Explicit black fills** -- `fill="black"`, `fill="#000000"`, `fill="#000"`
-///    are replaced with the hex color (third-party SVGs with hardcoded black).
-/// 3. **Explicit black strokes** -- `stroke="black"`, `stroke="#000000"`,
-///    `stroke="#000"` are also replaced (Issue 10).
-/// 4. **Implicit black** -- if the root `<svg>` tag has no `fill=` attribute,
-///    injects `fill="<hex>"` (Material-style SVGs).
-///
-/// **Limitations** (Issue 34): CSS inline styles (`style="fill:black"`),
-/// `fill="rgb(0,0,0)"`, and explicit black on child elements when the root
-/// tag has a different fill are not handled. This function is designed for
-/// monochrome icon sets; multi-color SVGs should not be colorized.
-///
-/// **Alpha discard** (Issue 21): the Hsla color's alpha channel is discarded.
-/// SVG fill/stroke attributes only accept opaque hex (`#rrggbb`); semi-transparent
-/// colors are converted to their opaque RGB equivalent.
-fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
-    let [r, g, b] = hsla_to_rgb(color);
-    let hex = format!("#{r:02x}{g:02x}{b:02x}");
-
-    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
-        // Non-UTF-8 SVGs pass through unmodified -- no corruption risk.
-        // These are typically multi-color system icons that shouldn't be colorized.
-        return svg_bytes.to_vec();
-    };
-
-    // 1. Replace currentColor (handles Lucide-style SVGs)
-    let replaced = if svg_str.contains("currentColor") {
-        svg_str.replace("currentColor", &hex)
-    } else {
-        svg_str.to_owned()
-    };
-
-    // 2. Replace explicit black fills (handles third-party SVGs)
-    let fill_hex = format!("fill=\"{hex}\"");
-    let replaced = replaced
-        .replace("fill=\"black\"", &fill_hex)
-        .replace("fill=\"#000000\"", &fill_hex)
-        .replace("fill=\"#000\"", &fill_hex);
-
-    // 3. Issue 10: also replace explicit black strokes
-    let stroke_hex = format!("stroke=\"{hex}\"");
-    let replaced = replaced
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
-
-    if replaced != svg_str {
-        return replaced.into_bytes();
-    }
-
-    // 4. No currentColor or explicit black -- inject fill into root <svg> tag
-    // (handles Material-style SVGs with implicit black fill)
-    if let Some(pos) = svg_str.find("<svg")
-        && let Some(tail) = svg_str.get(pos..)
-        && let Some(close) = tail.find('>')
-    {
-        let tag_end = pos.saturating_add(close);
-        if let Some(tag) = svg_str.get(pos..tag_end)
-            && !tag.contains("fill=")
-        {
-            // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let is_self_closing = tag_end > 0
-                && svg_str
-                    .as_bytes()
-                    .get(tag_end.saturating_sub(1))
-                    .is_some_and(|&b| b == b'/');
-            let inject_pos = if is_self_closing {
-                tag_end.saturating_sub(1)
-            } else {
-                tag_end
-            };
-            if let Some(before) = svg_str.get(..inject_pos)
-                && let Some(after) = svg_str.get(inject_pos..)
-            {
-                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
-                result.push_str(before);
-                result.push_str(&format!(" fill=\"{hex}\""));
-                result.push_str(after);
-                return result.into_bytes();
-            }
-        }
-    }
-
-    // SVG already has non-black fill and no currentColor -- return as-is
-    svg_bytes.to_vec()
+    )
 }
 
 #[cfg(test)]
@@ -1992,22 +1742,23 @@ mod tests {
 
     #[test]
     fn to_image_source_rgba_returns_a_decoded_image_in_gpuis_channel_order() {
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![
+        let rgba = IconData::rgba(
+            2,
+            2,
+            vec![
                 255, 0, 0, 255, // red
                 0, 255, 0, 255, // green
                 0, 0, 255, 255, // blue
                 255, 255, 0, 255, // yellow
             ],
-        };
+        )
+        .expect("a 2 x 2 buffer");
         let source = to_image_source(&rgba, None, None).expect("RGBA should convert");
         let image = rendered(source);
         assert_eq!(image.frame_count(), 1);
         // A `RenderImage` holds BGRA, which is what gpui's own decoder leaves
         // behind: it converts to RGBA8 and then swaps each pixel's first and
-        // third byte (gpui-pre `src/platform.rs:3196-3199`).
+        // third byte (gpui-pre `src/platform.rs:3249-3252`).
         assert_eq!(
             image.as_bytes(0),
             Some(
@@ -2085,7 +1836,10 @@ mod tests {
         };
         assert_eq!(colored.format, gpui::ImageFormat::Svg);
         assert_ne!(colored.bytes.as_slice(), svg_bytes(&svg));
-        assert_eq!(colored.bytes, colorize_svg(svg_bytes(&svg), color));
+        assert_eq!(
+            colored.bytes,
+            colorize_monochrome_svg(svg_bytes(&svg), to_rgba(color))
+        );
     }
 
     #[cfg(not(feature = "svg-rasterize"))]
@@ -2101,7 +1855,7 @@ mod tests {
     #[test]
     fn rgba_to_render_source_keeps_the_pixels_and_the_size() {
         let rgba = vec![0u8; 4 * 4 * 4]; // 4x4 image
-        let image = rendered(rgba_to_render_source(4, 4, &rgba).expect("valid input"));
+        let image = rendered(rgba_to_render_source(4, 4, rgba.clone()).expect("valid input"));
         assert_eq!(
             image.size(0),
             gpui::size(gpui::DevicePixels(4), gpui::DevicePixels(4))
@@ -2113,208 +1867,50 @@ mod tests {
     fn rgba_to_render_source_pixel_order_is_bgra() {
         // Input RGBA: R=0xAA, G=0xBB, B=0xCC, A=0xDD
         let rgba = vec![0xAA, 0xBB, 0xCC, 0xDD];
-        let image = rendered(rgba_to_render_source(1, 1, &rgba).expect("valid input"));
+        let image = rendered(rgba_to_render_source(1, 1, rgba).expect("valid input"));
         assert_eq!(image.as_bytes(0), Some([0xCC, 0xBB, 0xAA, 0xDD].as_slice()));
     }
 
     #[test]
     fn rgba_to_render_source_zero_width_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(rgba_to_render_source(0, 1, &rgba).is_none());
+        assert!(rgba_to_render_source(0, 1, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_zero_height_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(rgba_to_render_source(1, 0, &rgba).is_none());
+        assert!(rgba_to_render_source(1, 0, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_mismatched_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 12
         let rgba = vec![0u8; 12];
-        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
+        assert!(rgba_to_render_source(2, 2, rgba).is_none());
     }
 
     #[test]
     fn rgba_to_render_source_oversized_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 20
         let rgba = vec![0u8; 20];
-        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
-    }
-    // --- colorize_svg tests ---
-
-    #[test]
-    fn colorize_svg_replaces_fill_black() {
-        let svg = b"<svg><path fill=\"black\" d=\"M0 0h24v24H0z\"/></svg>";
-        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0); // a blue-ish color
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"black\""),
-            "fill=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should contain hex fill, got: {}",
-            result_str
-        );
+        assert!(rgba_to_render_source(2, 2, rgba).is_none());
     }
 
+    /// The HSL conversion gpui-pre does (`src/color.rs:194-221`), by hand:
+    /// h 0, s 1, l 0.5 has chroma 1 and m 0, so (1, 0, 0); h 0.5 (sector 3,
+    /// `(m, x + m, c + m)`), s 1, l 0.25 has chroma 0.5, x 0.5 and m 0, so
+    /// (0, 0.5, 0.5), and 0.5 × 255 = 127.5 rounds to 128. The alpha goes:
+    /// the colour is opaque.
     #[test]
-    fn colorize_svg_replaces_fill_hex_black() {
-        let svg = b"<svg><rect fill=\"#000000\" width=\"24\" height=\"24\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("#000000"),
-            "fill=\"#000000\" should be replaced, got: {}",
-            result_str
+    fn to_rgba_is_the_opaque_rgb_of_the_hsla() {
+        assert_eq!(
+            to_rgba(gpui::hsla(0.0, 1.0, 0.5, 1.0)),
+            native_theme::Rgba::new(255, 0, 0, 255)
         );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_fill_short_hex_black() {
-        let svg = b"<svg><rect fill=\"#000\" width=\"24\" height=\"24\"/></svg>";
-        let color = gpui::hsla(0.3, 0.8, 0.4, 1.0); // green
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("fill=\"#000\""),
-            "fill=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_current_color_still_works() {
-        let svg = b"<svg><path stroke=\"currentColor\" d=\"M0 0\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("currentColor"),
-            "currentColor should be replaced"
-        );
-        assert!(result_str.contains('#'), "should contain hex color");
-    }
-
-    #[test]
-    fn colorize_svg_implicit_black_still_works() {
-        // SVG with no fill attribute at all (Material-style)
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should inject fill into root svg tag, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_non_utf8_returns_original() {
-        // Non-UTF-8 bytes: valid SVG prefix followed by invalid byte sequence
-        let mut svg = b"<svg><path fill=\"black\" d=\"M0 0\"/>".to_vec();
-        svg.push(0xFF); // invalid UTF-8 byte
-        svg.extend_from_slice(b"</svg>");
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(&svg, color);
-        assert_eq!(result, svg, "non-UTF-8 input should be returned unchanged");
-    }
-
-    // Issue 10: stroke="black" replacement
-    #[test]
-    fn colorize_svg_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0h24\"/></svg>";
-        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("stroke=\"black\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("stroke=\"#"),
-            "should contain hex stroke, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_stroke_hex_black() {
-        let svg = b"<svg><line stroke=\"#000000\" x1=\"0\" y1=\"0\" x2=\"24\" y2=\"24\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("#000000"),
-            "stroke=\"#000000\" should be replaced"
-        );
-    }
-
-    #[test]
-    fn colorize_self_closing_svg_produces_valid_xml() {
-        // Self-closing <svg .../> tag — fill must be injected before '/'
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" />";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#"),
-            "should inject fill, got: {}",
-            result_str
-        );
-        // Must NOT produce '/ fill=' (broken XML)
-        assert!(
-            !result_str.contains("/ fill="),
-            "fill must be before '/', got: {}",
-            result_str
-        );
-        // Must end with '/>' (valid self-closing)
-        assert!(
-            result_str.trim().ends_with("/>"),
-            "should remain self-closing, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 66: colorize_svg preserves non-black fill on root <svg>
-    #[test]
-    fn colorize_svg_with_fill_white_root() {
-        // SVG root has fill="white" — should NOT be replaced with target color
-        let svg = b"<svg fill=\"white\"><path/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"white\""),
-            "fill=\"white\" should be preserved, got: {}",
-            result_str
-        );
-    }
-
-    // Issue 66: colorize_svg replaces stroke="black" even when root has fill="none"
-    #[test]
-    fn colorize_svg_with_fill_none_root() {
-        let svg = b"<svg fill=\"none\"><path stroke=\"black\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        // stroke="black" should be replaced with the target color hex
-        assert!(
-            !result_str.contains("stroke=\"black\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("stroke=\"#"),
-            "should contain hex stroke, got: {}",
-            result_str
+        assert_eq!(
+            to_rgba(gpui::hsla(0.5, 1.0, 0.25, 0.4)),
+            native_theme::Rgba::new(0, 128, 128, 255)
         );
     }
 
@@ -2330,16 +1926,29 @@ mod tests {
     }
 
     #[test]
-    fn into_image_source_rgba_returns_some() {
-        let rgba = IconData::Rgba {
-            width: 2,
-            height: 2,
-            data: vec![
+    fn into_image_source_rgba_is_the_buffer_in_bgra_order() {
+        let rgba = IconData::rgba(
+            2,
+            2,
+            vec![
                 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
             ],
-        };
-        let result = into_image_source(rgba, None, None);
-        assert!(result.is_some(), "RGBA should convert");
+        )
+        .expect("a 2 x 2 buffer");
+        let image = rendered(into_image_source(rgba, None, None).expect("RGBA should convert"));
+        assert_eq!(
+            image.size(0),
+            gpui::size(gpui::DevicePixels(2), gpui::DevicePixels(2))
+        );
+        assert_eq!(
+            image.as_bytes(0),
+            Some(
+                [
+                    0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255, 0, 255, 255, 255
+                ]
+                .as_slice()
+            )
+        );
     }
 
     #[test]
@@ -2358,7 +1967,7 @@ mod tests {
     #[derive(Debug)]
     struct TestCustomIcon;
 
-    impl native_theme::theme::IconProvider for TestCustomIcon {
+    impl native_theme::icons::IconProvider for TestCustomIcon {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None // No system name -- forces bundled SVG path
         }
@@ -2374,7 +1983,7 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::theme::IconProvider for EmptyProvider {
+    impl native_theme::icons::IconProvider for EmptyProvider {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
@@ -2427,7 +2036,7 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_accepts_dyn_provider() {
-        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestCustomIcon);
+        let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestCustomIcon);
         let result = custom_icon_to_image_source(
             &*boxed,
             native_theme::theme::IconSet::Material,
@@ -2435,6 +2044,268 @@ mod tests {
             None,
         );
         assert!(result.is_some());
+    }
+
+    /// Names `folder` for the freedesktop set and has no SVG of its own.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[derive(Debug)]
+    struct FolderProvider;
+
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    impl native_theme::icons::IconProvider for FolderProvider {
+        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
+            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        }
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            None
+        }
+    }
+
+    /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
+    /// its body `fill:currentColor`, the accent its stylesheet states, under
+    /// a fill of its own.
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    const FULL_COLOUR_FOLDER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.ColorScheme-Accent { color: #3daee9 }</style><path style="fill:currentColor" class="ColorScheme-Accent" d="M2 3h12l2 2h14v24H1V10h1z"/><path style="fill:#ffffff;fill-opacity:0.2" d="M14 3l1 3h15V5H16z"/></svg>"##;
+
+    /// A full-colour freedesktop icon loaded for a colour comes back as the
+    /// theme has it: the colour is for a symbolic icon, and a second pass
+    /// through the monochrome colouriser repainted the folder's body in it.
+    /// The theme is a fixture in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn custom_icon_to_image_source_leaves_a_full_colour_freedesktop_icon_as_it_is()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::custom_icon_to_image_source_leaves_a_full_colour_freedesktop_icon_as_it_is";
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let loaded = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+                Some(32),
+            )
+            .ok_or("the fixture theme has no folder")?;
+            let own = to_image_source(
+                &IconData::Svg(std::borrow::Cow::Borrowed(FULL_COLOUR_FOLDER.as_bytes())),
+                None,
+                Some(32),
+            )
+            .ok_or("the folder does not rasterize")?;
+            assert!(
+                rendered(loaded).as_bytes(0) == rendered(own).as_bytes(0),
+                "the full-colour icon was recoloured"
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "full-colour", |icons| {
+            let theme = icons.join("full-colour");
+            std::fs::create_dir_all(theme.join("places"))?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=full-colour\nDirectories=places\n\n\
+                 [places]\nSize=32\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )?;
+            std::fs::write(theme.join("places/folder.svg"), FULL_COLOUR_FOLDER)
+        })?;
+        Ok(())
+    }
+
+    /// A freedesktop icon whose `currentColor` nothing in it resolves is
+    /// drawn in the colour asked for, not in the black a rasteriser gives an
+    /// unset `currentColor` (M5-04's rule). The theme is a fixture in a child
+    /// process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn custom_icon_to_image_source_draws_a_bare_current_color_in_the_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::custom_icon_to_image_source_draws_a_bare_current_color_in_the_colour";
+        const BARE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let loaded = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                Some(red),
+                Some(16),
+            )
+            .ok_or("the fixture theme has no folder")?;
+            let in_red = BARE.replace("currentColor", "#ff0000");
+            let expected = to_image_source(
+                &IconData::Svg(std::borrow::Cow::Owned(in_red.into_bytes())),
+                None,
+                Some(16),
+            )
+            .ok_or("the folder does not rasterize")?;
+            assert!(
+                rendered(loaded).as_bytes(0) == rendered(expected).as_bytes(0),
+                "the bare currentColor was not drawn in the colour"
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "bare-current-color", |icons| {
+            let theme = icons.join("bare-current-color");
+            std::fs::create_dir_all(theme.join("places"))?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=bare-current-color\nDirectories=places\n\n\
+                 [places]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n",
+            )?;
+            std::fs::write(theme.join("places/folder.svg"), BARE)
+        })?;
+        Ok(())
+    }
+
+    /// A freedesktop theme's sprite-sheet indicator keeps the colour its own
+    /// stylesheet gives `currentColor` (Breeze's `process-working`, under
+    /// `.ColorScheme-Text { color:#232629 }`), and one whose `currentColor`
+    /// nothing in it resolves takes the colour asked for (M5-04's rule). The
+    /// themes are fixtures in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "svg-rasterize"
+    ))]
+    #[test]
+    fn a_freedesktop_indicator_is_coloured_where_it_sets_no_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::a_freedesktop_indicator_is_coloured_where_it_sets_no_colour";
+        const STYLED: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><g fill="currentColor"><path class="ColorScheme-Text" d="M2 2h18v18H2z"/><path class="ColorScheme-Text" d="M6 28h10v10H6z"/></g></svg>"#;
+        const BARE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><g fill="currentColor"><path d="M2 2h18v18H2z"/><path d="M6 28h10v10H6z"/></g></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+            let frames = |theme: &str, color: Option<Hsla>| {
+                let anim = native_theme::icons::FreedesktopLoader::load_indicator(Some(theme))
+                    .ok_or_else(|| format!("{theme} has no indicator"))?;
+                let AnimatedIcon::Frames(data) = &anim else {
+                    return Err(format!("{theme}'s indicator is not a sprite sheet"));
+                };
+                let raw: Vec<Vec<u8>> = data
+                    .frames()
+                    .iter()
+                    .map(|frame| match frame {
+                        IconData::Svg(svg) => svg.to_vec(),
+                        _ => Vec::new(),
+                    })
+                    .collect();
+                let drawn = animated_frames_to_image_sources_for(
+                    IconSet::Freedesktop,
+                    &anim,
+                    color,
+                    Some(22),
+                )
+                .ok_or_else(|| format!("{theme}'s frames do not rasterize"))?;
+                Ok::<_, String>((raw, drawn.sources))
+            };
+            let pixels = |svg: Vec<u8>| {
+                to_image_source(&IconData::Svg(std::borrow::Cow::Owned(svg)), None, Some(22))
+                    .map(|source| rendered(source).as_bytes(0).map(<[u8]>::to_vec))
+            };
+
+            let (raw, drawn) = frames("styled", Some(red))?;
+            assert_eq!(drawn.len(), 2, "the styled sheet has two frames");
+            let first = drawn.first().cloned().ok_or("no first frame")?;
+            for (svg, source) in raw.into_iter().zip(drawn) {
+                assert!(
+                    rendered(source).as_bytes(0).map(<[u8]>::to_vec) == pixels(svg).flatten(),
+                    "the styled frame was not drawn in its own colour"
+                );
+            }
+            // The rect's centre, BGRA (`rgba_to_render_source`): #232629.
+            let centre = (11 * 22 + 11) * 4;
+            assert_eq!(
+                rendered(first)
+                    .as_bytes(0)
+                    .and_then(|b| b.get(centre..centre + 4)),
+                Some(&[0x29, 0x26, 0x23, 0xff][..])
+            );
+
+            let (raw, drawn) = frames("bare", Some(red))?;
+            assert_eq!(drawn.len(), 2, "the bare sheet has two frames");
+            for (svg, source) in raw.into_iter().zip(drawn) {
+                let in_red = String::from_utf8_lossy(&svg).replace("currentColor", "#ff0000");
+                assert!(
+                    rendered(source).as_bytes(0).map(<[u8]>::to_vec)
+                        == pixels(in_red.into_bytes()).flatten(),
+                    "the bare frame was not drawn in the colour"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "styled", |icons| {
+            crate::icon_fixture::write_indicator_theme(icons, "styled", STYLED)?;
+            crate::icon_fixture::write_indicator_theme(icons, "bare", BARE)
+        })?;
+        Ok(())
+    }
+
+    /// A raster freedesktop icon comes back at the size asked for: the size
+    /// reaches the theme lookup, which picks the theme's directory of that
+    /// size. It was looked up at the loader's default 24, which took the
+    /// 16-pixel folder whatever the size. The theme is a fixture in a child
+    /// process ([`crate::icon_fixture`]) with a PNG folder at 16 and at 48.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_image_source_loads_a_raster_freedesktop_icon_at_the_size_asked_for()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::custom_icon_to_image_source_loads_a_raster_freedesktop_icon_at_the_size_asked_for";
+        if crate::icon_fixture::in_child() {
+            // 0 is clamped to 1 and 99999 to 512, whose nearest
+            // directories are the 16 and the 48.
+            for (size, side) in [(16, 16), (48, 48), (0, 16), (99_999, 48)] {
+                let image = custom_icon_to_image_source(
+                    &FolderProvider,
+                    native_theme::theme::IconSet::Freedesktop,
+                    None,
+                    Some(size),
+                )
+                .ok_or("the fixture theme has no folder")?;
+                let side = gpui::DevicePixels(side);
+                assert_eq!(
+                    rendered(image).size(0),
+                    gpui::size(side, side),
+                    "asked for {size}"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "raster-only", |icons| {
+            let theme = icons.join("raster-only");
+            std::fs::create_dir_all(&theme)?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=raster-only\nDirectories=16/places,48/places\n\n\
+                 [16/places]\nSize=16\nType=Fixed\n\n\
+                 [48/places]\nSize=48\nType=Fixed\n",
+            )?;
+            for size in [16, 48] {
+                let dir = theme.join(format!("{size}/places"));
+                std::fs::create_dir_all(&dir)?;
+                let mut png = std::io::Cursor::new(Vec::new());
+                image::RgbaImage::from_pixel(size, size, image::Rgba([61, 174, 233, 255]))
+                    .write_to(&mut png, image::ImageFormat::Png)
+                    .map_err(std::io::Error::other)?;
+                std::fs::write(dir.join("folder.png"), png.into_inner())?;
+            }
+            Ok(())
+        })?;
+        Ok(())
     }
 
     // --- bundled_icon_to_image_source tests ---
@@ -2515,10 +2386,70 @@ mod tests {
         let result = animated_frames_to_image_sources(&anim, None, None);
         let ais = result.expect("Frames variant should return Some");
         assert_eq!(ais.sources.len(), 3);
-        assert_eq!(ais.frame_duration_ms, 80);
+        assert_eq!(ais.frame_duration_ms.get(), 80);
         for source in ais.sources {
             assert_eq!(rendered(source).frame_count(), 1);
         }
+    }
+
+    /// A Material or Lucide frame is coloured as `colorize_monochrome_svg`
+    /// colours it, byte for byte once drawn: its `currentColor`, its explicit
+    /// black and its implicit black fill. A freedesktop frame of the same
+    /// bytes is not: only its `currentColor` takes the colour.
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn a_monochrome_set_s_frames_are_coloured_by_the_monochrome_colouriser() {
+        let frames: [&[u8]; 3] = [
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='currentColor' d='M2 2h20v20H2z'/></svg>",
+            br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M2 2h20v20H2z"/></svg>"#,
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M2 2h20v20H2z'/></svg>",
+        ];
+        let anim = AnimatedIcon::frames(
+            frames
+                .iter()
+                .map(|f| IconData::Svg(std::borrow::Cow::Borrowed(*f)))
+                .collect(),
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
+        let colour = gpui::hsla(0.6, 0.7, 0.4, 1.0);
+        let pixels = |source: ImageSource| rendered(source).as_bytes(0).map(<[u8]>::to_vec);
+        let expected: Vec<_> = frames
+            .iter()
+            .map(|f| {
+                let coloured = colorize_monochrome_svg(f, to_rgba(colour));
+                svg_bytes_to_image_source(&coloured, None, Some(24)).and_then(pixels)
+            })
+            .collect();
+        for set in [IconSet::Material, IconSet::Lucide] {
+            let drawn = animated_frames_to_image_sources_for(set, &anim, Some(colour), Some(24))
+                .expect("the frames convert");
+            let drawn: Vec<_> = drawn.sources.into_iter().map(pixels).collect();
+            assert!(
+                drawn == expected,
+                "{set:?}'s frames are not the colouriser's"
+            );
+        }
+        let freedesktop = animated_frames_to_image_sources_for(
+            IconSet::Freedesktop,
+            &anim,
+            Some(colour),
+            Some(24),
+        )
+        .expect("the frames convert");
+        let freedesktop: Vec<_> = freedesktop.sources.into_iter().map(pixels).collect();
+        assert!(
+            freedesktop.first() == expected.first(),
+            "a bare currentColor takes the colour"
+        );
+        assert!(
+            freedesktop.get(1) != expected.get(1),
+            "an explicit black stays black"
+        );
+        assert!(
+            freedesktop.get(2) != expected.get(2),
+            "an implicit black stays black"
+        );
     }
 
     #[test]
@@ -2527,7 +2458,7 @@ mod tests {
             IconData::Svg(std::borrow::Cow::Borrowed(
                 b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
             )),
-            native_theme::theme::TransformAnimation::Spin {
+            native_theme::icons::TransformAnimation::Spin {
                 duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
             },
         );
@@ -2550,7 +2481,11 @@ mod tests {
         let svg_element = gpui::svg();
         // with_spin_animation wraps an Svg element with continuous rotation.
         // This is pure construction -- no gpui render context needed.
-        let _animated = with_spin_animation(svg_element, "test-spin", 1000);
+        let _animated = with_spin_animation(
+            svg_element,
+            "test-spin",
+            std::num::NonZeroU32::new(1000).expect("test constant"),
+        );
     }
 }
 
@@ -2561,6 +2496,8 @@ mod freedesktop_mapping_tests {
     use super::tests::ALL_ICON_NAMES;
     use super::*;
     use native_theme::detect::LinuxDesktop;
+    #[cfg(feature = "system-icons")]
+    use native_theme::icons::FreedesktopLoader;
 
     #[test]
     fn every_gpui_icon_has_a_freedesktop_name_on_kde() {
@@ -2669,7 +2606,7 @@ mod freedesktop_mapping_tests {
     #[cfg(feature = "system-icons")]
     #[test]
     fn all_kde_names_resolve_in_breeze() {
-        let theme = match native_theme::theme::system_icon_theme() {
+        let theme = match native_theme::detect::system_icon_theme() {
             Ok(theme) => theme,
             Err(e) => {
                 eprintln!("Skipping: no system icon theme detected ({e})");
@@ -2729,5 +2666,338 @@ mod freedesktop_mapping_tests {
             "These GNOME mappings did not resolve in Adwaita:\n  {}",
             missing.join("\n  "),
         );
+    }
+
+    /// Every `IconName` with its Breeze and its GTK (Adwaita) freedesktop
+    /// name, the same name twice where the conventions agree: the fixture
+    /// themes of [`the_theme_s_own_name_wins_in_each_convention_s_theme`] are
+    /// written from this copy of the table, not from the functions under
+    /// test.
+    #[cfg(feature = "system-icons")]
+    const CONVENTIONS: &[(IconName, &str, &str)] = &[
+        (IconName::Ban, "action-unavailable", "action-unavailable"),
+        (IconName::Battery, "battery", "battery"),
+        (IconName::BookOpen, "help-contents", "help-contents"),
+        (IconName::Bot, "face-smile", "face-smile"),
+        (IconName::ChevronDown, "go-down", "go-down"),
+        (IconName::ChevronLeft, "go-previous", "go-previous"),
+        (IconName::ChevronRight, "go-next", "go-next"),
+        (IconName::ChevronUp, "go-up", "go-up"),
+        (
+            IconName::CircleAlert,
+            "emblem-important",
+            "emblem-important",
+        ),
+        (IconName::CircleX, "dialog-error", "dialog-error"),
+        (IconName::Copy, "edit-copy", "edit-copy"),
+        (IconName::Dash, "list-remove", "list-remove"),
+        (IconName::Delete, "edit-delete", "edit-delete"),
+        (IconName::File, "text-x-generic", "text-x-generic"),
+        (IconName::FileText, "text-x-generic", "text-x-generic"),
+        (IconName::Folder, "folder", "folder"),
+        (IconName::FolderClosed, "folder", "folder"),
+        (IconName::FolderOpen, "folder-open", "folder-open"),
+        (IconName::HardDrive, "drive-harddisk", "drive-harddisk"),
+        (IconName::HeartOff, "non-starred", "non-starred"),
+        (IconName::Info, "dialog-information", "dialog-information"),
+        (IconName::LayoutDashboard, "view-grid", "view-grid"),
+        (IconName::Map, "find-location", "find-location"),
+        (IconName::Maximize, "view-fullscreen", "view-fullscreen"),
+        (IconName::Menu, "open-menu", "open-menu"),
+        (
+            IconName::Mic,
+            "audio-input-microphone",
+            "audio-input-microphone",
+        ),
+        (IconName::Minimize, "window-minimize", "window-minimize"),
+        (IconName::Minus, "list-remove", "list-remove"),
+        (IconName::Moon, "weather-clear-night", "weather-clear-night"),
+        (IconName::Network, "network-workgroup", "network-workgroup"),
+        (
+            IconName::Pause,
+            "media-playback-pause",
+            "media-playback-pause",
+        ),
+        (
+            IconName::Play,
+            "media-playback-start",
+            "media-playback-start",
+        ),
+        (IconName::Plus, "list-add", "list-add"),
+        (IconName::Redo, "edit-redo", "edit-redo"),
+        (IconName::Redo2, "edit-redo", "edit-redo"),
+        (IconName::RefreshCw, "view-refresh", "view-refresh"),
+        (IconName::Replace, "edit-find-replace", "edit-find-replace"),
+        (
+            IconName::RotateCw,
+            "object-rotate-right",
+            "object-rotate-right",
+        ),
+        (IconName::Search, "edit-find", "edit-find"),
+        (
+            IconName::Settings,
+            "preferences-system",
+            "preferences-system",
+        ),
+        (
+            IconName::SortAscending,
+            "view-sort-ascending",
+            "view-sort-ascending",
+        ),
+        (
+            IconName::SortDescending,
+            "view-sort-descending",
+            "view-sort-descending",
+        ),
+        (
+            IconName::Square,
+            "media-playback-stop",
+            "media-playback-stop",
+        ),
+        (
+            IconName::SquareTerminal,
+            "utilities-terminal",
+            "utilities-terminal",
+        ),
+        (IconName::Star, "non-starred", "non-starred"),
+        (IconName::StarFill, "starred", "starred"),
+        (IconName::StarOff, "non-starred", "non-starred"),
+        (IconName::Sun, "weather-clear", "weather-clear"),
+        (IconName::TriangleAlert, "dialog-warning", "dialog-warning"),
+        (IconName::Undo, "edit-undo", "edit-undo"),
+        (IconName::Undo2, "edit-undo", "edit-undo"),
+        (IconName::User, "system-users", "system-users"),
+        (IconName::WindowClose, "window-close", "window-close"),
+        (
+            IconName::WindowMaximize,
+            "window-maximize",
+            "window-maximize",
+        ),
+        (
+            IconName::WindowMinimize,
+            "window-minimize",
+            "window-minimize",
+        ),
+        (IconName::WindowRestore, "window-restore", "window-restore"),
+        (IconName::ArrowDown, "go-down-skip", "go-bottom"),
+        (IconName::ArrowLeft, "go-previous-skip", "go-first"),
+        (IconName::ArrowRight, "go-next-skip", "go-last"),
+        (IconName::ArrowUp, "go-up-skip", "go-top"),
+        (
+            IconName::BatteryCharging,
+            "battery-100-charging",
+            "battery-full-charging",
+        ),
+        (IconName::BatteryFull, "battery-100", "battery-full"),
+        (IconName::BatteryLow, "battery-020", "battery-low"),
+        (IconName::BatteryMedium, "battery-050", "battery-good"),
+        (IconName::BatteryWarning, "battery-010", "battery-caution"),
+        (IconName::Calendar, "view-calendar", "x-office-calendar"),
+        (IconName::Check, "dialog-ok", "object-select"),
+        (IconName::CircleCheck, "emblem-ok-symbolic", "object-select"),
+        (IconName::CircleUser, "user-identity", "avatar-default"),
+        (IconName::Close, "tab-close", "window-close"),
+        (IconName::Cpu, "cpu", "computer"),
+        (IconName::Ellipsis, "overflow-menu", "view-more-horizontal"),
+        (IconName::EllipsisVertical, "overflow-menu", "view-more"),
+        (IconName::Eye, "view-visible", "view-reveal"),
+        (IconName::EyeOff, "view-hidden", "view-conceal"),
+        (IconName::Frame, "select-rectangular", "selection-mode"),
+        (IconName::Heart, "emblem-favorite", "starred"),
+        (IconName::Loader, "process-working", "content-loading"),
+        (IconName::LoaderCircle, "process-working", "content-loading"),
+        (IconName::MemoryStick, "memory", "media-flash"),
+        (IconName::Palette, "palette", "color-select"),
+        (IconName::PanelLeft, "sidebar-expand-left", "sidebar-show"),
+        (IconName::PanelLeftClose, "view-left-close", "sidebar-show"),
+        (IconName::PanelLeftOpen, "view-left-new", "sidebar-show"),
+        (
+            IconName::PanelRight,
+            "sidebar-expand-right",
+            "sidebar-show-right",
+        ),
+        (
+            IconName::PanelRightClose,
+            "view-right-close",
+            "sidebar-show-right",
+        ),
+        (
+            IconName::PanelRightOpen,
+            "view-right-new",
+            "sidebar-show-right",
+        ),
+        (IconName::ResizeCorner, "drag-handle", "list-drag-handle"),
+        (IconName::Settings2, "configure", "preferences-other"),
+        (IconName::ALargeSmall, "format-font-size-more", "zoom-in"),
+        (IconName::Asterisk, "rating", "starred"),
+        (IconName::Bell, "notification-active", "alarm"),
+        (
+            IconName::Building2,
+            "applications-office",
+            "network-workgroup",
+        ),
+        (
+            IconName::CaseSensitive,
+            "format-text-uppercase",
+            "format-text-rich",
+        ),
+        (
+            IconName::ChartPie,
+            "office-chart-pie",
+            "x-office-spreadsheet",
+        ),
+        (IconName::ChevronsUpDown, "handle-sort", "list-drag-handle"),
+        (IconName::ExternalLink, "external-link", "insert-link"),
+        (
+            IconName::GalleryVerticalEnd,
+            "view-list-icons",
+            "view-paged",
+        ),
+        (IconName::Github, "vcs-branch", "applications-engineering"),
+        (IconName::Globe, "globe", "web-browser"),
+        (IconName::Inbox, "mail-folder-inbox", "mail-send-receive"),
+        (
+            IconName::Inspector,
+            "code-context",
+            "preferences-system-details",
+        ),
+        (IconName::PanelBottom, "view-split-top-bottom", "view-dual"),
+        (
+            IconName::PanelBottomOpen,
+            "view-split-top-bottom",
+            "view-dual",
+        ),
+        (IconName::ThumbsDown, "rating-unrated", "process-stop"),
+        (IconName::ThumbsUp, "approved", "checkbox-checked"),
+    ];
+
+    /// The theme a fixture icon came from and the name it has there, as the
+    /// fixture writes them into each SVG.
+    #[cfg(feature = "system-icons")]
+    fn fixture_svg(theme: &str, name: &str) -> String {
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><title>{theme}/{name}</title><path d="M2 2h12v12H2z"/></svg>"#
+        )
+    }
+
+    /// An icon loaded from a theme by its candidates is the one that theme
+    /// has under its own convention's name: a GTK-only theme's GTK name, a
+    /// Breeze-only theme's Breeze name, and, in a GTK-only theme that
+    /// inherits a legacy theme carrying the Breeze names as PNGs (Adwaita
+    /// inherits AdwaitaLegacy, which has `emblem-favorite` and
+    /// `applications-office`), the theme's own GTK-named SVG, not its
+    /// parent's raster. A theme holding both names, as some themes have both
+    /// (Breeze ships `object-select-symbolic` beside `dialog-ok`), gives the
+    /// first candidate, Breeze's, so the table's order is pinned too. The
+    /// code under test never reads the desktop; the child process is for the
+    /// fixture's icon dirs ([`crate::icon_fixture`]).
+    #[cfg(feature = "system-icons")]
+    #[test]
+    fn the_theme_s_own_name_wins_in_each_convention_s_theme()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::freedesktop_mapping_tests::the_theme_s_own_name_wins_in_each_convention_s_theme";
+        let mut listed: Vec<&str> = CONVENTIONS
+            .iter()
+            .map(|(icon, _, _)| super::tests::variant_name(icon))
+            .collect();
+        let mut all: Vec<&str> = ALL_ICON_NAMES
+            .iter()
+            .map(super::tests::variant_name)
+            .collect();
+        listed.sort_unstable();
+        all.sort_unstable();
+        assert_eq!(listed, all, "CONVENTIONS lists every IconName once");
+        if crate::icon_fixture::in_child() {
+            let mut wrong = Vec::new();
+            for &(ref icon, breeze, gtk) in CONVENTIONS {
+                for (theme, expected) in [
+                    ("gtk-only", format!("gtk-only/{gtk}")),
+                    ("breeze-only", format!("breeze-only/{breeze}")),
+                    ("gtk-over-legacy", format!("gtk-over-legacy/{gtk}")),
+                    ("both-names", format!("both-names/{breeze}")),
+                ] {
+                    let candidates = freedesktop_name_candidates(icon.clone());
+                    let loaded = FreedesktopLoader::any(candidates).theme(theme).load();
+                    let found = match &loaded {
+                        Some(IconData::Svg(svg)) => {
+                            let svg = String::from_utf8_lossy(svg);
+                            svg.split_once("<title>")
+                                .and_then(|(_, rest)| rest.split_once("</title>"))
+                                .map_or_else(
+                                    || "an SVG without a title".to_string(),
+                                    |(t, _)| t.to_string(),
+                                )
+                        }
+                        Some(_) => "a raster".to_string(),
+                        None => "nothing".to_string(),
+                    };
+                    if found != expected {
+                        wrong.push(format!(
+                            "{theme}: {} ({}) loaded {found}, not {expected}",
+                            super::tests::variant_name(icon),
+                            candidates.join(", ")
+                        ));
+                    }
+                }
+            }
+            assert!(
+                wrong.is_empty(),
+                "{} icons loaded the wrong name:\n  {}",
+                wrong.len(),
+                wrong.join("\n  "),
+            );
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "gtk-only", |icons| {
+            let theme = |name: &str,
+                         inherits: &str,
+                         section: &str|
+             -> std::io::Result<std::path::PathBuf> {
+                let dir = icons.join(name);
+                std::fs::create_dir_all(dir.join("actions"))?;
+                std::fs::write(
+                    dir.join("index.theme"),
+                    format!(
+                        "[Icon Theme]\nName={name}\n{inherits}Directories=actions\n\n\
+                         [actions]\n{section}\n"
+                    ),
+                )?;
+                Ok(dir.join("actions"))
+            };
+            const SCALABLE: &str = "Size=16\nType=Scalable\nMinSize=8\nMaxSize=512";
+            let gtk_only = theme("gtk-only", "", SCALABLE)?;
+            let breeze_only = theme("breeze-only", "", SCALABLE)?;
+            let over_legacy = theme("gtk-over-legacy", "Inherits=breeze-legacy\n", SCALABLE)?;
+            let legacy = theme("breeze-legacy", "", "Size=24\nType=Fixed")?;
+            let both = theme("both-names", "", SCALABLE)?;
+            let mut png = std::io::Cursor::new(Vec::new());
+            image::RgbaImage::from_pixel(24, 24, image::Rgba([61, 174, 233, 255]))
+                .write_to(&mut png, image::ImageFormat::Png)
+                .map_err(std::io::Error::other)?;
+            let png = png.into_inner();
+            for &(_, breeze, gtk) in CONVENTIONS {
+                std::fs::write(
+                    gtk_only.join(format!("{gtk}.svg")),
+                    fixture_svg("gtk-only", gtk),
+                )?;
+                std::fs::write(
+                    breeze_only.join(format!("{breeze}.svg")),
+                    fixture_svg("breeze-only", breeze),
+                )?;
+                std::fs::write(
+                    over_legacy.join(format!("{gtk}.svg")),
+                    fixture_svg("gtk-over-legacy", gtk),
+                )?;
+                std::fs::write(legacy.join(format!("{breeze}.png")), &png)?;
+                for name in [breeze, gtk] {
+                    std::fs::write(
+                        both.join(format!("{name}.svg")),
+                        fixture_svg("both-names", name),
+                    )?;
+                }
+            }
+            Ok(())
+        })?;
+        Ok(())
     }
 }

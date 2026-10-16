@@ -31,7 +31,7 @@ pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
         )
         .not_themeable(
             "weight of a variable face",
-            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (cosmic_text_system.rs:985-1030), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
+            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (cosmic_text_system.rs:992-1037), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
         )
     } else {
         info.instance(

@@ -55,7 +55,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
             .color(claim("icon", "foreground", opaque(fg), "showcase"))
             .not_themeable(
                 "icon pixels",
-                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
             )
             .instance(
                 "size",
@@ -157,11 +157,11 @@ pub fn gpui_icon(
         ),
         (_, Some(role)) => info.instance(
             "lookup",
-            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for the name the connector gives the icon there instead, never another theme (showcase-gpui/support.rs, load_gpui_icons)"),
+            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
         ),
         (_, None) => info.instance(
             "lookup",
-            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there (showcase-gpui/support.rs, load_gpui_icons)",
+            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
         ),
     }
 }
@@ -185,12 +185,12 @@ pub fn animated_icon(
                 info.color(claim("frames", "foreground", opaque(fg), "showcase"))
                     .not_themeable(
                         "frame pixels",
-                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
                     )
             } else {
                 info.not_themeable(
                     "frame pixels",
-                    "the icon theme's own indicator artwork, recoloured with foreground only where it is drawn in currentColor or black (native-theme-gpui/icons.rs, colorize_svg); a multi-colour sprite keeps its colours",
+                    "the icon theme's own indicator artwork, its currentColor drawn in foreground only where the artwork sets no colour of its own, so a colour its stylesheet sets (Breeze's .ColorScheme-Text) and a multi-colour sprite stay as drawn (native-theme/icons.rs, fill_current_color)",
                 )
             };
             info.instance("frames", format!("{count}, {duration_ms}ms each"))
@@ -274,11 +274,12 @@ enum FactsPlatform {
 }
 
 impl FactsPlatform {
-    /// The platform of the native preset `preset`, full or `-live`; `None`
-    /// for any other theme.
+    /// The platform of the native preset `preset`; `None` for any other
+    /// theme.
     fn of_preset(preset: &str) -> Option<Self> {
-        match preset.strip_suffix("-live").unwrap_or(preset) {
-            "macos-sonoma" => Some(Self::MacOs),
+        match preset {
+            "macos-monterey" => Some(Self::MacOs),
+            "macos-tahoe" => Some(Self::MacOs),
             "windows-11" => Some(Self::Windows),
             "kde-breeze" => Some(Self::Kde),
             "adwaita" => Some(Self::Gnome),

@@ -12,6 +12,7 @@ use crate::Rgba;
 
 /// Fully resolved per-context icon sizes where every context is guaranteed populated.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedIconSizes {
     /// Icon size for toolbar buttons.
     pub toolbar: f32,
@@ -34,6 +35,7 @@ pub struct ResolvedIconSizes {
 /// written inline in
 /// `crate::resolve::validate_helpers::require_text_scale_entry` (private).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels. A size stated in points is converted at
     /// the resolution context's
@@ -51,6 +53,7 @@ pub struct ResolvedTextScaleEntry {
 
 /// A fully resolved text scale with all four typographic roles populated.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTextScale {
     /// Caption / small label text.
     pub caption: ResolvedTextScaleEntry,
@@ -69,6 +72,7 @@ pub struct ResolvedTextScale {
 /// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
 /// Produced by the resolution/validation pipeline.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedDefaults {
     // ---- Base font ----
     /// Primary UI font.
@@ -155,6 +159,7 @@ pub struct ResolvedDefaults {
 /// Mirrors [`crate::model::ThemeMode`] but with concrete (non-Option) types
 /// for all 26 per-widget structs plus defaults and text scale.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct ResolvedTheme {
     /// Global defaults.
     pub defaults: ResolvedDefaults,
@@ -233,11 +238,13 @@ pub struct ResolvedTheme {
 ///    KDE Plasma's `"breeze"` light / `"breeze-dark"` dark).
 /// 2. The parent [`Theme::icon_theme`](super::Theme::icon_theme) (shared
 ///    across light and dark).
-/// 3. [`system_icon_theme()`](super::system_icon_theme) (runtime detect).
+/// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) (runtime
+///    detect).
 ///
 /// The first value that is `Some` wins. Where none is — the TOML states no
 /// icon theme and detection fails — the field is `None`: no theme stands in,
-/// and [`system_icon_theme()`](super::system_icon_theme) gives the reason.
+/// and [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
+/// reason.
 /// [`icon_theme_explicit`](Self::icon_theme_explicit) reports whether the
 /// value came from the TOML (tiers 1 or 2) or from runtime detection
 /// (tier 3) — useful for UI code that labels the theme-author's choice as
@@ -248,23 +255,31 @@ pub struct ResolvedTheme {
 /// ```
 /// use native_theme::theme::{ColorMode, Theme};
 ///
-/// let theme = Theme::preset("material")?;
+/// let theme = Theme::preset("material-3")?;
 /// let r = theme.resolve(ColorMode::Light)?;
 /// assert_eq!(r.icon_theme.as_deref(), Some("material"));
 /// assert!(r.icon_theme_explicit);
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Resolved {
+    /// The mode of the variant actually resolved: `Dark` iff the theme's
+    /// `dark` variant was used. It differs from the requested mode when the
+    /// theme lacks that variant and
+    /// [`pick_variant`](super::Theme::pick_variant) falls back to the other.
+    pub mode: super::ColorMode,
     /// The picked variant's fully-resolved visual properties.
     pub variant: ResolvedTheme,
     /// The theme's icon set. Falls back to
-    /// [`system_icon_set()`](super::system_icon_set) when the TOML omits it.
+    /// [`system_icon_set()`](crate::detect::system_icon_set) when the TOML
+    /// omits it.
     pub icon_set: super::IconSet,
     /// The icon theme name, resolved through the three-tier precedence
     /// documented on the struct. `None` when the TOML states none and
     /// detection fails; the app can call
-    /// [`system_icon_theme()`](super::system_icon_theme) for the reason.
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) for the
+    /// reason.
     pub icon_theme: Option<std::borrow::Cow<'static, str>>,
     /// `true` if [`icon_theme`](Self::icon_theme) came from the TOML (tiers 1
     /// or 2); `false` if it was left to runtime system detection (tier 3),

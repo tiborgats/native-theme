@@ -298,8 +298,8 @@ fn sink_text(sink: &Sink) -> String {
 }
 
 /// The value at a leaf as `docs/showcase-elements.toml` spells it, in `theme_json`'s tree: a
-/// `*_px` segment is the serialised name without the suffix, and `padding_<side>_px` the side of
-/// the border's `padding`.
+/// `*_px` or `*_ms` segment is the serialised name without the suffix, and `padding_<side>_px`
+/// the side of the border's `padding`.
 pub(crate) fn listed_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
     let mut current = json;
     for part in leaf.split('.') {
@@ -312,7 +312,7 @@ fn listed_step<'a>(value: &'a serde_json::Value, part: &str) -> Option<&'a serde
     if let Some(next) = value.get(part) {
         return Some(next);
     }
-    let bare = part.strip_suffix("_px")?;
+    let bare = unit_less(part)?;
     if let Some(next) = value.get(bare) {
         return Some(next);
     }
@@ -320,12 +320,18 @@ fn listed_step<'a>(value: &'a serde_json::Value, part: &str) -> Option<&'a serde
     value.get("padding")?.get(side)
 }
 
-/// The `mapping.toml` key of a leaf as `docs/showcase-elements.toml` spells it: each `*_px`
-/// segment without the suffix, `padding_<side>` as `padding.<side>`.
+/// A leaf's segment without its `_px` or `_ms` unit, if it has one.
+fn unit_less(part: &str) -> Option<&str> {
+    part.strip_suffix("_px")
+        .or_else(|| part.strip_suffix("_ms"))
+}
+
+/// The `mapping.toml` key of a leaf as `docs/showcase-elements.toml` spells it: each `*_px` or
+/// `*_ms` segment without the suffix, `padding_<side>` as `padding.<side>`.
 pub(crate) fn mapping_key(leaf: &str) -> String {
     leaf.split('.')
         .map(|part| {
-            let bare = part.strip_suffix("_px").unwrap_or(part);
+            let bare = unit_less(part).unwrap_or(part);
             match bare.strip_prefix("padding_") {
                 Some(side) => format!("padding.{side}"),
                 None => bare.to_string(),
@@ -375,14 +381,15 @@ fn font_text(font: &serde_json::Map<String, serde_json::Value>) -> String {
 }
 
 /// How a listed leaf's value prints (the three showcases print it alike): a colour as its
-/// `#rrggbb[aa]`, a `*_px` number with " px", another number as itself, a whole font as
-/// [`font_text`], a text-scale entry as `<size> px <weight>`, a flag as `true` or `false`, a
-/// name as itself, and a value the theme leaves unstated as "not stated".
+/// `#rrggbb[aa]`, a `*_px` number with " px", a `*_ms` one with " ms", another number as
+/// itself, a whole font as [`font_text`], a text-scale entry as `<size> px <weight>`, a flag as
+/// `true` or `false`, a name as itself, and a value the theme leaves unstated as "not stated".
 pub(crate) fn leaf_text(leaf: &str, value: &serde_json::Value) -> String {
     match value {
         serde_json::Value::Null => "not stated".to_string(),
         serde_json::Value::Bool(b) => b.to_string(),
         serde_json::Value::Number(n) if leaf.ends_with("_px") => format!("{} px", number_text(n)),
+        serde_json::Value::Number(n) if leaf.ends_with("_ms") => format!("{} ms", number_text(n)),
         serde_json::Value::Number(n) => number_text(n),
         serde_json::Value::String(s) => s.clone(),
         serde_json::Value::Object(font) if font.contains_key("family") => font_text(font),
@@ -810,7 +817,7 @@ fn paint_swatch(
 ) {
     ui.painter().rect(
         rect,
-        native_theme_egui::border_radius(t),
+        native_theme_egui::border_corner_radius(t),
         colour,
         egui::Stroke::new(
             t.defaults.border.line_width,

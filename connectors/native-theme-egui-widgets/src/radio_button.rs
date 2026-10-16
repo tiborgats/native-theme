@@ -17,10 +17,12 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 ///
 /// **Tier W.** One `egui::RadioButton` in the checkbox role's scope — the `Selected` variant
 /// while it is checked, whose cell fills the circle with `checkbox.checked_background` and
-/// outlines it in `checkbox.border.color`; the `Disabled` variant and `Ui::disable` for
-/// `.enabled(false)` — with one per-instance change: egui paints the dot at a third of
-/// `Spacing::icon_width_inner` in radius (`egui/src/widgets/radio_button.rs:101`), a sink the
-/// checkbox's check mark shares (`egui/src/widgets/checkbox.rs:132-133`), so where the theme
+/// outlines it in `checkbox.border.color`; for `.enabled(false)` the `Disabled` variant, or
+/// `SelectedDisabled` while it is checked (the checked circle and dot where the theme states
+/// no disabled fill), faded as one over its backdrop — with one per-instance change: egui
+/// paints the dot at a third of `Spacing::icon_width_inner` in radius
+/// (`egui/src/widgets/radio_button.rs:101`), a sink the checkbox's check mark shares
+/// (`egui/src/widgets/checkbox.rs:132-133`), so where the theme
 /// states `checkbox.radio_dot_diameter` the scope's `icon_width_inner` becomes
 /// `EGUI_DOT_DIVISOR · 0.5 · radio_dot_diameter` for this radio alone, and the dot is that
 /// many pixels across, in the cell's `fg_stroke`, `checkbox.indicator_color`. Where the theme

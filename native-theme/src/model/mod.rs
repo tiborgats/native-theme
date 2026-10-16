@@ -32,55 +32,56 @@ impl ColorMode {
 }
 
 /// Animated icon types (frame sequences and transforms).
-pub mod animated;
+pub(crate) mod animated;
 /// Disclosure arrow placement convention.
-pub mod arrow_side;
+pub(crate) mod arrow_side;
 /// Border specification sub-struct for widget border properties.
-pub mod border;
+pub(crate) mod border;
 /// Bundled SVG icon lookup tables.
-pub mod bundled;
+pub(crate) mod bundled;
 /// Global theme defaults shared across widgets.
-pub mod defaults;
+pub(crate) mod defaults;
+/// Dialog entrance motion convention.
+pub(crate) mod dialog_entrance_style;
 /// Dialog button ordering convention.
-pub mod dialog_order;
+pub(crate) mod dialog_order;
 /// Per-widget font specification and text scale.
-pub mod font;
+pub(crate) mod font;
 /// Per-context icon sizes.
-pub mod icon_sizes;
+pub(crate) mod icon_sizes;
 /// Icon roles, sets, and provider trait.
-pub mod icons;
+pub(crate) mod icons;
 /// Resolved (non-optional) theme types produced after resolution.
-pub mod resolved;
+pub(crate) mod resolved;
 /// Active-tab indicator placement convention.
-pub mod tab_indicator_side;
+pub(crate) mod tab_indicator_side;
 /// Per-widget struct pairs and macros.
-pub mod widgets;
+pub(crate) mod widgets;
 
 pub use animated::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,
 };
+pub use arrow_side::ArrowSide;
 pub use border::{
     DefaultsBorderSpec, ResolvedDefaultsBorder, ResolvedPadding, ResolvedWidgetBorder,
     WidgetBorderSpec,
 };
-// G3 (Phase 93-03): demoted to pub(crate). Use the per-set loaders in `crate::icons` externally.
-pub use arrow_side::ArrowSide;
+// Crate-internal; external code uses the per-set loaders in `crate::icons`.
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
+pub use dialog_entrance_style::DialogEntranceStyle;
 pub use dialog_order::DialogButtonOrder;
 pub use font::{
     FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry, intern_font_family,
 };
 pub use icon_sizes::IconSizes;
-pub use icons::{
-    IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
-};
+pub use icons::{IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name};
 pub use resolved::{
     Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
 pub use tab_indicator_side::TabIndicatorSide;
-pub use widgets::*; // All 26 XxxTheme + ResolvedXxxTheme pairs
+pub use widgets::*; // 27 XxxTheme + ResolvedXxxTheme pairs: 26 per-variant widgets + LayoutTheme
 
 use std::borrow::Cow;
 
@@ -263,7 +264,9 @@ pub struct Theme {
     /// Uses `Cow<'static, str>` so bundled presets can store borrowed
     /// `&'static str` values without per-load `String` allocations.
     /// User-provided names (from TOML files or runtime detection)
-    /// are `Cow::Owned`.
+    /// are `Cow::Owned`. A TOML file may omit it (an overlay needs no
+    /// name: [`merge`](Self::merge) keeps the base's); it is then empty.
+    #[serde(default)]
     pub name: Cow<'static, str>,
 
     /// Light variant of the theme.
@@ -279,16 +282,16 @@ pub struct Theme {
     pub layout: LayoutTheme,
 
     /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
-    /// `SfSymbols`, `SegoeIcons`). Shared across light and dark variants.
+    /// `SfSymbols`, `SegoeFluent`). Shared across light and dark variants.
     /// When `None`, filled during resolution from
-    /// [`system_icon_set()`](crate::theme::system_icon_set).
+    /// [`system_icon_set()`](crate::detect::system_icon_set).
     ///
     /// # Examples
     ///
     /// ```
     /// use native_theme::theme::{Theme, IconSet};
     ///
-    /// let theme = Theme::preset("material")?;
+    /// let theme = Theme::preset("material-3")?;
     /// assert_eq!(theme.icon_set, Some(IconSet::Material));
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
@@ -306,7 +309,7 @@ pub struct Theme {
     /// Precedence at resolve time:
     /// 1. [`ThemeMode::defaults.icon_theme`](crate::model::ThemeDefaults::icon_theme) — per-variant override (if set)
     /// 2. `Theme::icon_theme` — this field (if set)
-    /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime
+    /// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) — runtime
     ///    detection; none where it fails
     ///
     /// See `docs/archive/v0.5.7_gaps.md` §G4 for the design rationale.
@@ -364,15 +367,29 @@ impl Theme {
     ///
     /// When `mode` is [`ColorMode::Dark`], prefers `dark` and falls back to `light`.
     /// When `mode` is [`ColorMode::Light`], prefers `light` and falls back to `dark`.
+    /// [`resolve`](Self::resolve) records the variant it took in
+    /// [`Resolved::mode`], so a fallback is visible after resolution.
     ///
     /// # Errors
     ///
     /// Returns [`Error::NoVariant`](crate::Error::NoVariant) if the theme has
     /// no variants at all.
     pub fn pick_variant(&self, mode: ColorMode) -> crate::Result<&ThemeMode> {
+        self.pick_variant_with_mode(mode)
+            .map(|(_, variant)| variant)
+    }
+
+    /// [`pick_variant`](Self::pick_variant), also returning the mode of the
+    /// variant it took (`Dark` iff `self.dark` was used).
+    pub(crate) fn pick_variant_with_mode(
+        &self,
+        mode: ColorMode,
+    ) -> crate::Result<(ColorMode, &ThemeMode)> {
+        let dark = self.dark.as_ref().map(|v| (ColorMode::Dark, v));
+        let light = self.light.as_ref().map(|v| (ColorMode::Light, v));
         match mode {
-            ColorMode::Dark => self.dark.as_ref().or(self.light.as_ref()),
-            ColorMode::Light => self.light.as_ref().or(self.dark.as_ref()),
+            ColorMode::Dark => dark.or(light),
+            ColorMode::Light => light.or(dark),
         }
         .ok_or(crate::Error::NoVariant { mode })
     }
@@ -415,30 +432,40 @@ impl Theme {
     /// `icon_set` / `icon_theme` fields. This is the one-call path from a
     /// parsed [`Theme`] to the values a UI framework needs.
     ///
-    /// `icon_set` falls back to [`system_icon_set()`] when the TOML omits
-    /// it. `icon_theme` uses three-tier precedence:
+    /// `icon_set` falls back to
+    /// [`system_icon_set()`](crate::detect::system_icon_set) when the TOML
+    /// omits it. `icon_theme` uses three-tier precedence:
     ///
     /// 1. The picked variant's `defaults.icon_theme` (per-mode override).
     /// 2. [`Theme::icon_theme`] (shared across variants).
-    /// 3. [`system_icon_theme()`] (runtime detect).
+    /// 3. [`system_icon_theme()`](crate::detect::system_icon_theme) (runtime
+    ///    detect).
     ///
     /// Where no tier gives a name — the TOML states none and detection
     /// fails — [`Resolved::icon_theme`] is `None`; the resolution itself
-    /// does not fail over it, and [`system_icon_theme()`] gives the reason.
+    /// does not fail over it, and
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
+    /// reason.
     /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
     /// fired (value came from TOML) versus tier 3 (runtime detection).
     ///
-    /// Uses [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
-    /// for DPI and button-order. For custom contexts, construct the
-    /// variant manually and call
-    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved).
+    /// Builds its inputs with
+    /// [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
+    /// on every call, which reads the environment and configuration files.
+    /// The font DPI it detects (on Linux by `xrdb -query`, and `xrandr`
+    /// where `Xft.dpi` is unset) is cached after the first call until
+    /// [`invalidate_caches()`](crate::detect::invalidate_caches). To
+    /// resolve several variants or themes with one detection, or with
+    /// inputs of your own, build the context once and call
+    /// [`resolve_with`](Self::resolve_with).
     ///
     /// # Errors
     ///
     /// Returns [`crate::Error::NoVariant`] when the theme has no variants,
     /// or [`crate::Error::ResolutionIncomplete`] /
     /// [`crate::Error::ResolutionInvalid`] when the picked variant cannot
-    /// be fully resolved.
+    /// be fully resolved. A value of [`Theme::layout`] out of range is also
+    /// [`crate::Error::ResolutionInvalid`].
     ///
     /// # Examples
     ///
@@ -446,7 +473,7 @@ impl Theme {
     /// use native_theme::theme::{ColorMode, Theme};
     ///
     /// // Theme-level `icon_theme` (tier 2) — applies to both modes.
-    /// let material = Theme::preset("material")?;
+    /// let material = Theme::preset("material-3")?;
     /// let r = material.resolve(ColorMode::Dark)?;
     /// assert_eq!(r.icon_theme.as_deref(), Some("material"));
     /// assert!(r.icon_theme_explicit);
@@ -458,30 +485,56 @@ impl Theme {
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn resolve(&self, mode: ColorMode) -> crate::Result<Resolved> {
-        self.resolve_in(mode, &crate::resolve::ResolutionContext::from_system())
+        self.resolve_with(mode, &crate::resolve::ResolutionContext::from_system())
     }
 
     /// [`resolve`](Self::resolve) with the resolution-time inputs of `ctx`,
-    /// whose `icon_theme` is tier 3.
-    pub(crate) fn resolve_in(
+    /// whose `icon_theme` is tier 3. It reads nothing from the system: the
+    /// font DPI, button order and detected icon theme are `ctx`'s.
+    ///
+    /// # Errors
+    ///
+    /// As [`resolve`](Self::resolve).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::resolve::ResolutionContext;
+    /// use native_theme::theme::{ColorMode, Theme};
+    ///
+    /// // One context for both variants; 72 DPI makes a point a pixel.
+    /// let ctx = ResolutionContext { font_dpi: 72.0, ..ResolutionContext::for_tests() };
+    /// let breeze = Theme::preset("kde-breeze")?;
+    /// let light = breeze.resolve_with(ColorMode::Light, &ctx)?;
+    /// let dark = breeze.resolve_with(ColorMode::Dark, &ctx)?;
+    /// assert_eq!(light.variant.defaults.font.size, 10.0); // `size_pt = 10.0`
+    /// assert_eq!(light.icon_theme.as_deref(), Some("breeze"));
+    /// assert_eq!(dark.icon_theme.as_deref(), Some("breeze-dark"));
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    pub fn resolve_with(
         &self,
         mode: ColorMode,
         ctx: &crate::resolve::ResolutionContext,
     ) -> crate::Result<Resolved> {
-        let variant_ref = self.pick_variant(mode)?;
+        let (picked_mode, variant_ref) = self.pick_variant_with_mode(mode)?;
+        crate::resolve::validate_helpers::check_font_dpi(ctx.font_dpi)?;
+        crate::resolve::validate_helpers::check_layout(&self.layout)?;
 
         let tier1 = variant_ref.defaults.icon_theme.clone();
         let tier2 = self.icon_theme.clone();
         let icon_theme_explicit = tier1.is_some() || tier2.is_some();
         let icon_theme = tier1.or(tier2).or_else(|| ctx.icon_theme.clone());
 
-        let icon_set = self
-            .icon_set
-            .unwrap_or_else(crate::model::icons::system_icon_set);
+        let icon_set = self.icon_set.unwrap_or_else(crate::detect::system_icon_set);
 
-        let variant = variant_ref.clone().into_resolved(ctx)?;
+        let variant = variant_ref
+            .clone()
+            .into_resolved(ctx)
+            .map_err(|e| e.in_variant(picked_mode))?;
 
         Ok(Resolved {
+            mode: picked_mode,
             variant,
             icon_set,
             icon_theme,
@@ -489,7 +542,8 @@ impl Theme {
         })
     }
 
-    /// Returns true if the theme has no variants set.
+    /// Returns true when the theme states nothing: no variant, no layout
+    /// value, no icon set and no icon theme. The name is not checked.
     pub fn is_empty(&self) -> bool {
         self.light.is_none()
             && self.dark.is_none()
@@ -529,7 +583,8 @@ impl Theme {
     ///
     /// # TOML Format
     ///
-    /// Theme files use the following structure. Every field is optional --
+    /// Theme files use the following structure. Every field is optional,
+    /// `name` included --
     /// omit any field you don't need. Unknown fields are silently ignored;
     /// [`lint_toml`](Self::lint_toml) reports them. Hex colors accept
     /// `#RGB`, `#RGBA`, `#RRGGBB` or `#RRGGBBAA` (the `#` is optional). A size carries its unit in its key:
@@ -650,12 +705,12 @@ impl Theme {
     ///
     /// Returns a static slice of [`PresetInfo`](crate::presets::PresetInfo) entries,
     /// one per bundled preset. Each entry carries the machine-readable key,
-    /// human-readable display name, target platform tags, and a `light_only` flag.
+    /// human-readable display name, and target platform tags.
     ///
     /// # Examples
     /// ```
     /// let presets = native_theme::theme::Theme::list_presets();
-    /// assert_eq!(presets.len(), 16);
+    /// assert_eq!(presets.len(), 17);
     /// assert_eq!(presets[0].key, "kde-breeze");
     /// assert_eq!(presets[0].display_name, "KDE Breeze");
     /// ```
@@ -668,7 +723,7 @@ impl Theme {
     ///
     /// Platform presets are included where their platform tag matches:
     /// kde-breeze on KDE, adwaita on Linux, windows-11 on Windows,
-    /// macos-sonoma on macOS, ios on macOS and iOS. `material` and the
+    /// macos-monterey and macos-tahoe on macOS, ios-13 on macOS and iOS. `material-3` and the
     /// community themes are always included.
     ///
     /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,
@@ -678,8 +733,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// let presets = native_theme::theme::Theme::list_presets_for_platform();
-    /// // On Linux KDE: kde-breeze, adwaita, material and all community themes
-    /// // On Windows: windows-11, material and all community themes
+    /// // On Linux KDE: kde-breeze, adwaita, material-3 and all community themes
+    /// // On Windows: windows-11, material-3 and all community themes
     /// assert!(!presets.is_empty());
     /// ```
     #[must_use]
@@ -1060,6 +1115,37 @@ mod tests {
     }
 
     #[test]
+    fn nameless_overlay_parses_and_merges() {
+        let toml = "[light.defaults]\naccent_color = \"#ff6600\"";
+        assert!(Theme::lint_toml(toml).unwrap().is_empty());
+        let overlay = Theme::from_toml(toml).unwrap();
+        assert_eq!(overlay.name, "");
+
+        let mut base = Theme::preset("catppuccin-mocha").unwrap();
+        base.merge(&overlay);
+        assert_eq!(base.name, "Catppuccin Mocha");
+        assert_eq!(
+            base.light.as_ref().unwrap().defaults.accent_color,
+            Some(Rgba::rgb(0xff, 0x66, 0x00))
+        );
+    }
+
+    #[test]
+    fn icon_set_segoe_fluent_toml_round_trip() {
+        let theme = Theme::from_toml("name = \"T\"\nicon_set = \"segoe-fluent\"").unwrap();
+        assert_eq!(theme.icon_set, Some(IconSet::SegoeFluent));
+        let toml_text = theme.to_toml().unwrap();
+        assert!(
+            toml_text.contains("icon_set = \"segoe-fluent\""),
+            "serialized name changed: {toml_text}"
+        );
+        assert_eq!(
+            Theme::from_toml(&toml_text).unwrap().icon_set,
+            Some(IconSet::SegoeFluent)
+        );
+    }
+
+    #[test]
     fn native_theme_merge_overlay_light_into_none() {
         let mut base = Theme {
             name: "Theme".into(),
@@ -1346,7 +1432,7 @@ accent_color = "#ff0000"
     #[test]
     fn native_theme_serde_toml_round_trip() {
         // Load a preset, serialize to TOML, deserialize back, and verify equality
-        let theme = Theme::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material-3").expect("material-3 preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
         let theme2 = Theme::from_toml(&toml_str).expect("should deserialize");
         assert_eq!(theme, theme2, "round-trip should preserve Theme");
@@ -1356,9 +1442,9 @@ accent_color = "#ff0000"
 
     #[test]
     fn resolve_material_uses_theme_level_icon_theme() {
-        // material.toml has `icon_theme = "material"` at the root (tier 2).
+        // material-3.toml has `icon_theme = "material"` at the root (tier 2).
         // The resolver must fill `icon_theme = "material"` for both modes.
-        let theme = Theme::preset("material").unwrap();
+        let theme = Theme::preset("material-3").unwrap();
         for mode in [ColorMode::Light, ColorMode::Dark] {
             let r = theme.resolve(mode).unwrap();
             assert_eq!(
@@ -1412,7 +1498,7 @@ accent_color = "#ff0000"
             "detected-theme".to_string()
         ));
         let r = adwaita_without_icon_theme()
-            .resolve_in(ColorMode::Light, &ctx)
+            .resolve_with(ColorMode::Light, &ctx)
             .unwrap();
         assert_eq!(r.icon_theme.as_deref(), Some("detected-theme"));
         assert!(
@@ -1431,7 +1517,7 @@ accent_color = "#ff0000"
             },
         ));
         let r = adwaita_without_icon_theme()
-            .resolve_in(ColorMode::Light, &ctx)
+            .resolve_with(ColorMode::Light, &ctx)
             .expect("a failed icon-theme detection must not fail resolution");
         assert_eq!(r.icon_theme, None);
         assert!(!r.icon_theme_explicit);
@@ -1447,7 +1533,7 @@ accent_color = "#ff0000"
         assert!(!r.icon_theme_explicit);
         assert_eq!(
             r.icon_theme.as_deref(),
-            crate::model::icons::system_icon_theme().ok().as_deref()
+            crate::detect::system_icon_theme().ok().as_deref()
         );
     }
 
@@ -1474,6 +1560,27 @@ accent_color = "#ff0000"
         let r = theme.resolve(ColorMode::Dark).unwrap();
         assert_eq!(r.icon_theme.as_deref(), Some("only-one"));
         assert!(r.icon_theme_explicit);
+    }
+
+    #[test]
+    fn resolve_light_only_asked_dark_reports_light_mode() {
+        let mut theme = Theme::preset("adwaita").unwrap();
+        theme.dark = None;
+        let r = theme.resolve(ColorMode::Dark).unwrap();
+        assert_eq!(r.mode, ColorMode::Light);
+    }
+
+    #[test]
+    fn resolve_reports_requested_mode_when_variant_present() {
+        let theme = Theme::preset("adwaita").unwrap();
+        assert_eq!(
+            theme.resolve(ColorMode::Dark).unwrap().mode,
+            ColorMode::Dark
+        );
+        assert_eq!(
+            theme.resolve(ColorMode::Light).unwrap().mode,
+            ColorMode::Light
+        );
     }
 
     #[test]
@@ -1644,12 +1751,12 @@ primay_bg = "#0078d7"
     #[test]
     fn lint_toml_preset_has_no_warnings() {
         // Spot-check one preset for lint cleanliness via round-trip
-        let theme = Theme::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material-3").expect("material-3 preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
         let warnings = Theme::lint_toml(&toml_str).expect("should parse");
         assert!(
             warnings.is_empty(),
-            "material preset should have no lint warnings, got: {warnings:?}"
+            "material-3 preset should have no lint warnings, got: {warnings:?}"
         );
     }
 
@@ -1934,6 +2041,134 @@ nonexistent_field = "#ff0000"
         assert!(
             widget_count >= 25,
             "expected >=25 widgets in WidgetFieldInfo, got {widget_count}"
+        );
+    }
+
+    // === docs/property-registry.toml key sets against the inventory ===
+    //
+    // The registry lists every property per table by its serialized TOML key;
+    // the inventory records the same keys from the structs. Types stay
+    // hand-kept and are not compared. `[theme_variant]` is skipped: `Theme`
+    // and `ThemeMode` do not register in the inventory.
+
+    #[test]
+    fn property_registry_keys_match_derive_inventory() {
+        use std::collections::BTreeSet;
+
+        let registry: toml::Table = include_str!("../../../docs/property-registry.toml")
+            .parse()
+            .expect("docs/property-registry.toml is valid TOML");
+
+        let struct_fields = |names: &[&'static str]| -> BTreeSet<String> {
+            names
+                .iter()
+                .filter_map(|name| field_info_entry(name))
+                .flat_map(|fields| fields.iter().map(|f| (*f).to_string()))
+                .collect()
+        };
+        let table_keys = |value: Option<&toml::Value>| -> Option<BTreeSet<String>> {
+            value
+                .and_then(|v| v.as_table())
+                .map(|t| t.keys().cloned().collect())
+        };
+
+        // `Border` is one table for both border structs; its comments say
+        // which keys belong to defaults and which to widget borders.
+        const STRUCTURES: &[(&str, &[&str])] = &[
+            ("Font", &["FontSpec"]),
+            ("Border", &["DefaultsBorderSpec", "WidgetBorderSpec"]),
+            ("IconSizes", &["IconSizes"]),
+            ("TextScaleEntry", &["TextScaleEntry"]),
+        ];
+        const STRUCT_TABLES: &[(&str, &[&str])] = &[
+            ("defaults", &["ThemeDefaults"]),
+            ("text_scale", &["TextScale"]),
+            ("layout", &["LayoutTheme"]),
+        ];
+        const SKIPPED_TABLES: &[&str] = &["theme_variant"];
+
+        fn compare(
+            drift: &mut Vec<String>,
+            table: &str,
+            registry: Option<BTreeSet<String>>,
+            code: &BTreeSet<String>,
+        ) {
+            let Some(registry) = registry else {
+                drift.push(format!("[{table}] is missing"));
+                return;
+            };
+            for key in registry.difference(code) {
+                drift.push(format!("[{table}] {key}: in the registry, not in the code"));
+            }
+            for key in code.difference(&registry) {
+                drift.push(format!("[{table}] {key}: in the code, not in the registry"));
+            }
+        }
+
+        let mut drift: Vec<String> = Vec::new();
+
+        let structures = registry
+            .get("_structures")
+            .and_then(|v| v.as_table())
+            .expect("[_structures] exists");
+        for name in structures.keys() {
+            if !STRUCTURES.iter().any(|(n, _)| n == name) {
+                drift.push(format!(
+                    "[_structures.{name}] maps to no struct in the test"
+                ));
+            }
+        }
+        for (name, structs) in STRUCTURES {
+            let code = struct_fields(structs);
+            assert!(!code.is_empty(), "no FieldInfo entry for {structs:?}");
+            compare(
+                &mut drift,
+                &format!("_structures.{name}"),
+                table_keys(structures.get(*name)),
+                &code,
+            );
+        }
+
+        for (table, structs) in STRUCT_TABLES {
+            let code = struct_fields(structs);
+            assert!(!code.is_empty(), "no FieldInfo entry for {structs:?}");
+            compare(&mut drift, table, table_keys(registry.get(*table)), &code);
+        }
+
+        let mut widget_count = 0usize;
+        for info in inventory::iter::<crate::resolve::WidgetFieldInfo>() {
+            widget_count += 1;
+            let code: BTreeSet<String> =
+                info.field_names.iter().map(|f| (*f).to_string()).collect();
+            compare(
+                &mut drift,
+                info.widget_name,
+                table_keys(registry.get(info.widget_name)),
+                &code,
+            );
+        }
+        assert!(
+            widget_count >= 25,
+            "expected >=25 widgets, got {widget_count}"
+        );
+
+        for table in registry.keys() {
+            let known = table == "_structures"
+                || SKIPPED_TABLES.contains(&table.as_str())
+                || STRUCT_TABLES.iter().any(|(t, _)| t == table)
+                || inventory::iter::<crate::resolve::WidgetFieldInfo>()
+                    .any(|info| info.widget_name == table);
+            if !known {
+                drift.push(format!(
+                    "[{table}] is in the registry, but no widget or struct"
+                ));
+            }
+        }
+
+        assert!(
+            drift.is_empty(),
+            "docs/property-registry.toml diverges from the derive inventory:\n{}",
+            drift.join("\n")
         );
     }
 }

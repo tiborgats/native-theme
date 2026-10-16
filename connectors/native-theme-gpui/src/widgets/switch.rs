@@ -5,16 +5,20 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, Styled, Window, div, prelude::FluentBuilder as _, px, rems,
+    Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
-use gpui_component::{ActiveTheme as _, Disableable as _, ThemeStyled as _};
+use gpui_component::{
+    ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _, ThemeStyled as _,
+};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, native, over, part_bounds, text_size};
+use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
+use crate::ActiveNativeTheme;
 
 /// The space between the track and the label, which `SwitchTheme` does not
-/// state: gpui-component's own, `gap_2` (switch.rs:238).
+/// state: gpui-component's own, `gap_2` (switch.rs:246).
 const LABEL_GAP: gpui::Rems = rems(0.5);
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -23,8 +27,10 @@ type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
 /// control the pointer hovers.
 const HOVER_GROUP: &str = "native-theme-switch";
 
-/// What a switch paints, per state, from `SwitchTheme` (spec §2.3).
+/// What a switch paints, per state, from `SwitchTheme`
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.3).
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SwitchLook {
     /// `switch.track_width`.
     pub track_width: Pixels,
@@ -59,9 +65,10 @@ impl SwitchLook {
     /// The look of a switch `checked` or not, `disabled` or not, or `None`
     /// when a length the theme gives is not finite.
     ///
-    /// The hover and disabled colours are soft options: a `None` copies the
-    /// colour it stands in for (C16), as the iced connector reads them
-    /// (`native-theme-iced` `styles::toggler`).
+    /// The hover and disabled colours are soft options, as the iced connector
+    /// reads them (`native-theme-iced` `styles::toggler`): a `None` disabled
+    /// colour copies the colour it stands in for (C16), and a `None` hover
+    /// leaves the track at rest.
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         let s = &resolved.switch;
@@ -80,7 +87,8 @@ impl SwitchLook {
         } else {
             s.hover_unchecked_background
         };
-        let hover_track = (!disabled).then(|| over(color(base), color(hover.unwrap_or(base))));
+        let hover_track =
+            (!disabled).then(|| hover.map_or(color(base), |h| over(color(base), color(h))));
         let rest_thumb = if checked {
             s.thumb_background
         } else {
@@ -152,16 +160,19 @@ impl SwitchLook {
     }
 }
 
-/// A switch whose track, thumb and states are `SwitchTheme`'s (spec §2.3),
+/// A switch whose track, thumb and states are `SwitchTheme`'s
+/// (`docs/archive/todo_gpui-widgets-spec.md` §2.3),
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
-/// state. The thumb travels on gpui-component's spring (switch.rs:207-216).
+/// state. The thumb travels on gpui-component's spring (switch.rs:215-224).
 /// While focused, the track draws the focus ring in `ThemeColor::ring`
 /// (`defaults.focus_ring_color`), as gpui-component's switch does
-/// (switch.rs:271-274).
+/// (switch.rs:279-282).
 ///
-/// Controlled: [`Switch::on_change`] receives the requested value. Without a
-/// native theme it renders gpui-component's `Switch`.
+/// Controlled: [`Switch::on_change`] receives the requested value. Its
+/// `Styled` style refines the row, after the widget's own: the row's layout,
+/// box and spacing; the track and the label set their own colours and text.
+/// Without a native theme it renders gpui-component's `Switch`.
 pub struct Switch {
     id: ElementId,
     label: Option<SharedString>,
@@ -170,10 +181,17 @@ pub struct Switch {
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
     backdrop: Option<Hsla>,
+    accessibility_label: Option<SharedString>,
+    tab_stop: bool,
+    tab_index: isize,
+    focus_ring: bool,
+    style: StyleRefinement,
 }
 
 impl Switch {
-    /// A new switch, off.
+    /// A new switch, off: a tab stop at index 0, as gpui-base's
+    /// (switch.rs:256-257), that draws the focus ring, as gpui-component's
+    /// (switch.rs:49-51).
     #[must_use]
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
@@ -184,7 +202,43 @@ impl Switch {
             on_change: None,
             observer: None,
             backdrop: None,
+            accessibility_label: None,
+            tab_stop: true,
+            tab_index: 0,
+            focus_ring: true,
+            style: StyleRefinement::default(),
         }
+    }
+
+    /// The name a screen reader announces, where it is not the label drawn
+    /// beside the track or no label is drawn; the drawn label stays as it
+    /// is.
+    #[must_use]
+    pub fn accessibility_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.accessibility_label = Some(label.into());
+        self
+    }
+
+    /// Whether Tab stops on it; `true` by default.
+    #[must_use]
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.tab_stop = tab_stop;
+        self
+    }
+
+    /// Its place in its tab group's Tab order; `0` by default.
+    #[must_use]
+    pub fn tab_index(mut self, tab_index: isize) -> Self {
+        self.tab_index = tab_index;
+        self
+    }
+
+    /// Whether the track draws the focus ring while focused; `true` by
+    /// default, as gpui-component's `FocusableExt::focus_ring`.
+    #[must_use]
+    pub fn focus_ring(mut self, focus_ring: bool) -> Self {
+        self.focus_ring = focus_ring;
+        self
     }
 
     /// The colour under the switch, which a disabled one is faded over as
@@ -205,7 +259,7 @@ impl Switch {
     }
 
     /// The label drawn beside the track, and the name a screen reader
-    /// announces.
+    /// announces where [`Switch::accessibility_label`] gives none.
     #[must_use]
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
@@ -236,8 +290,15 @@ impl Switch {
     fn fallback(self) -> AnyElement {
         gpui_component::switch::Switch::new(self.id)
             .when_some(self.label, |switch, label| switch.label(label))
+            .when_some(self.accessibility_label, |switch, label| {
+                switch.accessibility_label(label)
+            })
             .checked(self.checked)
             .disabled(self.disabled)
+            .tab_stop(self.tab_stop)
+            .tab_index(self.tab_index)
+            .focus_ring(self.focus_ring)
+            .refine_style(&self.style)
             .when_some(self.on_change, |switch, on_change| {
                 switch.on_click(move |checked, window, cx| on_change(checked, window, cx))
             })
@@ -245,13 +306,21 @@ impl Switch {
     }
 }
 
-impl RenderOnce for Switch {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = native(cx) else {
-            return self.fallback();
+impl Styled for Switch {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.style
+    }
+}
+
+impl Switch {
+    /// The theme-drawn row on gpui-base's switch, or the switch back where
+    /// gpui-component's switch is drawn instead.
+    pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseSwitch, Box<Self>> {
+        let Some(n) = cx.native() else {
+            return Err(Box::new(self));
         };
         let Some(look) = SwitchLook::of(n.resolved, self.checked, self.disabled) else {
-            return self.fallback();
+            return Err(Box::new(self));
         };
         let look = look.faded_over(
             self.backdrop
@@ -277,8 +346,67 @@ impl RenderOnce for Switch {
             .read(cx)
             .clone();
         let focused = focus_handle.is_focused(window);
-        let track = SwitchTrack::new((self.id.clone(), "track"))
+        let track = self.track(&look, focused, thumb_left, window, cx);
+        Ok(BaseSwitch::new(self.id)
             .checked(checked)
+            .disabled(self.disabled)
+            .track_focus(&focus_handle)
+            .tab_stop(self.tab_stop)
+            .tab_index(self.tab_index)
+            .when_some(
+                self.accessibility_label.or_else(|| self.label.clone()),
+                |switch, label| switch.accessibility_label(label),
+            )
+            .when_some(self.on_change, |switch, on_change| {
+                switch.on_change(move |next, _, window, cx| on_change(&next, window, cx))
+            })
+            .debug_selector(|| "native-switch-row".into())
+            .group(HOVER_GROUP)
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(LABEL_GAP)
+            .opacity(look.opacity)
+            // The caller's style, refined onto the row after the widget's
+            // own, as gpui-component refines its checkbox's (checkbox.rs:291);
+            // its switch refines it onto a box round the row (switch.rs:227).
+            .refine_style(&self.style)
+            .child(track)
+            .when_some(self.label, |switch, label| {
+                switch.child(
+                    div()
+                        // One line of the label's font, its size by
+                        // `defaults.line_height`, the line box the model
+                        // states, centred on the track -- where
+                        // gpui-component makes the line box the track's
+                        // height (switch.rs:300).
+                        .line_height(gpui::relative(label_line))
+                        .text_size(label_size)
+                        .font_weight(label_weight)
+                        .text_color(look.label)
+                        .debug_selector(|| "native-switch-label".into())
+                        .child(label)
+                        .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
+                )
+            }))
+    }
+}
+
+impl Switch {
+    /// The track in `look`, its thumb `thumb_left` from its left edge; while
+    /// `focused`, enabled, and told to (`focus_ring`), it draws the focus
+    /// ring.
+    pub(super) fn track(
+        &self,
+        look: &SwitchLook,
+        focused: bool,
+        thumb_left: Pixels,
+        window: &Window,
+        cx: &App,
+    ) -> SwitchTrack {
+        let observer = self.observer.as_ref();
+        SwitchTrack::new((self.id.clone(), "track"))
+            .checked(self.checked)
             .disabled(self.disabled)
             .relative()
             .flex_none()
@@ -286,7 +414,7 @@ impl RenderOnce for Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
-            .when(focused && !self.disabled, |track| {
+            .when(focused && !self.disabled && self.focus_ring, |track| {
                 track.focus_ring_style(window, cx)
             })
             .when_some(look.hover_track, |track, hover| {
@@ -294,7 +422,7 @@ impl RenderOnce for Switch {
             })
             .debug_selector(|| "native-switch-track".into())
             .child(
-                SwitchThumb::new(checked)
+                SwitchThumb::new(self.checked)
                     .disabled(self.disabled)
                     .absolute()
                     .top(look.inset)
@@ -309,41 +437,15 @@ impl RenderOnce for Switch {
                             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
                     ),
             )
-            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))));
-        BaseSwitch::new(self.id)
-            .checked(checked)
-            .disabled(self.disabled)
-            .track_focus(&focus_handle)
-            .when_some(self.label.clone(), |switch, label| {
-                switch.accessibility_label(label)
-            })
-            .when_some(self.on_change, |switch, on_change| {
-                switch.on_change(move |next, _, window, cx| on_change(&next, window, cx))
-            })
-            .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap(LABEL_GAP)
-            .opacity(look.opacity)
-            .child(track)
-            .when_some(self.label, |switch, label| {
-                switch.child(
-                    div()
-                        // One line of the label's font, its size by
-                        // `defaults.line_height`, the line box the model
-                        // states, centred on the track -- where
-                        // gpui-component makes the line box the track's
-                        // height (switch.rs:292).
-                        .line_height(gpui::relative(label_line))
-                        .text_size(label_size)
-                        .font_weight(label_weight)
-                        .text_color(look.label)
-                        .debug_selector(|| "native-switch-label".into())
-                        .child(label)
-                        .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
-                )
-            })
-            .into_any_element()
+            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))))
+    }
+}
+
+impl RenderOnce for Switch {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        match self.row(window, cx) {
+            Ok(row) => row.into_any_element(),
+            Err(switch) => switch.fallback(),
+        }
     }
 }

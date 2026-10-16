@@ -10,7 +10,9 @@ use std::fmt;
 /// its allowed range.
 #[derive(Debug, Clone)]
 pub struct RangeViolation {
-    /// Dot-separated path of the property (e.g. `"button.min_width"`).
+    /// Dot-separated TOML path of the property (e.g.
+    /// `"light.button.min_width_px"`), as
+    /// [`Error::ResolutionIncomplete`] describes.
     pub path: String,
     /// The actual value found.
     pub value: f64,
@@ -77,7 +79,9 @@ pub enum Error {
     UnknownPreset {
         /// The requested preset name.
         name: String,
-        /// Available preset names.
+        /// Available preset names: empty where the platform has no OS
+        /// generations to choose between (`from_system_with_preset` on Linux,
+        /// BSD and other platforms without a generation table).
         known: &'static [&'static str],
     },
 
@@ -88,7 +92,7 @@ pub enum Error {
         reason: &'static str,
     },
 
-    /// The theme has no variant for the requested color mode.
+    /// The theme has neither a light nor a dark variant.
     ///
     /// Returned by [`Theme::pick_variant()`](crate::Theme::pick_variant) and
     /// [`Theme::into_variant()`](crate::Theme::into_variant) when the theme
@@ -102,16 +106,47 @@ pub enum Error {
     /// `ReaderFailed` with reader `"toml-serializer"`.)
     Toml(toml::de::Error),
 
-    /// File I/O error.
-    Io(std::io::Error),
+    /// A theme file could not be read.
+    Io {
+        /// The file that could not be read.
+        path: std::path::PathBuf,
+        /// The underlying I/O error.
+        source: std::io::Error,
+    },
 
     /// Theme resolution found missing fields that could not be inherited.
+    ///
+    /// Each path, here and in [`RangeViolation::path`], names the key a
+    /// theme author writes in TOML: `button.min_height_px`,
+    /// `button.border.padding_left_px`, `defaults.icon_sizes.toolbar_px`.
+    /// A path from a whole theme ([`Theme::resolve`](crate::Theme::resolve),
+    /// [`Theme::resolve_with`](crate::Theme::resolve_with),
+    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system),
+    /// [`SystemTheme::with_overlay`](crate::SystemTheme::with_overlay))
+    /// starts with the table of the variant that failed, `light.` or
+    /// `dark.`, except a `layout.*` key and [`Error::ResolutionInvalid`]'s
+    /// `context.font_dpi`, which no variant holds; a
+    /// [`ThemeMode`](crate::theme::ThemeMode) resolved alone has no variant
+    /// table, so its paths start below it.
+    ///
+    /// A font size is one field with two keys, `size_pt` and `size_px` (a
+    /// text-scale line height likewise, `line_height_pt` and
+    /// `line_height_px`): an out-of-range one is named by the key in the
+    /// unit its value carries, under the table the value lands in (a
+    /// `button.font` that inherits a `defaults.font` in points is
+    /// `button.font.size_pt`), a missing one by the field, `size`
+    /// (`line_height`).
     ResolutionIncomplete {
-        /// Dot-separated paths of fields still `None` after resolution.
+        /// Dot-separated TOML paths of fields still `None` after resolution.
         missing: Vec<String>,
     },
 
-    /// Theme resolution found numeric values outside allowed ranges.
+    /// Theme resolution found numeric values outside allowed ranges. Each
+    /// violation's path is a TOML path, as [`Error::ResolutionIncomplete`]
+    /// describes, except `context.font_dpi`: the
+    /// [`ResolutionContext::font_dpi`](crate::ResolutionContext::font_dpi)
+    /// the resolution was given, which no theme states. A DPI that is not
+    /// finite and positive is that one violation, and no field is checked.
     ResolutionInvalid {
         /// One entry per out-of-range property.
         errors: Vec<RangeViolation>,
@@ -119,7 +154,7 @@ pub enum Error {
 
     /// A platform reader failed with a platform-specific error.
     ReaderFailed {
-        /// Reader name (e.g. `"kde"`, `"windows"`, `"icon-theme"`).
+        /// Reader name (e.g. `"windows"`, `"icon-theme"`, `"kde-watcher"`).
         reader: &'static str,
         /// The underlying error.
         source: Box<dyn std::error::Error + Send + Sync>,
@@ -141,9 +176,48 @@ impl Error {
             Error::ReaderFailed { .. } => ErrorKind::Platform,
             Error::UnknownPreset { .. } => ErrorKind::Parse,
             Error::Toml(_) => ErrorKind::Parse,
-            Error::Io(_) => ErrorKind::Io,
+            Error::Io { .. } => ErrorKind::Io,
             Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
             Error::ResolutionInvalid { .. } => ErrorKind::Resolution,
+        }
+    }
+}
+
+impl Error {
+    /// This error with each path it names prefixed by the table of the
+    /// variant that failed: `light.` or `dark.`. Errors that name no path
+    /// are returned unchanged, and so is `context.font_dpi`, which no
+    /// variant states. The theme-wide checks (`check_font_dpi`,
+    /// `check_layout`) belong before the variants resolve, as both callers
+    /// run them, so a `layout.*` path never reaches here.
+    pub(crate) fn in_variant(self, mode: crate::theme::ColorMode) -> Self {
+        let table = match mode {
+            crate::theme::ColorMode::Light => "light",
+            crate::theme::ColorMode::Dark => "dark",
+        };
+        match self {
+            Error::ResolutionIncomplete { missing } => Error::ResolutionIncomplete {
+                missing: missing
+                    .into_iter()
+                    .map(|path| format!("{table}.{path}"))
+                    .collect(),
+            },
+            Error::ResolutionInvalid { errors } => Error::ResolutionInvalid {
+                errors: errors
+                    .into_iter()
+                    .map(|rv| {
+                        if rv.path.starts_with("context.") {
+                            rv
+                        } else {
+                            RangeViolation {
+                                path: format!("{table}.{}", rv.path),
+                                ..rv
+                            }
+                        }
+                    })
+                    .collect(),
+            },
+            other => other,
         }
     }
 }
@@ -157,6 +231,12 @@ impl fmt::Display for Error {
             Error::PlatformUnsupported { platform } => {
                 write!(f, "platform not supported: {platform}")
             }
+            Error::UnknownPreset { name, known: [] } => {
+                write!(
+                    f,
+                    "unknown preset \"{name}\": this platform has no OS generations to choose between"
+                )
+            }
             Error::UnknownPreset { name, known } => {
                 write!(
                     f,
@@ -168,10 +248,15 @@ impl fmt::Display for Error {
                 write!(f, "theme watching unavailable: {reason}")
             }
             Error::NoVariant { mode } => {
-                write!(f, "theme has no variant for {mode:?}")
+                write!(
+                    f,
+                    "theme defines neither a light nor a dark variant (requested {mode:?})"
+                )
             }
             Error::Toml(err) => write!(f, "TOML error: {err}"),
-            Error::Io(err) => write!(f, "I/O error: {err}"),
+            Error::Io { path, source } => {
+                write!(f, "cannot read theme file `{}`: {source}", path.display())
+            }
             Error::ResolutionIncomplete { missing } => {
                 write!(
                     f,
@@ -180,8 +265,7 @@ impl fmt::Display for Error {
                 )?;
 
                 // Group fields by category, preserving insertion order within each group.
-                let categories: &[&str] =
-                    &["root defaults", "text scale", "widget fields", "icon set"];
+                let categories: &[&str] = &["root defaults", "text scale", "widget fields"];
                 for &cat in categories {
                     let fields: Vec<&str> = missing
                         .iter()
@@ -229,8 +313,13 @@ impl fmt::Display for Error {
     }
 }
 
-/// Categorize a field path into a human-readable group name.
+/// Categorize a field path into a human-readable group name. A leading
+/// variant table (`light.`, `dark.`) does not count.
 fn field_category(field: &str) -> &'static str {
+    let field = field
+        .strip_prefix("light.")
+        .or_else(|| field.strip_prefix("dark."))
+        .unwrap_or(field);
     match field.split('.').next() {
         Some("defaults") => "root defaults",
         Some("text_scale") => "text scale",
@@ -242,7 +331,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Toml(err) => Some(err),
-            Error::Io(err) => Some(err),
+            Error::Io { source, .. } => Some(source),
             Error::ReaderFailed { source, .. } => Some(source.as_ref()),
             Error::FeatureDisabled { .. }
             | Error::PlatformUnsupported { .. }
@@ -267,15 +356,50 @@ impl From<toml::ser::Error> for Error {
         // toml::de::Error. This preserves the existing From<toml::ser::Error>
         // conversion used by presets::to_toml().
         Error::ReaderFailed {
-            reader: "toml-serializer",
+            reader: reader_names::TOML_SERIALIZER,
             source: Box::new(err),
         }
     }
 }
 
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::Io(err)
+/// Declares the reader-name consts and, for the test, the list of them all.
+macro_rules! reader_names {
+    ($($(#[$meta:meta])* $name:ident = $value:literal;)*) => {
+        $($(#[$meta])* pub(crate) const $name: &str = $value;)*
+
+        /// Every name declared above, for the test that keeps them one style.
+        #[cfg(test)]
+        pub(crate) const ALL: &[&str] = &[$($value),*];
+    };
+}
+
+/// The `reader` name of every [`Error::ReaderFailed`], lowercase kebab-case.
+pub(crate) mod reader_names {
+    reader_names! {
+        #[cfg_attr(not(all(target_os = "windows", feature = "windows")), allow(dead_code))]
+        WINDOWS = "windows";
+        #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+        MACOS = "macos";
+        ICON_THEME = "icon-theme";
+        TOML_SERIALIZER = "toml-serializer";
+        PRESET_CACHE = "preset-cache";
+        #[cfg_attr(not(feature = "svg-rasterize"), allow(dead_code))]
+        SVG_RASTERIZER = "svg-rasterizer";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "kde", target_os = "linux")),
+            allow(dead_code)
+        )]
+        KDE_WATCHER = "kde-watcher";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "portal", target_os = "linux")),
+            allow(dead_code)
+        )]
+        GNOME_WATCHER = "gnome-watcher";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "windows", target_os = "windows")),
+            allow(dead_code)
+        )]
+        WINDOWS_WATCHER = "windows-watcher";
     }
 }
 
@@ -283,6 +407,24 @@ impl From<std::io::Error> for Error {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reader_names_are_lowercase_kebab_case_and_unique() {
+        for name in reader_names::ALL {
+            assert!(
+                !name.is_empty()
+                    && !name.starts_with('-')
+                    && !name.ends_with('-')
+                    && name
+                        .chars()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
+                "{name:?} is not lowercase kebab-case"
+            );
+        }
+        let mut sorted = reader_names::ALL.to_vec();
+        sorted.sort_unstable();
+        assert!(sorted.windows(2).all(|w| w[0] != w[1]), "duplicate name");
+    }
 
     // === ErrorKind dispatch tests ===
 
@@ -312,7 +454,7 @@ mod tests {
     #[test]
     fn kind_platform_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: "kde",
+            reader: reader_names::ICON_THEME,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         assert_eq!(err.kind(), ErrorKind::Platform);
@@ -346,7 +488,7 @@ mod tests {
     fn kind_resolution_for_invalid() {
         let err = Error::ResolutionInvalid {
             errors: vec![RangeViolation {
-                path: "button.min_width".into(),
+                path: "button.min_width_px".into(),
                 value: -5.0,
                 min: Some(0.0),
                 max: None,
@@ -357,7 +499,10 @@ mod tests {
 
     #[test]
     fn kind_io_for_io() {
-        let err = Error::Io(std::io::Error::other("disk failure"));
+        let err = Error::Io {
+            path: "theme.toml".into(),
+            source: std::io::Error::other("disk failure"),
+        };
         assert_eq!(err.kind(), ErrorKind::Io);
     }
 
@@ -388,7 +533,7 @@ mod tests {
             missing: vec![
                 "defaults.accent_color".into(),
                 "button.font.color".into(),
-                "window.border.corner_radius".into(),
+                "window.border.corner_radius_px".into(),
             ],
         };
         let msg = err.to_string();
@@ -397,7 +542,7 @@ mod tests {
         assert!(msg.contains("defaults.accent_color"), "got: {msg}");
         assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(msg.contains("button.font.color"), "got: {msg}");
-        assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
+        assert!(msg.contains("window.border.corner_radius_px"), "got: {msg}");
         assert!(msg.contains("hint:"), "got: {msg}");
         assert!(msg.contains("preset"), "got: {msg}");
     }
@@ -413,6 +558,17 @@ mod tests {
     }
 
     #[test]
+    fn display_no_variant_says_both_variants_are_missing() {
+        let err = Error::NoVariant {
+            mode: crate::theme::ColorMode::Dark,
+        };
+        assert_eq!(
+            err.to_string(),
+            "theme defines neither a light nor a dark variant (requested Dark)"
+        );
+    }
+
+    #[test]
     fn display_resolution_incomplete_groups_text_scale() {
         let err = Error::ResolutionIncomplete {
             missing: vec!["text_scale.caption".into(), "defaults.font.family".into()],
@@ -420,6 +576,53 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("[text scale]"), "got: {msg}");
         assert!(msg.contains("[root defaults]"), "got: {msg}");
+    }
+
+    #[test]
+    fn in_variant_prefixes_a_variant_path_and_not_the_context() {
+        let violation = |path: &str| RangeViolation {
+            path: path.into(),
+            value: 0.0,
+            min: Some(f64::MIN_POSITIVE),
+            max: None,
+        };
+        let err = Error::ResolutionInvalid {
+            errors: vec![
+                violation("context.font_dpi"),
+                violation("button.min_height_px"),
+            ],
+        }
+        .in_variant(crate::theme::ColorMode::Dark);
+        let Error::ResolutionInvalid { errors } = err else {
+            panic!("expected ResolutionInvalid, got: {err:?}");
+        };
+        let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+        assert_eq!(paths, ["context.font_dpi", "dark.button.min_height_px"]);
+    }
+
+    #[test]
+    fn display_resolution_incomplete_groups_variant_prefixed_paths() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec![
+                "dark.text_scale.caption".into(),
+                "light.defaults.icon_sizes.toolbar_px".into(),
+                "light.button.min_height_px".into(),
+            ],
+        };
+        let msg = err.to_string();
+        assert!(
+            msg.contains("[text scale]\n    - dark.text_scale.caption"),
+            "got: {msg}"
+        );
+        assert!(
+            msg.contains("[root defaults]\n    - light.defaults.icon_sizes.toolbar_px"),
+            "got: {msg}"
+        );
+        assert!(
+            msg.contains("[widget fields]\n    - light.button.min_height_px"),
+            "got: {msg}"
+        );
+        assert!(msg.contains("hint:"), "got: {msg}");
     }
 
     #[test]
@@ -438,13 +641,13 @@ mod tests {
         let err = Error::ResolutionInvalid {
             errors: vec![
                 RangeViolation {
-                    path: "button.min_width".into(),
+                    path: "button.min_width_px".into(),
                     value: -5.0,
                     min: Some(0.0),
                     max: None,
                 },
                 RangeViolation {
-                    path: "slider.track_height".into(),
+                    path: "slider.track_height_px".into(),
                     value: 200.0,
                     min: Some(1.0),
                     max: Some(100.0),
@@ -453,9 +656,9 @@ mod tests {
         };
         let msg = err.to_string();
         assert!(msg.contains("2 range violation(s)"), "got: {msg}");
-        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("button.min_width_px"), "got: {msg}");
         assert!(msg.contains("-5"), "got: {msg}");
-        assert!(msg.contains("slider.track_height"), "got: {msg}");
+        assert!(msg.contains("slider.track_height_px"), "got: {msg}");
         assert!(msg.contains("200"), "got: {msg}");
     }
 
@@ -471,11 +674,26 @@ mod tests {
         assert!(msg.contains("kde-breeze"), "got: {msg}");
     }
 
+    #[test]
+    fn display_unknown_preset_without_presets_says_so() {
+        let err = Error::UnknownPreset {
+            name: "adwaita".into(),
+            known: &[],
+        };
+        assert_eq!(
+            err.to_string(),
+            "unknown preset \"adwaita\": this platform has no OS generations to choose between"
+        );
+    }
+
     // === source() tests ===
 
     #[test]
     fn source_some_for_io() {
-        let err = Error::Io(std::io::Error::other("disk failure"));
+        let err = Error::Io {
+            path: "theme.toml".into(),
+            source: std::io::Error::other("disk failure"),
+        };
         assert!(
             std::error::Error::source(&err).is_some(),
             "Io should return Some from source()"
@@ -485,7 +703,7 @@ mod tests {
     #[test]
     fn source_some_for_reader_failed() {
         let err = Error::ReaderFailed {
-            reader: "kde",
+            reader: reader_names::ICON_THEME,
             source: Box::new(std::io::Error::other("dbus down")),
         };
         let source = std::error::Error::source(&err);
@@ -572,16 +790,15 @@ mod tests {
     }
 
     #[test]
-    fn from_io_error_produces_io_variant_no_arc() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
-        let err: Error = io_err.into();
-        match &err {
-            Error::Io(e) => {
-                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-                assert!(e.to_string().contains("missing file"));
-            }
-            other => panic!("expected Io variant, got: {other:?}"),
-        }
+    fn display_io_names_path_and_source() {
+        let err = Error::Io {
+            path: "/themes/my-theme.toml".into(),
+            source: std::io::Error::new(std::io::ErrorKind::NotFound, "missing file"),
+        };
+        assert_eq!(
+            err.to_string(),
+            "cannot read theme file `/themes/my-theme.toml`: missing file"
+        );
     }
 
     // === Derive checks ===
@@ -626,13 +843,13 @@ mod tests {
     #[test]
     fn range_violation_display_both_bounds() {
         let v = RangeViolation {
-            path: "button.min_width".into(),
+            path: "button.min_width_px".into(),
             value: -5.0,
             min: Some(0.0),
             max: Some(1000.0),
         };
         let msg = v.to_string();
-        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("button.min_width_px"), "got: {msg}");
         assert!(msg.contains("0..=1000"), "got: {msg}");
         assert!(msg.contains("-5"), "got: {msg}");
     }
