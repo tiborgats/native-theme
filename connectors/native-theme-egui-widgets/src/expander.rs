@@ -26,7 +26,9 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// * the header is as wide as the `Ui`, at least the scope's `interact_size.y` tall
 ///   (`expander.header_height`), padded by the stated `expander.border.padding` sides (the
 ///   scope's `button_padding` on a side left unstated), its fill the scope's state fill
-///   (`expander.hover_background` under the pointer);
+///   (`expander.hover_background` under the pointer); the title wraps at the width the
+///   padding and the arrow leave it, and where it cannot wrap that narrow the header is as
+///   wide as it needs, as egui's own header is at least its text;
 /// * the arrow, `expander.arrow_icon_size` across in `expander.arrow_color` (the state's
 ///   text colour where unstated), is egui's triangle: before the title it turns from the
 ///   title to down as the body opens, egui's own turn; after it (`arrow_side` trailing) from
@@ -258,14 +260,18 @@ fn header(
     let gap = stated_or(e.arrow_gap, ui.spacing().icon_spacing);
     let trailing = e.arrow_side == Some(ArrowSide::Trailing);
 
-    let width = ui.available_width();
-    let wrap = (width - left - right - arrow - gap).max(0.0);
+    let available = ui.available_width();
+    let wrap = (available - left - right - arrow - gap).max(0.0);
     let galley = title.into_galley(
         ui,
-        Some(egui::TextWrapMode::Extend),
+        Some(egui::TextWrapMode::Wrap),
         wrap,
         egui::TextStyle::Button,
     );
+    // At least the title's width, as egui's own header is at least its text
+    // (`egui/src/containers/collapsing_header.rs:516-532`): a title that cannot wrap to the
+    // width left (a glyph wider than it) still lies inside the header, clear of the arrow.
+    let width = available.max(galley.size().x + left + right + arrow + gap);
     let height = (galley.size().y + top + bottom).max(ui.spacing().interact_size.y);
     let (_, rect) = ui.allocate_space(egui::vec2(width, height));
     let mut response = ui.interact(rect, id, egui::Sense::click());

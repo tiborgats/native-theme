@@ -603,6 +603,54 @@ fn the_expander_is_laid_out_as_stated() {
     );
 }
 
+/// The painted header wraps a title too long for its column inside itself, clear of a
+/// trailing arrow, and is at least as wide as a title that cannot wrap narrower, as egui's
+/// own header is at least its text (`egui/src/containers/collapsing_header.rs:516-532`).
+#[test]
+fn a_long_title_wraps_inside_the_header() {
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    assert_eq!(
+        t.expander.arrow_side,
+        Some(native_theme_egui::native_theme::theme::ArrowSide::Trailing)
+    );
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let title = "A title far longer than the narrow column it is shown in";
+    // 120 points wraps the words; 1 point leaves no width for the title at all.
+    for width in [120.0, 1.0] {
+        let show = |ui: &mut egui::Ui| {
+            ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
+                Expander::new(title)
+                    .show(ui, |ui| ui.label("Body"))
+                    .header_response
+            })
+            .inner
+        };
+        let _ = response(&ctx, at(0.0), show);
+        let (out, header) = response(&ctx, at(0.0), show);
+        let text = flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Text(text) if text.galley.text() == title => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert!(text.galley.rows.len() > 1, "{width}: the title wraps");
+        let painted = egui::Rect::from_min_size(text.pos, text.galley.size());
+        assert!(
+            header.rect.contains_rect(painted),
+            "{width}: {painted:?} inside {:?}",
+            header.rect
+        );
+        let arrow = Parts::of(&header).unwrap().get("arrow").unwrap();
+        assert!(
+            painted.right() <= arrow.left(),
+            "{width}: {painted:?} clear of the arrow {arrow:?}"
+        );
+    }
+}
+
 /// T3: a clicked hyperlink is visited on the next pass, in `link.visited_text_color`.
 #[test]
 fn a_clicked_hyperlink_is_visited() {
