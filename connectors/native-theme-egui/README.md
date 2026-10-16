@@ -39,7 +39,8 @@ root and of `icons`.
 ## How it fits
 
 Depend on this crate; it re-exports `egui` and `native_theme`, so your
-`Cargo.toml` cannot pull in a second copy of either.
+`Cargo.toml` need not add a second dependency on either, whose version could
+drift from the connector's.
 
 It ships no `egui::Widget`, no image decoder, no font database of its own and
 no fork of any egui type. System-font lookup is native-theme's
