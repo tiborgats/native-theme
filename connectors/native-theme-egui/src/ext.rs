@@ -1,7 +1,7 @@
 use crate::atlas::carry_name_keys;
 use crate::plugin::{capped, record_scope};
 use crate::style::egui_preset;
-use crate::{Role, RoleVariant, Surface, ThemeAtlas};
+use crate::{Builder, Role, RoleVariant, Surface, ThemeAtlas};
 
 mod sealed {
     pub trait Sealed {}
@@ -147,11 +147,11 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 }
 
 /// Compile an atlas from a bundled preset, including its [`LayoutTheme`](crate::LayoutTheme)
-/// (`native_theme::theme::Theme::layout`, `native-theme/src/model/mod.rs:279`) and, with
+/// (`native_theme::theme::Theme::layout`, `native-theme/src/model/mod.rs:282`) and, with
 /// feature `system-fonts`, the preset's typefaces through
 /// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
-/// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:267`), as
+/// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:270`), as
 /// in both siblings (`connectors/native-theme-iced/src/lib.rs:388`,
 /// `connectors/native-theme-gpui/src/lib.rs:295`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
@@ -162,17 +162,18 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 ///
 /// The atlas carries **both** of the preset's variants — `ColorMode::Light` into the light
 /// `Style`, `ColorMode::Dark` into the dark one, each through `Theme::resolve_with`
-/// (`native-theme/src/model/mod.rs:492`), whose `pick_variant` cross-fallback serves a
-/// one-variant preset (`:372-377`), on the one `ResolutionContext::from_system()` the call
-/// builds, so that the resolution is `ThemeMode::resolve_system`'s (`:508`;
-/// `native-theme/src/resolve/mod.rs:266-267`) and the system is read once — for
+/// (`native-theme/src/model/mod.rs:515`), whose `pick_variant` cross-fallback serves a
+/// one-variant preset (`pick_variant_with_mode`, `:384-395`), on the one
+/// `ResolutionContext::from_system()` the call builds, so that the resolution is
+/// `ThemeMode::resolve_system`'s (`into_resolved(ctx)`, `:533`;
+/// `native-theme/src/resolve/mod.rs:292-294`) and the system is read once — for
 /// the reason [`SystemThemeExt::to_egui_atlas`] gives: under `ThemePreference::System` egui
 /// selects between its two styles every pass, so a preset compiled into one scheme would
 /// leave the other scheme wrong. This is the one deviation from
 /// `native_theme_gpui::from_preset`, which compiles the `is_dark` variant only.
 ///
 /// The icon set is those two `Resolved`s' `icon_set`, a theme-level value they share
-/// (`native-theme/src/model/mod.rs:504-506`); the icon theme
+/// (`native-theme/src/model/mod.rs:529`); the icon theme
 /// is each variant's own `Resolved::icon_theme`, `Theme::resolve_with(ColorMode::Light, ..)`'s for
 /// the light scheme and `ColorMode::Dark`'s for the dark one: [`ThemeAtlas::icon_set`](crate::ThemeAtlas::icon_set),
 /// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme).
@@ -205,14 +206,14 @@ pub fn from_preset(
 ) -> Result<(ThemeAtlas, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     // Both variants on one context, each through `Theme::resolve_with`, whose `pick_variant`
-    // cross-fallback serves a one-variant preset (`native-theme/src/model/mod.rs:372-377`).
+    // cross-fallback serves a one-variant preset (`native-theme/src/model/mod.rs:384-395`).
     let ctx = ResolutionContext::from_system();
     let light = spec.resolve_with(ColorMode::Light, &ctx)?;
     let dark = spec.resolve_with(ColorMode::Dark, &ctx)?;
     let mut builder = ThemeAtlas::builder(&spec.name, &light.variant, &dark.variant)
         .layout(&spec.layout)
         .accessibility(prefs)
-        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:504-506`)
+        // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:529`)
         .icon_set(light.icon_set);
     if let Some(icon_theme) = light.icon_theme.as_deref() {
         builder = builder.icon_theme(egui::Theme::Light, icon_theme);
@@ -236,11 +237,12 @@ pub fn from_preset(
 /// [`SystemThemeExt::to_egui_atlas`] of `SystemTheme::from_system()`. The [`Loaded::mode`] is
 /// `sys.mode` — the OS preference, not a luminance guess — and the [`Loaded::resolved`] is the
 /// variant it selects, as in both siblings' `from_system`.
-/// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
-/// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
+/// An application with fonts of its own builds through
+/// [`SystemThemeExt::to_egui_builder`] with
+/// `.fonts(FontPlan::from_system(&sys.light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
 ///
-/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:497`), the platform reader's
+/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:628`), the platform reader's
 /// values merged field-wise over the preset's, fed to [`Builder::layout`](crate::Builder::layout); so this path
 /// reaches the same spacing fields [`from_preset`] does. The accessibility preferences, the
 /// icon set and the icon themes also travel inside the atlas
@@ -299,10 +301,34 @@ pub struct Loaded {
     pub icon_theme: Option<Cow<'static, str>>,
 }
 
-/// Compile a detected [`SystemTheme`](native_theme::SystemTheme). Sealed, like the extension trait of §4.5.
+/// Compile a detected [`SystemTheme`](native_theme::SystemTheme). Sealed, like the extension trait of spec §4.5.
 pub trait SystemThemeExt: sealed::Sealed {
+    /// The [`Builder`] [`to_egui_atlas`](Self::to_egui_atlas) builds, before its `build()`:
+    /// both OS variants, the OS colour mode, the OS accessibility preferences, the OS layout,
+    /// the icon set, each variant's icon theme (`SystemTheme::icon_theme_for`) and, with
+    /// feature `system-fonts`, the OS typefaces through
+    /// `fonts::FontPlan::from_system(&self.light)`. An application with fonts or a
+    /// [`Builder::style_patch`] of its own adds them here, so the OS inputs stay those
+    /// `to_egui_atlas` reads; a second [`Builder::fonts`] replaces the first:
+    ///
+    /// ```rust,no_run
+    /// # #[cfg(feature = "system-fonts")]
+    /// # fn atlas(sys: &native_theme_egui::native_theme::SystemTheme) -> native_theme_egui::ThemeAtlas {
+    /// use native_theme_egui::SystemThemeExt;
+    /// use native_theme_egui::fonts::FontPlan;
+    ///
+    /// let defs = egui::FontDefinitions::default(); // the application's own
+    /// sys.to_egui_builder()
+    ///     .fonts(FontPlan::from_system(&sys.light).with_base(defs))
+    ///     .build()
+    /// # }
+    /// ```
+    #[must_use = "this starts the builder; call `build()` to produce the atlas"]
+    fn to_egui_builder(&self) -> Builder<'_>;
+
     /// Compile an atlas carrying both OS variants, the OS colour mode, the OS accessibility
-    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:497`).
+    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:628`):
+    /// `self.to_egui_builder().build()` ([`to_egui_builder`](Self::to_egui_builder)).
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
     /// (`connectors/native-theme-iced/src/lib.rs:459`) and `to_gpui_theme`
@@ -314,30 +340,21 @@ pub trait SystemThemeExt: sealed::Sealed {
     /// live OS scheme on macOS and Windows, where winit 0.30.13 reports one and sends
     /// `ThemeChanged` (egui-winit 0.36.2 `State::on_window_event`, lines 450–451 of its
     /// `src/lib.rs`); on Linux winit reports `None`, and the
-    /// scheme egui sees is this atlas's OS mode, supplied by the install plugin (§3.2)
+    /// scheme egui sees is this atlas's OS mode, supplied by the install plugin (spec §3.2)
     /// and renewed by the next atlas installed (a `ThemeWatcher` rebuild). It returns the
     /// atlas, not a [`Loaded`]: the atlas already carries both variants, the OS mode, the
     /// accessibility preferences, the icon set and both icon themes, which [`Loaded`] would
     /// only repeat; [`from_system`] gives the [`Loaded`].
     ///
-    /// Equivalent to — and the chain to spell out when adding [`Builder::style_patch`](crate::Builder::style_patch) or a
-    /// plan of the application's own —
-    /// `ThemeAtlas::builder(&self.name, &self.light, &self.dark).layout(&self.layout)`
-    /// `.accessibility(&self.accessibility).os_mode(self.mode).icon_set(self.icon_set)`
-    /// `.icon_theme(egui::Theme::Light, light).icon_theme(egui::Theme::Dark, dark)`
-    /// `.fonts(plan).build()` (each `icon_theme` only when
-    /// `self.icon_theme_for(ColorMode::Light)` or `(ColorMode::Dark)` is `Some`, §9.2), `plan`
-    /// being `fonts::FontPlan::from_system(&self.light)` with feature `system-fonts`, and no
-    /// `.fonts(..)` call without. An application with fonts
-    /// of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
-    /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
-    /// egui's default base.
+    /// An application with fonts or a style patch of its own builds through
+    /// [`to_egui_builder`](Self::to_egui_builder); this constructor uses egui's default font
+    /// base.
     #[must_use = "this builds the styles; it does not install them"]
     fn to_egui_atlas(&self) -> ThemeAtlas;
 }
 
 impl SystemThemeExt for SystemTheme {
-    fn to_egui_atlas(&self) -> ThemeAtlas {
+    fn to_egui_builder(&self) -> Builder<'_> {
         let mut builder = ThemeAtlas::builder(&self.name, &self.light, &self.dark)
             .layout(&self.layout)
             .accessibility(&self.accessibility)
@@ -353,6 +370,10 @@ impl SystemThemeExt for SystemTheme {
         {
             builder = builder.fonts(crate::fonts::FontPlan::from_system(&self.light));
         }
-        builder.build()
+        builder
+    }
+
+    fn to_egui_atlas(&self) -> ThemeAtlas {
+        self.to_egui_builder().build()
     }
 }

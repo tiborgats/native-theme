@@ -80,7 +80,7 @@ impl ThemeWatcher {
     /// returns the atlas to hand over: [`ThemeWatcher::system_rebuild`] for an application on
     /// the OS theme, else a closure that builds exactly what the application built at start-up,
     /// every builder input included, after `native_theme::detect::invalidate_caches()`
-    /// (`native-theme/src/detect.rs:154`) when it reads the OS (§10.2).
+    /// (`native-theme/src/detect.rs:230`) when it reads the OS (§10.2).
     ///
     /// Bind the result: dropping it stops the watch and joins the thread
     /// (`native-theme/src/watch/mod.rs:174-189`). `Send` but not `Sync`, like native-theme's
@@ -113,7 +113,10 @@ impl ThemeWatcher {
     /// `from_system` picks the running OS version's preset, so an application that pinned one
     /// with `SystemTheme::from_system_with_preset(name)` passes [`start`](Self::start) a closure
     /// that reads with it again: `invalidate_caches()`, then `from_system_with_preset(name)` and
-    /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas).
+    /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas). An application
+    /// with fonts or a [`Builder::style_patch`](crate::Builder::style_patch) of its own, which
+    /// this rebuild drops, adds them to
+    /// [`SystemThemeExt::to_egui_builder`](crate::SystemThemeExt::to_egui_builder) in its closure.
     ///
     /// # Errors
     /// Propagates [`from_system`](crate::from_system).

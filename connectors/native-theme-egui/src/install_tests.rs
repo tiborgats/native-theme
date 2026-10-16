@@ -2405,6 +2405,58 @@ mod t18_constructors {
         );
         assert!(same_styles(again, &fresh.to_egui_atlas()));
     }
+
+    /// M7-29: `to_egui_builder` is the builder `to_egui_atlas` builds, so its `build()` is
+    /// `to_egui_atlas`, style for style and input for input, and a style patch and a font plan
+    /// of the application's own go on top of it with every OS input kept.
+    #[test]
+    fn t18_g_to_egui_builder_is_to_egui_atlas_before_build() {
+        // As in `t18_g_to_egui_atlas_reports_what_it_was_given`: no desktop, nothing to build.
+        let Ok(sys) = SystemTheme::from_system() else {
+            return;
+        };
+        let plain = sys.to_egui_atlas();
+        let built = sys.to_egui_builder().build();
+        assert!(same_styles(&built, &plain));
+        assert_eq!(built.fonts(), plain.fonts());
+
+        let base = plain
+            .scheme(egui::Theme::Light)
+            .base
+            .visuals
+            .hyperlink_color;
+        let marker = if base == egui::Color32::RED {
+            egui::Color32::BLUE
+        } else {
+            egui::Color32::RED
+        };
+        let family = egui::FontFamily::Name("application".into());
+        let mut defs = egui::FontDefinitions::default();
+        defs.families.insert(family.clone(), Vec::new());
+        let own = sys
+            .to_egui_builder()
+            .style_patch(move |s| s.visuals.hyperlink_color = marker)
+            .fonts(crate::fonts::FontPlan::new().with_base(defs))
+            .build();
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(own.scheme(theme).base.visuals.hyperlink_color, marker);
+        }
+        assert!(own.fonts().unwrap().families.contains_key(&family));
+        assert!(
+            plain
+                .fonts()
+                .is_none_or(|defs| !defs.families.contains_key(&family))
+        );
+        assert_eq!(own.name(), plain.name());
+        assert_eq!(own.os_mode(), plain.os_mode());
+        assert_eq!(own.accessibility(), plain.accessibility());
+        assert_eq!(own.layout(), plain.layout());
+        assert_eq!(own.icon_set(), plain.icon_set());
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(own.resolved_for(theme), plain.resolved_for(theme));
+            assert_eq!(own.icon_theme(theme), plain.icon_theme(theme));
+        }
+    }
 }
 
 /// T14 (a), the raster-icon clause: an `install` after `to_image_source` stored a raster

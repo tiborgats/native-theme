@@ -232,17 +232,35 @@ With the `system-fonts` feature (on by default) `from_preset`, `from_system`
 and `to_egui_atlas` attach `fonts::FontPlan::from_system`, which asks
 native-theme for the faces of the theme's font families and installs them as
 the head of egui's `Proportional` and `Monospace` families. An
-application with fonts of its own passes them as the base:
-`FontPlan::from_system(&light).with_base(its_definitions)` into
-`Builder::fonts`. Installing the installed atlas again (the one
-`ThemeAtlas::from_ctx` returns) keeps the fonts and icons the application added
-since, restoring only the base styles, its own `TextStyle::Name` keys kept;
-`ThemeAtlas::clear` then `install` brings back the atlas's fonts. This crate
-never emits a `FontFamily::Name`. A family the
-platform does not have is drawn in the family the platform draws in its place
-(`native_theme::fonts::substitute_family`: fontconfig's best match on Linux,
-what every native application there gets; none yet on macOS and Windows) and
-is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
+application with fonts of its own passes them as the plan's base. On the OS
+theme, `SystemThemeExt::to_egui_builder` is the builder `to_egui_atlas` builds,
+before its `build()`, so every OS input stays and the second `fonts` call
+replaces the first:
+
+```rust,no_run
+use native_theme_egui::fonts::FontPlan;
+use native_theme_egui::native_theme::SystemTheme;
+use native_theme_egui::{SystemThemeExt, ThemeAtlas};
+
+fn atlas(defs: egui::FontDefinitions) -> native_theme_egui::Result<ThemeAtlas> {
+    let sys = SystemTheme::from_system()?;
+    Ok(sys
+        .to_egui_builder()
+        .fonts(FontPlan::from_system(&sys.light).with_base(defs))
+        .build())
+}
+```
+
+A `Builder::style_patch` of the application's own goes on the same builder,
+and `ThemeAtlas::builder` takes the same plan for any other theme.
+Installing the installed atlas again (the one `ThemeAtlas::from_ctx` returns)
+keeps the fonts and icons the application added since, restoring only the base
+styles, its own `TextStyle::Name` keys kept; `ThemeAtlas::clear` then `install`
+brings back the atlas's fonts. This crate never emits a `FontFamily::Name`. A
+family the platform does not have is drawn in the family the platform draws in
+its place (`native_theme::fonts::substitute_family`: fontconfig's best match on
+Linux, what every native application there gets; none yet on macOS and Windows)
+and is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
 `substitute` names it. A family with no substitute the platform has a face of,
 or a face epaint could not read, leaves egui's own and is reported too
 (`Note::FontFamilyUnavailable` with no `substitute`, `Note::FontDataInvalid`).
@@ -331,15 +349,17 @@ impl eframe::App for MyApp {
 
 `system_rebuild` is the rebuild for an application on the OS theme; one that
 built its atlas with inputs of its own passes a closure that builds the same
-again. `system_rebuild` reads with `from_system()`, which picks the running OS
+again: with fonts or a `style_patch` of its own, which `system_rebuild` would
+drop, it adds them to `SystemThemeExt::to_egui_builder`, as in [Fonts](#fonts).
+`system_rebuild` reads with `from_system()`, which picks the running OS
 version's preset, so an application that pinned a preset with
 `native_theme::SystemTheme::from_system_with_preset(name)` passes a closure
 that reads with it again: `native_theme::detect::invalidate_caches()`, then
-`from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas`. A failed
-rebuild keeps the installed theme, reports its message through `last_error`
-and requests a repaint, as a successful one does. Dropping the watcher stops it. KDE Plasma, GNOME and Budgie,
-macOS and Windows are watched; another Linux desktop returns an error from
-`start`.
+`from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas` (or
+`to_egui_builder`). A failed rebuild keeps the installed theme, reports its
+message through `last_error` and requests a repaint, as a successful one does.
+Dropping the watcher stops it. KDE Plasma, GNOME and Budgie, macOS and Windows
+are watched; another Linux desktop returns an error from `start`.
 
 ## Accessibility
 
