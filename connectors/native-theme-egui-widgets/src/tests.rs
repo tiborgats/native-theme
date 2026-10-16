@@ -1451,3 +1451,60 @@ fn parts_answer_until_two_passes_go_by_without_the_widget() {
     assert_eq!(Parts::of(&drawn), None, "two passes without it");
     assert!(Parts::of(&kept).is_some());
 }
+
+// ---- M7-25: the spinner's frame sources ------------------------------------------------------------
+
+/// A context with `t` installed with Material's indicator, drawn light, under reduced motion so
+/// the spinner draws the indicator's first frame.
+#[cfg(feature = "material-icons")]
+fn material_spinner(t: &ResolvedTheme) -> (egui::Context, ThemeAtlas) {
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    let ctx = egui::Context::default();
+    let atlas = ThemeAtlas::builder("test", t, t)
+        .accessibility(&prefs)
+        .icon_set(IconSet::Material)
+        .build();
+    atlas.install(&ctx);
+    ctx.set_theme(egui::Theme::Light);
+    (ctx, atlas)
+}
+
+/// M7-25: the source a spinner keeps for a frame is registered again after the install of
+/// another atlas forgot it, so the next `forget_icons` (here `ThemeAtlas::clear`) forgets its
+/// bytes too.
+#[cfg(feature = "material-icons")]
+#[test]
+fn a_kept_spinner_frame_is_forgotten_with_the_icons() {
+    use native_theme_egui::icons::{self, IconKey};
+    use native_theme_egui::native_theme::icons::load_icon_indicator;
+
+    let t = kde();
+    let (ctx, _) = material_spinner(&t);
+    // The frame's URI, made in a `Context` of its own so that it registers nothing here.
+    let key = IconKey::name("indicator", IconSet::Material)
+        .size(t.spinner.diameter)
+        .tint(to_color32(t.spinner.fill_color));
+    let anim = load_icon_indicator(IconSet::Material, None).unwrap();
+    let uri = match icons::to_image_source(&egui::Context::default(), &key, anim.first_frame()) {
+        Some(egui::ImageSource::Bytes { uri, .. }) => uri.into_owned(),
+        other => panic!("an SVG frame, not {other:?}"),
+    };
+    let draw = |ctx: &egui::Context| {
+        let _ = pass(ctx, idle(), |ui| {
+            ui.add(Spinner::new());
+        });
+    };
+    draw(&ctx);
+    assert!(ctx.try_load_bytes(&uri).is_ok(), "drawn");
+    let (_, again) = material_spinner(&t);
+    again.install(&ctx);
+    assert!(
+        ctx.try_load_bytes(&uri).is_err(),
+        "forgotten by the install"
+    );
+    draw(&ctx);
+    assert!(ctx.try_load_bytes(&uri).is_ok(), "drawn again");
+    ThemeAtlas::clear(&ctx);
+    assert!(ctx.try_load_bytes(&uri).is_err(), "forgotten by clear");
+}
