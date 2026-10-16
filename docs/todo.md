@@ -3380,7 +3380,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### Connectors: a public theme builder that takes the mode
 
-- [ ] [v0.7.0] All three connectors (M5 T4 ruling, 2026-10-14): iced's
+- [x] [v0.7.0] All three connectors (M5 T4 ruling, 2026-10-14): iced's
       public `to_theme(&resolved, name)` leaves `Extended::is_dark`, which
       iced uses for the window title bar, to iced's lightness test of the
       background, because a `ResolvedTheme` carries no mode
@@ -3400,6 +3400,8 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`connectors/native-theme-egui/src/ext.rs:134-137`), and
       `ThemeAtlas::builder` takes the two variants and `Builder::os_mode`
       (`connectors/native-theme-egui/src/atlas.rs:599`).
+  *Closed by M8 T4 (2026-10-16, 8d0e029f):* iced's `to_theme_in(resolved, name, mode: ColorMode)` is public, `to_theme` calls the private `Option` form and its doc points at `to_theme_in`, and the showcase's `load_adwaita_fallback` builds its theme with it in the mode it resolved (`Resolved::mode`). gpui's `to_theme(.., is_dark: bool, ..)` stays (the line below); egui needs nothing (`Builder::os_mode` takes both variants).
+- [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.
 
 ### Contracts: the connectors' widgets
 
@@ -3585,7 +3587,8 @@ the plan's close.
 ### M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Each sits here until its milestone takes it.
 - [ ] [v0.7.0] For M6's deferrals (ruling, Step 6): the Segoe Fluent SVG-outline item ("Segoe … to weigh in M6", the `For M6` entry above) moves to [1.0]: M4's em-box raster and `.size(u32)` removed the visible defects, M6-13 routes the requested size to the Segoe loader, and a `GGO_NATIVE` outline pipeline is Windows-only code this host cannot run. The public mode-taking theme builder ("Connectors: a public theme builder that takes the mode") and the widget contracts ("Contracts: the connectors' widgets") go to M8's API batch for all three connectors. The three showcase minors in *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7* (the sort-button test, `move_column`, `themed_entrance`/`panel_toggle`) go to M9a. The `TooltipDefaults` survival item there was closed by M6 T5 (c1208377), and the `contract.rs:641` citation was already right (M6 T9, 0c69f9bd).
-- [ ] [v0.7.0] For M8 (parity): iced's `AnimatedSvgHandles::frame_duration_ms` is still a `u32`, while gpui's `AnimatedImageSources::frame_duration_ms` is a `NonZeroU32` since M6 T1 (8212bf00).
+- [x] [v0.7.0] For M8 (parity): iced's `AnimatedSvgHandles::frame_duration_ms` is still a `u32`, while gpui's `AnimatedImageSources::frame_duration_ms` is a `NonZeroU32` since M6 T1 (8212bf00).
+  *Closed by M8 T4 (2026-10-16, fdc4b24a):* the field is a `NonZeroU32`, in the same commit as M8-08's `spin_rotation_radians(elapsed, duration_ms: NonZeroU32)`, whose zero guard and callers' `.get()`s are gone (the doc example, the README's spin recipe, the `Spinner`, the showcase's Icons page).
 - [x] [v0.7.0] For M8 (parity): gpui lays `slider.thumb_hover_color` over the thumb as a layer (M6 T9, `colors::over`), while iced uses it as given.
   *Closed by M8 T3 (2026-10-16, 97105ccc):* iced's `styles::slider` composites the hover over the thumb with `styles::composite_over`, as gpui's `SliderLook` does, and its contract row follows; both composites are native-theme's `color::composite_over` since 072855bc. No bundled value moves: every stated thumb hover is opaque.
 - [ ] [v0.7.0] For M8 (parity): on a text-scaling factor whose product is not a normal positive number, gpui and iced keep the theme's unscaled size (core's `AccessibilityPreferences::scaled`, M6 T13), while egui keeps its stock size with a `Note::ValueSanitised`, as its spec prescribes (d05d64f6). Decide whether the connectors should agree.
