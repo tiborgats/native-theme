@@ -433,14 +433,15 @@ impl ThemeAtlas {
     /// hinting rounds its pixels per em up to an integer
     /// (`skrifa-0.44.0/src/outline/glyf/mod.rs:175-186`), over the width at one point of `w`,
     /// the widest glyph of the faces the atlas installs in em of the font size, `u` the same
-    /// before `FontTweak::scale` ([`Builder::fonts`] names the faces). Per face: a static
-    /// TrueType face's `head` box (skrifa's `Metrics::bounds`,
-    /// `skrifa-0.44.0/src/metrics.rs:72-102`), which the `head` table states over all its
-    /// glyphs; for a variable face or a `CFF`/`CFF2` one, whose `head` box bounds the default
-    /// instance only and need not hold a CFF outline's control box, the widest control box of
-    /// its glyphs' outlines at the location the face is drawn at (skrifa's
-    /// `GlyphMetrics::bounds`, `skrifa-0.44.0/src/metrics.rs:352-393`), worked out once per
-    /// face and location for the process.
+    /// before `FontTweak::scale` ([`Builder::fonts`] names the faces). Per face: a TrueType
+    /// face whose outlines do not vary — static, or with `fvar` but no `gvar` — gives its
+    /// `head` box (skrifa's `Metrics::bounds`, `skrifa-0.44.0/src/metrics.rs:72-102`), which the
+    /// `head` table states over all its glyphs; a `gvar`, `CFF` or `CFF2` face, whose `head`
+    /// box bounds the default instance only and need not hold a CFF outline's control box,
+    /// gives the widest control box of its glyphs' outlines at the location the face is drawn
+    /// at — the faces skrifa draws for a glyph's bounds too
+    /// (`skrifa-0.44.0/src/metrics.rs:352-356`) — worked out once per face and location for
+    /// the process.
     ///
     /// Both inputs are the GPU's and the monitor's, known only at run time, so the install
     /// plugin derives the cap before every pass from that pass's `RawInput::max_texture_side`
@@ -448,14 +449,15 @@ impl ThemeAtlas {
     /// none) and `pixels_per_point` (`native_pixels_per_point × zoom_factor`, egui's own
     /// product, `egui/src/context.rs:451-455`) — again at the start of a `Context::run_ui`
     /// pass in which a zoom set in the last pass took effect, and by [`ThemeAtlas::install`]
-    /// from the `Context`'s current input — and lowers to it every `text_styles` size above
-    /// it in both base styles the `Context` holds;
+    /// once a pass has run — and lowers to it every `text_styles` size above it in both base
+    /// styles the `Context` holds;
     /// [`NativeThemeUiExt`](crate::NativeThemeUiExt)'s role styles and
     /// [`ThemeAtlas::role_modifier`]'s are lowered the same way when they are handed over. A
     /// size is only ever lowered: a cap that rises again — the window moved to a monitor of
     /// fewer pixels per point — restores nothing until the next [`ThemeAtlas::install`].
     ///
-    /// `None` until the atlas is installed, where no face of the atlas gives a width, and where
+    /// `None` until a pass has run with the atlas installed (an install into a `Context` that
+    /// has run one derives it at once), where no face of the atlas gives a width, and where
     /// the derivation gives less than one point — an atlas too narrow for the slack, or a
     /// `pixels_per_point` that is not a positive finite number — in which case nothing is
     /// lowered. It is the cap of the pass in progress: an immediate viewport's pass, run inside
@@ -484,17 +486,22 @@ impl ThemeAtlas {
     }
 
     /// Install into an [`egui::Context`]: the atlas's fonts, both colour schemes' base styles
-    /// (keeping the application's own `TextStyle::Name` keys, and each text size lowered to
-    /// [`ThemeAtlas::text_size_cap`] for the `Context`'s current input), the atlas into
-    /// `Context` data, the install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their
-    /// order and what each must not touch. The plugin supplies the OS colour scheme where the
+    /// (keeping the application's own `TextStyle::Name` keys, and, once a pass has run, each
+    /// text size lowered to [`ThemeAtlas::text_size_cap`]), the atlas into `Context` data, the
+    /// install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their order
+    /// and what each must not touch. The plugin supplies the OS colour scheme where the
     /// integration reports none, paints the focus ring (§6.18) and keeps the OS title bar on the
     /// scheme the UI is drawn in (§10.3).
     ///
     /// Run it on every application start, even when egui memory is persisted:
     /// `Options::dark_style` and `light_style` are `#[serde(skip)]`
     /// (`egui/src/memory/mod.rs:195`, `:199`). Safe to call at any time, including inside a
-    /// pass; the new theme reaches the whole UI on the next pass.
+    /// pass; the new theme reaches the whole UI on the next pass. Inside a pass, the base
+    /// styles change at once and the fonts do not: `Context::set_fonts` takes effect at the
+    /// next pass (`egui/src/context.rs:2104`, applied in `begin_pass`, `:548-553`), so text
+    /// drawn later in the same pass is set in the previous faces at sizes lowered for the new
+    /// faces' widest glyph — a previous face wider than the new widest is not bounded by the
+    /// cap for the rest of that pass.
     ///
     /// **The colour-scheme choice stays egui's.** `install` never touches
     /// `Options::theme_preference`, which is serde-persisted (`egui/src/memory/mod.rs:206`
@@ -525,12 +532,11 @@ impl ThemeAtlas {
             let previous = ctx.style_of(theme);
             ctx.set_style_of(theme, carry_name_keys(&previous, &self.scheme(theme).base));
         }
-        //    Then lowered to the text-size cap of the `Context`'s current input (M7-04) at once,
-        //    not at the plugin's next `input_hook`: a `Window` or popup opened later in this
-        //    pass builds its `Ui` from these styles (`egui/src/ui.rs:136`).
-        let (max_texture_side, pixels_per_point) =
-            ctx.input(|i| (i.max_texture_side, i.pixels_per_point()));
-        crate::plugin::cap_text_sizes(ctx, self, max_texture_side, pixels_per_point);
+        //    Then lowered to the text-size cap at once once a pass has run, not at the plugin's
+        //    next `input_hook`: a `Window` or popup opened later in this pass builds its `Ui`
+        //    from these styles (`egui/src/ui.rs:136`). M7-04; `plugin::cap_at_install` says why
+        //    not before the first pass.
+        crate::plugin::cap_at_install(ctx, self);
         // 3. The atlas published into `Context` data (`egui/src/context.rs:1033`).
         let published = self.clone();
         ctx.data_mut(|data| {
@@ -757,8 +763,8 @@ impl<'a> Builder<'a> {
     /// change invalidates either value.
     ///
     /// Recorded here too, from the same faces, is the width of their widest glyph, which the
-    /// install plugin turns into [`ThemeAtlas::text_size_cap`] at run time; for a variable or
-    /// CFF face it draws every glyph's outline once per process, face and weight.
+    /// install plugin turns into [`ThemeAtlas::text_size_cap`] at run time; for a `gvar`, `CFF`
+    /// or `CFF2` face it draws every glyph's outline once per process, face and weight.
     #[must_use = "this builds the styles; it does not install them"]
     pub fn build(self) -> ThemeAtlas {
         let mut notes = Vec::new();

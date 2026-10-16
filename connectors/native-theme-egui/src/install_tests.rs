@@ -2894,15 +2894,70 @@ fn a_zoom_change_is_capped_in_its_own_pass() {
 #[test]
 fn an_install_inside_a_pass_is_capped_in_that_pass() {
     let t = huge_text_theme();
+    let body = |c: &egui::Context| {
+        c.style_of(egui::Theme::Light)
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .unwrap()
+            .size
+    };
+    // The first install inside a pass, the plugin not yet registered: from the last pass's
+    // input.
     let atlas = ThemeAtlas::builder("huge", &t, &t).build();
     let ctx = egui::Context::default();
     let _ = pass(&ctx, input_at(1.0), |_| {});
+    let mut capped = None;
     let _ = pass(&ctx, input_at(1.0), |ui| {
         atlas.install(ui.ctx());
+        capped = Some(body(ui.ctx()));
         egui::Window::new("w").show(ui.ctx(), |ui| {
             ui.label("W");
         });
     });
+    assert_eq!(capped, atlas.text_size_cap());
+    let first = atlas.text_size_cap().expect("derived at install");
+    // A re-install inside a pass the plugin saw begin: from that pass's own input, here twice
+    // the last pass's pixels per point.
+    let other = ThemeAtlas::builder("huge too", &t, &t).build();
+    let mut capped = None;
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        other.install(ui.ctx());
+        capped = Some(body(ui.ctx()));
+        egui::Window::new("w").show(ui.ctx(), |ui| {
+            ui.label("W");
+        });
+    });
+    assert_eq!(capped, other.text_size_cap());
+    assert!(other.text_size_cap().expect("derived at install") < first);
+}
+
+/// M7-04: an install before the first pass — eframe's creation closure — lowers nothing: the
+/// input holds only egui's defaults then (`egui/src/input_state/mod.rs:348-349`), and a cap
+/// from them would hold the sizes down on a wider GPU. The first pass's `input_hook` lowers
+/// them, from the pass's own input.
+#[test]
+fn an_install_before_the_first_pass_leaves_the_sizes_alone() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    assert_eq!(atlas.text_size_cap(), None);
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let style = ctx.style_of(theme);
+        let body = style.text_styles.get(&egui::TextStyle::Body).unwrap();
+        assert_eq!(body.size, 30000.0, "{theme:?}");
+    }
+    let mut input = input_at(1.0);
+    input.max_texture_side = Some(8192);
+    let _ = pass(&ctx, input, |ui| {
+        ui.label("W");
+    });
+    let cap = atlas.text_size_cap().expect("derived in the first pass");
+    let style = ctx.style_of(egui::Theme::Light);
+    assert_eq!(
+        style.text_styles.get(&egui::TextStyle::Body).unwrap().size,
+        cap
+    );
 }
 
 /// M7-04: an immediate viewport runs its whole pass inside its parent's

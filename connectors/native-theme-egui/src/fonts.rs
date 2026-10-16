@@ -450,9 +450,12 @@ struct WidestGlyphKey {
 
 /// The process-wide memo of the outline-bound faces' widest glyph, in font units: `compute`
 /// runs once per [`WidestGlyphKey`], as native-theme loads its font database once per process
-/// (`native-theme/src/fonts.rs:158-165`). It grows by one entry per face and location the
-/// process builds an atlas with. A poisoned lock is recovered: the map holds plain values,
-/// written whole.
+/// (`native-theme/src/fonts.rs:158-165`). It is never evicted: it grows by one entry per face
+/// and location the process builds an atlas with — nothing for a fixed set of themes after
+/// each one's first build, but without bound under a font picker or a continuous weight
+/// control. An entry holds no font bytes; its key is 12 bytes per table of the face's
+/// directory (a few dozen tables) and 2 per variation axis, a few hundred bytes in all. A
+/// poisoned lock is recovered: the map holds plain values, written whole.
 fn widest_glyph_memo(key: WidestGlyphKey, compute: impl FnOnce() -> Option<f32>) -> Option<f32> {
     use std::collections::HashMap;
     use std::sync::{Mutex, OnceLock, PoisonError};
@@ -474,32 +477,33 @@ fn widest_glyph_memo(key: WidestGlyphKey, compute: impl FnOnce() -> Option<f32>)
 
 /// One face's widest glyph. Parsed as [`body_row_height`] parses its face.
 ///
-/// * A static TrueType face: its `head` box, skrifa's `Metrics::bounds`
+/// * A face with `gvar`, `CFF` or `CFF2` — the faces whose outlines skrifa itself draws for a
+///   glyph's bounds (`skrifa-0.44.0/src/metrics.rs:352-356`): [`widest_control_box`] of all its
+///   glyphs at the location the face is drawn at, its `FontTweak::coords` through
+///   `AxisCollection::location`, as epaint forms it (`epaint/src/text/font.rs:574-578`). A
+///   `gvar` face's `head` box bounds its default instance only, and a CFF outline's control
+///   box need not lie inside `head`'s. Every glyph is drawn once for this, so the width is
+///   kept for the process per face content and location ([`widest_glyph_memo`]). The first
+///   build with a face pays for every glyph: measured on the maintainer's Linux host in a
+///   release build, about 2 ms for Adwaita Sans (2 937 glyphs, `gvar`), 60 ms for Source Han
+///   Sans JP (17 944, `CFF`) and 0.3 s for Noto Sans CJK SC (65 535, `CFF`), at a load average
+///   of 52; a CJK desktop's system face costs that once per process, face and weight.
+/// * Any other face — static TrueType, and a TrueType face with `fvar` but no `gvar`, whose
+///   outlines do not vary: its `head` box, skrifa's `Metrics::bounds`
 ///   (`skrifa-0.44.0/src/metrics.rs:72-102`, read from `head` at `:116-122`), which the
 ///   OpenType `head` table defines over all glyph bounding boxes.
-/// * A variable face (one with `fvar`) or a `CFF`/`CFF2` one: the widest of its glyphs'
-///   own boxes at the location the face is drawn at — its `FontTweak::coords` through
-///   `AxisCollection::location`, as epaint forms it (`epaint/src/text/font.rs:574-578`) —
-///   from skrifa's `GlyphMetrics::bounds`, which for such a face takes the control box of
-///   the unhinted outline (`skrifa-0.44.0/src/metrics.rs:352-358`, `:384-393`), the box
-///   epaint measures (`epaint/src/text/font.rs:266`). `head` bounds only a variable face's
-///   default instance, and a CFF outline's control box need not lie inside it. Every glyph
-///   is drawn once for this, so the width is kept for the process per face content and
-///   location ([`widest_glyph_memo`]).
 fn face_widest_glyph(data: &FontData) -> Option<WidestGlyph> {
     use skrifa::MetadataProvider as _;
     use skrifa::raw::TableProvider as _;
 
     let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
-    let units_per_em = face
-        .metrics(
-            skrifa::instance::Size::unscaled(),
-            skrifa::instance::LocationRef::default(),
-        )
-        .units_per_em;
-    let outline_bound = face.fvar().is_ok() || face.cff().is_ok() || face.cff2().is_ok();
+    let metrics = face.metrics(
+        skrifa::instance::Size::unscaled(),
+        skrifa::instance::LocationRef::default(),
+    );
+    let outline_bound = face.gvar().is_ok() || face.cff().is_ok() || face.cff2().is_ok();
     let width = if outline_bound {
-        let location = face.axes().location(data.tweak.coords.as_ref());
+        let location = drawn_location(&face, data);
         let key = WidestGlyphKey {
             len: data.font.len(),
             index: data.index,
@@ -512,25 +516,49 @@ fn face_widest_glyph(data: &FontData) -> Option<WidestGlyph> {
             location: location.coords().iter().map(|c| c.to_bits()).collect(),
         };
         widest_glyph_memo(key, || {
-            let glyphs = face.glyph_metrics(skrifa::instance::Size::unscaled(), &location);
-            (0..glyphs.glyph_count())
-                .filter_map(|id| glyphs.bounds(skrifa::GlyphId::new(id)))
-                .map(|b| b.x_max - b.x_min)
-                .reduce(f32::max)
+            let outlines = face.outline_glyphs();
+            widest_control_box(outlines.iter().map(|(_, glyph)| glyph), &location)
         })?
     } else {
-        let bounds = face
-            .metrics(
-                skrifa::instance::Size::unscaled(),
-                skrifa::instance::LocationRef::default(),
-            )
-            .bounds?;
+        let bounds = metrics.bounds?;
         bounds.x_max - bounds.x_min
     };
-    let unscaled_em = width / f32::from(units_per_em);
+    let unscaled_em = width / f32::from(metrics.units_per_em);
     let em = unscaled_em * data.tweak.scale;
     (unscaled_em.is_finite() && unscaled_em > 0.0 && em.is_finite() && em > 0.0)
         .then_some(WidestGlyph { em, unscaled_em })
+}
+
+/// The variation location epaint draws `data`'s face at: its `FontTweak::coords` through
+/// `AxisCollection::location` (`epaint/src/text/font.rs:574-578`), before a run's own
+/// `TextFormat::coords`.
+fn drawn_location(face: &skrifa::FontRef<'_>, data: &FontData) -> skrifa::instance::Location {
+    use skrifa::MetadataProvider as _;
+    face.axes().location(data.tweak.coords.as_ref())
+}
+
+/// The widest of `glyphs`' control boxes, in font units, each outline drawn unhinted at
+/// `location` into skrifa's `ControlBoundsPen` — the box epaint measures
+/// (`epaint/src/text/font.rs:266`) and the one skrifa's own `GlyphMetrics::bounds` takes for
+/// such a face (`skrifa-0.44.0/src/metrics.rs:384-393`), from one outline collection rather
+/// than one per glyph. A glyph that fails to draw or draws nothing is passed over.
+pub(crate) fn widest_control_box<'a>(
+    glyphs: impl IntoIterator<Item = skrifa::outline::OutlineGlyph<'a>>,
+    location: &skrifa::instance::Location,
+) -> Option<f32> {
+    glyphs
+        .into_iter()
+        .filter_map(|glyph| {
+            let mut pen = skrifa::outline::pen::ControlBoundsPen::new();
+            let settings = skrifa::outline::DrawSettings::unhinted(
+                skrifa::instance::Size::unscaled(),
+                location,
+            );
+            glyph.draw(settings, &mut pen).ok()?;
+            let bounds = pen.bounding_box()?;
+            Some(bounds.x_max - bounds.x_min)
+        })
+        .reduce(f32::max)
 }
 
 #[cfg(test)]
@@ -588,12 +616,18 @@ mod tests {
         assert_eq!(widest_glyph(&garbage), None);
     }
 
-    /// M7-04: a variable or CFF face's widest glyph is the widest control box of its own
-    /// outlines at the location it is drawn at, recomputed here with a pen of the test's own
-    /// over every glyph's unhinted outline (`OutlineGlyph::draw`), not with
-    /// `GlyphMetrics::bounds`. Over the system faces the platform presets select (feature
-    /// `system-fonts`), each at its plan's weight; a host whose faces are all static TrueType
-    /// checks nothing and says so.
+    /// M7-04: a `gvar`, `CFF` or `CFF2` face's widest glyph is the widest control box of its
+    /// own outlines at the location it is drawn at, recomputed here with a pen of the test's
+    /// own over every glyph's unhinted outline (`OutlineGlyph::draw`). Over the system faces
+    /// the platform presets select (feature `system-fonts`), each at its plan's weight and at
+    /// `wght` 100 and 900.
+    ///
+    /// That the location is applied is checked on `W`: `drawn_location` must be the location
+    /// asked for, and `widest_control_box` of `W` there must equal the test's own width at that
+    /// location; where the test's own widths at 100 and 900 differ, so must the production
+    /// ones. Only a face whose `W` changes width with weight discriminates (a monospace face
+    /// need not); on this host Adwaita Sans does, while its widest glyph (2.458 em) is the same
+    /// at every weight. A host with no such face checks only the equalities and says so.
     #[cfg(feature = "system-fonts")]
     #[test]
     fn widest_glyph_of_outline_bound_faces_is_the_widest_control_box_at_its_location() {
@@ -625,7 +659,20 @@ mod tests {
             }
             fn close(&mut self) {}
         }
-        let mut checked = 0;
+        /// The test's own width of `glyph` at `location`.
+        fn own_width(
+            glyph: &skrifa::outline::OutlineGlyph<'_>,
+            location: &skrifa::instance::Location,
+        ) -> Option<f32> {
+            let mut pen = XPen::default();
+            let settings = skrifa::outline::DrawSettings::unhinted(
+                skrifa::instance::Size::unscaled(),
+                location,
+            );
+            glyph.draw(settings, &mut pen).ok()?;
+            pen.0.map(|(lo, hi)| hi - lo)
+        }
+        let (mut checked, mut discriminating) = (0, 0);
         for key in ["adwaita", "kde-breeze", "windows-11", "macos-tahoe"] {
             let Ok(t) = native_theme::theme::Theme::preset(key)
                 .and_then(|p| p.resolve(native_theme::theme::ColorMode::Light))
@@ -633,76 +680,69 @@ mod tests {
                 continue;
             };
             let (defs, _) = font_definitions(&t.variant, &FontPlan::from_system(&t.variant));
-            let faces = defs.font_data.iter().flat_map(|(name, data)| {
-                // The plan's own weight, and the axis's two ends where the face has one.
-                [None, Some(100.0), Some(900.0)].map(|wght| {
-                    let mut data = egui::FontData::clone(data);
+            for (name, plan_data) in &defs.font_data {
+                let face =
+                    skrifa::FontRef::from_index(plan_data.font.as_ref(), plan_data.index).unwrap();
+                if face.gvar().is_err() && face.cff().is_err() && face.cff2().is_err() {
+                    continue;
+                }
+                let outlines = face.outline_glyphs();
+                let upem = f32::from(face.head().unwrap().units_per_em());
+                let at = |wght: Option<f32>| {
+                    let mut data = egui::FontData::clone(plan_data);
                     if let Some(w) = wght {
                         data.tweak.coords = VariationCoords::new([(Tag::new(b"wght"), w)]);
                     }
-                    (name, data)
-                })
-            });
-            for (name, data) in faces {
-                let data = &data;
-                let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
-                if face.fvar().is_err() && face.cff().is_err() && face.cff2().is_err() {
-                    continue;
-                }
-                let location = face.axes().location(data.tweak.coords.as_ref());
-                let outlines = face.outline_glyphs();
-                let upem = f32::from(face.head().unwrap().units_per_em());
-                let mut want = 0.0_f32;
-                for id in 0..face.maxp().unwrap().num_glyphs() {
-                    let Some(glyph) = outlines.get(skrifa::GlyphId::new(u32::from(id))) else {
-                        continue;
-                    };
-                    let mut pen = XPen::default();
-                    let settings = skrifa::outline::DrawSettings::unhinted(
-                        skrifa::instance::Size::unscaled(),
-                        &location,
+                    data
+                };
+                for wght in [None, Some(100.0), Some(900.0)] {
+                    let data = at(wght);
+                    let location = drawn_location(&face, &data);
+                    let want = outlines
+                        .iter()
+                        .filter_map(|(_, glyph)| own_width(&glyph, &location))
+                        .fold(0.0_f32, f32::max);
+                    let got = face_widest_glyph(&data).unwrap();
+                    assert_eq!(got.unscaled_em, want / upem, "{key} {name} {wght:?}");
+                    assert_eq!(
+                        got.em,
+                        want / upem * data.tweak.scale,
+                        "{key} {name} {wght:?}"
                     );
-                    if glyph.draw(settings, &mut pen).is_ok()
-                        && let Some((lo, hi)) = pen.0
-                    {
-                        want = want.max(hi - lo);
-                    }
+                    println!(
+                        "widest glyph: {key} {name}: {} em at {:?}",
+                        got.unscaled_em,
+                        data.tweak.coords.as_ref()
+                    );
                 }
-                if face
+                checked += 1;
+                if !face
                     .axes()
                     .iter()
                     .any(|axis| axis.tag() == Tag::new(b"wght"))
                 {
-                    // The location is the one drawn: `W` is wider at 900 than at 100.
-                    let w_width = |wght: f32| {
-                        let at = face.axes().location([(Tag::new(b"wght"), wght)]);
-                        let id = face.charmap().map('W').unwrap();
-                        let mut pen = XPen::default();
-                        let settings = skrifa::outline::DrawSettings::unhinted(
-                            skrifa::instance::Size::unscaled(),
-                            &at,
-                        );
-                        outlines.get(id).unwrap().draw(settings, &mut pen).unwrap();
-                        pen.0.map(|(lo, hi)| hi - lo).unwrap()
-                    };
-                    assert!(w_width(900.0) > w_width(100.0), "{key} {name}");
+                    continue;
                 }
-                let got = face_widest_glyph(data).unwrap();
-                assert_eq!(got.unscaled_em, want / upem, "{key} {name}");
-                assert_eq!(got.em, want / upem * data.tweak.scale, "{key} {name}");
-                let head = face.head().unwrap();
-                println!(
-                    "widest glyph: {key} {name}: {} em at {:?}, head box {} em",
-                    got.unscaled_em,
-                    data.tweak.coords.as_ref(),
-                    f32::from(head.x_max() - head.x_min()) / upem
-                );
-                checked += 1;
+                let w = outlines.get(face.charmap().map('W').unwrap()).unwrap();
+                let mut own = Vec::new();
+                let mut production = Vec::new();
+                for wght in [100.0, 900.0] {
+                    let location = drawn_location(&face, &at(Some(wght)));
+                    let asked = face.axes().location([(Tag::new(b"wght"), wght)]);
+                    assert_eq!(location.coords(), asked.coords(), "{key} {name} {wght}");
+                    own.push(own_width(&w, &asked).unwrap());
+                    production.push(widest_control_box([w.clone()], &location).unwrap());
+                }
+                assert_eq!(production, own, "{key} {name}");
+                if own.first() != own.last() {
+                    assert_ne!(production.first(), production.last(), "{key} {name}");
+                    discriminating += 1;
+                }
             }
         }
-        if checked == 0 {
-            println!("widest glyph: no variable or CFF system face on this host; nothing checked");
-        }
+        println!(
+            "widest glyph: {checked} outline-bound faces checked, {discriminating} with a `W` that changes width with weight"
+        );
     }
 
     /// `weight_coords` is the `wght` axis at the CSS weight, built independently here.

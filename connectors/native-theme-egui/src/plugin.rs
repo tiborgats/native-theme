@@ -245,6 +245,31 @@ pub(crate) fn cap_text_sizes(
     cap
 }
 
+/// [`ThemeAtlas::install`]'s lowering (M7-04), from the inputs of the pass the sizes will be
+/// drawn in: inside a pass this plugin saw begin, that pass's own, as `input_hook` recorded
+/// them; otherwise, once the viewport has completed a pass (`Context::cumulative_pass_nr`,
+/// `egui/src/context.rs:1781`), the last pass's, which the `Context`'s input keeps. Before the
+/// first pass nothing is lowered: the input then holds only egui's defaults, a 2048 px texture
+/// and one pixel per point (`egui/src/input_state/mod.rs:348-349`), and lowering is one-way,
+/// so a cap from them would hold the sizes down on a wider GPU; nothing is drawn before that
+/// pass, whose `input_hook` lowers them. Not covered: a `Context`'s first install made inside
+/// its very first pass, which this plugin did not see begin and which has completed no pass,
+/// lowers nothing until the next pass.
+pub(crate) fn cap_at_install(ctx: &Context, atlas: &ThemeAtlas) {
+    let in_pass = ctx
+        .with_plugin(|plugin: &mut NativeThemePlugin| {
+            plugin.passes.last().map(|&(_, side, ppp)| (side, ppp))
+        })
+        .flatten();
+    let inputs = in_pass.or_else(|| {
+        (ctx.cumulative_pass_nr() > 0)
+            .then(|| ctx.input(|i| (i.max_texture_side, i.pixels_per_point())))
+    });
+    if let Some((max_texture_side, pixels_per_point)) = inputs {
+        cap_text_sizes(ctx, atlas, max_texture_side, pixels_per_point);
+    }
+}
+
 /// The install plugin of §10.3: the OS colour scheme where the integration reports none, the
 /// title bar that follows it, the focus ring of §6.18 and the text-size cap of M7-04
 /// ([`ThemeAtlas::text_size_cap`]). It holds no theme data — every hook
