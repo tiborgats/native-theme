@@ -1161,7 +1161,7 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<AdwaitaFallback> {
         })
         .ok()?;
     Some(AdwaitaFallback {
-        theme: native_theme_iced::to_theme(&r.variant, &nt.name),
+        theme: native_theme_iced::to_theme_in(&r.variant, &nt.name, r.mode),
         resolved: r.variant,
         layout: nt.layout.clone(),
         icon_set: r.icon_set,

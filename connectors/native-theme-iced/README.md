@@ -114,7 +114,7 @@ docs' *Kerning* section cites the sources.
 
 - **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
 - **`from_system()`** — read the OS theme. Returns a `Loaded`: `theme` and `resolved` for the variant the OS is currently using, `mode` (which variant that is), `accessibility` (the user's accessibility preferences, see [Text scaling](#text-scaling)), and `icon_set` and `icon_theme` for icons and the spinner. `SystemThemeExt::to_iced_theme` gives the same from a `SystemTheme`.
-- **`to_theme(&resolved, "App Name")`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else.
+- **`to_theme(&resolved, "App Name")`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else. `to_theme_in(&resolved, "App Name", mode)` is the same in a mode you know, which sets the theme's light/dark flag where `to_theme` leaves it to iced's guess from the background's lightness.
 - **`styles::*`** — one function per widget, each returning a closure for that widget's style setter. See [Styles](#styles).
 - **Metric helpers** — free functions that read geometry off `&ResolvedTheme` for use with iced's inline widget configuration.
 
