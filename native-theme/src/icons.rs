@@ -17,7 +17,11 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 
 /// The largest buffer, in bytes, built while decoding an icon from outside
 /// data: a PNG's output buffer, a sprite sheet's frames (`frame_count ×
-/// svg_len`) and a rasterised image (`size² × 4`).
+/// svg_len`) and a raster the OS draws (an SF Symbol's or a stock shell
+/// icon's bitmap). A raster drawn at a requested size (`size² × 4`: an SVG,
+/// a Segoe glyph) is checked against it too, but only as a backstop: the
+/// size is clamped to [`MAX_ICON_SIZE`] first, and 512² × 4 bytes is 1 MiB,
+/// so that check cannot fail.
 ///
 /// 64 MiB, the png crate's own default memory limit (`Limits::default()`,
 /// png-0.18.1 `src/decoder/mod.rs:81-87`): a 4096 × 4096 RGBA image, beyond
@@ -31,10 +35,12 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 )]
 pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
 
-/// The largest size, in pixels (points for an SF Symbol), that
-/// [`load_custom_icon`], [`load_custom_icon_in`] and `rasterize::rasterize_svg`
-/// (feature `svg-rasterize`) load or draw an icon at: a larger size is taken
-/// as this one, and 0 as 1.
+/// The largest size, in pixels (points for an SF Symbol), that the system
+/// loaders ([`FreedesktopLoader::size`], [`SfSymbolsLoader::size`],
+/// [`SegoeFluentLoader::size`]), and through them [`load_custom_icon`] and
+/// [`load_custom_icon_in`], and `rasterize::rasterize_svg` (feature
+/// `svg-rasterize`) load or draw an icon at: a larger size is taken as this
+/// one, and 0 as 1.
 ///
 /// 512, so the largest raster one call builds is 512² × 4 bytes, 1 MiB, where
 /// a size of 10 000 would allocate 400 MB for one icon. A connector that loads
@@ -264,11 +270,11 @@ impl<'a> FreedesktopLoader<'a> {
         }
     }
 
-    /// Set the requested icon size in pixels (default 24). Sizes above
-    /// 32767 (`i16::MAX`, the largest size freedesktop-icons computes with)
-    /// look up the largest directory, as 32767 does.
+    /// Set the requested icon size in pixels (default 24), clamped to
+    /// `1..=`[`MAX_ICON_SIZE`]: a larger size is looked up as 512, in the
+    /// theme's directory nearest it.
     pub fn size(mut self, size: u32) -> Self {
-        self.size = size;
+        self.size = size.clamp(1, MAX_ICON_SIZE);
         self
     }
 
@@ -425,10 +431,11 @@ impl<'a> SfSymbolsLoader<'a> {
     }
 
     /// Set the symbol's point size (default 24), the size its symbol
-    /// configuration is made with. A size of 0, or one whose `size² × 4`
-    /// bytes exceed the 64 MiB decode bound, loads `None`.
+    /// configuration is made with, clamped to `1..=`[`MAX_ICON_SIZE`]. A
+    /// symbol whose raster the OS draws over the 64 MiB decode bound loads
+    /// `None`.
     pub fn size(mut self, size: u32) -> Self {
-        self.size = Some(size);
+        self.size = Some(size.clamp(1, MAX_ICON_SIZE));
         self
     }
 
@@ -510,11 +517,10 @@ impl<'a> SegoeFluentLoader<'a> {
     }
 
     /// Set a glyph's size in pixels (default 32), the em height its font
-    /// is created with. A size of 0, or one whose `size² × 4` bytes exceed
-    /// the 64 MiB decode bound, loads `None` for a glyph. A stock shell icon
-    /// keeps the system's large icon size.
+    /// is created with, clamped to `1..=`[`MAX_ICON_SIZE`]. A stock shell
+    /// icon keeps the system's large icon size.
     pub fn size(mut self, size: u32) -> Self {
-        self.size = Some(size);
+        self.size = Some(size.clamp(1, MAX_ICON_SIZE));
         self
     }
 
@@ -838,8 +844,9 @@ fn load_provider_icon(
         .map(|svg| colorize_svg_data(IconData::Svg(svg), color))
 }
 
-/// A role or a name from `set`'s loader, in `color`, at `size` clamped to
-/// `1..=MAX_ICON_SIZE` where the loader takes one.
+/// A role or a name from `set`'s loader, in `color`, at `size` where the
+/// loader takes one; each system loader's `size` clamps it to
+/// `1..=MAX_ICON_SIZE`.
 fn load_set_icon<'a>(
     id: IconId<'a>,
     set: IconSet,
@@ -847,7 +854,6 @@ fn load_set_icon<'a>(
     color: Option<Rgba>,
     size: Option<u32>,
 ) -> Option<IconData> {
-    let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
     match set {
         IconSet::Freedesktop => {
             let loader = FreedesktopLoader::new(id).color_opt(color);
@@ -1676,10 +1682,39 @@ mod load_icon_tests {
     fn freedesktop_loader_stores_the_size_and_colour() {
         let loader = FreedesktopLoader::new("edit-copy");
         assert_eq!((loader.size, loader.fg_color), (24, None));
-        let loader = loader.size(70_000).color(Rgba::new(10, 20, 30, 40));
-        assert_eq!(loader.size, 70_000);
+        let loader = loader.size(48).color(Rgba::new(10, 20, 30, 40));
+        assert_eq!(loader.size, 48);
         assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         assert_eq!(loader.color_opt(None).fg_color, None);
+    }
+
+    /// Each system loader's size is clamped to `1..=MAX_ICON_SIZE`.
+    #[test]
+    fn the_system_loaders_clamp_the_size() {
+        for (size, clamped) in [
+            (0, 1),
+            (48, 48),
+            (MAX_ICON_SIZE, MAX_ICON_SIZE),
+            (MAX_ICON_SIZE + 1, MAX_ICON_SIZE),
+            (70_000, MAX_ICON_SIZE),
+            (u32::MAX, MAX_ICON_SIZE),
+        ] {
+            assert_eq!(
+                FreedesktopLoader::new("edit-copy").size(size).size,
+                clamped,
+                "freedesktop {size}"
+            );
+            assert_eq!(
+                SfSymbolsLoader::new(IconRole::ActionCopy).size(size).size,
+                Some(clamped),
+                "SF Symbols {size}"
+            );
+            assert_eq!(
+                SegoeFluentLoader::new(IconRole::ActionCopy).size(size).size,
+                Some(clamped),
+                "Segoe {size}"
+            );
+        }
     }
 
     #[test]

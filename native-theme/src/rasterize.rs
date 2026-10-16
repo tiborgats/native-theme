@@ -49,6 +49,8 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
         source,
     };
     let size = size.clamp(1, crate::icons::MAX_ICON_SIZE);
+    // A backstop: the clamp keeps the buffer at 1 MiB at most, far inside
+    // the decode bound, so this cannot fail; it also gives the buffer's length.
     let data_len = crate::icons::raster_bytes_in_bound(size, size).ok_or_else(|| {
         failed(
             format!(

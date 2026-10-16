@@ -885,7 +885,7 @@ impl IconProvider for ChromeIcon {
 
 /// `icon` from the chosen set and theme at `size` points, loaded and coloured as `role_image`
 /// loads a role's; a freedesktop icon under the first of its names the icon theme has, each
-/// looked up in that one theme (`FreedesktopLoader::any`, `native-theme/src/icons.rs:253`), as
+/// looked up in that one theme (`FreedesktopLoader::any`, `native-theme/src/icons.rs:259`), as
 /// the gpui showcase loads it. Its alt text is `ChromeIcon::alt_text`, whichever name loaded.
 /// `None` where the set or theme lacks it, never another set's icon.
 pub(crate) fn named_image(
