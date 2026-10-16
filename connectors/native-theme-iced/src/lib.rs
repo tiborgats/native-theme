@@ -1421,6 +1421,25 @@ mod tests {
         make_resolved_preset("catppuccin-mocha", is_dark)
     }
 
+    /// A stated `slider.thumb_hover_color` is a layer over the thumb (C17), as
+    /// the gpui connector's `SliderLook` lays it: a translucent one is
+    /// composited, not emitted as given. Every bundled hover is opaque, so the
+    /// layer here is set by hand.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_hovered_slider_handle_lays_the_hover_over_the_thumb() {
+        use iced_widget::slider::Status;
+        let mut r = make_resolved_preset("adwaita", false);
+        let hover = native_theme::color::Rgba::new(0, 0, 0, 0x40);
+        r.slider.thumb_hover_color = Some(hover);
+        let theme = to_theme(&r, "adwaita");
+        let style = styles::slider(&r)(&theme, Status::Hovered);
+        let to_color = palette::to_color;
+        let want = styles::composite_over(to_color(hover), to_color(r.slider.thumb_color));
+        assert_ne!(want, to_color(hover));
+        assert_eq!(style.handle.background, iced_core::Background::Color(want));
+    }
+
     /// docs/platform-facts.md §2.1.6: libadwaita fades a disabled switch as
     /// one widget (`_switch.scss:20-22`), so its white thumb stays white on
     /// the track and the pair fades over the window at 0.5: light #fcfcfd,

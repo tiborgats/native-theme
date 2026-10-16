@@ -1378,11 +1378,15 @@ pub(super) const SLIDER_ICED_FILL_STATUSES: &[slider::Status] = &[slider::Status
 #[cfg(feature = "widgets")]
 pub(super) fn native_slider_handle(r: &ResolvedTheme, status: slider::Status) -> Color {
     let s = &r.slider;
-    to_color(match status {
-        slider::Status::Active | slider::Status::Dragged => s.thumb_color,
-        // A thumb, so emitted as given rather than composited.
-        slider::Status::Hovered => s.thumb_hover_color.unwrap_or(s.thumb_color),
-    })
+    let thumb = to_color(s.thumb_color);
+    match status {
+        slider::Status::Active | slider::Status::Dragged => thumb,
+        // The platform layers its hover over the thumb; a `None` soft option
+        // is the thumb at rest.
+        slider::Status::Hovered => s
+            .thumb_hover_color
+            .map_or(thumb, |hover| over(to_color(hover), thumb)),
+    }
 }
 
 /// Every color field of `styles::slider`.

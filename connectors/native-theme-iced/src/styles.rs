@@ -1140,9 +1140,11 @@ pub fn menu(
 ///
 /// The rail's two backgrounds are `slider.fill_color` and `.track_color`, and
 /// its width is `slider.track_height`. The handle is `slider.thumb_color`,
-/// with `.thumb_hover_color` under the pointer -- a thumb, so emitted as given
-/// -- and its size is `slider.thumb_diameter`, halved because iced states a
-/// circular handle by its radius.
+/// with `.thumb_hover_color` under the pointer composited over it
+/// ([`composite_over`]): the platform states the hover as a layer over the
+/// thumb, as the gpui connector's slider lays it, while iced replaces the
+/// handle's fill. Its size is `slider.thumb_diameter`, halved because iced
+/// states a circular handle by its radius.
 ///
 /// Two things have no native source. The model states no dragged thumb color,
 /// so in that one status the handle's **fill** -- and nothing else about it --
@@ -1167,8 +1169,10 @@ pub fn slider(
 
     let thumb = to_color(s.thumb_color);
     // A soft option: `None` is the platform saying the thumb does not change
-    // under the pointer, so it copies the thumb's own color.
-    let hovered_thumb = to_color(s.thumb_hover_color.unwrap_or(s.thumb_color));
+    // under the pointer, so it is the thumb's own color.
+    let hovered_thumb = s
+        .thumb_hover_color
+        .map_or(thumb, |hover| composite_over(to_color(hover), thumb));
     // The model states the thumb's diameter; iced states a circular handle by
     // its radius.
     let handle_radius = s.thumb_diameter / 2.0;
