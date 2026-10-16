@@ -455,11 +455,12 @@ impl ThemeAtlas {
     /// size is only ever lowered: a cap that rises again — the window moved to a monitor of
     /// fewer pixels per point — restores nothing until the next [`ThemeAtlas::install`].
     ///
-    /// `None` until the atlas is installed, where no face of the atlas gives a
-    /// width, and where the derivation gives less than one point — an atlas too narrow for
-    /// the slack, or a `pixels_per_point` that is not a positive finite number — in which
-    /// case nothing is lowered. An atlas installed into several `Context`s, or drawn in
-    /// viewports of different `pixels_per_point`, reports the last pass's. A size handed to
+    /// `None` until the atlas is installed, where no face of the atlas gives a width, and where
+    /// the derivation gives less than one point — an atlas too narrow for the slack, or a
+    /// `pixels_per_point` that is not a positive finite number — in which case nothing is
+    /// lowered. It is the cap of the pass in progress: an immediate viewport's pass, run inside
+    /// its parent's, puts the parent's back when it ends; an atlas installed into several
+    /// `Context`s reports the last pass's. A size handed to
     /// egui by the application — from [`text_role_font`](crate::text_role_font),
     /// [`window_title_bar_font`](crate::window_title_bar_font),
     /// [`list_header_font`](crate::list_header_font) or

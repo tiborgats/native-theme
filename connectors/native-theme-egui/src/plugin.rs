@@ -251,11 +251,17 @@ pub(crate) fn cap_text_sizes(
 /// reads the atlas `install` published, so a re-install takes effect with no second
 /// registration (egui keeps the first plugin of a type, `egui/src/context.rs:2045`,
 /// `egui/src/plugin.rs:206-210`) — only its own bookkeeping: which viewports' input it filled
-/// this pass, and the last window theme it sent per viewport.
+/// this pass, the last window theme it sent per viewport, and the cap inputs of each pass in
+/// progress.
 #[derive(Default)]
 pub(crate) struct NativeThemePlugin {
     filled: egui::ViewportIdMap<bool>,
     last_sent: egui::ViewportIdMap<egui::SystemTheme>,
+    /// The `max_texture_side` and `pixels_per_point` of each pass in progress, innermost last:
+    /// an immediate viewport runs its whole pass, hooks included, inside its parent's
+    /// (`egui/src/context.rs:2799-2811`), so the cap one pass derives is put back to its
+    /// parent's when it ends (M7-04).
+    passes: Vec<(egui::ViewportId, usize, f32)>,
 }
 
 /// The atlas's OS mode, read from `Context` data (§10.3 step 3).
@@ -297,18 +303,26 @@ impl egui::plugin::Plugin for NativeThemePlugin {
             _ => false,
         };
         self.filled.insert(input.viewport_id, filled);
+        let max_texture_side = input
+            .max_texture_side
+            .unwrap_or_else(|| ctx.input_for(input.viewport_id, |i| i.max_texture_side));
+        // `RawInput::viewport` panics on a missing entry
+        // (`egui/src/data/input/raw_input.rs:116-118`), so `get`.
+        let native = input
+            .viewports
+            .get(&input.viewport_id)
+            .and_then(|viewport| viewport.native_pixels_per_point)
+            .unwrap_or(1.0);
+        let pixels_per_point = native * ctx.zoom_factor();
+        // A pass of this viewport still listed never reached `output_hook`: it and any pass
+        // nested in it are over.
+        if let Some(stale) = self.passes.iter().position(|p| p.0 == input.viewport_id) {
+            self.passes.truncate(stale);
+        }
+        self.passes
+            .push((input.viewport_id, max_texture_side, pixels_per_point));
         if let Some(atlas) = atlas {
-            let max_texture_side = input
-                .max_texture_side
-                .unwrap_or_else(|| ctx.input_for(input.viewport_id, |i| i.max_texture_side));
-            // `RawInput::viewport` panics on a missing entry
-            // (`egui/src/data/input/raw_input.rs:116-118`), so `get`.
-            let native = input
-                .viewports
-                .get(&input.viewport_id)
-                .and_then(|viewport| viewport.native_pixels_per_point)
-                .unwrap_or(1.0);
-            cap_text_sizes(ctx, &atlas, max_texture_side, native * ctx.zoom_factor());
+            cap_text_sizes(ctx, &atlas, max_texture_side, pixels_per_point);
         }
     }
 
@@ -326,6 +340,9 @@ impl egui::plugin::Plugin for NativeThemePlugin {
         };
         let (max_texture_side, pixels_per_point) =
             ctx.input(|i| (i.max_texture_side, i.pixels_per_point()));
+        if let Some(this) = self.passes.last_mut() {
+            (this.1, this.2) = (max_texture_side, pixels_per_point);
+        }
         let derived = atlas
             .widest_glyph()
             .and_then(|widest| derive_text_size_cap(max_texture_side, pixels_per_point, widest));
@@ -351,7 +368,18 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// included, inside its parent's, and the parent's commands reach the outermost pass's
     /// output (`egui/src/context.rs:2799-2811`); `input_hook` overwrites each viewport's entry
     /// every pass.
+    ///
+    /// First, the pass ending leaves the list of passes in progress, and where it was an
+    /// immediate viewport's, nested in its parent's, the parent's cap is derived again from the
+    /// parent's own inputs (M7-04): a child on a monitor of fewer pixels per point derives a
+    /// larger cap, which the parent's role scopes after it in the same pass would otherwise read.
     fn output_hook(&mut self, ctx: &Context, output: &mut egui::FullOutput) {
+        self.passes.pop();
+        if let (Some(&(_, max_texture_side, pixels_per_point)), Some(atlas)) =
+            (self.passes.last(), ThemeAtlas::from_ctx(ctx))
+        {
+            cap_text_sizes(ctx, &atlas, max_texture_side, pixels_per_point);
+        }
         let filled = &self.filled;
         let Some(mode) = os_mode(ctx) else {
             return;

@@ -2904,3 +2904,55 @@ fn an_install_inside_a_pass_is_capped_in_that_pass() {
         });
     });
 }
+
+/// M7-04: an immediate viewport runs its whole pass inside its parent's
+/// (`egui/src/context.rs:4116-4160`); on a monitor of fewer pixels per point it derives a
+/// larger cap, and the parent's role scopes after it in the same pass must use the parent's:
+/// at 8× the parent's density a `W` (0.849 em in egui's Ubuntu-Light, measured) drawn at the
+/// child's cap is wider than the 2048 px atlas.
+#[test]
+fn an_immediate_viewport_leaves_its_parent_the_parents_cap() {
+    use crate::NativeThemeUiExt as _;
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    ctx.set_embed_viewports(false);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                native_pixels_per_point: Some(0.25),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(2.0), |_| {});
+    let parent = atlas.text_size_cap().expect("derived at 2.0");
+    let mut child = None;
+    let mut after = None;
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        ui.ctx().show_viewport_immediate(
+            egui::ViewportId::from_hash_of("child"),
+            egui::ViewportBuilder::default(),
+            |ui, _| {
+                child = atlas.text_size_cap();
+                ui.label("W");
+            },
+        );
+        after = atlas.text_size_cap();
+        ui.native_scope(Role::Button, RoleVariant::Normal, |ui| {
+            let _ = ui.button("W");
+        });
+    });
+    let child = child.expect("derived at 0.25");
+    assert!(child > parent, "{child} > {parent}");
+    assert_eq!(after, Some(parent));
+}
