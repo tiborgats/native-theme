@@ -475,7 +475,7 @@ fn verdict_totals_match_the_specification() {
         ("surfaces", [8, 55, 32, 15]),
         ("buttons", [11, 46, 31, 18]),
         ("inputs", [4, 35, 36, 12]),
-        ("indicators", [6, 17, 8, 9]),
+        ("indicators", [5, 17, 9, 9]),
         ("chrome", [0, 54, 26, 19]),
     ];
     for (group, want) in expected {

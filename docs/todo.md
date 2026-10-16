@@ -1557,7 +1557,7 @@ model, the platform presets and the three connectors
       Ghost buttons in a style scope instead (`demo::ghost`: the full frame in
       every state, the resting fill and border colour transparent), and
       `a_ghost_button_keeps_its_size_when_hovered_and_pressed` checks it.
-- [ ] [v0.7.0] For M7: the base style's `extreme_bg_color` comes from
+- [x] [v0.7.0] For M7: the base style's `extreme_bg_color` comes from
       `scrollbar.track_color` (`connectors/native-theme-egui/src/mapping.md:432`,
       `connectors/native-theme-egui/src/style/base.rs:202`), which
       `macos-monterey` states transparent, the overlay scroll bar's clear track
@@ -1573,6 +1573,17 @@ model, the platform presets and the three connectors
       `SubtleFillColorTransparent`, `#ffffff00` in light and dark
       (`native-theme/src/presets/windows-11.toml:239`, `:799`;
       `docs/platform-facts.md:1278`), so the same holds there.
+      M7 T14 (2026-10-16): egui paints the scroll-bar groove from the slot,
+      at the three `spacing.scroll.*_background_opacity` when floating and at
+      1 when solid (`egui/src/containers/scroll_area.rs:1485-1511`). Where the
+      bar is an overlay one and its stated track fully transparent
+      (macos-monterey, macos-tahoe), the base style writes the three
+      opacities 0 and `extreme_bg_color` takes `input.background_color`,
+      egui's own meaning of the slot (`egui/src/style.rs:1513`); elsewhere it
+      keeps `scrollbar.track_color`. windows-11 states its transparent track
+      in solid mode, where the groove is painted at opacity 1, so its slot
+      stays transparent: the README's *Limits* records it, and mapping.md's
+      `scrollbar.track_color` row is DERIVED with the condition.
 - [x] [v0.7.0] For M7: the left and right panels fill with
       `sidebar.background_color`
       (`connectors/native-theme-egui/src/style/frames.rs:190-193`), which

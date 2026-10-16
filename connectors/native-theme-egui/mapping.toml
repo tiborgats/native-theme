@@ -1582,6 +1582,7 @@ verdict = "direct"
 sinks   = [
   { path = "visuals.text_edit_bg_color" },
   { path = "visuals.text_edit_bg_color", scope = "input", variant = "disabled", when = "input.disabled_background is None, §6.4" },
+  { path = "visuals.extreme_bg_color", when = "an overlay scrollbar with a fully transparent track, which has no groove" },
 ]
 
 ["input.placeholder_color"]
@@ -2031,10 +2032,13 @@ tested_by = "T18(a)"
 # ---- §5.5 Indicators
 
 ["scrollbar.track_color"]
-verdict = "direct"
+verdict = "derived"
 sinks   = [
-  { path = "visuals.extreme_bg_color" },
+  { path = "visuals.extreme_bg_color", when = "not an overlay bar with a fully transparent track, which has no groove" },
   { path = "visuals.extreme_bg_color", scope = "scrollbar" },
+  { path = "spacing.scroll.dormant_background_opacity", when = "an overlay bar with a fully transparent track: 0, no groove" },
+  { path = "spacing.scroll.active_background_opacity", when = "an overlay bar with a fully transparent track: 0, no groove" },
+  { path = "spacing.scroll.interact_background_opacity", when = "an overlay bar with a fully transparent track: 0, no groove" },
 ]
 
 ["scrollbar.thumb_color"]
@@ -2086,6 +2090,10 @@ sinks   = [
   { path = "spacing.scroll.bar_inner_margin", when = "the thumb is narrower than the groove, §6.5" },
   { path = "spacing.scroll.bar_outer_margin", when = "the thumb is narrower than the groove, §6.5" },
   { path = "spacing.scroll.floating_width", when = "egui's own floating width is not the thumb width, §6.5" },
+  { path = "visuals.extreme_bg_color", when = "the track is fully transparent: the input background in overlay mode" },
+  { path = "spacing.scroll.dormant_background_opacity", when = "the track is fully transparent: 0 in overlay mode" },
+  { path = "spacing.scroll.active_background_opacity", when = "the track is fully transparent: 0 in overlay mode" },
+  { path = "spacing.scroll.interact_background_opacity", when = "the track is fully transparent: 0 in overlay mode" },
 ]
 
 ["scrollbar.thumb_active_color"]
@@ -2841,12 +2849,9 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "spacing.menu_margin.bottom" = "as spacing.menu_margin.left"
 "spacing.default_area_size.x" = "sizes every free Area; dialog.max_width goes per call (§5.8 item 6)"
 "spacing.default_area_size.y" = "as spacing.default_area_size.x"
-"spacing.scroll.dormant_background_opacity"  = "no native leaf describes an auto-hide fade curve (§5.9)"
-"spacing.scroll.active_background_opacity"   = "as spacing.scroll.dormant_background_opacity"
-"spacing.scroll.interact_background_opacity" = "as spacing.scroll.dormant_background_opacity"
-"spacing.scroll.dormant_handle_opacity"      = "as spacing.scroll.dormant_background_opacity"
-"spacing.scroll.active_handle_opacity"       = "as spacing.scroll.dormant_background_opacity"
-"spacing.scroll.interact_handle_opacity"     = "as spacing.scroll.dormant_background_opacity"
+"spacing.scroll.dormant_handle_opacity"      = "no native leaf describes an auto-hide fade curve (§5.9)"
+"spacing.scroll.active_handle_opacity"       = "as spacing.scroll.dormant_handle_opacity"
+"spacing.scroll.interact_handle_opacity"     = "as spacing.scroll.dormant_handle_opacity"
 "visuals.text_cursor.stroke.width" = "no native caret width exists (§5.9)"
 "visuals.selection.stroke.width"   = "no native source; egui's 1.0 (§6.2)"
 "text_styles[Body].family"      = "always FontFamily::Proportional: the family reaches egui as bytes, never as a name (§8.1; T6(d))"

@@ -200,7 +200,19 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     v.window_fill = to_color32(t.menu.background_color); // base owner of window_fill (§5.9)
-    v.extreme_bg_color = to_color32(t.scrollbar.track_color);
+    // egui paints the scroll-bar groove from `extreme_bg_color`, at the three
+    // `*_background_opacity` when floating and at 1 when solid
+    // (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is fully
+    // transparent has no groove: its opacities are written 0 below, and the slot serves its other
+    // readers, `Frame::canvas` (`egui/src/containers/frame.rs:231`) and a role-less `ProgressBar`
+    // (`egui/src/widgets/progress_bar.rs:140`), with egui's own meaning of it, "e.g. TextEdit
+    // background" (`egui/src/style.rs:1513`). A solid bar keeps its stated track there.
+    let no_groove = t.scrollbar.overlay_mode && t.scrollbar.track_color.a == 0;
+    v.extreme_bg_color = to_color32(if no_groove {
+        t.input.background_color
+    } else {
+        t.scrollbar.track_color
+    });
     v.faint_bg_color = to_color32(t.list.alternate_row_background);
     v.text_edit_bg_color = Some(to_color32(t.input.background_color));
     v.text_cursor.stroke.color = to_color32(t.input.caret_color); // width stays egui's (§5.4)
@@ -271,6 +283,11 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     sp.scroll.foreground_color = false; // the handle reads `bg_fill` (§5.5)
+    if no_groove {
+        sp.scroll.dormant_background_opacity = 0.0;
+        sp.scroll.active_background_opacity = 0.0;
+        sp.scroll.interact_background_opacity = 0.0;
+    }
     sp.window_margin = margin(
         [
             "window.border.padding.top",
@@ -596,6 +613,64 @@ mod tests {
             assert_eq!(s.override_font_id, None);
             assert_eq!(v.override_text_color, None);
         }
+    }
+
+    /// egui paints the scroll-bar groove from `extreme_bg_color`, at the three
+    /// `*_background_opacity` when floating and at 1 when solid
+    /// (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is
+    /// fully transparent has no groove: the opacities are 0 and the slot takes the input
+    /// background, egui's own meaning of it (`egui/src/style.rs:1513`). A solid bar's
+    /// transparent track (windows-11) and an opaque track (kde-breeze) stay in the slot.
+    #[test]
+    fn a_clear_overlay_track_leaves_the_slot_to_the_input_background() {
+        let opacities = |s: &egui::Style| {
+            let sc = &s.spacing.scroll;
+            [
+                sc.dormant_background_opacity,
+                sc.active_background_opacity,
+                sc.interact_background_opacity,
+            ]
+        };
+        for (preset, mode, scheme) in [
+            ("macos-monterey", ColorMode::Light, egui::Theme::Light),
+            ("macos-monterey", ColorMode::Dark, egui::Theme::Dark),
+            ("macos-tahoe", ColorMode::Light, egui::Theme::Light),
+        ] {
+            let t = resolved(preset, mode);
+            assert!(t.scrollbar.overlay_mode, "{preset}: an overlay bar");
+            assert_eq!(t.scrollbar.track_color.a, 0, "{preset}: a clear track");
+            let (s, notes) = build(scheme, &t, &LayoutTheme::default(), None);
+            assert!(notes.is_empty(), "{preset}: {notes:?}");
+            assert_eq!(
+                s.visuals.extreme_bg_color,
+                to_color32(t.input.background_color),
+                "{preset} {mode:?}"
+            );
+            assert_eq!(opacities(&s), [0.0; 3], "{preset} {mode:?}");
+        }
+        for (preset, mode, scheme) in [
+            ("kde-breeze", ColorMode::Light, egui::Theme::Light),
+            ("windows-11", ColorMode::Light, egui::Theme::Light),
+            ("windows-11", ColorMode::Dark, egui::Theme::Dark),
+        ] {
+            let t = resolved(preset, mode);
+            let (s, _) = build(scheme, &t, &LayoutTheme::default(), None);
+            assert_eq!(
+                s.visuals.extreme_bg_color,
+                to_color32(t.scrollbar.track_color),
+                "{preset} {mode:?}"
+            );
+            assert_eq!(
+                opacities(&s),
+                opacities(&scheme.default_style()),
+                "{preset} {mode:?}: egui's own"
+            );
+        }
+        let t = resolved("windows-11", ColorMode::Light);
+        assert!(
+            !t.scrollbar.overlay_mode && t.scrollbar.track_color.a == 0,
+            "windows-11 states its transparent track in solid mode"
+        );
     }
 
     /// §6.16: a stated gap is `Vec2::splat`, a `None` keeps egui's asymmetric default, a

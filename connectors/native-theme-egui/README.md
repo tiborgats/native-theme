@@ -422,6 +422,16 @@ no `Style` field, and some containers paint parts no style reaches. Each such
 leaf is a `mapping.toml` row marked `unmappable`, with the reason, and the
 mapping document in the API reference lists them all.
 
+One egui colour, `visuals.extreme_bg_color`, fills the scroll-bar groove, a
+`ProgressBar`'s track and `Frame::canvas`. The base style puts the theme's
+scroll-bar track there; a `ProgressBar` inside `Role::ProgressBar` takes
+`progress_bar.track_color`. Where the scroll bar is an overlay one with a fully
+transparent track (macOS), the groove's opacities are 0 and the slot takes the
+input background instead. A solid scroll bar's groove is painted at full
+opacity, so its track stays in the slot even when the theme states it
+transparent, as `windows-11` does: there a canvas frame and a progress bar
+outside its role have no fill.
+
 ## Showcase
 
 ```sh

@@ -12,9 +12,9 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
 | Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 36 | 12 |
-| Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
+| Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **508** | **47** | **208** | **169** | **84** |
+| **TOTAL** | **508** | **46** | **208** | **170** | **84** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
 
@@ -344,7 +344,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `combo_box.hover_background` | SCOPED | «combo_box» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None copies combo_box.background_color, §6.4); «combo_box» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies combo_box.background_color, §6.4) |  |
 | `combo_box.min_height` | SCOPED | «combo_box» `spacing.interact_size.y` |  |
 | `combo_box.min_width` | DIRECT | `spacing.combo_width` |  |
-| `input.background_color` | DIRECT | `visuals.text_edit_bg_color`; «input:disabled» `visuals.text_edit_bg_color` (when: input.disabled_background is None, §6.4) |  |
+| `input.background_color` | DIRECT | `visuals.text_edit_bg_color`; «input:disabled» `visuals.text_edit_bg_color` (when: input.disabled_background is None, §6.4); `visuals.extreme_bg_color` (when: an overlay scrollbar with a fully transparent track, which has no groove) |  |
 | `input.border.color` | SCOPED | «input» `visuals.widgets.noninteractive.bg_stroke.color`; «input» `visuals.widgets.inactive.bg_stroke.color`; «input» `visuals.widgets.open.bg_stroke.color`; «input» `visuals.widgets.hovered.bg_stroke.color` (when: input.hover_border_color is None, §6.4); «input» `visuals.widgets.active.bg_stroke.color` (when: input.hover_border_color is None, §6.4) |  |
 | `input.border.corner_radius` | SCOPED | «input» `visuals.widgets.noninteractive.corner_radius`; «input» `visuals.widgets.inactive.corner_radius`; «input» `visuals.widgets.hovered.corner_radius`; «input» `visuals.widgets.active.corner_radius`; «input» `visuals.widgets.open.corner_radius` |  |
 | `input.border.line_width` | SCOPED | «input» `visuals.widgets.noninteractive.bg_stroke.width`; «input» `visuals.widgets.inactive.bg_stroke.width`; «input» `visuals.widgets.hovered.bg_stroke.width`; «input» `visuals.widgets.active.bg_stroke.width`; «input» `visuals.widgets.open.bg_stroke.width` |  |
@@ -427,12 +427,12 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `progress_bar.track_height` | SCOPED | «progress_bar» `spacing.interact_size.y` |  |
 | `scrollbar.groove_width` | DERIVED | `spacing.scroll.bar_width` (when: overlay mode, or a thumb wider than the groove, §6.5); `spacing.scroll.bar_inner_margin` (when: not overlay mode, §6.5); `spacing.scroll.bar_outer_margin` (when: not overlay mode, §6.5) |  |
 | `scrollbar.min_thumb_length` | DIRECT | `spacing.scroll.handle_min_length` |  |
-| `scrollbar.overlay_mode` | DERIVED | `spacing.scroll.floating`; `spacing.scroll.floating_allocated_width` (when: egui's own value is not 0.0, §6.5); `spacing.scroll.bar_width` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_inner_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_outer_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.floating_width` (when: egui's own floating width is not the thumb width, §6.5) |  |
+| `scrollbar.overlay_mode` | DERIVED | `spacing.scroll.floating`; `spacing.scroll.floating_allocated_width` (when: egui's own value is not 0.0, §6.5); `spacing.scroll.bar_width` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_inner_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_outer_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.floating_width` (when: egui's own floating width is not the thumb width, §6.5); `visuals.extreme_bg_color` (when: the track is fully transparent: the input background in overlay mode); `spacing.scroll.dormant_background_opacity` (when: the track is fully transparent: 0 in overlay mode); `spacing.scroll.active_background_opacity` (when: the track is fully transparent: 0 in overlay mode); `spacing.scroll.interact_background_opacity` (when: the track is fully transparent: 0 in overlay mode) |  |
 | `scrollbar.thumb_active_color` | DIRECT | `visuals.widgets.active.bg_fill` (when: stated; None copies scrollbar.thumb_hover_color, §6.9); «scrollbar» `visuals.widgets.active.bg_fill` (when: stated; None copies scrollbar.thumb_hover_color, §6.9) |  |
 | `scrollbar.thumb_color` | DIRECT | `visuals.widgets.inactive.bg_fill`; `visuals.widgets.open.bg_fill`; «scrollbar» `visuals.widgets.inactive.bg_fill`; «scrollbar» `visuals.widgets.open.bg_fill`; `spacing.scroll.foreground_color` (when: never: written false in the base style, so the handle reads bg_fill, §5.5, §5.9) |  |
 | `scrollbar.thumb_hover_color` | DIRECT | `visuals.widgets.hovered.bg_fill`; «scrollbar» `visuals.widgets.hovered.bg_fill`; `visuals.widgets.active.bg_fill` (when: scrollbar.thumb_active_color is None, §6.9); «scrollbar» `visuals.widgets.active.bg_fill` (when: scrollbar.thumb_active_color is None, §6.9) |  |
 | `scrollbar.thumb_width` | DERIVED | `spacing.scroll.bar_width` (when: not overlay mode, §6.5); `spacing.scroll.floating_width` (when: overlay mode, §6.5); `spacing.scroll.bar_inner_margin` (when: not overlay mode, §6.5); `spacing.scroll.bar_outer_margin` (when: not overlay mode, §6.5) |  |
-| `scrollbar.track_color` | DIRECT | `visuals.extreme_bg_color`; «scrollbar» `visuals.extreme_bg_color` |  |
+| `scrollbar.track_color` | DERIVED | `visuals.extreme_bg_color` (when: not an overlay bar with a fully transparent track, which has no groove); «scrollbar» `visuals.extreme_bg_color`; `spacing.scroll.dormant_background_opacity` (when: an overlay bar with a fully transparent track: 0, no groove); `spacing.scroll.active_background_opacity` (when: an overlay bar with a fully transparent track: 0, no groove); `spacing.scroll.interact_background_opacity` (when: an overlay bar with a fully transparent track: 0, no groove) |  |
 | `separator.line_color` | SCOPED | «separator» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `separator.line_width` | SCOPED | «separator» `visuals.widgets.noninteractive.bg_stroke.width` |  |
 | `slider.disabled_fill_color` | SCOPED | «slider:disabled» `visuals.selection.bg_fill` (when: stated; None copies slider.fill_color, §6.4) |  |
@@ -581,14 +581,17 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.menu_margin.left` | — (egui's own value stands) |  | `dialog.border.padding.left` \[dialog\], `popover.border.padding.left` \[popover\], `tooltip.border.padding.left` \[tooltip\] |
 | `spacing.menu_margin.right` | — (egui's own value stands) |  | `dialog.border.padding.right` \[dialog\], `popover.border.padding.right` \[popover\], `tooltip.border.padding.right` \[tooltip\] |
 | `spacing.menu_margin.top` | — (egui's own value stands) |  | `dialog.border.padding.top` \[dialog\], `popover.border.padding.top` \[popover\], `tooltip.border.padding.top` \[tooltip\] |
+| `spacing.scroll.active_background_opacity` | — (a formula's result) | `scrollbar.overlay_mode`, `scrollbar.track_color` |  |
 | `spacing.scroll.bar_inner_margin` | — (a formula's result) | `scrollbar.groove_width`, `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
 | `spacing.scroll.bar_outer_margin` | — (a formula's result) | `scrollbar.groove_width`, `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
 | `spacing.scroll.bar_width` | — (a formula's result) | `scrollbar.groove_width`, `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
+| `spacing.scroll.dormant_background_opacity` | — (a formula's result) | `scrollbar.overlay_mode`, `scrollbar.track_color` |  |
 | `spacing.scroll.floating` | `scrollbar.overlay_mode` |  |  |
 | `spacing.scroll.floating_allocated_width` | — (a formula's result) | `scrollbar.overlay_mode` |  |
 | `spacing.scroll.floating_width` | — (a formula's result) | `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
 | `spacing.scroll.foreground_color` | — (a constant this crate writes) | `scrollbar.thumb_color` forces it: written false in the base style, so the handle reads bg_fill, §5.5, §5.9 |  |
 | `spacing.scroll.handle_min_length` | `scrollbar.min_thumb_length` |  |  |
+| `spacing.scroll.interact_background_opacity` | — (a formula's result) | `scrollbar.overlay_mode`, `scrollbar.track_color` |  |
 | `spacing.slider_rail_height` | `slider.track_height` |  |  |
 | `spacing.tooltip_width` | `tooltip.max_width` |  |  |
 | `spacing.window_margin.bottom` | `window.border.padding.bottom` |  |  |
@@ -603,7 +606,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.collapsing_header_frame` | — (egui's own value stands) |  | `expander.hover_background` «expander» |
 | `visuals.disabled_alpha` | `defaults.disabled_opacity` |  | `button.disabled_opacity` «button», `button.disabled_opacity` «button:disabled», `checkbox.disabled_opacity` «checkbox», `checkbox.disabled_opacity` «checkbox:disabled», `checkbox.disabled_opacity` «checkbox:selected_disabled», `combo_box.disabled_opacity` «combo_box», `combo_box.disabled_opacity` «combo_box:disabled», `input.disabled_opacity` «input», `input.disabled_opacity` «input:disabled», `segmented_control.disabled_opacity` «segmented_control», `slider.disabled_opacity` «slider», `slider.disabled_opacity` «slider:disabled», `switch.disabled_opacity` «switch», `switch.disabled_opacity` «switch:disabled» |
 | `visuals.error_fg_color` | `defaults.danger_color` |  |  |
-| `visuals.extreme_bg_color` | `scrollbar.track_color` |  | `progress_bar.track_color` «progress_bar», `scrollbar.track_color` «scrollbar» |
+| `visuals.extreme_bg_color` | — (a formula's result) | `input.background_color`, `scrollbar.overlay_mode`, `scrollbar.track_color` | `progress_bar.track_color` «progress_bar», `scrollbar.track_color` «scrollbar» |
 | `visuals.faint_bg_color` | `list.alternate_row_background` |  |  |
 | `visuals.handle_shape` | — (a constant this crate writes) | `slider.thumb_diameter` forces it: HandleShape::Circle in the base style and every slider cell, a diameter's knob, §5.9, §6.6 |  |
 | `visuals.hyperlink_color` | `defaults.link_color` |  | `link.disabled_text_color` «link:disabled», `link.font.color` «link» |
@@ -801,18 +804,15 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.menu_margin.top` | as spacing.menu_margin.left |
 | `spacing.menu_spacing` | no reader anywhere in egui 0.36.2 (§5.10) |
 | `spacing.menu_width` | no reader anywhere in egui 0.36.2 (§5.10) |
-| `spacing.scroll.active_background_opacity` | as spacing.scroll.dormant_background_opacity |
-| `spacing.scroll.active_handle_opacity` | as spacing.scroll.dormant_background_opacity |
+| `spacing.scroll.active_handle_opacity` | as spacing.scroll.dormant_handle_opacity |
 | `spacing.scroll.content_margin.bottom` | as spacing.scroll.content_margin.left |
 | `spacing.scroll.content_margin.left` | no native leaf states a scroll-content margin (egui/src/style.rs:509, :596) |
 | `spacing.scroll.content_margin.right` | as spacing.scroll.content_margin.left |
 | `spacing.scroll.content_margin.top` | as spacing.scroll.content_margin.left |
-| `spacing.scroll.dormant_background_opacity` | no native leaf describes an auto-hide fade curve (§5.9) |
-| `spacing.scroll.dormant_handle_opacity` | as spacing.scroll.dormant_background_opacity |
+| `spacing.scroll.dormant_handle_opacity` | no native leaf describes an auto-hide fade curve (§5.9) |
 | `spacing.scroll.fade.size` | as spacing.scroll.fade.strength |
 | `spacing.scroll.fade.strength` | no platform fact records a scroll-edge fade (§5.10) |
-| `spacing.scroll.interact_background_opacity` | as spacing.scroll.dormant_background_opacity |
-| `spacing.scroll.interact_handle_opacity` | as spacing.scroll.dormant_background_opacity |
+| `spacing.scroll.interact_handle_opacity` | as spacing.scroll.dormant_handle_opacity |
 | `spacing.slider_width` | no native leaf states a slider length (§5.9) |
 | `spacing.text_edit_width` | no native leaf states a text-edit default width (§5.9) |
 | `text_styles[Body].family` | always FontFamily::Proportional: the family reaches egui as bytes, never as a name (§8.1; T6(d)) |

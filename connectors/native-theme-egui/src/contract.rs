@@ -265,6 +265,15 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
         }
         ["spacing", "scroll", "floating"] => Val::Bool(sp.scroll.floating),
         ["spacing", "scroll", "foreground_color"] => Val::Bool(sp.scroll.foreground_color),
+        ["spacing", "scroll", "dormant_background_opacity"] => {
+            Val::F32(sp.scroll.dormant_background_opacity)
+        }
+        ["spacing", "scroll", "active_background_opacity"] => {
+            Val::F32(sp.scroll.active_background_opacity)
+        }
+        ["spacing", "scroll", "interact_background_opacity"] => {
+            Val::F32(sp.scroll.interact_background_opacity)
+        }
         [slot, "size"] if slot.starts_with("text_styles[") => {
             let name = slot
                 .trim_start_matches("text_styles[")
@@ -479,6 +488,12 @@ fn border_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedWidg
         ),
         padding: padding_of(c, widget),
     }
+}
+
+/// An overlay scrollbar whose stated track is fully transparent: egui paints no groove there.
+fn no_groove(c: &Combination) -> bool {
+    matches!(native(c, "scrollbar.overlay_mode"), Native::Bool(true))
+        && colour(c, "scrollbar.track_color").is_some_and(|x| x.a == 0)
 }
 
 /// The first stated colour of a §6.4 chain; the chain's last leaf is required.
@@ -736,6 +751,31 @@ fn expected(
                 (true, "spacing.scroll.bar_width") => Val::F32(g),
                 (true, "spacing.scroll.floating_allocated_width") => Val::F32(0.0),
                 _ => return Ok(None), // the other branch's fields: not written
+            }
+        }
+        // ---- the groove's slot: an overlay bar with a fully transparent track has no groove
+        // (`egui/src/containers/scroll_area.rs:1485-1511`), so its opacities are 0 and the slot
+        // holds the input background (`egui/src/style.rs:1513`) ----
+        (None, "normal", None, "visuals.extreme_bg_color") => c32(if no_groove(c) {
+            req("input.background_color")?
+        } else {
+            req("scrollbar.track_color")?
+        }),
+        (Some("scrollbar"), "normal", None, "visuals.extreme_bg_color") => {
+            c32(req("scrollbar.track_color")?)
+        }
+        (
+            None,
+            "normal",
+            None,
+            "spacing.scroll.dormant_background_opacity"
+            | "spacing.scroll.active_background_opacity"
+            | "spacing.scroll.interact_background_opacity",
+        ) => {
+            if no_groove(c) {
+                Val::F32(0.0)
+            } else {
+                return Ok(None);
             }
         }
         // ---- §6.6 D2: the slider's row and knob ----
