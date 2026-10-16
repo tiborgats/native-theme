@@ -7,7 +7,7 @@
 //! | [`icon_name`] | Map [`IconRole`] → [`IconName`] (Lucide, zero-I/O) |
 //! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`Option<&str>`) |
 //! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`Option<&str>`) |
-//! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (`Option<&str>`, Linux only) |
+//! | [`freedesktop_name_for_gpui_icon`] | Deprecated: map [`IconName`] → freedesktop name by desktop (`Option<&str>`, Linux only) |
 //! | [`freedesktop_name_candidates`] | Map [`IconName`] → freedesktop names to try in one theme (`&[&str]`, Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (an RGBA icon's buffer is not copied) |
@@ -490,6 +490,10 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns `None` for an `IconName` newer than gpui-component 0.7.3, as
 /// [`freedesktop_name_candidates`] returns no name for it.
 #[cfg(target_os = "linux")]
+#[deprecated(
+    since = "0.7.0",
+    note = "the icon theme in use decides which name exists: use freedesktop_name_candidates and FreedesktopLoader::any"
+)]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
     icon: IconName,
@@ -2620,6 +2624,7 @@ mod freedesktop_mapping_tests {
     use native_theme::icons::FreedesktopLoader;
 
     #[test]
+    #[allow(deprecated)]
     fn every_gpui_icon_has_a_freedesktop_name_on_kde() {
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
@@ -2631,6 +2636,7 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn eye_differs_by_de() {
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Kde),
@@ -2643,6 +2649,7 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn mic_and_square_take_standard_names_on_every_desktop() {
         for de in [LinuxDesktop::Kde, LinuxDesktop::Gnome] {
             assert_eq!(
@@ -2660,6 +2667,7 @@ mod freedesktop_mapping_tests {
     /// ships `sidebar-expand-left` and `sidebar-expand-right` side by side
     /// (`actions/22/`). The GTK arm stays Adwaita's `sidebar-show-right`.
     #[test]
+    #[allow(deprecated)]
     fn panel_right_is_breezes_pair_of_panel_left() {
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::PanelLeft, LinuxDesktop::Kde),
@@ -2676,6 +2684,7 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn freedesktop_standard_ignores_de() {
         // edit-copy is freedesktop standard — same for all DEs
         assert_eq!(
@@ -2685,6 +2694,7 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn every_gpui_icon_has_a_freedesktop_name_on_gnome() {
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
@@ -2697,6 +2707,7 @@ mod freedesktop_mapping_tests {
 
     /// §10.4: the two star states must not share a glyph.
     #[test]
+    #[allow(deprecated)]
     fn star_states_have_distinct_freedesktop_names() {
         for de in [LinuxDesktop::Kde, LinuxDesktop::Gnome] {
             assert_eq!(
@@ -2711,6 +2722,7 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn xfce_uses_gnome_names() {
         // XFCE is GTK-based and should use GNOME naming convention
         assert_eq!(
@@ -2725,6 +2737,7 @@ mod freedesktop_mapping_tests {
 
     #[cfg(feature = "system-icons")]
     #[test]
+    #[allow(deprecated)]
     fn all_kde_names_resolve_in_breeze() {
         let theme = match native_theme::detect::system_icon_theme() {
             Ok(theme) => theme,
@@ -2763,6 +2776,7 @@ mod freedesktop_mapping_tests {
 
     #[cfg(feature = "system-icons")]
     #[test]
+    #[allow(deprecated)]
     fn gnome_names_resolve_in_adwaita() {
         // Verify GNOME mappings resolve against installed Adwaita theme.
         // Only runs when Adwaita is installed (it usually is on any Linux).

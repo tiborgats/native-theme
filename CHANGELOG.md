@@ -174,6 +174,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-iced**: `styles::slider` lays a stated `slider.thumb_hover_color` over the thumb (`styles::composite_over`), as the gpui connector's slider does, where it used the colour as given: the platform states the hover as a layer over the thumb. No bundled preset changes, as every stated thumb hover is opaque and an opaque layer composites to itself.
 - **native-theme-egui**: `icons::custom_icon_to_image_source` loads at the key's size clamped to `1..=512` by native-theme, as the gpui connector does: a size above 512 loads the icon at 512, where a freedesktop icon was looked up at the size given and an SF Symbol or Segoe glyph past their 64 MiB raster bound gave `None`.
 
+### Deprecated
+
+- **native-theme-gpui**: `icons::freedesktop_name_for_gpui_icon(icon, de)` (Linux). It picks a freedesktop name by desktop, where the icon theme in use decides which name exists (Adwaita, with the AdwaitaLegacy it inherits, lacks the Breeze name for 48 of the 50 icons the two conventions name apart); use `icons::freedesktop_name_candidates(icon)` with `native_theme::icons::FreedesktopLoader::any` in the one icon theme the icon is loaded from.
+
 ### Fixed
 
 - **native-theme**: a `[layout]` value that is negative, NaN or infinite (`widget_gap_px`, `container_margin_px`, `window_margin_px`, `section_gap_px`) fails `Theme::resolve`, `SystemTheme::from_system()` and `SystemTheme::with_overlay` with `Error::ResolutionInvalid` naming its key, `layout.widget_gap_px`; it reached `SystemTheme::layout` unchecked, although the four fields declare a non-negative range.
