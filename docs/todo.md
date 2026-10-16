@@ -3555,6 +3555,12 @@ the plan's close.
       function's docs point there. Removing it is an api-break of a released `pub fn`. The
       iced showcase's `panel_left_name` (`examples/showcase-iced.rs`, beside `PanelLeft`'s
       doc) makes the same desktop-keyed choice for `sidebar-show` / `sidebar-expand-left`.
+      M7 T12 (2026-10-16): the iced half is done. `panel_left_name` is gone; the iced
+      showcase's chrome loads its freedesktop names through `FreedesktopLoader::any` in the
+      one theme it chose (`&["sidebar-expand-left", "sidebar-show"]` for `PanelLeft`), and so
+      does the egui showcase's `ChromeIcon` (M7-15, its `gtk_desktop` gone). A fixture test in
+      each showcase loads the icon from a GTK-names-only and a Breeze-names-only theme on Sway
+      and on GNOME. What stays open here is the gpui function's question for M8.
 
 ### M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Each sits here until its milestone takes it.
