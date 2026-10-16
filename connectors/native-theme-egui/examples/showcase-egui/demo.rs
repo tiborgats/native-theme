@@ -5,7 +5,9 @@ use std::borrow::Cow;
 use native_theme::Rgba;
 use native_theme::icons::{FreedesktopLoader, IconProvider, IconRole};
 use native_theme::theme::IconSet;
-use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
+use native_theme_egui::{
+    NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Seam {
@@ -303,16 +305,6 @@ pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
         notes: Vec::new(),
         element: None,
     }
-}
-
-/// `role`'s modifier from the installed atlas, `None` when none is installed (egui's own look).
-fn role_modifier(
-    ui: &egui::Ui,
-    role: Role,
-    variant: RoleVariant,
-) -> Option<egui::style::StyleModifier> {
-    let theme = ui.ctx().theme();
-    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
 }
 
 /// `role`'s modifier for an open menu (`MenuConfig::style`): the popup framed by

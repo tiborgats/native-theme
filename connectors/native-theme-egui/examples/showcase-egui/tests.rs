@@ -3591,7 +3591,7 @@ fn every_seam_is_recorded() {
         ".native_scope(",
         ".native_set_style(",
         ".native_frame(",
-        ".role_modifier(",
+        "role_modifier(",
         ".surface_frame(",
     ];
     let mut in_demo = 0;

@@ -43,7 +43,8 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     ///
     /// **Does not reach `Area`-based containers** (`Window`, `Popup`, `Tooltip`, `Modal`,
     /// menus, `ComboBox` popups) when wrapped around them: their content `Ui` is built from
-    /// the `Context`'s style (spec §1.5). Popups and menus take [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier);
+    /// the `Context`'s style (spec §1.5). Popups and menus take [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier)
+    /// or [`role_modifier`](crate::role_modifier);
     /// `Window` and `Modal` take [`NativeThemeUiExt::native_frame`] for their chrome and this
     /// scope, or [`NativeThemeUiExt::native_set_style`], as the first statement *inside* their
     /// closure for their body (spec §1.5, §3.3).
@@ -127,6 +128,27 @@ impl NativeThemeUiExt for egui::Ui {
             None => egui_preset(surface, self.style()),
         }
     }
+}
+
+/// `role`'s style in `variant` as an `egui::style::StyleModifier`, from the atlas installed in
+/// `ui`'s `Context` ([`ThemeAtlas::from_ctx`](crate::ThemeAtlas::from_ctx)), in the scheme
+/// `ui.ctx().theme()` reports: [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier)
+/// for a call site that holds a `Ui` and not the atlas. Feed it to the same four acceptors.
+///
+/// `None` when no atlas is installed: pass the acceptor nothing, and it keeps egui's own
+/// style. There is no modifier that does that — `MenuConfig::style` and `MenuBar::style`
+/// default to egui's `menu_style` (`egui/src/containers/menu.rs:83`, `:226`), which
+/// `StyleModifier::default()`, a modifier whose `apply` does nothing (`egui/src/style.rs:192-194`,
+/// `:224-228`), would replace — so this
+/// is a free function, not a [`NativeThemeUiExt`] method, none of which returns an `Option`.
+#[must_use]
+pub fn role_modifier(
+    ui: &egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+) -> Option<egui::style::StyleModifier> {
+    let theme = ui.ctx().theme();
+    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
 }
 
 use native_theme::theme::{ColorMode, IconSet, ResolvedTheme, Theme};

@@ -137,6 +137,48 @@ fn role_modifier_replaces_the_style_and_carries_the_applications_name_keys() {
     assert_eq!(plain.text_styles.len(), 5);
 }
 
+/// docs/todo.md:3604 (M7-28): the free `role_modifier` is the installed atlas's
+/// `ThemeAtlas::role_modifier` in the scheme the `Ui`'s `Context` reports, and `None` with no
+/// atlas installed and after `clear`, so that an acceptor keeps egui's own style (a menu's
+/// `menu_style`, `egui/src/containers/menu.rs:83`).
+#[test]
+fn the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one() {
+    let ctx = bare_context();
+    let free = |ctx: &egui::Context| {
+        let mut out = None;
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            out = Some(
+                crate::role_modifier(ui, Role::Menu, RoleVariant::Normal).map(|modifier| {
+                    let mut style = egui::Style::default();
+                    modifier.apply(&mut style);
+                    style
+                }),
+            );
+        });
+        out.expect("the pass ran")
+    };
+    assert_eq!(free(&ctx), None, "nothing installed");
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let mut styles = Vec::new();
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        ctx.set_theme(theme);
+        let got = free(&ctx);
+        let mut want = egui::Style::default();
+        atlas
+            .role_modifier(theme, Role::Menu, RoleVariant::Normal)
+            .apply(&mut want);
+        assert_eq!(got.as_ref(), Some(&want), "{theme:?}");
+        styles.push(want);
+    }
+    assert_ne!(
+        styles[0], styles[1],
+        "the two schemes differ, or the test proves nothing"
+    );
+    ThemeAtlas::clear(&ctx);
+    assert_eq!(free(&ctx), None, "after clear");
+}
+
 /// §4.5, §7.5: `carry_name_keys` hands the cell's `Arc` over unchanged when the style it
 /// merges from holds no `Name` key the cell lacks, and copies only otherwise.
 #[test]
@@ -356,7 +398,9 @@ fn a_second_install_of_the_installed_atlas_restores_a_reset_style() {
 }
 
 /// With no atlas, and again after `clear`, every seam is egui's own and nothing
-/// panics (§4.5). `role_modifier` needs an atlas to be called on, so it has no no-atlas path.
+/// panics (§4.5). `ThemeAtlas::role_modifier` needs an atlas to be called on; the free
+/// `role_modifier`'s `None` without one is
+/// `the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one`'s.
 #[test]
 fn without_an_atlas_every_seam_is_egui_s_own() {
     let ctx = bare_context();

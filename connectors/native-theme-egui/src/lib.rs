@@ -73,8 +73,8 @@
 //!
 //! [`ThemeAtlas::install`] publishes the base style into both `egui::Theme`s; a role's
 //! style reaches a widget through [`NativeThemeUiExt::native_scope`],
-//! [`NativeThemeUiExt::native_set_style`] or [`ThemeAtlas::role_modifier`], and a
-//! container's frame through [`NativeThemeUiExt::native_frame`] or
+//! [`NativeThemeUiExt::native_set_style`] or [`ThemeAtlas::role_modifier`] (from a `Ui`,
+//! [`role_modifier`]), and a container's frame through [`NativeThemeUiExt::native_frame`] or
 //! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries, and some the
 //! `Style` also holds, are the free accessors of this crate root, for the application's own
 //! use; fonts are [`fonts`]' and icons [`icons`]'.
@@ -172,8 +172,8 @@ pub use accessors::{
 };
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
-pub use ext::NativeThemeUiExt;
 pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
+pub use ext::{NativeThemeUiExt, role_modifier};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(feature = "watch")]

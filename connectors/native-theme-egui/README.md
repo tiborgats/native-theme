@@ -22,8 +22,9 @@ egui's own types, and hands them to egui through egui's own seams:
 2. **Role styles.** One `Arc<egui::Style>` per `Role` and `RoleVariant`, reached
    where the application asks for it: `ui.native_scope(role, variant, ..)` or
    `ui.native_set_style(role, variant)` from the `NativeThemeUiExt` trait, and
-   `ThemeAtlas::role_modifier` for a popup or a menu. A button in a
-   `Role::Button` scope takes the button's own padding, radius and fills.
+   `ThemeAtlas::role_modifier`, or `role_modifier(ui, role, variant)` from a
+   `Ui`, for a popup or a menu. A button in a `Role::Button` scope takes the
+   button's own padding, radius and fills.
 3. **Surface frames.** One `egui::Frame` per `Surface` — window, title bar,
    dialog, popover, tooltip, card, side and central panels — from
    `ui.native_frame(surface)` or `ThemeAtlas::surface_frame`.
@@ -213,11 +214,13 @@ impl eframe::App for MyApp {
 - **Containers built on `egui::Area`** — `Window`, `Modal`, `Popup`, tooltips,
   menus and `ComboBox` popups — build their content from the `Context`'s style,
   so a scope wrapped *around* one does not reach it. Give a popup or a menu
-  `ThemeAtlas::role_modifier`; give a `Window` or a `Modal` its frame from
+  `ThemeAtlas::role_modifier` (`role_modifier(ui, ..)` with a `Ui` at hand);
+  give a `Window` or a `Modal` its frame from
   `native_frame`, and make `ui.native_set_style(role, variant)` the first
   statement *inside* its closure for the body.
 - **Without an atlas** every call degrades to egui's own behaviour; none
-  panics.
+  panics. `role_modifier(ui, ..)` returns `None` then: pass the popup or the
+  menu no style, and it keeps egui's own.
 
 ## Per-widget geometry
 
