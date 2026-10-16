@@ -432,8 +432,8 @@ pub fn custom_icon_to_image_source(
 }
 
 /// Drop every icon this crate cached in `ctx`, leaving unrelated application images alone;
-/// [`crate::ThemeAtlas::install`] calls it, and [`crate::ThemeAtlas::clear`]. Two stores,
-/// both required: the `bytes://` URIs
+/// [`crate::ThemeAtlas::install`] of an atlas other than the installed one calls it, and
+/// [`crate::ThemeAtlas::clear`]. Two stores, both required: the `bytes://` URIs
 /// are released with `Context::forget_image` (`egui/src/context.rs:3764`), which reaches only
 /// the loader caches (`:3771-3780`), and the stored `TextureHandle`s are removed from
 /// `ctx.data_mut()`, which is what frees their textures — `forget_image` never reaches a

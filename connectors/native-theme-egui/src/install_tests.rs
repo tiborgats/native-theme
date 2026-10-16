@@ -248,11 +248,90 @@ fn install_requests_a_repaint() {
         settled,
         "a pass that shows nothing must stop asking for repaints"
     );
-    atlas.install(&ctx);
+    preset_atlas("adwaita").install(&ctx);
     assert!(
         ctx.has_requested_repaint(),
         "install ends with a repaint request (§10.3 step 6)"
     );
+}
+
+/// M7-01: an `install` of the atlas already installed requests no repaint, frees no texture
+/// and leaves the fonts alone, so an application that installs in every pass still lets egui
+/// idle. Repaints are counted by egui's callback (`egui/src/context.rs:1961`), which fires
+/// only when a request lowers the pending delay (`:157-168`), so the passes between the two
+/// installs serve the first one's request (`:110-123`); frees are the texture delta's `free`
+/// list (`epaint/src/textures.rs:72-80`, taken at `:102`).
+#[test]
+fn a_second_install_of_the_installed_atlas_repaints_and_frees_nothing() {
+    use crate::icons::{IconKey, texture_id, to_image_source, uri};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let ctx = bare_context();
+    let repaints = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&repaints);
+    ctx.set_request_repaint_callback(move |_| {
+        counter.fetch_add(1, Ordering::Relaxed);
+    });
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
+    let key = IconKey::name("raster", IconSet::Freedesktop);
+    let handle_id = texture_id(&uri(&icon));
+    let atlas = preset_atlas("kde-breeze");
+    // The delta's frees, and the delta cleared unapplied as `pass` does.
+    let take_frees = |ctx: &egui::Context| {
+        let mut delta = ctx.tex_manager().write().take_delta();
+        let frees = delta.free.len();
+        delta.clear();
+        frees
+    };
+    let (mut requested, mut freed) = (0, 0);
+    for n in 0..2 {
+        let _ = to_image_source(&ctx, &key, &icon).unwrap();
+        let _ = take_frees(&ctx);
+        let before = repaints.load(Ordering::Relaxed);
+        atlas.install(&ctx);
+        requested += repaints.load(Ordering::Relaxed) - before;
+        freed += take_frees(&ctx);
+        for _ in 0..10 {
+            let _ = pass(&ctx, egui::RawInput::default(), |_ui| {});
+            if !ctx.has_requested_repaint() {
+                break;
+            }
+        }
+        assert!(
+            !ctx.has_requested_repaint(),
+            "install {n}: the passes after it must stop asking for repaints"
+        );
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            assert!(Arc::ptr_eq(&ctx.style_of(theme), &atlas.scheme(theme).base));
+        }
+    }
+    assert_eq!(
+        (requested, freed),
+        (1, 1),
+        "(repaint requests, texture frees): only the first install makes either"
+    );
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+}
+
+/// M7-01: the same-atlas install still restores both base styles (§10.3 step 2), so a style
+/// the application reset between two installs is the atlas's again, its `Name` keys kept.
+#[test]
+fn a_second_install_of_the_installed_atlas_restores_a_reset_style() {
+    let ctx = bare_context();
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let key = egui::TextStyle::Name("app-caption".into());
+    let font = egui::FontId::proportional(11.0);
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        let mut style = theme.default_style(); // egui/src/memory/theme.rs:24-29
+        style.text_styles.insert(key.clone(), font.clone());
+        ctx.set_style_of(theme, style);
+    }
+    atlas.install(&ctx);
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        let style = ctx.style_of(theme);
+        assert_eq!(style.visuals, atlas.scheme(theme).base.visuals, "{theme:?}");
+        assert_eq!(style.text_styles.get(&key), Some(&font), "{theme:?}");
+    }
 }
 
 /// With no atlas, and again after `clear`, every seam is egui's own and nothing
@@ -2322,7 +2401,9 @@ fn install_leaves_no_stored_icon_texture_handle() {
     let _ = to_image_source(&ctx, &key, &icon).unwrap();
     let handle_id = texture_id(&uri(&icon));
     assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
-    atlas.install(&ctx);
+    let (other, _) =
+        crate::from_preset("kde-breeze", false, &AccessibilityPreferences::default()).unwrap();
+    other.install(&ctx);
     assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_none()));
     assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
     assert_eq!(ctx.tex_manager().read().num_allocated(), before);

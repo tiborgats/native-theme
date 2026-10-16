@@ -1268,6 +1268,25 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// A rebuild that fails keeps the installed atlas and its fonts as they were: installing it
+/// again does not register the semibold faces a second time beside the first ones.
+#[test]
+fn a_failed_rebuild_keeps_the_installed_fonts() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let faces = |h: &Harness<'_, App>| h.ctx.fonts(|f| f.definitions().font_data.len());
+    let before = faces(&harness);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.theme = ThemeChoice::Preset("no-such-preset".to_string());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().theme_error.is_some(),
+        "the rebuild must fail"
+    );
+    assert_eq!(faces(&harness), before);
+}
+
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
 /// installs once, when it ends, not on every pass it moves the value.
 #[test]

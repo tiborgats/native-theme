@@ -503,6 +503,14 @@ impl ThemeAtlas {
     /// faces' widest glyph — a previous face wider than the new widest is not bounded by the
     /// cap for the rest of that pass.
     ///
+    /// **Installing the installed atlas again is cheap.** For the atlas [`ThemeAtlas::from_ctx`]
+    /// returns, or a clone of it, `install` restores both base styles — so a style the
+    /// application reset is the atlas's again, its text sizes lowered to the cap — and does
+    /// nothing else: it sets no fonts, forgets no icon and requests no repaint, so an
+    /// application that installs in every pass still lets egui idle. Fonts the application set
+    /// after the install stay as it set them; [`ThemeAtlas::clear`] then `install` runs the
+    /// whole sequence.
+    ///
     /// **The colour-scheme choice stays egui's.** `install` never touches
     /// `Options::theme_preference`, which is serde-persisted (`egui/src/memory/mod.rs:206`
     /// has no `serde(skip)`), so the user's in-app Light/Dark choice survives a restart.
@@ -519,6 +527,13 @@ impl ThemeAtlas {
     /// too and `install` leaves them alone: set them with
     /// `ctx.options_mut(|o| o.fallback_theme = ..)` (`egui/src/context.rs:1135`).
     pub fn install(&self, ctx: &egui::Context) {
+        // The atlas already published: step 2 alone, so a style the application reset is the
+        // atlas's again; the fonts, the plugin and the published atlas are already this atlas's,
+        // and the icons it coloured are still its colours (M7-01).
+        if ThemeAtlas::from_ctx(ctx).is_some_and(|installed| Arc::ptr_eq(&installed.0, &self.0)) {
+            self.install_base_styles(ctx);
+            return;
+        }
         // §10.3 step 1: the plan's fonts, whenever the atlas was built with a plan — even one in
         // which no face was found — so a family the plan has no face for is egui's own again, not
         // the previous install's; an atlas built with no plan leaves the `Context`'s fonts alone.
@@ -526,17 +541,8 @@ impl ThemeAtlas {
         if let Some(defs) = self.fonts() {
             ctx.set_fonts(defs.clone());
         }
-        // 2. Both base styles, each first given the `Name` keys of the style it replaces:
-        //    `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); §7.5, §10.3.
-        for theme in [egui::Theme::Dark, egui::Theme::Light] {
-            let previous = ctx.style_of(theme);
-            ctx.set_style_of(theme, carry_name_keys(&previous, &self.scheme(theme).base));
-        }
-        //    Then lowered to the text-size cap at once once a pass has run, not at the plugin's
-        //    next `input_hook`: a `Window` or popup opened later in this pass builds its `Ui`
-        //    from these styles (`egui/src/ui.rs:136`). M7-04; `plugin::cap_at_install` says why
-        //    not before the first pass.
-        crate::plugin::cap_at_install(ctx, self);
+        // 2. Both base styles.
+        self.install_base_styles(ctx);
         // 3. The atlas published into `Context` data (`egui/src/context.rs:1033`).
         let published = self.clone();
         ctx.data_mut(|data| {
@@ -569,11 +575,26 @@ impl ThemeAtlas {
     /// `egui::Theme` `t`, and `ctx.set_fonts(egui::FontDefinitions::default())` if the atlas
     /// installed a font plan, to get stock egui back. The icons this crate cached go with the
     /// atlas ([`icons::forget_icons`](crate::icons::forget_icons)): their URIs are forgotten
-    /// and the textures of raster icons freed.
+    /// and the textures of raster icons freed. A later [`ThemeAtlas::install`] of any atlas,
+    /// the one removed too, runs its whole sequence.
     pub fn clear(ctx: &egui::Context) {
         let key = atlas_key();
         ctx.data_mut(|data| data.remove::<Self>(key));
         crate::icons::forget_icons(ctx);
+    }
+
+    /// §10.3 step 2: both base styles, each first given the `Name` keys of the style it
+    /// replaces — `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); §7.5 —
+    /// and then lowered to the text-size cap at once once a pass has run, not at the plugin's
+    /// next `input_hook`: a `Window` or popup opened later in this pass builds its `Ui` from
+    /// these styles (`egui/src/ui.rs:136`). M7-04; `plugin::cap_at_install` says why not
+    /// before the first pass.
+    fn install_base_styles(&self, ctx: &egui::Context) {
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            let previous = ctx.style_of(theme);
+            ctx.set_style_of(theme, carry_name_keys(&previous, &self.scheme(theme).base));
+        }
+        crate::plugin::cap_at_install(ctx, self);
     }
 
     /// One scheme's compiled styles: the store every seam and every test module reads cells
