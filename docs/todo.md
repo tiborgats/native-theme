@@ -434,7 +434,7 @@ the file was pruned on 2026-10-11, not reordered.
 
 ### Icons: one monochrome-SVG colouriser, in native-theme
 
-- [ ] [v0.7.0] The iced and gpui connectors each recolour a monochrome SVG icon with a
+- [x] [v0.7.0] The iced and gpui connectors each recolour a monochrome SVG icon with a
       private copy of the same idea — iced's `colorize_monochrome_svg`
       (`connectors/native-theme-iced/src/icons.rs:277`) and gpui's
       `colorize_svg` (`connectors/native-theme-gpui/src/icons.rs:1299`) — and
@@ -451,10 +451,15 @@ the file was pruned on 2026-10-11, not reordered.
       iced: switched in M5 T8 (d809a666); gpui in M6 T4: each of its eleven
       `colorize_svg` cases is a case of native-theme's `colorize_tests` of
       the same name and input, so none moved.
+      egui (M7 T4, 2026-10-16, closed by inspection): `to_image_source`
+      colours a bundled set's SVG through core's `colorize_monochrome_svg`,
+      as it has since the connector was written, and holds no copy; its
+      `custom_icon_to_image_source` now loads through
+      `load_custom_icon_in`, which colours with the same function.
 
 ### Icons: one `currentColor` fill for a freedesktop indicator, in native-theme
 
-- [ ] [v0.7.0] For M6/M7 (ruling M5-04, 2026-10-14): core's
+- [x] [v0.7.0] For M6/M7 (ruling M5-04, 2026-10-14): core's
       `native_theme::icons::fill_current_color`
       (`native-theme/src/icons.rs:891`; M5 T7, 89ec7f61) replaces a symbolic
       freedesktop icon's `currentColor` with a colour's `#rrggbb` where the
@@ -472,6 +477,20 @@ the file was pruned on 2026-10-11, not reordered.
       `connectors/native-theme-iced/src/icons.rs:313-314`
       (`connectors/native-theme-egui/src/icons.rs:234`), a copy M5 T8
       removed.
+      gpui done (M6 T8, e7e3f809): the `Spinner` loads through
+      `animated_frames_to_image_sources_for`, which fills a freedesktop
+      frame through `fill_current_color`; `sets_color` and `paint_svg` are
+      gone from `widgets/spinner.rs`.
+      egui done (M7 T4, 2026-10-16): `final_svg_bytes`'s freedesktop arm
+      calls `fill_current_color` with `load_color`'s colour, its doc no
+      longer cites iced's removed step, and `sets_color` is gone; each of
+      its test's cases is a case of native-theme's
+      `sets_color_reads_only_the_color_property` or
+      `fill_current_color_borrows_what_it_leaves_alone` (the Breeze
+      `.ColorScheme-Text { color:#232629; }` shape), so none moved.
+      `custom_icon_to_image_source` loads through `load_custom_icon_in`,
+      which fills a freedesktop icon the same way, and colours nothing
+      again.
 
 ### Icons: recolour a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader does
 

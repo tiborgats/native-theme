@@ -111,6 +111,8 @@ mod contract;
 pub mod convert;
 mod ext;
 pub mod fonts;
+#[cfg(test)]
+mod icon_fixture;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;
