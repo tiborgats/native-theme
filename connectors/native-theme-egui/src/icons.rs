@@ -258,7 +258,9 @@ struct LoadedIcon {
 }
 
 /// The named icons [`custom_icon_to_image_source`] loaded, by the provider's name; stored
-/// under `loaded_key()`, dropped by `forget_icons`.
+/// under `loaded_key()`, dropped by `forget_icons`. It grows by one entry per distinct name,
+/// set, icon theme, size and colour until then, as the URI registry does: a colour that
+/// changes every frame adds an entry every frame.
 #[derive(Clone, Default)]
 pub(crate) struct LoadedIcons {
     by_name: HashMap<String, Vec<LoadedIcon>>,
@@ -490,10 +492,14 @@ pub fn to_image(
 /// of its file from disk (native-theme's `freedesktop.rs` performance note), for an SF Symbol
 /// or a Segoe glyph a raster the OS draws — and kept in `ctx`'s data until [`forget_icons`],
 /// which the next install of another atlas and [`crate::ThemeAtlas::clear`] call; an icon
-/// file changed on disk is seen after that. A later call copies, hashes and registers the kept
-/// bytes; another colour — another tint, or the other scheme's text colour — loads the icon
-/// once more. A name the set's loader does not find is looked up again on every call, and
-/// the provider's own SVG is coloured again on every call.
+/// file changed on disk is seen after that. The icon theme is the key's, else the system's as
+/// native-theme's detection cache names it (`native_theme::detect::system_icon_theme`), so
+/// after `native_theme::detect::invalidate_caches` a changed system icon theme is loaded
+/// from. A later call copies, hashes and registers the kept bytes; another colour — another
+/// tint, or the other scheme's text colour — loads the icon once more, and each distinct
+/// colour stays kept until [`forget_icons`], as each URI does: a colour that changes every
+/// frame keeps one more icon every frame. A name the set's loader does not find is looked up
+/// again on every call, and the provider's own SVG is coloured again on every call.
 #[must_use]
 pub fn custom_icon_to_image_source(
     ctx: &egui::Context,
@@ -507,16 +513,18 @@ pub fn custom_icon_to_image_source(
     // At 0 an SF Symbol or a Segoe glyph loads nothing (`SfSymbolsLoader::size`,
     // `SegoeFluentLoader::size`).
     let size = key.size.map(|size| size.max(1));
-    let load = |provider: &dyn IconProvider| {
-        native_theme::icons::load_custom_icon_in(
-            provider,
-            key.set,
-            key.icon_theme.as_deref(),
-            color,
-            size,
-        )
+    // The icon theme a freedesktop load searches: the key's, else the system's from
+    // native-theme's detection cache (`detect::system_icon_theme`, what `FreedesktopLoader`
+    // reads without one), so a kept icon is keyed by the theme it came from and a system
+    // theme detected anew after `detect::invalidate_caches` is loaded from, not the kept one.
+    let resolved_theme = match (&key.icon_theme, key.set) {
+        (None, IconSet::Freedesktop) => native_theme::detect::system_icon_theme().ok(),
+        _ => None,
     };
-    let icon_theme = key.icon_theme.as_deref();
+    let icon_theme = key.icon_theme.as_deref().or(resolved_theme.as_deref());
+    let load = |provider: &dyn IconProvider| {
+        native_theme::icons::load_custom_icon_in(provider, key.set, icon_theme, color, size)
+    };
     let named = provider.icon_name(key.set).and_then(|name| {
         let kept = ctx.data_mut(|d| {
             d.get_temp_mut_or_default::<LoadedIcons>(loaded_key())
@@ -526,7 +534,7 @@ pub fn custom_icon_to_image_source(
             let icon = Arc::new(load(&NameOnly(name))?);
             let loaded = LoadedIcon {
                 set: key.set,
-                icon_theme: key.icon_theme.clone(),
+                icon_theme: icon_theme.map(str::to_owned),
                 size,
                 color,
                 icon: Arc::clone(&icon),
@@ -1218,6 +1226,68 @@ mod tests {
         }
         crate::icon_fixture::run(NAME, "kept", |icons| {
             write_scalable_theme(icons, "kept", &[("folder", FIRST)])
+        })?;
+        Ok(())
+    }
+
+    /// M7-13: a key without an icon theme keeps the icon of the system's icon theme it was
+    /// loaded from: once the system names another and native-theme's detection caches are
+    /// invalidated, the next call loads that theme's icon. The themes are fixtures in a child
+    /// process ([`crate::icon_fixture`]), the system's `before` and then `after`.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_kept_icon_follows_a_change_of_the_system_icon_theme()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::a_kept_icon_follows_a_change_of_the_system_icon_theme";
+        const BEFORE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#3daee9" d="M2 2h12v12H2z"/></svg>"##;
+        const AFTER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
+        if let Some(kdeglobals) = crate::icon_fixture::kdeglobals() {
+            let ctx = egui::Context::default();
+            let loaded = || {
+                let key = IconKey::name("folder", IconSet::Freedesktop);
+                custom_icon_to_image_source(&ctx, &named("folder"), &key)
+                    .map(|source| String::from_utf8_lossy(&bytes_of(&source).1).into_owned())
+                    .ok_or("no folder")
+            };
+            assert_eq!(loaded()?, BEFORE);
+            std::fs::write(kdeglobals, "[Icons]\nTheme=after\n")?;
+            native_theme::detect::invalidate_caches();
+            assert_eq!(loaded()?, AFTER, "the system's new icon theme");
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "before", |icons| {
+            write_scalable_theme(icons, "before", &[("folder", BEFORE)])?;
+            write_scalable_theme(icons, "after", &[("folder", AFTER)])
+        })?;
+        Ok(())
+    }
+
+    /// M7-13: two providers whose names differ, under one key, each get their own icon: the
+    /// kept icons are the names', not the key's. The theme is a fixture in a child process
+    /// ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn two_provider_names_under_one_key_each_get_their_own_icon()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::two_provider_names_under_one_key_each_get_their_own_icon";
+        const FIRST: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#3daee9" d="M2 2h12v12H2z"/></svg>"##;
+        const SECOND: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
+        if crate::icon_fixture::in_child() {
+            let ctx = egui::Context::default();
+            let key = IconKey::name("brand-mark", IconSet::Freedesktop);
+            let loaded = |name: &'static str| {
+                custom_icon_to_image_source(&ctx, &named(name), &key)
+                    .map(|source| String::from_utf8_lossy(&bytes_of(&source).1).into_owned())
+                    .ok_or("no icon")
+            };
+            for _ in 0..2 {
+                assert_eq!(loaded("first")?, FIRST);
+                assert_eq!(loaded("second")?, SECOND);
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, "names", |icons| {
+            write_scalable_theme(icons, "names", &[("first", FIRST), ("second", SECOND)])
         })?;
         Ok(())
     }

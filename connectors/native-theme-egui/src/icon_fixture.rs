@@ -30,6 +30,11 @@ pub(crate) fn icons_dir() -> Option<PathBuf> {
     std::env::var_os(ROOT).map(|root| PathBuf::from(root).join("share/icons"))
 }
 
+/// The `kdeglobals` that names the system's icon theme, in the child process [`run`] starts.
+pub(crate) fn kdeglobals() -> Option<PathBuf> {
+    std::env::var_os(ROOT).map(|root| PathBuf::from(root).join("home/.config/kdeglobals"))
+}
+
 /// Runs the test `name` (its path from the crate root) again in a child
 /// process whose system icon theme is `theme`, an icon theme `write` puts in
 /// the icons dir it is given, and asserts that the test passed there.
