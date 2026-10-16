@@ -269,6 +269,7 @@ impl Showcase {
                             )),
                     ),
                 "a line of plain text, which takes group_box_foreground from the content box, over two Buttons, which report themselves",
+                container_margin,
             ))
             .child(demo::heading(
                 ui,
@@ -374,6 +375,7 @@ impl Showcase {
                         title,
                         div().text_sm().child(content),
                         "a line of plain text, which takes group_box_foreground from the content box",
+                        container_margin,
                     )
                     .w(px(180.0))
                 },

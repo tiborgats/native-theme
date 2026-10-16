@@ -6077,7 +6077,10 @@ impl GroupBoxKind {
 
 /// A `GroupBox` of `kind` titled `title` around `content`, which `about`
 /// describes in its info; its content refined by
-/// `geometry::group_box_content`.
+/// `geometry::group_box_content`, and padded with `container_margin`, the
+/// installed layout's `geometry::container_margin`, on a side
+/// `card.border.padding` leaves unstated ([`pad_unstated_sides`]).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn group_box(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6086,12 +6089,18 @@ pub(crate) fn group_box(
     title: &'static str,
     content: impl IntoElement,
     about: &'static str,
+    container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let native = cx.native();
-    let mut box_info =
-        info::layout::group_box(cx.theme(), kind, native.as_ref().map(|n| n.resolved), title)
-            .instance("content", about);
+    let mut box_info = info::layout::group_box(
+        cx.theme(),
+        kind,
+        native.as_ref().map(|n| n.resolved),
+        container_margin,
+        title,
+    )
+    .instance("content", about);
     // `GroupBox::content_style` takes a refinement rather than being one.
     let content_style = native_info(
         StyleRefinement::default(),
@@ -6100,6 +6109,13 @@ pub(crate) fn group_box(
         "group_box_content",
         &mut box_info,
     );
+    let content_style = match (&native, container_margin) {
+        (Some(n), Some(margin)) => {
+            box_info = box_info.geometry("container_margin");
+            pad_unstated_sides(content_style, &n.resolved.card.border.padding, margin)
+        }
+        _ => content_style,
+    };
     GroupBox::new()
         .with_variant(kind.variant())
         .content_style(content_style)
@@ -6107,6 +6123,39 @@ pub(crate) fn group_box(
         .child(content)
         .info(ui, id, box_info)
         .debug_selector(move || id.into())
+}
+
+/// `style` padded with `margin` on each side `padding` leaves unstated. A
+/// card or a group box is a container, and `layout.container_margin` is the
+/// padding inside containers (platform-facts §2.20): it pads a side
+/// `card.border.padding` leaves unstated, in place of a Fill or Outline
+/// GroupBox's own `p_4` and of a Normal one's none (group_box.rs,
+/// `GroupBox`). A stated side is `geometry::group_box_content`'s.
+fn pad_unstated_sides(
+    style: StyleRefinement,
+    padding: &ResolvedPadding,
+    margin: Pixels,
+) -> StyleRefinement {
+    let style = if padding.top.is_none() {
+        style.pt(margin)
+    } else {
+        style
+    };
+    let style = if padding.right.is_none() {
+        style.pr(margin)
+    } else {
+        style
+    };
+    let style = if padding.bottom.is_none() {
+        style.pb(margin)
+    } else {
+        style
+    };
+    if padding.left.is_none() {
+        style.pl(margin)
+    } else {
+        style
+    }
 }
 
 /// A card: a Fill `GroupBox` with no title, `width` wide, around the text
@@ -6136,35 +6185,10 @@ pub(crate) fn card(
         "group_box_content",
         &mut card_info,
     );
-    // A card is a container, and `layout.container_margin` is the padding
-    // inside containers (platform-facts §2.20): it pads a side
-    // `card.border.padding` leaves unstated, in place of the Fill
-    // GroupBox's own `p_4` (group_box.rs, `GroupBox`).
     let content_style = match (&native, container_margin) {
         (Some(n), Some(margin)) => {
-            let p = &n.resolved.card.border.padding;
             card_info = card_info.geometry("container_margin");
-            let style = content_style;
-            let style = if p.top.is_none() {
-                style.pt(margin)
-            } else {
-                style
-            };
-            let style = if p.right.is_none() {
-                style.pr(margin)
-            } else {
-                style
-            };
-            let style = if p.bottom.is_none() {
-                style.pb(margin)
-            } else {
-                style
-            };
-            if p.left.is_none() {
-                style.pl(margin)
-            } else {
-                style
-            }
+            pad_unstated_sides(content_style, &n.resolved.card.border.padding, margin)
         }
         _ => content_style,
     };

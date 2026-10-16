@@ -126,14 +126,40 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
     }
 }
 
+/// Each side of a GroupBox's content padding, named by where it comes from:
+/// the side `card.border.padding` states (`geometry::group_box_content`),
+/// else `margin`, the installed layout's `container_margin`, which the
+/// showcase pads an unstated side with where a native theme is installed
+/// (`demo::pad_unstated_sides`), else `own`, the variant's own.
+fn content_padding(native: Option<&ResolvedTheme>, margin: Option<Pixels>, own: &str) -> String {
+    let side = |name: &str, stated: Option<f32>| match (native, stated, margin) {
+        (Some(_), Some(v), _) => format!("{name} {}px, card.border's", px_text(v)),
+        (Some(_), None, Some(m)) => {
+            format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
+        }
+        _ => format!("{name} {own}"),
+    };
+    let p = native.map(|r| r.card.border.padding).unwrap_or_default();
+    format!(
+        "{}; {}; {}; {}. A side card.border.padding leaves unstated takes layout.container_margin, the padding inside containers (platform-facts §2.20), where a native theme is installed and its layout states one, else the variant's own (group_box.rs, GroupBox)",
+        side("top", p.top),
+        side("right", p.right),
+        side("bottom", p.bottom),
+        side("left", p.left),
+    )
+}
+
 /// A `GroupBox` of `kind` titled `title`. `native` is the theme
 /// `geometry::group_box_content` refined its content from, where a native
 /// theme is installed, whose line is recorded where `demo::group_box`
-/// applies the builder. The caller adds what the content is.
+/// applies the builder, and `margin` the installed layout's
+/// `container_margin`, which pads the sides the theme leaves unstated. The
+/// caller adds what the content is.
 pub fn group_box(
     t: &Theme,
     kind: GroupBoxKind,
     native: Option<&ResolvedTheme>,
+    margin: Option<Pixels>,
     title: &str,
 ) -> WidgetInfo {
     let styled = native.is_some();
@@ -200,6 +226,16 @@ pub fn group_box(
             "none: the Normal variant paints no background (group_box.rs, GroupBox)",
         ),
         (GroupBoxKind::Fill | GroupBoxKind::Outline, false) => info,
+    };
+    let own = match kind {
+        GroupBoxKind::Normal => "none, the Normal variant's own",
+        GroupBoxKind::Fill => "p_4, the Fill variant's own",
+        GroupBoxKind::Outline => "p_4, the Outline variant's own",
+    };
+    let info = if styled {
+        info.config("padding", content_padding(native, margin, own))
+    } else {
+        info.not_themeable("padding", content_padding(None, None, own))
     };
     info.not_themeable(
         "gaps",
@@ -413,9 +449,10 @@ pub fn card(
             "gpui-component/group_box.rs:145",
         )),
     };
-    let info = match (native, container_margin) {
-        (Some(_), Some(margin)) => info.config("padding", format!("layout.container_margin, {}px, the padding inside containers (platform-facts §2.20), on a side card.border.padding leaves unstated, in place of the Fill variant's p_4 (group_box.rs, GroupBox)", px_text(margin.as_f32()))),
-        _ => info.not_themeable("padding", "p_4, the Fill variant's own, on a side card.border.padding leaves unstated (group_box.rs, GroupBox)"),
+    let own = "p_4, the Fill variant's own";
+    let info = match native {
+        Some(_) => info.config("padding", content_padding(native, container_margin, own)),
+        None => info.not_themeable("padding", content_padding(None, None, own)),
     };
     info.instance("content", "a body-text Label, which reports itself")
 }
