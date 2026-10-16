@@ -9700,7 +9700,7 @@ Step 8 then: the full `check_release.sh` (compatibility stamps stale until the r
 
 ## M7 — egui connector and egui widgets
 
-**Status:** Steps 1–5 done 2026-10-15 (stop point A at `309df067`; review, verify, triage, one maintainer round). Run in session native-theme-f1 in parallel with M6's T13–T16 (maintainer 2026-10-15: "M7 review now"); Step 6 done 2026-10-15 (T1–T14 below); the fix phase follows M6's close.
+**Status:** done 2026-10-16. Steps 1–5 2026-10-15 (stop point A at `309df067`, run in parallel with M6's T13–T16 at the maintainer's request); Step 6 2026-10-15 (`467d54e6`); Steps 7–8 2026-10-16 (fix phase `c5ff9271..0c831ad4`, stop point B; below).
 
 ### Step 1 — inventory
 
@@ -10159,6 +10159,24 @@ Rulings (Step 6):
 Dependencies: T1 before T5, T6 and T8 (the plugin and `install` are edited after the cap lands in them); T2 before T11 (`ExpanderResponse` before the expander's new builders) and T12 (the `links` rename before the showcase's `demo.rs` edits); T3 before T13 (the README's Quick start, Features and Runtime blocks are edited once, by T3; T13 adds the Fonts and clear-colour recipes after); T4 before T8's M7-13 (the cache sits on the switched loader) and T12 (the showcase's icon helpers use the new path); T6 before T8 (the same-atlas install no longer calls `forget_icons`, which the cache's eviction relies on); T7 before T8 and T9 (one timings file, its `from_preset` rows settled before per-frame rows are added); T10 before T11 (the widgets' `scope.rs` mapping settled before the segmented control's second edit); T13 last (the § sweep runs over the final code). T14 is independent of everything but T1 (it edits `base.rs`, which T1 does not).
 
 Step 8 then: the full `check_release.sh` (compatibility stamps stale until the release asset run, as in M3–M6), both cross-target clippy commands, `cargo semver-checks` for native-theme (two api-adds), native-theme-egui (three breaks, the adds), native-theme-egui-widgets (`links`, `ExpanderResponse`), native-theme-gpui and native-theme-iced (the memo move and the showcase twin; expected clean), the timing re-run on a quieter host than Step 1's (M7-12's gate; no path slower than its before runs beyond the spread), ledger statuses, docs/todo.md (the deferrals above; the hover-layer and M3-15 entries closed for egui; `SystemTheme::icon`'s theme and size; the epaint upstream ask; the README version check's M8 shape), the project memory, `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
+
+### Steps 7–8 — fix phase closed (2026-10-16)
+
+- Tasks T1–T14, one `implement` agent (Opus 5.5) per task, with a fresh reviewer per task: Opus, or Sonnet for the mechanical ones. Fix rounds followed 12 of the 14 reviews. `check_release.sh --commit` ran once per task (the maintainer's rule of 2026-10-15). The commits and rulings are in the SDD ledger (`.superpowers/sdd/todo_code-review-plan/progress.md`, "## M7 fix phase"), and each entry's Status names its commits.
+- Rulings made during execution, beyond the fix plan:
+  - M7-04's cap: a variable or CFF face takes its own glyph boxes at the drawn weight, in a checksum-keyed process cache; at most 2.6 ms once per process for the default plans.
+  - `install` lowers sizes only with a real pass's inputs, and a per-pass viewport stack keeps each viewport's cap.
+  - The custom-icon cache is keyed by everything core's named load depends on, including the resolved system icon theme (M7-13).
+  - The checkbox's `SelectedDisabled` cell is the Selected cell with the disabled fill and the disabled text colour, and a translucent slider knob fades over the backdrop (M7-16, M7-17).
+  - The segmented control re-lays out, discarding a pass, whenever its rows change, bounded by egui's `max_passes` (M7-19).
+  - The showcase panel toggle's alt text is descriptive.
+- Final whole-phase review (Fable 5.1, `c5ff9271..c25a1c8b`): Ready, nothing Critical or Important. Its two Minors were fixed in `0c831ad4`.
+- Full `./scripts/check_release.sh` at `f9d00612`: 115 checks · 106 ✅ · 7 ⚠️ · 2 ❌, 33 min 52 s.
+  - The warnings are the existing tag v0.6.1 and soft semver ×6. The semver items are approved breaks only: for egui, M5's accessor renames and `to_color32_with_opacity`; for egui-widgets, the `wrap` → `links` rename and `ExpanderResponse` becoming `#[non_exhaustive]`; for gpui, iced, core and build, the earlier milestones' approved breaks.
+  - The two ❌ are expected: the visual assets and the compatibility stamps, which the release asset run refreshes.
+  - `cargo audit` found no advisories.
+- Timings (release, three runs, load about 25 from other projects' builds): warm egui `from_preset` 0.43–11.5 ms, median 2.7 ms, against the Step 1 baseline of 135–185 ms (at load 15–21); T7 measured 31–33 → 0.4–0.6 ms at load 3–6. No path is slower.
+- Carried forward: docs/todo.md, "M7 close (2026-10-16): items carried to M8, M9a and the presets".
 
 ## M8 — Cross-cutting
 
