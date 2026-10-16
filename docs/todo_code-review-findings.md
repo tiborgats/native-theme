@@ -9255,7 +9255,7 @@ Step 8 then: full `check_release.sh`, cross-target clippy, `cargo semver-checks`
 
 ## M6 — gpui connector
 
-**Status:** Steps 1–5 done 2026-10-15 (stop point A at `1d3f3c08`; review, verify, triage, one maintainer round); Step 6 done 2026-10-15 (T1–T16b below); Step 7 next. Session native-theme-f1 (Opus 5.5); the other session (native-theme-b5) holds off committing until M6 closes.
+**Status:** done 2026-10-16. Steps 1–5 2026-10-15 (stop point A at `1d3f3c08`; review, verify, triage, one maintainer round); Step 6 2026-10-15 (`1e60e1c9`); Steps 7–8 2026-10-15/16 (fix phase `1e60e1c9..3fa84e65`, stop point B; below). Nothing pushed. Session native-theme-f1 (Opus 5.5); the other session (native-theme-b5) holds off committing until M6 closes.
 
 ### Step 1 — inventory
 
@@ -9677,6 +9677,26 @@ Rulings (Step 6):
 Dependencies: T1 before T8 (the spinner's `with_spin_animation` call), T12 and T15 (the README recipes); T2 before T15 (`native(cx)`, `Resolved::mode` in the docs) and T3 (the Quick start block is edited once, by T3, after T2's doc pointers); T3 before T15; T4 before T7 (icons.rs read after the loader moved), T8 (`to_image_source`'s SVG path) and T13's M6-16 (the raster functions); T5 before T14 (`apply_inner`); T6 before T13 (`to_theme`'s clamp leaves before its refactor); T9 before T11 and T10 (`over()`'s semantics settled before the fade tests are written); T16 last (the coverage probe runs over the final colour mapping, after T9). T7 and T12 are independent of everything but T4 and T1 respectively.
 
 Step 8 then: the full `check_release.sh` (compatibility stamps stale until the release asset run, as in M3–M5), both cross-target clippy commands, `cargo semver-checks` for native-theme, native-theme-gpui and native-theme-iced (the `AnimatedSvgHandles` attribute and the `load_custom_icon` caller), the timing re-run (M6-03's gate; no path slower than its baseline beyond the spread), ledger statuses, docs/todo.md (the deferrals above; the M7 carry-overs egui inherits — `native`/`watch`, `fill_current_color`, the colouriser, the README version check; `SystemTheme::icon`'s size; the `freedesktop_name_for_gpui_icon` removal question for M8's batch), the project memory, `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
+
+### Steps 7–8 — fix phase closed (2026-10-16)
+
+- Tasks T1–T15 and T16a–T16c (T16b was split into T16b and T16c after T16a's dry run), one `implement` agent (Opus 5.5) per task and a fresh Opus reviewer per task. Fix rounds came after 15 of the 18 reviews, and twice the controller ruled on a change before review: T3's window-bound `on_theme_change`, because `AsyncApp::update` panics on a released app, and T16b's popover border. The commits and rulings are in the SDD ledger (`.superpowers/sdd/todo_code-review-plan/progress.md`, "## M6 fix phase"), and each entry's Status names its commits. On 2026-10-15 the maintainer changed the rule for `check_release.sh --commit` to once per task, on its last commit, instead of before every commit. So some intermediate commits fail a showcase citation gate until their task's last commit (T15 6226d8e9..10a21ad1, T16b 46673823).
+- Rulings beyond the fix plan, made during execution:
+  - `on_theme_change(window, cx, f)` is window-bound.
+  - `FreedesktopLoader::any` does a per-theme multi-name lookup in core, because Breeze-first picked AdwaitaLegacy's colour PNGs on GNOME.
+  - `load_custom_icon` fills a freedesktop SVG's bare `currentColor`, and the Breeze stylesheet colour stays (docs/todo.md's KIconLoader item).
+  - The source-over composite is public as `layer_over`.
+  - egui keeps its spec's stock-size fallback on an overflowing text-scale factor.
+  - The toolbar and popover edges and the card fill are not carried (inherited, not stated; the docs/todo.md entry "Presets: the toolbar's and the popover's edge width is the defaults'", [v0.7.0] for M8), and neither are the combo-box and text-area edges (their only receiver also colours the borderless variants).
+  - kde-breeze's `expander.hover_background` is unset, citing platform-facts.md:1619 and checked by the preset-validator.
+- The colour-leaf coverage test (M1-T7-03, gpui half) runs in the default suite with `widgets`: 169 leaves, 131 reach a sink, 38 are named with their reasons. 45 of about 48 of its upstream citations held on a separate check; the controller fixed the other three (c95a46d1).
+- Final whole-phase review (Fable 5.1, `1e60e1c9..c95a46d1`): Ready with fixes. One Important finding: the `geometry` builders dropped a font's family and style, so the KDE reader's menu, toolbar and title-bar fonts were lost. One Minor: the showcase's preset install. Both were fixed (35785f1e, 7c4ce724) and re-checked.
+- Full `./scripts/check_release.sh` at `3fa84e65`: 115 checks, 107 ✅, 6 ⚠️, 2 ❌, in 12 min 23 s.
+  - ⚠️: tag v0.6.1, and soft semver ×5. These are approved breaks only. For gpui: M5's accessor renames, `is_dark`, `SpinnerLook::path_radius`, the ten `#[non_exhaustive]` structs and `ActiveNativeTheme::native`. For iced: M5's renames and `AnimatedSvgHandles`. For egui: M5's renames. native-theme and native-theme-build: M1, M3 and M4's breaks.
+  - ❌, both expected: the visual assets and the compatibility stamps. The release asset run refreshes them, as in M3–M5.
+  - `cargo audit`: no advisories.
+- Timings (release, three runs, load about 7–8): warm gpui `from_preset` 51.7–80.1 µs, median 57 µs, against the Step 1 baseline of 52–245 µs. No path is slower.
+- Carried to M7, M8, M9a and the presets: docs/todo.md, "M6 close (2026-10-16): items carried to M7, M8, M9a and the presets".
 
 ## M7 — egui connector and egui widgets
 
