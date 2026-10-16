@@ -447,14 +447,15 @@ impl ThemeAtlas {
     /// (`egui/src/data/input/raw_input.rs:45`; the last pass's where the integration gives
     /// none) and `pixels_per_point` (`native_pixels_per_point × zoom_factor`, egui's own
     /// product, `egui/src/context.rs:451-455`) — again at the start of a `Context::run_ui`
-    /// pass in which a zoom set in the last pass took effect — and lowers to it every
-    /// `text_styles` size above it in both base styles the `Context` holds;
+    /// pass in which a zoom set in the last pass took effect, and by [`ThemeAtlas::install`]
+    /// from the `Context`'s current input — and lowers to it every `text_styles` size above
+    /// it in both base styles the `Context` holds;
     /// [`NativeThemeUiExt`](crate::NativeThemeUiExt)'s role styles and
     /// [`ThemeAtlas::role_modifier`]'s are lowered the same way when they are handed over. A
     /// size is only ever lowered: a cap that rises again — the window moved to a monitor of
     /// fewer pixels per point — restores nothing until the next [`ThemeAtlas::install`].
     ///
-    /// `None` until a pass has run with the atlas installed, where no face of the atlas gives a
+    /// `None` until the atlas is installed, where no face of the atlas gives a
     /// width, and where the derivation gives less than one point — an atlas too narrow for
     /// the slack, or a `pixels_per_point` that is not a positive finite number — in which
     /// case nothing is lowered. An atlas installed into several `Context`s, or drawn in
@@ -482,8 +483,9 @@ impl ThemeAtlas {
     }
 
     /// Install into an [`egui::Context`]: the atlas's fonts, both colour schemes' base styles
-    /// (keeping the application's own `TextStyle::Name` keys), the atlas into `Context` data,
-    /// the install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their
+    /// (keeping the application's own `TextStyle::Name` keys, and each text size lowered to
+    /// [`ThemeAtlas::text_size_cap`] for the `Context`'s current input), the atlas into
+    /// `Context` data, the install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their
     /// order and what each must not touch. The plugin supplies the OS colour scheme where the
     /// integration reports none, paints the focus ring (§6.18) and keeps the OS title bar on the
     /// scheme the UI is drawn in (§10.3).
@@ -522,6 +524,12 @@ impl ThemeAtlas {
             let previous = ctx.style_of(theme);
             ctx.set_style_of(theme, carry_name_keys(&previous, &self.scheme(theme).base));
         }
+        //    Then lowered to the text-size cap of the `Context`'s current input (M7-04) at once,
+        //    not at the plugin's next `input_hook`: a `Window` or popup opened later in this
+        //    pass builds its `Ui` from these styles (`egui/src/ui.rs:136`).
+        let (max_texture_side, pixels_per_point) =
+            ctx.input(|i| (i.max_texture_side, i.pixels_per_point()));
+        crate::plugin::cap_text_sizes(ctx, self, max_texture_side, pixels_per_point);
         // 3. The atlas published into `Context` data (`egui/src/context.rs:1033`).
         let published = self.clone();
         ctx.data_mut(|data| {

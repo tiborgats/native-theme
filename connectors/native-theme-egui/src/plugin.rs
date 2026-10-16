@@ -224,7 +224,7 @@ pub(crate) fn capped(style: Arc<egui::Style>, cap: Option<f32>) -> Arc<egui::Sty
 /// clone; `set_style_of` (`:2250`) runs only for a style with a size above the cap, so a pass
 /// writes nothing unless a size needs lowering. Checked every pass, not only when an input
 /// changed: a re-install of the same atlas writes its uncapped base styles again.
-fn cap_text_sizes(
+pub(crate) fn cap_text_sizes(
     ctx: &Context,
     atlas: &ThemeAtlas,
     max_texture_side: usize,

@@ -2887,3 +2887,20 @@ fn a_zoom_change_is_capped_in_its_own_pass() {
     let eight = atlas.text_size_cap().expect("derived at zoom 8");
     assert!(eight <= one / 8.0, "{one} -> {eight}");
 }
+
+/// M7-04: an `install` inside a pass writes the new atlas's uncapped base styles; a `Window`
+/// opened later in that pass builds its `Ui` from the `Context`'s style
+/// (`egui/src/ui.rs:136`), so `install` lowers the sizes itself, from the pass's input.
+#[test]
+fn an_install_inside_a_pass_is_capped_in_that_pass() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    let _ = pass(&ctx, input_at(1.0), |_| {});
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        atlas.install(ui.ctx());
+        egui::Window::new("w").show(ui.ctx(), |ui| {
+            ui.label("W");
+        });
+    });
+}
