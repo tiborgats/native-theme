@@ -28,7 +28,9 @@ because `iced_aw` is an optional dependency of the iced connector and is
 absent from the graph otherwise. The invocation still returns the whole
 workspace, so `gpui-component`, `egui` and `egui_extras` come from the same
 call. A dependency that is
-missing from the metadata is a hard error, never a silently skipped toolkit.
+missing from the metadata is a hard error, never a silently skipped toolkit,
+and so is a toolkit in which the rules below discover no widget: an upstream
+layout they no longer match would otherwise pass as `missing 0`.
 
 gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`
 or a `#[derive(IntoElement)]`, outside `#[cfg(test)]` modules, that the crate
@@ -751,7 +753,16 @@ def check(section, discovered, universe, showcase, exceptions, report, matches=s
     `discovered` and `universe` map a widget's name to the identifiers that
     prove the showcase renders it. `matches` is the toolkit's own rule for
     what counts as proof.
+
+    An empty `discovered` is an input error: an upstream layout the discovery
+    rules no longer match would otherwise report `missing 0`, and a section
+    with no exceptions has no stale one to catch it.
     """
+    if not discovered:
+        raise Failure(
+            f"[{section}]: the discovery rules found no widget in the toolkit's "
+            "sources; they no longer match its layout"
+        )
     excepted = exceptions.get(section, {})
     shown = [
         w for w, aliases in discovered.items() if any(matches(showcase, a) for a in aliases)
