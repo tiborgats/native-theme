@@ -122,26 +122,54 @@ impl Frame {
     }
 }
 
+/// What a [`Spinner`] reads of a theme, every read in one place, so the
+/// contract's colour-leaf coverage test sees the widget's reads as it sees a
+/// style's.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `spinner.diameter`: the spinner's size.
+    pub(crate) diameter: f32,
+    /// `spinner.stroke_width`: the arc's stroke.
+    pub(crate) stroke_width: f32,
+    /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's
+    /// tint.
+    pub(crate) color: Color,
+    /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
+    pub(crate) current_color: Rgba,
+}
+
+impl Look {
+    /// The look of a spinner under `resolved`.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let s = &resolved.spinner;
+        Self {
+            diameter: s.diameter,
+            stroke_width: s.stroke_width,
+            color: to_color(s.fill_color),
+            current_color: resolved.defaults.text_color,
+        }
+    }
+}
+
 impl Spinner {
     /// The spinner of `icon_set` under `resolved`: for
     /// [`IconSet::Freedesktop`], the indicator of `icon_theme` (the system's
     /// icon theme where `None`), never another theme's.
     #[must_use]
     pub fn new(resolved: &ResolvedTheme, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
-        let s = &resolved.spinner;
-        let color = to_color(s.fill_color);
+        let look = Look::of(resolved);
         let paint = match icon_set {
-            IconSet::Material | IconSet::Lucide => Paint::Tint(color),
-            IconSet::Freedesktop => Paint::CurrentColor(resolved.defaults.text_color),
+            IconSet::Material | IconSet::Lucide => Paint::Tint(look.color),
+            IconSet::Freedesktop => Paint::CurrentColor(look.current_color),
             _ => Paint::AsIs,
         };
         Self {
             drawn: load_icon_indicator(icon_set, icon_theme)
                 .and_then(|anim| drawn(&anim, paint))
                 .unwrap_or(Drawn::Arc),
-            diameter: s.diameter,
-            stroke_width: s.stroke_width,
-            color,
+            diameter: look.diameter,
+            stroke_width: look.stroke_width,
+            color: look.color,
         }
     }
 

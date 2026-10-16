@@ -77,7 +77,8 @@ struct Row {
 }
 
 /// One row of the accessor contract: a colour a crate-root function hands the
-/// consumer, and the native leaf it must be.
+/// consumer, or one the connector's own `Spinner` draws in, and the native
+/// leaf it must be.
 ///
 /// Both sides are an `Option` for the one accessor that returns a widget,
 /// `tab_indicator_line`, which draws nothing where the theme states no line:
@@ -4773,6 +4774,18 @@ fn sentinel_rgb(json: &serde_json::Value) -> (u8, u8, u8) {
         .unwrap_or((0x13, 0x57, 0x9b))
 }
 
+/// Each leaf the [`crate::Spinner`] draws in, with the row that reads it:
+/// `spinner.fill_color`, the arc and a Material or Lucide indicator's tint,
+/// and `defaults.text_color`, a freedesktop indicator's `currentColor`.
+#[cfg(all(feature = "iced_aw", feature = "spinner"))]
+const SPINNER_READS: &[(&str, &str)] = &[
+    ("spinner.fill_color", "crate::Spinner (arc, bundled tint)"),
+    (
+        "defaults.text_color",
+        "crate::Spinner (freedesktop currentColor)",
+    ),
+];
+
 /// Whether `entry` -- a leaf, or a widget's name -- names `leaf`: the leaf
 /// itself, or a leaf under it (`list.header_font` names
 /// `list.header_font.color`).
@@ -4923,6 +4936,20 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
                 )),
                 _ => failures.push(format!("{leaf}: named {named} times")),
             },
+        }
+    }
+
+    // The connector's own widget is a sink (docs/todo.md's ruling on the
+    // widgets' contracts): each leaf the `Spinner` draws in reaches its row.
+    #[cfg(feature = "spinner")]
+    for (leaf, row) in SPINNER_READS {
+        let rows = reached.get(*leaf).map(Vec::as_slice).unwrap_or_default();
+        if !rows.iter().any(|r| r == row) {
+            failures.push(format!(
+                "{leaf}: the Spinner draws in it, yet the rows it reaches ({}) \
+                 leave out {row}",
+                rows.join(", ")
+            ));
         }
     }
 

@@ -114,7 +114,8 @@ pub(super) const ROWS: &[Row] = &[
 ];
 
 /// Every colour accessor of the crate root and the native leaf it returns: the
-/// colours iced has no `Style` field for, which a consumer reads to draw with.
+/// colours iced has no `Style` field for, which a consumer reads to draw with;
+/// and with `spinner`, the colours the connector's own `Spinner` draws in.
 pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
     AccessorRow {
         accessor: "crate::border_color",
@@ -181,6 +182,22 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
             t.active_indicator_color.filter(|_| drawn).map(to_color)
         },
         get: |r| crate::tab_indicator_strip(&r.tab).map(|(color, _, _)| color),
+    },
+    #[cfg(feature = "spinner")]
+    AccessorRow {
+        // The connector's own widget: the arc, and a Material or Lucide
+        // indicator recoloured.
+        accessor: "crate::Spinner (arc, bundled tint)",
+        native: |r| Some(to_color(r.spinner.fill_color)),
+        get: |r| Some(crate::spinner::Look::of(r).color),
+    },
+    #[cfg(feature = "spinner")]
+    AccessorRow {
+        // A freedesktop indicator's `currentColor`, where the document sets
+        // no `color` of its own (`native_theme::icons::fill_current_color`).
+        accessor: "crate::Spinner (freedesktop currentColor)",
+        native: |r| Some(to_color(r.defaults.text_color)),
+        get: |r| Some(to_color(crate::spinner::Look::of(r).current_color)),
     },
 ];
 
