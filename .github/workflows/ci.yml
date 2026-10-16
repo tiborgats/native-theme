@@ -258,6 +258,7 @@ jobs:
         run: |
           python3 --version
           python3 scripts/check_widget_coverage.py
+          python3 scripts/check_widget_coverage.py --self-test
       # Fails on a connector accessor named unlike the `ResolvedTheme` leaf it
       # reads, or a function absent from a sibling connector or present there
       # under another signature, unless

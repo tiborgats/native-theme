@@ -347,7 +347,10 @@ showcase. Discovers the widgets from the dependencies' own sources through
 dependency is in the graph), then requires each one to be either shown in the
 showcase or listed with a reason in `docs/showcase-exceptions.toml`. Exits 0
 when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
-package is absent from the metadata or the discovery finds no widget in it. `scripts/check_release.sh`, `ci.yml`,
+package is absent from the metadata, the discovery finds no widget in it, or
+a file the rules read has moved upstream. `--self-test` runs those guards on
+synthetic crate roots, without cargo; `scripts/check_release.sh` and `ci.yml`
+run it beside the check. `scripts/check_release.sh`, `ci.yml`,
 `publish.yml`, `dependency-canary.yml` and `update_compatibility.sh run` run it, so an
 upstream release that adds a widget is reported the evening it appears.
 
@@ -356,6 +359,7 @@ is populated.
 
 ```sh
 python3 scripts/check_widget_coverage.py
+python3 scripts/check_widget_coverage.py --self-test
 ```
 
 ## check_connector_parity.py

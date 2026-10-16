@@ -839,6 +839,8 @@ if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)';
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
     python3 scripts/check_widget_coverage.py
+run_check "widget coverage: self-test" \
+    python3 scripts/check_widget_coverage.py --self-test
 run_check "connector parity: names and signatures (iced · gpui · egui)" \
     python3 scripts/check_connector_parity.py
 run_check "connector parity: self-test" \

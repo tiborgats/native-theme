@@ -9,6 +9,11 @@ script.
 Run from the repository root:
 
     python3 scripts/check_widget_coverage.py
+    python3 scripts/check_widget_coverage.py --self-test
+
+`--self-test` runs the guards on synthetic crate roots, with no cargo: an
+empty discovery and a moved upstream file each fail (exit 2 in a real run),
+and one widget found and shown passes.
 
 Exit 0 only when every discovered widget is either shown in the matching
 showcase or listed in docs/showcase-exceptions.toml with a non-empty reason,
@@ -539,8 +544,15 @@ def iced_modules(src):
 
 def aw_modules(src):
     """Every feature-gated widget module of `iced_aw`, with its type names."""
-    with open(os.path.join(src, "widget.rs"), encoding="utf-8") as f:
-        text = strip_comments(f.read())
+    path = os.path.join(src, "widget.rs")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = strip_comments(f.read())
+    except OSError as err:
+        raise Failure(
+            f"cannot read {path}, where iced_aw's feature-gated widget modules "
+            f"are declared; the discovery rules no longer match its layout: {err}"
+        ) from err
     reexports = {}
     for m in AW_REEXPORT.finditer(text):
         names = [n.strip() for n in (m.group(2) or m.group(3)).split(",") if n.strip()]
@@ -642,8 +654,14 @@ def egui_ui_methods(src):
     line numbers are the raw file's as long as no block comment spans lines.
     """
     path = os.path.join(src, "ui.rs")
-    with open(path, encoding="utf-8") as f:
-        raw = f.read().splitlines()
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = f.read().splitlines()
+    except OSError as err:
+        raise Failure(
+            f"cannot read {path}, where egui's `impl Ui` blocks are; the "
+            f"discovery rules no longer match its layout: {err}"
+        ) from err
     stripped = strip_comments("\n".join(raw)).splitlines()
     if len(stripped) != len(raw):
         raise Failure(f"{path}: a block comment spans lines; the Ui-method rule walks lines")
@@ -781,8 +799,79 @@ def check(section, discovered, universe, showcase, exceptions, report, matches=s
     return missing, stale
 
 
+def self_test():
+    """The guards against an upstream layout the rules no longer match, run on
+    synthetic crate roots: an empty discovery, a moved file, and one widget
+    found and shown, so the guards are not what makes every run fail."""
+    import tempfile
+
+    failures = []
+
+    def expect(label, got, want):
+        if got != want:
+            failures.append(f"{label}: got {got!r}, want {want!r}")
+
+    def fails(label, call):
+        try:
+            call()
+            failures.append(f"{label}: no error")
+        except Failure:
+            pass
+        except OSError as err:
+            failures.append(f"{label}: {type(err).__name__} instead of a Failure")
+
+    with tempfile.TemporaryDirectory() as root:
+        empty = os.path.join(root, "empty")
+        os.makedirs(empty)
+        with open(os.path.join(empty, "lib.rs"), "w", encoding="utf-8") as f:
+            f.write("pub struct Label;\nimpl Label { pub fn new() -> Self { Label } }\n")
+        crate = os.path.join(root, "crate")
+        os.makedirs(os.path.join(crate, "containers"))
+        with open(os.path.join(crate, "label.rs"), "w", encoding="utf-8") as f:
+            f.write("pub struct Label;\nimpl Widget for Label {\n}\n")
+
+        # M8-30: a section whose discovery finds nothing fails, every section
+        for section, discover in (
+            ("gpui", gpui_widgets),
+            ("iced_widget", iced_modules),
+            ("egui", egui_widgets),
+            ("egui_extras", egui_extras_widgets),
+        ):
+            found = {w: [w] for w in discover(empty)}
+            expect(f"{section}: the empty crate root discovers nothing", found, {})
+            fails(f"{section}: an empty discovery", lambda: check(section, found, found, "", {}, []))
+        for section in ("iced_aw", "egui_ui"):
+            fails(f"{section}: an empty discovery", lambda: check(section, {}, {}, "", {}, []))
+
+        # a file the rules read that upstream moved: a Failure, not a traceback
+        fails("iced_aw: no src/widget.rs", lambda: aw_modules(empty))
+        fails("egui_ui: no src/ui.rs", lambda: egui_ui_methods(empty))
+
+        # one widget discovered and shown passes; not shown, it is missing
+        found = {w: [w] for w in egui_widgets(crate)}
+        expect("egui: a by-value `impl Widget` is discovered", found, {"Label": ["Label"]})
+        report = []
+        expect("a shown widget passes",
+               check("egui", found, found, "ui.add(Label);", {}, report), ([], []))
+        expect("an unshown widget is missing",
+               check("egui", found, found, "", {}, report), (["Label"], []))
+
+    for line in failures:
+        print("  FAIL " + line)
+    if failures:
+        print(f"self-test: {len(failures)} failure(s)")
+        return 1
+    print("self-test: every scenario passes")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run the built-in scenarios instead of the check",
+    )
     parser.add_argument(
         "--showcase-gpui",
         default=SHOWCASE_GPUI,
@@ -801,6 +890,8 @@ def main():
         "whose .rs files are all read, its tests.rs left out",
     )
     args = parser.parse_args()
+    if args.self_test:
+        return self_test()
 
     meta = cargo_metadata()
     # Both sides strip literals. The gpui showcase did not, and its Widget
