@@ -1789,7 +1789,7 @@ impl Showcase {
         // installed with the OS's preferences and the user's over them, as
         // the desktop's own theme is.
         let prefs = Self::install_preferences(cx, self.os_preferences());
-        let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
+        let theme = to_theme(&r.variant, &nt.name, r.mode.is_dark(), &prefs);
         native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
         self.error_message = None;
         true
