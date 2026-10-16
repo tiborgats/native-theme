@@ -113,7 +113,9 @@
 //! `AccessibilityPreferences::default()` scales by one, and
 //! `native_theme::detect::accessibility_preferences()` gives the OS's under
 //! the preset, cached; `AccessibilityPreferences::from_system()` runs the
-//! platform reader each time.
+//! platform reader each time. [`is_reduced_motion()`], [`is_high_contrast()`],
+//! [`is_reduced_transparency()`] and [`text_scaling_factor()`] read the four
+//! preferences of a [`SystemTheme`], as in the gpui and egui connectors.
 //!
 //! # What each flag does
 //!
@@ -1244,6 +1246,42 @@ pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
     prefs.scaled(size)
 }
 
+// The four readers take a `SystemTheme`, where the OS preferences live, as
+// the gpui and egui connectors' do; a `Loaded` carries the same preferences
+// in `accessibility`.
+
+/// `accessibility.reduce_motion` of the `SystemTheme`: whether the OS asks for
+/// reduced motion, the flag `Spinner::view` (feature `spinner`) and the
+/// application's own animations take.
+#[must_use]
+pub fn is_reduced_motion(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_motion
+}
+
+/// `accessibility.high_contrast` of the `SystemTheme`: whether the OS asks for
+/// high contrast. The connector applies nothing for it (see *What each flag
+/// does* in the crate docs).
+#[must_use]
+pub fn is_high_contrast(sys: &SystemTheme) -> bool {
+    sys.accessibility.high_contrast
+}
+
+/// `accessibility.reduce_transparency` of the `SystemTheme`: whether the OS
+/// asks for less transparency, for the translucent surfaces the application
+/// draws.
+#[must_use]
+pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_transparency
+}
+
+/// `accessibility.text_scaling_factor` as the OS reported it (1.0 = no
+/// scaling), unfiltered; [`scaled_text_size()`] is what ignores a factor that
+/// is not finite and positive.
+#[must_use]
+pub fn text_scaling_factor(sys: &SystemTheme) -> f32 {
+    sys.accessibility.text_scaling_factor
+}
+
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.
 ///
 /// iced 0.14 draws a weight only where the family has a face at exactly
@@ -2288,6 +2326,36 @@ mod tests {
         // the success/error paths.
         let result = from_preset("nonexistent-preset", true);
         assert!(result.is_err());
+    }
+
+    /// Each reader returns its own preference: with one flag set, only its
+    /// reader is `true`, and the factor is the one stated.
+    #[test]
+    fn the_accessibility_readers_read_their_own_preference() {
+        let mut sys = match native_theme::SystemTheme::from_system() {
+            Ok(sys) => sys,
+            // Without a reader feature macOS and Windows have no OS theme;
+            // Linux always has one, its platform preset.
+            Err(_) if !cfg!(target_os = "linux") => return,
+            Err(e) => panic!("from_system failed on Linux: {e}"),
+        };
+        type Reader = fn(&SystemTheme) -> bool;
+        let readers: [(&str, Reader); 3] = [
+            ("reduce_motion", is_reduced_motion),
+            ("high_contrast", is_high_contrast),
+            ("reduce_transparency", is_reduced_transparency),
+        ];
+        for (set, _) in readers {
+            let a11y = &mut sys.accessibility;
+            a11y.reduce_motion = set == "reduce_motion";
+            a11y.high_contrast = set == "high_contrast";
+            a11y.reduce_transparency = set == "reduce_transparency";
+            for (name, reader) in readers {
+                assert_eq!(reader(&sys), name == set, "{name} with only {set} set");
+            }
+        }
+        sys.accessibility.text_scaling_factor = 1.25;
+        assert_eq!(text_scaling_factor(&sys), 1.25);
     }
 
     #[test]

@@ -129,6 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `ResolvedWidgetBorder::padding_outside()`, the widget's padding measured from its outer edge: each side the border's `padding` states plus its `line_width` (an unstated side stays `None`), saturating at `f32::MAX`, for a toolkit that lays content out from the widget's edge and paints the border over the padding; the iced connector's `padding_inside_border` and the egui connector's paddings are it.
 - **native-theme**: `icons::MAX_ICON_SIZE` (512), the largest size the system loaders, `load_custom_icon`, `load_custom_icon_in` and `rasterize_svg` load or draw an icon at (see *Breaking Changes*), so the connectors share one bound: a 512-pixel raster is 1 MiB.
 - **native-theme-iced**: `styles::composite_over(layer, base)`, the composite the styles flatten a stated hover or pressed layer onto a widget's fill with (`native_theme::color::composite_over` on iced `Color`s), public as the gpui connector's `layer_over` is, so an application drawing a layered state of its own matches the styles.
+- **native-theme-iced**: `is_reduced_motion`, `is_high_contrast`, `is_reduced_transparency` and `text_scaling_factor`, each reading one of a `SystemTheme`'s accessibility preferences, the four readers the gpui and egui connectors export under these names.
 
 ### Changed
 
