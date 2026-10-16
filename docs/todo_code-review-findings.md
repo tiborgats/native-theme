@@ -9286,7 +9286,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Before the write at lib.rs:1041, copy the four fields from the installed global (`if let Some(old) = cx.try_global::<GpuiTheme>() { theme.notification = old.notification.clone(); ... }`), so `apply` replaces only what `to_theme` maps, as upstream's `apply_config` does. Add the test above.
 **Verdict:** CONFIRMED — apply_inner (lib.rs:1040) runs `*GpuiTheme::global_mut(cx) = theme`, and to_theme builds that theme from `GpuiTheme::from(&theme_color)` (gpui-component 0.7.3 theme/mod.rs:765-790: notification/list/sheet/motion all `::default()`) without setting those four fields, while upstream's own `Theme::change` (mod.rs:388-398) edits only `mode`; nothing in apply's docs (lib.rs:836-886) tells the application its settings are reset. The motion half is already noted in docs/todo.md:2002 and the known items (:840), but only as a gap in what native-theme models, not as the application's own settings being reset.
 **Triage:** fix — CONFIRMED bug: `apply` must keep the application's `notification`, `list`, `sheet` and `motion` settings as upstream's own switch does (the motion half is docs/todo.md's existing entry, closed with it).
-**Status:** open
+**Status:** fixed in c1208377 (M6 T5; e1e00c3b)
 
 
 #### M6-02 · bug · S2 · connectors/native-theme-gpui/src/lib.rs:1045
@@ -9295,7 +9295,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Have `apply` drop the other stored variant when the new theme's name differs from the installed `GpuiTheme::theme_name()` (or always, with a two-variant `apply_pair(light, dark)` for the both-modes case). Then the doc's 'upstream default for the unstored mode' holds. Add a test: `apply_system_theme`, then a one-variant `apply` of another preset, then `Theme::change` to the other mode, and assert that the palette is not the first theme's.
 **Verdict:** CONFIRMED — apply_inner (lib.rs:1025-1031) writes only the `Some` variants into NativeTheme and never clears the other one, so a later single-variant `apply` keeps the earlier theme's `nt.dark`; `other_config` (:1045-1055) then builds the dark ThemeConfig from it under the new `name`, and base_overrides_for and install_variant_tooltip_delay read the same stale variant. This contradicts apply's own doc (:871-875: 'a single-variant apply leaves the other mode's config at ThemeConfig::default()'). Also reported by R2 (connectors/native-theme-gpui/src/lib.rs:1027): Repeated runtime switching keeps state: a single-variant `apply` of theme B after an `apply` of theme A of the other mode (or after `apply_system_theme`) keeps A's variant as B's other mode, so a later upstream `Theme::change` / `sync_system_appearance` shows A's palette, A's base-layer scrollbar/handle values and A's geometry under B's name. Verifier: CONFIRMED — apply (lib.rs:889-902) fills only one slot, apply_inner (lib.rs:1027-1032) never clears the other, and lib.rs:1037-1053 builds the other mode's config from the stale variant under the new name. The showcase's preset switch (examples/showcase-gpui/app.rs:1780) does exactly this. Rationale §2.22 records that variants accumulate, meant for one apply per variant of the same theme, but the doc at lib.rs:877-881 ('leaves the other mode's config at ThemeConfig::default()') contradicts the code once any earlier apply stored the other mode.
 **Triage:** fix — CONFIRMED bug, found by R1 and R2 (merged): a one-variant `apply` must clear the other mode's stored variant, as the doc says.
-**Status:** open
+**Status:** fixed in c1208377 (M6 T5; e1e00c3b)
 
 
 #### M6-03 · perf · S3 · connectors/native-theme-gpui/src/lib.rs:623
@@ -9304,7 +9304,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Do not hold `ASKED`'s lock across the subprocess (look up, release, ask, insert), and let the application warm the cache off the UI thread: a `pub fn prefetch_font_families(&[Arc<str>])`, or `apply` spawning the stored variants' families on the background executor. State the per-new-family first-call cost (one `fc-match`, about 15 ms) in the `from_preset` / `to_theme` / `font_family` docs, beside the reduced-motion note at lib.rs:294-299.
 **Verdict:** CONFIRMED — substituted_family (lib.rs:613-627) holds the static ASKED mutex while it calls native_theme::fonts::substitute_family, which runs `fc-match` through stdout_with_timeout with SUBPROCESS_TIMEOUT = 2 s (fonts.rs:301-306, detect.rs:20), once for each family not yet cached. I measured it by putting an fc-match logging shim first on PATH (strace is not installed) and running the existing release binary target/release/deps/timings-70a7c1d576d38ab0 (no build): 12 fc-match calls of about 12.5 ms each, exactly two (UI + mono) in each of the six first calls of 31-48 ms (kde-breeze, adwaita, windows-11, macos-monterey, material-3, catppuccin-latte); every other preset's first call was 0.25-0.39 ms with no fc-match call.
 **Triage:** fix — perf: the before/after first-call timing in tests/timings.rs is the gate (31–106 ms today); the subprocess must not run under the cache lock.
-**Status:** open
+**Status:** fixed in 44545c55 (M6 T14): the lock half; the first-call speed half dropped by the Step 6 ruling (the cost is once per family per process, documented)
 
 
 #### M6-04 · perf · S4 · connectors/native-theme-gpui/src/config.rs:44
@@ -9313,7 +9313,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Split `to_theme_config` into a private `to_theme_config_from(&ThemeColor, resolved, name, mode, prefs)` and have `to_theme` pass the `theme_color` it already built (it is `Copy`). Pass `theme.font_family` / `mono_font_family` too, so the config takes the families `to_theme` resolved.
 **Verdict:** CONFIRMED — to_theme computes to_theme_color at lib.rs:223, then calls config::to_theme_config (:270), which computes it again (config.rs:44) and converts 127 fields to hex SharedStrings (config.rs:45, :93-); apply_inner builds a third copy for the other mode (lib.rs:1052). How much of the warm 52 µs this costs is not measured, and the timing test calls from_preset, so the third copy (apply_inner) is not in it. A criterion bench of to_theme_color + theme_color_to_config_colors against a whole from_preset would show the share.
 **Triage:** fix if measurable — build the colour table once per `to_theme`/`apply`; kept only if warm `from_preset` drops beyond the run-to-run spread, else dropped.
-**Status:** open
+**Status:** dropped (M6 T13): the warm `from_preset` gain was below the before-runs' spread (numbers in the T13 report; `to_theme` alone −1–1.5 µs); the timing rows stay in tests/timings.rs
 
 
 #### M6-05 · bug · S4 · connectors/native-theme-gpui/src/lib.rs:241
@@ -9322,7 +9322,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Make core's `scaled()` return `size` when the product is not finite and positive (one guard that every connector and `geometry` builder inherits), and have `to_theme` / `to_theme_config` call `prefs.scaled(d.font.size)` instead of multiplying by hand.
 **Verdict:** PLAUSIBLE — The mechanism holds: text_scale_factor (native-theme/src/lib.rs:393-396) checks only that the factor is finite and > 0, and lib.rs:241/:243 multiply by it unchecked. The stated triggers are wrong in f32, though: 13 * 1e37 = 1.3e38 (finite), and 13 * 1e-45 = 1.8e-44 (subnormal, not 0). Only a factor above about 2.6e37 gives inf, and what gpui does with an inf rem needs a test to show.
 **Triage:** fix once reproduced — PLAUSIBLE: the fix's first step is a test giving `to_theme` a finite factor whose product overflows; a non-finite font size falls back as the text scale does.
-**Status:** open
+**Status:** fixed in b2685e69, 4e2b586a (M6 T13): core `AccessibilityPreferences::scaled` keeps the size when the product is not a normal positive number; egui keeps its spec's stock-size fallback (d05d64f6)
 
 
 #### M6-06 · api · api-break · connectors/native-theme-gpui/src/lib.rs:478
@@ -9331,7 +9331,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Before: `pub fn is_dark(resolved: &ResolvedTheme) -> bool` and `pub fn is_dark_resolved(resolved: &ResolvedTheme) -> bool`. After: keep only `is_dark_resolved` (or neither, once `from_preset` takes the mode from `Resolved.mode` and `to_theme` keeps its explicit `is_dark`), with the `to_theme` doc pointing at `Resolved::mode`.
 **Verdict:** CONFIRMED — is_dark (lib.rs:476-480) only delegates to is_dark_resolved (:467-469), so it is a second public name for the same function. The lightness-guess half is the known M3-15 ruling (findings ledger :7367, scheduled for M6) and not new. Note that a bare `&ResolvedTheme` carries no mode, so Resolved.mode can replace the guess in from_preset but cannot replace the helper itself (iced kept its lightness test in to_theme for the same reason, ledger M3-15 status). The only new content is removing the duplicate name. Also reported by API (connectors/native-theme-gpui/src/lib.rs:478): `is_dark(resolved)` is a public alias of `is_dark_resolved(resolved)`: two crate-root names for one background-lightness guess that neither sibling offers and that core's `Resolved.mode` (M3-15) makes unnecessary. Verifier: CONFIRMED — is_dark (lib.rs:478-480) just forwards to is_dark_resolved (:468), and neither iced nor egui has either function. The workspace has no caller of is_dark; is_dark_resolved has an in-crate test (lib.rs:1679), a doc link (:206), scripts/check_connector_parity.py:869 and scripts/connector_parity_exceptions.toml:27 and :55 (is_dark is listed there as 'undecided'). The lightness-guess half is already scheduled for M6 by the M3-15 ruling (findings :7367), so only the alias removal is new.
 **Triage:** maintainer: 2026-10-15, remove `is_dark` only; `is_dark_resolved` stays for a caller holding a bare `ResolvedTheme` (its parity exception stays, `is_dark`'s goes) → fix.
-**Status:** open
+**Status:** fixed in 4c5410e8 (M6 T2): `is_dark` removed, `is_dark_resolved` kept (maintainer 2026-10-15)
 
 
 #### M6-07 · bug · S2 · connectors/native-theme-gpui/src/base_layer.rs:71
@@ -9340,7 +9340,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Write `min_length = min_thumb_length + 2 * thumb_inset` (a derivation from the two theme values and upstream's arithmetic, like the inset itself), so the drawn thumb is at least the stated length; the proportional length still loses 2 x inset at the track ends, which only a per-axis inset upstream could fix (an upstream ask beside the existing scrollbar items).
 **Verdict:** CONFIRMED — gpui-base 0.7.3 scrollbar.rs:1211-1216 clamps the logical length to min_length and then draws length = logical - 2*inset. With inset = (groove - thumb)/2 (base_layer.rs:69), the drawn minimum is 20-13=7 on kde-breeze (21/8/20) and 17-11=6 on windows-11 (17/6/17). platform-facts.md:976 defines min_thumb_length as the thumb's length along the axis, and no rationale accepts the gap: the 0.6.4 rationale §2.6 notes the clamps but not this.
 **Triage:** fix — CONFIRMED: pass the minimum length plus twice the inset so the drawn thumb is the stated minimum.
-**Status:** open
+**Status:** fixed in 7369383d (M6 T6)
 
 
 #### M6-08 · bug · S4 · connectors/native-theme-gpui/src/geometry.rs:111
@@ -9349,7 +9349,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Move `.line_height(relative(n.resolved.defaults.line_height))` into `with_text` (with_coloured_text inherits it) so every builder that sets a text size carries the platform's line height; with_height_rule, button_label and text_area then no longer need their own copy.
 **Verdict:** PLAUSIBLE — Only with_height_rule (geometry.rs:166-167), button_label (:240) and text_area (:338) set defaults.line_height; with_text (:109-112) sets none. The '1.618 everywhere' part is overstated: phi is gpui-pre style.rs:494's default and holds where upstream sets nothing (tooltip.rs, status bar), but upstream sets 1.25 on the dialog title (dialog/title.rs:44) and on the checkbox and radio labels (checkbox.rs:334, radio.rs:255). Unstated-sizes rationale §5 point 3 scoped the line height to single-line control heights, so carrying it to wrapped text is an extension, and a rendered tooltip test would show the spacing.
 **Triage:** fix once reproduced — PLAUSIBLE: a rendered test of wrapped tooltip text first; the unstated-sizes rationale (§5.3) limits the control-height rule to single-line controls, not the platform's line height, so applying `defaults.line_height` to text builders follows theme data.
-**Status:** open
+**Status:** fixed in 15bde521 (M6 T6; reproduced first)
 
 
 #### M6-09 · bug · S2 · connectors/native-theme-gpui/src/geometry.rs:847
@@ -9358,7 +9358,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Above factor 1, return Size::Size(max(row_height, scaled item_font size x defaults.line_height + Medium cell padding top + bottom)) -- the same fit rule, from theme values and upstream's own padding -- and the header height likewise; or document the limit beside the builder if a fixed row is preferred.
 **Verdict:** CONFIRMED — data_table_size (geometry.rs:847-854) returns Size::Size(list.row_height) with no text-scale branch, and DataTable rows take it verbatim as .h(row_height) (table/state.rs:2047, :2061, :2321). geometry::table scales list.item_font through with_text, so at factor 2 macos-tahoe gets a 26px font in a 24px row. Neither docs/todo.md nor the known items cover it (the 2073 item is egui's); a seams.rs case at factor 2 would show the clip.
 **Triage:** fix — CONFIRMED: above text scale 1 a DataTable row and header grow with their text, as the control-height rule does for single-line controls.
-**Status:** open
+**Status:** fixed in fbf5952f, 9580c240 (M6 T6)
 
 
 #### M6-10 · simplify · S4 · connectors/native-theme-gpui/src/geometry.rs:430
@@ -9367,7 +9367,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Pick one policy: trust the validated ResolvedTheme and drop the `.max(0.0)` calls (and the same 'Issue 14' clamp in to_theme), or clamp every length through one helper used by with_padding and each builder.
 **Verdict:** CONFIRMED — line_width is clamped only in tooltip and tooltip_content (geometry.rs:430, :480) and passed raw at :188, :292, :342, :624, :655, while corner_radius is always clamped. Core's check_widget_border (native-theme/src/resolve/validate_helpers.rs:517-545) already rejects a non-finite or negative radius, line width or stated padding side, so the clamps are inconsistent defensive code.
 **Triage:** fix — drop the redundant clamps (core's validation rejects negative and non-finite lengths); deletes code.
-**Status:** open
+**Status:** fixed in ee0d1701, ca5c2c58 (M6 T6)
 
 
 #### M6-11 · bug · S2 · connectors/native-theme-gpui/src/icons.rs:1027
@@ -9376,7 +9376,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** When M1-T6-06 replaces load_custom_via_builder with native_theme::icons::load_custom_icon(provider, set, color), convert with to_image_source(&data, None, size), since core has already coloured each set its own way. Port iced's full-colour fixture test (decode the RenderImage and compare it with the uncoloured one).
 **Verdict:** CONFIRMED — icons.rs:1026-1027 loads through FreedesktopLoader.color_opt (core colours only symbolic icons) and then passes the same colour to to_image_source, whose colorize_svg (:1361-1362) replaces every currentColor. /usr/share/icons/breeze/places/32/folder.svg:13-15 paints its ColorScheme-Accent body fill:currentColor, so that part is repainted in c. M1-T6-06's status (ledger ~:822) schedules only gpui's copy drop for M6, and docs/todo.md has no entry for the second pass, so this is new: the gpui twin of M5-05.
 **Triage:** fix — CONFIRMED: the gpui twin of M5-05; the second colouring pass must not touch a full-colour freedesktop icon (with M1-T6-06's switch to core's loader).
-**Status:** open
+**Status:** fixed in a0f6ad3e, c222c345 (M6 T4: core's loader, and core fills a bare `currentColor`)
 
 
 #### M6-12 · bug · S2 · connectors/native-theme-gpui/src/icons.rs:459
@@ -9385,7 +9385,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Key the choice by the icon theme's convention instead of the desktop, for example a parameter naming the theme (Breeze-family if its Inherits chain contains breeze, else GTK). Or return both candidate names so the caller tries each in the same theme, which mixes no sets. Then add the Adwaita test above for a non-GTK desktop.
 **Verdict:** CONFIRMED — is_gtk (:459-466) depends only on the LinuxDesktop argument, and the showcase passes the DE apart from the theme it loads from (support.rs:803-808, :826-830). A script over the 50 `if is_gtk` arms found none of the 50 Breeze-branch names in /usr/share/icons/Adwaita (e.g. go-down-skip, battery-100-charging), while every GTK-branch name is there; no rationale or todo entry records this.
 **Triage:** fix — CONFIRMED: freedesktop names are chosen by the icon theme in use, not by the desktop.
-**Status:** open
+**Status:** fixed in c0526654, d5d781a8, bce6dd56 (M6 T7: `freedesktop_name_candidates` and core's `FreedesktopLoader::any`)
 
 
 #### M6-13 · bug · S2 · connectors/native-theme-gpui/src/icons.rs:1026
@@ -9394,7 +9394,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Give the runtime-set load a size (core's load_custom_icon/load_set_icon pass it to the loaders' .size()), and call it with this function's size. Until then, document that size does not reach a raster set.
 **Verdict:** CONFIRMED — load_custom_via_builder (:1035-1059) never calls .size() on any loader, although FreedesktopLoader, SfSymbolsLoader and SegoeFluentLoader all have size(u32) (native-theme/src/icons.rs:210, :362, :448; M4 T7 34d6d1f7). The loaders' defaults are 24 (freedesktop lookup), 24 pt (sficons.rs:23) and 32 px (winicons.rs:36), and rgba_to_render_source keeps the raster's own size. Core's load_custom_icon (icons.rs:687) takes no size either, so the planned M1-T6-06 switch does not fix this by itself.
 **Triage:** fix — CONFIRMED: the requested size reaches the system loaders (core's `load_custom_icon` gains the size if it lacks one; api-add in core).
-**Status:** open
+**Status:** fixed in a0f6ad3e, 6a5d67f0 (M6 T4: core's `load_custom_icon` takes the size; clamped 1..=512)
 
 
 #### M6-14 · bug · S2 · connectors/native-theme-gpui/src/icons.rs:1179
@@ -9403,7 +9403,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Take the IconSet (or the colouring rule) and colour per set: Material/Lucide through colorize_monochrome_svg, Freedesktop through core's fill_current_color, others unchanged. That is spinner.rs's paint_svg moved here, so Spinner's load (widgets/spinner.rs:220-234) can call this function instead of repeating the frame loop.
 **Verdict:** CONFIRMED — Breeze's animations/22/process-working.svg is a 22x330 strip with `.ColorScheme-Text { color:#232629 }` and fill=currentColor. parse_sprite_sheet (freedesktop.rs:482+) keeps the document, and :1179 maps each frame through to_image_source -> colorize_svg, which overrides the stated colour. The connector's Spinner keeps it (paint_svg/sets_color, widgets/spinner.rs:132-166), the ruling M5-04 records that rule (docs/todo.md:440), and the showcase reaches this path with Some(fg) (showcase-gpui/app.rs:629).
 **Triage:** fix — CONFIRMED: a freedesktop theme's animated frames keep the theme's own colour (ruling M5-04), as the connector's Spinner does.
-**Status:** open
+**Status:** fixed in e7e3f809 (M6 T8: `animated_frames_to_image_sources_for`)
 
 
 #### M6-15 · bug · S1 · connectors/native-theme-gpui/src/icons.rs:1234
@@ -9412,7 +9412,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Before: pub fn with_spin_animation(element: Svg, animation_id: impl Into<gpui::ElementId>, duration_ms: u32) -> impl IntoElement; pub frame_duration_ms: u32. After: duration_ms: NonZeroU32 (callers drop .get()); pub frame_duration_ms: NonZeroU32.
 **Verdict:** CONFIRMED — gpui-pre 0.3.9 elements/animation.rs:426 computes elapsed/duration (0/0 = NaN, x/0 = inf, then `%= 1.0` gives NaN), and :446 debug_asserts that delta is finite. Core's Spin duration and FrameList's frame duration are NonZeroU32 (freedesktop.rs:594-595), and :1193 calls .get(), which drops that guarantee. The doc's own wording, 'a zero-duration animation' (:1222-1223), understates the result.
 **Triage:** fix + maintainer: the zero-period panic is fixed without a break; maintainer 2026-10-15: `with_spin_animation`'s `duration_ms` and `AnimatedImageSources::frame_duration_ms` take `NonZeroU32` → fix.
-**Status:** open
+**Status:** fixed in 8212bf00 (M6 T1: `NonZeroU32`, maintainer 2026-10-15)
 
 
 #### M6-16 · perf · S4 · connectors/native-theme-gpui/src/icons.rs:1311
@@ -9421,7 +9421,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Make rgba_to_render_source take a RgbaData (or a Vec<u8>) and swap in place. svg_to_render_source and an owned into_image_source pass rgba.into_data(), and to_image_source's borrowed RGBA arm keeps the one copy.
 **Verdict:** CONFIRMED — Holds for rasterized SVGs and for into_image_source: rasterize_svg returns an owned RgbaData, but svg_to_render_source (:1250-1255) borrows .data() and rgba_to_render_source copies it with to_vec (:1311), and into_image_source drops the owned data and goes through the same copy, although RgbaData::into_data exists (model/icons.rs:391). For a borrowed &IconData::Rgba passed to to_image_source the one copy is needed, so 'every RGBA icon' overstates it. To confirm the cost, measure allocations and time for to_image_source at 48 and 512 px (a 9 KiB and a 1 MiB memcpy) against an owned-buffer path, for example with a dhat or criterion run.
 **Triage:** fix if measurable — `into_data()` instead of a copy; a 48 px and 512 px timing before and after; dropped below the spread.
-**Status:** open
+**Status:** fixed in 863594be, f8900791 (M6 T13; 512 px row 277–325 → 221 µs, above the spread)
 
 
 #### M6-17 · simplify · S4 · connectors/native-theme-gpui/src/icons.rs:969
@@ -9430,7 +9430,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Have to_image_source's Svg arm call svg_bytes_to_image_source(bytes, color, size). Fold svg_bytes_to_image_source into bundled_svg_to_image_source, or keep the private one and make the public one its only name.
 **Verdict:** CONFIRMED — to_image_source's Svg arm (:969-977), together with its raster_size line (:969), matches svg_bytes_to_image_source (:1125-1137) line for line, and bundled_svg_to_image_source (:1111-1118) only forwards to it. The Svg arm could call svg_bytes_to_image_source(bytes, color, size).
 **Triage:** fix — one SVG path; deletes code.
-**Status:** open
+**Status:** fixed in c2dfb9e5 (M6 T4)
 
 
 #### M6-18 · api · S4 · connectors/native-theme-gpui/src/icons.rs:86
@@ -9439,7 +9439,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Write icon_name's example with matches!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert)) and assert!(icon_name(IconRole::Shield).is_none()) as a doctest. Bind a color: Hsla in to_image_source's, and mark the compilable ones no_run instead of ignore.
 **Verdict:** CONFIRMED — gpui_component 0.7.3's IconName derives only Clone and IntoElement (src/icon.rs:17), so assert_eq! on Option<IconName> cannot compile, and the example at :86-92 also never imports IconName. The to_image_source example uses `color` without defining it (:959).
 **Triage:** fix — the two examples compile (`no_run`).
-**Status:** open
+**Status:** fixed in 4e9494a7 (M6 T15)
 
 
 #### M6-19 · bug · S2 · connectors/native-theme-gpui/src/widgets/slider.rs:299
@@ -9448,7 +9448,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add `SliderLook::faded_over(ground)`: the rail over the ground, the fill over the rail, the outline and the thumb over the fill, each faded by the opacity over the ground, and opacity set to 1. Add a `Slider::backdrop` as Checkbox and Switch have, and call it in render the way switch.rs:256-259 does.
 **Verdict:** CONFIRMED — slider.rs:299 puts look.opacity on the root, and gpui-pre's with_element_opacity (window.rs:4212-4226) multiplies the alpha of each painted primitive. SliderLook has no faded_over/backdrop counterpart to CheckboxLook::faded_over (checkbox.rs:185) or SwitchLook::faded_over (switch.rs:128), and adwaita's slider inherits defaults.disabled_opacity 0.5 (adwaita.toml:61, :207).
 **Triage:** fix — CONFIRMED: the disabled slider fades as one, as checkbox and switch do (`faded_over`).
-**Status:** open
+**Status:** fixed in ef4807b9 (M6 T10)
 
 
 #### M6-20 · bug · S2 · connectors/native-theme-gpui/src/widgets/slider.rs:205
@@ -9457,7 +9457,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Either draw the range (a second SliderThumb with `.start(true)` at `percentage.start`, the fill from start to end, keys moving the end through `set_value((start, new_end))`), or render the fallback when `state.read(cx).value().is_range()`. Say in the doc that the widget is horizontal-only.
 **Verdict:** CONFIRMED — render reads only value().end() and percentage().end (slider.rs:205, :209) and draws one SliderThumb with no .start(true). gpui-base's SliderTrack mouse-down picks is_start for a range (gpui-base slider.rs:677-689), and set_value(f32) stores SliderValue::Single (slider.rs:273-281 via stepped/step_by at :156-186), so a key press turns the range into a single value.
 **Triage:** fix — CONFIRMED: a range state draws two thumbs and keeps its range on key presses (the vertical axis is api-add, in the same task).
-**Status:** open
+**Status:** fixed in 91764f46, cfd31e14 (M6 T10)
 
 
 #### M6-21 · bug · S2 · connectors/native-theme-gpui/src/widgets/checkbox.rs:442
@@ -9466,7 +9466,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Set `.font_family(crate::font_family(&font.family))`, and `.italic()` for a non-normal style, on the checkbox/radio label and the tab label, next to the size and weight. Correct the two showcase leaf rows to match.
 **Verdict:** CONFIRMED — Checkbox and Radio build their font triple from size, weight and defaults.line_height only (checkbox.rs:547-551, :693-697), and the label div sets text_size, font_weight and line_height only (:441-449); TabBar does the same (tab_bar.rs:327-371). ResolvedFontSpec carries family and style (model/font.rs:255+), and no widget calls font_family or italic.
 **Triage:** fix — CONFIRMED: the labels take the resolved font family and style (connectors follow theme data); the showcase note "family: the window's" goes with it.
-**Status:** open
+**Status:** fixed in 9c509771 (checkbox/radio, M6 T11), 009fba77 (tab, M6 T12), 35785f1e (the geometry builders, final review)
 
 
 #### M6-22 · bug · S2 · connectors/native-theme-gpui/src/widgets/checkbox.rs:128
@@ -9475,7 +9475,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Write `hover_fill = c.hover_background.map_or(unchecked, |h| over(unchecked, color(h)))`, update the test at tests.rs:71-72 and the doc at :79-81, and note in the spec row that it was superseded.
 **Verdict:** CONFIRMED — hover_fill = over(unchecked, hover_background.unwrap_or(background_color)) (checkbox.rs:128-133), so with hover unset the layer is background_color over unchecked_background, and over a translucent fill the alpha doubles. iced's 98b522f7 (M5-07) made the unset hover the idle fill. Every bundled preset states hover_background, so only a custom theme reaches it.
 **Triage:** fix — CONFIRMED: the gpui twin of M5-07; an unset hover is the widget at rest.
-**Status:** open
+**Status:** fixed in 304da987 (M6 T11)
 
 
 #### M6-23 · bug · S4 · connectors/native-theme-gpui/src/widgets/checkbox.rs:794
@@ -9484,7 +9484,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Drop the inner div: `BaseRadioGroup::new(id).axis(axis).flex().flex_col()/flex_row().refine_style(&self.style).children(radios)`. The caller's gap still applies, and the flex-item properties now reach the group.
 **Verdict:** CONFIRMED — RadioGroup::render applies refine_style(&self.style) to an inner flex div that is the child of BaseRadioGroup (checkbox.rs:788-800), and BaseRadioGroup's own Stateful<Div> keeps an empty style (gpui-base radio_group.rs:56-66), so flex_1, w_full or absolute land one level too deep.
 **Triage:** fix — the caller's style reaches the group's root.
-**Status:** open
+**Status:** fixed in 4e201d1e (M6 T11)
 
 
 #### M6-24 · bug · S2 · connectors/native-theme-gpui/src/widgets/spinner.rs:437
@@ -9493,7 +9493,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** When the set is Freedesktop and no theme is named, resolve the theme for the key, `icon_theme.or_else(|| native_theme::detect::system_icon_theme().ok().map(Into::into))` (a cached call), so that a changed system theme makes a new key. While there, clamp `size` in the key to the 512 that `to_image_source` rasterizes at most (icons.rs:969), so sizes above it share one entry.
 **Verdict:** CONFIRMED — IconChoice::System gives the key icon_theme None (spinner.rs:427, :437-442). The Indicators global keeps each key for the life of the app and nothing in the crate clears it (:204-263), so load_indicator(None), which reads system_icon_theme at load time (freedesktop.rs:563-580), never runs again for an unchanged colour and size.
 **Triage:** fix — CONFIRMED: the system icon choice's cache key carries the icon theme.
-**Status:** open
+**Status:** fixed in 6f692ac3, baebc46e (M6 T8)
 
 
 #### M6-25 · perf · S4 · connectors/native-theme-gpui/src/widgets/tab_bar.rs:179
@@ -9502,7 +9502,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Put the same `cfg` on the field and the method body, or store the closure as `Option<Box<dyn FnOnce() -> String>>` and call it only when gpui records it.
 **Verdict:** CONFIRMED — Tab::debug_selector calls f() eagerly and stores the String (tab_bar.rs:179-182), where gpui-pre's own is a no-op outside cfg(any(test, all(debug_assertions, feature = "test-support"))) (div.rs:884-900). It costs something only for tabs a caller gave a selector, not every tab, and the cost is negligible: one small allocation per such tab per frame, which an allocation count per frame would measure.
 **Triage:** drop — only tabs given a selector pay, the cost is negligible and below any timing spread (the verifier's correction).
-**Status:** dropped
+**Status:** dropped (triage): negligible, below any timing spread
 
 
 #### M6-26 · api · api-add · connectors/native-theme-gpui/src/widgets/tab_bar.rs:400
@@ -9511,7 +9511,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add `TabBar::track_scroll(&ScrollHandle)` and a keyed fallback handle. On a click, or when `selected` changes, call `scroll_to_item(ix)` on it. A plain scroll is fine: upstream's spring is motion the model does not state.
 **Verdict:** CONFIRMED — The connector's TabBar only sets overflow_x_scroll (tab_bar.rs:396-402) and takes no ScrollHandle, while upstream has track_scroll and reveals a clicked tab (gpui-component tab/tab_bar.rs:124-132, :429-445). The claim overstates one point: upstream says a change of selection does NOT reveal the tab (:126-127).
 **Triage:** fix — a `track_scroll(ScrollHandle)` and a clicked tab scrolled into view, as upstream (upstream does not reveal on selection change; neither will we).
-**Status:** open
+**Status:** fixed in 1813ecc3, 10f5de05 (M6 T12)
 
 
 #### M6-27 · api · api-add · connectors/native-theme-gpui/src/widgets/checkbox.rs:465
@@ -9520,7 +9520,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add `accessibility_label`, `tab_stop` and `tab_index` builders that forward to the base primitive, and `impl Styled`, refined onto the row after the widget's own style, as upstream does.
 **Verdict:** CONFIRMED — Upstream Checkbox, Radio and Switch all have accessibility_label, tab_stop, tab_index and impl Styled (checkbox.rs:88-135, radio.rs:88-152, switch.rs:73-135). The connector's builders (checkbox.rs:472-520, :610-666, switch.rs:178-231) have none of them; the accessible name comes only from label().
 **Triage:** fix — `accessibility_label`, `tab_stop`, `tab_index` and `Styled` on Checkbox, Radio and Switch (closes docs/todo.md's "gpui: the native Switch lacks 0.7.0's focus options").
-**Status:** open
+**Status:** fixed in 485628c8, 106f430f (M6 T11)
 
 
 #### M6-28 · api · api-add · connectors/native-theme-gpui/src/widgets/progress.rs:62
@@ -9529,7 +9529,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add `ProgressBar::loading(bool)`, drawn with the same track, fill, radius and frame and upstream's one-second sweep (its motion, as the spinner keeps upstream's), shown still at the middle under `cx.reduce_motion()`. Or say in the doc that it is not offered.
 **Verdict:** CONFIRMED — The connector's ProgressBar is determinate only (progress.rs:55-104, no loading or indeterminate setter), while upstream's Progress::loading exists (progress/progress.rs:42). One correction: upstream's loading bar fill is tokens.progress_bar, which the connector already sets to progress_bar.fill_color (colors.rs:551). What is not native is the track (the fill at 0.2), the height, the radius and the missing border.
 **Triage:** fix — an indeterminate mode with upstream's motion (cited) and the theme's track, fill, height, radius and border.
-**Status:** open
+**Status:** fixed in fe175977 (M6 T10)
 
 
 #### M6-29 · simplify · S4 · connectors/native-theme-gpui/src/widgets/checkbox.rs:537
@@ -9538,7 +9538,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Move the prelude into `Parts`, e.g. `fn prepare(&self, look, round, n, window, cx) -> (AnyElement, Option<AnyElement>, FocusHandle, bool)`, and the row styling into a small generic helper over `Styled + ParentElement + InteractiveElement`.
 **Verdict:** CONFIRMED — Checkbox::render (checkbox.rs:537-597) and Radio::render (:683-744) repeat the same look, fade, font triple, Parts destructuring, focus handle and row chain, differing only in the base widget, set_position and the on_change body. label, checked, disabled, on_change, on_part_bounds and backdrop are identical setters on both.
 **Triage:** fix — one shared render body; deletes code.
-**Status:** open
+**Status:** fixed in 6f6385d0 (M6 T11; net −19)
 
 
 #### M6-30 · api · S4 · connectors/native-theme-gpui/src/widgets/spinner.rs:98
@@ -9547,7 +9547,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Remove it, or make it pub(crate)/test-only, and assert `inner` in the test instead. If it stays public, clamp it at 0 as `ring` does.
 **Verdict:** CONFIRMED — path_radius (spinner.rs:98-100) is used only by tests.rs:381, while ring() computes its own radii and clamps the inner one at 0 (:275-278). path_radius has no clamp, and stroke_width is not bounded by diameter in of_size (:88-91), so it goes negative when the stroke is wider than the diameter.
 **Triage:** fix + maintainer: clamp at 0; maintainer 2026-10-15: `path_radius` becomes `pub(crate)` → fix.
-**Status:** open
+**Status:** fixed in 747a159b (M6 T8: `pub(crate)`, maintainer 2026-10-15)
 
 
 #### M6-31 · api · S4 · connectors/native-theme-gpui/src/lib.rs:7
@@ -9556,7 +9556,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Replace the two Quick Start snippets with the README's recipe (init, `SystemTheme::from_system()` -> `apply_system_theme(&sys, cx)`, `Err` -> `from_preset("adwaita", false, &prefs)` -> `apply(theme, &resolved, &prefs, cx)`), keep the Manual Path, and reword :281 to 'the preset half of the common task; `apply` installs the result'. No signature change.
 **Verdict:** CONFIRMED — The //! Quick Start (lib.rs:5-21) stops at from_preset/from_system with no apply or apply_system_theme snippet; apply is only named in prose (:44-47, :103). from_preset's doc says 'the primary entry point' (lib.rs:281) yet installs nothing. The README's Quick start (README.md:109-126) does show apply_system_theme/apply, but lib.rs does not include the README, so docs.rs never shows it.
 **Triage:** fix — the crate docs' Quick Start shows `apply`/`apply_system_theme`; `from_preset` stops calling itself the primary entry point.
-**Status:** open
+**Status:** fixed in bfed2ac6 (M6 T15)
 
 
 #### M6-32 · api · S4 · connectors/native-theme-gpui/src/lib.rs:16
@@ -9565,7 +9565,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Turn the nine snippets into `no_run` with hidden lines, core's own idiom (native-theme/src/lib.rs:678-685: `# Ok::<(), native_theme::Error>(())`); `icon_name`'s gains `use gpui_component::IconName;`, `to_image_source`'s a hidden `# let color = gpui::black();`. No signature change.
 **Verdict:** CONFIRMED — The fences at lib.rs:7, :16, :27, :271, :412 and :425 are ```ignore. Doctests do build in this crate: icons.rs:1164 is a compiled no_run, and Cargo.toml:54-56 keeps the gpui dependency for doctests. None of these four entry points needs an App. iced's Quick Start and Manual Path are rust,no_run and rust (native-theme-iced/src/lib.rs:7, :15, :26).
 **Triage:** fix — the entry-point examples become `no_run`, as iced's.
-**Status:** open
+**Status:** fixed in bfed2ac6 (M6 T15)
 
 
 #### M6-33 · api · api-add · connectors/native-theme-gpui/src/lib.rs:805
@@ -9574,7 +9574,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add to the trait: before `pub trait ActiveNativeTheme { fn native_theme(&self) -> Option<&NativeTheme>; }`, after `pub trait ActiveNativeTheme { fn native_theme(&self) -> Option<&NativeTheme>; /// The `Native` view for the current mode, or `None` before `apply` ran. fn native(&self) -> Option<Native<'_>>; }` with `impl for App { fn native(&self) -> Option<Native<'_>> { self.try_global::<NativeTheme>()?.native(self) } }`; use it in README.md:206, geometry.rs:12 and widgets/mod.rs:150. Additive for every user (`App` is the only implementor).
 **Verdict:** CONFIRMED — ActiveNativeTheme (lib.rs:805-815) has only native_theme(), so reaching Native takes two steps. I count 68 `native_theme().and_then(|x| x.native(cx))` sites, plus a `?` form at inspector.rs:431: showcase demo.rs 40, showcase tests.rs 19, support.rs 2 (the showcase's own helpers native_geometry/native_value, :201 and :289), tests/seams.rs 4, README.md:206 1, and src/geometry.rs and src/widgets/mod.rs 1 each. A one-call form is additive and breaks none of them.
 **Triage:** fix — `ActiveNativeTheme::native(cx)`, and the call sites use it.
-**Status:** open
+**Status:** fixed in 4c5410e8 (M6 T2)
 
 
 #### M6-34 · api · api-break · connectors/native-theme-gpui/src/widgets/checkbox.rs:29
@@ -9583,7 +9583,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add `#[non_exhaustive]` to the ten structs; before `pub struct CheckboxLook { pub indicator: Pixels, .. }`, after `#[non_exhaustive] pub struct CheckboxLook { pub indicator: Pixels, .. }`. Field reads and `let mut g = scrollbar_geometry(r); g.track_width = ..` keep working; only a struct literal outside the crate (none known) breaks. `Native` stays constructible.
 **Verdict:** CONFIRMED — All ten structs have pub fields and no #[non_exhaustive] (checkbox.rs:28, switch.rs:27, slider.rs:30, progress.rs:18, separator.rs:13, spinner.rs:53, tab_bar.rs:23 and :73, base_layer.rs:28, icons.rs:51). The struct literals that build them are in-crate (base_layer.rs:66, icons.rs:1196, tab_bar.rs:127, widgets/tests.rs:572). Two callers the change would touch: the compiled no_run doctest at icons.rs:1169 destructures AnimatedImageSources without `..` and would break, and ScrollbarGeometry is also an input (scrollbar_styles :83, apply_overrides :146), so outside code would lose literal construction. iced's AnimatedSvgHandles (iced icons.rs:42-48) has the same unmarked shape, so parity needs it marked too. Also reported by R2 (connectors/native-theme-gpui/src/base_layer.rs:28): `ScrollbarGeometry` is a public struct of public fields without `#[non_exhaustive]`, mirroring gpui-base's private style fields, so the next field gpui-base adds (0.6.4 already reshaped the thumb arithmetic) is a breaking change for any caller that builds it with a struct literal. Verifier: CONFIRMED — base_layer is pub (lib.rs:154), and ScrollbarGeometry (base_layer.rs:28-29) is pub with pub fields and no #[non_exhaustive], unlike the crate's own Loaded (lib.rs:336-339). Note that #[non_exhaustive] would also stop callers building a custom geometry for apply_overrides with a literal or ..base, so they could only mutate one taken from scrollbar_geometry.
 **Triage:** maintainer: 2026-10-15, `#[non_exhaustive]` on all ten; `ScrollbarGeometry` is then made by `scrollbar_geometry(resolved)` and edited field by field; iced's `AnimatedSvgHandles` gets the attribute for parity → fix.
-**Status:** open
+**Status:** fixed in 8212bf00 (M6 T1, maintainer 2026-10-15)
 
 
 #### M6-35 · api · api-add · connectors/native-theme-gpui/src/lib.rs:817
@@ -9592,7 +9592,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** `#[derive(Clone, Copy, Debug)]` on `Native` and `#[derive(Default, Debug)]` on `NativeTheme`. Additive.
 **Verdict:** CONFIRMED — NativeTheme derives only Default (lib.rs:750), Native only Clone, Copy (:817). Every field implements Debug: ResolvedTheme (resolved.rs:161), AccessibilityPreferences (native-theme lib.rs:342) and bool. Loaded derives Debug (lib.rs:338).
 **Triage:** fix — derive `Debug`.
-**Status:** open
+**Status:** fixed in 4c5410e8 (M6 T2)
 
 
 #### M6-36 · api · S4 · connectors/native-theme-gpui/README.md:528
@@ -9601,7 +9601,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** README.md:526-529 and icons.rs:1226-1232 — after: `AnimatedIcon::Transform(_) => { if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) = (anim.icon(), anim.animation()) { let element = with_spin_animation(gpui::svg().data(bytes.clone()), "loading", duration_ms.get()); } }`, and :517 `load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref())` in place of `MaterialLoader::load_indicator()`. No signature change.
 **Verdict:** CONFIRMED — README.md:528-529 and icons.rs:1229-1230 pass a literal 1000 with gpui::svg().path("spinner.svg"), although the Spin animation carries duration_ms and the SVG bytes. The crate's own spinner (widgets/spinner.rs:241-244, :478-487) and the showcase (demo.rs:7842-7848) use svg().data(bytes) with the carried duration_ms. The iced leg was fixed as M5-16.
 **Triage:** fix — the recipe and the example take the period and the bytes from the icon data.
-**Status:** open
+**Status:** fixed in 8212bf00 (M6 T1)
 
 
 #### M6-37 · api · S4 · connectors/native-theme-gpui/README.md:499
@@ -9610,7 +9610,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** Add a 'Role icons' recipe after Custom icons and to the `icons` module doc: `let sys = SystemTheme::from_system()?; let resolved = sys.pick(sys.mode); let fg = resolved.defaults.text_color; if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) { let logical = icon_sizes(resolved).toolbar; if let Some(source) = to_image_source(&data, None, Some((logical * scale_factor) as u32)) { img(source).size(px(logical)) } }` — `None` for the colour because `sys.icon` coloured the bytes. No signature change.
 **Verdict:** CONFIRMED — The README's icon recipes are Custom icons (:499-508) and Animated spinners (:510-534) only; IconRole appears only in the mapping note at :619-620. Core's SystemTheme::icon(id, mode, color) (native-theme/src/lib.rs:687-696) and icons::to_image_source(data, color, size) (icons.rs:963) exist to compose one. iced now has this recipe (iced README.md:556-563, M5-14).
 **Triage:** fix — a role-icon recipe (`SystemTheme::icon` + `to_image_source`), the gpui leg of M5-14.
-**Status:** open
+**Status:** fixed in 2da40afe (M6 T15)
 
 
 #### M6-38 · api · S4 · connectors/native-theme-gpui/src/lib.rs:372
@@ -9619,7 +9619,7 @@ R1 explained the timing lead: the first theme build per new UI or mono font fami
 **Fix proposed:** lib.rs:372 — before `**Ownership note** (Issue 19/31): this function takes ownership of the`; after `**Ownership note:** this function takes ownership of the`. No signature change.
 **Verdict:** CONFIRMED — lib.rs:372 has '**Ownership note** (Issue 19/31)' in from_system's public doc, and it is the only 'Issue N' citation in a public doc. The claim that it is 'the one public doc comment' citing internal references is wrong, though: apply's public doc cites D34, D43, D38 and D37 (lib.rs:846, :862, :867, :868), apply_accessibility cites D35 (:922), and NativeTheme, Native and base_layer cite spec or rationale sections (:747, :816, base_layer.rs:2, :7, :61). Those are just as opaque on docs.rs, so the fix should cover them too.
 **Triage:** fix — every public doc's internal ticket numbers (Issue N, Dnn) go, per the verifier's wider count.
-**Status:** open
+**Status:** fixed in 6226d8e9 (M6 T15)
 
 ### Step 6 — fix plan (2026-10-15)
 
