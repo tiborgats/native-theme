@@ -27,6 +27,7 @@
 //! With no atlas installed, both add egui's own widget unchanged.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use native_theme_egui::convert::{composite_over, to_color32};
 use native_theme_egui::egui;
@@ -34,9 +35,11 @@ use native_theme_egui::native_theme::theme::ResolvedLinkTheme;
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
 
 /// The URLs a [`hyperlink`] of this `Context` was clicked for: its visited set, kept in
-/// `Context` data for the life of the `Context`.
+/// `Context` data for the life of the `Context`. Shared, so a read clones the `Arc` and not the
+/// set (`IdTypeMap::get_temp` clones the value it finds, `egui/src/util/id_type_map.rs:448-450`);
+/// a click copies it only while a read still holds it.
 #[derive(Clone, Default)]
-struct Visited(BTreeSet<String>);
+struct Visited(Arc<BTreeSet<String>>);
 
 fn visited_key() -> egui::Id {
     egui::Id::new("native-theme-egui-widgets::visited")
@@ -73,8 +76,7 @@ pub fn hyperlink<'a>(
             let (response, visited) = themed(ui, &l, text, Some(&url));
             if response.clicked() && !visited {
                 ui.ctx().data_mut(|d| {
-                    d.get_temp_mut_or_default::<Visited>(visited_key())
-                        .0
+                    Arc::make_mut(&mut d.get_temp_mut_or_default::<Visited>(visited_key()).0)
                         .insert(url);
                 });
                 ui.ctx().request_repaint();
