@@ -59,6 +59,20 @@ pub struct ThemeWatcher {
     _subscription: native_theme::watch::ThemeSubscription,
 }
 
+impl std::fmt::Debug for ThemeWatcher {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let pending = self
+            .handoff
+            .pending
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_some();
+        f.debug_struct("ThemeWatcher")
+            .field("pending", &pending)
+            .finish_non_exhaustive()
+    }
+}
+
 impl ThemeWatcher {
     /// Start watching. `rebuild` runs on the watcher thread after each change event and
     /// returns the atlas to hand over: [`ThemeWatcher::system_rebuild`] for an application on
@@ -197,6 +211,29 @@ mod tests {
         let ctx = egui::Context::default();
         if let Err(e) = ThemeWatcher::start(&ctx, ThemeWatcher::system_rebuild) {
             println!("start returned an error: {e:?}");
+        }
+    }
+
+    /// M7-05: an application struct that derives `Debug` can hold an `Option<ThemeWatcher>`,
+    /// the README's own pattern; a running watcher shows whether an atlas is pending.
+    #[test]
+    fn a_struct_deriving_debug_can_hold_a_watcher() {
+        #[derive(Debug)]
+        struct App {
+            watcher: Option<ThemeWatcher>,
+        }
+        let ctx = egui::Context::default();
+        let app = App {
+            watcher: ThemeWatcher::start(&ctx, adwaita).ok(),
+        };
+        let shown = format!("{app:?}");
+        match app.watcher {
+            Some(_) => assert!(
+                shown.contains("ThemeWatcher { pending: false, .. }")
+                    || shown.contains("ThemeWatcher { pending: true, .. }"),
+                "{shown}"
+            ),
+            None => assert_eq!(shown, "App { watcher: None }"),
         }
     }
 }
