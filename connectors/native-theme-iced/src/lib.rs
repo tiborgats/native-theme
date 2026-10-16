@@ -289,8 +289,8 @@ pub use watch::theme_changes;
 // The source crate, re-exported as the egui connector does, so an
 // application reaches the rest of native-theme's API
 // (`native_theme_iced::native_theme::detect::invalidate_caches()`) without a
-// dependency of its own, and a downstream `Cargo.toml` cannot bring in a
-// second, mismatched copy.
+// dependency of its own: a downstream `Cargo.toml` need not add a second
+// one, whose version could drift from the connector's.
 pub use native_theme;
 
 // Re-export native-theme types that appear in public signatures.

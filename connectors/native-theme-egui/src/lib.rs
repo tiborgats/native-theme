@@ -182,10 +182,11 @@ pub use watch::ThemeWatcher;
 mod tripwires;
 
 // ---- toolkit and source-crate re-exports -----------------------------------
-// Both are re-exported so a downstream `Cargo.toml` cannot introduce a second
-// copy of either crate. Two `egui` versions in one graph produce
-// "expected `egui::Style`, found `egui::Style`", which is the single most
-// common downstream failure with a toolkit connector.
+// Both are re-exported so a downstream `Cargo.toml` need not add a second
+// dependency on either crate, whose version could drift from the connector's.
+// Two `egui` versions in one graph produce "expected `egui::Style`, found
+// `egui::Style`", which is the single most common downstream failure with a
+// toolkit connector.
 pub use egui;
 pub use native_theme;
 
