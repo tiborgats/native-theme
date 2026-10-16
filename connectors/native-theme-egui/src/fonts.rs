@@ -408,6 +408,32 @@ pub(crate) fn body_row_height(defs: &egui::FontDefinitions, size: f32) -> Option
     (row.is_finite() && row > 0.0).then_some(row)
 }
 
+/// The width of the widest glyph any face of `defs` can draw, in em of the font size
+/// (M7-04): per face, skrifa's `Metrics::bounds` (`skrifa-0.44.0/src/metrics.rs:72-102`, filled
+/// from the `head` table at `:116-122`), the face's own bounding box, which every glyph's
+/// box lies inside, as `(x_max − x_min) / units_per_em × tweak.scale` — epaint draws a glyph
+/// at `font_size × tweak.scale × pixels_per_point` (`epaint/src/text/font.rs:567`) — and the
+/// maximum over the faces. Parsed as [`body_row_height`] parses its face. A face that does
+/// not parse, states no `head`, or gives no finite positive width is passed over; `None` when
+/// no face gives one.
+pub(crate) fn widest_glyph_em(defs: &egui::FontDefinitions) -> Option<f32> {
+    use skrifa::MetadataProvider as _;
+
+    defs.font_data
+        .values()
+        .filter_map(|data| {
+            let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
+            let m = face.metrics(
+                skrifa::instance::Size::unscaled(),
+                skrifa::instance::LocationRef::default(),
+            );
+            let bounds = m.bounds?;
+            let em = (bounds.x_max - bounds.x_min) / f32::from(m.units_per_em) * data.tweak.scale;
+            (em.is_finite() && em > 0.0).then_some(em)
+        })
+        .reduce(f32::max)
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -433,6 +459,34 @@ mod tests {
             assert_eq!(body_row_height(&defs, size), Some(want), "size {size}");
         }
         assert_eq!(body_row_height(&egui::FontDefinitions::empty(), 13.0), None);
+    }
+
+    /// M7-04: the widest glyph of egui's default faces is the widest `head` box, read here
+    /// from the table itself (`skrifa::raw::tables::head`), over `unitsPerEm`, times the
+    /// face's `FontTweak::scale`; a definitions with no face has none.
+    #[test]
+    fn widest_glyph_em_is_the_widest_head_box() {
+        use skrifa::raw::TableProvider as _;
+        let defs = egui::FontDefinitions::default();
+        let want = defs
+            .font_data
+            .values()
+            .map(|data| {
+                let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
+                let head = face.head().unwrap();
+                f32::from(head.x_max() - head.x_min()) / f32::from(head.units_per_em())
+                    * data.tweak.scale
+            })
+            .fold(0.0_f32, f32::max);
+        assert!(want > 0.0);
+        assert_eq!(widest_glyph_em(&defs), Some(want));
+        assert_eq!(widest_glyph_em(&egui::FontDefinitions::empty()), None);
+        let mut garbage = egui::FontDefinitions::empty();
+        garbage.font_data.insert(
+            "garbage".to_owned(),
+            Arc::new(egui::FontData::from_static(b"garbage")),
+        );
+        assert_eq!(widest_glyph_em(&garbage), None);
     }
 
     /// `weight_coords` is the `wght` axis at the CSS weight, built independently here.

@@ -2,6 +2,8 @@
 //! pass and per viewport, the `Ui`s a role scope styled and the radius each took; the plugin
 //! reads the record at the end of the pass.
 
+use std::sync::Arc;
+
 use egui::{Context, CornerRadius, Id, Rect, StrokeKind};
 
 use crate::atlas::FocusRing;
@@ -129,8 +131,98 @@ pub fn register_focus_shape(ctx: &Context, id: Id, rect: Rect, corner_radius: Co
     });
 }
 
+/// epaint's font-atlas width bound: `max_texture_side.at_most(16 * 1024)`
+/// (`epaint/src/text/fonts.rs:975`).
+const FONT_ATLAS_MAX_WIDTH: usize = 16 * 1024;
+
+/// The pixels `path.control_box().expand()` can add to a glyph outline's width
+/// (`epaint/src/text/font.rs:266-267`): kurbo's `Rect::expand` floors one side and ceils the
+/// other outward (`kurbo-0.13.1/src/rect.rs:430-442`, the kurbo epaint reaches through
+/// `vello_cpu`), adding less than one pixel on each.
+const GLYPH_BOX_ROUNDING: usize = 2;
+
+/// [`ThemeAtlas::text_size_cap`]'s derivation (M7-04): the font atlas's width
+/// (`epaint/src/text/fonts.rs:975`) less [`GLYPH_BOX_ROUNDING`], over the width of the widest
+/// glyph at one point, `pixels_per_point × widest_glyph_em`, floored. `None` where that is not
+/// a positive normal `f32`: a `max_texture_side` of two pixels or fewer, or a
+/// `pixels_per_point` or width that is zero, negative or not finite.
+pub(crate) fn derive_text_size_cap(
+    max_texture_side: usize,
+    pixels_per_point: f32,
+    widest_glyph_em: f32,
+) -> Option<f32> {
+    let width = max_texture_side
+        .min(FONT_ATLAS_MAX_WIDTH)
+        .saturating_sub(GLYPH_BOX_ROUNDING);
+    let width = f32::from(u16::try_from(width).ok()?); // at most 16382: exact
+    let cap = (width / (pixels_per_point * widest_glyph_em)).floor();
+    (cap.is_normal() && cap > 0.0).then_some(cap)
+}
+
+/// Whether a text size of `style` — a `text_styles` entry or `override_font_id` — is above `cap`.
+fn exceeds_cap(style: &egui::Style, cap: f32) -> bool {
+    style
+        .text_styles
+        .values()
+        .chain(style.override_font_id.as_ref())
+        .any(|font| font.size > cap)
+}
+
+/// Lower every text size of `style` above `cap` to it (M7-04).
+pub(crate) fn clamp_text_sizes(style: &mut egui::Style, cap: f32) {
+    for font in style
+        .text_styles
+        .values_mut()
+        .chain(style.override_font_id.as_mut())
+    {
+        if font.size > cap {
+            font.size = cap;
+        }
+    }
+}
+
+/// `style` with every text size above `cap` lowered to it: the same `Arc` when none is, a
+/// copy only in that pathological case (M7-04).
+pub(crate) fn capped(style: Arc<egui::Style>, cap: Option<f32>) -> Arc<egui::Style> {
+    match cap {
+        Some(cap) if exceeds_cap(&style, cap) => {
+            let mut next = egui::Style::clone(&style);
+            clamp_text_sizes(&mut next, cap);
+            Arc::new(next)
+        }
+        _ => style,
+    }
+}
+
+/// Derive the atlas's text-size cap for a pass, store it, and lower every size above it in both
+/// base styles the `Context` holds (M7-04). `style_of` (`egui/src/context.rs:2221`) is an `Arc`
+/// clone; `set_style_of` (`:2250`) runs only for a style with a size above the cap, so a pass
+/// writes nothing unless a size needs lowering. Checked every pass, not only when an input
+/// changed: a re-install of the same atlas writes its uncapped base styles again.
+fn cap_text_sizes(
+    ctx: &Context,
+    atlas: &ThemeAtlas,
+    max_texture_side: usize,
+    pixels_per_point: f32,
+) -> Option<f32> {
+    let cap = atlas
+        .widest_glyph_em()
+        .and_then(|em| derive_text_size_cap(max_texture_side, pixels_per_point, em));
+    atlas.set_text_size_cap(cap);
+    if let Some(cap) = cap {
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            let style = ctx.style_of(theme);
+            if exceeds_cap(&style, cap) {
+                ctx.set_style_of(theme, capped(style, Some(cap)));
+            }
+        }
+    }
+    cap
+}
+
 /// The install plugin of §10.3: the OS colour scheme where the integration reports none, the
-/// title bar that follows it, and the focus ring of §6.18. It holds no theme data — every hook
+/// title bar that follows it, the focus ring of §6.18 and the text-size cap of M7-04
+/// ([`ThemeAtlas::text_size_cap`]). It holds no theme data — every hook
 /// reads the atlas `install` published, so a re-install takes effect with no second
 /// registration (egui keeps the first plugin of a type, `egui/src/context.rs:2045`,
 /// `egui/src/plugin.rs:206-210`) — only its own bookkeeping: which viewports' input it filled
@@ -155,8 +247,20 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// the hook runs before `Options::begin_pass` copies the field
     /// (`egui/src/context.rs:966-968`, `egui/src/memory/mod.rs:358-359`). The viewport is the
     /// input's own: `Context::viewport_id` is not for use outside a pass.
+    ///
+    /// Then, before egui builds the pass's root `Ui` from the `Context`'s style
+    /// (`egui/src/context.rs:802-808`, after `begin_pass` ran this hook at `:966`), the
+    /// text-size cap of M7-04 for this pass: from the input's `max_texture_side`, or where it
+    /// gives none the viewport's last (`Context::input_for`, `egui/src/context.rs:997`; egui
+    /// keeps it, `egui/src/input_state/mod.rs:482`), and `pixels_per_point` as egui forms it,
+    /// `native_pixels_per_point` (`1.0` where none is given) × `zoom_factor`
+    /// (`egui/src/context.rs:451-455`).
     fn input_hook(&mut self, ctx: &Context, input: &mut egui::RawInput) {
-        let filled = match (input.system_theme, os_mode(ctx)) {
+        let atlas = ThemeAtlas::from_ctx(ctx);
+        let filled = match (
+            input.system_theme,
+            atlas.as_ref().and_then(ThemeAtlas::os_mode),
+        ) {
             (None, Some(mode)) => {
                 input.system_theme = Some(if mode.is_dark() {
                     egui::Theme::Dark
@@ -168,6 +272,46 @@ impl egui::plugin::Plugin for NativeThemePlugin {
             _ => false,
         };
         self.filled.insert(input.viewport_id, filled);
+        if let Some(atlas) = atlas {
+            let max_texture_side = input
+                .max_texture_side
+                .unwrap_or_else(|| ctx.input_for(input.viewport_id, |i| i.max_texture_side));
+            // `RawInput::viewport` panics on a missing entry
+            // (`egui/src/data/input/raw_input.rs:116-118`), so `get`.
+            let native = input
+                .viewports
+                .get(&input.viewport_id)
+                .and_then(|viewport| viewport.native_pixels_per_point)
+                .unwrap_or(1.0);
+            cap_text_sizes(ctx, &atlas, max_texture_side, native * ctx.zoom_factor());
+        }
+    }
+
+    /// A zoom set during the last pass takes effect inside `begin_pass`
+    /// (`egui/src/context.rs:438-441`), after `input_hook` ran with the previous
+    /// `zoom_factor`, so the cap is derived again from the pass's own `pixels_per_point`; where
+    /// it differs, the base styles and this root `Ui`'s style, already built from them, are
+    /// lowered to it (M7-04). An application that runs passes with `Context::begin_pass` rather
+    /// than `Context::run_ui` gets no `on_begin_pass` (`egui/src/context.rs:811`), and its cap
+    /// follows a zoom change one pass late.
+    fn on_begin_pass(&mut self, ui: &mut egui::Ui) {
+        let ctx = ui.ctx().clone();
+        let Some(atlas) = ThemeAtlas::from_ctx(&ctx) else {
+            return;
+        };
+        let (max_texture_side, pixels_per_point) =
+            ctx.input(|i| (i.max_texture_side, i.pixels_per_point()));
+        let derived = atlas
+            .widest_glyph_em()
+            .and_then(|em| derive_text_size_cap(max_texture_side, pixels_per_point, em));
+        if derived == atlas.text_size_cap() {
+            return;
+        }
+        if let Some(cap) = cap_text_sizes(&ctx, &atlas, max_texture_side, pixels_per_point)
+            && exceeds_cap(ui.style(), cap)
+        {
+            clamp_text_sizes(ui.style_mut(), cap);
+        }
     }
 
     /// In a pass whose `input_hook` filled the scheme, while `Options::sync_window_theme` holds
@@ -376,6 +520,57 @@ mod tests {
                 path: "defaults.focus_ring_offset"
             }]
         );
+    }
+
+    /// M7-04: the cap is the atlas width less two pixels over the widest glyph's width at one
+    /// point, floored; the atlas is never wider than 16 × 1024 (`epaint/src/text/fonts.rs:975`).
+    #[test]
+    fn the_text_size_cap_is_the_atlas_width_over_the_widest_glyph() {
+        assert_eq!(derive_text_size_cap(2048, 1.0, 1.0), Some(2046.0));
+        assert_eq!(derive_text_size_cap(2048, 2.0, 1.0), Some(1023.0));
+        assert_eq!(derive_text_size_cap(2048, 1.0, 4.0), Some(511.0)); // 511.5, floored
+        assert_eq!(derive_text_size_cap(2048, 1.5, 0.5), Some(2728.0));
+        assert_eq!(derive_text_size_cap(1 << 20, 1.0, 1.0), Some(16382.0));
+        assert_eq!(derive_text_size_cap(16 * 1024, 1.0, 1.0), Some(16382.0));
+        // Nothing to divide by, or no width: no cap.
+        assert_eq!(derive_text_size_cap(2, 1.0, 1.0), None);
+        assert_eq!(derive_text_size_cap(0, 1.0, 1.0), None);
+        assert_eq!(derive_text_size_cap(2048, 0.0, 1.0), None);
+        assert_eq!(derive_text_size_cap(2048, f32::NAN, 1.0), None);
+        assert_eq!(derive_text_size_cap(2048, 1.0, f32::INFINITY), None);
+        assert_eq!(derive_text_size_cap(2048, -1.0, 1.0), None);
+        // A width below one point at the cap's scale floors to zero: no cap.
+        assert_eq!(derive_text_size_cap(2048, 1.0, 4096.0), None);
+    }
+
+    /// M7-04: `capped` hands the same `Arc` back when no size is above the cap, and lowers
+    /// exactly the sizes above it — `text_styles` and `override_font_id` alike.
+    #[test]
+    fn capped_lowers_only_the_sizes_above_the_cap() {
+        let style = Arc::new(egui::Style::default());
+        assert!(Arc::ptr_eq(&capped(Arc::clone(&style), None), &style));
+        assert!(Arc::ptr_eq(
+            &capped(Arc::clone(&style), Some(1000.0)),
+            &style
+        ));
+        let mut big = egui::Style {
+            override_font_id: Some(egui::FontId::proportional(500.0)),
+            ..egui::Style::default()
+        };
+        if let Some(body) = big.text_styles.get_mut(&egui::TextStyle::Body) {
+            body.size = 400.0;
+        }
+        let out = capped(Arc::new(big), Some(300.0));
+        assert_eq!(out.override_font_id.as_ref().map(|f| f.size), Some(300.0));
+        let own = egui::Style::default();
+        for (slot, font) in &out.text_styles {
+            let want = if *slot == egui::TextStyle::Body {
+                300.0
+            } else {
+                own.text_styles[slot].size
+            };
+            assert_eq!(font.size, want, "{slot:?}");
+        }
     }
 
     #[test]

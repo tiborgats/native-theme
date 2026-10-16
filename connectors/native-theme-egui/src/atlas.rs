@@ -2,6 +2,7 @@
 //! `AtlasInner`, `SchemeStyles`, `Builder`.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::fonts::FontPlan;
 use crate::style::{BuildInput, compile, egui_preset};
@@ -147,6 +148,13 @@ pub(crate) struct AtlasInner {
     pub(crate) icon_theme: [Option<String>; 2],
     /// The definitions `install` sets (§10.3 step 1); `None` when no plan was given.
     pub(crate) fonts: Option<egui::FontDefinitions>,
+    /// The widest glyph of the faces the atlas installs, in em (`fonts::widest_glyph_em`):
+    /// the plan's definitions, or `egui::FontDefinitions::default()` with no plan; `None`
+    /// when no face states a bounding box.
+    pub(crate) widest_glyph_em: Option<f32>,
+    /// [`ThemeAtlas::text_size_cap`] as `f32` bits, `f32::INFINITY` until the install plugin
+    /// derives it (M7-04).
+    pub(crate) text_size_cap: AtomicU32,
     pub(crate) notes: Vec<Note>,
 }
 
@@ -210,7 +218,9 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// `FontFamily` (an `Arc<str>` in `Name`) and `Arc<FontData>` (`epaint/src/text/fonts.rs:431-444`,
 /// `:74-95`), a `FontData` being a `Cow<'static, [u8]>`, a `u32` and a `FontTweak` of plain
 /// values (`:112-122`, `:208-264`) — [`Builder::style_patch`]'s closure
-/// is applied at build and not kept; and a `ResolvedTheme` is plain
+/// is applied at build and not kept; the widest glyph of those faces (`Option<f32>`) and the
+/// [`ThemeAtlas::text_size_cap`] the install plugin derives from it (an `AtomicU32`, shared by
+/// every clone); and a `ResolvedTheme` is plain
 /// owned data with no interior mutability and no `Rc`
 /// (`native-theme/src/model/resolved.rs:158-217`).
 ///
@@ -373,8 +383,9 @@ impl ThemeAtlas {
     /// The modifier replaces the whole `Style`, like `impl From<Style> for StyleModifier`
     /// (`egui/src/style.rs:211-215`), except that every `TextStyle::Name` key of the style it
     /// receives is carried into the replacement — the closure is handed that style
-    /// (`egui/src/style.rs:194`, `:225-229`), so this costs nothing when there is none. Its
-    /// closure captures one `Arc<Style>`.
+    /// (`egui/src/style.rs:194`, `:225-229`), so this costs nothing when there is none — and
+    /// that every text size above [`ThemeAtlas::text_size_cap`], read when the closure runs, is
+    /// lowered to it. Its closure captures the atlas handle, one `Arc`.
     #[must_use]
     pub fn role_modifier(
         &self,
@@ -382,11 +393,15 @@ impl ThemeAtlas {
         role: Role,
         variant: RoleVariant,
     ) -> egui::style::StyleModifier {
-        let cell = Arc::clone(self.scheme(theme).cell(role, variant));
+        let atlas = self.clone();
         egui::style::StyleModifier::new(move |style: &mut egui::Style| {
-            let mut next = egui::Style::clone(&cell);
-            for (key, font) in missing_name_keys(style, &cell) {
+            let cell = atlas.scheme(theme).cell(role, variant);
+            let mut next = egui::Style::clone(cell);
+            for (key, font) in missing_name_keys(style, cell) {
                 next.text_styles.insert(key.clone(), font.clone());
+            }
+            if let Some(cap) = atlas.text_size_cap() {
+                crate::plugin::clamp_text_sizes(&mut next, cap);
             }
             *style = next;
         })
@@ -405,6 +420,46 @@ impl ThemeAtlas {
     #[must_use = "this returns the frame recipe; hand it to a container's `.frame(..)`"]
     pub fn surface_frame(&self, theme: egui::Theme, surface: Surface) -> egui::Frame {
         self.scheme(theme).frame(surface)
+    }
+
+    /// The largest text size, in points, epaint can draw in the pass in progress, and the size
+    /// every larger one this atlas hands egui is lowered to (M7-04). epaint rasterises a glyph
+    /// at its full size and asserts that it fits its font atlas
+    /// (`epaint/src/texture_atlas.rs:226-231`) — a panic in release builds too — whose width is
+    /// `max_texture_side` at most `16 × 1024` (`epaint/src/text/fonts.rs:975`). So the cap is
+    /// `floor((min(max_texture_side, 16 × 1024) − 2) / (pixels_per_point × w))`: the atlas width
+    /// less the two pixels by which epaint rounds a glyph's outline box out
+    /// (`epaint/src/text/font.rs:266-267`), over the width at one point of `w`, the widest glyph
+    /// of the faces the atlas installs in em — each face's own `head` bounding box (skrifa's
+    /// `Metrics::bounds`, `skrifa-0.44.0/src/metrics.rs:72-102`), which every glyph's box lies
+    /// inside, times its `FontTweak::scale` ([`Builder::fonts`] names the faces).
+    ///
+    /// Both inputs are the GPU's and the monitor's, known only at run time, so the install
+    /// plugin derives the cap before every pass from that pass's `RawInput::max_texture_side`
+    /// (`egui/src/data/input/raw_input.rs:45`; the last pass's where the integration gives
+    /// none) and `pixels_per_point` (`native_pixels_per_point × zoom_factor`, egui's own
+    /// product, `egui/src/context.rs:451-455`) — again at the start of a `Context::run_ui`
+    /// pass in which a zoom set in the last pass took effect — and lowers to it every
+    /// `text_styles` size above it in both base styles the `Context` holds;
+    /// [`NativeThemeUiExt`](crate::NativeThemeUiExt)'s role styles and
+    /// [`ThemeAtlas::role_modifier`]'s are lowered the same way when they are handed over. A
+    /// size is only ever lowered: a cap that rises again — the window moved to a monitor of
+    /// fewer pixels per point — restores nothing until the next [`ThemeAtlas::install`].
+    ///
+    /// `None` until a pass has run with the atlas installed, and where no face of the atlas
+    /// states a bounding box. An atlas installed into several `Context`s, or drawn in
+    /// viewports of different `pixels_per_point`, reports the last pass's. A size handed to
+    /// egui by the application — from [`text_role_font`](crate::text_role_font),
+    /// [`window_title_bar_font`](crate::window_title_bar_font),
+    /// [`list_header_font`](crate::list_header_font) or
+    /// [`scaled_text_size`](crate::scaled_text_size) — is the application's to clamp to it.
+    /// Not bounded by it: a glyph whose outline exceeds its face's `head` box by more than
+    /// the floor leaves (a CFF face's control box can), and a face the application adds to
+    /// the `Context` itself.
+    #[must_use]
+    pub fn text_size_cap(&self) -> Option<f32> {
+        let cap = f32::from_bits(self.0.text_size_cap.load(Ordering::Relaxed));
+        cap.is_finite().then_some(cap)
     }
 
     /// Non-fatal observations made while compiling this atlas: sanitised values, saturated
@@ -507,6 +562,17 @@ impl ThemeAtlas {
     pub(crate) fn focus_ring(&self, theme: egui::Theme) -> Option<&FocusRing> {
         self.0.scheme(theme).focus_ring.as_ref()
     }
+
+    /// The widest glyph of the faces the atlas installs, in em (M7-04).
+    pub(crate) fn widest_glyph_em(&self) -> Option<f32> {
+        self.0.widest_glyph_em
+    }
+
+    /// Store the cap the install plugin derived for a pass; `None` is no cap.
+    pub(crate) fn set_text_size_cap(&self, cap: Option<f32>) {
+        let bits = cap.unwrap_or(f32::INFINITY).to_bits();
+        self.0.text_size_cap.store(bits, Ordering::Relaxed);
+    }
 }
 
 /// Additive builder for [`ThemeAtlas`]. Every optional input is a method here, so a future
@@ -554,6 +620,11 @@ impl<'a> Builder<'a> {
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
     ///   and each `Style::override_font_id` size, in the base styles and in every role style —
     ///   is [`scaled_text_size`](crate::scaled_text_size) of the theme's size. No other length is scaled.
+    ///   A size above [`ThemeAtlas::text_size_cap`] — a large factor (`1000.0` takes a 13 pt
+    ///   size to 13000), or a theme file stating one — is lowered to it by the install plugin
+    ///   before each pass: epaint panics on a glyph wider than its font atlas
+    ///   (`epaint/src/texture_atlas.rs:226-231`), and how wide that is depends on the GPU's
+    ///   `max_texture_side` and the pass's `pixels_per_point`, so no build-time bound is right.
     /// * **Reduced motion.** With `reduce_motion` set, every style gets
     ///   `Style::animation_time = 0.0` (`egui/src/style.rs:318`; egui's default `0.2` at
     ///   `:1440`) and `Style::scroll_animation = ScrollAnimation::none()` (`:338`, `:858`).
@@ -583,6 +654,12 @@ impl<'a> Builder<'a> {
     /// `Context`'s fonts as they are. For the OS's own typefaces pass
     /// `fonts::FontPlan::from_system`'s plan (feature `system-fonts`), whose lookup notes
     /// then join [`ThemeAtlas::notes`].
+    ///
+    /// The faces of the `FontDefinitions` the plan makes
+    /// ([`fonts::font_definitions`](crate::fonts::font_definitions)) — without a plan,
+    /// `egui::FontDefinitions::default()`'s, the faces a `Context` keeps unless the
+    /// application replaces them — are the ones whose widest glyph bounds
+    /// [`ThemeAtlas::text_size_cap`].
     pub fn fonts(mut self, plan: FontPlan) -> Self {
         self.fonts = Some(plan);
         self
@@ -657,6 +734,9 @@ impl<'a> Builder<'a> {
     /// row height does not depend on `pixels_per_point`
     /// (`epaint/src/text/font.rs:561-565` scales by the font size alone), so no zoom or DPI
     /// change invalidates either value.
+    ///
+    /// Recorded here too, from the same faces, is the width of their widest glyph in em, which
+    /// the install plugin turns into [`ThemeAtlas::text_size_cap`] at run time.
     #[must_use = "this builds the styles; it does not install them"]
     pub fn build(self) -> ThemeAtlas {
         let mut notes = Vec::new();
@@ -670,6 +750,7 @@ impl<'a> Builder<'a> {
             defs
         });
         let defs = fonts.clone().unwrap_or_default(); // egui's default faces for an atlas with no plan
+        let widest_glyph_em = crate::fonts::widest_glyph_em(&defs);
         let light = compile_scheme(
             egui::Theme::Light,
             self.light,
@@ -704,6 +785,8 @@ impl<'a> Builder<'a> {
                 self.icon_theme[1].map(str::to_owned),
             ],
             fonts,
+            widest_glyph_em,
+            text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
             notes,
         }))
     }

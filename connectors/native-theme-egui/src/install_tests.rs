@@ -2751,3 +2751,139 @@ mod t13_accessibility {
         }
     }
 }
+
+/// M7-04: kde-breeze under a theme file stating `defaults.font.size` 30000 px in both
+/// variants, which core accepts (`native-theme/src/resolve/validate_helpers.rs:491` rejects
+/// only a size that is not finite and positive).
+fn huge_text_theme() -> ResolvedTheme {
+    let mut theme = Theme::preset("kde-breeze").unwrap();
+    let overlay = Theme::from_toml(
+        "name = \"huge\"\n\
+         [light.defaults.font]\nsize_px = 30000.0\n\
+         [dark.defaults.font]\nsize_px = 30000.0\n",
+    )
+    .unwrap();
+    theme.merge(&overlay);
+    theme
+        .into_variant(ColorMode::Light)
+        .unwrap()
+        .resolve_system()
+        .unwrap()
+}
+
+/// M7-04's gate: a pass drawing `"W"` at a stated 30000 px completes. epaint rasterises a
+/// glyph at its full size and asserts it fits the font atlas's width
+/// (`epaint/src/texture_atlas.rs:226-231`), which a 30000 px `W` never does; the install
+/// plugin lowers the Body size to the cap before the pass.
+#[test]
+fn a_huge_stated_text_size_draws() {
+    let t = huge_text_theme();
+    assert_eq!(t.defaults.font.size, 30000.0);
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let mut harness = egui_kittest::Harness::new_ui(|ui| {
+        ui.label("W");
+    });
+    atlas.install(&harness.ctx);
+    harness.step();
+    let cap = atlas.text_size_cap().expect("derived in the pass");
+    assert!(cap < 30000.0, "{cap}");
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let style = harness.ctx.style_of(theme);
+        let body = style.text_styles.get(&egui::TextStyle::Body).unwrap();
+        assert_eq!(body.size, cap, "{theme:?}");
+    }
+}
+
+/// M7-04: the role styles handed over by `native_scope`, `native_set_style` and
+/// `role_modifier` are capped too — kde-breeze's button font states no size, so it inherits
+/// the 30000 px (`override_font_id`, B3), as do the cell's `text_styles`.
+#[test]
+fn a_huge_stated_text_size_draws_in_a_role_scope() {
+    use crate::NativeThemeUiExt as _;
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let cell = atlas
+        .scheme(egui::Theme::Light)
+        .cell(Role::Button, RoleVariant::Normal);
+    assert_eq!(
+        cell.override_font_id.as_ref().map(|f| f.size),
+        Some(30000.0)
+    );
+    let mut harness = egui_kittest::Harness::new_ui(|ui| {
+        ui.native_scope(Role::Button, RoleVariant::Normal, |ui| {
+            let _ = ui.button("W");
+            ui.label("W");
+        });
+        ui.native_set_style(Role::Button, RoleVariant::Normal);
+        let _ = ui.button("W");
+    });
+    atlas.install(&harness.ctx);
+    harness.step();
+    let cap = atlas.text_size_cap().expect("derived in the pass");
+    let mut style = egui::Style::default();
+    atlas
+        .role_modifier(egui::Theme::Light, Role::Button, RoleVariant::Normal)
+        .apply(&mut style);
+    assert_eq!(style.override_font_id.map(|f| f.size), Some(cap));
+    assert!(style.text_styles.values().all(|f| f.size <= cap));
+}
+
+/// The pass's `pixels_per_point` as `RawInput` states it.
+fn input_at(native_pixels_per_point: f32) -> egui::RawInput {
+    let mut input = egui::RawInput::default();
+    if let Some(viewport) = input.viewports.get_mut(&egui::ViewportId::ROOT) {
+        viewport.native_pixels_per_point = Some(native_pixels_per_point);
+    }
+    input
+}
+
+/// M7-04: a pass whose `native_pixels_per_point` doubles re-derives the cap, which halves (to
+/// within the floor), and lowers the base styles to the new one.
+#[test]
+fn a_doubled_pixels_per_point_halves_the_cap() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let one = atlas.text_size_cap().expect("derived at 1.0");
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        ui.label("W");
+    });
+    let two = atlas.text_size_cap().expect("derived at 2.0");
+    assert!(two <= one / 2.0 && two > one / 2.0 - 1.0, "{one} -> {two}");
+    let body = |c: &egui::Context| {
+        c.style_of(egui::Theme::Light)
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .unwrap()
+            .size
+    };
+    assert_eq!(body(&ctx), two);
+}
+
+/// M7-04: a zoom set in one pass takes effect inside the next pass's `begin_pass`
+/// (`egui/src/context.rs:438-441`), after `input_hook`; the plugin's `on_begin_pass` derives
+/// the cap again from the pass's own `pixels_per_point`, and that pass draws.
+#[test]
+fn a_zoom_change_is_capped_in_its_own_pass() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let one = atlas.text_size_cap().expect("derived at zoom 1");
+    // At 8× the zoom-1 cap, a `W` (measured: 0.849 em in egui's Ubuntu-Light, whose `head`
+    // box is 3.678 em wide) is wider than the 2048 px atlas egui's default `max_texture_side`
+    // gives (`egui/src/input_state/mod.rs:349`).
+    ctx.set_zoom_factor(8.0);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let eight = atlas.text_size_cap().expect("derived at zoom 8");
+    assert!(eight <= one / 8.0, "{one} -> {eight}");
+}

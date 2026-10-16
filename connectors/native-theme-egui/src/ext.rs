@@ -1,5 +1,5 @@
 use crate::atlas::carry_name_keys;
-use crate::plugin::record_scope;
+use crate::plugin::{capped, record_scope};
 use crate::style::egui_preset;
 use crate::{Role, RoleVariant, Surface, ThemeAtlas};
 
@@ -32,7 +32,9 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// is carried into the child, so an application's named text styles resolve inside the
     /// scope as outside it (`TextStyle::resolve` would panic on a missing one,
     /// `egui/src/style.rs:112-120`); the role's `Arc` is handed over as is when there is no
-    /// such key; a copy is made only when there is one.
+    /// such key; a copy is made only when there is one. A copy is also made when a text size
+    /// of the style is above [`ThemeAtlas::text_size_cap`](crate::ThemeAtlas::text_size_cap),
+    /// and the size lowered to it (M7-04).
     ///
     /// It also records, for this pass, the child `Ui`'s `unique_id` (`egui/src/ui.rs:357-359`)
     /// with the role style's `widgets.active.corner_radius`, so the focus ring around a widget
@@ -53,8 +55,9 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     ) -> egui::InnerResponse<R>;
 
     /// Replace this `Ui`'s own style with `role`'s in `variant` for the remainder of the `Ui`
-    /// (`Ui::set_style`, `egui/src/ui.rs:387`), carrying its `TextStyle::Name` keys as
-    /// [`NativeThemeUiExt::native_scope`] does; nothing changes when no atlas is installed.
+    /// (`Ui::set_style`, `egui/src/ui.rs:387`), carrying its `TextStyle::Name` keys and
+    /// lowering a text size above the cap as [`NativeThemeUiExt::native_scope`] does; nothing
+    /// changes when no atlas is installed.
     /// Records this `Ui` and the role's corner radius for the focus ring as `native_scope`
     /// does, a later call on the same `Ui` replacing the record (§6.18). On the root `Ui`
     /// that `Context::run_ui` hands over, the ring reads the root's own style at the end of
@@ -92,7 +95,10 @@ impl NativeThemeUiExt for egui::Ui {
             return self.scope(add_contents);
         };
         let theme = self.ctx().theme();
-        let style = carry_name_keys(self.style(), atlas.scheme(theme).cell(role, variant));
+        let style = capped(
+            carry_name_keys(self.style(), atlas.scheme(theme).cell(role, variant)),
+            atlas.text_size_cap(),
+        );
         let radius = style.visuals.widgets.active.corner_radius;
         self.scope_builder(egui::UiBuilder::new().style(style), |child| {
             record_scope(child.ctx(), child.unique_id(), radius);
@@ -105,7 +111,10 @@ impl NativeThemeUiExt for egui::Ui {
             return;
         };
         let theme = self.ctx().theme();
-        let style = carry_name_keys(self.style(), atlas.scheme(theme).cell(role, variant));
+        let style = capped(
+            carry_name_keys(self.style(), atlas.scheme(theme).cell(role, variant)),
+            atlas.text_size_cap(),
+        );
         let radius = style.visuals.widgets.active.corner_radius;
         record_scope(self.ctx(), self.unique_id(), radius);
         self.set_style(style);
