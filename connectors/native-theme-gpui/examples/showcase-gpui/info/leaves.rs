@@ -2177,12 +2177,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "toolbar.border.color",
-        "gpui: the bar's bottom edge colour (demo::toolbar, border_color)",
+        "gpui: geometry::toolbar's bottom edge colour",
     ),
     (
         "",
         "toolbar.border.line_width_px",
-        "gpui: the bar's bottom edge, inside it (demo::toolbar, border_b)",
+        "gpui: geometry::toolbar's bottom edge, inside the bar",
     ),
     (
         "",

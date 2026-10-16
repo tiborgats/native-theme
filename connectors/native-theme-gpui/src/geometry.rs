@@ -985,8 +985,13 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// `toolbar.item_gap` between items where the theme states one, the
 /// `toolbar.border` padding sides the platform states,
 /// `toolbar.background_color`, and `toolbar.font`. An unstated side or gap
-/// is left to the application. No edge: §2.13 states none; an application
-/// that wants a rule draws a Separator.
+/// is left to the application.
+///
+/// The edge is the bar's bottom rule, `toolbar.border.color` at
+/// `toolbar.border.line_width`, inside the bar, between it and the content
+/// under it, as the theme states it: a width of 0 draws none. Neither
+/// gpui-component's `Toolbar` nor gpui-base's draws an edge of its own
+/// (`toolbar.rs:243-257`).
 ///
 /// The text colour displaces nothing: neither gpui-component's `Toolbar`
 /// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today
@@ -1004,7 +1009,10 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
         Some(g) => r.gap(px(g)),
         None => r,
     };
-    with_padding(r, &t.border.padding).bg(rgba_to_hsla(t.background_color))
+    with_padding(r, &t.border.padding)
+        .bg(rgba_to_hsla(t.background_color))
+        .border_b(px(t.border.line_width))
+        .border_color(rgba_to_hsla(t.border.color))
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -2774,7 +2782,7 @@ mod tests {
     /// Over every preset in both modes: the row is the model's `toolbar`, with
     /// the bar height as a floor rather than a fixed height, and only where it
     /// is stated (KDE's toolbar sizes to its content, platform-facts §2.13),
-    /// and no edge.
+    /// and its bottom edge the model's `toolbar.border`, on no other side.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
         let mut stated = 0usize;
@@ -2812,12 +2820,13 @@ mod tests {
                     Some(rgba_to_hsla(t.font.color)),
                     "{at}: text colour"
                 );
+                let edge = StyleRefinement::default().border_b(px(t.border.line_width));
+                assert_eq!(out.border_widths, edge.border_widths, "{at}: bottom edge");
                 assert_eq!(
-                    out.border_widths,
-                    StyleRefinement::default().border_widths,
-                    "{at}: §2.13 states no edge"
+                    out.border_color,
+                    Some(rgba_to_hsla(t.border.color)),
+                    "{at}: edge colour"
                 );
-                assert_eq!(out.border_color, None, "{at}: §2.13 states no edge");
             }
         }
         assert!(

@@ -415,9 +415,9 @@ pub fn toolbar(
             "widget",
             "the application's own h_flex, not gpui-component 0.7.3's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
-        .not_themeable(
+        .config(
             "edge",
-            "the model inherits toolbar.border.color and line_width from defaults.border, but platform-facts §2.13 states neither, so geometry::toolbar draws no edge -- an application that wants a rule draws a Separator",
+            "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, inside the bar: geometry::toolbar draws it where a native theme is installed, as the theme states it, and none at a width of 0",
         )
         .instance(
             "padding",

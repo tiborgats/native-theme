@@ -770,6 +770,10 @@ pub fn toolbar(item_gap: Option<f32>) -> WidgetInfo {
             "fill",
             "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar); geometry::toolbar fills it with toolbar.background_color",
         )
+        .config(
+            "edge",
+            "none of its own (toolbar.rs, RenderOnce for Toolbar); geometry::toolbar draws the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, inside the bar, and none at a width of 0",
+        )
         .not_themeable(
             "items",
             "added with content(), not child(): child() would make a Button a compact ghost and wrap it in an input_h box, 1.5 rem at Small (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar; sizing.rs, input_h)",

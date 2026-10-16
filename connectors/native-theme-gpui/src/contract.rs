@@ -995,14 +995,6 @@ enum Unread {
     /// it, which sinks read. The evidence cites
     /// `docs/inheritance-rules.toml:line`.
     Inherited(&'static str),
-    /// A receiver exists, but in most presets the value is the defaults' by
-    /// inheritance rather than a platform's statement, where drawing it would
-    /// add an edge no platform states. A resolved theme cannot tell a stated
-    /// value from an inherited one, so the connector draws none until the
-    /// docs/todo.md item settles the data, and a preset that states one from
-    /// a source loses it in gpui. The evidence cites the inheritance and that
-    /// item.
-    NoEdgeByData(&'static str),
 }
 
 /// One colour leaf no sink reads, and why.
@@ -1019,10 +1011,6 @@ struct UnreadColour {
 const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
      selected-text colour (`input/input.rs:556-563`), so a selected run is \
      drawn in the field's text colour";
-
-/// The docs/todo.md item that holds the toolbar's and the popover's edge.
-#[cfg(feature = "widgets")]
-const BY_DATA_ITEM: &str = "Presets: the toolbar's and the popover's edge width is the defaults'";
 
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
 /// bundled combinations and that `NO_RECEIVER` does not name, each with its
@@ -1275,17 +1263,6 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(
             "a hovered sidebar item takes `sidebar_accent` at 0.8, the \
              selection's token (`sidebar/menu.rs:305-308`)",
-        ),
-    },
-    UnreadColour {
-        leaf: "toolbar.border.color",
-        why: Unread::NoEdgeByData(
-            "in every preset the toolbar's edge inherits `defaults.border` \
-             (`docs/inheritance-rules.toml:86-90`, `widgets_with_border`), \
-             while docs/platform-facts.md §2.13 (:1344) has no border row and \
-             Breeze's `ToolBar_FrameWidth` is 0 (:1355); \
-             `geometry::toolbar` draws no edge. docs/todo.md item \"Presets: \
-             the toolbar's and the popover's edge width is the defaults'\"",
         ),
     },
 ];
@@ -2839,10 +2816,6 @@ fn every_colour_leaf_reaches_a_sink_or_is_named() -> crate::Result<()> {
             Unread::Inherited(evidence) => (
                 evidence.contains("inheritance-rules.toml:"),
                 "a docs/inheritance-rules.toml line",
-            ),
-            Unread::NoEdgeByData(evidence) => (
-                evidence.contains("inheritance-rules.toml:") && evidence.contains(BY_DATA_ITEM),
-                "a docs/inheritance-rules.toml line and the docs/todo.md item",
             ),
         };
         if !cited {

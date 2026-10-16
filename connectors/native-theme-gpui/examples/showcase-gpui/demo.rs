@@ -950,18 +950,7 @@ pub(crate) fn toolbar(
     let row = h_flex()
         .p(container_margin.unwrap_or(TOOLBAR_PADDING))
         .gap(widget_gap.unwrap_or(TOOLBAR_GAP));
-    // Its bottom edge `toolbar.border.line_width` thick in
-    // `toolbar.border.color`, inside the bar, as the status bar's top edge
-    // is (`status_bar`).
-    let edge = native_value(cx, |n| {
-        let b = &n.resolved.toolbar.border;
-        (px(b.line_width), info::stated(b.color))
-    });
-    let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info)
-        .when_some(edge, |row, (width, colour)| {
-            row.border_b(width).border_color(colour)
-        })
-        .children(items);
+    let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
     row.info(ui, "chrome-toolbar", row_info)
 }
 
@@ -1191,8 +1180,8 @@ pub(crate) struct ToolItem {
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
 /// 0.7.3's own, refined by `geometry::toolbar` alone -- the height, fill,
-/// font, gap and padding sides the theme states, and no fallback or edge,
-/// since the section shows the widget and not the chrome's row -- holding
+/// font, gap, padding sides and bottom edge the theme states, and no
+/// fallback, since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
 /// vertical `Separator` between them. Each group spaces its Buttons by
 /// `toolbar.item_gap` where the theme states one, else by the Toolbar's own

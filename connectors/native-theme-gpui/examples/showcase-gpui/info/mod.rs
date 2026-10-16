@@ -288,7 +288,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size, weight and colour -- upstream's Toolbar sets no colour (toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, font size, weight and colour -- upstream's Toolbar sets no colour (toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
