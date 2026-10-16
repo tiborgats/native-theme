@@ -147,6 +147,12 @@ the iced default it replaces:
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
 
+A stated hover or pressed colour is a layer the platform paints over the
+widget's fill, while iced replaces the fill per state, so the styles flatten
+the layer onto the fill with `styles::composite_over(layer, base)` (source-over,
+straight alpha, native-theme's `color::composite_over`); a layered state you
+draw yourself matches them through it.
+
 Some native geometry has a builder receiver rather than a `Style` field; pass
 it where you construct the widget:
 

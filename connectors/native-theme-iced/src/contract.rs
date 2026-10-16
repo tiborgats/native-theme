@@ -868,11 +868,12 @@ fn combinations() -> native_theme::Result<Vec<Combination>> {
 /// Written independently of `styles::composite_over`, which it must agree
 /// with; the properties both are held to are asserted below.
 fn over(top: Color, bottom: Color) -> Color {
+    if top.a <= 0.0 {
+        // `top` adds nothing; the composite is `bottom`, transparent or not.
+        return bottom;
+    }
     let under = bottom.a * (1.0 - top.a);
     let alpha = top.a + under;
-    if alpha <= 0.0 {
-        return Color::TRANSPARENT;
-    }
     if under <= 0.0 {
         // Nothing of `bottom` reaches the result; un-premultiplying would
         // divide by `top.a` and move the color by a few ulps.
@@ -4240,11 +4241,11 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
 
             // (a) a *visible* layer over nothing is the layer: the link case.
             // A fully transparent layer is excluded, and the property is false
-            // for one: a composite with no alpha has no color left to
-            // un-premultiply, so `composite_over` returns `Color::TRANSPARENT`
-            // rather than the layer's own channels, and a colored layer at
-            // `a == 0.0` therefore comes back as (0, 0, 0, 0). Nothing is
-            // painted either way; only the discarded channels differ.
+            // for one: a transparent layer adds nothing, so `composite_over`
+            // returns the base rather than the layer's own channels, and a
+            // colored layer at `a == 0.0` therefore comes back as the base's
+            // (0, 0, 0, 0). Nothing is painted either way; only the discarded
+            // channels differ.
             if layer.a > 0.0 {
                 visible_layers += 1;
                 if styles::composite_over(layer, Color::TRANSPARENT) != layer {

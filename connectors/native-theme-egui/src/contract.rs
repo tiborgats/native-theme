@@ -382,7 +382,7 @@ enum Native {
 }
 
 /// The leaf's value in the resolved theme, by its §13.1 path over `serde_json::to_value`.
-/// A colour is its `Display` string (`native-theme/src/color.rs:138-150`), parsed back with
+/// A colour is its `Display` string (`native-theme/src/color.rs:189-201`), parsed back with
 /// `Rgba::from_str` (`:188`); a `FontSize` object stops the walk.
 fn native(c: &Combination, leaf: &str) -> Native {
     let mut cur = &c.json;
@@ -1353,29 +1353,14 @@ fn straight_native(c: Rgba) -> Straight {
     }
 }
 
-/// `top` over `bottom`, straight-alpha source-over — the siblings' `over`
-/// (`connectors/native-theme-iced/src/contract.rs:853-871`).
+/// `top` over `bottom`, straight-alpha source-over — the siblings' composite
+/// (`native_theme::color::composite_over`).
 fn over(top: Straight, bottom: Straight) -> Straight {
-    let under = bottom.a * (1.0 - top.a);
-    let alpha = top.a + under;
-    if alpha <= 0.0 {
-        return Straight {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 0.0,
-        };
-    }
-    if under <= 0.0 {
-        return top;
-    }
-    let blend = |t: f32, b: f32| (t * top.a + b * under) / alpha;
-    Straight {
-        r: blend(top.r, bottom.r),
-        g: blend(top.g, bottom.g),
-        b: blend(top.b, bottom.b),
-        a: alpha,
-    }
+    let [r, g, b, a] = native_theme::color::composite_over(
+        [top.r, top.g, top.b, top.a],
+        [bottom.r, bottom.g, bottom.b, bottom.a],
+    );
+    Straight { r, g, b, a }
 }
 
 /// WCAG 2.1 relative luminance and contrast ratio, as the iced connector's test-only

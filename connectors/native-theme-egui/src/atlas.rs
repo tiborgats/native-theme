@@ -716,7 +716,7 @@ impl<'a> Builder<'a> {
     ///
     /// `high_contrast` and `reduce_transparency` are not applied; they are exposed through
     /// [`is_high_contrast`](crate::is_high_contrast) and [`is_reduced_transparency`](crate::is_reduced_transparency). gpui drops its modal scrim under
-    /// `reduce_transparency` (`connectors/native-theme-gpui/src/colors.rs:514-523`); egui's
+    /// `reduce_transparency` (`connectors/native-theme-gpui/src/colors.rs:509-518`); egui's
     /// counterpart, the `Modal` backdrop, is no `Style` field but a per-call
     /// `Modal::backdrop_color` (`egui/src/containers/modal.rs:62`, default
     /// `Color32::from_black_alpha(100)` at `:29`), so that choice is the application's at the

@@ -310,10 +310,10 @@ pub(crate) fn to_button_padding(
 /// ecolor's own `Color32::blend` (`ecolor/src/color32.rs:343-345`): an integer
 /// `gamma_multiply_u8` (`:289-298`) plus a saturating add, so it is total, panic-free and
 /// divides by no runtime value. An opaque layer returns itself exactly and an `a == 0` layer
-/// returns the idle fill exactly. Gamma space rather than linear light, as iced's composite
-/// argues (`connectors/native-theme-iced/src/styles.rs:74-78`). The result is rounded to
-/// `u8` in premultiplied space, so where the layer is translucent it can differ in rounding
-/// from a straight-alpha `f32` composite such as iced's `composite_over`.
+/// returns the idle fill exactly. Gamma space rather than linear light, as native-theme's
+/// straight-alpha composite argues (`native_theme::color::composite_over`). The result is
+/// rounded to `u8` in premultiplied space, so where the layer is translucent it can differ in
+/// rounding from that `f32` composite, which iced's and gpui's connectors use.
 #[inline]
 #[must_use]
 pub fn composite_over(layer: Rgba, idle: Rgba) -> egui::Color32 {

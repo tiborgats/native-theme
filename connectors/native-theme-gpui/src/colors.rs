@@ -28,10 +28,12 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
     gpui_rgba.into()
 }
 
-/// `layer` composited over `base`, source-over with straight alpha in sRGB: the
-/// result covers `a = layer.a + base.a * (1 - layer.a)`, and each channel is
-/// the two channels weighted by what each contributes, divided by `a`. An
-/// opaque layer composites to itself and a transparent one to `base`.
+/// `layer` composited over `base`, source-over with straight alpha in sRGB
+/// ([`native_theme::color::composite_over`], through `gpui::Rgba`): the result
+/// covers `a = layer.a + base.a * (1 - layer.a)`. An opaque layer composites
+/// to itself, a transparent one to `base`, and a layer over a transparent
+/// base to the layer; where the composite is one of the two, that `Hsla` is
+/// returned as it is, with no round trip through `Rgba`.
 ///
 /// Where `base` or `layer` is opaque this is `Hsla::blend` bit for bit (the
 /// same products, added in the same order, and `a` is exactly 1); `blend`
@@ -39,23 +41,16 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
 /// through `:580-593`), which a translucent layer over a translucent base
 /// shows.
 pub(crate) fn over(base: Hsla, layer: Hsla) -> Hsla {
-    if layer.a >= 1.0 {
-        return layer;
+    let channels = |c: Hsla| {
+        let gpui::Rgba { r, g, b, a } = c.into();
+        [r, g, b, a]
+    };
+    let (below, above) = (channels(base), channels(layer));
+    match native_theme::color::composite_over(above, below) {
+        mixed if mixed == above => layer,
+        mixed if mixed == below => base,
+        [r, g, b, a] => gpui::Rgba { r, g, b, a }.into(),
     }
-    if layer.a <= 0.0 {
-        return base;
-    }
-    let (b, l) = (gpui::Rgba::from(base), gpui::Rgba::from(layer));
-    let under = b.a * (1.0 - l.a);
-    let a = l.a + under;
-    let mix = |below: f32, above: f32| ((below * under) + (above * l.a)) / a;
-    gpui::Rgba {
-        r: mix(b.r, l.r),
-        g: mix(b.g, l.g),
-        b: mix(b.b, l.b),
-        a,
-    }
-    .into()
 }
 
 /// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`

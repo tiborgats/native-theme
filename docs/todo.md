@@ -877,6 +877,7 @@ model, the platform presets and the three connectors
       brush's values as `windows-11.toml:437` and `:1000` cite them
       (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45).
       The gpui connector also exports the composite, `layer_over`.
+      M8 T3 (2026-10-16): both f32 composites are native-theme's `color::composite_over`, and the iced connector exports it too, as `styles::composite_over`.
 
 ### windows-11: what WinUI 3 draws, or what Win32 reports
 
