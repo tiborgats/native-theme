@@ -1063,18 +1063,13 @@ mod tests {
                 .unwrap_or_else(|| panic!("{key:?} loaded nothing"));
             bytes_of(&source).1
         };
-        // The provider names no freedesktop icon, so its SVG is the icon on every platform; on
-        // a platform without the set's loader the provider's SVG is the icon too: SF Symbols
-        // load on macOS only, Segoe glyphs on Windows only (`SfSymbolsLoader::load`,
-        // `SegoeFluentLoader::load`).
-        let mut system_sets = vec![IconSet::Freedesktop];
-        if !cfg!(all(target_os = "macos", feature = "system-icons")) {
-            system_sets.push(IconSet::SfSymbols);
-        }
-        if !cfg!(all(target_os = "windows", feature = "system-icons")) {
-            system_sets.push(IconSet::SegoeFluent);
-        }
-        for set in system_sets {
+        // The provider names no icon in any set (`name: None`), so no set's loader is asked and
+        // its own SVG is the icon on every platform, macOS and Windows included.
+        for set in [
+            IconSet::Freedesktop,
+            IconSet::SfSymbols,
+            IconSet::SegoeFluent,
+        ] {
             let key = IconKey::name("brand-mark", set);
             assert_eq!(
                 loaded(&key),

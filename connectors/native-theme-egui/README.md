@@ -282,8 +282,9 @@ keeps the fonts and icons the application added since, restoring only the base
 styles, its own `TextStyle::Name` keys kept; `ThemeAtlas::clear` then `install`
 brings back the atlas's fonts. This crate never emits a `FontFamily::Name`. A
 family the platform does not have is drawn in the family the platform draws in
-its place (`native_theme::fonts::substitute_family`: fontconfig's best match on
-Linux, what every native application there gets; none yet on macOS and Windows)
+its place (`native_theme::fonts::substitute_family_cached`: fontconfig's best
+match on Linux, what every native application there gets, asked once per family
+per process; none yet on macOS and Windows)
 and is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
 `substitute` names it. A family with no substitute the platform has a face of,
 or a face epaint could not read, leaves egui's own and is reported too

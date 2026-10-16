@@ -45,7 +45,8 @@ pub enum Note {
     /// `fonts::FontPlan::from_system`, which the OS has no face of under that name (compared
     /// case-insensitively, spec §8.2).
     /// From `from_system`, the family the platform draws in its place —
-    /// `native_theme::fonts::substitute_family`, fontconfig's best match on Linux — is drawn
+    /// `native_theme::fonts::substitute_family_cached`, fontconfig's best match on Linux,
+    /// asked once per family per process — is drawn
     /// instead where the OS has a face of it, and named in `substitute`; otherwise egui's own
     /// face stays in that family's place.
     #[non_exhaustive]
