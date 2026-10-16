@@ -773,20 +773,44 @@ mod tests {
         }
     }
 
+    /// `dialog-error.svg` and `edit-copy.svg` of the icon theme `fixture`.
+    const FIXTURE_DIALOG_ERROR: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle fill="#da4453" cx="8" cy="8" r="7"/></svg>"##;
+    const FIXTURE_EDIT_COPY: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#232629" d="M2 2h9v9H2zM5 5h9v9H5z"/></svg>"##;
+
+    /// Runs the test `test_path` again in a child process whose system icon
+    /// theme is `fixture`, which holds `dialog-error.svg` and `edit-copy.svg`
+    /// ([`native_theme_test_fixtures`]).
+    fn in_fixture_theme(test_path: &str) -> std::io::Result<()> {
+        let child = native_theme_test_fixtures::Child::kde("fixture");
+        native_theme_test_fixtures::run(test_path, child, |icons| {
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "fixture",
+                &[
+                    ("dialog-error", FIXTURE_DIALOG_ERROR),
+                    ("edit-copy", FIXTURE_EDIT_COPY),
+                ],
+            )
+        })
+    }
+
     #[test]
-    #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
-    fn load_icon_returns_some_for_dialog_error() {
-        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
+    fn load_icon_returns_some_for_dialog_error() -> std::io::Result<()> {
+        if !native_theme_test_fixtures::in_child() {
+            return in_fixture_theme("freedesktop::tests::load_icon_returns_some_for_dialog_error");
+        }
+        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
+        assert_eq!(theme, "fixture");
         let name = icon_name(IconRole::DialogError, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
-        assert!(result.is_some(), "DialogError should resolve to an icon");
-        match result.unwrap() {
-            IconData::Svg(ref cow) => {
-                let s = String::from_utf8_lossy(cow);
-                assert!(s.contains("<svg"), "Icon data should contain <svg tag");
-            }
-            other => panic!("Expected SVG data, got {other:?}"),
-        }
+        assert_eq!(
+            result,
+            Some(IconData::Svg(Cow::Borrowed(
+                FIXTURE_DIALOG_ERROR.as_bytes()
+            ))),
+            "DialogError should resolve to the theme's SVG"
+        );
+        Ok(())
     }
 
     #[test]
@@ -803,9 +827,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
-    fn load_icon_returns_svg_variant() {
-        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
+    fn load_icon_returns_svg_variant() -> std::io::Result<()> {
+        if !native_theme_test_fixtures::in_child() {
+            return in_fixture_theme("freedesktop::tests::load_icon_returns_svg_variant");
+        }
+        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
         let name = icon_name(IconRole::ActionCopy, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
@@ -813,6 +839,7 @@ mod tests {
             matches!(result.unwrap(), IconData::Svg(_)),
             "Expected Svg variant"
         );
+        Ok(())
     }
 
     /// With no theme given and no icon theme detected, there is no spinner:
@@ -837,15 +864,18 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
-    fn load_icon_by_name_finds_edit_copy() {
-        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
+    fn load_icon_by_name_finds_edit_copy() -> std::io::Result<()> {
+        if !native_theme_test_fixtures::in_child() {
+            return in_fixture_theme("freedesktop::tests::load_icon_by_name_finds_edit_copy");
+        }
+        let theme = crate::system_icon_theme().expect("the fixture names the icon theme");
         let result = load_freedesktop_icon_by_name("edit-copy", &theme, 24, None);
-        assert!(
-            result.is_some(),
+        assert_eq!(
+            result,
+            Some(IconData::Svg(Cow::Borrowed(FIXTURE_EDIT_COPY.as_bytes()))),
             "edit-copy should be found in system theme"
         );
-        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+        Ok(())
     }
 
     // === Theme directory filter (fixture base dirs) ===
@@ -1878,32 +1908,55 @@ mod tests {
         assert_eq!(png_crc32(&bytes[12..29]), crc);
     }
 
+    /// A raster-only theme's icon, laid out as AdwaitaLegacy's
+    /// (`24x24/legacy`), decodes to RGBA, not raw PNG bytes inside
+    /// `IconData::Svg`. The theme is a fixture in a child process
+    /// ([`native_theme_test_fixtures`]) whose `edit-copy` is
+    /// [`encode_test_png`]'s.
     #[test]
-    #[ignore = "requires AdwaitaLegacy icon theme installed (GNOME legacy raster theme)"]
-    fn load_icon_from_png_only_theme_returns_rgba() {
-        // AdwaitaLegacy is a PNG-only legacy theme. The loader must decode
-        // PNG to Rgba, not wrap raw PNG bytes inside IconData::Svg.
-        let result = load_freedesktop_icon_by_name("edit-copy", "AdwaitaLegacy", 24, None);
-        let data = result.expect("edit-copy exists in AdwaitaLegacy 24x24/legacy");
-        match data {
-            IconData::Rgba(rgba) => {
-                let (width, height) = (rgba.width(), rgba.height());
-                assert!(width > 0 && height > 0);
-                assert_eq!(
-                    rgba.data().len(),
-                    (width as usize) * (height as usize) * 4,
-                    "RGBA byte count must match width*height*4"
-                );
+    fn load_icon_from_png_only_theme_returns_rgba() -> std::io::Result<()> {
+        const NAME: &str = "freedesktop::tests::load_icon_from_png_only_theme_returns_rgba";
+        let pixels: [u8; 16] = [
+            0xff, 0x00, 0x00, 0xff, // red, opaque
+            0x00, 0xff, 0x00, 0x80, // green, half-alpha
+            0x00, 0x00, 0xff, 0xff, // blue, opaque
+            0x11, 0x22, 0x33, 0x44, // arbitrary
+        ];
+        if native_theme_test_fixtures::in_child() {
+            let result = load_freedesktop_icon_by_name("edit-copy", "raster-only", 24, None);
+            let data = result.expect("edit-copy exists in raster-only 24x24/legacy");
+            match data {
+                IconData::Rgba(rgba) => {
+                    assert_eq!((rgba.width(), rgba.height()), (2, 2));
+                    assert_eq!(rgba.data(), &pixels[..]);
+                }
+                IconData::Svg(bytes) => {
+                    let head: Vec<u8> = bytes.iter().take(8).copied().collect();
+                    panic!(
+                        "expected Rgba, got Svg with {} bytes starting {:x?} \
+                         (PNG magic is 89 50 4e 47)",
+                        bytes.len(),
+                        head
+                    );
+                }
             }
-            IconData::Svg(bytes) => {
-                let head: Vec<u8> = bytes.iter().take(8).copied().collect();
-                panic!(
-                    "expected Rgba, got Svg with {} bytes starting {:x?} \
-                     (PNG magic is 89 50 4e 47)",
-                    bytes.len(),
-                    head
-                );
-            }
+            return Ok(());
         }
+        let child = native_theme_test_fixtures::Child {
+            desktop: "KDE",
+            icon_theme: None,
+        };
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            let theme = icons.join("raster-only");
+            std::fs::create_dir_all(theme.join("24x24/legacy"))?;
+            std::fs::write(
+                theme.join("index.theme"),
+                "[Icon Theme]\nName=raster-only\nDirectories=24x24/legacy\n\n\
+                 [24x24/legacy]\nSize=24\nType=Fixed\n",
+            )?;
+            let png = encode_test_png(2, 2, png::ColorType::Rgba, &pixels)
+                .ok_or_else(|| std::io::Error::other("test PNG encode"))?;
+            std::fs::write(theme.join("24x24/legacy/edit-copy.png"), png)
+        })
     }
 }

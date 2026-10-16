@@ -1980,10 +1980,18 @@ mod runtime_set_icon_tests {
     }
 
     /// A freedesktop icon is looked up in the icon theme given and no
-    /// other: in one that is not installed the provider's name finds
-    /// nothing, and its own SVG, where it has one, is the icon.
+    /// other: the given theme's own icon is the one loaded, in one that is
+    /// not installed the provider's name finds nothing though the system's
+    /// theme has it, and the provider's own SVG, where it has one, is the
+    /// icon. The themes are fixtures in a child process
+    /// ([`native_theme_test_fixtures`]), the system's `system`.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
-    fn a_custom_icon_is_looked_up_in_the_icon_theme_given() {
+    fn a_custom_icon_is_looked_up_in_the_icon_theme_given() -> std::io::Result<()> {
+        const NAME: &str =
+            "icons::runtime_set_icon_tests::a_custom_icon_is_looked_up_in_the_icon_theme_given";
+        const SYSTEM: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#3daee9" d="M2 2h12v12H2z"/></svg>"##;
+        const CHOSEN: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
         #[derive(Debug)]
         struct Named(Option<&'static [u8]>);
         impl IconProvider for Named {
@@ -1994,15 +2002,39 @@ mod runtime_set_icon_tests {
                 self.0.map(Cow::Borrowed)
             }
         }
-        let missing = Some("native-theme-no-such-theme");
-        assert!(
-            load_custom_icon_in(&Named(None), IconSet::Freedesktop, missing, None, None).is_none()
-        );
-        let own = b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>";
-        assert_eq!(
-            load_custom_icon_in(&Named(Some(own)), IconSet::Freedesktop, missing, None, None),
-            Some(IconData::Svg(Cow::Borrowed(own)))
-        );
+        if native_theme_test_fixtures::in_child() {
+            let svg = |svg: &'static str| Some(IconData::Svg(Cow::Borrowed(svg.as_bytes())));
+            let load = |provider: &Named, theme| {
+                load_custom_icon_in(provider, IconSet::Freedesktop, theme, None, None)
+            };
+            assert_eq!(load(&Named(None), None), svg(SYSTEM), "the system's theme");
+            assert_eq!(load(&Named(None), Some("chosen")), svg(CHOSEN));
+            let missing = Some("native-theme-no-such-theme");
+            assert_eq!(
+                load(&Named(None), missing),
+                None,
+                "an icon the theme given lacks is not taken from the system's"
+            );
+            let own = b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>";
+            assert_eq!(
+                load(&Named(Some(own)), missing),
+                Some(IconData::Svg(Cow::Borrowed(own)))
+            );
+            return Ok(());
+        }
+        let child = native_theme_test_fixtures::Child::kde("system");
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "system",
+                &[("edit-copy", SYSTEM)],
+            )?;
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "chosen",
+                &[("edit-copy", CHOSEN)],
+            )
+        })
     }
 
     #[test]
