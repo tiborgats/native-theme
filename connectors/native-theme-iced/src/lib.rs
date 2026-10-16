@@ -454,8 +454,17 @@ pub fn from_system() -> Result<Loaded> {
     })
 }
 
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for native_theme::SystemTheme {}
+}
+
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
-pub trait SystemThemeExt {
+///
+/// Sealed, as the egui connector's `SystemThemeExt` is: [`SystemTheme`] is
+/// its one implementor, so a method added to it later is not a breaking
+/// change.
+pub trait SystemThemeExt: sealed::Sealed {
     /// Convert this system theme to an iced [`iced_core::theme::Theme`] of
     /// its OS colour mode, as a [`Loaded`].
     ///
@@ -466,6 +475,19 @@ pub trait SystemThemeExt {
     #[must_use = "this returns the theme; it does not apply it"]
     fn to_iced_theme(&self) -> Loaded;
 }
+
+/// A type outside the crate cannot implement [`SystemThemeExt`]:
+///
+/// ```compile_fail,E0277
+/// struct Mine;
+/// impl native_theme_iced::SystemThemeExt for Mine {
+///     fn to_iced_theme(&self) -> native_theme_iced::Loaded {
+///         unimplemented!()
+///     }
+/// }
+/// ```
+#[cfg(doctest)]
+pub struct SystemThemeExtIsSealed;
 
 impl SystemThemeExt for native_theme::SystemTheme {
     fn to_iced_theme(&self) -> Loaded {
