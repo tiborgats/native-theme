@@ -501,7 +501,16 @@ pub fn from_system() -> Result<Loaded> {
     })
 }
 
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for native_theme::SystemTheme {}
+}
+
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`GpuiTheme`].
+///
+/// Sealed, as the egui connector's `SystemThemeExt` is: [`SystemTheme`] is
+/// its one implementor, so a method added to it later is not a breaking
+/// change.
 ///
 /// Useful when you already have a `SystemTheme` and want method syntax:
 ///
@@ -512,7 +521,7 @@ pub fn from_system() -> Result<Loaded> {
 /// let theme = sys.to_gpui_theme().theme;
 /// # Ok::<(), native_theme::Error>(())
 /// ```
-pub trait SystemThemeExt {
+pub trait SystemThemeExt: sealed::Sealed {
     /// Convert this system theme to a gpui-component [`GpuiTheme`], as a
     /// [`Loaded`].
     ///
@@ -522,6 +531,19 @@ pub trait SystemThemeExt {
     #[must_use = "this returns the theme; it does not apply it"]
     fn to_gpui_theme(&self) -> Loaded;
 }
+
+/// A type outside the crate cannot implement [`SystemThemeExt`]:
+///
+/// ```compile_fail,E0277
+/// struct Mine;
+/// impl native_theme_gpui::SystemThemeExt for Mine {
+///     fn to_gpui_theme(&self) -> native_theme_gpui::Loaded {
+///         unimplemented!()
+///     }
+/// }
+/// ```
+#[cfg(doctest)]
+pub struct SystemThemeExtIsSealed;
 
 impl SystemThemeExt for SystemTheme {
     fn to_gpui_theme(&self) -> Loaded {
