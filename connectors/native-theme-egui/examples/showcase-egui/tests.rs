@@ -4283,6 +4283,21 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
             "on {:?}",
             std::env::var("XDG_CURRENT_DESKTOP")
         );
+        // Its alt text names the icon, whichever name each theme holds it under.
+        let harness = Harness::new_ui(|ui| {
+            for theme in ["gtk-names", "breeze-names"] {
+                if let Some(image) = crate::demo::named_image(
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some(theme),
+                    16.0,
+                ) {
+                    ui.add(image);
+                }
+            }
+        });
+        assert_eq!(harness.get_all_by_label("panel-left").count(), 2);
         return Ok(());
     }
     for desktop in ["sway", "GNOME"] {

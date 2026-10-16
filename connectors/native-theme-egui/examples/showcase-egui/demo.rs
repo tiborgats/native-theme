@@ -837,6 +837,18 @@ pub(crate) enum ChromeIcon {
 }
 
 impl ChromeIcon {
+    /// The icon's alt text, the same in every set and theme: the gpui-component `IconName` it
+    /// stands for, as Lucide spells it (`connectors/native-theme-gpui/src/icons.rs:282`,
+    /// `:296`, `:303`), a name that describes it rather than the file a set or theme holds it
+    /// under (`icons::custom_icon_to_image_source`'s doc).
+    fn alt_text(self) -> &'static str {
+        match self {
+            Self::SquareTerminal => "square-terminal",
+            Self::RotateCw => "rotate-cw",
+            Self::PanelLeft => "panel-left",
+        }
+    }
+
     /// The icon's names in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:282`,
     /// `:296`, `:303`; Material `:426`, `:440`, `:447`; freedesktop
     /// `freedesktop_name_candidates`, `:593`, `:599`, `:640`, where Breeze's
@@ -874,8 +886,8 @@ impl IconProvider for ChromeIcon {
 /// `icon` from the chosen set and theme at `size` points, loaded and coloured as `role_image`
 /// loads a role's; a freedesktop icon under the first of its names the icon theme has, each
 /// looked up in that one theme (`FreedesktopLoader::any`, `native-theme/src/icons.rs:243`), as
-/// the gpui showcase loads it. `None` where the set or theme lacks it, never another set's
-/// icon.
+/// the gpui showcase loads it. Its alt text is `ChromeIcon::alt_text`, whichever name loaded.
+/// `None` where the set or theme lacks it, never another set's icon.
 pub(crate) fn named_image(
     ui: &egui::Ui,
     icon: ChromeIcon,
@@ -883,8 +895,12 @@ pub(crate) fn named_image(
     icon_theme: Option<&str>,
     size: f32,
 ) -> Option<egui::Image<'static>> {
-    let name = icon.icon_name(set)?;
-    let key = chrome_key(icons::IconKey::name(name, set), ui, icon_theme, size);
+    let key = chrome_key(
+        icons::IconKey::name(icon.alt_text(), set),
+        ui,
+        icon_theme,
+        size,
+    );
     let image = if set == IconSet::Freedesktop {
         let [r, g, b, _] = ui.visuals().text_color().to_srgba_unmultiplied();
         // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
