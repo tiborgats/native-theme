@@ -3362,7 +3362,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### READMEs: the dependency-version check beyond iced
 
-- [ ] [v0.7.0] For M6/M7/M8 (ruling M5-20, 2026-10-14): the iced README's
+- [x] [v0.7.0] For M6/M7/M8 (ruling M5-20, 2026-10-14): the iced README's
       `toml` blocks are checked against the workspace's minor by
       `the_readme_depends_on_this_release`
       (`connectors/native-theme-iced/src/compat.rs:311`; M5 T11, b0efe9e3),
@@ -3387,6 +3387,17 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       name 0.7, the coming release's minor, and M8's one workspace check (the
       *For M8* entry on the README check) takes both READMEs with core's and
       build's.
+  *Closed by M8 T9 (2026-10-17, 9246c7de):* one workspace check,
+      `scripts/check_readme_versions.py`, holds every README's `toml` blocks
+      (the root's, core's, build's, the three connectors' and egui-widgets')
+      to one rule: each `native-theme` and `native-theme-*` dependency names
+      the workspace version's `major.minor`, so the release bump moves every
+      README at once and the check holds them there (the Step 6 amendment,
+      no rule predicting the next version from the CHANGELOG). The egui and
+      egui-widgets READMEs name the workspace's 0.6 again, not 0.7 as M7 T3
+      wrote them; the gpui, iced, core and build READMEs name 0.6 until the
+      0.7.0 bump. `scripts/check_release.sh` (both modes), ci.yml's
+      documentation job and publish.yml run it.
 
 ### Connectors: a public theme builder that takes the mode
 
@@ -3612,7 +3623,8 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Closed by M8 T6 (2026-10-16, e4972f32):* they do not unify (Step 6 ruling): both are documented clamps of a pathological factor. egui's `scaled_text_size` keeps its plain product by its spec §8.6, and its doc says why the siblings differ; iced's and gpui's docs name egui's contract; the parity gate records nothing, as the three signatures agree.
 - [x] [v0.7.0] For M8 (parity): iced's `font_family` returns the default family only. gpui's geometry builders carry each font's family and style since M6's final review (35785f1e).
   *Closed by M8 T7 (2026-10-16, 6e9c2121):* `font_family` stays the defaults' family, its leaf's name (Step 6 ruling); the per-widget parity is `font(spec) -> iced_core::Font` (feature `system-fonts`): the family `system_font_family` gives (since 2fcc26fb the platform's substitute where the system lacks the stated one, as gpui and egui draw it, M8-01), the weight through `to_iced_weight`, the style; it leaks one name per distinct family, kept for the process. The showcase's own leak is M9b's to shrink.
-- [ ] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
+- [x] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
+  *Closed by M8 T9 (2026-10-17, 9246c7de):* `scripts/check_readme_versions.py` replaces both copies and their parser tests, and reads every README the workspace has, the egui widgets one among them: every `native-theme*` dependency in a `toml` block names the workspace version's `major.minor`, and each crate's README states its own crate's, in its Quick start where it has one. The entry above records the rule.
 - [ ] [v0.7.0] For M8 (test quality): the icon fixture helper (`icon_fixture.rs`) is copied between the iced and gpui connectors (M6 T4). The gpui DataTable row-growth test re-implements `table_row_height`, and the row formula leaves out the row's 1 px bottom border (M6 T6). The text stays inside either way.
   *Fixture half closed by M8 T2 (2026-10-16, 990ab210):* one `publish = false` crate, `native-theme-test-fixtures` (tools/test-fixtures), replaces the copies; the DataTable half stays open.
 - [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
