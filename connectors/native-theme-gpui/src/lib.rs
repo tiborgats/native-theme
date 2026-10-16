@@ -515,9 +515,9 @@ mod sealed {
 
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`GpuiTheme`].
 ///
-/// Sealed, as the egui connector's `SystemThemeExt` is: [`SystemTheme`] is
-/// its one implementor, so a method added to it later is not a breaking
-/// change.
+/// Sealed, as the egui and iced connectors' `SystemThemeExt` are:
+/// [`SystemTheme`] is its one implementor, so a method added to it later is
+/// not a breaking change.
 ///
 /// Useful when you already have a `SystemTheme` and want method syntax:
 ///

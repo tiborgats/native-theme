@@ -539,7 +539,11 @@ const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 /// popover's as the theme states it. Upstream draws no border on a popover:
 /// its edge is a 1px ring of `foreground` at low alpha in the shadow
 /// (`styled.rs:36-38`, `:186-194`), outside the surface (`:63-67`), and it
-/// stays, so the border lies inside it.
+/// stays, so the border lies inside it. With `Popover::arrow(true)` the
+/// border opens at the arrow's base: upstream paints the background over
+/// 1 px on either side of the surface edge there (`popover.rs:384-387`,
+/// `arrow_join_bounds` `:473-487`), and strokes the arrow's two slopes in
+/// the ring's colour, not `popover.border.color` (`:388-395`).
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
@@ -991,7 +995,13 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// `toolbar.border.line_width`, inside the bar, between it and the content
 /// under it, as the theme states it: a width of 0 draws none. Neither
 /// gpui-component's `Toolbar` nor gpui-base's draws an edge of its own
-/// (`toolbar.rs:243-257`).
+/// (`toolbar.rs:243-257`). Bottom only, not a frame, for parity:
+/// docs/platform-facts.md §2.13 has no border row, and the other two
+/// connectors draw the toolbar's border as one line under the bar -- egui's
+/// toolbar role strokes it as the top panel's separator
+/// (native-theme-egui `src/style/roles.rs:128-141`), and the iced showcase
+/// draws a `toolbar.border.line_width` line under its toolbar
+/// (`examples/showcase-iced.rs:4443`).
 ///
 /// The text colour displaces nothing: neither gpui-component's `Toolbar`
 /// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today
