@@ -923,6 +923,11 @@ drops its `load_custom_via_builder` copy).
 
 ## M9 — Optional: the showcases
 
+> **Mandatory (maintainer, 2026-10-16):** "it absolutely is a must, not optional. I only want to
+> publish finished, as perfect as possible work. Everything that is in this repo is part of the
+> project, and must be the highest quality. Even the readmes, documentation, changelog, examples,
+> etc." M9a, M9b and M9c all run after M8, each with the milestone template's full Steps 1–8.
+
 Lens: theme-data violations (a hard-coded colour, size or spacing where a resolved value
 exists), dead code, duplication between the three showcases, and slow paths on theme switch.
 Split so each part can stop on its own:
