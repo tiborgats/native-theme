@@ -723,9 +723,9 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// The family gpui is asked to draw a theme's `family` in: the macOS alias
 /// of `ui_font_family`; with feature `system-fonts`, where the system
 /// lacks `family`, the family the platform substitutes for it
-/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux
-/// and the other non-Apple, non-Android unix systems, the font every native
-/// application of the system gets); else `family` as
+/// (`native_theme::fonts::substitute_family_cached`: fontconfig's match on
+/// Linux and the other non-Apple, non-Android unix systems, the font every
+/// native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
 /// list of its own, `.ZedMono` first (gpui-pre 0.3.9 `src/text_system.rs`
 /// lines 255-266, 370-379), not the platform's. The platform is asked once
