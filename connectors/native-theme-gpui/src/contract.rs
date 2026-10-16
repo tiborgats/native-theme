@@ -1003,8 +1003,6 @@ enum Unread {
     /// a source loses it in gpui. The evidence cites the inheritance and that
     /// item.
     NoEdgeByData(&'static str),
-    /// As [`Unread::NoEdgeByData`], for a fill.
-    NoFillByData(&'static str),
 }
 
 /// One colour leaf no sink reads, and why.
@@ -1022,8 +1020,7 @@ const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
      selected-text colour (`input/input.rs:556-563`), so a selected run is \
      drawn in the field's text colour";
 
-/// The docs/todo.md item that holds the toolbar's and the popover's edge and
-/// the card's fill.
+/// The docs/todo.md item that holds the toolbar's and the popover's edge.
 #[cfg(feature = "widgets")]
 const BY_DATA_ITEM: &str = "Presets: the toolbar's and the popover's edge width is the defaults'";
 
@@ -1095,8 +1092,8 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `window.title_bar_background`, `slider.thumb_color`, \
              `list.header_background` and `switch.thumb_background` \
              (`docs/inheritance-rules.toml:150`, `:203`, `:236`, `:250`); \
-             `card.background_color` inherits it too (`:266`) and has its \
-             own entry here",
+             `card.background_color` inherits it too (`:266`), which \
+             `geometry::group_box_content` reads",
         ),
     },
     UnreadColour {
@@ -1303,19 +1300,6 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              border until docs/todo.md item \"Presets: the toolbar's and the \
              popover's edge width is the defaults'\" is settled, so adwaita's \
              stated edge is not drawn",
-        ),
-    },
-    UnreadColour {
-        leaf: "card.background_color",
-        why: Unread::NoFillByData(
-            "in most presets the card's fill inherits \
-             `defaults.surface_color` (`docs/inheritance-rules.toml:266`), \
-             while docs/platform-facts.md §2.26 (:1590) states no card for \
-             macOS and KDE; material-3 (both modes) and adwaita (dark, \
-             libadwaita's `card_bg_color`) state one from a source. \
-             `geometry::group_box_content` fills nothing until docs/todo.md \
-             item \"Presets: the toolbar's and the popover's edge width is \
-             the defaults'\" is settled, so their stated fills are not drawn",
         ),
     },
 ];
@@ -2870,7 +2854,7 @@ fn every_colour_leaf_reaches_a_sink_or_is_named() -> crate::Result<()> {
                 evidence.contains("inheritance-rules.toml:"),
                 "a docs/inheritance-rules.toml line",
             ),
-            Unread::NoEdgeByData(evidence) | Unread::NoFillByData(evidence) => (
+            Unread::NoEdgeByData(evidence) => (
                 evidence.contains("inheritance-rules.toml:") && evidence.contains(BY_DATA_ITEM),
                 "a docs/inheritance-rules.toml line and the docs/todo.md item",
             ),

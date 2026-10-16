@@ -705,6 +705,11 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
 /// content surface (`:172-177`), which 0.7.3 nests in a column that also
 /// holds the optional footer (`:167-168`).
+///
+/// The fill is `card.background_color` on every variant: the refinement
+/// comes last (`:177`), over the Fill variant's `group_box` token (`:145`),
+/// and on a Normal or Outline box, which paints none of its own (`:144`,
+/// `:146`).
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
@@ -712,6 +717,7 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
         .rounded(px(c.border.corner_radius))
         .border(px(c.border.line_width))
         .border_color(rgba_to_hsla(c.border.color))
+        .bg(rgba_to_hsla(c.background_color))
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).
@@ -2637,6 +2643,10 @@ mod tests {
             );
             assert_eq!(out.border_widths.top, abs(c.border.line_width));
             assert_eq!(out.border_color, Some(rgba_to_hsla(c.border.color)));
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(c.background_color).into())
+            );
 
             assert_eq!(
                 accordion_title(n).size.height,

@@ -388,7 +388,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "card.background_color",
-        "gpui: the GroupBox content's bg (demo::card)",
+        "gpui: geometry::group_box_content's bg",
     ),
     (
         "",

@@ -126,11 +126,17 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
     }
 }
 
-/// A `GroupBox` of `kind` titled `title`. `styled` is whether
-/// `geometry::group_box_content` refined its content, whose line is
-/// recorded where `demo::group_box` applies the builder. The caller adds
-/// what the content is.
-pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> WidgetInfo {
+/// A `GroupBox` of `kind` titled `title`. `native` is the theme
+/// `geometry::group_box_content` refined its content from, where a native
+/// theme is installed, whose line is recorded where `demo::group_box`
+/// applies the builder. The caller adds what the content is.
+pub fn group_box(
+    t: &Theme,
+    kind: GroupBoxKind,
+    native: Option<&ResolvedTheme>,
+    title: &str,
+) -> WidgetInfo {
+    let styled = native.is_some();
     let info = WidgetInfo::new("GroupBox")
         .variant(kind.name())
         .color(claim(
@@ -147,17 +153,23 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
             t.group_box_foreground,
             "gpui-component/group_box.rs:173",
         ));
-    // (fill, edge) per variant (group_box.rs:143-147).
-    let info = match kind {
-        GroupBoxKind::Normal => info,
-        GroupBoxKind::Fill => info.color(claim(
+    // (fill, edge) per variant (group_box.rs:143-147), under the card's
+    // fill and edge where the builder refined the content.
+    let info = match (kind, native) {
+        (_, Some(r)) => info.color(claim(
+            "fill",
+            "background_color",
+            stated(r.card.background_color),
+            "showcase",
+        )),
+        (GroupBoxKind::Normal, None) => info,
+        (GroupBoxKind::Fill, None) => info.color(claim(
             "bg",
             "group_box",
             t.group_box,
             "gpui-component/group_box.rs:145",
         )),
-        GroupBoxKind::Outline if styled => info,
-        GroupBoxKind::Outline => info.color(claim(
+        (GroupBoxKind::Outline, None) => info.color(claim(
             "border",
             "border",
             t.border,
@@ -178,12 +190,16 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
                 "none: only the Outline variant draws a border (group_box.rs, GroupBox)",
             ),
     };
-    let info = match kind {
-        GroupBoxKind::Normal => info.not_themeable(
+    let info = match (kind, styled) {
+        (_, true) => info.config(
+            "fill",
+            "card.background_color, on every variant: geometry::group_box_content sets it on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over a Fill box's group_box token, and on a Normal or Outline box, which paints no background of its own",
+        ),
+        (GroupBoxKind::Normal, false) => info.not_themeable(
             "fill",
             "none: the Normal variant paints no background (group_box.rs, GroupBox)",
         ),
-        GroupBoxKind::Fill | GroupBoxKind::Outline => info,
+        (GroupBoxKind::Fill | GroupBoxKind::Outline, false) => info,
     };
     info.not_themeable(
         "gaps",
@@ -366,8 +382,8 @@ pub fn expander(
 
 /// A card: a Fill `GroupBox` with no title, its content filled with
 /// `native`'s `card.background_color` where a native theme is installed
-/// (`demo::card`). Its geometry line is recorded where the helper applies
-/// the builder.
+/// (`geometry::group_box_content`). Its geometry line is recorded where the
+/// helper applies the builder.
 pub fn card(
     t: &Theme,
     native: Option<&ResolvedTheme>,
@@ -389,7 +405,7 @@ pub fn card(
                 stated(r.card.background_color),
                 "showcase",
             ))
-            .config("edge", "card.border.color at card.border.line_width, with card.border's radius and stated padding sides: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox)"),
+            .config("edge", "card.border.color at card.border.line_width, with card.border's radius, stated padding sides and card.background_color as the fill: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox)"),
         None => info.color(claim(
             "fill",
             "group_box",
