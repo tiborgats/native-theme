@@ -250,22 +250,35 @@ or a face epaint could not read, leaves egui's own and is reported too
 ## Icons
 
 ```rust,no_run
-use native_theme_egui::icons::{IconContext, IconKey, icon_size, to_image};
-use native_theme_egui::{IconRole, IconSet, ResolvedTheme};
+use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
+use native_theme_egui::{IconRole, ThemeAtlas};
 
-fn warning_icon(ui: &mut egui::Ui, t: &ResolvedTheme) {
-    let set = IconSet::Lucide;
-    let key = IconKey::role(IconRole::DialogWarning, set).tint(ui.visuals().warn_fg_color);
-    let Some(data) = native_theme_egui::native_theme::icons::load_icon(IconRole::DialogWarning, set)
-    else {
+fn warning_icon(ui: &mut egui::Ui) {
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
         return;
     };
-    if let Some(image) = to_image(ui.ctx(), &key, &data) {
-        let side = icon_size(t, IconContext::Toolbar);
+    let scheme = ui.ctx().theme();
+    let role = IconRole::DialogWarning;
+    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let mut key = IconKey::role(role, atlas.icon_set())
+        .size(side)
+        .tint(ui.visuals().warn_fg_color);
+    if let Some(name) = atlas.icon_theme(scheme) {
+        key = key.icon_theme(name);
+    }
+    if let Some(image) = custom_icon_to_image(ui.ctx(), &role, &key) {
         ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
     }
 }
 ```
+
+The icon comes from the installed theme's icon set (`ThemeAtlas::icon_set`) and,
+for a freedesktop set, its icon theme for the scheme egui draws
+(`ThemeAtlas::icon_theme`), at the theme's size. An `IconRole` is an
+`IconProvider`, so `icons::custom_icon_to_image` (and
+`custom_icon_to_image_source`, its `ImageSource`) load a role as they load an
+application's own icon; `icons::to_image` takes icon data the application
+loaded itself.
 
 Install `egui_extras`' image loaders with its `svg` feature
 (`egui_extras::install_image_loaders`). An SVG icon's URI is the hash of its

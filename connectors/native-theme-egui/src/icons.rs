@@ -464,7 +464,10 @@ pub fn to_image(
     Some(egui::Image::new(source).alt_text(key.alt_text()))
 }
 
-/// Same, for an application-supplied [`IconProvider`]. Loads the key's set through
+/// Same, for an [`IconProvider`]: an application-supplied one, or an [`IconRole`], which is
+/// one (`native-theme/src/model/icons.rs:547`), so a role's icon from the installed theme's
+/// set and icon theme at its size is one call ([`custom_icon_to_image`] gives it as an
+/// `egui::Image` with its alt text). Loads the key's set through
 /// [`native_theme::icons::load_custom_icon_in`], which tries `provider.icon_name(set)` through
 /// the set's loader, then the provider's own `icon_svg(set)`, and no other set: a freedesktop
 /// icon from the key's icon theme ([`IconKey::icon_theme`]; the system's without one), and
@@ -483,7 +486,8 @@ pub fn to_image(
 /// provider's own SVG for one, take the tint alone and are untouched without one
 /// ([`IconKey::tint`]). The loaded bytes are keyed as [`to_image_source`] keys an icon, with
 /// no second colouring pass, so the provider's bytes are what the URI's hash covers. `None`
-/// where the provider has none. Build the key with `IconKey::name(n, set)`, `n` its
+/// where the provider has none. For an `IconRole`, build the key with
+/// `IconKey::role(role, set)`; for another provider, with `IconKey::name(n, set)`, `n` its
 /// `icon_name(set)` where it has one; where it has none, a name that describes it, which
 /// becomes its alt text — the URI is the hash of the bytes alone (§9.2).
 ///
@@ -562,6 +566,45 @@ pub fn custom_icon_to_image_source(
         IconData::Svg(bytes) => Some(svg_source(ctx, bytes.to_vec())),
         icon => raster_source(ctx, icon),
     }
+}
+
+/// [`custom_icon_to_image_source`], wrapped in an `egui::Image` with `alt_text` from the key,
+/// as [`to_image`] wraps [`to_image_source`]: the role's `IconRole::name()` or the key's name.
+/// `None` where [`custom_icon_to_image_source`] gives `None`.
+///
+/// A role's icon as the installed theme states it, its set, its icon theme for the scheme
+/// egui draws and a size from the theme, drawn in a tint:
+///
+/// ```no_run
+/// use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
+/// use native_theme_egui::{IconRole, ThemeAtlas};
+///
+/// fn warning_icon(ui: &mut egui::Ui) {
+///     let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+///         return;
+///     };
+///     let scheme = ui.ctx().theme();
+///     let role = IconRole::DialogWarning;
+///     let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+///     let mut key = IconKey::role(role, atlas.icon_set())
+///         .size(side)
+///         .tint(ui.visuals().warn_fg_color);
+///     if let Some(name) = atlas.icon_theme(scheme) {
+///         key = key.icon_theme(name);
+///     }
+///     if let Some(image) = custom_icon_to_image(ui.ctx(), &role, &key) {
+///         ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
+///     }
+/// }
+/// ```
+#[must_use]
+pub fn custom_icon_to_image(
+    ctx: &egui::Context,
+    provider: &dyn IconProvider,
+    key: &IconKey,
+) -> Option<egui::Image<'static>> {
+    let source = custom_icon_to_image_source(ctx, provider, key)?;
+    Some(egui::Image::new(source).alt_text(key.alt_text()))
 }
 
 /// Drop every icon this crate cached in `ctx`, leaving unrelated application images alone;
@@ -1414,6 +1457,21 @@ mod tests {
         let by_name = IconKey::name("brand-mark", IconSet::Material);
         assert_eq!(by_name.alt_text(), "brand-mark");
         assert!(to_image(&ctx, &by_name, &svg(PLAIN)).is_some());
+    }
+
+    /// An `IconRole` is a provider: `custom_icon_to_image` loads a role's icon from the key's
+    /// set in one call, and a role the set lacks gives `None`, from no other set.
+    #[cfg(feature = "lucide-icons")]
+    #[test]
+    fn custom_icon_to_image_loads_a_role() {
+        let ctx = egui::Context::default();
+        let role = IconRole::DialogWarning;
+        let key = IconKey::role(role, IconSet::Lucide).size(16.0);
+        assert!(custom_icon_to_image(&ctx, &role, &key).is_some());
+        // SF Symbols has no open folder (`native-theme/src/model/icons.rs:571`).
+        let lacking = IconRole::FolderOpen;
+        let key = IconKey::role(lacking, IconSet::SfSymbols);
+        assert!(custom_icon_to_image(&ctx, &lacking, &key).is_none());
     }
 
     /// `IconKey::size` is total over every `f32` (§4.10).
