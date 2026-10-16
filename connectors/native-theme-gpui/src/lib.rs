@@ -1961,16 +1961,34 @@ mod tests {
         );
     }
 
+    /// Each reader returns its own preference: with one flag set, only its
+    /// reader is `true`, and the factor is the one stated.
     #[test]
-    fn accessibility_helpers() {
-        // Accessibility helpers now take &SystemTheme; skip on CI if unavailable
-        let Ok(sys) = SystemTheme::from_system() else {
-            return;
+    fn the_accessibility_readers_read_their_own_preference() {
+        let mut sys = match SystemTheme::from_system() {
+            Ok(sys) => sys,
+            // Without a reader feature macOS and Windows have no OS theme;
+            // Linux always has one, its platform preset.
+            Err(_) if !cfg!(target_os = "linux") => return,
+            Err(e) => panic!("from_system failed on Linux: {e}"),
         };
-        let _ = is_reduced_motion(&sys);
-        let _ = is_high_contrast(&sys);
-        let _ = is_reduced_transparency(&sys);
-        let _ = text_scaling_factor(&sys);
+        type Reader = fn(&SystemTheme) -> bool;
+        let readers: [(&str, Reader); 3] = [
+            ("reduce_motion", is_reduced_motion),
+            ("high_contrast", is_high_contrast),
+            ("reduce_transparency", is_reduced_transparency),
+        ];
+        for (set, _) in readers {
+            let a11y = &mut sys.accessibility;
+            a11y.reduce_motion = set == "reduce_motion";
+            a11y.high_contrast = set == "high_contrast";
+            a11y.reduce_transparency = set == "reduce_transparency";
+            for (name, reader) in readers {
+                assert_eq!(reader(&sys), name == set, "{name} with only {set} set");
+            }
+        }
+        sys.accessibility.text_scaling_factor = 1.25;
+        assert_eq!(text_scaling_factor(&sys), 1.25);
     }
 
     #[test]
