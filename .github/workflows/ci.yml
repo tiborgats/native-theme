@@ -63,13 +63,15 @@ jobs:
       # expect_used in their crate roots, and scripts/check_strict_panic.sh
       # holds the rest of the list (indexing_slicing, arithmetic_side_effects,
       # panic, ...). native-theme with check_release.sh's NT_FEATURES and with
-      # none; native-theme-derive, which has no clippy leg of its own, here too.
+      # none; native-theme-derive and the test fixtures (tools/test-fixtures),
+      # which have no leg of their own, here too.
       - name: Strict panic lints (native-theme)
         if: matrix.package == 'native-theme'
         run: |
           bash scripts/check_strict_panic.sh -p native-theme --lib --features kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
           bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
           bash scripts/check_strict_panic.sh -p native-theme-derive --lib
+          bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
       # The same lints on the macOS and Windows code, which a Linux run never
       # compiles. Clippy builds no binary, so each target needs only its
       # standard library, no linker or SDK.
@@ -189,6 +191,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme-build
       - run: cargo test -p native-theme-derive
+      - run: cargo test -p native-theme-test-fixtures
 
   test-connectors:
     name: Test ${{ matrix.name }}

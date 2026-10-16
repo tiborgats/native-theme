@@ -1979,11 +1979,46 @@ mod runtime_set_icon_tests {
         }
     }
 
+    /// A provider whose freedesktop name is `edit-copy`, with `self.0` as its
+    /// own SVG.
+    #[derive(Debug)]
+    struct EditCopy(Option<&'static [u8]>);
+    impl IconProvider for EditCopy {
+        fn icon_name(&self, _set: IconSet) -> Option<&str> {
+            Some("edit-copy")
+        }
+        fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+            self.0.map(Cow::Borrowed)
+        }
+    }
+
+    /// In an icon theme that is not installed the provider's name finds
+    /// nothing, and its own SVG, where it has one, is the icon. On every
+    /// host: the theme given is the only one searched.
+    #[test]
+    fn a_custom_icon_missing_from_the_icon_theme_given_is_the_providers_own() {
+        let missing = Some("native-theme-no-such-theme");
+        assert!(
+            load_custom_icon_in(&EditCopy(None), IconSet::Freedesktop, missing, None, None)
+                .is_none()
+        );
+        let own = b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>";
+        assert_eq!(
+            load_custom_icon_in(
+                &EditCopy(Some(own)),
+                IconSet::Freedesktop,
+                missing,
+                None,
+                None
+            ),
+            Some(IconData::Svg(Cow::Borrowed(own)))
+        );
+    }
+
     /// A freedesktop icon is looked up in the icon theme given and no
-    /// other: the given theme's own icon is the one loaded, in one that is
-    /// not installed the provider's name finds nothing though the system's
-    /// theme has it, and the provider's own SVG, where it has one, is the
-    /// icon. The themes are fixtures in a child process
+    /// other: the given theme's own icon is the one loaded, and in one that
+    /// is not installed the provider's name finds nothing though the
+    /// system's theme has it. The themes are fixtures in a child process
     /// ([`native_theme_test_fixtures`]), the system's `system`.
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     #[test]
@@ -1992,33 +2027,17 @@ mod runtime_set_icon_tests {
             "icons::runtime_set_icon_tests::a_custom_icon_is_looked_up_in_the_icon_theme_given";
         const SYSTEM: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#3daee9" d="M2 2h12v12H2z"/></svg>"##;
         const CHOSEN: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#e01b24" d="M2 2h12v12H2z"/></svg>"##;
-        #[derive(Debug)]
-        struct Named(Option<&'static [u8]>);
-        impl IconProvider for Named {
-            fn icon_name(&self, _set: IconSet) -> Option<&str> {
-                Some("edit-copy")
-            }
-            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
-                self.0.map(Cow::Borrowed)
-            }
-        }
         if native_theme_test_fixtures::in_child() {
             let svg = |svg: &'static str| Some(IconData::Svg(Cow::Borrowed(svg.as_bytes())));
-            let load = |provider: &Named, theme| {
-                load_custom_icon_in(provider, IconSet::Freedesktop, theme, None, None)
+            let load = |theme| {
+                load_custom_icon_in(&EditCopy(None), IconSet::Freedesktop, theme, None, None)
             };
-            assert_eq!(load(&Named(None), None), svg(SYSTEM), "the system's theme");
-            assert_eq!(load(&Named(None), Some("chosen")), svg(CHOSEN));
-            let missing = Some("native-theme-no-such-theme");
+            assert_eq!(load(None), svg(SYSTEM), "the system's theme");
+            assert_eq!(load(Some("chosen")), svg(CHOSEN));
             assert_eq!(
-                load(&Named(None), missing),
+                load(Some("native-theme-no-such-theme")),
                 None,
                 "an icon the theme given lacks is not taken from the system's"
-            );
-            let own = b"<svg viewBox=\"0 0 24 24\"><path d=\"M0 0\"/></svg>";
-            assert_eq!(
-                load(&Named(Some(own)), missing),
-                Some(IconData::Svg(Cow::Borrowed(own)))
             );
             return Ok(());
         }

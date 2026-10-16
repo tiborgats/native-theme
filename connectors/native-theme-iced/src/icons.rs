@@ -457,6 +457,9 @@ mod tests {
     /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
     /// its body `fill:currentColor`, the accent its stylesheet states, under
     /// a fill of its own.
+    /// The fixture theme holds it in its one scalable directory
+    /// ([`write_scalable_theme`](crate::icon_fixture::write_scalable_theme)),
+    /// not in a `places/32` one.
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     const FULL_COLOUR_FOLDER: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.ColorScheme-Accent { color: #3daee9 }</style><path style="fill:currentColor" class="ColorScheme-Accent" d="M2 3h12l2 2h14v24H1V10h1z"/><path style="fill:#ffffff;fill-opacity:0.2" d="M14 3l1 3h15V5H16z"/></svg>"##;
 

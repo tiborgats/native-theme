@@ -2069,6 +2069,9 @@ mod tests {
     /// A full-colour folder in the shape of Breeze's `places/32/folder.svg`:
     /// its body `fill:currentColor`, the accent its stylesheet states, under
     /// a fill of its own.
+    /// The fixture theme holds it in its one scalable directory
+    /// ([`write_scalable_theme`](crate::icon_fixture::write_scalable_theme)),
+    /// not in a `places/32` one.
     #[cfg(all(
         target_os = "linux",
         feature = "system-icons",
