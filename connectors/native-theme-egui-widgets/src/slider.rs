@@ -43,9 +43,10 @@ const KEY_STEP: f32 = 1.0;
 ///   the trailing fill over the rail, the knob and its outline over the fill, each faded over
 ///   the backdrop and painted at the opacity the `Ui` had, so no part shows another through
 ///   it. The knob and its outline are taken over the fill throughout, which is exact for an
-///   opaque knob (every bundled preset's `thumb_color` is opaque); a translucent one would show
-///   the rail beyond the fill's end. Under `ui.add_enabled(false, ..)` it is faded as one by
-///   the calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
+///   opaque one; a translucent knob (macos-monterey's dark `thumb_color` `#ffffff80`,
+///   material-3's `disabled_thumb_color` at alpha `0x61`) shows the fill also where its half
+///   beyond the fill's end lies over the rail. Under `ui.add_enabled(false, ..)` it is faded
+///   as one by the calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
 ///
 /// Interaction is egui's on a linear range: it senses `Sense::drag()` (`:655`); a drag sets
 /// the value from the pointer (`:666-678`); while focused, the arrow keys along the rail move
