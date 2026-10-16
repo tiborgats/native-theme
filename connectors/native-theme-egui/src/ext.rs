@@ -215,8 +215,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// preset — `native_theme::detect::accessibility_preferences()` on a preset switch, the cached
 /// reading, or `AccessibilityPreferences::from_system()`, which runs the platform reader each
 /// time. Accessibility is orthogonal to the theme choice, which is why
-/// `native_theme_gpui::from_preset` takes the same argument
-/// (`connectors/native-theme-gpui/src/lib.rs:289-293`).
+/// `native_theme_gpui::from_preset` takes the same argument.
 ///
 /// # Errors
 /// Propagates `Theme::preset` and `Theme::resolve_with` failures.
