@@ -11,7 +11,8 @@ pub(crate) struct Handoff {
 }
 
 impl Handoff {
-    /// The step the watcher thread runs on each OS change: `rebuild`, store, wake egui.
+    /// The step the watcher thread runs on each OS change: `rebuild`, store the atlas or the
+    /// error, wake egui.
     pub(crate) fn on_change(
         &self,
         ctx: &egui::Context,
@@ -31,6 +32,7 @@ impl Handoff {
                     .last_error
                     .lock()
                     .unwrap_or_else(PoisonError::into_inner) = Some(error.to_string());
+                ctx.request_repaint();
             }
         }
     }
@@ -87,8 +89,9 @@ impl ThemeWatcher {
     /// # Errors
     /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:224`),
     /// which reports `Error::WatchUnavailable` on desktops and feature sets it cannot watch
-    /// (`:241-273`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error is not returned here; it is kept for
-    /// [`ThemeWatcher::last_error`].
+    /// (`:241-273`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error
+    /// is not returned here; it is kept for [`ThemeWatcher::last_error`], and egui is woken with
+    /// `ctx.request_repaint()` either way, so the next pass reads the new atlas or the error.
     pub fn start(
         ctx: &egui::Context,
         rebuild: impl Fn() -> native_theme::Result<ThemeAtlas> + Send + 'static,
@@ -129,7 +132,8 @@ impl ThemeWatcher {
 
     /// The most recent `rebuild`'s error, as text — a `String`, not an [`Error`](crate::Error), because
     /// `native_theme::error::Error` is not `Clone` (`native-theme/src/error.rs:58-60`); `None`
-    /// again once a later `rebuild` succeeds.
+    /// again once a later `rebuild` succeeds. A failed `rebuild` requests a repaint, as a
+    /// successful one does, so an idle application reads it on the next pass.
     #[must_use]
     pub fn last_error(&self) -> Option<String> {
         self.handoff.last_error()
@@ -187,10 +191,16 @@ mod tests {
         assert!(handoff.last_error().is_none());
     }
 
-    /// T15 (b): a failed rebuild publishes nothing and keeps its message until a later success.
+    /// T15 (b): a failed rebuild publishes nothing and keeps its message until a later success;
+    /// it wakes the UI with one repaint, as a success does (M7-35).
     #[test]
     fn a_failed_rebuild_hands_over_nothing_and_keeps_its_message() {
         let ctx = egui::Context::default();
+        let repaints = Arc::new(AtomicUsize::new(0));
+        let seen = Arc::clone(&repaints);
+        ctx.set_request_repaint_callback(move |_| {
+            seen.fetch_add(1, Ordering::SeqCst);
+        });
         let handoff = Handoff::default();
         let failing = || {
             Err(Error::WatchUnavailable {
@@ -198,6 +208,12 @@ mod tests {
             })
         };
         handoff.on_change(&ctx, &failing);
+        assert_eq!(
+            repaints.load(Ordering::SeqCst),
+            1,
+            "the failure woke the UI"
+        );
+        assert!(ctx.has_requested_repaint());
         assert!(handoff.take().is_none());
         assert!(
             handoff

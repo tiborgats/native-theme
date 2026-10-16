@@ -310,8 +310,8 @@ version's preset, so an application that pinned a preset with
 `native_theme::SystemTheme::from_system_with_preset(name)` passes a closure
 that reads with it again: `native_theme::detect::invalidate_caches()`, then
 `from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas`. A failed
-rebuild keeps the installed theme and reports its message through
-`last_error`. Dropping the watcher stops it. KDE Plasma, GNOME and Budgie,
+rebuild keeps the installed theme, reports its message through `last_error`
+and requests a repaint, as a successful one does. Dropping the watcher stops it. KDE Plasma, GNOME and Budgie,
 macOS and Windows are watched; another Linux desktop returns an error from
 `start`.
 
