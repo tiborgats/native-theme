@@ -157,15 +157,18 @@ fn main() -> eframe::Result {
 
 Or a bundled preset, with both its variants in one atlas. `is_dark` picks the
 `ResolvedTheme` returned beside the atlas; egui's own `set_theme` picks the
-scheme on screen:
+scheme on screen. A preset pins the scheme: set the one `is_dark` named.
+`from_system` instead follows the OS, with `ThemePreference::System`:
 
 ```rust,no_run
+use egui::ThemePreference;
 use native_theme_egui::{AccessibilityPreferences, from_preset};
 
-fn install_preset(ctx: &egui::Context) -> native_theme_egui::Result<()> {
+fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Result<()> {
     let prefs = AccessibilityPreferences::default();
-    let (atlas, _resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
+    let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &prefs)?;
     atlas.install(ctx);
+    ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
     Ok(())
 }
 ```
@@ -302,10 +305,15 @@ impl eframe::App for MyApp {
 
 `system_rebuild` is the rebuild for an application on the OS theme; one that
 built its atlas with inputs of its own passes a closure that builds the same
-again. A failed rebuild keeps the installed theme and reports its message
-through `last_error`. Dropping the watcher stops it. KDE Plasma, GNOME and
-Budgie, macOS and Windows are watched; another Linux desktop returns an error
-from `start`.
+again. `system_rebuild` reads with `from_system()`, which picks the running OS
+version's preset, so an application that pinned a preset with
+`native_theme::SystemTheme::from_system_with_preset(name)` passes a closure
+that reads with it again: `native_theme::detect::invalidate_caches()`, then
+`from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas`. A failed
+rebuild keeps the installed theme and reports its message through
+`last_error`. Dropping the watcher stops it. KDE Plasma, GNOME and Budgie,
+macOS and Windows are watched; another Linux desktop returns an error from
+`start`.
 
 ## Accessibility
 

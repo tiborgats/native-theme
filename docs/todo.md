@@ -263,7 +263,7 @@ the file was pruned on 2026-10-11, not reordered.
       on a Mac in the System colour mode, change the appearance and the
       accent in System Settings, and see the showcase follow (the CI macOS
       leg or the maintainer).
-- [ ] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
+- [x] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
       lost on the next system re-read** (M2 final review, Minor 5,
       2026-10-11). The connectors' re-reads call `from_system()`, which picks
       the running version's generation: egui's watcher rebuilds through
@@ -297,6 +297,13 @@ the file was pruned on 2026-10-11, not reordered.
       `SystemTheme::from_system()`, or
       `SystemTheme::from_system_with_preset(name)` for a pinned preset, then
       `apply_system_theme`. egui stays open (M7).
+      For egui, settled as for iced and gpui (M7 T3, 2026-10-16):
+      `ThemeWatcher::start(ctx, rebuild)` (feature `watch`) takes the rebuild,
+      and `system_rebuild` stays the OS theme's; the README's *Runtime theme
+      change* recipe and `system_rebuild`'s documentation say that an
+      application that pinned a preset passes a closure that reads with
+      `SystemTheme::from_system_with_preset(name)` again, after
+      `invalidate_caches()`, then `to_egui_atlas()`.
 
 ### windows-11: the disabled fills are fully transparent
 

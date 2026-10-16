@@ -107,6 +107,11 @@ impl ThemeWatcher {
     /// The OS-theme rebuild: `native_theme::detect::invalidate_caches()`, then
     /// [`from_system`](crate::from_system)'s atlas.
     ///
+    /// `from_system` picks the running OS version's preset, so an application that pinned one
+    /// with `SystemTheme::from_system_with_preset(name)` passes [`start`](Self::start) a closure
+    /// that reads with it again: `invalidate_caches()`, then `from_system_with_preset(name)` and
+    /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas).
+    ///
     /// # Errors
     /// Propagates [`from_system`](crate::from_system).
     pub fn system_rebuild() -> native_theme::Result<ThemeAtlas> {

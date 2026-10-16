@@ -23,14 +23,18 @@
 //! # }
 //! ```
 //!
-//! Or from a bundled preset:
+//! Or from a bundled preset. A preset pins the scheme: set the one `is_dark` named.
+//! [`from_system`] instead follows the OS, with `ThemePreference::System`:
 //!
 //! ```rust,no_run
+//! use egui::ThemePreference;
 //! use native_theme_egui::{from_preset, AccessibilityPreferences};
 //!
 //! # fn install(ctx: &egui::Context) -> native_theme_egui::Result<()> {
-//! let (atlas, _resolved) = from_preset("catppuccin-mocha", true, &AccessibilityPreferences::default())?;
+//! let is_dark = true;
+//! let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &AccessibilityPreferences::default())?;
 //! atlas.install(ctx);
+//! ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
 //! # Ok(())
 //! # }
 //! ```

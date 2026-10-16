@@ -180,7 +180,9 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 ///
 /// `is_dark` selects the returned [`ResolvedTheme`](crate::ResolvedTheme); it does not pin egui's colour scheme —
 /// that is egui's `ctx.set_theme(..)` ([`ThemeAtlas::install`](crate::ThemeAtlas::install)). It is explicit and never
-/// inferred: some presets (`solarized`, `gruvbox`) have ambiguous lightness.
+/// inferred: some presets (`solarized`, `gruvbox`) have ambiguous lightness. For a one-variant
+/// preset the returned `ResolvedTheme` is the fallback variant, the one the preset has, whose
+/// mode `Resolved::mode` names on core's path (`Theme::resolve_with`).
 ///
 /// `prefs` is applied as [`Builder::accessibility`](crate::Builder::accessibility) applies it. Pass
 /// `&AccessibilityPreferences::default()` for none, or the OS preferences to honour them under a
