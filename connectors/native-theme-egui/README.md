@@ -177,6 +177,30 @@ fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Resu
 layout, the accessibility preferences, a font plan, the OS colour mode, the icon
 set and theme, and a `style_patch` applied after the mapping.
 
+## Window background
+
+eframe paints `App::clear_color` behind every panel: its root `Ui` has no
+margin or background colour (eframe `src/epi.rs:173`), and the default clear
+colour is a translucent near-black, `rgba(12, 12, 12, 180)` (`:248-252`). A
+panel fill the theme states translucent or transparent — `windows-11`'s
+sidebar, WinUI's docked `NavigationView` pane over the window backdrop — lies
+over that colour, so return the base style's `panel_fill`, the theme's
+`defaults.background_color`, as the showcase does:
+
+```rust,no_run
+struct MyApp;
+
+impl eframe::App for MyApp {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.label("Hello");
+    }
+
+    fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
+        visuals.panel_fill.to_normalized_gamma_f32()
+    }
+}
+```
+
 ## Core concepts
 
 - **`Role`** names what a region of the interface is — a button, an input, a

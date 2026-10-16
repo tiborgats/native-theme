@@ -1573,7 +1573,7 @@ model, the platform presets and the three connectors
       `SubtleFillColorTransparent`, `#ffffff00` in light and dark
       (`native-theme/src/presets/windows-11.toml:239`, `:799`;
       `docs/platform-facts.md:1278`), so the same holds there.
-- [ ] [v0.7.0] For M7: the left and right panels fill with
+- [x] [v0.7.0] For M7: the left and right panels fill with
       `sidebar.background_color`
       (`connectors/native-theme-egui/src/style/frames.rs:190-193`), which
       `windows-11` states transparent since M2b Step 7b, WinUI's docked
@@ -1598,6 +1598,14 @@ model, the platform presets and the three connectors
       `src/root.rs:444-452`), so only a view opened with gpui's own
       `cx.open_window` paints its own (`cx.theme().background`, as the
       showcase's root view does, `app.rs:2213`). The egui half stays M7's.
+      M7 T13 (2026-10-16), the egui half: a recipe, no API. The panel fill
+      is theme data and stays as stated; what shows through it is eframe's
+      `App::clear_color`, which only the application sets. The README's
+      *Window background* section, the crate docs' and `ThemeAtlas::install`'s
+      doc say that eframe paints it behind every panel and that an
+      application returns `visuals.panel_fill.to_normalized_gamma_f32()`,
+      the theme's `defaults.background_color`, as the showcase does
+      (`connectors/native-theme-egui/examples/showcase-egui/app.rs:895-897`).
 
 ### native-theme-gpui connector
 

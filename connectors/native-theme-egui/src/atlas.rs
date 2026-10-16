@@ -539,6 +539,14 @@ impl ThemeAtlas {
     /// `:331`) and `Options::sync_window_theme` (`:229`, default `true` at `:333`) are egui's
     /// too and `install` leaves them alone: set them with
     /// `ctx.options_mut(|o| o.fallback_theme = ..)` (`egui/src/context.rs:1135`).
+    ///
+    /// **The window background stays the application's.** eframe paints `App::clear_color`
+    /// behind every panel (eframe `src/epi.rs:173`; the default is `rgba(12, 12, 12, 180)`,
+    /// `:248-252`), and a panel fill the theme states translucent or transparent
+    /// (`windows-11`'s sidebar) lies over it: return
+    /// `visuals.panel_fill.to_normalized_gamma_f32()`, the theme's
+    /// `defaults.background_color`, from `clear_color`, as the crate docs' *Window background*
+    /// shows.
     pub fn install(&self, ctx: &egui::Context) {
         // The atlas already published: step 2 alone, so a style the application reset is the
         // atlas's again; the fonts, the plugin and the published atlas are already this atlas's,
