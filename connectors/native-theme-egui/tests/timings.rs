@@ -73,7 +73,10 @@ fn native_scopes_per_pass_with_a_focused_widget() {
             })
         };
         let _ = pass();
-        assert!(ctx.memory(|m| m.focused()).is_some(), "the button is focused");
+        assert!(
+            ctx.memory(|m| m.focused()).is_some(),
+            "the button is focused"
+        );
         let time = median(21, &mut pass);
         println!("timing native_scope pass: {scopes} scopes, focused, {time:?}");
     }
@@ -136,5 +139,8 @@ fn custom_icons_per_pass() {
             .filter_map(|(svg, key)| custom_icon_to_image_source(&ctx, svg, key))
             .count()
     });
-    println!("timing custom icons: {} provider SVGs, {provider:?}", own.len());
+    println!(
+        "timing custom icons: {} provider SVGs, {provider:?}",
+        own.len()
+    );
 }
