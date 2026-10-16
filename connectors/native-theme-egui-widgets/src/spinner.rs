@@ -240,7 +240,7 @@ fn paint_indicator(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) -> bool {
     let (index, frame) = icons::animated_frame_index(ctx, anim, paint.reduce_motion)
         .and_then(|i| Some((i, anim.frame_list()?.get(i)?)))
         .unwrap_or_else(|| (0, anim.first_frame()));
-    // The scheme names the colour of a freedesktop frame's `currentColor`.
+    // The scheme keys the cached frame; a freedesktop frame's `currentColor` is the key's tint.
     let scheme = ctx.theme();
     let cached = loaded.sources.lock().get(ctx, &key, scheme, index);
     let Some(source) = cached.or_else(|| {

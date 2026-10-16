@@ -2319,7 +2319,9 @@ const WIDGET_READS: &[(&str, &[&str])] = &[
 ];
 
 /// Every widget's `Look` is spliced: the crate's sources define as many `pub(crate) struct Look`
-/// as `looks` reads, and `WIDGET_READS` has a row for each widget `looks` names.
+/// as `looks` reads, and `WIDGET_READS` has a row for each widget `looks` names. It counts the
+/// literal `pub(crate) struct Look ` (the shape all eight take): a `Look` declared another way, or
+/// a look struct under another name, is not counted.
 #[test]
 fn every_look_is_read_by_the_coverage_test() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
