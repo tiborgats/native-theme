@@ -130,6 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: `icons::MAX_ICON_SIZE` (512), the largest size the system loaders, `load_custom_icon`, `load_custom_icon_in` and `rasterize_svg` load or draw an icon at (see *Breaking Changes*), so the connectors share one bound: a 512-pixel raster is 1 MiB.
 - **native-theme-iced**: `styles::composite_over(layer, base)`, the composite the styles flatten a stated hover or pressed layer onto a widget's fill with (`native_theme::color::composite_over` on iced `Color`s), public as the gpui connector's `layer_over` is, so an application drawing a layered state of its own matches the styles.
 - **native-theme-iced**: `is_reduced_motion`, `is_high_contrast`, `is_reduced_transparency` and `text_scaling_factor`, each reading one of a `SystemTheme`'s accessibility preferences, the four readers the gpui and egui connectors export under these names.
+- **native-theme-iced**: `pub use native_theme;`, the source crate re-exported as the egui connector does, so an application reaches the rest of native-theme's API (`native_theme_iced::native_theme::detect::invalidate_caches()`) without a dependency of its own, and cannot bring in a second copy.
 
 ### Changed
 

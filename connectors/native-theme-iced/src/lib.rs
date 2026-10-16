@@ -284,6 +284,13 @@ pub use spinner::Spinner;
 #[cfg(feature = "watch")]
 pub use watch::theme_changes;
 
+// The source crate, re-exported as the egui connector does, so an
+// application reaches the rest of native-theme's API
+// (`native_theme_iced::native_theme::detect::invalidate_caches()`) without a
+// dependency of its own, and a downstream `Cargo.toml` cannot bring in a
+// second, mismatched copy.
+pub use native_theme;
+
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;

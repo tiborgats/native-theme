@@ -67,3 +67,14 @@ fn light_and_dark_palettes_differ() {
         "light and dark adwaita should have different backgrounds"
     );
 }
+
+/// The connector re-exports native-theme, so an application names its API
+/// through `native_theme_iced::native_theme` with no dependency of its own,
+/// and it is the copy the connector's own types come from.
+#[test]
+fn native_theme_is_reached_through_the_connector() {
+    let _: fn() = native_theme_iced::native_theme::detect::invalidate_caches;
+    let theme: native_theme_iced::native_theme::theme::Theme = Theme::preset("adwaita").unwrap();
+    let resolved = theme.resolve(ColorMode::Light).unwrap();
+    let _ = to_theme(&resolved.variant, &theme.name);
+}
