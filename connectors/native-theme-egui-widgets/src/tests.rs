@@ -651,6 +651,82 @@ fn a_long_title_wraps_inside_the_header() {
     }
 }
 
+/// `open` opens or closes the body whatever the pointer does, and `enabled(false)` leaves the
+/// header disabled and unclickable: on the painted path, on egui's own and with no atlas.
+#[test]
+fn the_expander_opens_and_disables_as_told() {
+    let own = from_preset("material-3", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let e = &own.expander;
+    assert!(
+        e.arrow_side.is_none()
+            && e.arrow_gap.is_none()
+            && e.content_indent.is_none()
+            && e.frame_enabled.is_none(),
+        "material-3 states none of the painted path's four"
+    );
+    let contexts = [
+        (
+            "painted",
+            installed(&kde(), &AccessibilityPreferences::default()),
+        ),
+        ("own", installed(&own, &AccessibilityPreferences::default())),
+        ("bare", bare()),
+    ];
+    for (path, ctx) in contexts {
+        let mut time = 0.0;
+        let mut show = |open: Option<bool>, enabled: bool, input: Option<(egui::Pos2, bool)>| {
+            // Far apart, so each pass finds the last one's animation done; a press and its
+            // release close, so egui takes them for a click (`InputOptions::max_click_duration`).
+            time += if input.is_some() { 0.1 } else { 10.0 };
+            let mut raw = at(time);
+            if let Some((pos, pressed)) = input {
+                raw.events = pointer(pos, pressed).events;
+            }
+            let mut got = None;
+            let _ = pass(&ctx, raw, |ui| {
+                let r = Expander::new("Details")
+                    .open(open)
+                    .enabled(enabled)
+                    .show(ui, |ui| ui.label("Body"));
+                got = Some((r.header_response, r.body_returned.is_some()));
+            });
+            got.unwrap()
+        };
+        let (header, shown) = show(None, true, None);
+        assert!(!shown, "{path}: closed at first");
+        let centre = header.rect.center();
+        let (header, _) = show(Some(true), true, None);
+        assert!(header.changed(), "{path}: open(Some(true)) opens it");
+        assert!(show(None, true, None).1, "{path}: and it stays open");
+        let _ = show(Some(true), true, Some((centre, true)));
+        let (header, _) = show(Some(true), true, Some((centre, false)));
+        assert!(!header.changed(), "{path}: a click leaves it open");
+        assert!(show(None, true, None).1, "{path}");
+        let (header, _) = show(Some(false), true, None);
+        assert!(header.changed(), "{path}: open(Some(false)) closes it");
+        assert!(!show(None, true, None).1, "{path}: and it stays closed");
+        let (header, _) = show(None, false, None);
+        assert!(
+            !header.enabled(),
+            "{path}: enabled(false) disables the header"
+        );
+        let _ = show(None, false, Some((centre, true)));
+        let (header, _) = show(None, false, Some((centre, false)));
+        assert!(!header.clicked() && !header.changed(), "{path}");
+        assert!(
+            !show(None, false, None).1,
+            "{path}: a disabled header is not clicked open"
+        );
+        // egui senses a press on the widgets the pass before laid out, so one enabled first.
+        let _ = show(None, true, None);
+        let _ = show(None, true, Some((centre, true)));
+        let (header, _) = show(None, true, Some((centre, false)));
+        assert!(header.changed(), "{path}: an enabled one is");
+    }
+}
+
 /// T3: a clicked hyperlink is visited on the next pass, in `link.visited_text_color`.
 #[test]
 fn a_clicked_hyperlink_is_visited() {
