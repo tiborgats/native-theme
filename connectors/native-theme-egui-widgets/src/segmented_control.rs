@@ -1,6 +1,6 @@
 //! [`SegmentedControl`]: one exclusive choice among a row of segments.
 
-use native_theme_egui::convert::u8_from_f32_saturating;
+use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
 
@@ -45,9 +45,15 @@ use crate::parts::Parts;
 /// the selection. The row inside the outline is a `RadioGroup` for AccessKit and each segment
 /// a `RadioButton`, toggled when selected.
 ///
-/// It has no `enabled`: `segmented_control` states no disabled colour, so
-/// `ui.add_enabled(false, ..)` — egui's fade at the calling `Ui`'s `disabled_alpha` — is its
-/// disabled appearance.
+/// It has no `enabled`: `segmented_control` states no disabled colour, so under
+/// `ui.add_enabled(false, ..)` it is its enabled self faded by the calling `Ui`'s
+/// `disabled_alpha`, as one widget over its backdrop ([`Self::backdrop`]), as libadwaita fades
+/// the whole widget (the crate's *Disabled*): the outline's fill over the backdrop, each
+/// segment's fill over the outline's, each label over its segment, each faded over the
+/// backdrop and painted at the opacity the calling `Ui` had before egui faded it
+/// (`Ui::disable` multiplies the painter's opacity by `disabled_alpha`,
+/// `egui/src/ui.rs:497-502`, `:1588-1592`), so the outline's colour does not show through a
+/// segment. Where `disabled_alpha` is 1 the colours are as stated.
 ///
 /// With no atlas installed, it adds the same buttons in the calling `Ui`'s style, in a row
 /// with no outline.
@@ -56,6 +62,7 @@ pub struct SegmentedControl<'a> {
     selected: &'a mut usize,
     segments: Vec<egui::WidgetText>,
     wrap: bool,
+    backdrop: Option<egui::Color32>,
 }
 
 impl<'a> SegmentedControl<'a> {
@@ -69,6 +76,7 @@ impl<'a> SegmentedControl<'a> {
             selected,
             segments: segments.into_iter().map(Into::into).collect(),
             wrap: false,
+            backdrop: None,
         }
     }
 
@@ -76,6 +84,13 @@ impl<'a> SegmentedControl<'a> {
     /// narrow for them (`Ui::horizontal_wrapped`), instead of running past its edge.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
+        self
+    }
+
+    /// The colour under the control, which a disabled one is faded over as one widget; the
+    /// window's, `defaults.background_color`, where not given.
+    pub fn backdrop(mut self, backdrop: egui::Color32) -> Self {
+        self.backdrop = Some(backdrop);
         self
     }
 }
@@ -86,17 +101,26 @@ impl egui::Widget for SegmentedControl<'_> {
             selected,
             segments,
             wrap,
+            backdrop,
         } = self;
         if let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) {
-            let padding = &atlas
-                .resolved_for(ui.ctx().theme())
-                .segmented_control
-                .border
-                .padding;
+            let t = atlas.resolved_for(ui.ctx().theme());
+            let padding = &t.segmented_control.border.padding;
             let unstated = padding.top.is_none() && padding.bottom.is_none();
+            // The fade a disabled calling `Ui` gave the painter, which the control takes back to
+            // fade itself as one.
+            let alpha = ui.visuals().disabled_alpha();
+            let fade = (!ui.is_enabled() && alpha > 0.0 && alpha < 1.0).then(|| {
+                let ground = backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color));
+                (ground, alpha, ui.opacity() / alpha)
+            });
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {
                 if unstated {
                     fit_height(ui, &segments);
+                }
+                if let Some((ground, alpha, opacity)) = fade {
+                    fade_as_one(ui.visuals_mut(), ground, alpha);
+                    ui.set_opacity(opacity);
                 }
                 let outline = Outline::of(ui);
                 let contents = |ui: &mut egui::Ui| {
@@ -189,6 +213,28 @@ impl Outline {
             se: if last { inner(r.se) } else { 0 },
         }
     }
+}
+
+/// The segmented control scope's colours faded as one widget over `ground` by `alpha`: the
+/// outline's fill, the border colour, over `ground`; a segment's fill, `inactive` at rest and
+/// `selection` while selected (`egui/src/widget_style.rs:150-159`), over the outline's; its
+/// label over its segment; each faded over `ground`. A disabled segment is in its `inactive`
+/// state, as egui hovers no disabled widget (`egui/src/context.rs:1496-1500`).
+fn fade_as_one(v: &mut egui::Visuals, ground: egui::Color32, alpha: f32) {
+    let fade = |under: egui::Color32, colour: egui::Color32| {
+        crate::fade::faded(ground, under.blend(colour), alpha)
+    };
+    let outline = ground.blend(v.widgets.inactive.bg_stroke.color);
+    let idle = &mut v.widgets.inactive;
+    let segment = outline.blend(idle.weak_bg_fill);
+    let label = v.override_text_color.unwrap_or(idle.fg_stroke.color);
+    idle.bg_stroke.color = fade(ground, outline);
+    idle.weak_bg_fill = fade(outline, idle.weak_bg_fill);
+    idle.fg_stroke.color = fade(segment, idle.fg_stroke.color);
+    v.override_text_color = v.override_text_color.map(|_| fade(segment, label));
+    let selected = outline.blend(v.selection.bg_fill);
+    v.selection.bg_fill = fade(outline, v.selection.bg_fill);
+    v.selection.stroke.color = fade(selected, v.selection.stroke.color);
 }
 
 /// Narrow the scope's vertical button padding until the tallest one-line segment is the

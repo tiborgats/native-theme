@@ -941,6 +941,77 @@ fn a_disabled_slider_fades_as_one() {
     );
 }
 
+/// A segmented control under a disabled `Ui` is faded as one over its backdrop: each segment's
+/// fill over the outline's, faded over the window, painted at opacity 1, so the outline's
+/// colour does not show through a segment.
+#[test]
+fn a_disabled_segmented_control_fades_as_one() {
+    let t = adwaita();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let mut cell = None;
+    let (out, control) = response(&ctx, at(0.0), |ui| {
+        use native_theme_egui::NativeThemeUiExt as _;
+        cell = Some(
+            ui.native_scope(
+                native_theme_egui::Role::SegmentedControl,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| ui.visuals().clone(),
+            )
+            .inner,
+        );
+        ui.add_enabled(false, SegmentedControl::new(&mut 0, ["Day", "Week"]))
+    });
+    let v = cell.unwrap();
+    let alpha = v.disabled_alpha();
+    assert!(alpha < 1.0);
+    let outline = ground.blend(v.widgets.inactive.bg_stroke.color);
+    let segment = v.widgets.inactive.weak_bg_fill;
+    assert_eq!(segment.a(), 255, "the segment fill is opaque on adwaita");
+    let fill_of = |out: &egui::FullOutput, control: &egui::Response, name: &str| {
+        let rect = match name {
+            "outline" => control.rect,
+            segment => Parts::of(control).unwrap().get(segment).unwrap(),
+        };
+        rects(out)
+            .into_iter()
+            .find(|s| s.rect == rect)
+            .map(|s| s.fill)
+            .unwrap()
+    };
+    assert_eq!(
+        fill_of(&out, &control, "segment_1"),
+        ground.lerp_to_gamma(segment, alpha)
+    );
+    assert_eq!(
+        fill_of(&out, &control, "segment_0"),
+        ground.lerp_to_gamma(outline.blend(v.selection.bg_fill), alpha)
+    );
+    assert_eq!(
+        fill_of(&out, &control, "outline"),
+        ground.lerp_to_gamma(outline, alpha)
+    );
+
+    // A backdrop of the caller's is the ground instead.
+    let card = to_color32(t.card.background_color);
+    assert_ne!(card, ground);
+    let (out, control) = response(&ctx, at(0.0), |ui| {
+        ui.add_enabled(
+            false,
+            SegmentedControl::new(&mut 0, ["Day", "Week"]).backdrop(card),
+        )
+    });
+    let outline = card.blend(v.widgets.inactive.bg_stroke.color);
+    assert_eq!(
+        fill_of(&out, &control, "outline"),
+        card.lerp_to_gamma(outline, alpha)
+    );
+    assert_eq!(
+        fill_of(&out, &control, "segment_1"),
+        card.lerp_to_gamma(segment, alpha)
+    );
+}
+
 /// The progress bar is outlined as `progress_bar.border` states: kde-breeze's 1px in the
 /// window text at 20 % inside the bar, adwaita's width 0 not at all.
 #[test]
