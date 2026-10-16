@@ -1203,6 +1203,27 @@ fn the_progress_bar_is_outlined_as_stated() {
     assert!(rects(&out).iter().all(|r| r.stroke.width == 0.0));
 }
 
+/// With no `desired_width`, the bar is the `Ui`'s available width, at least
+/// `progress_bar.min_width`, where egui's own floor is 96.
+#[test]
+fn the_progress_bar_is_at_least_its_min_width() {
+    for (preset, want) in [("macos-monterey", 100.0), ("kde-breeze", 50.0)] {
+        let t = from_preset(preset, false, &AccessibilityPreferences::default())
+            .unwrap()
+            .1;
+        let ctx = installed(&t, &AccessibilityPreferences::default());
+        let column = 50.0;
+        assert_eq!(want, t.progress_bar.min_width.max(column), "{preset}");
+        let (_, bar) = response(&ctx, at(0.0), |ui| {
+            ui.allocate_ui(egui::vec2(column, f32::INFINITY), |ui| {
+                ui.add(ProgressBar::new(0.4))
+            })
+            .inner
+        });
+        assert_eq!(bar.rect.width(), want, "{preset}");
+    }
+}
+
 /// The slider's rail, fill and knob are the theme's, the knob's hover a layer over it.
 #[test]
 fn the_slider_paints_the_themes_knob() {
