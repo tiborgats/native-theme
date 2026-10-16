@@ -22,10 +22,10 @@ targets = [
 ]
 
 [features]
-# The native look is not opt-in (§12.1): everything that serves it without
-# application code is on by default. `svg-rasterize` stays opt-in, and `native`
-# and `watch` are off by default as in native-theme and the iced and gpui
-# connectors.
+# The native look of a preset is not opt-in (§12.1): the icons and fonts that
+# serve it without application code are on by default. `svg-rasterize` stays
+# opt-in. Reading the OS theme (`native`) and following it (`watch`) are off by
+# default, as in native-theme and the iced and gpui connectors.
 default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]
 material-icons = ["native-theme/material-icons"]
 lucide-icons  = ["native-theme/lucide-icons"]
@@ -33,7 +33,8 @@ system-icons  = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 system-fonts  = ["native-theme/system-fonts"]
 # The OS readers: without one, `from_system()` is the platform preset on Linux
-# and an error on macOS and Windows. native-theme's finer `kde`, `portal`,
+# (with the light/dark preference and reduced motion still read) and an error
+# on macOS and Windows. native-theme's finer `kde`, `portal`,
 # `macos` and `windows` pick one.
 native        = ["native-theme/native"]
 watch         = ["native-theme/watch"]  # enables `ThemeWatcher`
@@ -51,8 +52,9 @@ skrifa = { version = "0.44.0", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 eframe = "0.36.2"
-# The OS readers and the watcher, so the showcase, install_tests.rs and every
-# test build read the OS theme without the `native` feature named.
+# The OS readers, so the showcase, install_tests.rs and every test build read
+# the OS theme without the `native` feature named; `ThemeWatcher` and the
+# showcase's watcher still need this crate's own `watch` feature.
 native-theme = { workspace = true, features = ["native", "watch"] }
 # The showcase's palette is every widget egui_extras offers (§10.4): `svg` for
 # the icons, `datepicker` for `DatePickerButton`. Not `syntect`: without it
