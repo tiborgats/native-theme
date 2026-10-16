@@ -18,11 +18,13 @@ use gpui_component::plot::shape::{Arc, ArcData};
 use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
 use native_theme::detect::{system_icon_set, system_icon_theme};
-use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use native_theme::icons::{
+    AnimatedIcon, IconData, MAX_ICON_SIZE, TransformAnimation, load_icon_indicator,
+};
 use native_theme::theme::{IconSet, ResolvedTheme};
 
 use super::{color, length};
-use crate::icons::{MAX_ICON_SIZE, animated_frames_to_image_sources_for, with_spin_animation};
+use crate::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 use crate::{ActiveNativeTheme, NativeTheme};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
@@ -175,8 +177,8 @@ impl IndicatorKey {
     /// `system` (asked only then; [`system_theme`]), so a key names the theme
     /// its indicator comes from and a changed system theme is a key of its
     /// own; another set has no theme. The size is at most the 512 an SVG is
-    /// rasterized at (`icons::MAX_ICON_SIZE`), so the sizes above it share
-    /// their one image.
+    /// rasterized at (`native_theme::icons::MAX_ICON_SIZE`), so the sizes
+    /// above it share their one image.
     fn new(
         set: IconSet,
         icon_theme: Option<SharedString>,
@@ -608,7 +610,7 @@ mod tests {
     }
 
     /// A size above the 512 an SVG is rasterized at most
-    /// (`icons::MAX_ICON_SIZE`) is one key, as it is one image.
+    /// (`native_theme::icons::MAX_ICON_SIZE`) is one key, as it is one image.
     #[test]
     fn a_key_s_size_is_at_most_the_largest_raster() {
         let black = Rgba::rgb(0, 0, 0);

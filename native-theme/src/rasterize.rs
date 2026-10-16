@@ -11,16 +11,16 @@ use resvg::usvg;
 ///
 /// Parses the SVG, scales it uniformly to fit within `size x size` pixels
 /// (preserving aspect ratio), and renders to a pixel buffer with straight
-/// (non-premultiplied) alpha.
+/// (non-premultiplied) alpha. `size` is clamped to
+/// `1..=`[`MAX_ICON_SIZE`](crate::icons::MAX_ICON_SIZE) first: 0 draws one
+/// pixel, and a size above 512 draws at 512.
 ///
 /// # Errors
 ///
 /// Returns [`crate::Error::ReaderFailed`] with reader `"svg-rasterizer"`,
 /// whose [`kind`](crate::Error::kind) is
 /// [`ErrorKind::Platform`](crate::error::ErrorKind::Platform), if the SVG
-/// cannot be parsed, if the size is zero or its `size × size` RGBA buffer is
-/// over the icon decode bound of 64 MiB (a size above 4096), or if that
-/// buffer cannot be allocated.
+/// cannot be parsed or its `size × size` RGBA buffer cannot be allocated.
 ///
 /// An `<image>` is drawn only from an inline `data:` URL; an `href` naming a
 /// file is not read.
@@ -48,10 +48,11 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
         reader: crate::error::reader_names::SVG_RASTERIZER,
         source,
     };
+    let size = size.clamp(1, crate::icons::MAX_ICON_SIZE);
     let data_len = crate::icons::raster_bytes_in_bound(size, size).ok_or_else(|| {
         failed(
             format!(
-                "rasterization size {size}x{size} is zero or over {} bytes",
+                "rasterization size {size}x{size} is over {} bytes",
                 crate::icons::MAX_ICON_DECODE_BYTES
             )
             .into(),
@@ -173,10 +174,24 @@ mod tests {
         }
     }
 
+    /// A size is clamped to `1..=MAX_ICON_SIZE`: 0 draws one pixel, and a
+    /// size past the bound draws at the bound rather than allocating
+    /// `size² × 4` bytes.
     #[test]
-    fn rasterize_zero_size_returns_err() {
-        let result = rasterize_svg(VALID_SVG, 0);
-        assert!(result.is_err(), "zero size should return Err");
+    fn rasterize_clamps_the_size_to_max_icon_size() {
+        use crate::icons::MAX_ICON_SIZE;
+        for (size, side) in [
+            (0, 1),
+            (MAX_ICON_SIZE, MAX_ICON_SIZE),
+            (MAX_ICON_SIZE + 1, MAX_ICON_SIZE),
+            (100_000, MAX_ICON_SIZE),
+            (u32::MAX, MAX_ICON_SIZE),
+        ] {
+            let Ok(IconData::Rgba(rgba)) = rasterize_svg(VALID_SVG, size) else {
+                panic!("asked for {size}: no raster");
+            };
+            assert_eq!((rgba.width(), rgba.height()), (side, side), "asked for {size}");
+        }
     }
 
     fn alpha_at(icon: &IconData, x: usize, y: usize) -> u8 {
@@ -204,21 +219,6 @@ mod tests {
         );
         assert_eq!(alpha_at(&icon, 50, 23), 0, "above the band is transparent");
         assert_eq!(alpha_at(&icon, 50, 76), 0, "below the band is transparent");
-    }
-
-    #[test]
-    fn rasterize_size_over_the_decode_bound_returns_err() {
-        let result = rasterize_svg(VALID_SVG, 100_000);
-        assert!(
-            result.is_err(),
-            "a size over the decode bound should return Err"
-        );
-        let result = rasterize_svg(VALID_SVG, 4097);
-        assert!(result.is_err(), "4097² × 4 is over the decode bound");
-        assert!(
-            rasterize_svg(VALID_SVG, 4096).is_ok(),
-            "4096² × 4 is the bound"
-        );
     }
 
     #[test]

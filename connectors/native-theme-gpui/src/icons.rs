@@ -679,12 +679,6 @@ pub fn freedesktop_name_candidates(icon: IconName) -> &'static [&'static str] {
 /// on HiDPI screens. gpui uses the same 2x scale factor internally.
 const SVG_RASTERIZE_SIZE: u32 = 48;
 
-/// Maximum allowed rasterization size for icon conversion.
-///
-/// Values above this are clamped to prevent excessive memory allocation
-/// from a single icon render.
-pub(crate) const MAX_ICON_SIZE: u32 = 512;
-
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
@@ -701,7 +695,9 @@ pub(crate) const MAX_ICON_SIZE: u32 = 512;
 ///   the color's alpha channel is discarded during SVG colorization because
 ///   SVG fill/stroke attributes only accept opaque hex (`#rrggbb`).
 /// - `size`: Rasterize size in pixels for SVG icons. `None` defaults to 48px
-///   (2x HiDPI at 24px logical). Clamped to 1..=512 range. Pass
+///   (2x HiDPI at 24px logical), clamped to `1..=`
+///   [`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE) (512) by
+///   native-theme's rasterizer. Pass
 ///   `logical_size * scale_factor` for DPI-correct rendering. Not used
 ///   without `svg-rasterize` (below).
 ///
@@ -802,8 +798,9 @@ pub fn into_image_source(
 /// symbolic icon's placeholders, a `currentColor` the document sets no
 /// `color` for), so one whose stylesheet sets its colour (a Breeze
 /// `current-color-scheme`) keeps that colour and a full-colour one its own
-/// palette. `size`, clamped to
-/// `1..=512` as for an SVG, reaches the system sets' loaders too: a
+/// palette. `size`, clamped to `1..=`
+/// [`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE) (512) by
+/// [`load_custom_icon`] as for an SVG, reaches the system sets' loaders too: a
 /// freedesktop icon is looked up at it, so a PNG one comes back from the
 /// theme's directory nearest it, an SF Symbol is configured at it in points
 /// and a Segoe glyph drawn at it in pixels, and the RGBA they return is
@@ -821,7 +818,6 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
     let data = load_custom_icon(provider, icon_set, color.map(to_rgba), size)?;
     into_image_source(data, None, size)
 }
@@ -891,13 +887,14 @@ pub fn bundled_svg_to_image_source(
 /// SVG path of [`to_image_source()`] and [`bundled_svg_to_image_source()`].
 ///
 /// Issue 27: avoids the heap copy that wrapping in `IconData::Svg(bytes.to_vec())`
-/// would incur. Issue 28: the size is clamped to `1..=512`.
+/// would incur. Issue 28: native-theme's rasterizer clamps the size to
+/// `1..=`[`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE).
 fn svg_bytes_to_image_source(
     svg_bytes: &[u8],
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
+    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
     if let Some(c) = color {
         let colored = colorize_monochrome_svg(svg_bytes, to_rgba(c));
         svg_to_render_source(&colored, raster_size)
@@ -2303,6 +2300,46 @@ mod tests {
                 std::fs::write(dir.join("folder.png"), png.into_inner())?;
             }
             Ok(())
+        })?;
+        Ok(())
+    }
+
+    /// A custom icon's size is clamped to `1..=MAX_ICON_SIZE` by native-theme's
+    /// loader: a freedesktop lookup at 99 999 is made at 512, so it takes the
+    /// theme's 512 directory, not its 1024 one. The theme is a fixture in a
+    /// child process ([`crate::icon_fixture`]) with a PNG folder of each size.
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn custom_icon_to_image_source_looks_a_huge_size_up_at_the_bound()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::custom_icon_to_image_source_looks_a_huge_size_up_at_the_bound";
+        if crate::icon_fixture::in_child() {
+            let image = custom_icon_to_image_source(
+                &FolderProvider,
+                native_theme::theme::IconSet::Freedesktop,
+                None,
+                Some(99_999),
+            )
+            .ok_or("the fixture theme has no folder")?;
+            let side = gpui::DevicePixels(512);
+            assert_eq!(rendered(image).size(0), gpui::size(side, side));
+            return Ok(());
+        }
+        let png = |size: u32| -> std::io::Result<Vec<u8>> {
+            let mut png = std::io::Cursor::new(Vec::new());
+            image::RgbaImage::from_pixel(size, size, image::Rgba([61, 174, 233, 255]))
+                .write_to(&mut png, image::ImageFormat::Png)
+                .map_err(std::io::Error::other)?;
+            Ok(png.into_inner())
+        };
+        let (at_512, at_1024) = (png(512)?, png(1024)?);
+        crate::icon_fixture::run(NAME, Child::kde("sized"), |icons| {
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "sized",
+                &[(512, "folder.png", &at_512), (1024, "folder.png", &at_1024)],
+            )
         })?;
         Ok(())
     }

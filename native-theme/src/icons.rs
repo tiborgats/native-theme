@@ -31,6 +31,16 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 )]
 pub(crate) const MAX_ICON_DECODE_BYTES: usize = 64 * 1024 * 1024;
 
+/// The largest size, in pixels (points for an SF Symbol), that
+/// [`load_custom_icon`], [`load_custom_icon_in`] and
+/// [`rasterize_svg`](crate::rasterize::rasterize_svg) load or draw an icon
+/// at: a larger size is taken as this one, and 0 as 1.
+///
+/// 512, so the largest raster one call builds is 512² × 4 bytes, 1 MiB, where
+/// a size of 10 000 would allocate 400 MB for one icon. Every connector loads
+/// its icons through these, so all three share the bound.
+pub const MAX_ICON_SIZE: u32 = 512;
+
 /// Whether a `size × size` RGBA raster (`size² × 4` bytes) is inside
 /// [`MAX_ICON_DECODE_BYTES`]; a size of 0 is not.
 #[cfg_attr(
@@ -747,14 +757,16 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// colour only for monochrome icons; with `None` a full-colour SVG is
 /// returned unchanged.
 ///
-/// `size` reaches each system set's loader as that loader takes it: the
-/// pixel size a freedesktop icon is looked up at
-/// ([`FreedesktopLoader::size`], which picks the theme's directory nearest
-/// it, so a PNG icon comes back at that directory's size), an SF Symbol's
-/// point size ([`SfSymbolsLoader::size`]) and a Segoe glyph's pixel size
-/// ([`SegoeFluentLoader::size`]). `None` keeps each loader's default (24
-/// pixels, 24 points and 32 pixels). A Material or Lucide icon, or the
-/// provider's own SVG, is scalable and loads the same at every size.
+/// `size` is clamped to `1..=`[`MAX_ICON_SIZE`] and reaches each system
+/// set's loader as that loader takes it: the pixel size a freedesktop icon
+/// is looked up at ([`FreedesktopLoader::size`], which picks the theme's
+/// directory nearest it, so a PNG icon comes back at that directory's
+/// size), an SF Symbol's point size ([`SfSymbolsLoader::size`]) and a Segoe
+/// glyph's pixel size ([`SegoeFluentLoader::size`]); a loader that cannot
+/// draw the icon at that size returns `None`, as for an icon it does not
+/// find. `None` keeps each loader's default (24 pixels, 24 points and 32
+/// pixels). A Material or Lucide icon, or the provider's own SVG, is
+/// scalable and loads the same at every size.
 ///
 /// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
@@ -769,7 +781,8 @@ pub fn load_custom_icon(
 
 /// [`load_custom_icon`], with a freedesktop icon looked up in `icon_theme`
 /// ([`FreedesktopLoader::theme`]) where it is `Some`, the system's icon
-/// theme where it is `None`.
+/// theme where it is `None`. `size` is clamped to `1..=`[`MAX_ICON_SIZE`]
+/// as there.
 ///
 /// For the icon theme the application's theme names
 /// ([`SystemTheme::icon_theme_for`](crate::SystemTheme::icon_theme_for),
@@ -825,8 +838,8 @@ fn load_provider_icon(
         .map(|svg| colorize_svg_data(IconData::Svg(svg), color))
 }
 
-/// A role or a name from `set`'s loader, in `color`, at `size` where the
-/// loader takes one.
+/// A role or a name from `set`'s loader, in `color`, at `size` clamped to
+/// `1..=MAX_ICON_SIZE` where the loader takes one.
 fn load_set_icon<'a>(
     id: IconId<'a>,
     set: IconSet,
@@ -834,6 +847,7 @@ fn load_set_icon<'a>(
     color: Option<Rgba>,
     size: Option<u32>,
 ) -> Option<IconData> {
+    let size = size.map(|size| size.clamp(1, MAX_ICON_SIZE));
     match set {
         IconSet::Freedesktop => {
             let loader = FreedesktopLoader::new(id).color_opt(color);
@@ -2013,6 +2027,53 @@ mod runtime_set_icon_tests {
             ),
             Some(IconData::Svg(Cow::Borrowed(own)))
         );
+    }
+
+    /// A custom icon is loaded at a size clamped to `1..=MAX_ICON_SIZE`: a
+    /// freedesktop lookup at 99 999 is made at 512, so it takes the theme's
+    /// 512 directory, not its 1024 one, and one at 0 is made at 1, taking the
+    /// 1 directory, not the 0 one. The theme
+    /// is a fixture in a child process ([`native_theme_test_fixtures`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_custom_icon_is_loaded_at_a_clamped_size() -> std::io::Result<()> {
+        const NAME: &str =
+            "icons::runtime_set_icon_tests::a_custom_icon_is_loaded_at_a_clamped_size";
+        const ZERO: &str = r##"<svg xmlns="http://www.w3.org/2000/svg"/>"##;
+        const SMALL: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>"##;
+        const AT_512: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"/>"##;
+        const AT_1024: &str =
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"/>"##;
+        if native_theme_test_fixtures::in_child() {
+            let svg = |svg: &'static str| Some(IconData::Svg(Cow::Borrowed(svg.as_bytes())));
+            let load = |size| {
+                load_custom_icon_in(
+                    &EditCopy(None),
+                    IconSet::Freedesktop,
+                    None,
+                    None,
+                    Some(size),
+                )
+            };
+            assert_eq!(load(99_999), svg(AT_512), "asked for 99999");
+            assert_eq!(load(MAX_ICON_SIZE + 1), svg(AT_512), "asked for 513");
+            assert_eq!(load(1024), svg(AT_512), "asked for 1024");
+            assert_eq!(load(0), svg(SMALL), "asked for 0");
+            return Ok(());
+        }
+        let child = native_theme_test_fixtures::Child::kde("sized");
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            native_theme_test_fixtures::write_fixed_theme(
+                icons,
+                "sized",
+                &[
+                    (0, "edit-copy.svg", ZERO.as_bytes()),
+                    (1, "edit-copy.svg", SMALL.as_bytes()),
+                    (512, "edit-copy.svg", AT_512.as_bytes()),
+                    (1024, "edit-copy.svg", AT_1024.as_bytes()),
+                ],
+            )
+        })
     }
 
     /// A freedesktop icon is looked up in the icon theme given and no

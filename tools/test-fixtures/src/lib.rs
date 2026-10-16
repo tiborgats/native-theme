@@ -194,6 +194,37 @@ pub fn write_scalable_theme(icons: &Path, name: &str, files: &[(&str, &str)]) ->
     Ok(())
 }
 
+/// Writes the theme `name` into `icons` with one fixed-size directory per
+/// size of `files`, each `(size, file, bytes)` as `<size>/<file>` in the
+/// directory `<size>` (`Size=<size>`, `Type=Fixed`), so a lookup takes the
+/// directory nearest the size it is made at.
+///
+/// # Errors
+///
+/// An error from writing a file.
+pub fn write_fixed_theme(icons: &Path, name: &str, files: &[(u32, &str, &[u8])]) -> io::Result<()> {
+    let theme = icons.join(name);
+    let mut sizes: Vec<u32> = files.iter().map(|&(size, ..)| size).collect();
+    sizes.sort_unstable();
+    sizes.dedup();
+    let directories: Vec<String> = sizes.iter().map(u32::to_string).collect();
+    let mut index = format!(
+        "[Icon Theme]\nName={name}\nDirectories={}\n",
+        directories.join(",")
+    );
+    for size in &sizes {
+        index.push_str(&format!("\n[{size}]\nSize={size}\nType=Fixed\n"));
+    }
+    std::fs::create_dir_all(&theme)?;
+    std::fs::write(theme.join("index.theme"), index)?;
+    for (size, file, bytes) in files {
+        let dir = theme.join(size.to_string());
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join(file), bytes)?;
+    }
+    Ok(())
+}
+
 /// Writes the theme `name` into `icons` with `svg` as its loading
 /// indicator, `animations/22/process-working.svg` in a directory declared as
 /// Breeze's is (`/usr/share/icons/breeze/index.theme`, `[animations/22]`).
@@ -258,6 +289,38 @@ mod tests {
             write_scalable_theme(icons, "fixture", &[("folder", SVG)])?;
             write_indicator_theme(icons, "indicator", SVG)
         })?;
+        Ok(())
+    }
+
+    /// A fixed theme lists each size once, as a fixed directory holding its
+    /// files.
+    #[test]
+    fn a_fixed_theme_has_one_directory_per_size() -> Result<(), Box<dyn std::error::Error>> {
+        let icons = std::env::temp_dir().join(format!(
+            "native-theme-test-fixture-fixed-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&icons);
+        let written = write_fixed_theme(
+            &icons,
+            "fixed",
+            &[
+                (48, "folder.svg", SVG.as_bytes()),
+                (16, "folder.svg", SVG.as_bytes()),
+                (16, "edit-copy.svg", SVG.as_bytes()),
+            ],
+        );
+        let index = std::fs::read_to_string(icons.join("fixed/index.theme"));
+        let files = ["16/folder.svg", "16/edit-copy.svg", "48/folder.svg"]
+            .map(|file| icons.join("fixed").join(file).is_file());
+        let _ = std::fs::remove_dir_all(&icons);
+        written?;
+        assert_eq!(
+            index?,
+            "[Icon Theme]\nName=fixed\nDirectories=16,48\n\n\
+             [16]\nSize=16\nType=Fixed\n\n[48]\nSize=48\nType=Fixed\n"
+        );
+        assert_eq!(files, [true; 3]);
         Ok(())
     }
 

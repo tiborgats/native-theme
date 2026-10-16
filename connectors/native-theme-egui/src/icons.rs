@@ -115,18 +115,18 @@ impl IconKey {
     /// the theme's directory nearest it), an SF Symbol's point size
     /// ([`SfSymbolsLoader::size`](native_theme::icons::SfSymbolsLoader::size)) and a Segoe
     /// glyph's pixel size
-    /// ([`SegoeFluentLoader::size`](native_theme::icons::SegoeFluentLoader::size)). A size of 0
-    /// is asked for as 1, as those two load nothing at 0. A size those two do not accept
-    /// above that, one whose `size² × 4` raster bytes exceed their 64 MiB decode bound, gives
-    /// `None`, and so does a raster with a side above `max_texture_side`: egui refuses an
-    /// oversized raster rather than resampling it (spec §9.3). A Material or Lucide icon is
-    /// scalable and loads the same at every size. Stored as a private `u32` — the type the
-    /// three loaders take — computed as `(if points > 0.0 { points.round() } else { 0.0 }) as
-    /// u32`, which is total over every `f32`: `NaN`, `-0.0` and every negative fold to the
-    /// single key `0`, and the float-to-int `as` cast saturates at `u32::MAX` (spec §7.1). An
-    /// integer, not an `f32`, is what lets `IconKey` derive `Eq` and `Hash`. Without this call
-    /// the key has no size, and each loader takes its own default: 24 pixels, 24 points and 32
-    /// pixels.
+    /// ([`SegoeFluentLoader::size`](native_theme::icons::SegoeFluentLoader::size)), clamped to
+    /// `1..=`[`MAX_ICON_SIZE`](native_theme::icons::MAX_ICON_SIZE) (512) by native-theme's
+    /// `load_custom_icon_in`, as the gpui connector's custom icons are. A loader that cannot
+    /// draw the icon at that size gives `None`, and so does a raster with a side above
+    /// `max_texture_side`: egui refuses an oversized raster rather than resampling it
+    /// (spec §9.3). A Material or Lucide icon is scalable and loads the same at every size.
+    /// Stored as a private `u32` — the type the three loaders take — computed as
+    /// `(if points > 0.0 { points.round() } else { 0.0 }) as u32`, which is total over every
+    /// `f32`: `NaN`, `-0.0` and every negative fold to the single key `0`, and the
+    /// float-to-int `as` cast saturates at `u32::MAX` (spec §7.1). An integer, not an `f32`,
+    /// is what lets `IconKey` derive `Eq` and `Hash`. Without this call the key has no size,
+    /// and each loader takes its own default: 24 pixels, 24 points and 32 pixels.
     #[must_use]
     pub fn size(mut self, points: f32) -> Self {
         let rounded = if points > 0.0 { points.round() } else { 0.0 };
@@ -514,9 +514,6 @@ pub fn custom_icon_to_image_source(
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent => load_color(ctx, key),
         _ => key.tint_rgba(),
     };
-    // At 0 an SF Symbol or a Segoe glyph loads nothing (`SfSymbolsLoader::size`,
-    // `SegoeFluentLoader::size`).
-    let size = key.size.map(|size| size.max(1));
     // The icon theme a freedesktop load searches: the key's, else the system's from
     // native-theme's detection cache (`detect::system_icon_theme`, what `FreedesktopLoader`
     // reads without one), so a kept icon is keyed by the theme it came from and a system
@@ -527,19 +524,19 @@ pub fn custom_icon_to_image_source(
     };
     let icon_theme = key.icon_theme.as_deref().or(resolved_theme.as_deref());
     let load = |provider: &dyn IconProvider| {
-        native_theme::icons::load_custom_icon_in(provider, key.set, icon_theme, color, size)
+        native_theme::icons::load_custom_icon_in(provider, key.set, icon_theme, color, key.size)
     };
     let named = provider.icon_name(key.set).and_then(|name| {
         let kept = ctx.data_mut(|d| {
             d.get_temp_mut_or_default::<LoadedIcons>(loaded_key())
-                .get(name, key.set, icon_theme, size, color)
+                .get(name, key.set, icon_theme, key.size, color)
         });
         kept.or_else(|| {
             let icon = Arc::new(load(&NameOnly(name))?);
             let loaded = LoadedIcon {
                 set: key.set,
                 icon_theme: icon_theme.map(str::to_owned),
-                size,
+                size: key.size,
                 color,
                 icon: Arc::clone(&icon),
             };
@@ -1369,6 +1366,39 @@ mod tests {
                 std::fs::write(dir.join("folder.svg"), svg(size))?;
             }
             Ok(())
+        })?;
+        Ok(())
+    }
+
+    /// A key's size is clamped to `1..=MAX_ICON_SIZE` by native-theme's loader: a freedesktop
+    /// lookup at 99 999 points is made at 512, so it takes the theme's 512 directory, not its
+    /// 1024 one. The theme is a fixture in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_custom_icon_at_a_huge_size_is_looked_up_at_the_bound()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::tests::a_custom_icon_at_a_huge_size_is_looked_up_at_the_bound";
+        let svg = |size: u32| {
+            format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}"/>"#)
+        };
+        if crate::icon_fixture::in_child() {
+            let ctx = egui::Context::default();
+            let key = IconKey::name("folder", IconSet::Freedesktop).size(99_999.0);
+            let source = custom_icon_to_image_source(&ctx, &named("folder"), &key)
+                .ok_or("the fixture theme has no folder")?;
+            assert_eq!(String::from_utf8_lossy(&bytes_of(&source).1), svg(512));
+            return Ok(());
+        }
+        let (at_512, at_1024) = (svg(512), svg(1024));
+        crate::icon_fixture::run(NAME, Child::kde("sized"), |icons| {
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "sized",
+                &[
+                    (512, "folder.svg", at_512.as_bytes()),
+                    (1024, "folder.svg", at_1024.as_bytes()),
+                ],
+            )
         })?;
         Ok(())
     }

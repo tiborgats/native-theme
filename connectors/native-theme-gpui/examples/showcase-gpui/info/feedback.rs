@@ -261,7 +261,7 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:463",
+                "native-theme-gpui/widgets/spinner.rs:465",
             ))
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
@@ -271,7 +271,7 @@ pub fn native_spinner(
                 "indicator",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/spinner.rs:464",
+                "native-theme-gpui/widgets/spinner.rs:466",
             ))
             .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
@@ -286,7 +286,7 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:91"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:93"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
