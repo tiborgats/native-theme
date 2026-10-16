@@ -3414,7 +3414,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### Contracts: the connectors' widgets
 
-- [ ] [v0.7.0] A design question for all connectors (M5 T7 ruling,
+- [x] [v0.7.0] A design question for all connectors (M5 T7 ruling,
       2026-10-14): the iced contract covers every palette slot the
       connector writes and every field of a `styles::*` output
       (`connectors/native-theme-iced/src/contract.rs:1-3`), so a widget of
@@ -3428,6 +3428,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       its `widgets` feature, `connectors/native-theme-gpui/Cargo.toml:32-35`)
       and native-theme-egui-widgets, or a widget's unit tests stay its only
       check.
+  *Closed by M8 T7 (2026-10-16, c94f1a1b):* a connector's own widget is a sink of its colour-leaf coverage test, with no second contract (Step 6 ruling). iced's `Spinner` reads the theme through `spinner::Look::of`, and two accessor rows read it (`spinner.fill_color`, the arc and a bundled set's tint; `defaults.text_color`, a freedesktop indicator's `currentColor`), which `every_colour_leaf_reaches_a_row_or_is_named` requires each leaf to reach; gpui's seven Looks were sinks already (M6 T16); egui's widgets read the atlas's cells, which `mapping.md` and `mapping_tests` row.
 
 ---
 
@@ -3603,7 +3604,8 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Closed by M8 T3 (2026-10-16, 97105ccc):* iced's `styles::slider` composites the hover over the thumb with `styles::composite_over`, as gpui's `SliderLook` does, and its contract row follows; both composites are native-theme's `color::composite_over` since 072855bc. No bundled value moves: every stated thumb hover is opaque.
 - [x] [v0.7.0] For M8 (parity): on a text-scaling factor whose product is not a normal positive number, gpui and iced keep the theme's unscaled size (core's `AccessibilityPreferences::scaled`, M6 T13), while egui keeps its stock size with a `Note::ValueSanitised`, as its spec prescribes (d05d64f6). Decide whether the connectors should agree.
   *Closed by M8 T6 (2026-10-16, e4972f32):* they do not unify (Step 6 ruling): both are documented clamps of a pathological factor. egui's `scaled_text_size` keeps its plain product by its spec §8.6, and its doc says why the siblings differ; iced's and gpui's docs name egui's contract; the parity gate records nothing, as the three signatures agree.
-- [ ] [v0.7.0] For M8 (parity): iced's `font_family` returns the default family only. gpui's geometry builders carry each font's family and style since M6's final review (35785f1e).
+- [x] [v0.7.0] For M8 (parity): iced's `font_family` returns the default family only. gpui's geometry builders carry each font's family and style since M6's final review (35785f1e).
+  *Closed by M8 T7 (2026-10-16, 6e9c2121):* `font_family` stays the defaults' family, its leaf's name (Step 6 ruling); the per-widget parity is `font(spec) -> iced_core::Font` (feature `system-fonts`): the family `system_font_family` gives (since 2fcc26fb the platform's substitute where the system lacks the stated one, as gpui and egui draw it, M8-01), the weight through `to_iced_weight`, the style; it leaks one name per distinct family, kept for the process. The showcase's own leak is M9b's to shrink.
 - [ ] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
 - [ ] [v0.7.0] For M8 (test quality): the icon fixture helper (`icon_fixture.rs`) is copied between the iced and gpui connectors (M6 T4). The gpui DataTable row-growth test re-implements `table_row_height`, and the row formula leaves out the row's 1 px bottom border (M6 T6). The text stays inside either way.
   *Fixture half closed by M8 T2 (2026-10-16, 990ab210):* one `publish = false` crate, `native-theme-test-fixtures` (tools/test-fixtures), replaces the copies; the DataTable half stays open.
