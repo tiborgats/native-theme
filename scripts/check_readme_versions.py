@@ -16,8 +16,9 @@ Run from the repository root:
 
 Exit 0 when every dependency names the workspace's `major.minor`, 1 when one
 names another, 2 on an input it cannot read (a workspace version not of the
-form major.minor.patch, a README missing, a crate's README that states no
-dependency on its own crate, so the check would pass vacuously).
+form major.minor.patch, the root README or a crate's missing, a crate's
+README that states no dependency on its own crate, so the check would pass
+vacuously).
 
 The release bump moves the READMEs
 ----------------------------------
@@ -43,7 +44,8 @@ its own dependency: in its `## Quick start` section where the README has one
 with a `toml` block, anywhere in a `toml` block otherwise (the core README
 installs with `cargo add` and states its features' block under *Feature
 flags*). A README that lost its block would otherwise pass with nothing to
-compare.
+compare. The root README must exist too; a member without one (a tool that
+is not published) is skipped.
 """
 
 import argparse
@@ -56,6 +58,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 WORKSPACE = "Cargo.toml"
+ROOT_README = "README.md"
 
 # The crates an application names in its own manifest, by directory: each
 # README states the dependency on its crate. native-theme-derive's README
@@ -98,7 +101,7 @@ def workspace_readmes(text, label):
         raise Failure(f"{label}: {error}")
     if not members:
         raise Failure(f"{label}: `[workspace] members` lists no crate")
-    return ["README.md"] + [f"{member}/README.md" for member in members]
+    return [ROOT_README] + [f"{member}/README.md" for member in members]
 
 
 DEP_RE = re.compile(r"\s*([A-Za-z0-9_-]+)\s*=\s*(.*)")
@@ -177,7 +180,9 @@ def check(read_rel, own_dependency=OWN_DEPENDENCY):
         try:
             texts[rel] = read_rel(rel)
         except Failure:
-            if os.path.dirname(rel) in own:
+            # a member without a README of its own (a tool) states nothing;
+            # the root's and every crate's must be there
+            if rel == ROOT_README or os.path.dirname(rel) in own:
                 raise
     for directory in own:
         if f"{directory}/README.md" not in readmes:
@@ -351,6 +356,7 @@ def self_test():
                   SELF_ICED.replace("native-theme-iced = {", "iced-other = {", 1)}))
     fails("a crate README that is missing",
           tree(**{"connectors/native-theme-iced/README.md": None}))
+    fails("a root README that is missing", tree(**{"README.md": None}))
 
     for line in failures:
         print("  FAIL " + line)

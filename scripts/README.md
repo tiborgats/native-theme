@@ -409,8 +409,8 @@ Each crate an application depends on (core, build, the three connectors,
 egui-widgets) must state its own dependency, in its Quick start where it has
 one, so a README that lost its block cannot pass with nothing to compare.
 Exits 0 when clean, 1 on a README naming another minor, 2 on an input it
-cannot read (a version not of the form major.minor.patch, a missing README, a
-crate README without its own dependency). `--self-test` runs its built-in
+cannot read (a version not of the form major.minor.patch, a missing root or
+crate README, a crate README without its own dependency). `--self-test` runs its built-in
 scenarios, a README naming another minor among them; `--root DIR` reads a
 scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
 subset too) runs the check and the self-test; `ci.yml`'s documentation job
