@@ -87,13 +87,22 @@ pub enum RoleVariant {
     /// of its own: `checkbox.checked_background` and `checkbox.border.color` (§6.2). A
     /// button's suggested action, the active tab and segment and the switched-on switch are
     /// carried by their `Normal` cells, which the `Button`'s own `.selected(..)` flag picks
-    /// from; their `Selected` cell is the `Normal` one.
+    /// from; their `Selected` cell is the `Normal` one. A checked control that is disabled
+    /// takes [`SelectedDisabled`](Self::SelectedDisabled).
     Selected,
     /// The platform's disabled appearance, written into the `inactive` entry, with the role's
     /// `disabled_opacity` as `Visuals::disabled_alpha`, which `Ui::disable` fades the widget by
     /// on top of those colours. A platform dims by one of the two, and its data makes the other
     /// an identity (docs/platform-facts.md §2.1.6). See §6.3.
     Disabled,
+    /// The disabled appearance of a checked `Checkbox` or `RadioButton`, beside `Selected`: the
+    /// checked box, its outline `checkbox.border.color`, and the label in
+    /// `checkbox.disabled_text_color`. Where the theme states no `checkbox.disabled_background`
+    /// the platform dims by opacity alone, and the box keeps its checked fill and its
+    /// `indicator_color` mark, which `disabled_alpha` fades; where it states one, the box takes
+    /// that fill and the mark `disabled_text_color`, as the `Disabled` cell's box does
+    /// (docs/platform-facts.md §2.1.6). Every other role's is its `Disabled` cell.
+    SelectedDisabled,
 }
 
 /// A container surface: the *chrome* (fill, stroke, corner radius, margins, shadow) of one
@@ -282,10 +291,11 @@ impl Role {
 }
 
 /// Every `RoleVariant`, in declaration order.
-pub(crate) const VARIANTS: [RoleVariant; 3] = [
+pub(crate) const VARIANTS: [RoleVariant; 4] = [
     RoleVariant::Normal,
     RoleVariant::Selected,
     RoleVariant::Disabled,
+    RoleVariant::SelectedDisabled,
 ];
 
 impl RoleVariant {
@@ -307,13 +317,14 @@ impl RoleVariant {
     }
 
     /// The stable identifier a `mapping.toml` sink's `variant` names (§13.1): `"normal"`,
-    /// `"selected"`, `"disabled"`.
+    /// `"selected"`, `"disabled"`, `"selected_disabled"`.
     #[must_use]
     pub fn key(self) -> &'static str {
         match self {
             Self::Normal => "normal",
             Self::Selected => "selected",
             Self::Disabled => "disabled",
+            Self::SelectedDisabled => "selected_disabled",
         }
     }
 
@@ -436,12 +447,14 @@ mod tests {
             &[
                 RoleVariant::Normal,
                 RoleVariant::Selected,
-                RoleVariant::Disabled
+                RoleVariant::Disabled,
+                RoleVariant::SelectedDisabled
             ]
         );
         assert_eq!(RoleVariant::Normal.key(), "normal");
         assert_eq!(RoleVariant::Selected.key(), "selected");
         assert_eq!(RoleVariant::Disabled.key(), "disabled");
+        assert_eq!(RoleVariant::SelectedDisabled.key(), "selected_disabled");
         assert_eq!(RoleVariant::from_selected(true), RoleVariant::Selected);
         assert_eq!(RoleVariant::from_selected(false), RoleVariant::Normal);
         assert_eq!(RoleVariant::default(), RoleVariant::Normal);

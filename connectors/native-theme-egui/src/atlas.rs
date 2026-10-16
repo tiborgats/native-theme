@@ -104,8 +104,8 @@ pub(crate) struct FocusRing {
 pub(crate) struct SchemeStyles {
     pub(crate) base: Arc<egui::Style>,
     /// `cells[role.index()][variant.index()]`; a cell with no data of its own shares its
-    /// `Normal` `Arc` (§3.4).
-    pub(crate) cells: [[Arc<egui::Style>; 3]; 25],
+    /// `Normal` `Arc` (§3.4), and a `SelectedDisabled` one its `Disabled` `Arc`.
+    pub(crate) cells: [[Arc<egui::Style>; 4]; 25],
     /// `frames[surface.index()]`.
     pub(crate) frames: [egui::Frame; 11],
     /// The ring the install plugin paints (§6.18); `None` for a zero or non-finite width or a
@@ -114,7 +114,7 @@ pub(crate) struct SchemeStyles {
 }
 
 impl SchemeStyles {
-    /// The cell of a role in a variant. The indices are below 25 and 3 by construction
+    /// The cell of a role in a variant. The indices are below 25 and 4 by construction
     /// (`ROLES`, `VARIANTS`); the base style is the fallback the lint-free `get` needs, never
     /// reached.
     pub(crate) fn cell(&self, role: Role, variant: RoleVariant) -> &Arc<egui::Style> {

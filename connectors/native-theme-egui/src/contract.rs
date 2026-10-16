@@ -18,7 +18,8 @@ use native_theme::theme::{ColorMode, ResolvedTheme, Theme as NativeTheme};
 use crate::convert::{self, Rgba};
 use crate::install_tests::resolved;
 use crate::mapping_tests::{
-    Manifest, Row, Sink, Verdict, covers, no_row_write, role_by_key, surface_by_key, variant_by_key,
+    Manifest, Row, Sink, Verdict, built_from, covers, no_row_write, role_by_key, surface_by_key,
+    variant_by_key,
 };
 use crate::style_diff::{
     all_frame_paths, all_frames, all_style_paths, all_styles, frame_diff, self_equal, style_diff,
@@ -307,9 +308,10 @@ fn read_frame(frame: &egui::Frame, path: &str) -> Option<Val> {
 
 /// The `Style` a sink's location starts from before any row writes it — §3.4's inheritance,
 /// §13.1's *Inheritance*: egui's own `Style` for the base style, the base style for a role's
-/// `Normal` cell (with egui's `menu_style` applied for `Role::Menu`, §3.4), and the `Normal`
-/// cell for its `Selected` and `Disabled` cells. With `AccessibilityPreferences::default()`
-/// and no patch, the stored base style is the one the cells were derived from.
+/// `Normal` cell (with egui's `menu_style` applied for `Role::Menu`, §3.4), and for a role's
+/// other cells the cell each is built from (`mapping_tests::built_from`). With
+/// `AccessibilityPreferences::default()` and no patch, the stored base style is the one the
+/// cells were derived from.
 fn inherited_style(c: &Combination, sink: &Sink) -> Style {
     match (sink.scope.as_deref(), sink.variant.as_deref()) {
         (None, _) => c.scheme.default_style(), // egui/src/memory/theme.rs:24-29
@@ -320,7 +322,11 @@ fn inherited_style(c: &Combination, sink: &Sink) -> Style {
             }
             s
         }
-        (Some(scope), Some(_)) => Style::clone(c.cell(role_by_key(scope), RoleVariant::Normal)),
+        (Some(scope), Some(variant)) => {
+            let role = role_by_key(scope);
+            let from = built_from(role, variant_by_key(variant)).unwrap_or(RoleVariant::Normal);
+            Style::clone(c.cell(role, from))
+        }
     }
 }
 
@@ -602,6 +608,28 @@ fn expected(
                 "checkbox.background_color",
             ],
         )?),
+        // The disabled rule (docs/platform-facts.md §2.1.6): a checked box takes the stated
+        // disabled fill and its mark the disabled text colour; with no disabled fill stated it
+        // is its checked self, which `disabled_alpha` fades.
+        (Some("checkbox"), "selected_disabled", None, "visuals.widgets.inactive.bg_fill") => {
+            c32(chain(
+                c,
+                &[
+                    "checkbox.disabled_background",
+                    "checkbox.checked_background",
+                ],
+            )?)
+        }
+        (
+            Some("checkbox"),
+            "selected_disabled",
+            None,
+            "visuals.widgets.inactive.fg_stroke.color",
+        ) => c32(if colour(c, "checkbox.disabled_background").is_some() {
+            req("checkbox.disabled_text_color")?
+        } else {
+            req("checkbox.indicator_color")?
+        }),
         (Some("input"), "disabled", None, "visuals.text_edit_bg_color") => {
             Val::OptColor(Some(convert::to_color32(chain(
                 c,
@@ -1150,8 +1178,9 @@ fn names(sinks: &[&Sink], path: &str) -> bool {
 /// T10c: every field of every location that no row declares there — the `[unwritten]` paths and
 /// every field no sink at that location names — holds the value the location inherits (§3.4;
 /// §13.1, *Inheritance*): egui's own `Style` for the base style, the base style for a role's
-/// `Normal` cell (with egui's `menu_style` for `Role::Menu`), the `Normal` cell for its
-/// `Selected` and `Disabled` cells, and egui's preset frame over the base style for a `Surface`.
+/// `Normal` cell (with egui's `menu_style` for `Role::Menu`), for a role's other cells the cell
+/// each is built from (`mapping_tests::built_from`), and egui's preset frame over the base
+/// style for a `Surface`.
 /// §6's no-row writes in a cell (`mapping_tests::no_row_write`) count as declared there.
 #[test]
 fn t10c_every_undeclared_field_holds_its_inherited_value() {
@@ -1199,9 +1228,9 @@ fn t10c_every_undeclared_field_holds_its_inherited_value() {
             }
             let normal = c.cell(*role, RoleVariant::Normal);
             for variant in RoleVariant::all() {
-                let (from, cell) = match variant {
-                    RoleVariant::Normal => (&inherited, normal),
-                    _ => (normal, c.cell(*role, *variant)),
+                let (from, cell) = match built_from(*role, *variant) {
+                    None => (&inherited, normal),
+                    Some(from) => (c.cell(*role, from), c.cell(*role, *variant)),
                 };
                 let moved: Vec<String> = style_diff(from, cell)
                     .into_iter()

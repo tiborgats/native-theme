@@ -263,10 +263,14 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 
     let role_keys: BTreeSet<&str> = Role::all().iter().map(|r| r.key()).collect();
     let surface_keys: BTreeSet<&str> = Surface::all().iter().map(|s| s.key()).collect();
-    let variant_keys: BTreeSet<&str> = [RoleVariant::Selected, RoleVariant::Disabled]
-        .iter()
-        .map(|v| v.key())
-        .collect();
+    let variant_keys: BTreeSet<&str> = [
+        RoleVariant::Selected,
+        RoleVariant::Disabled,
+        RoleVariant::SelectedDisabled,
+    ]
+    .iter()
+    .map(|v| v.key())
+    .collect();
     let presets: BTreeSet<&str> = Theme::list_presets().iter().map(|p| p.key).collect();
     let sub_tags = [
         "egui-limited",
@@ -985,6 +989,19 @@ pub(crate) fn variant_by_key(key: &str) -> RoleVariant {
         .unwrap_or_else(|| panic!("no variant {key}"))
 }
 
+/// The cell a role's `variant` cell is built from (§3.4; §13.1, *Inheritance*): `None` for a
+/// `Normal` cell, which is built from the base style; the `Normal` cell for `Selected` and
+/// `Disabled`; for `SelectedDisabled` the checkbox's `Selected` cell, and every other role's
+/// `Disabled` cell, which it shares.
+pub(crate) fn built_from(role: Role, variant: RoleVariant) -> Option<RoleVariant> {
+    match variant {
+        RoleVariant::Selected | RoleVariant::Disabled => Some(RoleVariant::Normal),
+        RoleVariant::SelectedDisabled if role == Role::Checkbox => Some(RoleVariant::Selected),
+        RoleVariant::SelectedDisabled => Some(RoleVariant::Disabled),
+        _ => None,
+    }
+}
+
 pub(crate) fn surface_by_key(key: &str) -> Surface {
     *Surface::all()
         .iter()
@@ -1098,21 +1115,14 @@ fn carried_by(
                     continue;
                 }
                 let at_normal = required && normal == Own::Carries;
-                out.push((
-                    Location::Cell(theme, *role, RoleVariant::Normal),
-                    s.path.clone(),
+                carried_from_cell(
+                    m,
+                    a,
+                    (theme, *role, RoleVariant::Normal),
+                    &s.path,
                     at_normal,
-                ));
-                for v in [RoleVariant::Selected, RoleVariant::Disabled] {
-                    let own = cell_own(m, a, *role, v, &s.path);
-                    if own != Own::Overrides {
-                        out.push((
-                            Location::Cell(theme, *role, v),
-                            s.path.clone(),
-                            at_normal && own == Own::Carries,
-                        ));
-                    }
-                }
+                    &mut out,
+                );
             }
             for surface in Surface::all() {
                 for (field, base_path) in preset_reads(*surface) {
@@ -1133,23 +1143,7 @@ fn carried_by(
         (Some(scope), None) => {
             let role = role_by_key(scope);
             let variant = variant_by_key(s.variant.as_deref().unwrap_or("normal"));
-            out.push((
-                Location::Cell(theme, role, variant),
-                s.path.clone(),
-                required,
-            ));
-            if variant == RoleVariant::Normal {
-                for v in [RoleVariant::Selected, RoleVariant::Disabled] {
-                    let own = cell_own(m, a, role, v, &s.path);
-                    if own != Own::Overrides {
-                        out.push((
-                            Location::Cell(theme, role, v),
-                            s.path.clone(),
-                            required && own == Own::Carries,
-                        ));
-                    }
-                }
-            }
+            carried_from_cell(m, a, (theme, role, variant), &s.path, required, &mut out);
         }
         (None, Some(surface)) => {
             out.push((
@@ -1163,6 +1157,40 @@ fn carried_by(
         }
     }
     out
+}
+
+/// The cell `at` carrying `path`, and every cell built from it (`built_from`) that does not
+/// write `path` itself, `required` there only where nothing between writes it either.
+fn carried_from_cell(
+    m: &Manifest,
+    a: &Cached,
+    at: (egui::Theme, Role, RoleVariant),
+    path: &str,
+    required: bool,
+    out: &mut Vec<(Location, String, bool)>,
+) {
+    let (theme, role, variant) = at;
+    out.push((
+        Location::Cell(theme, role, variant),
+        path.to_owned(),
+        required,
+    ));
+    for v in RoleVariant::all() {
+        if built_from(role, *v) != Some(variant) {
+            continue;
+        }
+        let own = cell_own(m, a, role, *v, path);
+        if own != Own::Overrides {
+            carried_from_cell(
+                m,
+                a,
+                (theme, role, *v),
+                path,
+                required && own == Own::Carries,
+                out,
+            );
+        }
+    }
 }
 
 fn json(t: &ResolvedTheme) -> serde_json::Value {

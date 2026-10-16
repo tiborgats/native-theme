@@ -5,8 +5,10 @@
 #   { path, scope?, variant?, surface?, when? }: `path` is the Style field chain with the
 #   `Style.` prefix dropped, as style_diff emits it (`visuals.widgets.hovered.weak_bg_fill`,
 #   `spacing.button_padding.x`, `text_styles[Body].size`); no scope and no surface = the base
-#   style; `scope = "<Role::key()>"` = that role's cell, `variant = "selected" | "disabled"`
-#   beside it for a Selected or Disabled cell (absent = normal); `surface = "<Surface::key()>"`
+#   style; `scope = "<Role::key()>"` = that role's cell, `variant = "selected" | "disabled" |
+#   "selected_disabled"` beside it for a Selected, Disabled or SelectedDisabled cell (absent =
+#   normal; a SelectedDisabled cell is built from the checkbox's Selected cell, and is every
+#   other role's Disabled cell); `surface = "<Surface::key()>"`
 #   = that surface's egui::Frame, the path then spelled against Frame (`fill`, `stroke.color`,
 #   `inner_margin.left`, `corner_radius`, `shadow.blur`); `when` = the condition, in words, under
 #   which another input of the formula can hold the sink still.
@@ -1261,6 +1263,7 @@ sinks   = [
   { path = "visuals.widgets.hovered.bg_fill", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.active.bg_fill", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.open.bg_fill", scope = "checkbox", variant = "selected" },
+  { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "selected_disabled", when = "checkbox.disabled_background is None: the platform dims by opacity alone, §6.3" },
 ]
 
 ["checkbox.indicator_color"]
@@ -1271,6 +1274,7 @@ sinks   = [
   { path = "visuals.widgets.hovered.fg_stroke.color", scope = "checkbox" },
   { path = "visuals.widgets.active.fg_stroke.color", scope = "checkbox" },
   { path = "visuals.widgets.open.fg_stroke.color", scope = "checkbox" },
+  { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox", variant = "selected_disabled", when = "checkbox.disabled_background is None: the platform dims by opacity alone, §6.3" },
 ]
 
 ["checkbox.indicator_width"]
@@ -1314,6 +1318,7 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "checkbox" },
   { path = "visuals.disabled_alpha", scope = "checkbox", variant = "disabled" },
+  { path = "visuals.disabled_alpha", scope = "checkbox", variant = "selected_disabled" },
 ]
 
 ["checkbox.disabled_text_color"]
@@ -1321,6 +1326,8 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.override_text_color", scope = "checkbox", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox", variant = "disabled" },
+  { path = "visuals.override_text_color", scope = "checkbox", variant = "selected_disabled" },
+  { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox", variant = "selected_disabled", when = "checkbox.disabled_background is stated, §6.3" },
 ]
 
 ["checkbox.hover_background"]
@@ -1332,7 +1339,11 @@ sinks   = [
 
 ["checkbox.disabled_background"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "disabled", when = "stated; None copies the idle fill, §6.4" }]
+sinks   = [
+  { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "disabled", when = "stated; None copies the idle fill, §6.4" },
+  { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "selected_disabled", when = "stated; None keeps checkbox.checked_background, §6.3" },
+  { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox", variant = "selected_disabled", when = "stated: checkbox.disabled_text_color, else checkbox.indicator_color, §6.3" },
+]
 
 ["checkbox.unchecked_background"]
 verdict = "scoped"

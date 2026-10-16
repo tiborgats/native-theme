@@ -181,7 +181,8 @@ set and theme, and a `style_patch` applied after the mapping.
 
 - **`Role`** names what a region of the interface is — a button, an input, a
   menu, a sidebar, a toolbar — and **`RoleVariant`** its state: `Normal`,
-  `Selected` or `Disabled`. Each pair is one pre-built style.
+  `Selected`, `Disabled` or `SelectedDisabled` (a checked box that is
+  disabled). Each pair is one pre-built style.
 - **`Surface`** names a container's chrome; `Surface::Panel(PanelSide)` takes
   the side the panel is anchored to.
 - **Containers built on `egui::Area`** — `Window`, `Modal`, `Popup`, tooltips,
