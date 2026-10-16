@@ -1555,3 +1555,24 @@ fn a_kept_spinner_frame_is_forgotten_with_the_icons() {
     ThemeAtlas::clear(&ctx);
     assert!(ctx.try_load_bytes(&uri).is_err(), "forgotten by clear");
 }
+
+/// M7-25: a spinner draws its frame from the source it kept in the pass before, not from a new
+/// copy of the frame's SVG.
+#[cfg(feature = "material-icons")]
+#[test]
+fn a_kept_spinner_frame_is_drawn_again() {
+    let (ctx, _) = material_spinner(&kde());
+    let draw = || {
+        let _ = pass(&ctx, idle(), |ui| {
+            ui.add(Spinner::new());
+        });
+    };
+    draw();
+    let first = crate::spinner::kept_frames(&ctx, IconSet::Material);
+    assert_eq!(first.len(), 1, "the first frame, under reduced motion");
+    draw();
+    draw();
+    let later = crate::spinner::kept_frames(&ctx, IconSet::Material);
+    assert_eq!(later.len(), 1);
+    assert_eq!(first[0].as_ptr(), later[0].as_ptr(), "the same bytes");
+}

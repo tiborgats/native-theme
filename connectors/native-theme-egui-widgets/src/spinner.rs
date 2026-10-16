@@ -114,7 +114,10 @@ struct Indicator {
 }
 
 /// The image sources of an indicator's frames, by frame index, for the key and scheme they
-/// were made under.
+/// were made under: one key at a time, as every spinner of a `Context` draws the indicator of
+/// its entry under the one key the installed atlas and egui's scheme give in a pass (set, icon
+/// theme, `spinner.diameter`, `spinner.fill_color`). A new key, from a scheme switch or another
+/// atlas, drops the frames kept for the old one, and its frames are made once each.
 #[derive(Default)]
 struct Sources {
     made_for: Option<(IconKey, egui::Theme)>,
@@ -213,7 +216,10 @@ fn paint_indicator(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) -> bool {
     let scheme = ctx.theme();
     let cached = loaded.sources.lock().get(ctx, &key, scheme, index);
     let Some(source) = cached.or_else(|| {
-        // Outside the lock: `to_image_source` takes the `Context` lock.
+        // Made with the lock released, as `get` released it: no other draw waits on the copy,
+        // colouring and hash. The lock is taken before the `Context`'s, never inside it: `get`
+        // asks egui's bytes loaders with it held, and nothing here takes it from inside an
+        // accessor.
         let made = icons::to_image_source(ctx, &key, frame)?;
         loaded.sources.lock().put(&key, scheme, index, made.clone());
         Some(made)
@@ -254,4 +260,19 @@ fn paint_arc(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) {
         path,
         egui::Stroke::new(paint.stroke_width, paint.colour),
     ));
+}
+
+/// The bytes of every frame source the indicator entry of `set` (with no icon theme) keeps.
+#[cfg(all(test, feature = "material-icons"))]
+pub(crate) fn kept_frames(ctx: &egui::Context, set: IconSet) -> Vec<egui::load::Bytes> {
+    indicator(ctx, set, None)
+        .sources
+        .lock()
+        .frames
+        .values()
+        .filter_map(|source| match source {
+            egui::ImageSource::Bytes { bytes, .. } => Some(bytes.clone()),
+            _ => None,
+        })
+        .collect()
 }
