@@ -268,6 +268,7 @@ jobs:
         run: |
           python3 --version
           python3 scripts/check_connector_parity.py
+          python3 scripts/check_connector_parity.py --self-test
 
   # The gpui connector on GPUI Fast is built for Windows and macOS too: no
   # other job on push builds it there, and linking the showcase catches what
@@ -326,6 +327,7 @@ jobs:
         run: |
           python3 --version
           python3 scripts/check_readme_versions.py
+          python3 scripts/check_readme_versions.py --self-test
       - run: cargo doc --workspace --no-deps
       # docs.rs builds native-theme-iced with every feature, and a doc item
       # behind a feature gate can only break in that configuration.
