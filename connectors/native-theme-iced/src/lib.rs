@@ -28,8 +28,10 @@
 //! use native_theme_iced::to_theme_in;
 //!
 //! let nt = Theme::preset("catppuccin-mocha").unwrap();
-//! let resolved = nt.into_variant(ColorMode::Light).unwrap().resolve_system().unwrap();
-//! let theme = to_theme_in(&resolved, "My App", ColorMode::Light);
+//! // `resolved.mode` is the mode of the variant resolved: the other one where
+//! // the preset has only that.
+//! let resolved = nt.resolve(ColorMode::Light).unwrap();
+//! let theme = to_theme_in(&resolved.variant, "My App", resolved.mode);
 //! ```
 //!
 //! # Kerning
