@@ -1410,6 +1410,15 @@ model, the platform presets and the three connectors
       is settled gpui draws neither adwaita's stated popover edge nor its dark
       card fill, nor material-3's card fill: sourced values not drawn, so the
       item is retagged [v0.7.0], for M8.
+      M8 T5 (2026-10-16, da8144f2, 92cd1665, 3e31d86e): the connector half is
+      done. gpui carries the three as the theme states them:
+      `geometry::group_box_content` fills the card with
+      `card.background_color`, `geometry::popover` edges the popover in
+      `popover.border.color` at its `line_width`, and `geometry::toolbar`
+      draws the bar's bottom edge in `toolbar.border.color` at its
+      `line_width`; the coverage test's three entries and its `NoEdgeByData`
+      / `NoFillByData` classes are gone. The preset half (T15, T16) and the
+      `[wrong_safety_nets]` entries (T17) stay open here.
 
 ### Presets: expander hover fills with no source
 
@@ -3568,7 +3577,7 @@ the plan's close.
 - [ ] [v0.7.0] For M8: `winicons.rs`'s `bitmap_bgra` returns on
       `checked_neg()?` (`native-theme/src/winicons.rs:223`) without a `note_failure`;
       unreachable after the bound check above it.
-- [ ] [v0.7.0] For M8's api batch (M6-12 ruling, 2026-10-15): ask the maintainer whether
+- [x] [v0.7.0] For M8's api batch (M6-12 ruling, 2026-10-15): ask the maintainer whether
       `native_theme_gpui::icons::freedesktop_name_for_gpui_icon(icon, de)` goes. It picks a
       name by desktop, where the icon theme in use decides which name exists (Adwaita, with
       the AdwaitaLegacy it inherits, lacks the Breeze name for 48 of the 50 icons the
@@ -3583,6 +3592,7 @@ the plan's close.
       does the egui showcase's `ChromeIcon` (M7-15, its `gtk_desktop` gone). A fixture test in
       each showcase loads the icon from a GTK-names-only and a Breeze-names-only theme on Sway
       and on GNOME. What stays open here is the gpui function's question for M8.
+  *Closed by M8 T5 (2026-10-16, 6c82cf19):* the function is not removed but `#[deprecated(since = "0.7.0")]`, its note pointing at `freedesktop_name_candidates` and `FreedesktopLoader::any`, its own tests under `#[allow(deprecated)]`, a CHANGELOG *Deprecated* line. Its removal is a line of the M8 close-out's maintainer question.
 
 ### M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Each sits here until its milestone takes it.
@@ -3596,7 +3606,8 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
 - [ ] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
 - [ ] [v0.7.0] For M8 (test quality): the icon fixture helper (`icon_fixture.rs`) is copied between the iced and gpui connectors (M6 T4). The gpui DataTable row-growth test re-implements `table_row_height`, and the row formula leaves out the row's 1 px bottom border (M6 T6). The text stays inside either way.
   *Fixture half closed by M8 T2 (2026-10-16, 990ab210):* one `publish = false` crate, `native-theme-test-fixtures` (tools/test-fixtures), replaces the copies; the DataTable half stays open.
-- [ ] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
+- [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
+  *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
 - [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1609 names `ItemView_ArrowSize` where :1616 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
 - [ ] [1.0] Presets (windows-11): the checkbox's hover fill cites no source of its own. Laid over the window, it lands within one 8-bit level of WinUI's `ControlAltFillColorTertiary` (M6 T9's note), but whether the preset means a layer or a replacement is open preset-data work.
