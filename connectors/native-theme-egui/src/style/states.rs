@@ -66,10 +66,10 @@ pub(crate) struct TextSource {
 
 /// A border: its own colour as stated — the final line colour, into which the model has
 /// already folded `defaults.border.opacity` —, width and radius, into `entries`. `paths` are
-/// the colour, corner-radius and line-width leaves.
+/// the corner-radius and line-width leaves.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,
-    pub paths: [&'static str; 3],
+    pub paths: [&'static str; 2],
     pub entries: BorderEntries,
 }
 
@@ -169,14 +169,14 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
     }
 
     if let Some(b) = &src.border {
-        let [color_path, radius_path, width_path] = b.paths;
+        let [radius_path, width_path] = b.paths;
         // one stroke and one radius per kind of entry, each over its resting entry's own:
         // egui's stock entries differ (`egui/src/style.rs:1693-1720`), and a hover that
         // fell back to its own would show egui's look, not the platform's (§6.1)
         let over = |own: &WidgetVisuals, notes: &mut Vec<Note>| {
             (
                 stroke(
-                    [color_path, width_path],
+                    width_path,
                     own.bg_stroke,
                     to_color32(b.border.color),
                     b.border.line_width,
@@ -362,7 +362,7 @@ mod tests {
                     text: None,
                     border: Some(BorderSource {
                         border: &t.button.border,
-                        paths: ["test.color", "test.corner_radius", "test.line_width"],
+                        paths: ["test.corner_radius", "test.line_width"],
                         entries: BorderEntries::All,
                     }),
                     open: OpenFrom::Inactive,

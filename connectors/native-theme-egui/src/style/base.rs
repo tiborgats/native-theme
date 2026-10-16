@@ -56,17 +56,16 @@ pub(crate) fn radius(
 }
 
 /// A border stroke: the colour as converted, the width over the sink's own (`to_stroke`'s
-/// rule, §7.2). `paths` are the colour's and the width's leaves. Every border colour is the
+/// rule, §7.2), a non-finite one reported for `width_path`. Every border colour is the
 /// final line colour: `defaults.border.opacity` is already folded into it, and no stroke
 /// multiplies it again (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`).
 pub(crate) fn stroke(
-    paths: [&'static str; 2],
+    width_path: &'static str,
     own: egui::Stroke,
     color: egui::Color32,
     width: f32,
     notes: &mut Vec<Note>,
 ) -> egui::Stroke {
-    let [_color_path, width_path] = paths;
     if !width.is_finite() {
         push_note(notes, Note::ValueSanitised { path: width_path });
     }
@@ -187,7 +186,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         notes,
     );
     v.window_stroke = stroke(
-        ["defaults.border.color", "defaults.border.line_width"],
+        "defaults.border.line_width",
         own.visuals.window_stroke,
         to_color32(d.border.color),
         d.border.line_width,
@@ -331,7 +330,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     super::note_transparent_fill(w.noninteractive.bg_fill, "defaults.background_color", notes);
     w.noninteractive.weak_bg_fill = to_color32(d.background_color);
     w.noninteractive.bg_stroke = stroke(
-        ["defaults.border.color", "defaults.border.line_width"],
+        "defaults.border.line_width",
         own.visuals.widgets.noninteractive.bg_stroke,
         to_color32(d.border.color),
         d.border.line_width,
@@ -367,11 +366,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                paths: [
-                    "button.border.color",
-                    "button.border.corner_radius",
-                    "button.border.line_width",
-                ],
+                paths: ["button.border.corner_radius", "button.border.line_width"],
                 entries: BorderEntries::Interactive,
             }),
             open: OpenFrom::Inactive,

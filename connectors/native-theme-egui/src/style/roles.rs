@@ -131,12 +131,12 @@ fn text_in_all(idle: Rgba) -> Option<TextSource> {
 fn panel_edge(
     s: &mut egui::Style,
     own: &egui::Style,
-    paths: [&'static str; 2],
+    width_path: &'static str,
     border: &ResolvedWidgetBorder,
     notes: &mut Vec<Note>,
 ) {
     s.visuals.widgets.noninteractive.bg_stroke = stroke(
-        paths,
+        width_path,
         own.visuals.widgets.noninteractive.bg_stroke,
         to_color32(border.color),
         border.line_width,
@@ -168,11 +168,7 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                paths: [
-                    "button.border.color",
-                    "button.border.corner_radius",
-                    "button.border.line_width",
-                ],
+                paths: ["button.border.corner_radius", "button.border.line_width"],
                 entries: BorderEntries::All, // the `{5}` rows
             }),
             open: OpenFrom::Inactive,
@@ -238,11 +234,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             }),
             border: Some(BorderSource {
                 border: &m.border,
-                paths: [
-                    "menu.border.color",
-                    "menu.border.corner_radius",
-                    "menu.border.line_width",
-                ],
+                paths: ["menu.border.corner_radius", "menu.border.line_width"],
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
             }),
             open: OpenFrom::Hovered, // the open item stays highlighted (`menu.rs:382-384`)
@@ -296,11 +288,7 @@ fn input_role(
             text: text_in_all(i.font.color),
             border: Some(BorderSource {
                 border: &i.border,
-                paths: [
-                    "input.border.color",
-                    "input.border.corner_radius",
-                    "input.border.line_width",
-                ],
+                paths: ["input.border.corner_radius", "input.border.line_width"],
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -356,7 +344,6 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             border: Some(BorderSource {
                 border: &border,
                 paths: [
-                    "checkbox.unchecked_border_color",
                     "checkbox.border.corner_radius",
                     "checkbox.border.line_width",
                 ],
@@ -579,11 +566,7 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
             }),
             border: Some(BorderSource {
                 border: &tb.border,
-                paths: [
-                    "tab.border.color",
-                    "tab.border.corner_radius",
-                    "tab.border.line_width",
-                ],
+                paths: ["tab.border.corner_radius", "tab.border.line_width"],
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -653,13 +636,7 @@ fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["sidebar.border.color", "sidebar.border.line_width"],
-        &sb.border,
-        notes,
-    );
+    panel_edge(s, own, "sidebar.border.line_width", &sb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -698,13 +675,7 @@ fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["toolbar.border.color", "toolbar.border.line_width"],
-        &tb.border,
-        notes,
-    );
+    panel_edge(s, own, "toolbar.border.line_width", &tb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -735,13 +706,7 @@ fn status_bar(
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["status_bar.border.color", "status_bar.border.line_width"],
-        &sb.border,
-        notes,
-    );
+    panel_edge(s, own, "status_bar.border.line_width", &sb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -907,7 +872,6 @@ fn combo_box(
             border: Some(BorderSource {
                 border: &cb.border,
                 paths: [
-                    "combo_box.border.color",
                     "combo_box.border.corner_radius",
                     "combo_box.border.line_width",
                 ],
@@ -981,7 +945,6 @@ fn segmented_control(
             border: Some(BorderSource {
                 border: &sc.border,
                 paths: [
-                    "segmented_control.border.color",
                     "segmented_control.border.corner_radius",
                     "segmented_control.border.line_width",
                 ],
@@ -1047,7 +1010,6 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             border: Some(BorderSource {
                 border: &x.border,
                 paths: [
-                    "expander.border.color",
                     "expander.border.corner_radius",
                     "expander.border.line_width",
                 ],
