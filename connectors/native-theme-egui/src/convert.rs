@@ -499,6 +499,56 @@ mod tests {
         );
     }
 
+    /// M8-07: on every widget border of every bundled preset in both modes, where each length
+    /// is finite and below `LENGTH_CEILING` (core's validation), `padding_with_border` is core's
+    /// `padding_outside`.
+    #[test]
+    fn padding_with_border_is_padding_outside_on_every_preset() {
+        fn borders(at: &str, v: &serde_json::Value, out: &mut Vec<(String, serde_json::Value)>) {
+            let serde_json::Value::Object(map) = v else {
+                return;
+            };
+            for (key, child) in map {
+                let path = format!("{at}.{key}");
+                if key == "border" && !path.starts_with(".defaults") {
+                    out.push((path.clone(), child.clone()));
+                }
+                borders(&path, child, out);
+            }
+        }
+        let mut checked = 0;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = crate::install_tests::resolved(info.key, mode);
+                let mut found = Vec::new();
+                borders("", &serde_json::to_value(&r).unwrap(), &mut found);
+                for (path, value) in found {
+                    let b: ResolvedWidgetBorder = serde_json::from_value(value).unwrap();
+                    let p = b.padding;
+                    let sides = [p.top, p.right, p.bottom, p.left];
+                    assert!(
+                        [Some(b.line_width)]
+                            .into_iter()
+                            .chain(sides)
+                            .flatten()
+                            .all(|v| v.is_finite() && (0.0..LENGTH_CEILING).contains(&v)),
+                        "{} {mode:?} {path}: {b:?}",
+                        info.key
+                    );
+                    assert_eq!(
+                        padding_with_border(&b),
+                        b.padding_outside(),
+                        "{} {mode:?} {path}",
+                        info.key
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked > 0);
+        println!("padding_with_border against padding_outside: {checked} borders");
+    }
+
     /// T17: `padding_with_border` adds the line width to each stated finite side, adds nothing
     /// for a non-finite width, keeps `f32::MAX + width` finite, and `to_button_padding` of
     /// line width `1.0` with sides 5 / 6 gives `.y = 6.5`.

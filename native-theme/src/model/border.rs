@@ -256,6 +256,42 @@ pub struct ResolvedWidgetBorder {
     pub padding: ResolvedPadding,
 }
 
+impl ResolvedWidgetBorder {
+    /// The padding measured from the widget's outer edge: each side
+    /// [`padding`](Self::padding) states plus [`line_width`](Self::line_width),
+    /// and `None` where it states none, so the toolkit keeps its own padding
+    /// there.
+    ///
+    /// The theme's padding lies inside the border (outer size = border +
+    /// padding + content, `docs/platform-facts.md:900-902`). A toolkit that
+    /// lays a widget's content out its padding in from the widget's edge and
+    /// paints the border over that padding, as iced and egui do, takes this,
+    /// and the content sits where the platform puts it; one whose box model
+    /// lays the padding inside the border (gpui) takes
+    /// [`padding`](Self::padding).
+    ///
+    /// On a resolved theme every length is finite and non-negative
+    /// (validation rejects any other). A finite side plus a finite width can
+    /// only overflow upwards, and that sum is `f32::MAX`, so a finite padding
+    /// stays finite; a non-finite side or width gives the `f32` sum.
+    #[must_use]
+    pub fn padding_outside(&self) -> ResolvedPadding {
+        let width = self.line_width;
+        let side = |stated: Option<f32>| {
+            stated.map(|v| match v + width {
+                sum if v.is_finite() && width.is_finite() => sum.min(f32::MAX),
+                sum => sum,
+            })
+        };
+        ResolvedPadding {
+            top: side(self.padding.top),
+            right: side(self.padding.right),
+            bottom: side(self.padding.bottom),
+            left: side(self.padding.left),
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -523,5 +559,59 @@ mod tests {
             "color = \"#000000\"\ncorner_radius = 2.0\nline_width = 1.0\nshadow_enabled = false\n";
         let border: ResolvedWidgetBorder = toml::from_str(src).unwrap();
         assert_eq!(border.padding, ResolvedPadding::default());
+    }
+
+    // === padding_outside tests ===
+
+    fn bordered(line_width: f32, padding: [Option<f32>; 4]) -> ResolvedWidgetBorder {
+        let [top, right, bottom, left] = padding;
+        ResolvedWidgetBorder {
+            color: Rgba::rgb(0, 0, 0),
+            corner_radius: 0.0,
+            line_width,
+            shadow_enabled: false,
+            padding: ResolvedPadding {
+                top,
+                right,
+                bottom,
+                left,
+            },
+        }
+    }
+
+    #[test]
+    fn padding_outside_adds_the_line_width_to_each_stated_side() {
+        let border = bordered(1.5, [Some(4.0), Some(8.0), None, Some(0.0)]);
+        assert_eq!(
+            border.padding_outside(),
+            ResolvedPadding {
+                top: Some(5.5),
+                right: Some(9.5),
+                bottom: None,
+                left: Some(1.5),
+            }
+        );
+    }
+
+    #[test]
+    fn padding_outside_with_no_border_is_the_padding() {
+        let border = bordered(0.0, [Some(4.0), None, Some(2.0), None]);
+        assert_eq!(border.padding_outside(), border.padding);
+        assert_eq!(
+            bordered(2.0, [None; 4]).padding_outside(),
+            ResolvedPadding::default()
+        );
+    }
+
+    #[test]
+    fn padding_outside_with_a_huge_width_saturates() {
+        let border = bordered(f32::MAX, [Some(1.0), Some(f32::MAX), None, None]);
+        let padding = border.padding_outside();
+        assert_eq!(padding.top, Some(f32::MAX));
+        assert_eq!(padding.right, Some(f32::MAX));
+        assert_eq!((padding.bottom, padding.left), (None, None));
+        let side = bordered(1.0, [Some(f32::INFINITY), Some(f32::NAN), None, None]).padding_outside();
+        assert_eq!(side.top, Some(f32::INFINITY));
+        assert!(side.right.is_some_and(f32::is_nan));
     }
 }
