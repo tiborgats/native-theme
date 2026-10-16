@@ -3348,6 +3348,60 @@ fn a_closed_viewport_s_focus_entry_is_let_go() {
     assert_eq!(entries(&ctx), 1, "the root's");
 }
 
+/// M8 T6 review: an immediate viewport that opens its own immediate child in its very first
+/// pass keeps its focus entry: egui counts it as having completed no pass while its child's
+/// input arrives, and only its pass in progress tells it from a closed one.
+#[test]
+fn a_parent_in_its_first_pass_keeps_its_focus_entry() {
+    use crate::NativeThemeUiExt as _;
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas("kde-breeze").install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let parent = egui::ViewportId::from_hash_of("first-pass parent");
+    let child = egui::ViewportId::from_hash_of("first-pass child");
+    let mut parent_passes = None;
+    let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+        ui.ctx()
+            .show_viewport_immediate(parent, egui::ViewportBuilder::default(), |ui, _| {
+                ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        parent_passes = Some(ui.ctx().cumulative_pass_nr_for(parent));
+                        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                    },
+                );
+            });
+    });
+    assert_eq!(
+        parent_passes,
+        Some(0),
+        "the parent had completed no pass while its child ran, or the test proves nothing"
+    );
+    assert_eq!(
+        ctx.data(|d| d.count::<crate::plugin::FocusEntry>()),
+        3,
+        "the root's, the parent's and the child's"
+    );
+}
+
 /// M8 T6 review: a focus entry `register_focus_shape` wrote before any install, so before the
 /// plugin saw its viewport's input, is let go too once egui has closed the viewport.
 #[test]
