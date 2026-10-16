@@ -1,6 +1,7 @@
 //! [`Parts`]: where a widget of this crate painted its parts.
 
 use native_theme_egui::egui;
+use native_theme_egui::egui::util::id_type_map::RawKey;
 
 /// The rectangles a widget of this crate painted its named parts in, in the coordinates of the
 /// `Ui` it was added to, as the pass that drew it last painted them: what a test or a layout
@@ -24,9 +25,23 @@ pub struct Parts(Vec<(String, egui::Rect)>);
 
 impl Parts {
     /// The parts the widget answering with `response` painted in the pass that drew it; `None`
-    /// for a response no widget of this crate recorded parts for.
+    /// for a response no widget of this crate recorded parts for, and for one not drawn in
+    /// the last two passes that drew a widget of this crate.
     pub fn of(response: &egui::Response) -> Option<Self> {
-        response.ctx.data(|d| d.get_temp::<Self>(key(response.id)))
+        let ctx = &response.ctx;
+        let key = store_key(ctx);
+        ctx.data(|d| {
+            // Borrowed, not cloned as `get_temp` clones (`egui/src/util/id_type_map.rs:448-450`).
+            let store = d
+                .get_temp_raw(RawKey::new::<PartsStore>(key))?
+                .downcast_ref::<PartsStore>()?;
+            store
+                .current
+                .parts
+                .get(&response.id)
+                .or_else(|| store.previous.parts.get(&response.id))
+                .cloned()
+        })
     }
 
     /// The part named `name`, where the widget painted one.
@@ -47,15 +62,44 @@ impl Parts {
         self.0.push((name.into(), rect));
     }
 
-    /// Keep these as the parts of the widget answering with `id`, for [`Parts::of`].
+    /// Keep these as the parts of the widget answering with `id` in this pass, for
+    /// [`Parts::of`].
     pub(crate) fn store(self, ctx: &egui::Context, id: egui::Id) {
-        ctx.data_mut(|d| d.insert_temp(key(id), self));
+        // Outside the accessor: each takes the `Context` lock itself.
+        let (key, pass) = (store_key(ctx), ctx.cumulative_pass_nr());
+        ctx.data_mut(|d| {
+            let store = d.get_temp_mut_or_default::<PartsStore>(key);
+            if store.current.pass != pass {
+                std::mem::swap(&mut store.current, &mut store.previous);
+                store.current.pass = pass;
+                store.current.parts.clear();
+            }
+            store.current.parts.insert(id, self);
+        });
     }
 }
 
-/// Where a widget's parts are kept in its `Context`'s data.
-fn key(id: egui::Id) -> egui::Id {
-    id.with("native-theme-egui-widgets::parts")
+/// The parts of the widgets of this crate drawn in a viewport, in one entry of the `Context`'s
+/// data, which egui never clears of temporary values (`egui/src/util/id_type_map.rs:375`): the
+/// generation of the latest pass a widget recorded parts in, and of the one before it, which
+/// the next pass's first record drops.
+#[derive(Clone, Default)]
+struct PartsStore {
+    current: Generation,
+    previous: Generation,
+}
+
+/// The parts the widgets drawn in the pass numbered `pass` recorded, by widget id.
+#[derive(Clone, Default)]
+struct Generation {
+    pass: u64,
+    parts: egui::IdMap<Parts>,
+}
+
+/// Where the parts of the widgets drawn in `ctx`'s viewport are kept: one store per viewport,
+/// as egui counts passes per viewport (`Context::cumulative_pass_nr`).
+fn store_key(ctx: &egui::Context) -> egui::Id {
+    egui::Id::new(("native-theme-egui-widgets::parts", ctx.viewport_id()))
 }
 
 /// The rectangle of a text atom laid out after an atom whose cell is `before`, `gap` apart, as
@@ -67,4 +111,14 @@ pub(crate) fn text_after(before: egui::Rect, gap: f32, size: egui::Vec2) -> egui
         egui::pos2(before.right() + gap, before.center().y - 0.5 * size.y),
         size,
     )
+}
+
+/// How many widgets' parts the store of `ctx`'s viewport keeps.
+#[cfg(test)]
+pub(crate) fn stored(ctx: &egui::Context) -> usize {
+    let key = store_key(ctx);
+    ctx.data_mut(|d| {
+        let store = d.get_temp_mut_or_default::<PartsStore>(key);
+        store.current.parts.len() + store.previous.parts.len()
+    })
 }

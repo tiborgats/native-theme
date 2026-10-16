@@ -19,7 +19,9 @@ use native_theme_egui::{
 };
 
 use crate::combo_box::ComboBox;
+use crate::expander::Expander;
 use crate::links;
+use crate::parts::Parts;
 use crate::progress_bar::ProgressBar;
 use crate::radio_button::RadioButton;
 use crate::segmented_control::SegmentedControl;
@@ -1333,7 +1335,7 @@ fn the_drop_down_is_as_tall_as_its_text() {
         assert!((a.center().x - centre).abs() < 1e-3, "{a:?} {centre}");
     }
     assert!((a.center().y - combo.rect.center().y).abs() < 0.5, "{a:?}");
-    let text = crate::parts::Parts::of(&combo).and_then(|parts| parts.get("text"));
+    let text = Parts::of(&combo).and_then(|parts| parts.get("text"));
     assert!(
         text.zip(left).is_some_and(|(text, left)| {
             (text.left() - (combo.rect.left() + c.border.line_width + left)).abs() < 1e-3
@@ -1387,4 +1389,65 @@ fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
     let arrow = t.combo_box.arrow_icon_size;
     assert!((a.width() - 0.7 * arrow).abs() < 1e-3, "{a:?}");
     assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
+}
+
+// ---- M7-22: parts of widgets no longer drawn -----------------------------------------------------
+
+/// The widgets of `one_widget` and a progress bar under ids salted with `pass_nr`, and an
+/// expander under one id: egui's `CollapsingHeader` keeps a state per header id itself
+/// (`egui/src/containers/collapsing_header.rs:39`, `:187`).
+fn churning_pass(ctx: &egui::Context, pass_nr: usize) {
+    let _ = pass(ctx, idle(), |ui| {
+        ui.push_id(pass_nr, |ui| {
+            for i in 0..WIDGETS {
+                let _ = one_widget(ui, i);
+            }
+            ui.add(ProgressBar::new(0.4));
+        });
+        let _ = Expander::new("Details").show(ui, |_| ());
+    });
+}
+
+/// M7-22: a widget whose id changes every pass leaves no `Parts` behind: the `Context`'s data
+/// holds as many entries after 200 such passes as after the first two, and the parts kept are
+/// those of the last two passes' widgets.
+#[test]
+fn parts_of_widgets_no_longer_drawn_are_not_kept() {
+    let ctx = installed(&kde(), &AccessibilityPreferences::default());
+    churning_pass(&ctx, 0);
+    let per_pass = crate::parts::stored(&ctx);
+    churning_pass(&ctx, 1);
+    let early = ctx.data(|d| d.len());
+    for pass_nr in 2..200 {
+        churning_pass(&ctx, pass_nr);
+        assert_eq!(crate::parts::stored(&ctx), 2 * per_pass, "pass {pass_nr}");
+    }
+    assert_eq!(ctx.data(|d| d.len()), early);
+}
+
+/// M7-22: a widget's parts answer through the pass after the one that drew it, and not once
+/// two passes that drew other widgets of the crate have gone by without it.
+#[test]
+fn parts_answer_until_two_passes_go_by_without_the_widget() {
+    let ctx = installed(&kde(), &AccessibilityPreferences::default());
+    let (_, drawn) = response(&ctx, idle(), |ui| {
+        ui.push_id("gone", |ui| ui.add(Switch::new(&mut true)))
+            .inner
+    });
+    let parts = Parts::of(&drawn).expect("parts after the pass that drew it");
+    assert!(parts.get("thumb").is_some());
+    let other = |ui: &mut egui::Ui| {
+        ui.push_id("kept", |ui| ui.add(Switch::new(&mut true)))
+            .inner
+    };
+    let mut during = None;
+    let _ = pass(&ctx, idle(), |ui| {
+        let _ = other(ui);
+        during = Some(Parts::of(&drawn));
+    });
+    assert_eq!(during, Some(Some(parts.clone())), "in the next pass");
+    assert_eq!(Parts::of(&drawn), Some(parts), "after the next pass");
+    let (_, kept) = response(&ctx, idle(), other);
+    assert_eq!(Parts::of(&drawn), None, "two passes without it");
+    assert!(Parts::of(&kept).is_some());
 }
