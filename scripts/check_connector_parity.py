@@ -55,7 +55,8 @@ kept by its name and every other one read as `_`: a toolkit's own type
 by construction, and the return type is the toolkit's for the same reason. A
 type is the core crate's when the crate declares it `pub` and the function
 names it with no path, or with one that starts at `native_theme`, and does
-not take it as a generic parameter or import it from another crate: iced's
+not take it as a generic parameter, declare it in its file, or import it, or
+a glob of it, from another crate: iced's
 `iced_core::Theme` is a toolkit's, though the core crate has a `Theme`. Where
 the connectors that have the function disagree, the signature most of them
 share is the reference, on a tie the first connector's in `CONNECTORS` order,
@@ -352,7 +353,7 @@ FN_RE = re.compile(r"^pub (?:const )?fn (\w+)", re.M)
 
 class Fn:
     def __init__(self, name, line, cls, leaves, groups, detail="", ptypes=(), module=None,
-                 foreign=frozenset()):
+                 foreign=frozenset(), core=frozenset()):
         self.name = name
         self.line = line
         self.cls = cls
@@ -362,8 +363,11 @@ class Fn:
         self.ptypes = tuple(ptypes)
         self.module = module
         # names that are not the core crate's where the function is written:
-        # its generic parameters, and what its file imports from elsewhere
+        # its generic parameters, what its file imports from elsewhere or
+        # declares itself (`GLOB` for a glob import of another crate); and
+        # the names the file imports from a core path
         self.foreign = frozenset(foreign)
+        self.core = frozenset(core)
 
     @property
     def leaf(self):
@@ -403,8 +407,14 @@ def signature(f, shared):
     that is neither the core crate's (`shared`) nor std's (`STD_TYPES`) read
     as `_`: a path that does not start at `native_theme` (or std) is a
     toolkit's (`iced_core::Theme`), and so is a bare name the function takes
-    as a generic parameter or its file imports from another crate, though
-    the core crate declares one of that name."""
+    as a generic parameter, or its file declares, imports from another crate
+    or may take from another crate's glob, though the core crate declares
+    one of that name. The evidence is lexical, one file's: a core type
+    written through a module-relative or aliased path (`theme::Theme` after
+    `use native_theme::theme;`, `nt::Theme` after `use native_theme as nt;`)
+    reads as `_` too. That errs loud, never silent: it can only make two
+    signatures that agree look different, a false `unlike` the run reports,
+    and no connector writes a core type that way today."""
 
     def one(m):
         prefix, name = m.group(1), m.group(2)
@@ -415,7 +425,7 @@ def signature(f, shared):
             if root == "native_theme" and name in shared:
                 return name
             return name if root in STD_ROOTS and name in STD_TYPES else "_"
-        if name in f.foreign:
+        if name in f.foreign or (GLOB in f.foreign and name not in f.core):
             return "_"
         return name if name in shared or name in STD_TYPES else "_"
 
@@ -433,18 +443,33 @@ def signature(f, shared):
 IMPORT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+([^;]+);", re.M)
 
 
-def foreign_imports(text):
-    """The names a (blanked) source file brings into scope with a `use` of
-    another crate's path: not `native_theme`, `crate`, `self` or `super`."""
-    names = set()
+GLOB = "*"
+LOCAL_TYPE_RE = re.compile(
+    r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:struct|enum|union|trait|type)\s+(\w+)", re.M
+)
+
+
+def scope_names(text):
+    """(foreign, core) of a (blanked) source file: the names it brings into
+    scope from another crate's path -- every `use` whose root is not
+    `native_theme`, `crate`, `self` or `super`, with `GLOB` for a glob of one,
+    whose names the script cannot list -- and the types it declares itself,
+    which shadow a core one of the same name; and the names it imports
+    explicitly from a core path, which a glob does not shadow."""
+    foreign, core = set(), set()
     for m in IMPORT_RE.finditer(text):
         tree = m.group(1)
         root = tree.split("::")[0].strip()
+        names = {item.group(2) or item.group(1) for item in re.finditer(
+            r"(\w+)(?:\s+as\s+(\w+))?\s*(?=[,}]|$)", tree)}
         if root in ("native_theme", "crate", "self", "super"):
+            core |= names
             continue
-        for item in re.finditer(r"(\w+)(?:\s+as\s+(\w+))?\s*(?=[,}]|$)", tree):
-            names.add(item.group(2) or item.group(1))
-    return names
+        foreign |= names
+        if re.search(r"(?:::|[{,])\s*\*", tree):
+            foreign.add(GLOB)
+    foreign |= set(LOCAL_TYPE_RE.findall(text))
+    return foreign, core
 
 
 def generic_names(text):
@@ -528,7 +553,7 @@ def scan(model, source, label, module=None):
     """The column-0 `pub fn`s of one source file, classified; `module` names
     the public module they are reached through, None at the crate root."""
     text = blank(source)
-    imported = foreign_imports(text)
+    imported, core = scope_names(text)
     fns = []
     for m in FN_RE.finditer(text):
         name = m.group(1)
@@ -557,11 +582,11 @@ def scan(model, source, label, module=None):
         where = f"{label}:{line} `{name}`"
         if not theme:
             fns.append(Fn(name, line, "outside", set(), set(), ptypes=ptypes, module=module,
-                          foreign=imported | generics))
+                          foreign=imported | generics, core=core))
             continue
         if len(theme) > 1 or others:
             fns.append(Fn(name, line, "inputs", set(), set(), ", ".join(others),
-                          ptypes=ptypes, module=module, foreign=imported | generics))
+                          ptypes=ptypes, module=module, foreign=imported | generics, core=core))
             continue
         leaves, groups, escapes = classify_body(
             model, text[body_open + 1 : body_close - 1], theme[0], where
@@ -575,7 +600,7 @@ def scan(model, source, label, module=None):
         else:
             cls = "one-field"
         fns.append(Fn(name, line, cls, leaves, groups, ptypes=ptypes, module=module,
-                      foreign=imported | generics))
+                      foreign=imported | generics, core=core))
     return fns
 
 
@@ -1187,6 +1212,23 @@ pub fn by_import(a: Theme, b: IcedTheme, c: Color) -> u8 { 0 }
     expect("a toolkit's `Theme` beside the core's",
            [signature(themed[n], {"Theme"}) for n in ("by_path", "by_generic", "by_import")],
            ["(&Theme, &_)", "(_, Option<&str>)", "(_, _, _)"])
+    # a glob import from another crate may bring a `Theme` in, and a type the
+    # file declares shadows the core's: both are the toolkit's
+    for source, want, label in (
+        ("use iced_core::*;\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&_)", "a glob import from another crate"),
+        ("use iced_core::{Color, *};\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&_)", "a glob inside a group"),
+        ("use iced_core::*;\nuse native_theme::theme::Theme;\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&Theme)", "a glob beside an explicit core import"),
+        ("type Theme = iced_core::Theme;\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&_)", "a local type alias"),
+        ("pub struct Theme;\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&_)", "a local struct"),
+        ("pub(crate) enum Theme { A }\npub fn f(a: &Theme) -> u8 { 0 }",
+         "(&_)", "a local enum"),
+    ):
+        expect(label, signature(merge(scan(model, source, "t"))["f"], {"Theme"}), want)
     expect("a core `Theme` imported from native_theme stays the core's",
            signature(merge(scan(model, "use native_theme::theme::Theme;\n"
                                 "pub fn f(a: &Theme) -> u8 { 0 }", "t"))["f"], {"Theme"}),
