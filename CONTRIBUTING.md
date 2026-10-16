@@ -40,12 +40,17 @@ installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
 under `RUSTFLAGS="-D warnings"`, and for x86_64-apple-darwin `native-theme-egui`
 with all targets and features), `cargo fmt --all` (formats in place; CI uses
 `--check`), per-crate `cargo clippy --all-targets -- -D warnings`
-(`native-theme-gpui` with `native,watch`, and with `gpui-fast,native,watch`), the strict
+(`native-theme` also with its Linux features,
+`kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts`;
+`native-theme-gpui` with `native,watch`, and with `gpui-fast,native,watch`), the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
 and the rest of the type-aware set; `native-theme-gpui` with `native,watch` and
 with `gpui-fast,native,watch`),
 per-crate `cargo test` (`native-theme-gpui` with `native,watch`, and `native-theme`
-with `portal,watch` and with `system-fonts`), the gpui connector's tests with no
+also with its Linux features, where the tests that need an installed Breeze or
+Adwaita theme run on a host that has them; a test leg that passes no test
+fails, except the OS probe's while its test list is empty), `native-theme`'s ignored stem-index test (`--ignored`, ~30-50 s,
+against the installed Breeze and Adwaita themes), the gpui connector's tests with no
 default features and on GPUI Fast (`--features gpui-fast,native,watch --all-targets`; the
 `--all-targets` leaves the doctests out, since each is a crate of its own that
 names gpui-pre as `gpui`, not GPUI through gpui-kit, and fails on GPUI Fast), the
@@ -73,7 +78,8 @@ by the version number or by undoing the change); a hard failure (`❌`) exits
 non-zero and must be fixed.
 
 `--commit` runs every one of those checks except the release-tag check, the gpui
-connector's tests on GPUI Fast and the release-only sections:
+connector's tests on GPUI Fast, `native-theme`'s ignored stem-index test and the
+release-only sections:
 the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
 `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the PROVENANCE and
 compatibility stamp checks. Each of
@@ -82,8 +88,10 @@ not passed.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
-CI additionally tests `native-theme` across its feature matrix on Linux,
-Windows and macOS, which the script cannot do locally.
+On Linux it tests `native-theme` with no features and with all its Linux
+features at once; CI also runs the Linux features one leg at a time. What the
+script leaves to CI is the macOS and Windows test legs: it checks and lints
+those targets where they are installed, but cannot run their tests.
 
 A scheduled workflow, `dependency-canary.yml`, runs nightly at 18:10 UTC
 (and on demand from the Actions tab) with every dependency updated on a

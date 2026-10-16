@@ -257,10 +257,12 @@ widget coverage, the showcase-parity comparator's static modes, docs and the
 archive index, then the release-only sections: the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks. Prints one line per check and a summary;
-exits 1 on a hard failure. `CONTRIBUTING.md` lists every check.
+exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
+cfg that matches nothing still exits 0. `CONTRIBUTING.md` lists every check.
 
 With `--commit` it runs the per-commit subset: the release-tag check, the gpui
-connector's tests on GPUI Fast and the release-only sections are skipped, each
+connector's tests on GPUI Fast, native-theme's ignored stem-index test and the
+release-only sections are skipped, each
 printing `skipped (--commit mode)`, and the summary names them.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;

@@ -19,11 +19,15 @@
 #                  commit of every fix phase and before the release commit.
 #   --commit       the per-commit subset: skips the release-only checks
 #                  (the release-tag check, the gpui connector's tests on GPUI
-#                  Fast, docs.rs emulation, packaging, semver checks,
-#                  security audit, outdated dependencies, and the
-#                  visual-asset and compatibility stamp checks), each
-#                  printing "skipped (--commit mode)", and names them in the
-#                  final summary.
+#                  Fast, native-theme's ignored stem-index test, docs.rs
+#                  emulation, packaging, semver checks, security audit,
+#                  outdated dependencies, and the visual-asset and
+#                  compatibility stamp checks), each printing "skipped
+#                  (--commit mode)", and names them in the final summary.
+#
+# Formatting: `cargo fmt --all` formats the tree in place rather than checking
+# it, by design: the per-commit gate formats what is about to be committed,
+# and CI's `cargo fmt --all --check` refuses what was committed unformatted.
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
@@ -37,9 +41,10 @@ Usage: scripts/check_release.sh [--commit]
   --commit       the per-commit subset: every lint, check, test, docs,
                  widget-coverage, showcase-parity and archive-index gate; skips
                  the release-tag check, the gpui connector's tests on GPUI
-                 Fast, docs.rs emulation, packaging, semver checks, the
-                 security audit, outdated dependencies, and the visual-asset
-                 and compatibility stamp checks
+                 Fast, native-theme's ignored stem-index test, docs.rs
+                 emulation, packaging, semver checks, the security audit,
+                 outdated dependencies, and the visual-asset and
+                 compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -149,7 +154,10 @@ format_elapsed() {
 #
 # run_check       — hard fail (exits on command failure)
 # run_check_soft  — soft fail (logs a warning, continues)
-# run_tests[_soft] — variants that filter noise from `cargo test` output
+# run_tests[_soft] — variants that filter noise from `cargo test` output and
+#                    fail when the run passes no test (a filter or a cfg that
+#                    matches nothing exits 0 with "0 passed")
+# run_tests_min N — run_tests with N as the minimum of passed tests
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Filter pattern for cargo test: drop individual "test NAME ... ok" lines while
@@ -198,10 +206,11 @@ run_check()      { _run_check_impl "$1" "hard" "${@:2}"; }
 run_check_soft() { _run_check_impl "$1" "soft" "${@:2}"; }
 
 _run_tests_impl() {
-    # $1 = description, $2 = "hard"|"soft", $3... = command
+    # $1 = description, $2 = "hard"|"soft", $3 = minimum passed, $4... = command
     local description="$1"
     local mode="$2"
-    shift 2
+    local min_passed="$3"
+    shift 3
     local start=$SECONDS
     local output
     local status=0
@@ -212,12 +221,16 @@ _run_tests_impl() {
     local elapsed
     elapsed=$(format_elapsed "$((SECONDS - start))")
 
+    local total_passed=0
     if [ "$status" -eq 0 ]; then
-        # Successful run: print compact summary (sum passed across binaries).
-        local total_passed total_ignored
         total_passed=$(printf "%s\n" "$output" \
             | grep -oE 'test result: ok\. [0-9]+ passed' \
             | awk '{sum += $4} END {print sum+0}')
+    fi
+
+    if [ "$status" -eq 0 ] && [ "$total_passed" -ge "$min_passed" ]; then
+        # Successful run: print compact summary (sum passed across binaries).
+        local total_ignored
         total_ignored=$(printf "%s\n" "$output" \
             | grep -oE '[0-9]+ ignored' \
             | awk '{sum += $1} END {print sum+0}')
@@ -240,6 +253,10 @@ _run_tests_impl() {
     else
         # Failure: dump filtered output so the user sees what broke.
         printf "%s\n" "$output" | grep -v -E "$TEST_NOISE_FILTER" >&2 || true
+        if [ "$status" -eq 0 ]; then
+            printf "${RED}   %s passed, fewer than the minimum of %s:${NC} a filter or cfg that matches nothing still exits 0\n" \
+                "$total_passed" "$min_passed" >&2
+        fi
         if [ "$mode" = "soft" ]; then
             print_warn "$description" "$elapsed" "soft"
         else
@@ -250,8 +267,9 @@ _run_tests_impl() {
     fi
 }
 
-run_tests()      { _run_tests_impl "$1" "hard" "${@:2}"; }
-run_tests_soft() { _run_tests_impl "$1" "soft" "${@:2}"; }
+run_tests()      { _run_tests_impl "$1" "hard" 1 "${@:2}"; }
+run_tests_soft() { _run_tests_impl "$1" "soft" 1 "${@:2}"; }
+run_tests_min()  { _run_tests_impl "$2" "hard" "$1" "${@:3}"; }
 
 # Optional-tool installer: prompts user if a cargo subcommand is missing.
 check_and_install_tool() {
@@ -457,6 +475,14 @@ else
         | grep -oP '"workspace_members":\[[^\]]*\]' | grep -oP '[^/]+(?=#)')
 fi
 
+# native-theme's Linux feature set: every feature with code on Linux
+# (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
+# native-theme has no default features, so on Linux the tests of its
+# feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
+# the watchers) are linted and run only by the clippy and test legs below that
+# name this set; the strict panic lints name it for the library.
+NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check
 # ─────────────────────────────────────────────────────────────────────────────
@@ -560,6 +586,12 @@ for crate in $WORKSPACE_CRATES; do
     else
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
+    # The Linux features too, so the reader, icon and watcher code and their
+    # tests are linted; the run above keeps the no-feature cfg branches.
+    if [ "$crate" = "native-theme" ]; then
+        run_check "clippy ($crate, Linux features)" \
+            cargo clippy -p "$crate" --all-targets --features "$NT_FEATURES" -- -D warnings
+    fi
 done
 # The gpui connector on GPUI Fast (its `gpui-fast` feature), which the loop's
 # features leave off, with `native` and `watch` as in the loop. Soft, as the
@@ -578,12 +610,10 @@ run_check_soft "clippy (native-theme-gpui, gpui-fast, native, watch)" \
 # they legitimately use .unwrap() / asserts for failure clarity and demo brevity.
 # Bin targets (if any in the future) should be added to this list.
 #
-# `native-theme` is run with the full Linux feature set so feature-gated
-# modules (kde, portal, system-icons, freedesktop, spinners, watch) are
-# checked; plain `--lib` misses them. ci.yml names the same features.
+# `native-theme` is run with the full Linux feature set ($NT_FEATURES) so
+# feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
+# watch) are checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
-
 print_section "Strict panic lints (library code)"
 run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
@@ -636,13 +666,39 @@ print_section "Tests"
 # The gpui connector with `native` and `watch` on top of its defaults:
 # `on_theme_change`'s tests (they start no OS watcher) and the showcase's
 # `watch` code. Each is additive, so the one leg covers the defaults too.
+# The OS probe is a stub on Linux with no tests: it may pass none only while
+# its test list is empty.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
         run_tests_soft "test ($crate, native, watch)" cargo test -p "$crate" --features native,watch
+    elif [ "$crate" = "native-theme-os-probe" ]; then
+        probe_min=1
+        if ! cargo test -p "$crate" -- --list 2>/dev/null | grep -q ': test$'; then
+            probe_min=0
+        fi
+        run_tests_min "$probe_min" "test ($crate)" cargo test -p "$crate"
     else
         run_tests "test ($crate)" cargo test -p "$crate"
     fi
 done
+# native-theme with its Linux features ($NT_FEATURES): the loop above runs it
+# with none, which compiles out the KDE and GNOME readers, the freedesktop
+# icon loader, the rasterizer, the spinners, the font lookup and the watchers,
+# and tests/reader_kde.rs. On a host with Breeze and Adwaita installed the
+# tests that need them run too; elsewhere they skip themselves.
+run_tests "test (native-theme, Linux features)" \
+    cargo test -p native-theme --features "$NT_FEATURES"
+# The freedesktop stem index against freedesktop-icons' unfiltered lookup over
+# the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
+# (~30-50 s), so the per-commit subset leaves it to the full run.
+if [[ $COMMIT_MODE ]]; then
+    printf "${DIM}test (native-theme, Linux features, stem index)${NC}\n"
+    print_skipped "test (native-theme, Linux features, stem index)"
+else
+    run_tests "test (native-theme, Linux features, stem index)" \
+        cargo test -p native-theme --features "$NT_FEATURES" --lib -- --ignored \
+        freedesktop::tests::indexed_lookup_matches_the_unfiltered_lookup_on_installed_themes
+fi
 # The loop above runs the gpui connector with its default features, which
 # include `svg-rasterize`; its tests for the SVG path without rasterization only
 # compile without it. Same soft class as the connector's default test.
@@ -659,15 +715,6 @@ else
     run_tests_soft "test (native-theme-gpui, gpui-fast, native, watch)" \
         cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
 fi
-# The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
-# only under `portal` + `watch`, which the default features leave off; the
-# test discriminates on a desktop whose session bus runs xdg-desktop-portal.
-run_tests "test (native-theme, portal+watch: the watch module)" \
-    cargo test -p native-theme --features portal,watch --lib watch::
-# native-theme has no default features, so the loop above compiles its
-# fontdb-backed font lookup (native-theme/src/fonts.rs, `system-fonts`) out.
-run_tests "test (native-theme, system-fonts: the fonts module)" \
-    cargo test -p native-theme --features system-fonts --lib fonts::
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: iced connector configurations
