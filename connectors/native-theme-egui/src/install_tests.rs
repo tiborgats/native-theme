@@ -3252,6 +3252,58 @@ fn an_immediate_viewport_leaves_its_parent_the_parents_cap() {
     assert_eq!(after, Some(parent));
 }
 
+/// docs/todo.md:3609: the focus entry of an immediate viewport egui has closed is let go with it,
+/// as egui drops its own state of a closed viewport (`egui/src/context.rs:2756-2790`,
+/// `:2829-2835`); the root's stays.
+#[test]
+fn a_closed_viewport_s_focus_entry_is_let_go() {
+    use crate::NativeThemeUiExt as _;
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas("kde-breeze").install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("closed child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                    },
+                );
+            }
+        });
+    };
+    let entries = |ctx: &egui::Context| ctx.data(|d| d.count::<crate::plugin::FocusEntry>());
+    root(&ctx, true);
+    assert_eq!(entries(&ctx), 2, "the root's and the child's");
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert_eq!(entries(&ctx), 1, "the root's");
+}
+
 /// M7-04: a pass whose sizes all lie under the cap writes no style: both base styles are the
 /// same `Arc` before and after it.
 #[test]

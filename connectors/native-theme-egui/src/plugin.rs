@@ -55,6 +55,7 @@ pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> 
 /// registered focus shapes (spec §6.18; §4.3). One entry, not one per `Ui`: egui's garbage
 /// collection gathers only the elements it can serialize and skips a temporary value
 /// (`egui/src/util/id_type_map.rs:712-722`); its `gc` scope walks that gathered map (`:728-729`).
+/// So the install plugin drops a viewport's entry itself once egui has closed the viewport.
 #[derive(Clone, Default)]
 pub(crate) struct FocusEntry {
     /// `Context::cumulative_pass_nr` of the pass the lists belong to.
@@ -80,7 +81,12 @@ impl FocusEntry {
 /// viewport runs a pass nested inside its parent's and `cumulative_pass_nr` is counted per
 /// viewport (`egui/src/context.rs:1781-1793`).
 pub(crate) fn focus_key(ctx: &Context) -> Id {
-    Id::new(("native-theme-egui/focus", ctx.viewport_id()))
+    focus_key_of(ctx.viewport_id())
+}
+
+/// The entry's key for `viewport`.
+fn focus_key_of(viewport: egui::ViewportId) -> Id {
+    Id::new(("native-theme-egui/focus", viewport))
 }
 
 /// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
@@ -297,6 +303,38 @@ pub(crate) struct NativeThemePlugin {
     passes: Vec<(egui::ViewportId, usize, f32)>,
 }
 
+impl NativeThemePlugin {
+    /// Drop the focus entry of every viewport whose input this plugin saw and that egui no
+    /// longer has, as egui drops its own state of a closed viewport
+    /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), and the viewport from `filled`, which
+    /// is the list scanned. egui has no accessor that lists its viewports; it counts one it no
+    /// longer has as having completed no pass (`Context::cumulative_pass_nr_for`,
+    /// `egui/src/context.rs:1788-1793`). A viewport whose input this plugin saw has begun a
+    /// pass, so one still open has completed it unless that pass is in progress now, which
+    /// only the viewports in `passes` can be. Call after this pass is pushed.
+    fn forget_closed_viewports(&mut self, ctx: &Context) {
+        let passes = &self.passes;
+        let mut closed = Vec::new();
+        self.filled.retain(|&viewport, _| {
+            let open = viewport == egui::ViewportId::ROOT
+                || passes.iter().any(|p| p.0 == viewport)
+                || ctx.cumulative_pass_nr_for(viewport) > 0;
+            if !open {
+                closed.push(viewport);
+            }
+            open
+        });
+        if closed.is_empty() {
+            return;
+        }
+        ctx.data_mut(|data| {
+            for viewport in closed {
+                data.remove::<FocusEntry>(focus_key_of(viewport));
+            }
+        });
+    }
+}
+
 /// The atlas's OS mode, read from `Context` data (spec §10.3 step 3).
 fn os_mode(ctx: &Context) -> Option<ColorMode> {
     ThemeAtlas::from_ctx(ctx).and_then(|atlas| atlas.os_mode())
@@ -354,6 +392,7 @@ impl egui::plugin::Plugin for NativeThemePlugin {
         }
         self.passes
             .push((input.viewport_id, max_texture_side, pixels_per_point));
+        self.forget_closed_viewports(ctx);
         if let Some(atlas) = atlas {
             cap_text_sizes(ctx, &atlas, max_texture_side, pixels_per_point);
         }
@@ -409,10 +448,10 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// with `Options::fallback_theme = Light` the title bar goes dark under a light UI after
     /// this restore: egui's own behaviour from startup, which the restore brings back.
     ///
-    /// The `filled` map is read, never emptied: an immediate viewport runs its whole pass, hooks
-    /// included, inside its parent's, and the parent's commands reach the outermost pass's
+    /// The `filled` map is read, never emptied here: an immediate viewport runs its whole pass,
+    /// hooks included, inside its parent's, and the parent's commands reach the outermost pass's
     /// output (`egui/src/context.rs:2799-2811`); `input_hook` overwrites each viewport's entry
-    /// every pass.
+    /// every pass, and drops the entry of a viewport egui has closed.
     ///
     /// First, the pass ending leaves the list of passes in progress, and where it was an
     /// immediate viewport's, nested in its parent's, the parent's cap is derived again from the
