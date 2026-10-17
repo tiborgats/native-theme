@@ -11,7 +11,9 @@
 //!
 //! This is a port of libadwaita's own C routine for it, `adw_rgba_to_standalone`
 //! (`src/adw-accent-color.c:130-157`), with its Oklab conversions
-//! (`src/adw-color-utils.c:73-159`), in `f32` as there: the colour is converted
+//! (`src/adw-color-utils.c:73-159`), in `f32` throughout where the C runs its
+//! gamma steps in double (`pow`, `:73-89`) and cubes with `powf (l, 3)`; the
+//! documented colours below come out exactly all the same. The colour is converted
 //! to Oklab, its lightness clamped, converted back, and each channel clamped to
 //! `[0, 1]` (the gamut clipping `doc/css-variables.md:88-99` describes). The
 //! documented accent table (`doc/css-variables.md:101-230`) is its test vector.
@@ -81,15 +83,17 @@ pub(crate) fn standalone(accent: Rgba, dark: bool) -> Rgba {
 /// libadwaita's focus ring for the accent background `accent`:
 /// `$focus_border_color`, the standalone colour at 50 %
 /// (`color-mix(in srgb, var(--accent-color) 50%, transparent)`,
-/// `_colors.scss:260`, `:307`).
+/// `_colors.scss:260`, `:307`), or under `prefers-contrast: more`
+/// `$focus_border_color_hc`, at 80 % (`_colors.scss:261`, `:308`;
+/// `_drawing.scss:24-26`).
 #[must_use]
-pub(crate) fn focus_ring(accent: Rgba, dark: bool) -> Rgba {
+pub(crate) fn focus_ring(accent: Rgba, dark: bool, high_contrast: bool) -> Rgba {
     let s = standalone(accent, dark);
     Rgba::from_f32(
         f32::from(s.r) / 255.0,
         f32::from(s.g) / 255.0,
         f32::from(s.b) / 255.0,
-        0.5,
+        if high_contrast { 0.8 } else { 0.5 },
     )
 }
 
@@ -126,8 +130,9 @@ mod tests {
 
     #[test]
     fn the_focus_ring_is_the_standalone_colour_at_half_alpha() {
-        assert_eq!(focus_ring(hex("#3584e4"), false), hex("#0461be80"));
-        assert_eq!(focus_ring(hex("#3584e4"), true), hex("#81d0ff80"));
-        assert_eq!(focus_ring(hex("#9141ac"), false), hex("#8939a480"));
+        assert_eq!(focus_ring(hex("#3584e4"), false, false), hex("#0461be80"));
+        assert_eq!(focus_ring(hex("#3584e4"), true, false), hex("#81d0ff80"));
+        assert_eq!(focus_ring(hex("#9141ac"), false, false), hex("#8939a480"));
+        assert_eq!(focus_ring(hex("#3584e4"), false, true), hex("#0461becc"));
     }
 }

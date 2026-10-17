@@ -160,9 +160,17 @@ fn apply_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
 /// `adw_rgba_to_standalone`, `src/adw-accent-color.c:130-157`;
 /// docs/platform-facts.md §2.1.5 `focus_ring_color`, §2.4
 /// `focus_border_color`), not the accent background itself.
-fn apply_gnome_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba, dark: bool) {
+///
+/// Under high contrast the ring is `$focus_border_color_hc`, the standalone
+/// colour at 80 % (`_drawing.scss:24-26`; `_colors.scss:261`, `:308`).
+fn apply_gnome_accent(
+    variant: &mut crate::ThemeMode,
+    accent: &crate::Rgba,
+    dark: bool,
+    high_contrast: bool,
+) {
     apply_accent(variant, accent);
-    let ring = accent::focus_ring(*accent, dark);
+    let ring = accent::focus_ring(*accent, dark, high_contrast);
     variant.defaults.focus_ring_color = Some(ring);
     variant.input.focus_border_color = Some(ring);
 }
@@ -415,6 +423,12 @@ pub(crate) struct GnomePortalData {
     pub(crate) gsettings_high_contrast: Option<bool>,
 }
 
+/// Whether the user asked for high contrast: the portal's `contrast`, or
+/// gsettings' `high-contrast` where the portal gives none (GNOME < 44).
+fn effective_high_contrast(data: &GnomePortalData) -> bool {
+    data.high_contrast || data.gsettings_high_contrast == Some(true)
+}
+
 /// Extract AccessibilityPreferences from GNOME portal + gsettings data.
 ///
 /// Merges portal and gsettings sources: portal `high_contrast` takes
@@ -422,7 +436,7 @@ pub(crate) struct GnomePortalData {
 /// GNOME does not expose `reduce_transparency`, so it keeps the default (false).
 fn accessibility_from_gnome_data(data: &GnomePortalData) -> crate::AccessibilityPreferences {
     let mut acc = crate::AccessibilityPreferences::default();
-    let effective_high_contrast = data.high_contrast || data.gsettings_high_contrast == Some(true);
+    let effective_high_contrast = effective_high_contrast(data);
     if let Some(tsf) = data.text_scaling_factor {
         acc.text_scaling_factor = tsf;
     }
@@ -446,7 +460,12 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         && (0.0..=1.0).contains(&b)
     {
         let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
-        apply_gnome_accent(&mut variant, &rgba, data.is_dark);
+        apply_gnome_accent(
+            &mut variant,
+            &rgba,
+            data.is_dark,
+            effective_high_contrast(data),
+        );
     }
 
     // NOTE: high_contrast, reduce_motion and text_scaling_factor
@@ -707,7 +726,12 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
             None => return Ok(result),
         };
 
-        // Apply accent to the reader's variant
+        // Apply accent to the reader's variant. The KDE portal's accent is the
+        // palette's `QPalette::Highlight` (xdg-desktop-portal-kde
+        // `src/settings.cpp:282`), and Breeze draws its focus ring opaque in
+        // `[Colors:View] DecorationFocus` (docs/platform-facts.md §2.1.5),
+        // which equals it in Breeze and under a Plasma accent: the ring takes
+        // the accent as given, not libadwaita's standalone derivation.
         match &mut result.output {
             crate::ReaderOutput::Single { mode, .. } => {
                 apply_accent(mode, &rgba);
@@ -1136,7 +1160,7 @@ mod tests {
         assert_eq!(variant.defaults.accent_color, Some(expected));
         assert_eq!(variant.defaults.selection_background, Some(expected));
         // The ring is libadwaita's `$focus_border_color` of the accent.
-        let ring = Some(super::accent::focus_ring(expected, false));
+        let ring = Some(super::accent::focus_ring(expected, false, false));
         assert_eq!(variant.defaults.focus_ring_color, ring);
         assert_eq!(variant.input.focus_border_color, ring);
     }
@@ -1282,6 +1306,23 @@ mod tests {
     // === build_gnome_spec_pure tests (no ashpd types, no I/O) ===
 
     /// Default GnomePortalData for testing (light, no accent, Cantarell 11, 96 DPI).
+    fn default_gnome_data() -> GnomePortalData {
+        GnomePortalData {
+            is_dark: false,
+            accent_rgb: None,
+            high_contrast: false,
+            reduce_motion: None,
+            font_name: Some("Cantarell 11".to_string()),
+            monospace_font_name: Some("Source Code Pro 10".to_string()),
+            titlebar_font: Some("Cantarell Bold 11".to_string()),
+            text_scaling_factor: Some(1.0),
+            session_type: None,
+            overlay_scrolling: Some(true),
+            icon_theme: Some("Adwaita".to_string()),
+            gsettings_high_contrast: None,
+        }
+    }
+
     /// libadwaita draws its focus ring, and an entry's focus edge, in
     /// `$focus_border_color`: the portal accent's standalone colour at 50 %,
     /// lighter on a dark background (`doc/css-variables.md:137-140`;
@@ -1319,20 +1360,34 @@ mod tests {
         }
     }
 
-    fn default_gnome_data() -> GnomePortalData {
-        GnomePortalData {
-            is_dark: false,
-            accent_rgb: None,
-            high_contrast: false,
-            reduce_motion: None,
-            font_name: Some("Cantarell 11".to_string()),
-            monospace_font_name: Some("Source Code Pro 10".to_string()),
-            titlebar_font: Some("Cantarell Bold 11".to_string()),
-            text_scaling_factor: Some(1.0),
-            session_type: None,
-            overlay_scrolling: Some(true),
-            icon_theme: Some("Adwaita".to_string()),
-            gsettings_high_contrast: None,
+    /// Under `prefers-contrast: more` libadwaita colours the ring
+    /// `$focus_border_color_hc`, the standalone colour at 80 %
+    /// (`_drawing.scss:24-26`; `_colors.scss:261`, `:308`): the high-contrast
+    /// flag, from the portal or from gsettings, takes the ring to #0461becc /
+    /// #81d0ffcc under the default blue.
+    #[test]
+    fn under_high_contrast_the_focus_ring_is_the_standalone_colour_at_80() {
+        let hex = |s: &str| s.parse::<crate::Rgba>().expect("a hex colour");
+        for (dark, portal, gsettings, ring) in [
+            (false, true, None, "#0461becc"),
+            (true, true, None, "#81d0ffcc"),
+            (false, false, Some(true), "#0461becc"),
+            (false, false, Some(false), "#0461be80"),
+        ] {
+            let mut data = default_gnome_data();
+            data.is_dark = dark;
+            data.high_contrast = portal;
+            data.gsettings_high_contrast = gsettings;
+            data.accent_rgb = Some((
+                f64::from(0x35_u8) / 255.0,
+                f64::from(0x84_u8) / 255.0,
+                f64::from(0xe4_u8) / 255.0,
+            ));
+            let result = build_gnome_spec_pure(&data);
+            let variant = reader_mode(&result);
+            let at = format!("dark {dark}, portal {portal}, gsettings {gsettings:?}");
+            assert_eq!(variant.defaults.focus_ring_color, Some(hex(ring)), "{at}");
+            assert_eq!(variant.input.focus_border_color, Some(hex(ring)), "{at}");
         }
     }
 
@@ -1438,7 +1493,7 @@ mod tests {
         assert_eq!(variant.defaults.accent_color, Some(expected));
         assert_eq!(variant.defaults.selection_background, Some(expected));
         // The ring is libadwaita's `$focus_border_color` of the accent.
-        let ring = Some(super::accent::focus_ring(expected, false));
+        let ring = Some(super::accent::focus_ring(expected, false, false));
         assert_eq!(variant.defaults.focus_ring_color, ring);
         assert_eq!(variant.input.focus_border_color, ring);
     }
