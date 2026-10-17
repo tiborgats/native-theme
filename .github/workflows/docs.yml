@@ -39,19 +39,20 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: x86_64-apple-darwin, x86_64-pc-windows-msvc
-      - uses: Swatinem/rust-cache@v2
-      # Into target/docsrs/<target>/doc, one tree per target, emptied first so
-      # a restored cache cannot carry a removed crate's pages. A proc-macro
-      # (native-theme-derive) is built for the host, so cargo writes its pages
-      # to target/docsrs/doc whatever the target; that directory is a link to
-      # the default target's tree, which puts them in its crate list and
-      # search index (the runner's host is the default target). The crate
-      # list is collected first, so a listing that fails or lists nothing
-      # fails the step instead of documenting no crate.
+      # No rust-cache: each nightly gives the cache a new key, and a fresh
+      # three-target cache saved on every push to main would evict ci.yml's
+      # caches from the repository's quota. The job builds from clean.
+      #
+      # Into target/docsrs/<target>/doc, one tree per target. A proc-macro
+      # (native-theme-derive) is built for the host, and cargo writes its
+      # pages to target/docsrs/doc whatever the host and the `--target`;
+      # that directory is a link to the x86_64-unknown-linux-gnu tree, the
+      # site's root, which puts them in its crate list and search index. The
+      # crate list is collected first, so a listing that fails or lists
+      # nothing fails the step instead of documenting no crate.
       - name: Document every crate as docs.rs does
         run: |
           python3 --version
-          rm -rf target/docsrs/doc target/docsrs/*/doc
           mkdir -p target/docsrs/x86_64-unknown-linux-gnu/doc
           ln -s x86_64-unknown-linux-gnu/doc target/docsrs/doc
           crates=$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))')
@@ -73,6 +74,39 @@ jobs:
             fi
           done
           echo '<meta http-equiv="refresh" content="0;url=native_theme/index.html">' > site/index.html
+      # Every published crate's front page on the site, for each target its
+      # docs.rs metadata lists (scripts/check_docsrs.py's own reading of it),
+      # so a crate whose pages went elsewhere, as the proc-macro's did before
+      # the link above, fails the run instead of leaving the site without it.
+      - name: Check every crate's pages are on the site
+        run: |
+          python3 -I - <<'EOF'
+          import json, os, subprocess, sys
+          sys.path.insert(0, "scripts")
+          from check_docsrs import docsrs_metadata, targets_of
+          out = subprocess.run(["cargo", "metadata", "--no-deps", "--format-version", "1"],
+                               check=True, capture_output=True, text=True).stdout
+          missing, found = [], 0
+          for package in json.loads(out)["packages"]:
+              if package.get("publish") == []:
+                  continue
+              lib = [t["name"] for t in package["targets"] if {"lib", "proc-macro"} & set(t["kind"])]
+              if not lib:
+                  missing.append(f"{package['name']}: no library target")
+                  continue
+              for target in targets_of(docsrs_metadata(package)):
+                  root = "site" if target == "x86_64-unknown-linux-gnu" else os.path.join("site", target)
+                  page = os.path.join(root, lib[0].replace("-", "_"), "index.html")
+                  if os.path.isfile(page):
+                      found += 1
+                  else:
+                      missing.append(page)
+          if missing or not found:
+              for page in missing or ["no crate page at all"]:
+                  print(f"::error::missing from the site: {page}")
+              sys.exit(1)
+          print(f"{found} crate front pages on the site")
+          EOF
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
