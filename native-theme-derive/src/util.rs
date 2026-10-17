@@ -18,7 +18,7 @@ pub(crate) fn widget_name(opt_name: &Ident) -> String {
     out
 }
 
-/// Extract T from Option<T>. Returns the type as-is if not Option.
+/// Extract `T` from `Option<T>`. Returns the type as-is if not `Option`.
 pub(crate) fn option_inner(ty: &Type) -> Type {
     if let Type::Path(type_path) = ty
         && let Some(seg) = type_path.path.segments.last()

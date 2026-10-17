@@ -18,7 +18,7 @@ use crate::{
 /// a two-crate probe on rustc 1.97.1). Since the diagnostics channel is the surface most
 /// likely to be enriched, each struct variant carries its own `#[non_exhaustive]`, so a
 /// downstream `match` must spell `{ path, .. }` and adding a field stays additive.
-/// [`Surface::Panel`](crate::Surface::Panel) and both [`fonts::FontBytes`](crate::fonts::FontBytes) tuple variants are deliberately left
+/// [`Surface::Panel`] and both [`fonts::FontBytes`](crate::fonts::FontBytes) tuple variants are deliberately left
 /// exhaustive: `#[non_exhaustive]` on a *tuple* variant makes it unconstructible outside this
 /// crate (`E0603`, verified), and constructing them is the documented call shape.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -209,10 +209,10 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// `Send + Sync + 'static`, so it can be built on a watcher thread and published into
 /// [`egui::Context::data_mut`] (`egui/src/context.rs:1033`). This is the one load-bearing
 /// auto-trait claim in the crate, so its ground is named: the atlas holds nothing but
-/// `Arc<egui::Style>`, `egui::Frame`, [`Note`], [`AccessibilityPreferences`](crate::AccessibilityPreferences), two
-/// [`ResolvedTheme`](crate::ResolvedTheme)s, its [`LayoutTheme`](crate::LayoutTheme) (four `Option<f32>`), its name (`String`), the
-/// OS [`ColorMode`](crate::ColorMode) (`Option`), the
-/// [`IconSet`](crate::IconSet) and the icon-theme name per `egui::Theme` (`Option<String>` each) it carries, the
+/// `Arc<egui::Style>`, `egui::Frame`, [`Note`], [`AccessibilityPreferences`], two
+/// [`ResolvedTheme`]s, its [`LayoutTheme`] (four `Option<f32>`), its name (`String`), the
+/// OS [`ColorMode`] (`Option`), the
+/// [`IconSet`] and the icon-theme name per `egui::Theme` (`Option<String>` each) it carries, the
 /// focus ring per `egui::Theme` (spec §6.18: an `Option` of an `egui::Stroke` and an `f32` offset),
 /// and the `egui::FontDefinitions` [`Builder::build`] made from its [`fonts::FontPlan`](crate::fonts::FontPlan) for
 /// [`ThemeAtlas::install`] (none when no plan was given), which are `BTreeMap`s of `String`,
@@ -227,11 +227,11 @@ pub(crate) fn atlas_key() -> egui::Id {
 ///
 /// It carries, per `egui::Theme` (Light and Dark):
 /// * one base [`egui::Style`],
-/// * one [`egui::Style`] per ([`Role`](crate::Role), [`RoleVariant`](crate::RoleVariant)),
-/// * one [`egui::Frame`] per [`Surface`](crate::Surface),
+/// * one [`egui::Style`] per ([`Role`], [`RoleVariant`]),
+/// * one [`egui::Frame`] per [`Surface`],
 /// * one focus ring, or none where the theme states no ring (spec §6.18),
 ///
-/// plus the two [`ResolvedTheme`](crate::ResolvedTheme)s it was built from. The styles reach widgets through
+/// plus the two [`ResolvedTheme`]s it was built from. The styles reach widgets through
 /// [`ThemeAtlas::install`] (the base styles), [`NativeThemeUiExt`](crate::NativeThemeUiExt) and
 /// [`ThemeAtlas::role_modifier`] (the role styles) and [`ThemeAtlas::surface_frame`] (the
 /// frames). No raw role or base `Arc<Style>` is handed out: installed raw, it would drop the
@@ -251,7 +251,7 @@ impl std::fmt::Debug for ThemeAtlas {
 }
 
 impl ThemeAtlas {
-    /// Start building from a light and a dark [`ResolvedTheme`](crate::ResolvedTheme).
+    /// Start building from a light and a dark [`ResolvedTheme`].
     ///
     /// Both are required: egui keeps a separate `Style` per `egui::Theme`
     /// (`egui/src/memory/mod.rs:196`, `:200`). Pass the same value twice if only one exists.
@@ -285,7 +285,7 @@ impl ThemeAtlas {
         &self.0.name
     }
 
-    /// The source [`ResolvedTheme`](crate::ResolvedTheme) for an `egui::Theme` — pass `ctx.theme()` for the scheme
+    /// The source [`ResolvedTheme`] for an `egui::Theme` — pass `ctx.theme()` for the scheme
     /// egui is drawing. Total: every atlas holds both.
     #[must_use]
     pub fn resolved_for(&self, theme: egui::Theme) -> &ResolvedTheme {
@@ -377,7 +377,7 @@ impl ThemeAtlas {
     /// `widgets.inactive.weak_bg_fill` (`:27`) and carries none of the menu's own values;
     /// the `Role::Menu` cell applies the same function and then those values (spec §3.4). It is
     /// also the menu's chrome: egui builds every menu's frame from the style
-    /// the modifier produces ([`Surface`](crate::Surface) gives the detail), so the fill, stroke, radius,
+    /// the modifier produces ([`Surface`] gives the detail), so the fill, stroke, radius,
     /// shadow and margins of a menu are the ones the `Role::Menu` cell inherits from the base
     /// style, and its items' border, radius and padding the cell's own (spec §5.2).
     ///
@@ -670,15 +670,15 @@ pub struct Builder<'a> {
 
 impl<'a> Builder<'a> {
     /// Layout spacing. The atlas writes `widget_gap` into `spacing.item_spacing` (spec §6.16) and
-    /// `window_margin` into [`Surface::CentralPanel`](crate::Surface::CentralPanel)'s inner margin; a `None` leaves that egui
+    /// `window_margin` into [`Surface::CentralPanel`]'s inner margin; a `None` leaves that egui
     /// value at its stock default. `container_margin` and `section_gap` have no `Style` field;
     /// the application reads them per call from [`ThemeAtlas::layout`], which keeps the
     /// layout given here — a nested container's `Frame::inner_margin` and `Ui::add_space`
     /// (spec §5.1).
     ///
-    /// A separate input because [`LayoutTheme`](crate::LayoutTheme) lives on `native_theme::theme::Theme`
+    /// A separate input because [`LayoutTheme`] lives on `native_theme::theme::Theme`
     /// (`native-theme/src/model/mod.rs:282`) and on `SystemTheme`
-    /// (`native-theme/src/lib.rs:628`), and **not** on [`ResolvedTheme`](crate::ResolvedTheme)
+    /// (`native-theme/src/lib.rs:628`), and **not** on [`ResolvedTheme`]
     /// (`native-theme/src/model/resolved.rs:158-217`). All four fields are `Option<f32>`
     /// (`native-theme/src/model/widgets/mod.rs:1028-1045`).
     pub fn layout(mut self, layout: &'a LayoutTheme) -> Self {
@@ -789,7 +789,7 @@ impl<'a> Builder<'a> {
         self
     }
 
-    /// Build. Infallible: a [`ResolvedTheme`](crate::ResolvedTheme) is complete by construction and every numeric
+    /// Build. Infallible: a [`ResolvedTheme`] is complete by construction and every numeric
     /// conversion in this crate is total (see [`convert`](crate::convert)). Every face of the font plan is
     /// validated here, once, with the parse epaint will make ([`fonts::font_definitions`](crate::fonts::font_definitions));
     /// each rejected face is a [`Note::FontDataInvalid`] in [`ThemeAtlas::notes`], and the

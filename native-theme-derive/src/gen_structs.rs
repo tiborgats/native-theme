@@ -35,7 +35,7 @@ pub(crate) fn gen_structs(
     }
 }
 
-/// Generate resolved struct fields: option -> T, soft_option -> Option<T>,
+/// Generate resolved struct fields: option -> `T`, soft_option -> `Option<T>`,
 /// nested/border -> resolved type.
 fn gen_resolved_fields(fields: &[FieldMeta]) -> TokenStream {
     let field_tokens: Vec<TokenStream> = fields

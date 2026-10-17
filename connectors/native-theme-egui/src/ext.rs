@@ -44,7 +44,7 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// **Does not reach `Area`-based containers** (`Window`, `Popup`, `Tooltip`, `Modal`,
     /// menus, `ComboBox` popups) when wrapped around them: their content `Ui` is built from
     /// the `Context`'s style (spec §1.5). Popups and menus take [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier)
-    /// or [`role_modifier`](crate::role_modifier);
+    /// or [`role_modifier`];
     /// `Window` and `Modal` take [`NativeThemeUiExt::native_frame`] for their chrome and this
     /// scope, or [`NativeThemeUiExt::native_set_style`], as the first statement *inside* their
     /// closure for their body (spec §1.5, §3.3).
@@ -74,13 +74,13 @@ pub trait NativeThemeUiExt: sealed::Sealed {
 
     /// `surface`'s [`egui::Frame`] ([`ThemeAtlas::surface_frame`](crate::ThemeAtlas::surface_frame)). When nothing is installed
     /// it is the frame egui itself builds for that container from this `Ui`'s style, the
-    /// same as passing no frame: `Frame::window` for [`Surface::Window`](crate::Surface::Window) and
-    /// [`Surface::WindowTitleBar`](crate::Surface::WindowTitleBar) (`egui/src/containers/window.rs:630-631`),
-    /// `Frame::popup` for [`Surface::Dialog`](crate::Surface::Dialog), [`Surface::Popover`](crate::Surface::Popover) and [`Surface::Tooltip`](crate::Surface::Tooltip)
+    /// same as passing no frame: `Frame::window` for [`Surface::Window`] and
+    /// [`Surface::WindowTitleBar`] (`egui/src/containers/window.rs:630-631`),
+    /// `Frame::popup` for [`Surface::Dialog`], [`Surface::Popover`] and [`Surface::Tooltip`]
     /// (`egui/src/containers/modal.rs:100`, `egui/src/containers/popup.rs:603`),
-    /// `Frame::group` for [`Surface::Card`](crate::Surface::Card) (`egui/src/ui.rs:2147-2148`),
-    /// `Frame::side_top_panel` for [`Surface::Panel`](crate::Surface::Panel) (`egui/src/containers/panel.rs:950`)
-    /// and `Frame::central_panel` for [`Surface::CentralPanel`](crate::Surface::CentralPanel) (`:1243`).
+    /// `Frame::group` for [`Surface::Card`] (`egui/src/ui.rs:2147-2148`),
+    /// `Frame::side_top_panel` for [`Surface::Panel`] (`egui/src/containers/panel.rs:950`)
+    /// and `Frame::central_panel` for [`Surface::CentralPanel`] (`:1243`).
     #[must_use = "this returns the frame recipe; hand it to a container's `.frame(..)`"]
     fn native_frame(&self, surface: Surface) -> egui::Frame;
 }
@@ -206,7 +206,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// where the integration reports none either, egui falls back to `Options::fallback_theme`.
 /// To follow the OS there, build through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with [`Builder::os_mode`](crate::Builder::os_mode).
 ///
-/// `is_dark` selects the returned [`ResolvedTheme`](crate::ResolvedTheme); it does not pin egui's colour scheme —
+/// `is_dark` selects the returned [`ResolvedTheme`]; it does not pin egui's colour scheme —
 /// that is egui's `ctx.set_theme(..)` ([`ThemeAtlas::install`](crate::ThemeAtlas::install)). It is explicit and never
 /// inferred: some presets (`solarized`, `gruvbox`) have ambiguous lightness. For a one-variant
 /// preset the returned `ResolvedTheme` is the fallback variant, the one the preset has, whose
@@ -324,7 +324,7 @@ pub struct Loaded {
     pub icon_theme: Option<Cow<'static, str>>,
 }
 
-/// Compile a detected [`SystemTheme`](native_theme::SystemTheme). Sealed, like the extension trait of spec §4.5.
+/// Compile a detected [`SystemTheme`]. Sealed, like the extension trait of spec §4.5.
 pub trait SystemThemeExt: sealed::Sealed {
     /// The [`Builder`] [`to_egui_atlas`](Self::to_egui_atlas) builds, before its `build()`:
     /// both OS variants, the OS colour mode, the OS accessibility preferences, the OS layout,
