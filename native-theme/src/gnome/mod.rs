@@ -34,6 +34,8 @@
 //! - `$XDG_SESSION_TYPE`: the session type, which decides whether the
 //!   text-scaling factor is reported (`GnomeReader`), fixed for a session.
 
+mod accent;
+
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};
 
@@ -149,6 +151,20 @@ fn apply_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
     variant.defaults.focus_ring_color = Some(*accent);
     // A checked notebook tab's line is `--accent-bg-color` (docs/platform-facts.md §2.11).
     variant.tab.active_indicator_color = Some(*accent);
+}
+
+/// [`apply_accent`] as libadwaita draws the accent: its focus ring, and an
+/// entry's focus edge, are `$focus_border_color`, the accent's standalone
+/// colour at 50 % on a light or a dark background (`--accent-color`,
+/// libadwaita 1.10.0 `doc/css-variables.md:137-140`, derived by
+/// `adw_rgba_to_standalone`, `src/adw-accent-color.c:130-157`;
+/// docs/platform-facts.md §2.1.5 `focus_ring_color`, §2.4
+/// `focus_border_color`), not the accent background itself.
+fn apply_gnome_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba, dark: bool) {
+    apply_accent(variant, accent);
+    let ring = accent::focus_ring(*accent, dark);
+    variant.defaults.focus_ring_color = Some(ring);
+    variant.input.focus_border_color = Some(ring);
 }
 
 /// Parse a GNOME font string (gsettings `font-name`, `monospace-font-name`,
@@ -430,7 +446,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         && (0.0..=1.0).contains(&b)
     {
         let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
-        apply_accent(&mut variant, &rgba);
+        apply_gnome_accent(&mut variant, &rgba, data.is_dark);
     }
 
     // NOTE: high_contrast, reduce_motion and text_scaling_factor
@@ -1119,7 +1135,10 @@ mod tests {
 
         assert_eq!(variant.defaults.accent_color, Some(expected));
         assert_eq!(variant.defaults.selection_background, Some(expected));
-        assert_eq!(variant.defaults.focus_ring_color, Some(expected));
+        // The ring is libadwaita's `$focus_border_color` of the accent.
+        let ring = Some(super::accent::focus_ring(expected, false));
+        assert_eq!(variant.defaults.focus_ring_color, ring);
+        assert_eq!(variant.input.focus_border_color, ring);
     }
 
     // === high contrast tests ===
@@ -1263,6 +1282,35 @@ mod tests {
     // === build_gnome_spec_pure tests (no ashpd types, no I/O) ===
 
     /// Default GnomePortalData for testing (light, no accent, Cantarell 11, 96 DPI).
+    /// libadwaita draws its focus ring, and an entry's focus edge, in
+    /// `$focus_border_color`: the portal accent's standalone colour at 50 %,
+    /// lighter on a dark background (`doc/css-variables.md:137-140`;
+    /// `adw_rgba_to_standalone`, `src/adw-accent-color.c:130-157`). The
+    /// default blue gives #0461be80 / #81d0ff80; purple #8939a480 / #fba7ff80
+    /// (the documented accent table, `doc/css-variables.md:101-230`).
+    #[test]
+    fn the_focus_ring_and_entry_focus_are_the_accents_standalone_colour_at_half() {
+        let hex = |s: &str| s.parse::<crate::Rgba>().expect("a hex colour");
+        for (accent, dark, ring) in [
+            ((0x35, 0x84, 0xe4), false, "#0461be80"),
+            ((0x35, 0x84, 0xe4), true, "#81d0ff80"),
+            ((0x91, 0x41, 0xac), false, "#8939a480"),
+            ((0x91, 0x41, 0xac), true, "#fba7ff80"),
+        ] {
+            let mut data = default_gnome_data();
+            data.is_dark = dark;
+            data.accent_rgb = Some((
+                f64::from(accent.0) / 255.0,
+                f64::from(accent.1) / 255.0,
+                f64::from(accent.2) / 255.0,
+            ));
+            let result = build_gnome_spec_pure(&data);
+            let variant = reader_mode(&result);
+            assert_eq!(variant.defaults.focus_ring_color, Some(hex(ring)), "{accent:?} dark {dark}");
+            assert_eq!(variant.input.focus_border_color, Some(hex(ring)), "{accent:?} dark {dark}");
+        }
+    }
+
     fn default_gnome_data() -> GnomePortalData {
         GnomePortalData {
             is_dark: false,
@@ -1381,7 +1429,10 @@ mod tests {
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
         assert_eq!(variant.defaults.accent_color, Some(expected));
         assert_eq!(variant.defaults.selection_background, Some(expected));
-        assert_eq!(variant.defaults.focus_ring_color, Some(expected));
+        // The ring is libadwaita's `$focus_border_color` of the accent.
+        let ring = Some(super::accent::focus_ring(expected, false));
+        assert_eq!(variant.defaults.focus_ring_color, ring);
+        assert_eq!(variant.input.focus_border_color, ring);
     }
 
     #[test]
