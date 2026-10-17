@@ -172,7 +172,8 @@ impl SwitchLook {
 
     /// This look faded as one control over `ground`, the colour it is drawn
     /// on: where [`opacity`](Self::opacity) is below 1, the track composited
-    /// over `ground`, the thumb over the track and the label over `ground`,
+    /// over `ground`, the thumb and both outlines over the track and the
+    /// label over `ground`,
     /// each faded by it over `ground`, the opacity then 1. As libadwaita
     /// fades a disabled switch, `filter: Opacity(..)` on the whole widget
     /// (docs/platform-facts.md §2.1.6), so the thumb keeps its colour on the
@@ -187,7 +188,7 @@ impl SwitchLook {
         let track = over(ground, self.track);
         Self {
             track: faded(ground, ground, self.track, a),
-            track_border: self.track_border.map(|edge| faded(ground, ground, edge, a)),
+            track_border: self.track_border.map(|edge| faded(ground, track, edge, a)),
             thumb_color: faded(ground, track, self.thumb_color, a),
             thumb_border: self.thumb_border.map(|edge| faded(ground, track, edge, a)),
             label: faded(ground, ground, self.label, a),

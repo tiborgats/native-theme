@@ -1113,6 +1113,59 @@ fn a_disabled_widget_fades_by_its_disabled_opacity() {
     assert!(circles(&out).iter().any(|c| c.fill == thumb));
 }
 
+/// A disabled switch faded as one fades its track's outline over the track it is drawn inside,
+/// not over the window: a translucent outline (windows-11's `#00000037`, material-3's
+/// `#1d1b201f`) shows the track through it. On adwaita, which fades by 0.5, with an outline no
+/// bundled preset states there.
+#[test]
+fn a_faded_switch_fades_its_outline_over_its_track() {
+    let mut t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let edge = native_theme_egui::native_theme::color::Rgba::new(0, 0, 0, 0x37);
+    t.switch.unchecked_track_border_color = Some(edge);
+    t.switch.track_border_line_width = Some(1.0);
+    assert_eq!(t.switch.disabled_opacity, 0.5);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let track = to_color32(
+        t.switch
+            .disabled_unchecked_background
+            .unwrap_or(t.switch.unchecked_background),
+    );
+    let on_track = ground.blend(track).blend(to_color32(edge));
+    let want = ground.lerp_to_gamma(on_track, 0.5);
+    let mut on = false;
+    let (out, _) = response(&ctx, at(0.0), |ui| {
+        ui.add(Switch::new(&mut on).enabled(false))
+    });
+    let size = egui::vec2(t.switch.track_width, t.switch.track_height);
+    let stroke = rects(&out)
+        .into_iter()
+        .rev()
+        .find(|r| r.rect.size() == size)
+        .map(|r| r.stroke);
+    assert_eq!(stroke, Some(egui::Stroke::new(1.0, want)));
+}
+
+/// A thumb outline as wide as the thumb's radius fills the thumb: the thumb is still drawn, a
+/// disc of its diameter in the outline's colour (epaint draws no circle of radius 0).
+#[test]
+fn a_thumb_outline_as_wide_as_its_radius_fills_the_thumb() {
+    let mut t = kde();
+    let edge = t.defaults.danger_color;
+    t.switch.thumb_border_color = Some(edge);
+    t.switch.thumb_border_line_width = Some(0.5 * t.switch.thumb_diameter);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut on = true;
+    let (out, _) = response(&ctx, at(0.0), |ui| ui.add(Switch::new(&mut on)));
+    let thumb = circles(&out)
+        .into_iter()
+        .find(|c| c.fill == to_color32(edge))
+        .map(|c| 2.0 * c.radius);
+    assert_eq!(thumb, Some(t.switch.thumb_diameter));
+}
+
 /// adwaita light, the opacity-only platform (`disabled_opacity` 0.5, no disabled colour).
 fn adwaita() -> ResolvedTheme {
     let t = from_preset("adwaita", false, &AccessibilityPreferences::default())

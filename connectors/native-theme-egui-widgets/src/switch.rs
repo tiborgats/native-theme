@@ -380,15 +380,15 @@ fn switch_ui(
     let half = 0.5 * g.track.y.max(diameter);
     let ends = (track.left() + half)..=(track.right() - half);
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
-    // Faded as one: the track and its outline over the ground, the thumb and its outline over
-    // the track.
+    // Faded as one: the track over the ground; its outline, drawn inside it, and the thumb and
+    // its outline over the track.
     let on_ground = ground.map(|ground| ground.blend(fill));
     let faded = |under: Option<egui::Color32>, colour: egui::Color32| match under {
         Some(under) => as_one(under, colour),
         None => colour,
     };
     let edge =
-        edge.map(|(colour, width)| egui::Stroke::new(width, faded(*ground, to_color32(colour))));
+        edge.map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
     let thumb_edge = thumb_edge
         .map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
     let (fill, thumb) = (faded(*ground, fill), faded(on_ground, to_color32(thumb)));
@@ -401,9 +401,16 @@ fn switch_ui(
         egui::StrokeKind::Inside,
     );
     // epaint strokes a circle outside its radius (`epaint/src/tessellator.rs:1531`), so the
-    // thumb's outline is drawn inside its diameter.
+    // thumb's outline is drawn inside its diameter. An outline as wide as the thumb's radius
+    // fills it, and epaint draws no circle whose radius is not above 0
+    // (`tessellator.rs:1494-1496`), so that thumb is a disc in the outline's colour.
     let stroke = thumb_edge.unwrap_or(egui::Stroke::NONE);
-    painter.circle(centre, 0.5 * diameter - stroke.width, thumb, stroke);
+    let inner = 0.5 * diameter - stroke.width;
+    if inner > 0.0 {
+        painter.circle(centre, inner, thumb, stroke);
+    } else {
+        painter.circle_filled(centre, 0.5 * diameter, stroke.color);
+    }
     let mut parts = Parts::default();
     parts.push("track", track);
     parts.push(

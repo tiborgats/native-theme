@@ -233,6 +233,31 @@ fn a_disabled_switch_fades_as_one_over_its_backdrop() {
     assert_eq!(look.map(|l| l.faded_over(ground)), look);
 }
 
+/// A disabled switch faded as one fades its track's outline over the track
+/// it is drawn inside, not over the window: a translucent outline (windows-11's
+/// `#00000037`, material-3's `#1d1b201f`) shows the track through it. On
+/// adwaita, which fades by 0.5, with an outline no bundled preset states there.
+#[test]
+fn a_faded_switch_fades_its_outline_over_its_track() {
+    let mut r = resolved("adwaita", ColorMode::Light);
+    let edge = native_theme::color::Rgba::new(0, 0, 0, 0x37);
+    r.switch.unchecked_track_border_color = Some(edge);
+    r.switch.track_border_line_width = Some(1.);
+    let a = r.switch.disabled_opacity;
+    assert!(a < 1., "adwaita no longer fades a disabled switch");
+    let ground = c(r.defaults.background_color);
+    let track = c(r
+        .switch
+        .disabled_unchecked_background
+        .unwrap_or(r.switch.unchecked_background));
+    let look = SwitchLook::of(&r, false, true).map(|l| l.faded_over(ground));
+    assert_eq!(
+        look.and_then(|l| l.track_border),
+        Some(over(ground, over(over(ground, track), c(edge)).opacity(a))),
+        "the outline over the track, the pair faded over the window"
+    );
+}
+
 /// The same rule for a checkbox: its mark on its fill, the pair faded over
 /// the window.
 #[test]
