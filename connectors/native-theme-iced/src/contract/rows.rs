@@ -132,7 +132,7 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         // iced's one link colour of its own, `markdown::Style.link_color`,
         // needs iced's `markdown` feature, which the connector does not
         // enable; a link button takes `link.font.color`, which inherits this
-        // leaf (`docs/inheritance-rules.toml:286`). Ruling T12a C5.
+        // leaf (`docs/inheritance-rules.toml:294`). Ruling T12a C5.
         accessor: "crate::link_color",
         native: |r| Some(to_color(r.defaults.link_color)),
         get: |r| Some(crate::link_color(r)),

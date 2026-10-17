@@ -2195,7 +2195,7 @@ mod apply_tests {
     /// differs from `drag_border`, which upstream's projection writes there.
     /// `handle` cannot serve as the observable: every preset inherits
     /// `splitter.divider_color` from `defaults.border.color`
-    /// (`docs/inheritance-rules.toml:238`), which is also what upstream writes,
+    /// (`docs/inheritance-rules.toml:246`), which is also what upstream writes,
     /// so that slot holds the same value whichever side wrote it.
     fn preset_for_observer_tests(prefs: &AccessibilityPreferences) -> (GpuiTheme, ResolvedTheme) {
         let (theme, resolved) =

@@ -399,7 +399,7 @@ the file was pruned on 2026-10-11, not reordered.
       `native-theme/src/presets/windows-11.toml:237-250`, `:797-810`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
-      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:197`),
+      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:205`),
       a fallback the same file lists among its wrong safety nets, a text
       colour for "a semi-transparent UI control" (`:499-501`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
@@ -1059,7 +1059,7 @@ model, the platform presets and the three connectors
       kept in `docs/todo_code-review-findings.md`, `## M2c — iOS`,
       *Steps 16–18*. Three of those carry an open choice:
       `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
-      `docs/inheritance-rules.toml:352-359`) or WebKit's 0.4 (html.css:945-947,
+      `docs/inheritance-rules.toml:364-371`) or WebKit's 0.4 (html.css:945-947,
       RenderThemeCocoa.mm:1585); `defaults.selection_text_color` white on
       the inherited accent or label on UIKit's grey row selection;
       `button.min_width_px` 44 (the HIG's default control size) or 28 (its
@@ -1117,7 +1117,7 @@ model, the platform presets and the three connectors
       BackgroundNormal`; dark `#272c31`, `[WM] activeBackground`; both
       marked ❓ "no source"), the KDE reader, which reads `[Colors:Complementary]`
       (`native-theme/src/kde/colors.rs:173-176`, M4),
-      `docs/inheritance-rules.toml:489` and the `[Colors:Complementary]`
+      `docs/inheritance-rules.toml:549` and the `[Colors:Complementary]`
       description at `docs/platform-facts.md:609` follow. The text colour
       is settled either way: `ForegroundNormal` is the same in both sets.
 
@@ -1427,7 +1427,7 @@ model, the platform presets and the three connectors
 ### Presets: the toolbar's and the popover's edge width is the defaults'
 
 - [x] [v0.7.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
-      `defaults.border` (`docs/inheritance-rules.toml:86-90`,
+      `defaults.border` (`docs/inheritance-rules.toml:92-96`,
       `widgets_with_border`), so their resolved `border.line_width` is 1 or
       0.5 in most presets (the toolbar's is 0 only in kde-breeze and
       material-3; the popover's is stated only by adwaita, 1 from libadwaita's
@@ -1436,7 +1436,7 @@ model, the platform presets and the three connectors
       draws a popover's edge as its own ring inside the shadow (gpui-component
       0.7.3 `styled.rs:186-194`). The card's fill is the same kind of value:
       `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:266`), and only material-3 (both modes)
+      (`docs/inheritance-rules.toml:274`), and only material-3 (both modes)
       and adwaita (dark, `#ffffff14`, `adwaita.toml:771`, libadwaita
       `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1657`) states no card for macOS and
       KDE. Should the inheritance give the toolbar and the popover a 0 width
@@ -1984,7 +1984,7 @@ model, the platform presets and the three connectors
       opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
       marked "no macOS 26 source" (`docs/platform-facts.md:1192` is ❓; the
       inherited window colour is a wrong safety net,
-      `docs/inheritance-rules.toml:159`), so the contract's check that a
+      `docs/inheritance-rules.toml:167`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
       for that stated value.
       (1) fixed (M6 T9, 2026-10-15): `colors::over` composites the pressed
@@ -3825,7 +3825,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
   G2 Task 13 (2026-10-14): the new `dialog.entrance` has no receiver either: iced 0.14 and `iced_aw` 0.14.1 have no dialog widget, so nothing animates a dialog's entrance; the crate docs' *Theme Field Coverage* (`connectors/native-theme-iced/src/lib.rs`) names it among the values iced has no receiver for.
 
 ### iced: an application style that reads `window.background_color`
-- [ ] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:149`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
+- [ ] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:157`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
 
 ### GNOME reader: title and heading sizes ignore the user's font
 - [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
@@ -4042,7 +4042,7 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:266`), which windows-11 states as
+      (`docs/inheritance-rules.toml:274`), which windows-11 states as
       `CardBackgroundFillColorDefault`, #ffffffb3 / #ffffff0d
       (`windows-11.toml:27-28`, `:609-610`), so the card is filled in the
       platform's colour; what is left is stating it on the card itself.

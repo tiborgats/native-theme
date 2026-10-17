@@ -1042,7 +1042,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the primary button's label and the check mark inherit it, \
              `button.primary_text_color` and `checkbox.indicator_color` \
-             (`docs/inheritance-rules.toml:157`, `:181`), and they reach \
+             (`docs/inheritance-rules.toml:165`, `:189`), and they reach \
              `primary_foreground` and `CheckboxLook`",
         ),
     },
@@ -1050,7 +1050,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.font.color",
         why: Unread::Inherited(
             "every widget's font colour inherits it \
-             (`docs/inheritance-rules.toml:109`), and the widgets' own reach \
+             (`docs/inheritance-rules.toml:115`), and the widgets' own reach \
              their sinks: `checkbox.font.color`, `input.font.color`, \
              `list.item_font.color`, `popover.font.color`, \
              `status_bar.font.color` and `window.title_bar_font.color` among \
@@ -1060,7 +1060,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "defaults.link_color",
         why: Unread::Inherited(
-            "`link.font.color` inherits it (`docs/inheritance-rules.toml:286`), \
+            "`link.font.color` inherits it (`docs/inheritance-rules.toml:294`), \
              and the `link` row reads that",
         ),
     },
@@ -1069,7 +1069,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the selections that sinks read inherit it: \
              `menu.hover_background`, `sidebar.selection_background` and \
-             `list.selection_background` (`docs/inheritance-rules.toml:189`, \
+             `list.selection_background` (`docs/inheritance-rules.toml:197`, \
              `:218`, `:234`), and `input.selection_background` through \
              `defaults.text_selection_background` (`:54`, `:167`)",
         ),
@@ -1079,7 +1079,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the selected-item labels that sinks read inherit it: \
              `menu.hover_text_color`, `sidebar.selection_text_color` and \
-             `list.selection_text_color` (`docs/inheritance-rules.toml:190`, \
+             `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
              `:219`, `:235`)",
         ),
     },
@@ -1089,7 +1089,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
             "the surfaces that sinks read inherit it: \
              `window.title_bar_background`, `slider.thumb_color`, \
              `list.header_background` and `switch.thumb_background` \
-             (`docs/inheritance-rules.toml:150`, `:203`, `:236`, `:250`); \
+             (`docs/inheritance-rules.toml:158`, `:211`, `:244`, `:258`); \
              `card.background_color` inherits it too (`:266`), which \
              `geometry::group_box_content` reads",
         ),
@@ -1098,7 +1098,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.text_selection_background",
         why: Unread::Inherited(
             "`input.selection_background` inherits it \
-             (`docs/inheritance-rules.toml:167`), and the `selection` row \
+             (`docs/inheritance-rules.toml:175`), and the `selection` row \
              reads that",
         ),
     },
@@ -1166,7 +1166,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `appearance(false)` draws no edge (`input/input.rs:795-799`), \
              which an edge colour in the refinement would paint over the \
              width `geometry::text_area` sets. The leaf inherits \
-             `input.border.color` (`docs/inheritance-rules.toml:173`), which \
+             `input.border.color` (`docs/inheritance-rules.toml:181`), which \
              the `input` row reads, and equals it in all 34 combinations",
         ),
     },

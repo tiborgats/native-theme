@@ -1209,7 +1209,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
             "iced has no application-wide disabled colour. The disabled text \
              colours of the button, the input, the check box, the list and \
              the link inherit this one, and rows read each of them \
-             (`docs/inheritance-rules.toml:161`, `:170`, `:183`, `:274`, \
+             (`docs/inheritance-rules.toml:169`, `:178`, `:191`, `:282`, \
              `:292`); the menu's and the combo box's inherit it too (`:191`, \
              `:283`) and have no receiver, as their entries here say",
         ),
@@ -1244,7 +1244,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). \
              The muted colour reaches iced through the leaves that inherit it, \
              `input.placeholder_color` among them \
-             (`docs/inheritance-rules.toml:166`, `:197`, `:198`, `:202`, \
+             (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, \
              `:208`). Ruling T12a C3",
         ),
     },
@@ -1262,7 +1262,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::Inherited(
             "the selected-item labels that rows read inherit it: \
              `menu.hover_text_color`, `sidebar.selection_text_color` and \
-             `list.selection_text_color` (`docs/inheritance-rules.toml:190`, \
+             `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
              `:219`, `:235`)",
         ),
     },
@@ -1279,7 +1279,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.text_selection_background",
         why: Unread::Inherited(
             "`input.selection_background` inherits it \
-             (`docs/inheritance-rules.toml:167`), and `styles::text_input` and \
+             (`docs/inheritance-rules.toml:175`), and `styles::text_input` and \
              `styles::text_editor` emit that as their `selection`",
         ),
     },
@@ -1378,7 +1378,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` \
              takes from the palette's background (`theme.rs:291-293`, \
              `:328-336`), `defaults.background_color`; this leaf inherits that \
-             one (`docs/inheritance-rules.toml:149`) and equals it in all 34 \
+             one (`docs/inheritance-rules.toml:157`) and equals it in all 34 \
              bundled combinations. A style for `application(..).style(..)` that \
              reads it is a docs/todo.md item. Ruling T12a C4",
         ),

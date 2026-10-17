@@ -1373,7 +1373,7 @@ pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
 /// states neither. The text colour is `ThemeColor::link`, the
 /// `link.font.color` row. The fill is `link.background_color`: upstream paints
 /// none (`link.rs:73-90`), so it displaces nothing, and every preset states a
-/// transparent one, as inline links have none (`docs/inheritance-rules.toml:366`).
+/// transparent one, as inline links have none (`docs/inheritance-rules.toml:405`).
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
@@ -2354,7 +2354,7 @@ mod tests {
     /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
     /// select is the exception, its `combo_box.font.color` the accent), because
     /// a preset that states no `font.color` for a widget inherits the window's
-    /// (docs/inheritance-rules.toml:115-136), and `foreground` is fed from
+    /// (docs/inheritance-rules.toml:121-142), and `foreground` is fed from
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child

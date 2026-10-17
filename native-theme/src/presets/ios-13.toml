@@ -16,7 +16,7 @@
 # (WebKit) marks a value read from WebKit's drawing of iOS controls (docs/platform-facts.md:23), not from UIKit.
 # A value with no comment has no primary source (M2c Step 2 found none: Apple publishes no UIKit
 # metric or state colour for it) and is kept as it was.
-# docs/inheritance-rules.toml:422-427 asks a preset to state the colours it would otherwise inherit
+# docs/inheritance-rules.toml:460-465 asks a preset to state the colours it would otherwise inherit
 # wrongly. No iOS source gives window.title_bar_background, list.header_background,
 # menu.background_color, menu.font.color, list.item_font.color, list.header_font.color or
 # scrollbar.thumb_color (the HIG's scroll indicator is "translucent", with no colour), so they
@@ -137,7 +137,7 @@ min_height_px = 44.0
 icon_text_gap_px = 6.0
 hover_background = "#d1d1d6"
 # hover_text_color is not stated: iOS has no hover state and WebKit's iOS html.css gives a button no
-# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:160)
+# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:168)
 active_background = "#c7c7cc"
 # (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:901-906; ios-18 expected.txt:13)
 active_text_color = "#007aff"
@@ -169,7 +169,7 @@ placeholder_color = "#3c3c434c"
 color = "#000000"
 
 [light.input.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:605 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 [light.checkbox]
 indicator_width_px = 22.0
@@ -181,7 +181,7 @@ unchecked_background = "#ffffff"
 unchecked_border_color = "#c6c6c8"
 
 [light.checkbox.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:609 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [light.tooltip]
@@ -226,7 +226,7 @@ min_width_px = 100.0
 track_color = "#e4e4e5"
 
 [light.progress_bar.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:613 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [light.tab]
@@ -340,7 +340,7 @@ background_color = "#e9e9ea"
 color = "#007aff"
 
 [light.combo_box.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:617 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 
@@ -352,7 +352,7 @@ active_background = "#007aff"
 active_text_color = "#ffffff"
 
 [light.segmented_control.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:621 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 
@@ -365,7 +365,7 @@ hover_background = "#e5e5ea"
 arrow_color = "#8e8e93"
 
 [light.expander.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:625 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [light.window]
@@ -482,7 +482,7 @@ min_height_px = 44.0
 icon_text_gap_px = 6.0
 hover_background = "#3a3a3c"
 # hover_text_color is not stated: iOS has no hover state and WebKit's iOS html.css gives a button no
-# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:160)
+# :hover rule, so it inherits button.font.color (docs/inheritance-rules.toml:168)
 active_background = "#48484a"
 # (WebKit) systemBlue, a pressed iOS button keeps its blue text (html.css:901-906; ios-18 expected.txt:15)
 active_text_color = "#0a84ff"
@@ -514,7 +514,7 @@ placeholder_color = "#ebebf54c"
 color = "#ffffff"
 
 [dark.input.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:605 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 [dark.checkbox]
 indicator_width_px = 22.0
@@ -526,7 +526,7 @@ unchecked_background = "#1c1c1e"
 unchecked_border_color = "#38383a"
 
 [dark.checkbox.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:609 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [dark.tooltip]
@@ -571,7 +571,7 @@ min_width_px = 100.0
 track_color = "#2b2b2e"
 
 [dark.progress_bar.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:613 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [dark.tab]
@@ -684,7 +684,7 @@ background_color = "#262629"
 color = "#0a84ff"
 
 [dark.combo_box.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:617 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 
@@ -696,7 +696,7 @@ active_background = "#0a84ff"
 active_text_color = "#ffffff"
 
 [dark.segmented_control.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:621 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 
@@ -709,7 +709,7 @@ hover_background = "#2c2c2e"
 arrow_color = "#8e8e93"
 
 [dark.expander.border]
-# docs/inheritance-rules.toml:79-83: no platform draws a shadow under this control, and the preset must say so
+# docs/inheritance-rules.toml:625 ([wrong_safety_nets]): the defaults' shadow is a wrong safety net for this control, and the preset must say so
 shadow_enabled = false
 
 [dark.window]

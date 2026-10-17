@@ -121,7 +121,7 @@ min_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1187): macos-monterey's value
 icon_text_gap_px = 4.0
 # no macOS 26 source (platform-facts.md:1192): macos-monterey's value; the inherited
-# defaults.background_color (inheritance-rules.toml:159, a wrong safety net) is the window's
+# defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
 # opaque colour, which would hide the translucent button on hover
 hover_background = "#e0e0e5"
 
@@ -504,7 +504,7 @@ min_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1187): macos-monterey's value
 icon_text_gap_px = 4.0
 # no macOS 26 source (platform-facts.md:1192): macos-monterey's value; the inherited
-# defaults.background_color (inheritance-rules.toml:159, a wrong safety net) is the window's
+# defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
 # opaque colour, which would hide the translucent button on hover
 hover_background = "#444446"
 
