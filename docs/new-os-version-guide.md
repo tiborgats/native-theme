@@ -294,7 +294,8 @@ every desktop but KDE to, in the OS's light or dark mode.
 6. **Update dispatch:** Add a variant to `LinuxDesktop` in
    `native-theme/src/detect.rs` if the desktop is not recognised yet;
    `linux_reader_kind()` and the icon-theme detection's `icon_theme_source()`
-   name every variant, so the compiler asks for their arms. Then, in
+   in `native-theme/src/detect/icon_theme.rs` name every variant, so the
+   compiler asks for their arms. Then, in
    `native-theme/src/pipeline.rs`:
    - add a variant for your reader to the `LinuxReader` enum, gated on your
      feature flag;
