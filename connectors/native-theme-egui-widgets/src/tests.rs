@@ -1409,11 +1409,67 @@ fn painting_sources() -> Vec<(String, String)> {
             continue;
         }
         let raw = std::fs::read_to_string(&path).unwrap();
-        // Test modules sit at the end of a file.
-        let code = raw.split("#[cfg(test)]").next().unwrap_or_default();
-        out.push((name, blank(code)));
+        let code: Vec<&str> = rendered_lines(&raw).into_iter().map(|(_, l)| l).collect();
+        out.push((name, blank(&code.join("\n"))));
     }
     out
+}
+
+/// The lines of `text`, numbered from 1, before its inline `#[cfg(test)]` module, which sits at
+/// a file's end: a `#[cfg(test)]` line, any attributes after it, then a `mod name {` line. A
+/// `#[cfg(test)]` on anything else (`mod tests;` in `lib.rs`, a test-only function) or inside a
+/// comment does not end the scan. The egui connector's tripwires read its sources by the same
+/// rule (`native-theme-egui/src/tripwires.rs`, `rendered_lines`).
+fn rendered_lines(text: &str) -> Vec<(usize, &str)> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut out = Vec::new();
+    for (i, &line) in lines.iter().enumerate() {
+        if line.starts_with("#[cfg(test)]") && opens_inline_module(&lines[i + 1..]) {
+            break;
+        }
+        out.push((i + 1, line));
+    }
+    out
+}
+
+/// Whether the item after a `#[cfg(test)]` is an inline `mod name {`, past its attributes,
+/// single-line or spread over lines up to one ending in `)]`.
+fn opens_inline_module(after: &[&str]) -> bool {
+    let mut in_attribute = false;
+    for line in after {
+        let line = line.trim();
+        if in_attribute {
+            in_attribute = !line.ends_with(")]");
+        } else if line.starts_with("#[") {
+            in_attribute = !line.ends_with(']');
+        } else {
+            return line.starts_with("mod ") && line.ends_with('{');
+        }
+    }
+    false
+}
+
+/// [`rendered_lines`] on fixed sources: a `#[cfg(test)]` named in a comment, on a test-only
+/// function or on `mod tests;` leaves the lines after it in; the inline test module, its
+/// attributes before it, is left out.
+#[test]
+fn only_the_inline_test_module_is_left_out() {
+    let source = "//! Its helpers sit under `#[cfg(test)]`.\n\
+                  #[cfg(test)]\n\
+                  mod tests;\n\
+                  #[cfg(test)]\n\
+                  pub(crate) fn stored() {}\n\
+                  fn kept() {}\n\
+                  #[cfg(test)]\n\
+                  #[allow(\n\
+                  clippy::unwrap_used,\n\
+                  )]\n\
+                  mod tests {\n\
+                  fn left_out() {}\n\
+                  }";
+    let lines: Vec<&str> = rendered_lines(source).into_iter().map(|(_, l)| l).collect();
+    assert_eq!(lines.last(), Some(&"fn kept() {}"), "{lines:#?}");
+    assert_eq!(lines.len(), 6);
 }
 
 /// `code` with every `//` comment and every string literal replaced by spaces.
@@ -2256,7 +2312,8 @@ fn a_section_is_named_by_the_name_or_the_list_before_it() {
 
 /// Every `///` or `//!` line of the crate's sources outside its tests that holds a `§` names
 /// the document each `§` cites (M6-38's ruling, [`every_section_is_named`]), so a docs.rs reader
-/// can look it up. As in [`painting_sources`], a file's test items sit at its end.
+/// can look it up. As in [`painting_sources`], a file's inline test module is left out
+/// ([`rendered_lines`]).
 #[test]
 fn every_section_citation_names_its_document() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
@@ -2269,12 +2326,11 @@ fn every_section_citation_names_its_document() {
             continue;
         }
         let raw = std::fs::read_to_string(&path).unwrap();
-        let code = raw.split("#[cfg(test)]").next().unwrap_or_default();
-        for (i, line) in code.lines().enumerate() {
+        for (number, line) in rendered_lines(&raw) {
             let doc = line.trim_start();
             let is_doc = doc.starts_with("///") || doc.starts_with("//!");
             if is_doc && !every_section_is_named(doc) {
-                bare.push(format!("src/{name}:{}: {doc}", i + 1));
+                bare.push(format!("src/{name}:{number}: {doc}"));
             }
         }
         scanned += 1;
