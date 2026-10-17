@@ -502,8 +502,8 @@ impl Switch {
                         // The thumb's whole box, its outline too.
                         div()
                             .absolute()
-                            .top(-look.thumb_border_width)
-                            .left(-look.thumb_border_width)
+                            .top(px(-f32::from(look.thumb_border_width)))
+                            .left(px(-f32::from(look.thumb_border_width)))
                             .size(look.thumb)
                             .debug_selector(|| "native-switch-thumb".into())
                             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
