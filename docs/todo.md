@@ -1682,6 +1682,27 @@ model, the platform presets and the three connectors
       edge; and adwaita `button.background_color` #e8e8e8 / #3a3a3e is
       uncited, where the same `$button_color` composites to #e6e6e7 /
       #38383c.
+      M8 T16b (2026-10-17): the KDE reader derives the eight colour leaves
+      from the colour scheme as Breeze, Kirigami and qqc2-desktop-style
+      compute them (`button.hover_background`, `slider.thumb_color`, both
+      switch tracks, the toolbar's fill and edge, the popover's and the
+      card's edges), in Qt's arithmetic, checked against Qt 6.11.2 test
+      vectors (`scripts/generate_qt_color_vectors.py`); the toolbar fill's
+      kwinrc condition is the next entry.
+
+### KDE reader: the toolbar's Header fill and the window border size
+
+- [ ] [1.0] From M8 T16b (2026-10-17): Breeze fills a main window's tools
+      area with the Header set only where the window decoration's border
+      size is automatic, None or NoSides (kwinrc `[org.kde.kdecoration2]
+      BorderSizeAuto` / `BorderSize`; breezehelper.cpp:1904-1941 at breeze
+      f0b1d75; `docs/platform-facts.md` §2.13 `background_color`); otherwise
+      the toolbar shows the window colour. The KDE reader
+      (`native-theme/src/kde/colors.rs`, `populate_colors`) assumes Plasma's
+      default, automatic, and gives `toolbar.background_color` the Header
+      colour whatever the user set. Read kwinrc's border size, as Breeze
+      does, and give the toolbar the window colour where it is another
+      size.
 
 ### windows-11: the validator's findings after T35 left open
 
