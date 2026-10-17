@@ -394,6 +394,11 @@ fields = [
     "switch.disabled_unchecked_background", # platform-specific disabled unchecked track
     "switch.disabled_thumb_color",     # platform-specific disabled thumb
     "switch.unchecked_thumb_background", # None: the off thumb is `thumb_background` (§2.21)
+    "switch.unchecked_track_border_color", # None: no off-track outline, GNOME and macOS (§2.21)
+    "switch.checked_track_border_color", # None: no on-track outline, Windows and Material (§2.21)
+    "switch.disabled_unchecked_track_border_color", # None: the enabled outline (§2.21)
+    "switch.disabled_checked_track_border_color", # None: the enabled outline (§2.21)
+    "switch.thumb_border_color",       # None: no thumb outline, all but KDE (§2.21)
     "combo_box.hover_background",      # platform-specific hover bg
     "combo_box.disabled_background",   # platform-specific disabled bg
     "segmented_control.hover_background", # platform-specific hover bg
@@ -403,6 +408,8 @@ fields = [
     "checkbox.radio_dot_diameter",     # macOS publishes no radio dot size (platform-facts §2.5)
     "checkbox.radio_indicator_width",  # None: the radio is `indicator_width` across (§2.5)
     "switch.unchecked_thumb_diameter", # None: the off thumb is `thumb_diameter` across (§2.21)
+    "switch.track_border_line_width",  # None: no track outline (§2.21)
+    "switch.thumb_border_line_width",  # None: no thumb outline (§2.21)
     "tab.item_gap",                    # macOS publishes no tab spacing (platform-facts §2.11)
     "tab.active_indicator_color",      # None: no indicator line, Windows and macOS (§2.11)
     "tab.active_indicator_width",      # None: no indicator line (§2.11)

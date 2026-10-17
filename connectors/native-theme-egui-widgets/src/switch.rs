@@ -33,10 +33,15 @@ use crate::scope;
 ///   states them (Material's 16 in `outline`, against 24 in `on-primary`). It moves, and
 ///   grows or shrinks, over the scope's `Style::animation_time`, which the connector sets to
 ///   `0.0` under reduced motion.
+/// * The track is outlined inside its edge, `track_border_line_width` wide, in
+///   `checked_track_border_color` or `unchecked_track_border_color`, and the thumb inside its
+///   edge, `thumb_border_line_width` wide, in `thumb_border_color`, where the theme states the
+///   colour and the width (docs/platform-facts.md §2.21).
 /// * The label is text of no widget font of its own, so in `defaults.font.color`: the switch
 ///   role's cell carries no text colour of the switch's.
-/// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
-///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
+/// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`,
+///   `disabled_thumb_color` and the tracks' `disabled_*_track_border_color` (a `None` copies
+///   the colour it stands for) and the label in
 ///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` as one widget over
 ///   the backdrop (the crate's *Disabled*): the thumb on the track, the pair over
 ///   [`Switch::backdrop`]. Under `ui.add_enabled(false, ..)` it is faded as one by the
@@ -97,6 +102,10 @@ struct Geometry {
     thumb: f32,
     /// The thumb while off: `unchecked_thumb_diameter`, or `thumb`.
     unchecked_thumb: f32,
+    /// `track_border_line_width`; `None` draws no track outline.
+    track_border: Option<f32>,
+    /// `thumb_border_line_width`; `None` draws no thumb outline.
+    thumb_border: Option<f32>,
 }
 
 impl Geometry {
@@ -106,6 +115,10 @@ impl Geometry {
             Some(d) => scope::length(d)?,
             None => thumb,
         };
+        let border = |width: Option<f32>| match width {
+            Some(w) => scope::length(w).map(Some),
+            None => Some(None),
+        };
         Some(Self {
             track: egui::vec2(
                 scope::length(sw.track_width)?,
@@ -114,6 +127,8 @@ impl Geometry {
             radius: scope::length(sw.track_radius)?,
             thumb,
             unchecked_thumb,
+            track_border: border(sw.track_border_line_width)?,
+            thumb_border: border(sw.thumb_border_line_width)?,
         })
     }
 }
@@ -131,6 +146,11 @@ pub(crate) struct Look {
     pub(crate) thumb_background: Rgba,
     pub(crate) unchecked_thumb_background: Option<Rgba>,
     pub(crate) disabled_thumb_color: Option<Rgba>,
+    pub(crate) unchecked_track_border_color: Option<Rgba>,
+    pub(crate) checked_track_border_color: Option<Rgba>,
+    pub(crate) disabled_unchecked_track_border_color: Option<Rgba>,
+    pub(crate) disabled_checked_track_border_color: Option<Rgba>,
+    pub(crate) thumb_border_color: Option<Rgba>,
     /// `defaults.font.color`: the label.
     pub(crate) text: Rgba,
     /// `defaults.disabled_text_color`: a disabled switch's label.
@@ -152,6 +172,11 @@ impl Look {
             thumb_background: sw.thumb_background,
             unchecked_thumb_background: sw.unchecked_thumb_background,
             disabled_thumb_color: sw.disabled_thumb_color,
+            unchecked_track_border_color: sw.unchecked_track_border_color,
+            checked_track_border_color: sw.checked_track_border_color,
+            disabled_unchecked_track_border_color: sw.disabled_unchecked_track_border_color,
+            disabled_checked_track_border_color: sw.disabled_checked_track_border_color,
+            thumb_border_color: sw.thumb_border_color,
             text: t.defaults.font.color,
             disabled_text: t.defaults.disabled_text_color,
             background: t.defaults.background_color,
@@ -325,6 +350,18 @@ fn switch_ui(
         Some(layer) if hovered => composite_over(layer, fill),
         _ => to_color32(fill),
     };
+    let rest_edge = if checked {
+        sw.checked_track_border_color
+    } else {
+        sw.unchecked_track_border_color
+    };
+    let edge = match (checked, enabled) {
+        (true, false) => sw.disabled_checked_track_border_color.or(rest_edge),
+        (false, false) => sw.disabled_unchecked_track_border_color.or(rest_edge),
+        _ => rest_edge,
+    };
+    let edge = edge.zip(g.track_border);
+    let thumb_edge = sw.thumb_border_color.zip(g.thumb_border);
     let rest_thumb = if checked {
         sw.thumb_background
     } else {
@@ -342,17 +379,30 @@ fn switch_ui(
     let half = 0.5 * g.track.y;
     let ends = (track.left() + half)..=(track.right() - half);
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
-    // Faded as one: the track over the ground, the thumb over the track.
-    let (fill, thumb) = match ground {
-        Some(ground) => {
-            let on_ground = ground.blend(fill);
-            (as_one(*ground, fill), as_one(on_ground, to_color32(thumb)))
-        }
-        None => (fill, to_color32(thumb)),
+    // Faded as one: the track and its outline over the ground, the thumb and its outline over
+    // the track.
+    let on_ground = ground.map(|ground| ground.blend(fill));
+    let faded = |under: Option<egui::Color32>, colour: egui::Color32| match under {
+        Some(under) => as_one(under, colour),
+        None => colour,
     };
+    let edge =
+        edge.map(|(colour, width)| egui::Stroke::new(width, faded(*ground, to_color32(colour))));
+    let thumb_edge = thumb_edge
+        .map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
+    let (fill, thumb) = (faded(*ground, fill), faded(on_ground, to_color32(thumb)));
     let painter = ui.painter();
-    painter.rect_filled(track, radius, fill);
-    painter.circle_filled(centre, 0.5 * diameter, thumb);
+    painter.rect(
+        track,
+        radius,
+        fill,
+        edge.unwrap_or(egui::Stroke::NONE),
+        egui::StrokeKind::Inside,
+    );
+    // epaint strokes a circle outside its radius (`epaint/src/tessellator.rs:1531`), so the
+    // thumb's outline is drawn inside its diameter.
+    let stroke = thumb_edge.unwrap_or(egui::Stroke::NONE);
+    painter.circle(centre, 0.5 * diameter - stroke.width, thumb, stroke);
     let mut parts = Parts::default();
     parts.push("track", track);
     parts.push(

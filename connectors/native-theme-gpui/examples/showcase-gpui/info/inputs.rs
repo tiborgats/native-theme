@@ -784,7 +784,7 @@ pub fn native_switch(
                 "track",
                 "checked_background",
                 stated(s.checked_background),
-                "native-theme-gpui/widgets/switch.rs:76",
+                "native-theme-gpui/widgets/switch.rs:92",
             ))
             .color(if s.hover_checked_background.is_some() {
                 claim(
@@ -792,14 +792,14 @@ pub fn native_switch(
                     "hover_checked_background",
                     s.hover_checked_background
                         .map_or(stated(s.checked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:86",
+                    "native-theme-gpui/widgets/switch.rs:102",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "checked_background",
                     stated(s.checked_background),
-                    "native-theme-gpui/widgets/switch.rs:76",
+                    "native-theme-gpui/widgets/switch.rs:92",
                 )
             }),
         (false, false) => info
@@ -807,7 +807,7 @@ pub fn native_switch(
                 "track",
                 "unchecked_background",
                 stated(s.unchecked_background),
-                "native-theme-gpui/widgets/switch.rs:78",
+                "native-theme-gpui/widgets/switch.rs:94",
             ))
             .color(if s.hover_unchecked_background.is_some() {
                 claim(
@@ -815,14 +815,14 @@ pub fn native_switch(
                     "hover_unchecked_background",
                     s.hover_unchecked_background
                         .map_or(stated(s.unchecked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:88",
+                    "native-theme-gpui/widgets/switch.rs:104",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "unchecked_background",
                     stated(s.unchecked_background),
-                    "native-theme-gpui/widgets/switch.rs:78",
+                    "native-theme-gpui/widgets/switch.rs:94",
                 )
             }),
         (true, true) => info.color(claim(
@@ -832,7 +832,7 @@ pub fn native_switch(
                 s.disabled_checked_background
                     .unwrap_or(s.checked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:81",
+            "native-theme-gpui/widgets/switch.rs:97",
         )),
         (false, true) => info.color(claim(
             "track",
@@ -841,8 +841,73 @@ pub fn native_switch(
                 s.disabled_unchecked_background
                     .unwrap_or(s.unchecked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:82",
+            "native-theme-gpui/widgets/switch.rs:98",
         )),
+    };
+    // The track's outline and the thumb's, where the theme states the colour
+    // and the width (SwitchLook::of).
+    let track_edge = match (checked, disabled) {
+        (true, false) => s.checked_track_border_color.is_some().then(|| {
+            claim(
+                "track outline",
+                "checked_track_border_color",
+                s.checked_track_border_color
+                    .map_or(stated(s.checked_background), stated),
+                "native-theme-gpui/widgets/switch.rs:119",
+            )
+        }),
+        (false, false) => s.unchecked_track_border_color.is_some().then(|| {
+            claim(
+                "track outline",
+                "unchecked_track_border_color",
+                s.unchecked_track_border_color
+                    .map_or(stated(s.unchecked_background), stated),
+                "native-theme-gpui/widgets/switch.rs:121",
+            )
+        }),
+        (true, true) => s
+            .disabled_checked_track_border_color
+            .or(s.checked_track_border_color)
+            .is_some()
+            .then(|| {
+                claim(
+                    "track outline",
+                    "disabled_checked_track_border_color",
+                    s.disabled_checked_track_border_color
+                        .or(s.checked_track_border_color)
+                        .map_or(stated(s.checked_background), stated),
+                    "native-theme-gpui/widgets/switch.rs:124",
+                )
+            }),
+        (false, true) => s
+            .disabled_unchecked_track_border_color
+            .or(s.unchecked_track_border_color)
+            .is_some()
+            .then(|| {
+                claim(
+                    "track outline",
+                    "disabled_unchecked_track_border_color",
+                    s.disabled_unchecked_track_border_color
+                        .or(s.unchecked_track_border_color)
+                        .map_or(stated(s.unchecked_background), stated),
+                    "native-theme-gpui/widgets/switch.rs:126",
+                )
+            }),
+    };
+    let info = match track_edge.filter(|_| s.track_border_line_width.is_some()) {
+        Some(edge) => info.color(edge),
+        None => info,
+    };
+    let info = if s.thumb_border_color.is_some() && s.thumb_border_line_width.is_some() {
+        info.color(claim(
+            "thumb outline",
+            "thumb_border_color",
+            s.thumb_border_color
+                .map_or(stated(s.thumb_background), stated),
+            "native-theme-gpui/widgets/switch.rs:138",
+        ))
+    } else {
+        info
     };
     // While focused the track draws the focus ring in `ring` at 50% alpha
     // (gpui-component styled.rs:261), `ring` being the connector's
@@ -868,39 +933,39 @@ pub fn native_switch(
                 "thumb",
                 "disabled_thumb_color",
                 stated(s.disabled_thumb_color.unwrap_or(rest_thumb)),
-                "native-theme-gpui/widgets/switch.rs:98",
+                "native-theme-gpui/widgets/switch.rs:114",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(r.defaults.disabled_text_color),
-                "native-theme-gpui/widgets/switch.rs:103",
+                "native-theme-gpui/widgets/switch.rs:140",
             )),
         (true, false) => info
             .color(claim(
                 "thumb",
                 "thumb_background",
                 stated(s.thumb_background),
-                "native-theme-gpui/widgets/switch.rs:93",
+                "native-theme-gpui/widgets/switch.rs:109",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:105",
+                "native-theme-gpui/widgets/switch.rs:142",
             )),
         (false, false) => info
             .color(claim(
                 "thumb",
                 "unchecked_thumb_background",
                 stated(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
-                "native-theme-gpui/widgets/switch.rs:95",
+                "native-theme-gpui/widgets/switch.rs:111",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:105",
+                "native-theme-gpui/widgets/switch.rs:142",
             )),
     };
     let info = info
@@ -917,6 +982,17 @@ pub fn native_switch(
                 "switch.thumb_diameter: {}px, centred on the track's axis",
                 s.thumb_diameter
             ),
+        )
+        .config(
+            "outlines",
+            match (s.track_border_line_width, s.thumb_border_line_width) {
+                (None, None) => "switch.track_border_line_width and thumb_border_line_width unstated: none".to_owned(),
+                (track, thumb) => format!(
+                    "switch.track_border_line_width {}, thumb_border_line_width {}, inside each part",
+                    track.map_or("unstated".to_owned(), |w| format!("{w}px")),
+                    thumb.map_or("unstated".to_owned(), |w| format!("{w}px")),
+                ),
+            },
         )
         .config(
             "label font",

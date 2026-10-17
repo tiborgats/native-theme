@@ -188,30 +188,6 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "widgets")]
     (
-        "styles::toggler.background_border_width",
-        "iced default: toggler::default(theme, status).background_border_width \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.background_border_color",
-        "iced default: toggler::default(theme, status).background_border_color \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.foreground_border_width",
-        "iced default: toggler::default(theme, status).foreground_border_width \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.foreground_border_color",
-        "iced default: toggler::default(theme, status).foreground_border_color \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
         "styles::toggler.text_color",
         "iced default: toggler::default(theme, status).text_color -- the model \
          states no font for a switch, and iced's None inherits the surrounding \

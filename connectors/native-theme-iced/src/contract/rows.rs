@@ -1208,10 +1208,74 @@ fn thumb_fits(r: &ResolvedTheme, thumb: f32) -> bool {
     r.switch.track_height > 0.0 && thumb >= 0.0 && thumb <= r.switch.track_height
 }
 
-/// Every color field of `styles::toggler`. Five of the remaining seven fields
-/// are in `DERIVED`: `SwitchTheme` carries no border and no font. The other two,
-/// `border_radius` and `padding_ratio`, are native (`switch.track_radius`, and
-/// the inset the track and thumb heights state between them).
+/// The track's outline in `status`, `(width, colour)`, where the theme states
+/// both: `switch.checked_track_border_color` or `.unchecked_track_border_color`,
+/// disabled its `.disabled_*` form where stated, faded as one over the window,
+/// `.track_border_line_width` wide (docs/platform-facts.md §2.21).
+#[cfg(feature = "widgets")]
+fn native_toggler_track_edge(r: &ResolvedTheme, status: toggler::Status) -> Option<(f32, Color)> {
+    let s = &r.switch;
+    let rest = |is_toggled: bool| {
+        if is_toggled {
+            s.checked_track_border_color
+        } else {
+            s.unchecked_track_border_color
+        }
+    };
+    let edge = |colour: Option<native_theme::color::Rgba>| {
+        colour
+            .zip(s.track_border_line_width)
+            .map(|(colour, width)| (width, to_color(colour)))
+    };
+    match status {
+        toggler::Status::Active { is_toggled } | toggler::Status::Hovered { is_toggled } => {
+            edge(rest(is_toggled))
+        }
+        toggler::Status::Disabled { is_toggled } => {
+            let disabled = if is_toggled {
+                s.disabled_checked_track_border_color
+            } else {
+                s.disabled_unchecked_track_border_color
+            };
+            edge(disabled.or(rest(is_toggled)))
+                .map(|(width, colour)| (width, as_one(r, window(r), colour, s.disabled_opacity)))
+        }
+    }
+}
+
+/// The thumb's outline in `status`, `(width, colour)`, where the theme states
+/// both: `switch.thumb_border_color`, `.thumb_border_line_width` wide, faded
+/// as one with a disabled switch over its track.
+#[cfg(feature = "widgets")]
+fn native_toggler_thumb_edge(r: &ResolvedTheme, status: toggler::Status) -> Option<(f32, Color)> {
+    let s = &r.switch;
+    let edge = s
+        .thumb_border_color
+        .zip(s.thumb_border_line_width)
+        .map(|(colour, width)| (width, to_color(colour)));
+    match status {
+        toggler::Status::Active { .. } | toggler::Status::Hovered { .. } => edge,
+        toggler::Status::Disabled { is_toggled } => edge.map(|(width, colour)| {
+            (
+                width,
+                as_one(
+                    r,
+                    over(native_toggler_disabled_track(r, is_toggled), window(r)),
+                    colour,
+                    s.disabled_opacity,
+                ),
+            )
+        }),
+    }
+}
+
+/// Every color field of `styles::toggler`. One of the remaining five fields
+/// is in `DERIVED`: `SwitchTheme` carries no font. The other four,
+/// `border_radius`, `padding_ratio` and the two border widths, are native
+/// (`switch.track_radius`, the inset the track and thumb heights state
+/// between them, `.track_border_line_width` and `.thumb_border_line_width`).
+/// A border the theme states no outline for is transparent, the colour no
+/// border paints.
 #[cfg(feature = "widgets")]
 pub(super) const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
     StyleRow {
@@ -1225,6 +1289,18 @@ pub(super) const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
         statuses: TOGGLER_STATUSES,
         native: native_toggler_thumb,
         get: |t, r, s| fill(styles::toggler(r)(t, s).foreground),
+    },
+    StyleRow {
+        field: "styles::toggler.background_border_color",
+        statuses: TOGGLER_STATUSES,
+        native: |r, s| native_toggler_track_edge(r, s).map_or(Color::TRANSPARENT, |e| e.1),
+        get: |t, r, s| Ok(styles::toggler(r)(t, s).background_border_color),
+    },
+    StyleRow {
+        field: "styles::toggler.foreground_border_color",
+        statuses: TOGGLER_STATUSES,
+        native: |r, s| native_toggler_thumb_edge(r, s).map_or(Color::TRANSPARENT, |e| e.1),
+        get: |t, r, s| Ok(styles::toggler(r)(t, s).foreground_border_color),
     },
 ];
 
@@ -1259,14 +1335,35 @@ fn native_toggler_padding_ratio(t: &Theme, r: &ResolvedTheme, status: toggler::S
     }
 }
 
-/// The switch's thumb inset, the one scalar whose native value is guarded.
+/// The switch's thumb inset, whose native value is guarded, and the widths
+/// of the two outlines, iced's own where the theme states no outline.
 #[cfg(feature = "widgets")]
-pub(super) const TOGGLER_SCALAR_ROWS: &[ScalarRow<toggler::Status>] = &[ScalarRow {
-    field: "styles::toggler.padding_ratio",
-    statuses: TOGGLER_STATUSES,
-    native: native_toggler_padding_ratio,
-    get: |t, r, s| Ok(styles::toggler(r)(t, s).padding_ratio),
-}];
+pub(super) const TOGGLER_SCALAR_ROWS: &[ScalarRow<toggler::Status>] = &[
+    ScalarRow {
+        field: "styles::toggler.padding_ratio",
+        statuses: TOGGLER_STATUSES,
+        native: native_toggler_padding_ratio,
+        get: |t, r, s| Ok(styles::toggler(r)(t, s).padding_ratio),
+    },
+    ScalarRow {
+        field: "styles::toggler.background_border_width",
+        statuses: TOGGLER_STATUSES,
+        native: |t, r, s| {
+            native_toggler_track_edge(r, s)
+                .map_or(toggler::default(t, s).background_border_width, |e| e.0)
+        },
+        get: |t, r, s| Ok(styles::toggler(r)(t, s).background_border_width),
+    },
+    ScalarRow {
+        field: "styles::toggler.foreground_border_width",
+        statuses: TOGGLER_STATUSES,
+        native: |t, r, s| {
+            native_toggler_thumb_edge(r, s)
+                .map_or(toggler::default(t, s).foreground_border_width, |e| e.0)
+        },
+        get: |t, r, s| Ok(styles::toggler(r)(t, s).foreground_border_width),
+    },
+];
 
 /// The switch's corner radius, `switch.track_radius`. It shapes the thumb as
 /// well as the track: iced paints both quads with this one radius

@@ -435,8 +435,8 @@ divider_width_px = 1.0
 # divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1455)
 
 [light.switch]
-# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000; its
-# stroke, ToggleSwitchStrokeOff, the model does not carry
+# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000, inside
+# ToggleSwitchStrokeOff (unchecked_track_border_color)
 unchecked_background = "#00000006"
 # platform-facts.md:1510 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #FFFFFF
 thumb_background = "#ffffff"
@@ -460,6 +460,16 @@ hover_unchecked_background = "#e5e5e5"
 disabled_checked_background = "#00000037"
 # ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:138; Common_themeresources_any.xaml:237)
 disabled_unchecked_background = "#ffffff00"
+# platform-facts.md:1519 (§2.21): ToggleSwitchStrokeOff = ControlStrongStrokeColorDefault #72000000
+# (ToggleSwitch_themeresources.xaml:139; Common_themeresources_any.xaml:252), the off track's
+# OuterBorder stroke; its hover and pressed strokes are the same (platform-facts.md:1520)
+unchecked_track_border_color = "#00000072"
+# platform-facts.md:1521 (§2.21): ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #37000000
+# (ToggleSwitch_themeresources.xaml:142; Common_themeresources_any.xaml:253)
+disabled_unchecked_track_border_color = "#00000037"
+# platform-facts.md:1524 (§2.21): ToggleSwitchOuterBorderStrokeThickness 1; the on track's stroke is drawn at
+# ToggleSwitchOnStrokeThickness 0, so checked_track_border_color stays unset (platform-facts.md:1522)
+track_border_line_width_px = 1.0
 
 [light.dialog]
 # platform-facts.md:1535 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #F3F3F3
@@ -1017,8 +1027,8 @@ divider_width_px = 1.0
 # divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1455)
 
 [dark.switch]
-# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000; its
-# stroke, ToggleSwitchStrokeOff, the model does not carry
+# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000, inside
+# ToggleSwitchStrokeOff (unchecked_track_border_color)
 unchecked_background = "#00000019"
 # platform-facts.md:1510 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #000000
 thumb_background = "#000000"
@@ -1042,6 +1052,16 @@ hover_unchecked_background = "#2a2a2a"
 disabled_checked_background = "#ffffff28"
 # ToggleSwitchFillOffDisabled = ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:18; Common_themeresources_any.xaml:33)
 disabled_unchecked_background = "#ffffff00"
+# platform-facts.md:1519 (§2.21): ToggleSwitchStrokeOff = ControlStrongStrokeColorDefault #8BFFFFFF
+# (ToggleSwitch_themeresources.xaml:19; Common_themeresources_any.xaml:48), the off track's
+# OuterBorder stroke; its hover and pressed strokes are the same (platform-facts.md:1520)
+unchecked_track_border_color = "#ffffff8b"
+# platform-facts.md:1521 (§2.21): ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #28FFFFFF
+# (ToggleSwitch_themeresources.xaml:22; Common_themeresources_any.xaml:49)
+disabled_unchecked_track_border_color = "#ffffff28"
+# platform-facts.md:1524 (§2.21): ToggleSwitchOuterBorderStrokeThickness 1; the on track's stroke is drawn at
+# ToggleSwitchOnStrokeThickness 0, so checked_track_border_color stays unset (platform-facts.md:1522)
+track_border_line_width_px = 1.0
 
 [dark.dialog]
 # platform-facts.md:1535 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #202020

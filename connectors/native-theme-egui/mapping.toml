@@ -1245,6 +1245,41 @@ verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
+["switch.unchecked_track_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off track's outline"
+
+["switch.checked_track_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the on track's outline"
+
+["switch.disabled_unchecked_track_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled off track's outline"
+
+["switch.disabled_checked_track_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled on track's outline"
+
+["switch.track_border_line_width"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the track outline's width"
+
+["switch.thumb_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb's outline"
+
+["switch.thumb_border_line_width"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb outline's width"
+
 ["checkbox.background_color"]
 verdict = "scoped"
 sinks   = [

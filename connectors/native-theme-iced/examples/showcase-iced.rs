@@ -5777,6 +5777,24 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "styles::toggler: the Disabled track background".into()
         }
         ("switch", "disabled_thumb_color") => "styles::toggler: the Disabled foreground".into(),
+        (
+            "switch",
+            "checked_track_border_color"
+            | "unchecked_track_border_color"
+            | "disabled_checked_track_border_color",
+        ) => "styles::toggler: the track's background_border_color, the track button's border"
+            .into(),
+        ("switch", "track_border_line_width_px") => {
+            "styles::toggler: the track's background_border_width, the track button's border".into()
+        }
+        ("switch", "thumb_border_color") => {
+            "styles::toggler: the thumb's foreground_border_color, the thumb container's border"
+                .into()
+        }
+        ("switch", "thumb_border_line_width_px") => {
+            "styles::toggler: the thumb's foreground_border_width, the thumb container's border"
+                .into()
+        }
         ("switch", "disabled_opacity") => {
             "styles::toggler: the Disabled colours' alpha times it; the label faded alike".into()
         }
@@ -8640,6 +8658,11 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
             ),
             ("track radius", "switch.track_radius"),
             (
+                "outlines",
+                "switch.*_track_border_color, track_border_line_width wide, and \
+                 thumb_border_color, thumb_border_line_width wide, where the theme states them",
+            ),
+            (
                 "label",
                 format!(
                     "{} -- the model states no font for a switch",
@@ -9443,7 +9466,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("track width", "iced lays the track out as 2 x its height"),
-                ("border", "SwitchTheme carries none — iced's own"),
+                (
+                    "border",
+                    "switch.*_track_border_color and .thumb_border_color, as wide as stated, where the theme states them; else iced's own, none",
+                ),
                 ("animation timing", "hardcoded"),
             ],
         ),

@@ -1117,6 +1117,94 @@ fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
     );
 }
 
+/// docs/platform-facts.md §2.21: the track is outlined in the colour the
+/// theme states for its state, `track_border_line_width` wide, and the thumb
+/// in `thumb_border_color`, `thumb_border_line_width` wide; a part whose
+/// colour or width is unset has no outline. Under kde-breeze (both tracks
+/// and the thumb outlined), windows-11 and material-3 (the off track only).
+#[gpui::test]
+fn the_switch_draws_the_stated_outlines(cx: &mut TestAppContext) {
+    for preset in ["kde-breeze", "windows-11", "material-3"] {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)]
+            {
+                switch_draws_the_stated_outlines(cx, preset, mode, checked, disabled);
+            }
+        }
+    }
+}
+
+fn switch_draws_the_stated_outlines(
+    cx: &mut TestAppContext,
+    preset: &'static str,
+    mode: ColorMode,
+    checked: bool,
+    disabled: bool,
+) {
+    let cx = window_with(
+        cx,
+        Some((preset, mode)),
+        Box::new(move |_, _| {
+            Switch::new("s")
+                .checked(checked)
+                .disabled(disabled)
+                .into_any_element()
+        }),
+    );
+    let r = resolved(preset, mode);
+    let s = &r.switch;
+    let state = format!("{preset} {mode:?} checked {checked} disabled {disabled}");
+    assert_eq!(s.disabled_opacity, 1., "{state}: drawn unfaded");
+    let track_colour = match (checked, disabled) {
+        (true, false) => s.checked_track_border_color,
+        (false, false) => s.unchecked_track_border_color,
+        (true, true) => s
+            .disabled_checked_track_border_color
+            .or(s.checked_track_border_color),
+        (false, true) => s
+            .disabled_unchecked_track_border_color
+            .or(s.unchecked_track_border_color),
+    };
+    let stated = |colour: Option<native_theme::color::Rgba>, width: Option<f32>| {
+        colour
+            .zip(width)
+            .map(|(colour, width)| (px(width), c(colour)))
+    };
+    let edge = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
+        cx.update(|window, _| {
+            let b = b.scale(window.scale_factor());
+            window
+                .painted_quads()
+                .iter()
+                .find(|q| q.bounds == b && q.border_widths.top.0 > 0.)
+                .map(|q| {
+                    (
+                        px(q.border_widths.top.0 / window.scale_factor()),
+                        q.border_color,
+                    )
+                })
+        })
+    };
+    let track = bounds(cx, "native-switch-track");
+    assert_eq!(
+        edge(cx, track),
+        stated(track_colour, s.track_border_line_width),
+        "{state}: the track"
+    );
+    let thumb = bounds(cx, "native-switch-thumb");
+    let diameter = if checked {
+        s.thumb_diameter
+    } else {
+        s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+    };
+    assert_eq!(thumb.size.width, px(diameter), "{state}: the thumb's box");
+    assert_eq!(
+        edge(cx, thumb),
+        stated(s.thumb_border_color, s.thumb_border_line_width),
+        "{state}: the thumb"
+    );
+}
+
 #[gpui::test]
 fn the_slider_rail_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
     let state = cx.new(|_| SliderState::new().default_value(0.));
@@ -1584,7 +1672,8 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
 /// ring: with the theme's focus ring on, gpui-component's
 /// `focus_ring_style` tints the track's border in `ThemeColor::ring`
-/// (styled.rs:257-262), and the track sets no border colour of its own.
+/// (styled.rs:257-262), and without it the border is the track's own
+/// outline (`SwitchLook::track_border`).
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
     let cx = window_with(
@@ -1607,7 +1696,7 @@ fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
         cx.theme().ring
     });
     assert_eq!(border(cx, true), Some(ring));
-    assert_eq!(border(cx, false), None);
+    assert_eq!(border(cx, false), look.track_border);
 }
 
 #[derive(Clone, Copy)]

@@ -10,13 +10,13 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
-| Buttons (button, link, switch, checkbox, segmented control) | 106 | 11 | 46 | 31 | 18 |
+| Buttons (button, link, switch, checkbox, segmented control) | 113 | 11 | 46 | 31 | 25 |
 | Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 36 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **508** | **46** | **208** | **170** | **84** |
+| **TOTAL** | **515** | **46** | **208** | **170** | **91** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 15.
+UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
 ## Rows
 
@@ -302,20 +302,27 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `segmented_control.segment_height` | SCOPED | «segmented_control» `spacing.interact_size.y` |  |
 | `segmented_control.separator_width` | SCOPED | «segmented_control» `spacing.item_spacing.x` | probe `2.0` |
 | `switch.checked_background` | SCOPED | «switch» `visuals.selection.bg_fill`; «switch:disabled» `visuals.selection.bg_fill` (when: switch.disabled_checked_background is None, §6.4) |  |
+| `switch.checked_track_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the on track's outline |
 | `switch.disabled_checked_background` | SCOPED | «switch:disabled» `visuals.selection.bg_fill` (when: stated; None copies switch.checked_background, §6.4) |  |
+| `switch.disabled_checked_track_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled on track's outline |
 | `switch.disabled_opacity` | SCOPED | «switch» `visuals.disabled_alpha`; «switch:disabled» `visuals.disabled_alpha` |  |
 | `switch.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
 | `switch.disabled_unchecked_background` | SCOPED | «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4) |  |
+| `switch.disabled_unchecked_track_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled off track's outline |
 | `switch.hover_checked_background` | DERIVED | → T18(a) |  |
 | `switch.hover_unchecked_background` | SCOPED | «switch» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4) |  |
 | `switch.thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
+| `switch.thumb_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb's outline |
+| `switch.thumb_border_line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb outline's width |
 | `switch.thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1) |
+| `switch.track_border_line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the track outline's width |
 | `switch.track_height` | SCOPED | «switch» `spacing.interact_size.y` |  |
 | `switch.track_radius` | SCOPED | «switch» `visuals.widgets.noninteractive.corner_radius`; «switch» `visuals.widgets.inactive.corner_radius`; «switch» `visuals.widgets.hovered.corner_radius`; «switch» `visuals.widgets.active.corner_radius`; «switch» `visuals.widgets.open.corner_radius` |  |
 | `switch.track_width` | DERIVED | → T18(a) |  |
 | `switch.unchecked_background` | SCOPED | «switch» `visuals.widgets.inactive.weak_bg_fill`; «switch» `visuals.widgets.open.weak_bg_fill`; «switch» `visuals.widgets.hovered.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: switch.disabled_unchecked_background is None, §6.4) |  |
 | `switch.unchecked_thumb_background` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's colour |
 | `switch.unchecked_thumb_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's size |
+| `switch.unchecked_track_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off track's outline |
 
 ### Inputs (input, text area, combo box, list)
 

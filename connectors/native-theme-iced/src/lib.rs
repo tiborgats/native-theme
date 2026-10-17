@@ -1747,6 +1747,79 @@ mod tests {
         );
     }
 
+    /// docs/platform-facts.md §2.21: the track is outlined in the colour the
+    /// theme states for its state, `switch.track_border_line_width` wide, and
+    /// the thumb in `thumb_border_color`, `thumb_border_line_width` wide; a
+    /// part whose colour or width is unset keeps iced's own. Under
+    /// kde-breeze (both tracks and the thumb outlined), windows-11 and
+    /// material-3 (the off track only), on and off, at rest, hovered and
+    /// disabled.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn the_switch_draws_the_stated_outlines() {
+        use iced_widget::toggler::Status;
+        for preset in ["kde-breeze", "windows-11", "material-3"] {
+            for dark in [false, true] {
+                let r = make_resolved_preset(preset, dark);
+                let s = &r.switch;
+                let theme = to_theme(&r, preset);
+                let style = styles::toggler(&r);
+                for is_toggled in [false, true] {
+                    for status in [
+                        Status::Active { is_toggled },
+                        Status::Hovered { is_toggled },
+                        Status::Disabled { is_toggled },
+                    ] {
+                        let state = format!("{preset} dark {dark} {status:?}");
+                        assert_eq!(s.disabled_opacity, 1.0, "{state}: drawn unfaded");
+                        let rest = if is_toggled {
+                            s.checked_track_border_color
+                        } else {
+                            s.unchecked_track_border_color
+                        };
+                        let colour = match (status, is_toggled) {
+                            (Status::Disabled { .. }, true) => {
+                                s.disabled_checked_track_border_color.or(rest)
+                            }
+                            (Status::Disabled { .. }, false) => {
+                                s.disabled_unchecked_track_border_color.or(rest)
+                            }
+                            _ => rest,
+                        };
+                        let iced = iced_widget::toggler::default(&theme, status);
+                        let stated =
+                            |colour: Option<native_theme::color::Rgba>,
+                             width: Option<f32>,
+                             unset: (f32, iced_core::Color)| {
+                                colour
+                                    .zip(width)
+                                    .map_or(unset, |(c, w)| (w, palette::to_color(c)))
+                            };
+                        let got = style(&theme, status);
+                        assert_eq!(
+                            (got.background_border_width, got.background_border_color),
+                            stated(
+                                colour,
+                                s.track_border_line_width,
+                                (iced.background_border_width, iced.background_border_color)
+                            ),
+                            "{state}: the track"
+                        );
+                        assert_eq!(
+                            (got.foreground_border_width, got.foreground_border_color),
+                            stated(
+                                s.thumb_border_color,
+                                s.thumb_border_line_width,
+                                (iced.foreground_border_width, iced.foreground_border_color)
+                            ),
+                            "{state}: the thumb"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /// The active tab's line exists exactly where the theme states its
     /// colour, width and side (docs/platform-facts.md §2.11): Breeze, GNOME
     /// and Material draw one, Windows none; a width that is not a positive,

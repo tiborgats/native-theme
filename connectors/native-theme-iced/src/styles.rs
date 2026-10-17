@@ -928,10 +928,16 @@ pub fn radio(
 /// out as `2 × size` by `size` (`:287`), so the platform's track width follows
 /// from it and has no separate receiver.
 ///
-/// Five fields have no native source and come from `toggler::default(theme,
-/// status)`: `SwitchTheme` carries no border, so both border widths and both
-/// border colors are iced's, and so is `text_color` -- the model states no
-/// font for a switch, and iced's `None` inherits the surrounding one.
+/// The track's border is `switch.checked_track_border_color` or
+/// `.unchecked_track_border_color`, `.disabled_*` disabled where stated,
+/// `.track_border_line_width` wide, and the thumb's `.thumb_border_color`,
+/// `.thumb_border_line_width` wide, each faded as one with a disabled switch;
+/// a border whose colour or width the theme leaves unset is iced's own, none
+/// (`docs/platform-facts.md` §2.21: libadwaita and macOS outline neither,
+/// WinUI and Material only the off track). iced draws both inside their
+/// quads. `text_color` has no native source and comes from
+/// `toggler::default(theme, status)`: the model states no font for a switch,
+/// and iced's `None` inherits the surrounding one.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn toggler(
     resolved: &ResolvedTheme,
@@ -989,6 +995,35 @@ pub fn toggler_over(
     let disabled_on = disabled_as_one(disabled_checked, disabled_thumb);
     let disabled_off = disabled_as_one(disabled_unchecked, disabled_unchecked_thumb);
 
+    // The outlines, where the theme states a colour and a width: the track's
+    // per state, a disabled one faded as one over the ground, and the
+    // thumb's over the track (docs/platform-facts.md §2.21).
+    let outline = |colour: Option<native_theme::color::Rgba>, width: Option<f32>| {
+        colour
+            .zip(width)
+            .map(|(colour, width)| (width, to_color(colour)))
+    };
+    let edge_on = outline(s.checked_track_border_color, s.track_border_line_width);
+    let edge_off = outline(s.unchecked_track_border_color, s.track_border_line_width);
+    let disabled_edge = |colour: Option<native_theme::color::Rgba>, rest: Option<(f32, Color)>| {
+        outline(colour, s.track_border_line_width)
+            .or(rest)
+            .map(|(width, edge)| (width, faded_as_one(ground, ground, edge, opacity)))
+    };
+    let disabled_edge_on = disabled_edge(s.disabled_checked_track_border_color, edge_on);
+    let disabled_edge_off = disabled_edge(s.disabled_unchecked_track_border_color, edge_off);
+    let thumb_edge = outline(s.thumb_border_color, s.thumb_border_line_width);
+    let disabled_thumb_edge = |track: Color| {
+        thumb_edge.map(|(width, edge)| {
+            (
+                width,
+                faded_as_one(ground, composite_over(track, ground), edge, opacity),
+            )
+        })
+    };
+    let disabled_thumb_edge_on = disabled_thumb_edge(disabled_checked);
+    let disabled_thumb_edge_off = disabled_thumb_edge(disabled_unchecked);
+
     let track_radius = Radius::new(s.track_radius);
     // Guarded so that a track with no height, or a thumb taller than its
     // track, falls back to iced's own ratio rather than dividing by zero or
@@ -1039,13 +1074,23 @@ pub fn toggler_over(
         } else {
             unchecked_padding_ratio
         };
+        let (track_edge, thumb_edge) = match status {
+            Status::Disabled { is_toggled: true } => (disabled_edge_on, disabled_thumb_edge_on),
+            Status::Disabled { is_toggled: false } => (disabled_edge_off, disabled_thumb_edge_off),
+            _ if is_toggled => (edge_on, thumb_edge),
+            _ => (edge_off, thumb_edge),
+        };
+        let (background_border_width, background_border_color) =
+            track_edge.unwrap_or((iced.background_border_width, iced.background_border_color));
+        let (foreground_border_width, foreground_border_color) =
+            thumb_edge.unwrap_or((iced.foreground_border_width, iced.foreground_border_color));
         Style {
             background: Background::Color(background),
-            background_border_width: iced.background_border_width,
-            background_border_color: iced.background_border_color,
+            background_border_width,
+            background_border_color,
             foreground: Background::Color(foreground),
-            foreground_border_width: iced.foreground_border_width,
-            foreground_border_color: iced.foreground_border_color,
+            foreground_border_width,
+            foreground_border_color,
             text_color: iced.text_color,
             border_radius: Some(track_radius),
             padding_ratio: padding_ratio.unwrap_or(iced.padding_ratio),

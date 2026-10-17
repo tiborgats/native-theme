@@ -49,10 +49,25 @@ pub struct SwitchLook {
     pub track: Hsla,
     /// The track's colour under the pointer, where the control is enabled.
     pub hover_track: Option<Hsla>,
+    /// The track's outline, drawn inside it: `switch.checked_track_border_color`
+    /// or `unchecked_track_border_color`, disabled their `disabled_*` forms
+    /// where the theme states them; `None` where the theme states no colour
+    /// or no `track_border_line_width` (docs/platform-facts.md §2.21).
+    pub track_border: Option<Hsla>,
+    /// The track outline's width: `switch.track_border_line_width`, 0 where
+    /// [`track_border`](Self::track_border) is `None`.
+    pub track_border_width: Pixels,
     /// The thumb's colour: `switch.thumb_background`, off
     /// `unchecked_thumb_background` where the theme states one, disabled
     /// `disabled_thumb_color`.
     pub thumb_color: Hsla,
+    /// The thumb's outline, drawn inside it: `switch.thumb_border_color`;
+    /// `None` where the theme states no colour or no
+    /// `thumb_border_line_width`.
+    pub thumb_border: Option<Hsla>,
+    /// The thumb outline's width: `switch.thumb_border_line_width`, 0 where
+    /// [`thumb_border`](Self::thumb_border) is `None`.
+    pub thumb_border_width: Pixels,
     /// The label's colour: `SwitchTheme` states none, so the window's text,
     /// `defaults.text_color`, and `defaults.disabled_text_color` disabled.
     pub label: Hsla,
@@ -68,7 +83,8 @@ impl SwitchLook {
     /// The hover and disabled colours are soft options, as the iced connector
     /// reads them (`native-theme-iced` `styles::toggler`): a `None` disabled
     /// colour copies the colour it stands in for (C16), and a `None` hover
-    /// leaves the track at rest.
+    /// leaves the track at rest. An outline is drawn where the theme states
+    /// both its colour and its width.
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         let s = &resolved.switch;
@@ -99,6 +115,27 @@ impl SwitchLook {
         } else {
             rest_thumb
         };
+        let rest_track_border = if checked {
+            s.checked_track_border_color
+        } else {
+            s.unchecked_track_border_color
+        };
+        let track_border = match (checked, disabled) {
+            (true, true) => s.disabled_checked_track_border_color.or(rest_track_border),
+            (false, true) => s
+                .disabled_unchecked_track_border_color
+                .or(rest_track_border),
+            _ => rest_track_border,
+        };
+        let outline = |colour: Option<native_theme::color::Rgba>, width: Option<f32>| match colour
+            .zip(width)
+        {
+            Some((colour, width)) => length(width).map(|width| (Some(color(colour)), width)),
+            None => Some((None, px(0.))),
+        };
+        let (track_border, track_border_width) = outline(track_border, s.track_border_line_width)?;
+        let (thumb_border, thumb_border_width) =
+            outline(s.thumb_border_color, s.thumb_border_line_width)?;
         let label = if disabled {
             resolved.defaults.disabled_text_color
         } else {
@@ -118,7 +155,11 @@ impl SwitchLook {
             inset: px((f32::from(track_height) - f32::from(thumb)) / 2.),
             track: color(track),
             hover_track,
+            track_border,
+            track_border_width,
             thumb_color: color(thumb_color),
+            thumb_border,
+            thumb_border_width,
             label: color(label),
             opacity: super::disabled_opacity(disabled, s.disabled_opacity),
         })
@@ -141,7 +182,9 @@ impl SwitchLook {
         let track = over(ground, self.track);
         Self {
             track: faded(ground, ground, self.track, a),
+            track_border: self.track_border.map(|edge| faded(ground, ground, edge, a)),
             thumb_color: faded(ground, track, self.thumb_color, a),
+            thumb_border: self.thumb_border.map(|edge| faded(ground, track, edge, a)),
             label: faded(ground, ground, self.label, a),
             opacity: 1.,
             ..self
@@ -414,6 +457,9 @@ impl Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
+            .when_some(look.track_border, |track, edge| {
+                track.border(look.track_border_width).border_color(edge)
+            })
             .when(focused && !self.disabled && self.focus_ring, |track| {
                 track.focus_ring_style(window, cx)
             })
@@ -425,19 +471,27 @@ impl Switch {
                 SwitchThumb::new(self.checked)
                     .disabled(self.disabled)
                     .absolute()
-                    .top(look.inset)
-                    .left(thumb_left)
+                    // An absolute child is placed inside its parent's border.
+                    .top(look.inset - look.track_border_width)
+                    .left(thumb_left - look.track_border_width)
                     .size(look.thumb)
                     .rounded_full()
                     .bg(look.thumb_color)
+                    .when_some(look.thumb_border, |thumb, edge| {
+                        thumb.border(look.thumb_border_width).border_color(edge)
+                    })
                     .child(
+                        // The thumb's whole box, its outline too.
                         div()
-                            .size_full()
+                            .absolute()
+                            .top(-look.thumb_border_width)
+                            .left(-look.thumb_border_width)
+                            .size(look.thumb)
                             .debug_selector(|| "native-switch-thumb".into())
                             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
                     ),
             )
-            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))))
+            .children(observer.map(|o| part_bounds(Part::Track, o, look.track_border_width)))
     }
 }
 

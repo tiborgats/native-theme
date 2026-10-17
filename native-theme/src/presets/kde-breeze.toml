@@ -410,6 +410,22 @@ disabled_checked_background = "#3daee980"
 disabled_unchecked_background = "#bcc0bf80"
 # platform-facts.md:1510 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#f0f0f0"
+# platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
+# frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #fcfcfc / #232629
+unchecked_track_border_color = "#cccfd2"
+# platform-facts.md:1522 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
+# (SwitchIndicator.qml:27; BreezeLight.colors:87)
+checked_track_border_color = "#3daee9"
+# platform-facts.md:1521 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+disabled_unchecked_track_border_color = "#e2e2e2"
+# platform-facts.md:1523 (§2.21): highlightColor in the Disabled group, Disabled Selection
+disabled_checked_track_border_color = "#e3e5e7"
+# platform-facts.md:1524 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
+track_border_line_width_px = 1.0
+# platform-facts.md:1525 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
+thumb_border_color = "#cccfd2"
+# platform-facts.md:1528 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
+thumb_border_line_width_px = 1.0
 
 [light.dialog]
 button_order = "primary_left"
@@ -924,6 +940,22 @@ disabled_checked_background = "#3daee980"
 disabled_unchecked_background = "#4d545b80"
 # platform-facts.md:1510 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#272a2e"
+# platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
+# frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #292c30 / #fcfcfc
+unchecked_track_border_color = "#4e5359"
+# platform-facts.md:1522 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
+# (SwitchIndicator.qml:27; BreezeDark.colors:88)
+checked_track_border_color = "#3daee9"
+# platform-facts.md:1521 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+disabled_unchecked_track_border_color = "#34373b"
+# platform-facts.md:1523 (§2.21): highlightColor in the Disabled group, Disabled Selection
+disabled_checked_track_border_color = "#1f2124"
+# platform-facts.md:1524 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
+track_border_line_width_px = 1.0
+# platform-facts.md:1525 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
+thumb_border_color = "#4e5359"
+# platform-facts.md:1528 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
+thumb_border_line_width_px = 1.0
 
 [dark.dialog]
 button_order = "primary_left"

@@ -444,8 +444,83 @@ fn the_off_thumb_is_the_stated_off_thumb() {
     let thumb = circles(&out)
         .into_iter()
         .find(|c| c.fill == to_color32(t.defaults.danger_color))
-        .map(|c| 2.0 * c.radius);
+        .map(|c| 2.0 * (c.radius + c.stroke.width));
     assert_eq!(thumb, t.switch.unchecked_thumb_diameter);
+}
+
+/// The track is outlined inside its edge in the colour the theme states for its state,
+/// `switch.track_border_line_width` wide, and the thumb inside its edge in
+/// `thumb_border_color`, `thumb_border_line_width` wide (epaint strokes a circle outside its
+/// radius, `epaint/src/tessellator.rs:1531`); a part whose colour or width is unset has no
+/// outline (docs/platform-facts.md §2.21). Under kde-breeze (both tracks and the thumb
+/// outlined), windows-11 and material-3 (the off track only), on and off, enabled and disabled.
+#[test]
+fn the_switch_draws_the_stated_outlines() {
+    for preset in ["kde-breeze", "windows-11", "material-3"] {
+        for dark in [false, true] {
+            let t = from_preset(preset, dark, &AccessibilityPreferences::default())
+                .unwrap()
+                .1;
+            let s = &t.switch;
+            for (checked, enabled) in [(false, true), (true, true), (false, false), (true, false)] {
+                let state = format!("{preset} dark {dark} checked {checked} enabled {enabled}");
+                assert_eq!(s.disabled_opacity, 1.0, "{state}: drawn unfaded");
+                let ctx = installed(&t, &AccessibilityPreferences::default());
+                let mut on = checked;
+                let (out, _) = response(&ctx, at(0.0), |ui| {
+                    ui.add(Switch::new(&mut on).enabled(enabled))
+                });
+                let colour = match (checked, enabled) {
+                    (true, true) => s.checked_track_border_color,
+                    (false, true) => s.unchecked_track_border_color,
+                    (true, false) => s
+                        .disabled_checked_track_border_color
+                        .or(s.checked_track_border_color),
+                    (false, false) => s
+                        .disabled_unchecked_track_border_color
+                        .or(s.unchecked_track_border_color),
+                };
+                let stated = |colour: Option<native_theme_egui::native_theme::color::Rgba>,
+                              width: Option<f32>| {
+                    colour
+                        .zip(width)
+                        .map(|(colour, width)| (width, to_color32(colour)))
+                };
+                let size = egui::vec2(s.track_width, s.track_height);
+                // The track, painted after the layout's frame of the same size.
+                let track = rects(&out)
+                    .into_iter()
+                    .rev()
+                    .find(|r| r.rect.size() == size)
+                    .unwrap();
+                let edge = (track.stroke.width > 0.0).then(|| {
+                    assert_eq!(track.stroke_kind, egui::StrokeKind::Inside, "{state}");
+                    (track.stroke.width, track.stroke.color)
+                });
+                assert_eq!(
+                    edge,
+                    stated(colour, s.track_border_line_width),
+                    "{state}: the track"
+                );
+                let diameter = if checked {
+                    s.thumb_diameter
+                } else {
+                    s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+                };
+                let thumb = circles(&out)
+                    .into_iter()
+                    .find(|c| 2.0 * (c.radius + c.stroke.width) == diameter)
+                    .unwrap();
+                let edge =
+                    (thumb.stroke.width > 0.0).then_some((thumb.stroke.width, thumb.stroke.color));
+                assert_eq!(
+                    edge,
+                    stated(s.thumb_border_color, s.thumb_border_line_width),
+                    "{state}: the thumb"
+                );
+            }
+        }
+    }
 }
 
 /// The radio button's circle is `checkbox.radio_indicator_width` across its outline where the
@@ -2285,6 +2360,11 @@ const WIDGET_READS: &[(&str, &[&str])] = &[
             "switch.thumb_background",
             "switch.unchecked_thumb_background",
             "switch.disabled_thumb_color",
+            "switch.unchecked_track_border_color",
+            "switch.checked_track_border_color",
+            "switch.disabled_unchecked_track_border_color",
+            "switch.disabled_checked_track_border_color",
+            "switch.thumb_border_color",
             "defaults.font.color",
             "defaults.disabled_text_color",
             "defaults.background_color",

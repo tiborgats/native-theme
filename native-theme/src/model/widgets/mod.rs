@@ -720,7 +720,10 @@ pub struct SwitchTheme {
     #[theme(check = "non_negative")]
     pub track_height: Option<f32>,
     /// Thumb diameter in logical pixels; while the switch is off,
-    /// `unchecked_thumb_diameter` where the theme states one.
+    /// `unchecked_thumb_diameter` where the theme states one. A thumb
+    /// shorter than the track is centred in it; a taller one overhangs it
+    /// above and below and sits flush with its ends, as qqc2-desktop-style's
+    /// (docs/platform-facts.md §2.21).
     #[serde(rename = "thumb_diameter_px")]
     #[theme(check = "non_negative")]
     pub thumb_diameter: Option<f32>,
@@ -756,6 +759,39 @@ pub struct SwitchTheme {
     /// Thumb color when disabled.
     #[theme(category = "soft_option")]
     pub disabled_thumb_color: Option<Rgba>,
+    /// The off track's outline, `track_border_line_width` wide inside the
+    /// track: WinUI's `ToggleSwitchStrokeOff`, Material's
+    /// `unselected-track-outline-color`, qqc2-desktop-style's
+    /// `handleBorderColor`. `None` draws no outline, as libadwaita and
+    /// macOS (docs/platform-facts.md §2.21).
+    #[theme(category = "soft_option")]
+    pub unchecked_track_border_color: Option<Rgba>,
+    /// The on track's outline: qqc2-desktop-style's `highlightColor`. `None`
+    /// draws none, as WinUI and Material, which outline only the off track
+    /// (docs/platform-facts.md §2.21).
+    #[theme(category = "soft_option")]
+    pub checked_track_border_color: Option<Rgba>,
+    /// The off track's outline when disabled; `None`, the enabled one (as
+    /// for the one below).
+    #[theme(category = "soft_option")]
+    pub disabled_unchecked_track_border_color: Option<Rgba>,
+    /// The on track's outline when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_checked_track_border_color: Option<Rgba>,
+    /// The track outline's width in logical pixels, on and off; `None`
+    /// draws no outline.
+    #[serde(rename = "track_border_line_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub track_border_line_width: Option<f32>,
+    /// The thumb's outline, `thumb_border_line_width` wide inside the thumb,
+    /// on and off: qqc2-desktop-style's `handleBorderColor`. `None` draws
+    /// none (docs/platform-facts.md §2.21).
+    #[theme(category = "soft_option")]
+    pub thumb_border_color: Option<Rgba>,
+    /// The thumb outline's width in logical pixels; `None` draws no outline.
+    #[serde(rename = "thumb_border_line_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub thumb_border_line_width: Option<f32>,
 }
 
 // ── 2.22 Dialog ──────────────────────────────────────────────────────────────

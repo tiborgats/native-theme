@@ -1929,6 +1929,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "switch.checked_track_border_color",
+        "gpui: the on track's outline, track_border_line_width wide, where stated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.disabled_checked_track_border_color",
+        "gpui: a disabled on track's outline, where stated; unset, the enabled one (SwitchLook)",
+    ),
+    (
+        "",
         "switch.disabled_opacity",
         "gpui: fades the whole disabled switch (widgets::Switch)",
     ),
@@ -1954,6 +1964,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "switch.thumb_border_color",
+        "gpui: the thumb's outline, thumb_border_line_width wide, where stated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.thumb_border_line_width_px",
+        "gpui: the thumb outline's width, inside the thumb (SwitchLook)",
+    ),
+    (
+        "",
         "switch.thumb_diameter_px",
         "gpui: the thumb's size, centred in the track (SwitchLook)",
     ),
@@ -1966,6 +1986,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "switch.unchecked_thumb_diameter_px",
         "gpui: the off thumb's size, thumb_diameter where unstated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.track_border_line_width_px",
+        "gpui: the track outline's width, inside the track (SwitchLook)",
     ),
     (
         "",
@@ -1986,6 +2011,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "switch.unchecked_background",
         "gpui: the track's fill when off (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.unchecked_track_border_color",
+        "gpui: the off track's outline, track_border_line_width wide, where stated (SwitchLook)",
     ),
     // --- tab: widgets::TabBar ----------------------------------------------------
     (

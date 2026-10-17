@@ -402,6 +402,15 @@ thumb_diameter_px = 24.0
 # platform-facts.md:1512 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
 unchecked_thumb_diameter_px = 16.0
 track_radius_px = 16.0
+# platform-facts.md:1519 (§2.21): unselected-track-outline-color = outline #79747e (_md-comp-switch.scss:137),
+# drawn round the unselected track only; hover, focus and pressed the same (platform-facts.md:1520)
+unchecked_track_border_color = "#79747e"
+# platform-facts.md:1521 (§2.21): disabled-unselected-track-outline-color = on-surface (_md-comp-switch.scss:48-49)
+# at disabled-track-opacity 0.12 (:37)
+disabled_unchecked_track_border_color = "#1d1b201f"
+# platform-facts.md:1524 (§2.21): track-outline-width 2 (_md-comp-switch.scss:90), unselected only, so
+# checked_track_border_color stays unset (platform-facts.md:1522)
+track_border_line_width_px = 2.0
 
 [light.dialog]
 button_order = "primary_right"
@@ -907,6 +916,15 @@ thumb_diameter_px = 24.0
 # platform-facts.md:1512 (§2.21): unselected-handle-width / height 16 (_md-comp-switch.scss:106-107)
 unchecked_thumb_diameter_px = 16.0
 track_radius_px = 16.0
+# platform-facts.md:1519 (§2.21): unselected-track-outline-color = outline #938f99 (_md-comp-switch.scss:137),
+# drawn round the unselected track only; hover, focus and pressed the same (platform-facts.md:1520)
+unchecked_track_border_color = "#938f99"
+# platform-facts.md:1521 (§2.21): disabled-unselected-track-outline-color = on-surface (_md-comp-switch.scss:48-49)
+# at disabled-track-opacity 0.12 (:37)
+disabled_unchecked_track_border_color = "#e6e0e91f"
+# platform-facts.md:1524 (§2.21): track-outline-width 2 (_md-comp-switch.scss:90), unselected only, so
+# checked_track_border_color stays unset (platform-facts.md:1522)
+track_border_line_width_px = 2.0
 
 [dark.dialog]
 button_order = "primary_right"

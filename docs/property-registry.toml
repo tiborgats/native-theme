@@ -446,6 +446,16 @@ hover_unchecked_background   = "color"
 disabled_checked_background  = "color"
 disabled_unchecked_background = "color"
 disabled_thumb_color         = "color"
+# The outlines are soft options: unset draws no outline (libadwaita, macOS;
+# WinUI and Material outline only the off track). §2.21's hover rows and its
+# disabled thumb outline are KDE's alone and are not carried (docs/todo.md).
+unchecked_track_border_color = "color"
+checked_track_border_color   = "color"
+disabled_unchecked_track_border_color = "color"
+disabled_checked_track_border_color = "color"
+track_border_line_width_px   = "f32"
+thumb_border_color           = "color"
+thumb_border_line_width_px   = "f32"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.22 Dialog

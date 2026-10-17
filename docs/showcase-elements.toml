@@ -1046,14 +1046,14 @@ sample = { text = "glyph" }
 id = "basic.switches.off"
 name = "Switch"
 parent = "basic.switches.heading"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["Off"]
 
 [[element]]
 id = "basic.switches.off.track"
 name = "Switch track"
 parent = "basic.switches.off"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.unchecked_background", "switch.hover_unchecked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.unchecked_background", "switch.hover_unchecked_background", "switch.unchecked_track_border_color", "switch.track_border_line_width_px"]
 states = ["Off"]
 part = true
 sample = { fill = [0.75, 0.5] }
@@ -1062,7 +1062,7 @@ sample = { fill = [0.75, 0.5] }
 id = "basic.switches.off.thumb"
 name = "Switch thumb"
 parent = "basic.switches.off.track"
-leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background"]
+leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["Off"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1080,14 +1080,14 @@ sample = { text = "glyph" }
 id = "basic.switches.on"
 name = "Switch"
 parent = "basic.switches.off"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On"]
 
 [[element]]
 id = "basic.switches.on.track"
 name = "Switch track"
 parent = "basic.switches.on"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.hover_checked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.hover_checked_background", "switch.checked_track_border_color", "switch.track_border_line_width_px"]
 states = ["On"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1096,7 +1096,7 @@ sample = { fill = [0.25, 0.5] }
 id = "basic.switches.on.thumb"
 name = "Switch thumb"
 parent = "basic.switches.on.track"
-leaves = ["switch.thumb_diameter_px", "switch.thumb_background"]
+leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1114,14 +1114,14 @@ sample = { text = "glyph" }
 id = "basic.switches.disabled"
 name = "Switch"
 parent = "basic.switches.on"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.disabled_thumb_color", "defaults.font", "defaults.line_height", "defaults.disabled_text_color"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.disabled_thumb_color", "defaults.font", "defaults.line_height", "defaults.disabled_text_color", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On, disabled"]
 
 [[element]]
 id = "basic.switches.disabled.track"
 name = "Switch track"
 parent = "basic.switches.disabled"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.disabled_opacity", "switch.disabled_checked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1130,7 +1130,7 @@ sample = { fill = [0.25, 0.5] }
 id = "basic.switches.disabled.thumb"
 name = "Switch thumb"
 parent = "basic.switches.disabled.track"
-leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_thumb_color"]
+leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_thumb_color", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.5, 0.5] }
