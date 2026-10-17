@@ -1240,10 +1240,33 @@ fn switch_draws_the_stated_outlines(
         s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
     };
     assert_eq!(thumb.size.width, px(diameter), "{state}: the thumb's box");
-    // Placed as without an outline: gpui places an absolute child inside its
-    // parent's border, which the thumb's offsets take back.
+    // The thumb lies over the track's outline, as qqc2-desktop-style's
+    // handle lies over its track (SwitchIndicator.qml:38-79): gpui paints a
+    // box's border after its children, so an outline on the track itself
+    // would cross the thumb.
+    let order = cx.update(|window, _| {
+        let quads = window.painted_quads();
+        let at = |b: Bounds<Pixels>, edge: bool| {
+            let b = b.scale(window.scale_factor());
+            quads
+                .iter()
+                .position(|q| q.bounds == b && (q.border_widths.top.0 > 0.) == edge)
+        };
+        (at(track, true), at(thumb, false))
+    });
+    if let (Some(edge), Some(fill)) = order {
+        assert!(
+            edge < fill,
+            "{state}: the track's outline is painted over the thumb"
+        );
+    }
+    // Placed as without an outline.
     let inset = (px(s.track_height) - px(diameter)) / 2.;
-    assert_eq!(thumb.origin.y - track.origin.y, inset, "{state}: on the axis");
+    assert_eq!(
+        thumb.origin.y - track.origin.y,
+        inset,
+        "{state}: on the axis"
+    );
     let end = inset.max(px(0.));
     if checked {
         assert_eq!(
@@ -1252,7 +1275,11 @@ fn switch_draws_the_stated_outlines(
             "{state}: at the right end"
         );
     } else {
-        assert_eq!(thumb.origin.x - track.origin.x, end, "{state}: at the left end");
+        assert_eq!(
+            thumb.origin.x - track.origin.x,
+            end,
+            "{state}: at the left end"
+        );
     }
     assert_eq!(
         edge(cx, thumb),
@@ -1728,8 +1755,8 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
 /// ring: with the theme's focus ring on, gpui-component's
 /// `focus_ring_style` tints the track's border in `ThemeColor::ring`
-/// (styled.rs:257-262), and without it the border is the track's own
-/// outline (`SwitchLook::track_border`).
+/// (styled.rs:257-262), and the track sets no border colour of its own (its
+/// outline is a box of its own, under the thumb).
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
     let cx = window_with(
@@ -1752,7 +1779,7 @@ fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
         cx.theme().ring
     });
     assert_eq!(border(cx, true), Some(ring));
-    assert_eq!(border(cx, false), look.track_border);
+    assert_eq!(border(cx, false), None);
 }
 
 #[derive(Clone, Copy)]

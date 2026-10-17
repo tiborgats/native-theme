@@ -462,9 +462,6 @@ impl Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
-            .when_some(look.track_border, |track, edge| {
-                track.border(look.track_border_width).border_color(edge)
-            })
             .when(focused && !self.disabled && self.focus_ring, |track| {
                 track.focus_ring_style(window, cx)
             })
@@ -472,13 +469,29 @@ impl Switch {
                 track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
             })
             .debug_selector(|| "native-switch-track".into())
+            // The outline, a box of its own under the thumb: gpui paints a
+            // box's border after its children, so on the track it would
+            // cross the thumb, which qqc2-desktop-style lays over its
+            // track's outline (SwitchIndicator.qml:38-79).
+            .when_some(look.track_border, |track, edge| {
+                track.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .w(look.track_width)
+                        .h(look.track_height)
+                        .rounded(look.track_radius)
+                        .border(look.track_border_width)
+                        .border_color(edge),
+                )
+            })
             .child(
                 SwitchThumb::new(self.checked)
                     .disabled(self.disabled)
                     .absolute()
-                    // An absolute child is placed inside its parent's border.
-                    .top(look.inset - look.track_border_width)
-                    .left(thumb_left - look.track_border_width)
+                    .top(look.inset)
+                    .left(thumb_left)
                     .size(look.thumb)
                     .rounded_full()
                     .bg(look.thumb_color)
@@ -496,7 +509,7 @@ impl Switch {
                             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.)))),
                     ),
             )
-            .children(observer.map(|o| part_bounds(Part::Track, o, look.track_border_width)))
+            .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))))
     }
 }
 
