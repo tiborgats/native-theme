@@ -299,7 +299,7 @@ impl FactsPlatform {
     /// Whether platform-facts §2.1.8 documents a size for `context` on this
     /// platform: its (none) cells are macOS's large, dialog and panel,
     /// Windows's dialog and panel, and GNOME's dialog and panel
-    /// (platform-facts.md:1132-1136).
+    /// (platform-facts.md:1136-1140).
     fn documents(self, context: IconSizeContext) -> bool {
         !matches!(
             (self, context),

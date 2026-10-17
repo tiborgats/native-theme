@@ -104,7 +104,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         background_color: nscolor_to_rgba(&window_bg, &srgb),
         text_color: label,
         surface_color: nscolor_to_rgba(&control_bg, &srgb),
-        // platform-facts.md:1051: border.color is separatorColor on macOS.
+        // platform-facts.md:1055: border.color is separatorColor on macOS.
         border: crate::model::border::DefaultsBorderSpec {
             color: nscolor_to_rgba(&separator_c, &srgb),
             ..Default::default()
@@ -112,7 +112,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         muted_color: nscolor_to_rgba(&secondary_label, &srgb),
         // shadow_color is not read: NSColor.shadowColor is an opaque black, while the
         // shadow AppKit draws is NSShadow's default, black at 1/3, which the preset
-        // states (platform-facts.md:1053).
+        // states (platform-facts.md:1057).
         danger_color: nscolor_to_rgba(&system_red, &srgb),
         danger_text_color: label,
         warning_color: nscolor_to_rgba(&system_orange, &srgb),
@@ -122,7 +122,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         info_color: nscolor_to_rgba(&system_blue, &srgb),
         info_text_color: label,
         selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
-        // platform-facts.md:1056, :1058-1059: alternateSelectedControlTextColor on a
+        // platform-facts.md:1060, :1062-1063: alternateSelectedControlTextColor on a
         // selection; selectedTextBackgroundColor and selectedTextColor for selected text
         selection_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
         selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
@@ -182,7 +182,7 @@ fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
 /// The scroll bar for the user's scroller style: `overlay` (else legacy)
 /// and the groove width AppKit gives that style, `width_for(overlay)`.
 /// The width differs per style and macOS version: legacy 15 and overlay 16
-/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1294).
+/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1307).
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn scrollbar_for_style(overlay: bool, width_for: impl Fn(bool) -> f64) -> crate::ScrollbarTheme {
     crate::ScrollbarTheme {
@@ -238,7 +238,7 @@ pub(crate) fn reduce_motion() -> bool {
 /// Returns (reduce_motion, high_contrast, reduce_transparency). No text-scaling
 /// factor: macOS's accessibility text size affects only a few Apple apps, and
 /// `preferredFont(forTextStyle:)` still returns fixed sizes
-/// (docs/platform-facts.md:1123), so the fonts the reader reads already carry
+/// (docs/platform-facts.md:1127), so the fonts the reader reads already carry
 /// whatever size the system gives them.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>) {
@@ -869,7 +869,7 @@ mod tests {
     }
 
     /// The groove width is the one AppKit gives the user's scroller style,
-    /// not the overlay style's always (docs/platform-facts.md:1294: legacy 15,
+    /// not the overlay style's always (docs/platform-facts.md:1307: legacy 15,
     /// overlay 16 on macOS 14.8.9).
     #[test]
     fn scrollbar_for_style_takes_the_styles_width() {
@@ -966,7 +966,7 @@ mod tests {
         );
     }
 
-    // === Border colour (platform-facts.md:1051: separatorColor) ===
+    // === Border colour (platform-facts.md:1055: separatorColor) ===
 
     #[cfg(all(target_os = "macos", feature = "macos"))]
     #[test]
@@ -978,7 +978,7 @@ mod tests {
         );
     }
 
-    // === The NSColor mapping (platform-facts.md:1053, :1056, :1058-1059, :1197) ===
+    // === The NSColor mapping (platform-facts.md:1057, :1060, :1062-1063, :1210) ===
 
     #[cfg(all(target_os = "macos", feature = "macos"))]
     #[test]
@@ -987,7 +987,7 @@ mod tests {
         let (defaults, _) = super::read_appearance_colors();
         assert_eq!(
             defaults.shadow_color, None,
-            "NSColor.shadowColor is not the drawn shadow (platform-facts.md:1053)"
+            "NSColor.shadowColor is not the drawn shadow (platform-facts.md:1057)"
         );
         assert_eq!(
             defaults.selection_text_color,
@@ -1022,7 +1022,7 @@ mod tests {
                 crate::ReaderOutput::Dual { light, .. } if light.input.selection_background.is_none()
             ),
             "the reader should return both variants, light input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1197)"
+             inherits defaults.text_selection_background (platform-facts.md:1210)"
         );
         assert!(
             matches!(
@@ -1030,7 +1030,7 @@ mod tests {
                 crate::ReaderOutput::Dual { dark, .. } if dark.input.selection_background.is_none()
             ),
             "the reader should return both variants, dark input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1197)"
+             inherits defaults.text_selection_background (platform-facts.md:1210)"
         );
     }
 

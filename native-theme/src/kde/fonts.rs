@@ -144,10 +144,10 @@ fn heading(body: crate::model::font::FontSize, factor: f32) -> crate::TextScaleE
 /// Reads font keys from `[General]` and `[WM]` sections:
 /// - defaults.font from `[General]` font, and from its size the Kirigami
 ///   heading sizes of text_scale.section_heading (level 2) and
-///   text_scale.dialog_title (level 1), `docs/platform-facts.md:1473-1474`
+///   text_scale.dialog_title (level 1), `docs/platform-facts.md:1486-1487`
 /// - defaults.mono_font from `[General]` fixed
 /// - text_scale.caption from `[General]` smallestReadableFont
-///   (`docs/platform-facts.md:1472`)
+///   (`docs/platform-facts.md:1485`)
 /// - menu.font from `[General]` menuFont (KDE-03)
 /// - toolbar.font from `[General]` toolBarFont (KDE-03)
 /// - window.title_bar_font from `[WM]` activeFont (KDE-01)

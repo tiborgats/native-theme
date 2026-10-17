@@ -13,7 +13,7 @@
 #   html.css, RenderThemeIOS.mm: WebKit 31adf9d1605fad1fb548e86d36384161a2a060b4 (tag WebKit-7621.2.5.14.9,
 #     before the iOS 26 form-control refresh), Source/WebCore/css/html.css and Source/WebCore/rendering/ios/RenderThemeIOS.mm
 #   RenderThemeCocoa.mm: WebKit de320ba3ff90229f983988d42d4b0f83315459da Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm
-# (WebKit) marks a value read from WebKit's drawing of iOS controls (docs/platform-facts.md:20), not from UIKit.
+# (WebKit) marks a value read from WebKit's drawing of iOS controls (docs/platform-facts.md:23), not from UIKit.
 # A value with no comment has no primary source (M2c Step 2 found none: Apple publishes no UIKit
 # metric or state colour for it) and is kept as it was.
 # docs/inheritance-rules.toml:422-427 asks a preset to state the colours it would otherwise inherit
@@ -38,7 +38,7 @@ text_color = "#000000"
 # secondarySystemBackground (ios-18 expected.txt:133)
 surface_color = "#f2f2f7"
 # secondaryLabel rgba(60,60,67,0.6) (ios-18 expected.txt:145), the macOS column's muted_color
-# role (docs/platform-facts.md:1052); #8a8a8e over white
+# role (docs/platform-facts.md:1056); #8a8a8e over white
 muted_color = "#3c3c4399"
 shadow_color = "#00000018"
 
@@ -51,7 +51,7 @@ warning_text_color = "#000000"
 # systemGreen (HIG color 2025-06-07, Green; ios-18 expected.txt:43)
 success_color = "#34c759"
 success_text_color = "#ffffff"
-# systemBlue, the macOS column's info_color role (docs/platform-facts.md:1086)
+# systemBlue, the macOS column's info_color role (docs/platform-facts.md:1090)
 info_color = "#007aff"
 info_text_color = "#ffffff"
 
@@ -66,7 +66,7 @@ disabled_text_color = "#3c3c434c"
 accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
-# docs/platform-facts.md:1030 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
+# docs/platform-facts.md:1034 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
 # macos-monterey.toml states it; SF Pro is the system font in iOS and iPadOS (HIG typography 2025-05-23)
 line_height = 1.19
 focus_ring_width_px = 2.0
@@ -79,7 +79,7 @@ color = "#c6c6c8"
 corner_radius_px = 10.0
 corner_radius_lg_px = 13.0
 line_width_px = 0.5
-# the text colour's share that gives color over the background (docs/platform-facts.md:946, :997):
+# the text colour's share that gives color over the background (docs/platform-facts.md:950, :1001):
 # black over white at 57/255 = 0.224 (red, green) and 55/255 = 0.216 (blue)
 opacity = 0.22
 shadow_enabled = true
@@ -109,21 +109,21 @@ line_height_pt = 16.0
 
 [light.text_scale.section_heading]
 # Headline: Semibold 17 pt, leading 22 (HIG typography 2025-05-23); the macOS column's role,
-# .headline (docs/platform-facts.md:1473)
+# .headline (docs/platform-facts.md:1486)
 size_pt =17.0
 weight = 600
 line_height_pt = 22.0
 
 [light.text_scale.dialog_title]
 # Title 1: Regular 28 pt, leading 34 (HIG typography 2025-05-23); the macOS column's role,
-# .title1 (docs/platform-facts.md:1474)
+# .title1 (docs/platform-facts.md:1487)
 size_pt =28.0
 weight = 400
 line_height_pt = 34.0
 
 [light.text_scale.display]
 # Large Title: Regular 34 pt, leading 41 (HIG typography 2025-05-23); the macOS column's role,
-# .largeTitle (docs/platform-facts.md:1475)
+# .largeTitle (docs/platform-facts.md:1488)
 size_pt =34.0
 weight = 400
 line_height_pt = 41.0
@@ -384,7 +384,7 @@ text_color = "#ffffff"
 # secondarySystemBackground (ios-18 expected.txt:135)
 surface_color = "#1c1c1e"
 # secondaryLabel rgba(235,235,245,0.6) (ios-18 expected.txt:147), the macOS column's muted_color
-# role (docs/platform-facts.md:1052); #8d8d93 over black
+# role (docs/platform-facts.md:1056); #8d8d93 over black
 muted_color = "#ebebf599"
 shadow_color = "#00000040"
 
@@ -397,7 +397,7 @@ warning_text_color = "#000000"
 # systemGreen (HIG color 2025-06-07, Green; ios-18 expected.txt:45)
 success_color = "#30d158"
 success_text_color = "#ffffff"
-# systemBlue, the macOS column's info_color role (docs/platform-facts.md:1086)
+# systemBlue, the macOS column's info_color role (docs/platform-facts.md:1090)
 info_color = "#0a84ff"
 info_text_color = "#ffffff"
 
@@ -412,7 +412,7 @@ disabled_text_color = "#ebebf54c"
 accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
-# docs/platform-facts.md:1030 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
+# docs/platform-facts.md:1034 (§2.1.1): 1.19, SF Pro's font metrics, (1950+494+0)/2048, as
 # macos-monterey.toml states it; SF Pro is the system font in iOS and iPadOS (HIG typography 2025-05-23)
 line_height = 1.19
 focus_ring_width_px = 2.0
@@ -424,7 +424,7 @@ color = "#38383a"
 corner_radius_px = 10.0
 corner_radius_lg_px = 13.0
 line_width_px = 0.5
-# the text colour's share that gives color over the background (docs/platform-facts.md:946, :997):
+# the text colour's share that gives color over the background (docs/platform-facts.md:950, :1001):
 # white over black at 56/255 = 0.220 (red, green) and 58/255 = 0.227 (blue)
 opacity = 0.22
 shadow_enabled = true
@@ -454,21 +454,21 @@ line_height_pt = 16.0
 
 [dark.text_scale.section_heading]
 # Headline: Semibold 17 pt, leading 22 (HIG typography 2025-05-23); the macOS column's role,
-# .headline (docs/platform-facts.md:1473)
+# .headline (docs/platform-facts.md:1486)
 size_pt =17.0
 weight = 600
 line_height_pt = 22.0
 
 [dark.text_scale.dialog_title]
 # Title 1: Regular 28 pt, leading 34 (HIG typography 2025-05-23); the macOS column's role,
-# .title1 (docs/platform-facts.md:1474)
+# .title1 (docs/platform-facts.md:1487)
 size_pt =28.0
 weight = 400
 line_height_pt = 34.0
 
 [dark.text_scale.display]
 # Large Title: Regular 34 pt, leading 41 (HIG typography 2025-05-23); the macOS column's role,
-# .largeTitle (docs/platform-facts.md:1475)
+# .largeTitle (docs/platform-facts.md:1488)
 size_pt =34.0
 weight = 400
 line_height_pt = 41.0

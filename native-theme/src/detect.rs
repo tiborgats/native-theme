@@ -685,7 +685,7 @@ pub(crate) fn session_type() -> Option<String> {
 /// Whether a session of `session_type` reads KDE's `forceFontDPI`: an X11
 /// session only. Plasma 6.7 reads the key on X11 alone (its fonts KCM shows
 /// it only for `xcb`, krdb hands it to X11 as `Xft.dpi` only off Wayland,
-/// `docs/platform-facts.md:713-714`), and Plasma 6.8 drops it; a Wayland
+/// `docs/platform-facts.md:717-718`), and Plasma 6.8 drops it; a Wayland
 /// session that kept the key from an X11 one would otherwise scale fonts
 /// Plasma does not.
 #[cfg(all(target_os = "linux", feature = "kde"))]
@@ -694,7 +694,7 @@ pub(crate) fn reads_force_font_dpi(session_type: Option<&str>) -> bool {
 }
 
 /// A `forceFontDPI` value as a font DPI: Plasma declares the key a UInt
-/// whose default 0 means unset (`docs/platform-facts.md:713`), so it is
+/// whose default 0 means unset (`docs/platform-facts.md:717`), so it is
 /// parsed as a `u32` and 0 is `None`, as is anything that is not a `u32`.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) fn parse_force_font_dpi(value: &str) -> Option<f32> {
@@ -705,7 +705,7 @@ pub(crate) fn parse_force_font_dpi(value: &str) -> Option<f32> {
 /// KDE's `forceFontDPI` on a session that reads it
 /// ([`reads_force_font_dpi`]), from kcmfonts, where [`parse_force_font_dpi`]
 /// accepts it. Plasma keeps the key in that file alone: the fonts KCM writes
-/// it there and krdb reads it there (`docs/platform-facts.md:713`). The file
+/// it there and krdb reads it there (`docs/platform-facts.md:717`). The file
 /// is not read on any other session.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn kde_force_font_dpi(

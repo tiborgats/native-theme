@@ -31,7 +31,7 @@ const HOVER_GROUP: &str = "native-theme-checkbox";
 #[non_exhaustive]
 pub struct CheckboxLook {
     /// `checkbox.indicator_width`: the square's side, or the circle's
-    /// diameter (docs/platform-facts.md:980).
+    /// diameter (docs/platform-facts.md:984).
     pub indicator: Pixels,
     /// `checkbox.radio_dot_diameter`: the dot a selected radio draws, or
     /// `None` where the theme states none or a length that is not finite --
@@ -60,7 +60,7 @@ pub struct CheckboxLook {
     /// The side of the square a checkbox's mark is drawn in: the indicator
     /// inside `checkbox.border.padding` where the theme states it, and
     /// inside its border on a side it leaves unstated -- "checkmark fills
-    /// indicator" (docs/platform-facts.md:1224, §2.5).
+    /// indicator" (docs/platform-facts.md:1237, §2.5).
     pub mark_size: Pixels,
     /// Whether the theme states any side of `checkbox.border.padding`: the
     /// mark's box is then that square, where it is otherwise the box its
@@ -407,7 +407,7 @@ fn indicator_and_label(
     let observer = parts.observer.as_ref();
     let mark = match look.dot.filter(|_| round) {
         // A radio's dot, `radio_dot_diameter` across, centred in the circle
-        // (docs/platform-facts.md:1228, §2.5).
+        // (docs/platform-facts.md:1241, §2.5).
         Some(dot) => div()
             .size(dot)
             .flex_none()
@@ -416,12 +416,12 @@ fn indicator_and_label(
             .debug_selector(|| "native-radio-dot".into())
             .into_any_element(),
         // The mark fills the indicator inside its padding, or its border:
-        // "checkmark fills indicator" (docs/platform-facts.md:1224, §2.5).
+        // "checkmark fills indicator" (docs/platform-facts.md:1237, §2.5).
         None => {
             let inner = look.mark_size;
             match look.mark_stroke {
                 // gpui-component's own glyph, stroked as the theme states
-                // (docs/platform-facts.md:1229, §2.5).
+                // (docs/platform-facts.md:1242, §2.5).
                 Some(stroke) => stroked_check(inner, stroke, look.mark, opacity),
                 None => svg()
                     .size(inner)

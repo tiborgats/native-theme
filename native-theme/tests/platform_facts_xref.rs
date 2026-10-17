@@ -211,15 +211,15 @@ fn macos_tahoe_matches_platform_facts() {
         .as_ref()
         .expect("macos-tahoe should have light variant");
 
-    // Font: "SF Pro, 13pt, Regular (400)", the same on macOS 26 (platform-facts.md:59)
+    // Font: "SF Pro, 13pt, Regular (400)", the same on macOS 26 (platform-facts.md:63)
     assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
     assert_eq!(light.defaults.font.size, Some(FontSize::Pt(13.0)));
     assert_eq!(light.defaults.font.weight, Some(400));
 
-    // Line height: 1.19, SF Pro's metrics, unchanged (platform-facts.md:1030)
+    // Line height: 1.19, SF Pro's metrics, unchanged (platform-facts.md:1034)
     assert_eq!(light.defaults.line_height, Some(1.19));
 
-    // Control corner radius: macOS 26's 6, the text field's 5 (platform-facts.md:174, :1112)
+    // Control corner radius: macOS 26's 6, the text field's 5 (platform-facts.md:178, :1116)
     assert_eq!(light.defaults.border.corner_radius, Some(6.0));
     assert_eq!(
         light.input.border.as_ref().and_then(|b| b.corner_radius),
@@ -241,11 +241,11 @@ fn macos_tahoe_matches_platform_facts() {
 #[test]
 fn macos_tahoe_probe_sizes_match_platform_facts() {
     let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
-    assert!(line(1170).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1199).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1603).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1455).contains("macOS 26: same"));
-    assert!(line(1456).contains("macOS 26: same"));
+    assert!(line(1183).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1212).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1616).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1468).contains("macOS 26: same"));
+    assert!(line(1469).contains("macOS 26: same"));
     let theme = Theme::preset("macos-tahoe").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.button.min_height, Some(24.0));
@@ -325,11 +325,11 @@ fn all_platform_presets_load_and_have_both_variants() {
 fn macos_probe_sizes_match_platform_facts() {
     let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
     // §2.17 (:1455-1456): NSSplitView's thick divider, 9 wide and clear
-    assert!(line(1455).contains("NSSplitView divider: 9 **(API)**"));
-    assert!(line(1456).contains("clear for the `.thick` style"));
+    assert!(line(1468).contains("NSSplitView divider: 9 **(API)**"));
+    assert!(line(1469).contains("clear for the `.thick` style"));
     // §2.3 (:1170) and §2.4 (:1199): the push button and the text field on 14-15
-    assert!(line(1170).contains("macOS 14–15: NSButton intrinsic: 20 **(API)**"));
-    assert!(line(1199).contains("macOS 14–15: NSTextField intrinsic: 21 **(API)**"));
+    assert!(line(1183).contains("macOS 14–15: NSButton intrinsic: 20 **(API)**"));
+    assert!(line(1212).contains("macOS 14–15: NSTextField intrinsic: 21 **(API)**"));
     let theme = Theme::preset("macos-monterey").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.splitter.divider_width, Some(9.0));

@@ -10,7 +10,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
     let border = variant.button.border.get_or_insert_default();
-    // platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6 on both axes
+    // platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6 on both axes
     // (breezestyle.cpp expands the button size by the margin on each side).
     border.padding_left = Some(6.0); // Button_MarginWidth
     border.padding_right = Some(6.0); // Button_MarginWidth
@@ -20,16 +20,16 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Checkbox
     variant.checkbox.indicator_width = Some(20.0); // CheckBox_Size
-    // platform-facts.md:1228 (§2.5): renderRadioButton's radius
+    // platform-facts.md:1241 (§2.5): renderRadioButton's radius
     // (CheckBox_Size - 2 - 12) / 2 = 3
     variant.checkbox.radio_dot_diameter = Some(6.0);
-    // platform-facts.md:1229 (§2.5): the check pen, PenWidth::Frame * 2 = 2.002
+    // platform-facts.md:1242 (§2.5): the check pen, PenWidth::Frame * 2 = 2.002
     variant.checkbox.check_mark_stroke_width = Some(2.0);
     variant.checkbox.label_gap = Some(4.0); // CheckBox_ItemSpacing
 
     // Input
     let border = variant.input.border.get_or_insert_default();
-    // platform-facts.md:1200-1201 (§2.4): inside the 1px frame line,
+    // platform-facts.md:1213-1214 (§2.4): inside the 1px frame line,
     // LineEdit_FrameWidth 6 plus QLineEdit's horizontalMargin 2 / verticalMargin 1
     border.padding_left = Some(7.0); // LineEdit_FrameWidth + 2 - 1
     border.padding_right = Some(7.0); // LineEdit_FrameWidth + 2 - 1
@@ -38,7 +38,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Text area
     let border = variant.text_area.border.get_or_insert_default();
-    // platform-facts.md:1701-1702 (§2.29): inside the 1px frame line,
+    // platform-facts.md:1714-1715 (§2.29): inside the 1px frame line,
     // Frame_FrameWidth 2 plus QTextDocument's documentMargin 4
     border.padding_left = Some(5.0); // Frame_FrameWidth + 4 - 1
     border.padding_right = Some(5.0); // Frame_FrameWidth + 4 - 1
@@ -64,10 +64,10 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
-    // platform-facts.md:1347 (§2.11): QTabBar lays the tabs edge to edge
+    // platform-facts.md:1360 (§2.11): QTabBar lays the tabs edge to edge
     variant.tab.item_gap = Some(0.0);
     let border = variant.tab.border.get_or_insert_default();
-    // platform-facts.md:1339-1340 (§2.11)
+    // platform-facts.md:1352-1353 (§2.11)
     border.padding_left = Some(8.0); // TabBar_TabMarginWidth
     border.padding_right = Some(8.0); // TabBar_TabMarginWidth
     border.padding_top = Some(4.0); // TabBar_TabMarginHeight
@@ -75,7 +75,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Menu
     let border = variant.menu.border.get_or_insert_default();
-    // platform-facts.md:1248-1249 (§2.6)
+    // platform-facts.md:1261-1262 (§2.6)
     border.padding_left = Some(4.0); // MenuItem_MarginWidth
     border.padding_right = Some(4.0); // MenuItem_MarginWidth
     border.padding_top = Some(4.0); // MenuItem_MarginHeight
@@ -84,7 +84,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Tooltip
     let border = variant.tooltip.border.get_or_insert_default();
-    // platform-facts.md:1270-1271 (§2.7)
+    // platform-facts.md:1283-1284 (§2.7)
     border.padding_left = Some(3.0); // ToolTip_FrameWidth
     border.padding_right = Some(3.0); // ToolTip_FrameWidth
     border.padding_top = Some(3.0); // ToolTip_FrameWidth
@@ -92,14 +92,14 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // List
     let border = variant.list.border.get_or_insert_default();
-    // platform-facts.md:1420-1421 (§2.15)
+    // platform-facts.md:1433-1434 (§2.15)
     border.padding_left = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_right = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_top = Some(1.0); // ItemView_ItemMarginTop
     border.padding_bottom = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
-    // platform-facts.md:1377 (§2.13)
+    // platform-facts.md:1390 (§2.13)
     variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing
 
     // Splitter

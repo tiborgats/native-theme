@@ -192,7 +192,7 @@ pub struct CheckboxTheme {
     pub indicator_color: Option<Rgba>,
     /// Side length of the checkbox indicator (square), or diameter of the
     /// radio indicator (circle), in logical pixels: the whole indicator, not
-    /// the mark drawn inside it (docs/platform-facts.md:980).
+    /// the mark drawn inside it (docs/platform-facts.md:984).
     #[serde(rename = "indicator_width_px")]
     #[theme(check = "non_negative")]
     pub indicator_width: Option<f32>,

@@ -775,7 +775,7 @@ Runs after M2d's Steps 1–6 and after M1's rename task (the file is `material-3
   pinned Compose release: every cell cites its `*Tokens.kt` token, its Compose constant, or
   its Step 3 measurement; cells whose Expressive value differs carry both, the Expressive one
   tagged *Expressive*; the not-representable details are listed under the column's
-  introduction (`platform-facts.md:865`).
+  introduction (`platform-facts.md:869`).
   G2 (2026-10-14): `material-3`'s `list.header_height_px` 56 (material-web's
   `md.comp.data-table.header.container.height` at `cbd34a89`), `tooltip.show_delay_ms` 0
   (Compose at androidx `1e677685`: shown on pointer enter) and `dialog.entrance` `scale_fade`

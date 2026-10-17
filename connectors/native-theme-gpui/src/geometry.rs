@@ -986,7 +986,7 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// A toolbar row (docs/platform-facts.md §2.13), the application's own or
 /// gpui-component's `Toolbar`: its height the content's, at least
 /// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
-/// toolbars size to their content and state none (platform-facts.md:1376),
+/// toolbars size to their content and state none (platform-facts.md:1389),
 /// and a fixed height would be an invention there, so the refinement sets
 /// the height to `auto`, which also replaces the `h_8` gpui-component's
 /// `Toolbar` sets at its Small size (toolbar.rs:252-256); an application that

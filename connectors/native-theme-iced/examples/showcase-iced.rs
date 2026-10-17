@@ -9113,7 +9113,7 @@ fn checkbox_info(resolved: &ResolvedTheme) -> String {
     let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
     let label_gap_s = format!("{:.0}px", c.label_gap);
     // `checkbox.indicator_width` is the indicator's side length, square for a
-    // checkbox and a diameter for a radio (platform-facts.md:980), and both
+    // checkbox and a diameter for a radio (platform-facts.md:984), and both
     // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
     // (radio.rs:200, :300) take exactly that.
     let indicator_width_s = format!("{:.0}px", c.indicator_width);
@@ -9164,12 +9164,12 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
     let c = &resolved.checkbox;
     let label_gap_s = format!("{:.0}px", c.label_gap);
     // `checkbox.radio_indicator_width` where the theme sizes the radio apart
-    // (platform-facts.md:1230), the checkbox's `indicator_width` where not.
+    // (platform-facts.md:1243), the checkbox's `indicator_width` where not.
     let indicator_width_s = format!(
         "{:.0}px",
         c.radio_indicator_width.unwrap_or(c.indicator_width)
     );
-    // `checkbox.radio_dot_diameter` (platform-facts.md:1228), which
+    // `checkbox.radio_dot_diameter` (platform-facts.md:1241), which
     // `native_theme_iced::radio` draws over iced's radio; unstated, the dot is
     // iced's own, half the circle (radio.rs:409).
     let dot_s = c.radio_dot_diameter.map(|d| format!("{d:.0}px"));
@@ -13284,7 +13284,7 @@ mod tests {
 
     /// The Basic page's selected radio, Option A, is drawn by
     /// `native_theme_iced::radio`: under kde-breeze its dot is
-    /// `checkbox.radio_dot_diameter`, 6px (platform-facts.md:1228), centred
+    /// `checkbox.radio_dot_diameter`, 6px (platform-facts.md:1241), centred
     /// in the circle, in the column of Option B's circle and above it.
     #[test]
     fn the_basic_radio_draws_the_themes_dot() {

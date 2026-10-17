@@ -245,7 +245,7 @@ fn logical_system_metric(index: SYSTEM_METRICS_INDEX) -> f32 {
 /// Read the scrollbar and border metrics, in logical pixels.
 ///
 /// `SM_CXBORDER` is the Windows source of `defaults.border.line_width`
-/// (`docs/platform-facts.md:1114`). The focus ring's width is not read:
+/// (`docs/platform-facts.md:1118`). The focus ring's width is not read:
 /// `SM_CXFOCUSBORDER` is 1, and WinUI 3 draws a 2 px ring, which the preset
 /// states.
 #[cfg(all(target_os = "windows", feature = "windows"))]
@@ -259,9 +259,9 @@ fn read_widget_sizing(variant: &mut crate::ThemeMode) {
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
 fn read_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
-    // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:382)
+    // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:386)
     variant.scrollbar.min_thumb_length = Some(17.0);
-    variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:378
+    variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:382
 }
 
 /// Convert a Win32 COLORREF (0x00BBGGRR) to Rgba.
@@ -322,9 +322,9 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // TextFillColorDisabledBrush (Common_themeresources_any.xaml:419).
     variant.defaults.disabled_text_color = Some(colors.gray_text);
     // TextControlSelectionHighlightColor = SystemControlHighlightAccentBrush
-    // (generic.xaml:2666, :2055); COLOR_HIGHLIGHT, docs/platform-facts.md:1055.
+    // (generic.xaml:2666, :2055); COLOR_HIGHLIGHT, docs/platform-facts.md:1059.
     variant.defaults.selection_background = Some(colors.highlight);
-    // COLOR_HIGHLIGHTTEXT, docs/platform-facts.md:1056; no style in the theme resources or
+    // COLOR_HIGHLIGHTTEXT, docs/platform-facts.md:1060; no style in the theme resources or
     // generic.xaml sets a selected-text foreground (a text box sets only
     // SelectionHighlightColor, TextBox_themeresources.xaml:183).
     variant.defaults.selection_text_color = Some(colors.highlight_text);
@@ -384,18 +384,18 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // SolidBackgroundFillColorBaseBrush above, active and inactive; its title text is
     // TitleBarForegroundBrush = SystemControlForegroundBaseHighBrush, inactive
     // TitleBarDeactivatedForegroundBrush = SystemControlDisabledBaseMediumLowBrush
-    // (TitleBar_themeresources.xaml:54-55; generic.xaml:2039, :2026; docs/platform-facts.md:1147-1154).
+    // (TitleBar_themeresources.xaml:54-55; generic.xaml:2039, :2026; docs/platform-facts.md:1160-1167).
     variant.window.title_bar_background = Some(colors.window_bg);
     variant.window.inactive_title_bar_background = Some(colors.window_bg);
     variant.window.title_bar_font.get_or_insert_default().color = Some(colors.btn_text);
     variant.window.inactive_title_bar_text_color = Some(colors.gray_text);
     // CardStrokeColorDefaultBrush = SystemColorWindowTextColor (Common_themeresources_any.xaml:464),
-    // the text colour itself, so the line opacity is 1 (docs/platform-facts.md:1051, :1116).
+    // the text colour itself, so the line opacity is 1 (docs/platform-facts.md:1055, :1120).
     variant.defaults.border.color = Some(colors.window_text);
     variant.defaults.border.opacity = Some(1.0);
     // ProgressBarBorderThemeThickness is 1 in HighContrast, ProgressBarBorderBrush =
     // SystemColorWindowTextColor and ProgressBarBackground = SystemColorWindowColor
-    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1327).
+    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1340).
     let progress_border = variant.progress_bar.border.get_or_insert_default();
     progress_border.line_width = Some(1.0);
     progress_border.color = Some(colors.window_text);
@@ -505,15 +505,15 @@ fn build_theme(
     variant.defaults.accent_color = Some(accent);
     // The accent button and a checked ToggleButton are filled with
     // `AccentFillColorDefault`: AccentDark1 light, AccentLight2 dark
-    // (docs/platform-facts.md:1175, :1181); the accent if the shade is unavailable.
+    // (docs/platform-facts.md:1188, :1194); the accent if the shade is unavailable.
     let primary_bg = if dark { light2 } else { dark1 }.unwrap_or(accent);
     variant.button.primary_background = Some(primary_bg);
     variant.button.checked_background = Some(primary_bg);
     // `HyperlinkForeground` = `AccentTextFillColorPrimary`: AccentDark2 light,
-    // AccentLight3 dark (docs/platform-facts.md:1054).
+    // AccentLight3 dark (docs/platform-facts.md:1058).
     variant.defaults.link_color = if dark { light3 } else { dark2 };
     // `SystemFillColorAttention`: the accent light, AccentLight2 dark
-    // (docs/platform-facts.md:1086).
+    // (docs/platform-facts.md:1090).
     variant.defaults.info_color = if dark { light2 } else { Some(accent) };
     // `HyperlinkForegroundPointerOver` and `HyperlinkForegroundPressed`: AccentDark3 and
     // AccentDark1 light, AccentLight3 and AccentLight2 dark (Hyperlink_themeresources.xaml:16-17,
@@ -864,7 +864,7 @@ mod tests {
     ];
 
     /// Light mode: the accent fill is AccentDark1, the link AccentDark2, the
-    /// informational fill the accent (docs/platform-facts.md:1175, :1181,
+    /// informational fill the accent (docs/platform-facts.md:1188, :1194,
     /// :1054, :1086).
     #[test]
     fn build_theme_accent_shades_light_mode() {
@@ -914,7 +914,7 @@ mod tests {
 
     /// A shade that fails to read leaves the link and informational colours
     /// to the preset; the accent fill falls back to the accent
-    /// (docs/platform-facts.md:1175).
+    /// (docs/platform-facts.md:1188).
     #[test]
     fn build_theme_without_shades_leaves_link_to_the_preset() {
         let accent = crate::Rgba::rgb(0, 120, 215);
@@ -1434,7 +1434,7 @@ mod tests {
     }
 
     /// `CardBackgroundFillColorDefault` comes from the preset
-    /// (docs/platform-facts.md:1050).
+    /// (docs/platform-facts.md:1054).
     #[test]
     fn build_theme_leaves_surface_to_the_preset() {
         let result = light_reader();
@@ -1442,7 +1442,7 @@ mod tests {
     }
 
     /// `TextFillColorDisabled` comes from the preset
-    /// (docs/platform-facts.md:1060).
+    /// (docs/platform-facts.md:1064).
     #[test]
     fn build_theme_leaves_disabled_text_to_the_preset() {
         let result = light_reader();

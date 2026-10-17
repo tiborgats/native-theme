@@ -151,7 +151,7 @@ fn custom_accent_fixture() {
 fn high_dpi_fixture() {
     let content = include_str!("fixtures/kde/high-dpi.ini");
     // forceFontDPI=192 in kdeglobals is no font DPI: Plasma keeps the key in
-    // kcmfonts (docs/platform-facts.md:713)
+    // kcmfonts (docs/platform-facts.md:717)
     let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
     let _v = theme.dark.as_ref().unwrap();
 

@@ -122,7 +122,7 @@ fn weight_rank(face: u16, wanted: u16) -> (u8, u16) {
 
 /// Whether `family` names the macOS system UI font: caselessly equal to
 /// "SF Pro", the name the platform documents for it
-/// (`docs/platform-facts.md:59-67`) and `macos-monterey` states. A pure
+/// (`docs/platform-facts.md:63-71`) and `macos-monterey` states. A pure
 /// predicate, on every platform, with no font database: `system_face`'s
 /// macOS branch asks it beside its Core Text family comparison, and the
 /// gpui connector asks it alone to map the family to gpui's own alias.
@@ -537,7 +537,7 @@ mod tests {
     }
 
     /// The macOS system UI font's documented name, caselessly, and nothing
-    /// else (`docs/platform-facts.md:59-67`).
+    /// else (`docs/platform-facts.md:63-71`).
     #[test]
     fn the_macos_system_ui_family_is_sf_pro_caselessly() {
         assert!(is_macos_system_ui_family("SF Pro"));

@@ -1429,7 +1429,7 @@ mod tests {
     /// the pressed button covers more than its idle fill (C17).
     ///
     /// macos-tahoe light is the combination where both are translucent: macOS
-    /// 26 draws the push button in `#00000014` (docs/platform-facts.md:1164),
+    /// 26 draws the push button in `#00000014` (docs/platform-facts.md:1177),
     /// and with no stated pressed fill the connector derives one from it, as
     /// translucent. A blend that keeps the base's alpha leaves the pressed
     /// fill at the idle fill's 0.0784 (docs/todo.md, M6).

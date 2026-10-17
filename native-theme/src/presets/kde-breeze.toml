@@ -14,52 +14,52 @@ icon_set = "freedesktop"
 
 [light.defaults]
 icon_theme = "breeze"
-# platform-facts.md:1048 (§2.1.3): BreezeLight.colors has no [General] AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5)
+# platform-facts.md:1052 (§2.1.3): BreezeLight.colors has no [General] AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5)
 accent_color = "#3daee9"
-# platform-facts.md:1046 (§2.1.3): [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5)
+# platform-facts.md:1050 (§2.1.3): [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5)
 background_color = "#eff0f1"
-# platform-facts.md:1047 (§2.1.3): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+# platform-facts.md:1051 (§2.1.3): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
 text_color = "#232629"
-# platform-facts.md:1050 (§2.1.3): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
+# platform-facts.md:1054 (§2.1.3): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
 surface_color = "#ffffff"
-# platform-facts.md:1052 (§2.1.3): [Colors:Window] ForegroundInactive 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
+# platform-facts.md:1056 (§2.1.3): [Colors:Window] ForegroundInactive 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
 muted_color = "#707d8a"
-# platform-facts.md:1053 (§2.1.3): (none) in Breeze, the preset's own #00000040
+# platform-facts.md:1057 (§2.1.3): (none) in Breeze, the preset's own #00000040
 shadow_color = "#00000040"
 
-# platform-facts.md:1080 (§2.1.4): [Colors:View] ForegroundNegative 218,68,83 (BreezeLight.colors:121, breeze v6.7.5)
+# platform-facts.md:1084 (§2.1.4): [Colors:View] ForegroundNegative 218,68,83 (BreezeLight.colors:121, breeze v6.7.5)
 danger_color = "#da4453"
-# platform-facts.md:1081 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
-danger_text_color = "#232629"
-# platform-facts.md:1082 (§2.1.4): [Colors:View] ForegroundNeutral 246,116,0 (BreezeLight.colors:122, breeze v6.7.5)
-warning_color = "#f67400"
-# platform-facts.md:1083 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
-warning_text_color = "#232629"
-# platform-facts.md:1084 (§2.1.4): [Colors:View] ForegroundPositive 39,174,96 (BreezeLight.colors:124, breeze v6.7.5)
-success_color = "#27ae60"
 # platform-facts.md:1085 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
-success_text_color = "#232629"
-# platform-facts.md:1086 (§2.1.4): [Colors:View] ForegroundActive 61,174,233 (BreezeLight.colors:118, breeze v6.7.5)
-info_color = "#3daee9"
+danger_text_color = "#232629"
+# platform-facts.md:1086 (§2.1.4): [Colors:View] ForegroundNeutral 246,116,0 (BreezeLight.colors:122, breeze v6.7.5)
+warning_color = "#f67400"
 # platform-facts.md:1087 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+warning_text_color = "#232629"
+# platform-facts.md:1088 (§2.1.4): [Colors:View] ForegroundPositive 39,174,96 (BreezeLight.colors:124, breeze v6.7.5)
+success_color = "#27ae60"
+# platform-facts.md:1089 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+success_text_color = "#232629"
+# platform-facts.md:1090 (§2.1.4): [Colors:View] ForegroundActive 61,174,233 (BreezeLight.colors:118, breeze v6.7.5)
+info_color = "#3daee9"
+# platform-facts.md:1091 (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
 info_text_color = "#232629"
 
-# platform-facts.md:1055 (§2.1.3): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
+# platform-facts.md:1059 (§2.1.3): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
 selection_background = "#3daee9"
-# platform-facts.md:1056 (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
+# platform-facts.md:1060 (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
 selection_text_color = "#ffffff"
-# platform-facts.md:1054 (§2.1.3): [Colors:View] ForegroundLink 41,128,185 (BreezeLight.colors:120, breeze v6.7.5)
+# platform-facts.md:1058 (§2.1.3): [Colors:View] ForegroundLink 41,128,185 (BreezeLight.colors:120, breeze v6.7.5)
 link_color = "#2980b9"
-# platform-facts.md:1104 (§2.1.5): [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5)
+# platform-facts.md:1108 (§2.1.5): [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5)
 focus_ring_color = "#3daee9"
-# platform-facts.md:1060 (§2.1.3): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
+# platform-facts.md:1064 (§2.1.3): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
 disabled_text_color = "#a0a1a3"
-# platform-facts.md:1049 (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
+# platform-facts.md:1053 (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
 accent_text_color = "#ffffff"
 
-# platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
+# platform-facts.md:1119 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
 disabled_opacity = 1.0
-# platform-facts.md:1030 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
+# platform-facts.md:1034 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -73,19 +73,19 @@ line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [light.defaults.font]
-# platform-facts.md:571 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
+# platform-facts.md:575 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Noto Sans"
 size_pt =10.0
 weight = 400
 
 [light.defaults.mono_font]
-# platform-facts.md:572 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
+# platform-facts.md:576 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Hack"
 size_pt =10.0
 weight = 400
 
 [light.defaults.icon_sizes]
-# platform-facts.md:1132-1136 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
+# platform-facts.md:1136-1140 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
 # Desktop 48, Dialog 32 and Panel 48, Breeze's sizes
 toolbar_px = 22.0
 small_px = 16.0
@@ -94,31 +94,31 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [light.text_scale.caption]
-# platform-facts.md:1472 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
+# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
 size_pt =8.0
 weight = 400
 
 [light.text_scale.section_heading]
-# platform-facts.md:1473 (§2.19): Kirigami Heading level 2, the 10pt body
+# platform-facts.md:1486 (§2.19): Kirigami Heading level 2, the 10pt body
 # (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [light.text_scale.dialog_title]
-# platform-facts.md:1474 (§2.19): Kirigami Heading level 1, the 10pt body
+# platform-facts.md:1487 (§2.19): Kirigami Heading level 1, the 10pt body
 # (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
 
-# No display: platform-facts.md:1475 (§2.19) gives KDE none; it resolves
+# No display: platform-facts.md:1488 (§2.19) gives KDE none; it resolves
 # from the body font.
 
 [light.window]
-# platform-facts.md:1147 (§2.2): [WM] activeBackground 227,229,231 (BreezeLight.colors:197, breeze v6.7.5)
+# platform-facts.md:1160 (§2.2): [WM] activeBackground 227,229,231 (BreezeLight.colors:197, breeze v6.7.5)
 title_bar_background = "#e3e5e7"
-# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 239,240,241 (BreezeLight.colors:200, breeze v6.7.5)
+# platform-facts.md:1166 (§2.2): [WM] inactiveBackground 239,240,241 (BreezeLight.colors:200, breeze v6.7.5)
 inactive_title_bar_background = "#eff0f1"
-# platform-facts.md:1154 (§2.2): [WM] inactiveForeground 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
+# platform-facts.md:1167 (§2.2): [WM] inactiveForeground 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
 inactive_title_bar_text_color = "#707d8a"
 
 [light.button]
@@ -126,52 +126,52 @@ background_color = "#fcfcfc"
 min_width_px = 80.0
 min_height_px = 32.0
 icon_text_gap_px = 4.0
-# platform-facts.md:1179 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
+# platform-facts.md:1192 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
 # it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
 hover_background = "#fcfcfc"
 hover_text_color = "#232629"
 active_background = "#3daee9"
 # no facts row: the text on the accent fill, [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
 active_text_color = "#ffffff"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
-# platform-facts.md:1181-1182 (§2.3): a checked button is KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+# platform-facts.md:1194-1195 (§2.3): a checked button is KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
 checked_background = "#e1e1e2"
 checked_text_color = "#232629"
 
 
 [light.button.border]
 color = "#d1d1d2"
-# platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6, both axes
+# platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 [light.button.font]
-# platform-facts.md:1166 (§2.3): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
+# platform-facts.md:1179 (§2.3): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
 color = "#232629"
 [light.input]
 background_color = "#ffffff"
 min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
-# platform-facts.md:1195 (§2.4): [Colors:View] ForegroundInactive 112,125,138 (BreezeLight.colors:119, breeze v6.7.5)
+# platform-facts.md:1208 (§2.4): [Colors:View] ForegroundInactive 112,125,138 (BreezeLight.colors:119, breeze v6.7.5)
 placeholder_color = "#707d8a"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f3f3f3"
 disabled_text_color = "#aaabac"
 
 
 [light.input.border]
-# platform-facts.md:1200-1201 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
+# platform-facts.md:1213-1214 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
-# platform-facts.md:1203 (§2.4): no shadow
+# platform-facts.md:1216 (§2.4): no shadow
 shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1701-1702 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# platform-facts.md:1714-1715 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
 # documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
 padding_horizontal_px = 5.0
 padding_vertical_px = 5.0
@@ -180,44 +180,44 @@ padding_vertical_px = 5.0
 color = "#232629"
 [light.checkbox]
 indicator_width_px = 20.0
-# platform-facts.md:1228 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+# platform-facts.md:1241 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
 radio_dot_diameter_px = 6.0
-# platform-facts.md:1229 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
+# platform-facts.md:1242 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
 check_mark_stroke_width_px = 2.0
 label_gap_px = 4.0
-# platform-facts.md:1226 (§2.5): Button #fcfcfc under Selection #3daee9 at alpha 0.3
+# platform-facts.md:1239 (§2.5): Button #fcfcfc under Selection #3daee9 at alpha 0.3
 checked_background = "#c2e4f6"
-# platform-facts.md:1219 (§2.5): palette.text(), [Colors:View] ForegroundNormal
+# platform-facts.md:1232 (§2.5): palette.text(), [Colors:View] ForegroundNormal
 indicator_color = "#232629"
 hover_background = "#93cee9"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a0a1a3"
-# platform-facts.md:1214 (§2.5): [Colors:Button] BackgroundNormal 252,252,252
+# platform-facts.md:1227 (§2.5): [Colors:Button] BackgroundNormal 252,252,252
 unchecked_background = "#fcfcfc"
-# platform-facts.md:1217 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+# platform-facts.md:1230 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
 unchecked_border_color = "#c6c8c9"
 
 [light.checkbox.border]
-# platform-facts.md:1217 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
+# platform-facts.md:1230 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
 color = "#3daee9"
-# platform-facts.md:1223 (§2.5): no shadow
+# platform-facts.md:1236 (§2.5): no shadow
 shadow_enabled = false
 
 [light.tooltip]
 background_color = "#f7f7f7"
 max_width_px = 300.0
-# platform-facts.md:1277 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
+# platform-facts.md:1290 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
 show_delay_ms = 700
 
 
 [light.tooltip.border]
-# platform-facts.md:1270-1271 (§2.7): ToolTip_FrameWidth = 3
+# platform-facts.md:1283-1284 (§2.7): ToolTip_FrameWidth = 3
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [light.tooltip.font]
-# platform-facts.md:1269 (§2.7): [Colors:Tooltip] ForegroundNormal 35,38,41 (BreezeLight.colors:109, breeze v6.7.5)
+# platform-facts.md:1282 (§2.7): [Colors:Tooltip] ForegroundNormal 35,38,41 (BreezeLight.colors:109, breeze v6.7.5)
 color = "#232629"
 [light.scrollbar]
 groove_width_px = 21.0
@@ -231,7 +231,7 @@ thumb_active_color = "#3daee9"
 track_height_px = 6.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
-# platform-facts.md:1306 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc
+# platform-facts.md:1319 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc
 # (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
 thumb_color = "#fcfcfc"
 thumb_hover_color = "#93cee9"
@@ -242,16 +242,16 @@ disabled_thumb_color = "#dee0e2"
 [light.progress_bar]
 track_height_px = 6.0
 min_width_px = 6.0
-# platform-facts.md:1320 (§2.10): Accent at alpha 0.7 over Window, KColorUtils::overlayColors(#eff0f1, #3daee9b3)
+# platform-facts.md:1333 (§2.10): Accent at alpha 0.7 over Window, KColorUtils::overlayColors(#eff0f1, #3daee9b3)
 fill_color = "#72c2eb"
 
 [light.progress_bar.border]
-# platform-facts.md:1326-1327 (§2.10): WindowText #232629 at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
+# platform-facts.md:1339-1340 (§2.10): WindowText #232629 at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
 color = "#23262933"
 line_width_px = 1.0
-# platform-facts.md:1325 (§2.10): no shadow
+# platform-facts.md:1338 (§2.10): no shadow
 shadow_enabled = false
-# platform-facts.md:1328-1329 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
+# platform-facts.md:1341-1342 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
 # progress (breezestyle.cpp:2304, :2329-2338)
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
@@ -259,77 +259,77 @@ padding_vertical_px = 0.0
 [light.tab]
 min_width_px = 80.0
 min_height_px = 30.0
-# platform-facts.md:1347 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
+# platform-facts.md:1360 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
 item_gap_px = 0.0
-# platform-facts.md:1333 (§2.11): an unselected tab is Window.darker(120), #eff0f1 → #c7c8c9 (breezehelper.cpp:1495-1496)
+# platform-facts.md:1346 (§2.11): an unselected tab is Window.darker(120), #eff0f1 → #c7c8c9 (breezehelper.cpp:1495-1496)
 background_color = "#c7c8c9"
 active_background = "#eff0f1"
 active_text_color = "#232629"
-# platform-facts.md:1333 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+# platform-facts.md:1346 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#232629"
-# platform-facts.md:1348-1350 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+# platform-facts.md:1361-1363 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
 active_indicator_color = "#3daee9"
 active_indicator_width_px = 3.0
 active_indicator_side = "top"
 
 
 [light.tab.border]
-# platform-facts.md:1341 (§2.11): selected tab only, mix(Window #eff0f1, WindowText #232629, frameContrast 0.2)
+# platform-facts.md:1354 (§2.11): selected tab only, mix(Window #eff0f1, WindowText #232629, frameContrast 0.2)
 color = "#c6c8c9"
-# platform-facts.md:1342 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+# platform-facts.md:1355 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
 line_width_px = 1.0
-# platform-facts.md:1343 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+# platform-facts.md:1356 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
 corner_radius_px = 4.5
-# platform-facts.md:1344 (§2.11): no shadow
+# platform-facts.md:1357 (§2.11): no shadow
 shadow_enabled = false
-# platform-facts.md:1339-1340 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
+# platform-facts.md:1352-1353 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
-# row_height not stated: platform-facts.md:1247 (§2.6), (none), sizes to font
-# platform-facts.md:1255 (§2.6): KIconLoader's Small, 16
+# row_height not stated: platform-facts.md:1260 (§2.6), (none), sizes to font
+# platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#a0a1a3"
 
 
 [light.menu.border]
-# platform-facts.md:1248-1249 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
+# platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [light.menu.font]
-# platform-facts.md:1246 (§2.6): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+# platform-facts.md:1259 (§2.6): [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
 color = "#232629"
 [light.list]
-# platform-facts.md:1408 (§2.15): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
+# platform-facts.md:1421 (§2.15): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
 background_color = "#ffffff"
-# platform-facts.md:1416 (§2.15): [Colors:Header] BackgroundNormal 222,224,226 (BreezeLight.colors:59, breeze v6.7.5)
+# platform-facts.md:1429 (§2.15): [Colors:Header] BackgroundNormal 222,224,226 (BreezeLight.colors:59, breeze v6.7.5)
 header_background = "#dee0e2"
-# platform-facts.md:1411 (§2.15): [Colors:View] BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
+# platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
 alternate_row_background = "#f7f7f7"
-# row_height not stated: platform-facts.md:1418 (§2.15), (none), sizes to content
+# row_height not stated: platform-facts.md:1431 (§2.15), (none), sizes to content
 hover_background = "#93cee9"
 hover_text_color = "#232629"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#aaabac"
 
 
 [light.list.border]
-# platform-facts.md:1420-1421 (§2.15): 2; 1
+# platform-facts.md:1433-1434 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
 
 [light.list.item_font]
-# platform-facts.md:1410 (§2.15): [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123, breeze v6.7.5)
+# platform-facts.md:1423 (§2.15): [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123, breeze v6.7.5)
 color = "#232629"
 
 [light.list.header_font]
-# platform-facts.md:1415 (§2.15): [Colors:Header] ForegroundNormal 35,38,41 (BreezeLight.colors:67, breeze v6.7.5)
+# platform-facts.md:1428 (§2.15): [Colors:Header] ForegroundNormal 35,38,41 (BreezeLight.colors:67, breeze v6.7.5)
 color = "#232629"
 [light.toolbar]
 # platform-facts.md §2.13 background_color: Breeze fills a QMainWindow's tools area with the Header set's Window colour,
@@ -337,13 +337,13 @@ color = "#232629"
 # (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
 # as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
 background_color = "#dee0e2"
-# bar_height not stated: platform-facts.md:1376 (§2.13), (none), sizes to content
-# platform-facts.md:1377 (§2.13): ToolBar_ItemSpacing = 0
+# bar_height not stated: platform-facts.md:1389 (§2.13), (none), sizes to content
+# platform-facts.md:1390 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1378-1379 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+# platform-facts.md:1391-1392 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 # platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
@@ -356,90 +356,90 @@ shadow_enabled = false
 
 
 [light.status_bar.border]
-# platform-facts.md:1401-1402 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
+# platform-facts.md:1414-1415 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
 padding_right_px = 14.0
 padding_left_px = 2.0
 padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [light.sidebar]
-# ❓ platform-facts.md:1356 (§2.12): no source for #dee0e2, [Colors:Header] BackgroundNormal (BreezeLight.colors:59); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
+# ❓ platform-facts.md:1369 (§2.12): no source for #dee0e2, [Colors:Header] BackgroundNormal (BreezeLight.colors:59); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
 background_color = "#dee0e2"
 hover_background = "#93cee9"
 
 
 [light.sidebar.font]
-# platform-facts.md:1358 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:137, :123, breeze v6.7.5)
+# platform-facts.md:1371 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:137, :123, breeze v6.7.5)
 color = "#232629"
 [light.popover]
-# background_color not stated: platform-facts.md:1441 (§2.16), ← defaults.background_color
-# font.color not stated: platform-facts.md:1443 (§2.16), ← defaults.font.color
+# background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color
+# font.color not stated: platform-facts.md:1456 (§2.16), ← defaults.font.color
 
 [light.popover.border]
 # platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup strokes linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Window set (Popup.qml:50, colorutils.cpp:61-80), #c2c5c9; line_width not stated, the
 # Popup's 1 (§2.16 border.line_width, Popup.qml:51), as defaults.border.line_width
 color = "#c2c5c9"
-# platform-facts.md:1448-1449 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
+# platform-facts.md:1461-1462 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
 
 [light.separator]
-# line_color not stated: platform-facts.md:1463 (§2.18), ← defaults.border.color
+# line_color not stated: platform-facts.md:1476 (§2.18), ← defaults.border.color
 
 [light.splitter]
 divider_width_px = 1.0
 hover_color = "#bcc0bf"
 
 [light.switch]
-# platform-facts.md:1509 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
+# platform-facts.md:1522 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
 # Qt.alpha(backgroundColor, 0.9)) of the Button set (SwitchIndicator.qml:21, :32-35, :49), #e6e7e7
 unchecked_background = "#e6e7e7"
-# platform-facts.md:1508 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
+# platform-facts.md:1521 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
 # (SwitchIndicator.qml:53-63), #92cae8: an accent-derived blend, not the accent
 checked_background = "#92cae8"
-# platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
+# platform-facts.md:1523 (§2.21): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 thumb_background = "#fcfcfc"
 track_width_px = 36.0
-# platform-facts.md:1505 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
+# platform-facts.md:1518 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
 # (SwitchIndicator.qml:15, :41-46)
 track_height_px = 12.0
-# platform-facts.md:1506 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
+# platform-facts.md:1519 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
 # overhanging the track by 3 above and below, flush with its ends (:68)
 thumb_diameter_px = 18.0
-# platform-facts.md:1507 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
+# platform-facts.md:1520 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
 track_radius_px = 6.0
-# platform-facts.md:1514 (§2.21): no fill reads `hovered` (SwitchIndicator.qml:49, :62, :77), so the rest fill
+# platform-facts.md:1527 (§2.21): no fill reads `hovered` (SwitchIndicator.qml:49, :62, :77), so the rest fill
 hover_checked_background = "#92cae8"
-# platform-facts.md:1515 (§2.21): the same, the rest fill
+# platform-facts.md:1528 (§2.21): the same, the rest fill
 hover_unchecked_background = "#e6e7e7"
-# platform-facts.md:1516 (§2.21): the checked track's composition from the Disabled group
+# platform-facts.md:1529 (§2.21): the checked track's composition from the Disabled group
 # (plasmadesktoptheme.cpp:267-274), Disabled Button and Selection, KColorScheme 6.30.0
 disabled_checked_background = "#e6e7e8"
-# platform-facts.md:1517 (§2.21): the off track's tint from the Disabled group
+# platform-facts.md:1530 (§2.21): the off track's tint from the Disabled group
 disabled_unchecked_background = "#e9e9e9"
-# platform-facts.md:1518 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#f0f0f0"
-# platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
+# platform-facts.md:1532 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #fcfcfc / #232629
 unchecked_track_border_color = "#cccfd2"
-# platform-facts.md:1522 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
+# platform-facts.md:1535 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
 # (SwitchIndicator.qml:27; BreezeLight.colors:87)
 checked_track_border_color = "#3daee9"
-# platform-facts.md:1521 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+# platform-facts.md:1534 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
 disabled_unchecked_track_border_color = "#e2e2e2"
-# platform-facts.md:1523 (§2.21): highlightColor in the Disabled group, Disabled Selection
+# platform-facts.md:1536 (§2.21): highlightColor in the Disabled group, Disabled Selection
 disabled_checked_track_border_color = "#e3e5e7"
-# platform-facts.md:1524 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
+# platform-facts.md:1537 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
 track_border_line_width_px = 1.0
-# platform-facts.md:1525 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
+# platform-facts.md:1538 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
 thumb_border_color = "#cccfd2"
-# platform-facts.md:1528 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
+# platform-facts.md:1541 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
 thumb_border_line_width_px = 1.0
 
 [light.dialog]
 button_order = "primary_left"
-# platform-facts.md:1556 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+# platform-facts.md:1569 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
 entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
@@ -450,16 +450,16 @@ icon_size_px =32.0
 
 
 [light.dialog.border]
-# platform-facts.md:1543-1544 (§2.22): Layout_TopLevelMarginWidth = 10
+# platform-facts.md:1556-1557 (§2.22): Layout_TopLevelMarginWidth = 10
 padding_horizontal_px = 10.0
 padding_vertical_px = 10.0
 
 [light.link]
 underline_enabled = true
-# platform-facts.md:1682 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
+# platform-facts.md:1695 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
 visited_text_color = "#9b59b6"
 background_color = "#00000000"
-# platform-facts.md:1685 (§2.28): KDE hover_background **(none)**, transparent as background_color
+# platform-facts.md:1698 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # No hover_text_color or active_text_color: they inherit link.font.color
 # (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
@@ -467,7 +467,7 @@ hover_background = "#00000000"
 # qtexthtmlparser.cpp:2057-2068, qwidgettextcontrol.cpp:2983-2991); Kirigami's
 # LinkButton keeps linkColor while hovered and darkens it pressed, Qt.darker
 # (kirigami v6.31.0 templates/LinkButton.qml:66, :87-93), which no key derives.
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
 disabled_text_color = "#a3cae2"
 
 [light.spinner]
@@ -476,29 +476,29 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
-# platform-facts.md:1598 (§2.24): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
+# platform-facts.md:1611 (§2.24): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 background_color = "#fcfcfc"
 min_height_px = 32.0
 min_width_px = 120.0
-# platform-facts.md:1606 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+# platform-facts.md:1619 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 hover_background = "#93cee9"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
 
 
 [light.combo_box.border]
-# platform-facts.md:1605, :1610 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+# platform-facts.md:1618, :1623 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
-# platform-facts.md:1609 (§2.24): no shadow
+# platform-facts.md:1622 (§2.24): no shadow
 shadow_enabled = false
 
 [light.combo_box.font]
-# platform-facts.md:1600 (§2.24): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
+# platform-facts.md:1613 (§2.24): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
 color = "#232629"
 [light.segmented_control]
 segment_height_px = 30.0
@@ -508,7 +508,7 @@ active_text_color = "#fcfcfc"
 hover_background = "#dee0e2"
 
 [light.segmented_control.border]
-# platform-facts.md:1631 (§2.25): no shadow
+# platform-facts.md:1644 (§2.25): no shadow
 shadow_enabled = false
 
 
@@ -526,7 +526,7 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1649-1650 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# platform-facts.md:1662-1663 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
 # card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
 padding_horizontal_px = 7.0
 padding_vertical_px = 7.0
@@ -534,70 +534,70 @@ padding_vertical_px = 7.0
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
-# platform-facts.md:1670-1673 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# platform-facts.md:1683-1686 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
 # before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
 arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1673 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1686 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#232629"
 
 [light.expander.border]
-# platform-facts.md:1669 (§2.27): no shadow
+# platform-facts.md:1682 (§2.27): no shadow
 shadow_enabled = false
 
 # === Dark variant (BreezeDark.colors) ===
 
 [dark.defaults]
 icon_theme = "breeze-dark"
-# platform-facts.md:1048 (§2.1.3): BreezeDark.colors has no [General] AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5)
+# platform-facts.md:1052 (§2.1.3): BreezeDark.colors has no [General] AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5)
 accent_color = "#3daee9"
-# platform-facts.md:1046 (§2.1.3): [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5)
+# platform-facts.md:1050 (§2.1.3): [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5)
 background_color = "#202326"
-# platform-facts.md:1047 (§2.1.3): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+# platform-facts.md:1051 (§2.1.3): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
 text_color = "#fcfcfc"
-# platform-facts.md:1050 (§2.1.3): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
+# platform-facts.md:1054 (§2.1.3): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
 surface_color = "#141618"
-# platform-facts.md:1052 (§2.1.3): [Colors:Window] ForegroundInactive 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
+# platform-facts.md:1056 (§2.1.3): [Colors:Window] ForegroundInactive 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
 muted_color = "#a1a9b1"
-# platform-facts.md:1053 (§2.1.3): (none) in Breeze, the preset's own #00000060
+# platform-facts.md:1057 (§2.1.3): (none) in Breeze, the preset's own #00000060
 shadow_color = "#00000060"
 
-# platform-facts.md:1080 (§2.1.4): [Colors:View] ForegroundNegative 218,68,83 (BreezeDark.colors:122, breeze v6.7.5)
+# platform-facts.md:1084 (§2.1.4): [Colors:View] ForegroundNegative 218,68,83 (BreezeDark.colors:122, breeze v6.7.5)
 danger_color = "#da4453"
-# platform-facts.md:1081 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
-danger_text_color = "#fcfcfc"
-# platform-facts.md:1082 (§2.1.4): [Colors:View] ForegroundNeutral 246,116,0 (BreezeDark.colors:123, breeze v6.7.5)
-warning_color = "#f67400"
-# platform-facts.md:1083 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
-warning_text_color = "#fcfcfc"
-# platform-facts.md:1084 (§2.1.4): [Colors:View] ForegroundPositive 39,174,96 (BreezeDark.colors:125, breeze v6.7.5)
-success_color = "#27ae60"
 # platform-facts.md:1085 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
-success_text_color = "#fcfcfc"
-# platform-facts.md:1086 (§2.1.4): [Colors:View] ForegroundActive 61,174,233 (BreezeDark.colors:119, breeze v6.7.5)
-info_color = "#3daee9"
+danger_text_color = "#fcfcfc"
+# platform-facts.md:1086 (§2.1.4): [Colors:View] ForegroundNeutral 246,116,0 (BreezeDark.colors:123, breeze v6.7.5)
+warning_color = "#f67400"
 # platform-facts.md:1087 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+warning_text_color = "#fcfcfc"
+# platform-facts.md:1088 (§2.1.4): [Colors:View] ForegroundPositive 39,174,96 (BreezeDark.colors:125, breeze v6.7.5)
+success_color = "#27ae60"
+# platform-facts.md:1089 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+success_text_color = "#fcfcfc"
+# platform-facts.md:1090 (§2.1.4): [Colors:View] ForegroundActive 61,174,233 (BreezeDark.colors:119, breeze v6.7.5)
+info_color = "#3daee9"
+# platform-facts.md:1091 (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
 info_text_color = "#fcfcfc"
 
-# platform-facts.md:1055 (§2.1.3): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
+# platform-facts.md:1059 (§2.1.3): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
 selection_background = "#3daee9"
-# platform-facts.md:1056 (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze v6.7.5)
+# platform-facts.md:1060 (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze v6.7.5)
 selection_text_color = "#fcfcfc"
-# platform-facts.md:1054 (§2.1.3): [Colors:View] ForegroundLink 29,153,243 (BreezeDark.colors:121, breeze v6.7.5)
+# platform-facts.md:1058 (§2.1.3): [Colors:View] ForegroundLink 29,153,243 (BreezeDark.colors:121, breeze v6.7.5)
 link_color = "#1d99f3"
-# platform-facts.md:1104 (§2.1.5): [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5)
+# platform-facts.md:1108 (§2.1.5): [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5)
 focus_ring_color = "#3daee9"
-# platform-facts.md:1060 (§2.1.3): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
+# platform-facts.md:1064 (§2.1.3): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
 disabled_text_color = "#686a6c"
-# platform-facts.md:1049 (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze v6.7.5)
+# platform-facts.md:1053 (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze v6.7.5)
 accent_text_color = "#fcfcfc"
 
-# platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
+# platform-facts.md:1119 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
 disabled_opacity = 1.0
-# platform-facts.md:1030 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
+# platform-facts.md:1034 (§2.1.1): Noto Sans sTypo metrics, (1069+293+0)/1000
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -611,19 +611,19 @@ line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [dark.defaults.font]
-# platform-facts.md:571 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
+# platform-facts.md:575 (§1.3.1): [General] font, Breeze default Noto Sans, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Noto Sans"
 size_pt =10.0
 weight = 400
 
 [dark.defaults.mono_font]
-# platform-facts.md:572 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
+# platform-facts.md:576 (§1.3.1): [General] fixed, Breeze default Hack, 10pt, 400 (kfontsettingsdata.cpp)
 family = "Hack"
 size_pt =10.0
 weight = 400
 
 [dark.defaults.icon_sizes]
-# platform-facts.md:1132-1136 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
+# platform-facts.md:1136-1140 (§2.1.8): KIconLoader's MainToolbar 22, Small 16,
 # Desktop 48, Dialog 32 and Panel 48, Breeze's sizes
 toolbar_px = 22.0
 small_px = 16.0
@@ -632,31 +632,31 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [dark.text_scale.caption]
-# platform-facts.md:1472 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
+# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
 size_pt =8.0
 weight = 400
 
 [dark.text_scale.section_heading]
-# platform-facts.md:1473 (§2.19): Kirigami Heading level 2, the 10pt body
+# platform-facts.md:1486 (§2.19): Kirigami Heading level 2, the 10pt body
 # (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [dark.text_scale.dialog_title]
-# platform-facts.md:1474 (§2.19): Kirigami Heading level 1, the 10pt body
+# platform-facts.md:1487 (§2.19): Kirigami Heading level 1, the 10pt body
 # (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
 
-# No display: platform-facts.md:1475 (§2.19) gives KDE none; it resolves
+# No display: platform-facts.md:1488 (§2.19) gives KDE none; it resolves
 # from the body font.
 
 [dark.window]
-# platform-facts.md:1147 (§2.2): [WM] activeBackground 39,44,49 (BreezeDark.colors:204, breeze v6.7.5)
+# platform-facts.md:1160 (§2.2): [WM] activeBackground 39,44,49 (BreezeDark.colors:204, breeze v6.7.5)
 title_bar_background = "#272c31"
-# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:207, breeze v6.7.5)
+# platform-facts.md:1166 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:207, breeze v6.7.5)
 inactive_title_bar_background = "#202428"
-# platform-facts.md:1154 (§2.2): [WM] inactiveForeground 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
+# platform-facts.md:1167 (§2.2): [WM] inactiveForeground 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
 inactive_title_bar_text_color = "#a1a9b1"
 
 [dark.button]
@@ -664,52 +664,52 @@ background_color = "#292c30"
 min_width_px = 80.0
 min_height_px = 32.0
 icon_text_gap_px = 4.0
-# platform-facts.md:1179 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
+# platform-facts.md:1192 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
 # it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
 hover_background = "#292c30"
 hover_text_color = "#fcfcfc"
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"
-# platform-facts.md:1181-1182 (§2.3): a checked button is KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+# platform-facts.md:1194-1195 (§2.3): a checked button is KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
 checked_background = "#43464a"
 checked_text_color = "#fcfcfc"
 
 
 [dark.button.border]
 color = "#535659"
-# platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6, both axes
+# platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 [dark.button.font]
-# platform-facts.md:1166 (§2.3): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+# platform-facts.md:1179 (§2.3): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.input]
-# platform-facts.md:1190 (§2.4): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
+# platform-facts.md:1203 (§2.4): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
 background_color = "#141618"
 min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
-# platform-facts.md:1195 (§2.4): [Colors:View] ForegroundInactive 161,169,177 (BreezeDark.colors:120, breeze v6.7.5)
+# platform-facts.md:1208 (§2.4): [Colors:View] ForegroundInactive 161,169,177 (BreezeDark.colors:120, breeze v6.7.5)
 placeholder_color = "#a1a9b1"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#131517"
 disabled_text_color = "#606263"
 
 
 [dark.input.border]
-# platform-facts.md:1200-1201 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
+# platform-facts.md:1213-1214 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
-# platform-facts.md:1203 (§2.4): no shadow
+# platform-facts.md:1216 (§2.4): no shadow
 shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1701-1702 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# platform-facts.md:1714-1715 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
 # documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
 padding_horizontal_px = 5.0
 padding_vertical_px = 5.0
@@ -718,45 +718,45 @@ padding_vertical_px = 5.0
 color = "#fcfcfc"
 [dark.checkbox]
 indicator_width_px = 20.0
-# platform-facts.md:1228 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+# platform-facts.md:1241 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
 radio_dot_diameter_px = 6.0
-# platform-facts.md:1229 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
+# platform-facts.md:1242 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
 check_mark_stroke_width_px = 2.0
 label_gap_px = 4.0
-# platform-facts.md:1226 (§2.5): Button #292c30 under Selection #3daee9 at alpha 0.3
+# platform-facts.md:1239 (§2.5): Button #292c30 under Selection #3daee9 at alpha 0.3
 checked_background = "#2f5368"
-# platform-facts.md:1219 (§2.5): palette.text(), [Colors:View] ForegroundNormal
+# platform-facts.md:1232 (§2.5): palette.text(), [Colors:View] ForegroundNormal
 indicator_color = "#fcfcfc"
 hover_background = "#93cee9"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#686a6c"
-# platform-facts.md:1214 (§2.5): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
+# platform-facts.md:1227 (§2.5): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
 unchecked_background = "#292c30"
-# platform-facts.md:1217 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+# platform-facts.md:1230 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
 unchecked_border_color = "#4c4e51"
 
 [dark.checkbox.border]
-# platform-facts.md:1217 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
+# platform-facts.md:1230 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
 color = "#3daee9"
-# platform-facts.md:1223 (§2.5): no shadow
+# platform-facts.md:1236 (§2.5): no shadow
 shadow_enabled = false
 
 [dark.tooltip]
-# platform-facts.md:1264 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)
+# platform-facts.md:1277 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)
 background_color = "#292c30"
 max_width_px = 300.0
-# platform-facts.md:1277 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
+# platform-facts.md:1290 (§2.7): Qt's m_toolTipWakeUpDelay{700} for SH_ToolTip_WakeUpDelay (qstylehints_p.h:45; qcommonstyle.cpp:5351-5356)
 show_delay_ms = 700
 
 
 [dark.tooltip.border]
-# platform-facts.md:1270-1271 (§2.7): ToolTip_FrameWidth = 3
+# platform-facts.md:1283-1284 (§2.7): ToolTip_FrameWidth = 3
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [dark.tooltip.font]
-# platform-facts.md:1269 (§2.7): [Colors:Tooltip] ForegroundNormal 252,252,252 (BreezeDark.colors:110, breeze v6.7.5)
+# platform-facts.md:1282 (§2.7): [Colors:Tooltip] ForegroundNormal 252,252,252 (BreezeDark.colors:110, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.scrollbar]
 groove_width_px = 21.0
@@ -770,7 +770,7 @@ thumb_active_color = "#3daee9"
 track_height_px = 6.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
-# platform-facts.md:1306 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #292c30
+# platform-facts.md:1319 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #292c30
 # (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
 thumb_color = "#292c30"
 thumb_hover_color = "#93cee9"
@@ -781,16 +781,16 @@ disabled_thumb_color = "#2d3035"
 [dark.progress_bar]
 track_height_px = 6.0
 min_width_px = 6.0
-# platform-facts.md:1320 (§2.10): Accent at alpha 0.7 over Window, KColorUtils::overlayColors(#202326, #3daee9b3)
+# platform-facts.md:1333 (§2.10): Accent at alpha 0.7 over Window, KColorUtils::overlayColors(#202326, #3daee9b3)
 fill_color = "#3584ae"
 
 [dark.progress_bar.border]
-# platform-facts.md:1326-1327 (§2.10): WindowText #fcfcfc at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
+# platform-facts.md:1339-1340 (§2.10): WindowText #fcfcfc at alpha frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
 color = "#fcfcfc33"
 line_width_px = 1.0
-# platform-facts.md:1325 (§2.10): no shadow
+# platform-facts.md:1338 (§2.10): no shadow
 shadow_enabled = false
-# platform-facts.md:1328-1329 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
+# platform-facts.md:1341-1342 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
 # progress (breezestyle.cpp:2304, :2329-2338)
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
@@ -798,78 +798,78 @@ padding_vertical_px = 0.0
 [dark.tab]
 min_width_px = 80.0
 min_height_px = 30.0
-# platform-facts.md:1347 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
+# platform-facts.md:1360 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
 item_gap_px = 0.0
-# platform-facts.md:1333 (§2.11): an unselected tab is Window.darker(120), #202326 → #1b1d20 (breezehelper.cpp:1495-1496)
+# platform-facts.md:1346 (§2.11): an unselected tab is Window.darker(120), #202326 → #1b1d20 (breezehelper.cpp:1495-1496)
 background_color = "#1b1d20"
-# platform-facts.md:1334 (§2.11): ← defaults.background_color, [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)
+# platform-facts.md:1347 (§2.11): ← defaults.background_color, [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)
 active_background = "#202326"
 active_text_color = "#fcfcfc"
-# platform-facts.md:1333 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+# platform-facts.md:1346 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#fcfcfc"
-# platform-facts.md:1348-1350 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+# platform-facts.md:1361-1363 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
 active_indicator_color = "#3daee9"
 active_indicator_width_px = 3.0
 active_indicator_side = "top"
 
 
 [dark.tab.border]
-# platform-facts.md:1341 (§2.11): selected tab only, mix(Window #202326, WindowText #fcfcfc, frameContrast 0.2)
+# platform-facts.md:1354 (§2.11): selected tab only, mix(Window #202326, WindowText #fcfcfc, frameContrast 0.2)
 color = "#4c4e51"
-# platform-facts.md:1342 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+# platform-facts.md:1355 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
 line_width_px = 1.0
-# platform-facts.md:1343 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+# platform-facts.md:1356 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
 corner_radius_px = 4.5
-# platform-facts.md:1344 (§2.11): no shadow
+# platform-facts.md:1357 (§2.11): no shadow
 shadow_enabled = false
-# platform-facts.md:1339-1340 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
+# platform-facts.md:1352-1353 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
-# row_height not stated: platform-facts.md:1247 (§2.6), (none), sizes to font
-# platform-facts.md:1255 (§2.6): KIconLoader's Small, 16
+# row_height not stated: platform-facts.md:1260 (§2.6), (none), sizes to font
+# platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#686a6c"
 
 
 [dark.menu.border]
-# platform-facts.md:1248-1249 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
+# platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [dark.menu.font]
-# platform-facts.md:1246 (§2.6): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+# platform-facts.md:1259 (§2.6): [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.list]
-# platform-facts.md:1408 (§2.15): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
+# platform-facts.md:1421 (§2.15): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
 background_color = "#141618"
-# platform-facts.md:1416 (§2.15): [Colors:Header] BackgroundNormal 41,44,48 (BreezeDark.colors:60, breeze v6.7.5)
+# platform-facts.md:1429 (§2.15): [Colors:Header] BackgroundNormal 41,44,48 (BreezeDark.colors:60, breeze v6.7.5)
 header_background = "#292c30"
-# platform-facts.md:1411 (§2.15): [Colors:View] BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
+# platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
 alternate_row_background = "#1d1f22"
-# row_height not stated: platform-facts.md:1418 (§2.15), (none), sizes to content
+# row_height not stated: platform-facts.md:1431 (§2.15), (none), sizes to content
 hover_background = "#2e4a5e"
 hover_text_color = "#fcfcfc"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#606263"
 
 
 [dark.list.border]
-# platform-facts.md:1420-1421 (§2.15): 2; 1
+# platform-facts.md:1433-1434 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
 
 [dark.list.item_font]
-# platform-facts.md:1410 (§2.15): [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124, breeze v6.7.5)
+# platform-facts.md:1423 (§2.15): [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124, breeze v6.7.5)
 color = "#fcfcfc"
 
 [dark.list.header_font]
-# platform-facts.md:1415 (§2.15): [Colors:Header] ForegroundNormal 252,252,252 (BreezeDark.colors:68, breeze v6.7.5)
+# platform-facts.md:1428 (§2.15): [Colors:Header] ForegroundNormal 252,252,252 (BreezeDark.colors:68, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.toolbar]
 # platform-facts.md §2.13 background_color: Breeze fills a QMainWindow's tools area with the Header set's Window colour,
@@ -877,13 +877,13 @@ color = "#fcfcfc"
 # (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
 # as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
 background_color = "#292c30"
-# bar_height not stated: platform-facts.md:1376 (§2.13), (none), sizes to content
-# platform-facts.md:1377 (§2.13): ToolBar_ItemSpacing = 0
+# bar_height not stated: platform-facts.md:1389 (§2.13), (none), sizes to content
+# platform-facts.md:1390 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1378-1379 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+# platform-facts.md:1391-1392 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 # platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
@@ -896,90 +896,90 @@ shadow_enabled = false
 
 
 [dark.status_bar.border]
-# platform-facts.md:1401-1402 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
+# platform-facts.md:1414-1415 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
 padding_right_px = 14.0
 padding_left_px = 2.0
 padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [dark.sidebar]
-# ❓ platform-facts.md:1356 (§2.12): no source for #272c31, [WM] activeBackground (BreezeDark.colors:204); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
+# ❓ platform-facts.md:1369 (§2.12): no source for #272c31, [WM] activeBackground (BreezeDark.colors:204); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
 background_color = "#272c31"
 hover_background = "#2e4a5e"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1358 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:138, :124, breeze v6.7.5)
+# platform-facts.md:1371 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:138, :124, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.popover]
-# background_color not stated: platform-facts.md:1441 (§2.16), ← defaults.background_color
-# font.color not stated: platform-facts.md:1443 (§2.16), ← defaults.font.color
+# background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color
+# font.color not stated: platform-facts.md:1456 (§2.16), ← defaults.font.color
 
 [dark.popover.border]
 # platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup strokes linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Window set (Popup.qml:50, colorutils.cpp:61-80), #474c51; line_width not stated, the
 # Popup's 1 (§2.16 border.line_width, Popup.qml:51), as defaults.border.line_width
 color = "#474c51"
-# platform-facts.md:1448-1449 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
+# platform-facts.md:1461-1462 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
 
 [dark.separator]
-# line_color not stated: platform-facts.md:1463 (§2.18), ← defaults.border.color
+# line_color not stated: platform-facts.md:1476 (§2.18), ← defaults.border.color
 
 [dark.splitter]
 divider_width_px = 1.0
 hover_color = "#4d545b"
 
 [dark.switch]
-# platform-facts.md:1509 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
+# platform-facts.md:1522 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
 # Qt.alpha(backgroundColor, 0.9)) of the Button set (SwitchIndicator.qml:21, :32-35, :49), #3e4144
 unchecked_background = "#3e4144"
-# platform-facts.md:1508 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
+# platform-facts.md:1521 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
 # (SwitchIndicator.qml:53-63), #3e7797: an accent-derived blend, not the accent
 checked_background = "#3e7797"
-# platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+# platform-facts.md:1523 (§2.21): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
 thumb_background = "#292c30"
 track_width_px = 36.0
-# platform-facts.md:1505 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
+# platform-facts.md:1518 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
 # (SwitchIndicator.qml:15, :41-46)
 track_height_px = 12.0
-# platform-facts.md:1506 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
+# platform-facts.md:1519 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
 # overhanging the track by 3 above and below, flush with its ends (:68)
 thumb_diameter_px = 18.0
-# platform-facts.md:1507 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
+# platform-facts.md:1520 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
 track_radius_px = 6.0
-# platform-facts.md:1514 (§2.21): no fill reads `hovered` (SwitchIndicator.qml:49, :62, :77), so the rest fill
+# platform-facts.md:1527 (§2.21): no fill reads `hovered` (SwitchIndicator.qml:49, :62, :77), so the rest fill
 hover_checked_background = "#3e7797"
-# platform-facts.md:1515 (§2.21): the same, the rest fill
+# platform-facts.md:1528 (§2.21): the same, the rest fill
 hover_unchecked_background = "#3e4144"
-# platform-facts.md:1516 (§2.21): the checked track's composition from the Disabled group
+# platform-facts.md:1529 (§2.21): the checked track's composition from the Disabled group
 # (plasmadesktoptheme.cpp:267-274), Disabled Button and Selection, KColorScheme 6.30.0
 disabled_checked_background = "#26292c"
-# platform-facts.md:1517 (§2.21): the off track's tint from the Disabled group
+# platform-facts.md:1530 (§2.21): the off track's tint from the Disabled group
 disabled_unchecked_background = "#2e3135"
-# platform-facts.md:1518 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#272a2e"
-# platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
+# platform-facts.md:1532 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #292c30 / #fcfcfc
 unchecked_track_border_color = "#4e5359"
-# platform-facts.md:1522 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
+# platform-facts.md:1535 (§2.21): highlightColor, [Colors:Selection] BackgroundNormal 61,174,233
 # (SwitchIndicator.qml:27; BreezeDark.colors:88)
 checked_track_border_color = "#3daee9"
-# platform-facts.md:1521 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+# platform-facts.md:1534 (§2.21): handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
 disabled_unchecked_track_border_color = "#34373b"
-# platform-facts.md:1523 (§2.21): highlightColor in the Disabled group, Disabled Selection
+# platform-facts.md:1536 (§2.21): highlightColor in the Disabled group, Disabled Selection
 disabled_checked_track_border_color = "#1f2124"
-# platform-facts.md:1524 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
+# platform-facts.md:1537 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:38-51)
 track_border_line_width_px = 1.0
-# platform-facts.md:1525 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
+# platform-facts.md:1538 (§2.21): handleBorderColor, the off track's (SwitchIndicator.qml:78)
 thumb_border_color = "#4e5359"
-# platform-facts.md:1528 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
+# platform-facts.md:1541 (§2.21): no border.width, Qt Quick's default 1 (SwitchIndicator.qml:65-79)
 thumb_border_line_width_px = 1.0
 
 [dark.dialog]
 button_order = "primary_left"
-# platform-facts.md:1556 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+# platform-facts.md:1569 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
 entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
@@ -990,16 +990,16 @@ icon_size_px =32.0
 
 
 [dark.dialog.border]
-# platform-facts.md:1543-1544 (§2.22): Layout_TopLevelMarginWidth = 10
+# platform-facts.md:1556-1557 (§2.22): Layout_TopLevelMarginWidth = 10
 padding_horizontal_px = 10.0
 padding_vertical_px = 10.0
 
 [dark.link]
 underline_enabled = true
-# platform-facts.md:1682 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
+# platform-facts.md:1695 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
 visited_text_color = "#9b59b6"
 background_color = "#00000000"
-# platform-facts.md:1685 (§2.28): KDE hover_background **(none)**, transparent as background_color
+# platform-facts.md:1698 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # No hover_text_color or active_text_color: they inherit link.font.color
 # (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
@@ -1007,7 +1007,7 @@ hover_background = "#00000000"
 # qtexthtmlparser.cpp:2057-2068, qwidgettextcontrol.cpp:2983-2991); Kirigami's
 # LinkButton keeps linkColor while hovered and darkens it pressed, Qt.darker
 # (kirigami v6.31.0 templates/LinkButton.qml:66, :87-93), which no key derives.
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] ForegroundLink, KColorScheme 6.31.0
 disabled_text_color = "#164160"
 
 [dark.spinner]
@@ -1016,29 +1016,29 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
-# platform-facts.md:1598 (§2.24): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+# platform-facts.md:1611 (§2.24): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
 background_color = "#292c30"
 min_height_px = 32.0
 min_width_px = 120.0
-# platform-facts.md:1606 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+# platform-facts.md:1619 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 hover_background = "#93cee9"
-# platform-facts.md:1115 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+# platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1605, :1610 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+# platform-facts.md:1618, :1623 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
-# platform-facts.md:1609 (§2.24): no shadow
+# platform-facts.md:1622 (§2.24): no shadow
 shadow_enabled = false
 
 [dark.combo_box.font]
-# platform-facts.md:1600 (§2.24): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+# platform-facts.md:1613 (§2.24): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.segmented_control]
 segment_height_px = 30.0
@@ -1048,7 +1048,7 @@ active_text_color = "#fcfcfc"
 hover_background = "#31363b"
 
 [dark.segmented_control.border]
-# platform-facts.md:1631 (§2.25): no shadow
+# platform-facts.md:1644 (§2.25): no shadow
 shadow_enabled = false
 
 
@@ -1066,7 +1066,7 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1649-1650 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# platform-facts.md:1662-1663 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
 # card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
 padding_horizontal_px = 7.0
 padding_vertical_px = 7.0
@@ -1074,18 +1074,18 @@ padding_vertical_px = 7.0
 [dark.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
-# platform-facts.md:1670-1673 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# platform-facts.md:1683-1686 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
 # before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
 arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1673 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1686 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#fcfcfc"
 
 [dark.expander.border]
-# platform-facts.md:1669 (§2.27): no shadow
+# platform-facts.md:1682 (§2.27): no shadow
 shadow_enabled = false
 
 

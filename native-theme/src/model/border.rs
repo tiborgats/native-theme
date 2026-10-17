@@ -263,7 +263,7 @@ impl ResolvedWidgetBorder {
     /// there.
     ///
     /// The theme's padding lies inside the border (outer size = border +
-    /// padding + content, `docs/platform-facts.md:900-902`). A toolkit that
+    /// padding + content, `docs/platform-facts.md:904-906`). A toolkit that
     /// lays a widget's content out its padding in from the widget's edge and
     /// paints the border over that padding, as iced and egui do, takes this,
     /// and the content sits where the platform puts it; one whose box model

@@ -1087,7 +1087,7 @@ where
 /// (`stack.rs:180-187`) and whose upper layers take no input
 /// (`stack.rs:249-275`): layout, input, hover and label stay the radio's.
 /// Where the theme states no dot size -- macOS publishes none
-/// (`docs/platform-facts.md:1228`) -- the dot is iced's own.
+/// (`docs/platform-facts.md:1241`) -- the dot is iced's own.
 ///
 /// Set the label's `text_size` and `font` on `radio` before passing it.
 ///

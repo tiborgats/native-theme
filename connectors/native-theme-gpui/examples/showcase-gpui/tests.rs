@@ -3370,7 +3370,7 @@ fn the_sidebar_samples_report_themselves(cx: &mut TestAppContext) {
 ///
 /// A size platform-facts §2.1.8 documents none for on the installed native
 /// preset's platform says it has no platform source: adwaita's dialog and
-/// panel (platform-facts.md:1135-1136), and none of kde-breeze's. The preset
+/// panel (platform-facts.md:1139-1140), and none of kde-breeze's. The preset
 /// is named the way the preset Combobox names it, which `use_preset`
 /// leaves alone. Under `default` the caveat is the preset's the desktop
 /// theme is built on: `default` standing for adwaita, as it does on GNOME,

@@ -110,13 +110,13 @@ the file was pruned on 2026-10-11, not reordered.
       ([breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137)),
       painted after the tab's frame in `Helper::renderTabBarTab`
       ([breezehelper.cpp:1471-1487](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1471-L1487));
-      recorded in `docs/platform-facts.md:1341` (§2.11). The other three
+      recorded in `docs/platform-facts.md:1354` (§2.11). The other three
       platforms are still to be researched before the field is added.
 
 ### Tab: the border is the selected tab's, and KDE's live tab colours
 
 - [ ] [1.0] `kde-breeze` now states `tab.border.color`, `line_width_px`,
-      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1341-1344`,
+      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1354-1357`,
       §2.11). Breeze strokes only the selected tab; an unselected tab has no
       pen and rounds 5 on the row's outer ends only (breezehelper.cpp:1488-1507,
       breezestyle.cpp:7248-7253), and Windows' cell (`:1341`) is also
@@ -149,7 +149,7 @@ the file was pruned on 2026-10-11, not reordered.
       divider are rounded — and the colour of the divider line between
       segments, then add what the platforms state to `SegmentedControlTheme`
       (`native-theme/src/model/widgets/mod.rs:773-803`), which states the
-      divider's width, `separator_width` (`docs/platform-facts.md:987`), and
+      divider's width, `separator_width` (`docs/platform-facts.md:991`), and
       no colour or join. Until the model states them, the egui widgets crate
       draws its segments `separator_width` apart as separate segments, with no
       divider line (`docs/archive/todo_egui-widgets-spec.md` §4.4); nothing is to be
@@ -161,7 +161,7 @@ the file was pruned on 2026-10-11, not reordered.
       box and its stroke width — in `docs/platform-facts.md` §2.5 **first**,
       then add to `CheckboxTheme` what the platforms state. The model has no
       field for the mark: `indicator_width` is the box
-      (`docs/platform-facts.md:980`), and §2.5 says of the mark only that it
+      (`docs/platform-facts.md:984`), and §2.5 says of the mark only that it
       fills the indicator, except for GNOME's `padding: 3` (`:1224-1225`).
       Each toolkit draws its own: egui a three-point line in an 8 px square
       (`Spacing::icon_width_inner`, `egui/src/style.rs:1467`, read at
@@ -333,11 +333,11 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `docs/platform-facts.md` derives macOS `border.padding_vertical` as the
       outer height less the content height, halved — "3 **(measured)**
-      (22−16)/2" for the button (`docs/platform-facts.md:1172`), and the same
+      (22−16)/2" for the button (`docs/platform-facts.md:1185`), and the same
       shape for the text input (`:1201`), the menu (`:1249`), the tab
       (`:1340`) and the list (`:1421`). Outer less content is border plus padding, yet the outer-box
       rule counts border, padding and content as separate parts
-      (`docs/platform-facts.md:897-902`), and a padding is what lies inside the
+      (`docs/platform-facts.md:901-906`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
       `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:116-117`,
@@ -351,20 +351,20 @@ the file was pruned on 2026-10-11, not reordered.
       M2a Step 7 (2026-10-11) took the button's row from the OS probe:
       AppKit's title rect sits 1 below the top and 3 above the bottom of the
       20-tall bezel, measured from its outer (alignment-rect) edge
-      (`docs/platform-facts.md:1172`), and the pop-up button's likewise
+      (`docs/platform-facts.md:1185`), and the pop-up button's likewise
       (`:1610`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
       M2a Step 8 (2026-10-11) took the text input's row from the probe too:
       the title rect sits 2 below the top and 2 above the bottom of the
-      21-tall field on macOS 14.8.9 (`docs/platform-facts.md:1201`), from the
+      21-tall field on macOS 14.8.9 (`docs/platform-facts.md:1214`), from the
       outer edge again, so its border's share is open as the other two's.
 
 ### Presets: a spinner stroke width platform-facts does not give
 
 - [ ] [1.0] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
       Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
-      states **(none)** for the other three (`docs/platform-facts.md:1588`),
+      states **(none)** for the other three (`docs/platform-facts.md:1601`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml:376`, `:833`;
@@ -379,7 +379,7 @@ the file was pruned on 2026-10-11, not reordered.
       field where the icon set has no animated indicator
       (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
-      `min_diameter` either (**(none)**, `docs/platform-facts.md:1587`), yet
+      `min_diameter` either (**(none)**, `docs/platform-facts.md:1600`), yet
       `kde-breeze` and `adwaita` (and their `-live` twins, until M1-T4-01
       removed them) state `min_diameter_px = 16.0` in both variants.
       `min_diameter` is required in `ResolvedSpinnerTheme` too
@@ -391,7 +391,7 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `docs/platform-facts.md` §2.8 measures `scrollbar.thumb_color` for
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
-      (`docs/platform-facts.md:1292`), yet neither `macos-monterey` nor
+      (`docs/platform-facts.md:1305`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
@@ -418,7 +418,7 @@ the file was pruned on 2026-10-11, not reordered.
       `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
       `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
       Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
-      beside the measurement in `docs/platform-facts.md:1292-1293`). The
+      beside the measurement in `docs/platform-facts.md:1305-1306`). The
       preset states what WinUI 3 draws elsewhere, but its measured hover and
       pressed thumbs (`#a0a0a0`, `#787878`) are lighter or darker than that
       brush, and WinUI does not change the thumb on hover: decide whether
@@ -433,7 +433,7 @@ the file was pruned on 2026-10-11, not reordered.
       option with no source. Two citations are one line off: the dark scroll
       bar this entry cites as `macos-monterey.toml:640-654` is `:641-655`, and
       the egui entry's dark `track_color` (`:646`) is `:647`. The validator also
-      named `docs/platform-facts.md:1294` and `:177` as "citing probe 15" (its
+      named `docs/platform-facts.md:1307` and `:177` as "citing probe 15" (its
       words; `:1294` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
 
@@ -559,7 +559,7 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `defaults.selection_inactive_background` is the selection fill of a
       window that has lost focus. Only macOS states it
-      (`docs/platform-facts.md:1057`, `unemphasizedSelectedContentBackgroundColor`;
+      (`docs/platform-facts.md:1061`, `unemphasizedSelectedContentBackgroundColor`;
       the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
       text colour to pair with it: a toolkit that swapped the fill in on focus
       loss would paint the active `selection_text_color` on it. The egui
@@ -575,7 +575,7 @@ the file was pruned on 2026-10-11, not reordered.
       A question, not a claim: the macOS reader also writes the unemphasised
       colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
       `:502`), where platform-facts gives an input's selection as
-      `← defaults.text_selection_background` (`docs/platform-facts.md:1197`),
+      `← defaults.text_selection_background` (`docs/platform-facts.md:1210`),
       `selectedTextBackgroundColor` on macOS (`:1058`). Neither the reader's
       comments nor the commit that added the assignment (`d87483c8`) say why a text
       field's selection takes the unfocused colour. Is it intended? Fix the
@@ -584,7 +584,7 @@ the file was pruned on 2026-10-11, not reordered.
       `input.selection_background`, and
       `read_macos_leaves_the_text_field_selection_to_inheritance`
       (`native-theme/src/macos.rs:1017`) pins it, so the field inherits
-      `defaults.text_selection_background`, as `docs/platform-facts.md:1197`
+      `defaults.text_selection_background`, as `docs/platform-facts.md:1210`
       gives it. The research task above (the text colour on the unemphasised
       selection) stays open.
 
@@ -618,10 +618,10 @@ the file was pruned on 2026-10-11, not reordered.
       *M2b fix round 2 (2026-10-11):* windows-11's `defaults.border.color` is
       now `CardStrokeColorDefault` as the resource gives it, `#0000000f` light
       and `#00000019` dark (Common_themeresources_any.xaml:250, :46,
-      microsoft-ui-xaml 8463f45; `docs/platform-facts.md:1051`), so its dark
+      microsoft-ui-xaml 8463f45; `docs/platform-facts.md:1055`), so its dark
       `#454545` is closed. `splitter.hover_color` keeps the old `#e5e5e5` /
       `#454545` with no source ❓: WinUI 3 has no draggable divider
-      (`docs/platform-facts.md:1455`); it is for M3 with the other soft
+      (`docs/platform-facts.md:1468`); it is for M3 with the other soft
       options that have no facts row.
       *M2e Step 7 (2026-10-11):* adwaita's `defaults.border.color` is now the
       computed `#dcdcde` / `#434347`, and its popover outline libadwaita
@@ -650,7 +650,7 @@ the file was pruned on 2026-10-11, not reordered.
       Breeze 6.7).
       *M2e fix round 1 (2026-10-11):* kde-breeze's `separator.line_color`
       (`#c4c8c6` / `#3e4550`, no source) is no longer stated: the separator
-      inherits `defaults.border.color` (`docs/platform-facts.md:1463`), so
+      inherits `defaults.border.color` (`docs/platform-facts.md:1476`), so
       the unsourced `#bcc0bf` / `#4d545b` above is now its line colour too.
       kde-breeze light's `button.active_text_color`, the text on the accent
       fill, is `#ffffff` (`[Colors:Selection] ForegroundNormal`,
@@ -664,9 +664,9 @@ the file was pruned on 2026-10-11, not reordered.
       *M4 T36 (2026-10-13):* kde-breeze's disabled switch thumb, the
       `#fcfcfc80` above, is the handle's Disabled shade since 74fc414d,
       Disabled `[Colors:Button] BackgroundNormal` (`#f0f0f0` / `#272a2e`,
-      `docs/platform-facts.md:1510`). kde-breeze's `defaults.border.color` is
+      `docs/platform-facts.md:1523`). kde-breeze's `defaults.border.color` is
       still open, and two facts cells disagree on it:
-      `docs/platform-facts.md:1051` gives KDE's `border.color` as "(preset) —
+      `docs/platform-facts.md:1055` gives KDE's `border.color` as "(preset) —
       derived from background", while `:1463` gives the separator, which
       inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
       frameContrast). State the computed mix in the preset and the `:1051` cell
@@ -825,7 +825,7 @@ model, the platform presets and the three connectors
 ### windows-11: a border opacity with no source
 
 - [x] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
-      variants (light `:70`, dark `:567`), and `docs/platform-facts.md:1116`
+      variants (light `:70`, dark `:567`), and `docs/platform-facts.md:1120`
       gives Windows no multiplier: WinUI 3 states each stroke role as a colour
       with its own alpha. M2b-P07 (`docs/todo_code-review-findings.md`) was
       deferred to the *Border opacity* entry, which closed on 2026-09-28
@@ -839,7 +839,7 @@ model, the platform presets and the three connectors
       `CardStrokeColorDefault`'s alpha, already in the stated
       `defaults.border.color` (`model/border.rs`: no connector multiplies by
       it), as macos-monterey's 0.098 is: 15/255 = 0.059 light (`#0000000f`)
-      and 25/255 = 0.098 dark (`#00000019`); `docs/platform-facts.md:1116`
+      and 25/255 = 0.098 dark (`#00000019`); `docs/platform-facts.md:1120`
       says so. It moves to the archive at the next prune.
 
 ### Hover fills: a layer or a replacement
@@ -853,7 +853,7 @@ model, the platform presets and the three connectors
       `styles::composite_over`, `connectors/native-theme-iced/src/styles.rs:79`).
       WinUI 3 replaces instead: `ButtonBackgroundPointerOver` =
       `ControlFillColorSecondary` takes the place of `ButtonBackground`
-      (`docs/platform-facts.md:1179`), and so do `ButtonBackgroundPressed`
+      (`docs/platform-facts.md:1192`), and so do `ButtonBackgroundPressed`
       and `ComboBoxBackgroundPointerOver` (Button_themeresources.xaml:130,
       ComboBox_themeresources.xaml:243, microsoft-ui-xaml 8463f45). M2b
       Step 7b (`docs/todo_code-review-findings.md`, M2b) has windows-11
@@ -924,7 +924,7 @@ model, the platform presets and the three connectors
       `SolidBackgroundFillColorTertiary`, `#F9F9F9` / `#282828`,
       TabView_themeresources.xaml:7, :85; Common_themeresources_any.xaml:274,
       :70). `button.checked_background` states the accent, `#0078d4`, for
-      `AccentFillColorDefault` (`docs/platform-facts.md:1181`), but that brush
+      `AccentFillColorDefault` (`docs/platform-facts.md:1194`), but that brush
       is `SystemAccentColorDark1` light and `SystemAccentColorLight2` dark
       (Common_themeresources_any.xaml:329, :125), `#0067c0` / `#4cc2ff` for
       the default accent on Windows 11 25H2
@@ -932,7 +932,7 @@ model, the platform presets and the three connectors
       *M2b fix round 2 (2026-10-11):* `input.background_color` now states
       `TextControlBackground` = `ControlFillColorDefault` as the resource
       gives it, `#ffffffb3` / `#ffffff0f` (TextBox_themeresources.xaml:130,
-      :23), and `docs/platform-facts.md:1190` gives the brush beside
+      :23), and `docs/platform-facts.md:1203` gives the brush beside
       `COLOR_WINDOW`; the old dark `#2d2d2d` had no source.
       `tab.active_background` and `button.checked_background` are still open.
       *M2 final review (2026-10-11, I1), for M4:* the mix shows in dark mode.
@@ -984,7 +984,7 @@ model, the platform presets and the three connectors
       Common_themeresources_any.xaml:252, :48, microsoft-ui-xaml 8463f45),
       over a nearly clear fill, `ToggleSwitchFillOff` =
       `ControlAltFillColorSecondary`, `#06000000` / `#19000000`
-      (`docs/platform-facts.md:1509`). The model has no switch border colour,
+      (`docs/platform-facts.md:1522`). The model has no switch border colour,
       so windows-11's off switch draws as a faint pill with no outline
       (`#00000006` over `#f3f3f3`). Its hover and disabled strokes
       (`ToggleSwitchStrokeOffPointerOver`, `ToggleSwitchStrokeOffDisabled`,
@@ -1023,7 +1023,7 @@ model, the platform presets and the three connectors
       foreground) and the menu's background (`:294`, `:837`): WinUI 3 draws the
       menu on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does
       not publish; the preset states the fallback of the acrylic brush of the
-      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1240`). Under
+      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1253`). Under
       high contrast the preset's stated strokes and fills that the reader
       does not map (`input.hover_border_color`, the check box's and switch's
       off colours, the slider's track and disabled colours) keep
@@ -1118,7 +1118,7 @@ model, the platform presets and the three connectors
       marked ❓ "no source"), the KDE reader, which reads `[Colors:Complementary]`
       (`native-theme/src/kde/colors.rs:173-176`, M4),
       `docs/inheritance-rules.toml:489` and the `[Colors:Complementary]`
-      description at `docs/platform-facts.md:605` follow. The text colour
+      description at `docs/platform-facts.md:609` follow. The text colour
       is settled either way: `ForegroundNormal` is the same in both sets.
 
 ### Presets: adwaita's list header and slider thumb
@@ -1126,12 +1126,12 @@ model, the platform presets and the three connectors
 - [ ] [v0.7.0] Since M2e fix round 2 adwaita leaves `list.header_background`
       and `slider.thumb_color` to inheritance (`defaults.surface_color`,
       `#ffffff` / `#1d1d20`). `list.header_background`: the GNOME cell of
-      `docs/platform-facts.md:1416` names "columnview header" but no colour;
+      `docs/platform-facts.md:1429` names "columnview header" but no colour;
       at libadwaita 1.10.0 the header's buttons are transparent
       (`_column-view.scss:12-13`) over the column view's `.view` fill,
       `--view-bg-color` (`_column-view.scss:72-76`, `_views.scss:1-4`).
       State that in the cell, then decide whether the preset states it.
-      `slider.thumb_color`: the GNOME cell of `docs/platform-facts.md:1306`
+      `slider.thumb_color`: the GNOME cell of `docs/platform-facts.md:1319`
       says ← `defaults.surface_color`, but libadwaita 1.10.0 fills the slider
       with `$slider_color` = `color-mix(in srgb, white 80%,
       var(--view-bg-color))` (`_scale.scss:50`, `_colors.scss:288`), a light
@@ -1142,7 +1142,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar
       is `NSVisualEffectView.Material.sidebar`, a material with no colour
-      (`docs/platform-facts.md:1356`), yet `macos-monterey` and `macos-tahoe`
+      (`docs/platform-facts.md:1369`), yet `macos-monterey` and `macos-tahoe`
       state `#e8e8ed` / `#262626`. The OS probe resolves its colours with
       Reduce Transparency on and renders no material. Have it render a
       sidebar-material `NSVisualEffectView` with Reduce Transparency on and
@@ -1151,7 +1151,7 @@ model, the platform presets and the three connectors
       re-audit, 2026-10-11).
 - [ ] [v0.7.0] `window.title_bar_background` and `list.header_background`
       are ≈ `defaults.surface_color` on macOS, "measured", with no render
-      cited (`docs/platform-facts.md:1147`, `:1416`). In `macos-monterey`
+      cited (`docs/platform-facts.md:1160`, `:1429`). In `macos-monterey`
       dark both inherit `controlBackgroundColor` `#1e1e1e` under a window of
       `#323232`. Render a titled window and an `NSTableView` with a header
       on the probe images, in both appearances, and check both cells against
@@ -1160,7 +1160,7 @@ model, the platform presets and the three connectors
 ### OS probe: the selected segment in a key window
 
 - [ ] [v0.7.0] `segmented_control.active_background` on macOS is
-      `selectedContentBackgroundColor` (`docs/platform-facts.md:1623`), whose
+      `selectedContentBackgroundColor` (`docs/platform-facts.md:1636`), whose
       value macOS 26 reports unchanged (probe 26 `:324`, `:398`), but the OS
       probe renders each control in a borderless window it never orders
       front, so never key (probe `:514`), and there the selected segment is
@@ -1176,7 +1176,7 @@ model, the platform presets and the three connectors
 
 ### platform-facts: the Plasma 6.8 rows cite the beta
 
-- [ ] [v0.7.0] `docs/platform-facts.md:713`, `:714` and `:1123` state Plasma
+- [ ] [v0.7.0] `docs/platform-facts.md:717`, `:718` and `:1123` state Plasma
       6.8 from its Beta 2 (plasma-workspace `v6.7.91`, `40cde89a`): no
       `forceFontDPI`, no krdb, and `Xft.dpi` from the Xwayland scale; the
       `kde-breeze.toml` header says Breeze's values are unchanged at Breeze
@@ -1300,7 +1300,7 @@ model, the platform presets and the three connectors
       `DwmGetColorizationColor` as `window.title_bar_background` whether or not
       the user turned on *Show accent colour on title bars*; since 8c133614 it
       does not, and outside high contrast the title bar is the preset's Mica
-      fallback (bcb1d2c2; `docs/platform-facts.md:1147`, `:370`). With the
+      fallback (bcb1d2c2; `docs/platform-facts.md:1160`, `:374`). With the
       setting on, Windows draws the title bar in an accent colour the theme then
       misses. The probe reads the setting as `ColorPrevalence` under
       `HKCU\Software\Microsoft\Windows\DWM` (0 on the Windows 11 25H2 runner,
@@ -1320,7 +1320,7 @@ model, the platform presets and the three connectors
       `button.primary_background` to equal the accent. windows-11's static
       `primary_background` therefore inherits the accent, `#0078d4`
       (ee75ad7e; the comment at `native-theme/src/presets/windows-11.toml:139-141`),
-      where `docs/platform-facts.md:1175` gives WinUI 3's
+      where `docs/platform-facts.md:1188` gives WinUI 3's
       `AccentFillColorDefault`, `#0067c0` / `#4cc2ff` for the default accent.
       The live reader already writes the `AccentFillColorDefault` shades there
       (8ccdbed0), so a live Windows theme already breaks the iced assumption.
@@ -1382,7 +1382,7 @@ model, the platform presets and the three connectors
 ### KDE reader: `switch.thumb_background` and `menu.icon_size` are not read
 
 - [ ] [v0.7.x] From M4 T36 (2026-10-13): kde-breeze states the switch thumb as
-      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1510`)
+      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1523`)
       and the menu icon size as KIconLoader's Small, 16 (`:1255`), but the KDE
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
@@ -1399,7 +1399,7 @@ model, the platform presets and the three connectors
       Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
       mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
       breezehelper.cpp:200-203, as the T36 implementer read them), while
-      `docs/platform-facts.md:1240` gives KDE's `menu.background_color` as
+      `docs/platform-facts.md:1253` gives KDE's `menu.background_color` as
       `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
       uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
       it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
@@ -1438,7 +1438,7 @@ model, the platform presets and the three connectors
       `card.background_color` inherits `defaults.surface_color`
       (`docs/inheritance-rules.toml:266`), and only material-3 (both modes)
       and adwaita (dark, `#ffffff14`, `adwaita.toml:771`, libadwaita
-      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1644`) states no card for macOS and
+      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1657`) states no card for macOS and
       KDE. Should the inheritance give the toolbar and the popover a 0 width
       and the card no fill, or should their presets state them from a source?
       Until then the gpui connector carries neither `toolbar.border.color`,
@@ -1446,7 +1446,7 @@ model, the platform presets and the three connectors
       three in the coverage test.
       M6 T16c fix round 1 (2026-10-16): adwaita also states the popover's
       edge colour, `#0000000d` in both modes from libadwaita's outline
-      (`adwaita.toml:296`, `:678`, `docs/platform-facts.md:1444`). A resolved
+      (`adwaita.toml:296`, `:678`, `docs/platform-facts.md:1457`). A resolved
       theme cannot tell a stated value from an inherited one, so until this
       is settled gpui draws neither adwaita's stated popover edge nor its dark
       card fill, nor material-3's card fill: sourced values not drawn, so the
@@ -1509,7 +1509,7 @@ model, the platform presets and the three connectors
       §2.27), and the community presets catppuccin-latte, -frappe, -macchiato,
       -mocha, dracula, gruvbox, nord, one-dark, solarized and tokyo-night
       (`:243`/`:486` or `:241`/`:484`). kde-breeze's was unset in M6 T16b: the
-      §2.27 `frame_enabled` row (`docs/platform-facts.md:1673`) says
+      §2.27 `frame_enabled` row (`docs/platform-facts.md:1686`) says
       `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
       nothing else. Find each platform's source for a hovered expander header
       (a facts row), or unset the value; the gpui connector's
@@ -1721,7 +1721,7 @@ model, the platform presets and the three connectors
       M8 T16c fix round 1 (2026-10-17): kde-breeze states those four now,
       `disabled_checked_background` #e6e7e8 / #26292c and
       `disabled_unchecked_background` #e9e9e9 / #2e3135
-      (`docs/platform-facts.md:1516-1517`); the switch's disabled tracks close.
+      (`docs/platform-facts.md:1529-1530`); the switch's disabled tracks close.
 
 ### KDE reader: the toolbar's Header fill and the window border size
 
@@ -1741,7 +1741,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;
       the stopping rule sent everything T35's fix round did not take here):
-      - `defaults.shadow_color`: `docs/platform-facts.md:1053` gives Windows
+      - `defaults.shadow_color`: `docs/platform-facts.md:1057` gives Windows
         two layers (the ambient one drawn, 14 % low, 20 % high), and the
         model's one shadow colour serves both the popup and the window
         shadows; unchanged. Decide what the one field states, or split it.
@@ -1751,7 +1751,7 @@ model, the platform presets and the three connectors
         wrong kind.
       - Under high contrast the reader writes `input.background_color` as
         `COLOR_BTNFACE` (`native-theme/src/windows.rs:363`), where the facts'
-        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md:1190`); the
+        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md:1203`); the
         Win32 cell is not the HC mapping, and the HC writes have no facts rows.
         Give the HC mappings their rows.
       - The link's hover and pressed text have no high-contrast mapping
@@ -1903,7 +1903,7 @@ model, the platform presets and the three connectors
       `windows-11` states the track transparent too since M2b Step 7b, WinUI's
       `SubtleFillColorTransparent`, `#ffffff00` in light and dark
       (`native-theme/src/presets/windows-11.toml:239`, `:799`;
-      `docs/platform-facts.md:1291`), so the same holds there.
+      `docs/platform-facts.md:1304`), so the same holds there.
       M7 T14 (2026-10-16): egui paints the scroll-bar groove from the slot,
       at the three `spacing.scroll.*_background_opacity` when floating and at
       1 when solid (`egui/src/containers/scroll_area.rs:1485-1511`). Where the
@@ -1961,7 +1961,7 @@ model, the platform presets and the three connectors
 
 - [ ] [1.0] **For M6: two defects in gpui's pressed button fill, shown by
       `macos-tahoe`** (M2a Step 9). macOS 26 draws the push button in a
-      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md:1164`),
+      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md:1177`),
       and no source gives its pressed fill, so the connector derives one.
       (1) `tc.button_active = tc.button.blend(tc.secondary_active)`
       (`connectors/native-theme-gpui/src/colors.rs:355`): `Hsla::blend` keeps
@@ -1975,7 +1975,7 @@ model, the platform presets and the three connectors
       `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated. The
       hover fill is not affected: `macos-tahoe` states `macos-monterey`'s
       opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
-      marked "no macOS 26 source" (`docs/platform-facts.md:1179` is ❓; the
+      marked "no macOS 26 source" (`docs/platform-facts.md:1192` is ❓; the
       inherited window colour is a wrong safety net,
       `docs/inheritance-rules.toml:159`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
@@ -2406,7 +2406,7 @@ What is still open on the iced side:
 - [ ] [1.0] kde-breeze states `button.hover_background = "#93cee9"` in both modes
       under a `#fcfcfc` label in dark mode: 1.67:1 (the pressed pair is 2.43
       in light mode). platform-facts records the KDE source as "`[Colors:Button]
-      DecorationHover` **blend**" (`platform-facts.md:1168`), and `#93cee9` is
+      DecorationHover` **blend**" (`platform-facts.md:1181`), and `#93cee9` is
       the raw `DecorationHover`, which Breeze paints as an outline — so the
       preset may be recording the unblended colour as a fill. Found 2026-09-21
       by the iced contrast report; for `preset-validator` to judge. The same
@@ -2418,7 +2418,7 @@ What is still open on the iced side:
       modes and `list.hover_background` and `sidebar.hover_background` in
       light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
       give no colour: "`[Colors:View] DecorationHover` blend"
-      (`docs/platform-facts.md:1365`, `:1422`), "(Breeze src) thumb hover"
+      (`docs/platform-facts.md:1378`, `:1435`), "(Breeze src) thumb hover"
       (`:1293`). `segmented_control.hover_background` and
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source
@@ -3348,7 +3348,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1625`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
@@ -3363,18 +3363,18 @@ the gap — closing it is a change, and each wants its own decision.
       `progress_bar.min_width` 100, `tab.min_width` 64, the dialog bounds
       320/560/140/600, `spinner.stroke_width` 2, `combo_box.min_width` 120,
       `combo_box.arrow_icon_size` 17 (the chevron measures 7 × 10.5 on macOS
-      26, `docs/platform-facts.md:1606`, not a square either),
+      26, `docs/platform-facts.md:1619`, not a square either),
       `expander.header_height` 40 and the icon sizes small 16, large 32,
       dialog 22 and panel 20; it makes
       `macos-monterey`'s choice of the small toolbar mode, 24 (the cell's
       macOS 26 tag: "same"). It does not carry `scrollbar.groove_width`:
       macOS 26 reports `scrollerWidth` 17 in both modes
-      (`docs/platform-facts.md:1294`), which `macos-tahoe` states; and it
+      (`docs/platform-facts.md:1307`), which `macos-tahoe` states; and it
       leaves `layout.container_margin` unstated. It carries the same way,
       wherever else the model requires a number that no source gives for
       macOS 26: `focus_ring_offset` -1, `border.corner_radius_lg` 10 (Tahoe's
       window radii are larger per third-party measurements,
-      `docs/platform-facts.md:173`; not adopted, no API gives them),
+      `docs/platform-facts.md:177`; not adopted, no API gives them),
       `border.line_width` 0.5, `border.shadow_enabled`,
       `button.icon_text_gap` and `menu.icon_text_gap` 4, `tooltip.max_width`
       300, `scrollbar.min_thumb_length` 40, `tab.min_height` 24,
@@ -3397,7 +3397,7 @@ the gap — closing it is a change, and each wants its own decision.
       kde-breeze states 8. Two value mismatches the audit noticed and did
       not follow: adwaita's `checkbox.indicator_width` 20 against §2.5's
       "libadwaita CSS: 14" (Ch. 1 gives 20 with padding:
-      `docs/platform-facts.md:1220` gives GNOME 14, the CSS `min-width`,
+      `docs/platform-facts.md:1233` gives GNOME 14, the CSS `min-width`,
       which is the content box, while `adwaita.toml` states the 20-point box
       that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
       read 20; it does since 963bcdd2, which closes this mismatch), and windows-11's
@@ -3821,7 +3821,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:149`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
 
 ### GNOME reader: title and heading sizes ignore the user's font
-- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:742-751`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
+- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
 
 ### iced showcase: the startup fallback outside Linux
 - [ ] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
@@ -4031,7 +4031,7 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Correction (M8 T14 fix round 1, 2026-10-17):* the header row's border is the main header's `.h(header_row_height).border_b_1()` at gpui-component `src/table/state.rs:1959-1960`; `:1899` is the left-fixed columns' header.
 - [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
   *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1663 names `ItemView_ArrowSize` where :1626 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1626 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`

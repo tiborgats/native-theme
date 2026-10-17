@@ -192,7 +192,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 /// `epaint::Margin` from a widget's per-side padding, over the sink's own margin.
 ///
 /// `ResolvedPadding` has one `Option<f32>` per side (`native-theme/src/model/border.rs:203-212`),
-/// each a **per-side** value (`docs/platform-facts.md:910-926`) — do **not** halve. A stated,
+/// each a **per-side** value (`docs/platform-facts.md:914-930`) — do **not** halve. A stated,
 /// finite side (`Some(0.0)` included) is rounded to a whole point, saturating; an unstated
 /// side (`None`) and, by the non-finite rule, a `NaN` or `±∞` one keep `base`'s side, where
 /// `base` is the value egui's own default `Style` for that scheme gives the sink (S1) —
@@ -224,7 +224,7 @@ pub fn to_margin(
 /// side plus the border's line width.
 ///
 /// A platform's padding lies *inside* its border — outer size = border + padding + content
-/// (`docs/platform-facts.md:900-902`) — while `Button`, `ComboBox`, `CollapsingHeader` and
+/// (`docs/platform-facts.md:904-906`) — while `Button`, `ComboBox`, `CollapsingHeader` and
 /// `TextEdit` draw their stroke *inside* the padding egui gives them: `Button`'s frame margin
 /// is `button_padding + expansion − bg_stroke.width` and `Frame` adds the stroke back
 /// (`egui/src/widget_style.rs:163-165`, `egui/src/containers/frame.rs:327-331`),
@@ -240,7 +240,7 @@ pub fn to_margin(
 /// most half a point. It is exact only where the preset's padding is the platform's
 /// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
 /// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) and `macos-tahoe`'s (4 / 4 for all three)
-/// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1172`,
+/// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1185`,
 /// `:1201`, `:1610`), where the border's share is
 /// still open, so there each of those controls comes out one line width per side taller than
 /// the platform's until platform-facts settles those cells (`docs/todo.md`).

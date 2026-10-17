@@ -655,7 +655,7 @@ mod tests {
     }
 
     /// macos-tahoe light's push button is `#00000014` (macos-tahoe.toml
-    /// `[light.button]`, docs/platform-facts.md:1164), and the pressed fill a
+    /// `[light.button]`, docs/platform-facts.md:1177), and the pressed fill a
     /// connector derives from it keeps that alpha; the pressed button is one
     /// over the other, alpha 0.0784 → 0.1507 (the M6 T9 ruling).
     #[test]

@@ -10,7 +10,7 @@
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
 //! - `kcmfonts`: `forceFontDPI`, on X11, the file the fonts KCM writes it
-//!   to and krdb reads it from (`docs/platform-facts.md:713`).
+//!   to and krdb reads it from (`docs/platform-facts.md:717`).
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
 //!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
 //!   xdg-desktop-portal-kde gives the application palette's highlight
@@ -42,7 +42,7 @@ use crate::model::IconSizes;
 /// and Phase 79-02 decision for rationale.
 ///
 /// `font_dpi` is returned as given: kdeglobals holds no font DPI
-/// (`forceFontDPI` lives in kcmfonts, `docs/platform-facts.md:713`).
+/// (`forceFontDPI` lives in kcmfonts, `docs/platform-facts.md:717`).
 /// Icon sizes are NOT populated (requires filesystem access).
 #[doc(hidden)]
 pub fn from_kde_content_pure(
@@ -851,7 +851,7 @@ BackgroundNormal=49,54,59
 
     /// Plasma's fonts KCM and krdb open `forceFontDPI`'s file by the name
     /// `kcmfonts`, and KConfig adds no `rc` to a name it is given
-    /// (docs/platform-facts.md:713).
+    /// (docs/platform-facts.md:717).
     #[test]
     fn force_font_dpi_is_read_from_kcmfonts() {
         let dir = temp_config_dir("kcmfonts");
@@ -1658,7 +1658,7 @@ AnimationDurationFactor=1.0
     }
 
     /// `forceFontDPI` lives in kcmfonts, which the fonts KCM writes it to
-    /// and krdb reads it from (docs/platform-facts.md:713); a kdeglobals key
+    /// and krdb reads it from (docs/platform-facts.md:717); a kdeglobals key
     /// of that name is no font DPI and does not replace the one given.
     #[test]
     fn a_kdeglobals_force_font_dpi_is_not_the_font_dpi() -> crate::Result<()> {
