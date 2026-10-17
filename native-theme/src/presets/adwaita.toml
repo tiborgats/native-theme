@@ -50,8 +50,9 @@ selection_background = "#3584e4"
 selection_text_color = "#ffffff"
 # ❓ platform-facts.md:1054 (§2.1.3): no source for #1b6acb at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 link_color = "#1b6acb"
-# ❓ platform-facts.md:1104 (§2.1.5): no source for #3584e4 as the ring at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
-focus_ring_color = "#3584e4"
+# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #0461be at 50 % (libadwaita 1.10.0
+# _drawing.scss:20, _colors.scss:260, :307, :146; adw-accent-color.c:130-157)
+focus_ring_color = "#0461be80"
 # platform-facts.md:1060 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
 disabled_text_color = "#2e3436"
 # platform-facts.md:1049 (§2.1.3): accent_fg_color white (libadwaita 1.10.0 adw-style-manager.c:161)
@@ -144,8 +145,10 @@ placeholder_color = "#929595"
 min_height_px = 34.0
 # platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#2e3436"
-hover_border_color = "#3584e4"
-focus_border_color = "#3584e4"
+# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
+# icons' opacity (_entries.scss:49)
+# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
+focus_border_color = "#0461be80"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
 
 
@@ -468,7 +471,9 @@ info_text_color = "#ffffff"
 selection_background = "#3584e4"
 selection_text_color = "#ffffff"
 link_color = "#5b9bf8"
-focus_ring_color = "#3584e4"
+# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #81d0ff at 50 % (libadwaita 1.10.0
+# _drawing.scss:20, _colors.scss:260, :307, :151; adw-accent-color.c:130-157)
+focus_ring_color = "#81d0ff80"
 # platform-facts.md:1060 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
 disabled_text_color = "#ffffff"
 accent_text_color = "#ffffff"
@@ -562,8 +567,10 @@ placeholder_color = "#8b8b8b"
 min_height_px = 34.0
 # platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#ffffff"
-hover_border_color = "#3584e4"
-focus_border_color = "#3584e4"
+# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
+# icons' opacity (_entries.scss:49)
+# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
+focus_border_color = "#81d0ff80"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
 
 
