@@ -685,6 +685,46 @@ fn role_with_radius_other_than(
         .expect("a role whose active corner radius differs")
 }
 
+/// adwaita's text field has no line at rest (`input.border.line_width` 0,
+/// `docs/platform-facts.md` §2.4), so the stroke its focused frame takes in
+/// `input.focus_border_color` is 0 wide; the focus edge is the theme's inset ring
+/// (2 px at offset -2, §2.1.5), which the plugin paints round a field a click focuses.
+#[test]
+fn a_clicked_borderless_text_field_shows_the_focus_ring() {
+    let (ctx, atlas, probe) = ring_harness("adwaita");
+    let theme = ctx.theme();
+    let t = atlas.resolved_for(theme);
+    assert_eq!(
+        t.input.border.line_width, 0.0,
+        "adwaita's field has no rest line"
+    );
+    let ring = atlas
+        .focus_ring(theme)
+        .expect("adwaita states a focus ring");
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.text_edit_singleline(&mut text));
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = field.layer_id;
+    watch(&probe, &[layer]);
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    let field = pass_ui(&ctx, primary(centre, false), &mut show);
+    assert!(field.has_focus(), "the click focuses the field");
+    let rings = rings_on(&seen(&probe), layer, ring.stroke);
+    assert_eq!(
+        rings.len(),
+        1,
+        "a focused borderless field has no visible focus edge"
+    );
+    let painted = rings.first().expect("the one ring");
+    assert_eq!(
+        painted.rect,
+        field.rect.expand(ring.offset),
+        "the ring lies inside the edge"
+    );
+}
+
 /// T14 (b), first half: rest, a click, `Tab`, the OS focus lost and regained.
 #[test]
 fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
