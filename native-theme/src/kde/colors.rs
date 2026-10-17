@@ -171,10 +171,14 @@ impl QtHsv {
 
     /// `QColor::toRgb` from HSV (qcolor.cpp:2222-2292). `from_hsv_f` and
     /// `to_hsv` give a hue of at most 36000, Qt's 0, so the sector is 0..=5.
+    ///
     /// Qt 6.11.2 as PySide6 6.11.2 ships it rounds `1.0f - (s * f)` once, a
-    /// fused multiply-add: rounding the product first gives another 16-bit
-    /// channel on 15 of 20 000 random interpolations
-    /// (scripts/generate_qt_color_vectors.py).
+    /// fused multiply-add. That is a property of the build, not of Qt's
+    /// source: the compiler may contract the expression where the target has
+    /// FMA. A build that rounds the product first differs by one 16-bit unit
+    /// on rare inputs, 15 of the generator's 20 000 random interpolations
+    /// and 40 of 100 000 more (seed 4243), and gave the same 8-bit colour on
+    /// every one of them (scripts/generate_qt_color_vectors.py).
     fn to_rgb(self) -> QtColor {
         let alpha = self.alpha;
         if self.saturation == 0 || self.hue == u16::MAX {
@@ -430,7 +434,8 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// edges. The blends on the accent (the checked checkbox, the progress fill,
 /// the switch's on track) come from kdeglobals' `[Colors:Selection]
 /// BackgroundNormal`, so an application's `with_overlay` accent or the
-/// portal's (`GnomePortalKdeReader::apply_accent`) does not move them.
+/// portal's (`gnome::apply_accent`, applied by `GnomePortalKdeReader`) does
+/// not move them.
 ///
 /// The toolbar takes the Header set's fill as Breeze paints it where the
 /// window decoration's border size is automatic, None or NoSides
