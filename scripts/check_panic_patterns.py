@@ -25,15 +25,20 @@ Patterns, outside test code
 
 Test code
 ---------
-An item under `#[cfg(test)]` or `#[cfg(all(test, ..))]` is skipped, from its
-opening brace to the brace that closes it. An attribute whose item ends at a
-`;` (`mod tests;`, `use ..;`) covers that item only. A file named `tests.rs`,
-and a file whose parent declares its module under `#[cfg(test)]`
+`#[cfg(test)]` or `#[cfg(all(test, ..))]` covers the next item only, from the
+attribute to the item's end: the brace that closes its first `{` outside
+`(..)` and `[..]` (a module, a function, an impl), or the first `;` or `,`
+outside them (`mod name;`, a `use`, a field, a variant, a match arm), or the
+`}`, `)` or `]` that closes the list it sits in (a last field). A line is
+skipped when all of its code lies in such a span; a line that also holds
+other code is scanned, and an item the file never closes is scanned: where the
+scan cannot tell, it reports rather than skips. A file named `tests.rs`, and a
+file whose parent declares its module under `#[cfg(test)]`
 (`#[cfg(test)] mod name;`), is test code and skipped whole.
 
 What is code
 ------------
-The braces are counted, and the patterns matched, on the code alone: line and
+Items are bounded, and the patterns matched, on the code alone: line and
 block comments (nested), string and byte-string literals, raw strings with any
 number of `#`, and char and byte literals are blanked first, across lines. A
 `{` in a test's TOML fixture or a `'{'` would otherwise leave the count inside
@@ -127,40 +132,105 @@ def code_only(text):
                 i += 3
             else:
                 i += 1  # a lifetime or a label
-        elif IDENT_CHAR.match(c):
-            # Skip the rest of an identifier, so the `r` of `bar"` or the `b`
-            # of `crab'` is never taken for a literal's prefix.
-            i += 1
-            while i < n and IDENT_CHAR.match(text[i]):
-                i += 1
         else:
             i += 1
     return "".join(out)
 
 
-def scan_file(path, lines, source):
-    """`lines` is the file's code (`code_only`), `source` its text, line for line."""
-    issues = []
-    in_test = 0
+def matching_brace(code, i):
+    """The index of the `}` that closes the `{` at `i`, or None if the file ends first."""
     depth = 0
-    test_active = False
-    for number, line in enumerate(lines, 1):
-        s = line.strip()
-        if CFG_TEST.search(s):
-            test_active = True
-        opens = line.count("{")
-        closes = line.count("}")
-        if test_active:
-            if opens > 0:
-                if in_test == 0:
-                    in_test = depth + 1
-                test_active = False
-            elif ";" in line:
-                test_active = False
-        depth += opens - closes
-        if in_test > 0 and depth < in_test:
-            in_test = 0
-        if in_test > 0:
+    for j in range(i, len(code)):
+        if code[j] == "{":
+            depth += 1
+        elif code[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return j
+    return None
+
+
+def item_end(code, i):
+    """The index of the last character of the item that starts at or after `i`.
+
+    The item is the first `{…}` outside `(…)` and `[…]` (with a `;` or `,`
+    right after it), or it ends at the first `;` or `,` outside them (a
+    `mod name;`, a field, a variant, a match arm), or just before the `}`,
+    `)` or `]` that closes the enclosing list (a last field). None when the
+    file ends first.
+    """
+    depth = 0
+    n = len(code)
+    while i < n:
+        c = code[i]
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+            if depth < 0:
+                return i - 1
+        elif depth == 0:
+            if c == "{":
+                close = matching_brace(code, i)
+                if close is None:
+                    return None
+                k = close + 1
+                while k < n and code[k].isspace():
+                    k += 1
+                return k if k < n and code[k] in ";," else close
+            if c in ";,":
+                return i
+            if c == "}":
+                return i - 1
+        i += 1
+    return None
+
+
+def test_item_spans(code):
+    """The character spans `(start, end)` of the items under `#[cfg(test)]`.
+
+    Each span runs from the attribute's `#` to the end of the next item
+    (`item_end`): the attribute covers that item only. An attribute whose item
+    has no end in the file covers nothing, so code the scan cannot bound is
+    scanned, never skipped.
+    """
+    spans = []
+    n = len(code)
+    for m in CFG_TEST.finditer(code):
+        depth = 0
+        j = m.start() + 1
+        while j < n:
+            if code[j] == "[":
+                depth += 1
+            elif code[j] == "]":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        if j >= n:
+            continue
+        end = item_end(code, j + 1)
+        if end is not None:
+            spans.append((m.start(), end))
+    return spans
+
+
+def scan_file(path, code, source):
+    """`code` is the file's text through `code_only`, `source` its lines.
+
+    A line is test code when every non-blank character of its code lies in a
+    span `test_item_spans` gives. A line that also holds code outside every
+    span is scanned.
+    """
+    covered = bytearray(len(code))
+    for start, end in test_item_spans(code):
+        covered[start:end + 1] = b"\x01" * (end + 1 - start)
+    issues = []
+    offset = 0
+    for number, line in enumerate(code.split("\n"), 1):
+        chars = [offset + k for k, ch in enumerate(line) if not ch.isspace()]
+        offset += len(line) + 1
+        if chars and all(covered[k] for k in chars):
             continue
         for pattern, tag in PATTERNS:
             if pattern.search(line):
@@ -172,7 +242,8 @@ def scan_file(path, lines, source):
 def test_only_files(code_by_file):
     """Files their parent declares under `#[cfg(test)]` as `mod name;`."""
     skip = set()
-    for path, lines in code_by_file.items():
+    for path, code in code_by_file.items():
+        lines = code.split("\n")
         base, name = os.path.split(path)
         child_dir = base if name in ("lib.rs", "main.rs", "mod.rs") else os.path.join(base, name[:-3])
         for i, line in enumerate(lines):
@@ -205,14 +276,14 @@ def scan(dirs):
             except (OSError, UnicodeDecodeError) as error:
                 errors.append(f"{path}: cannot be read ({error})")
                 continue
-            code_by_file[path] = code_only(text).split("\n")
+            code_by_file[path] = code_only(text)
             source_by_file[path] = text.split("\n")
     skip = test_only_files(code_by_file)
     findings = []
-    for path, lines in code_by_file.items():
+    for path, code in code_by_file.items():
         if path.endswith(os.sep + "tests.rs") or path in skip:
             continue
-        findings.extend(scan_file(path, lines, source_by_file[path]))
+        findings.extend(scan_file(path, code, source_by_file[path]))
     return findings, errors
 
 
@@ -235,6 +306,7 @@ SELF_TEST_FILES = {
         '    const TOML: &str = r##"\n'
         '[a] b = { c = "{"\n'
         '"##;\n'
+        '    fn t() { Some(1).unwrap(); }\n'
         '}\n'
         'pub fn after() -> u8 { "1".parse().unwrap() }\n'
     ),
@@ -244,6 +316,7 @@ SELF_TEST_FILES = {
         'mod tests {\n'
         '    // a stray { in a comment\n'
         '    /* outer /* nested { */ still a comment { */\n'
+        '    fn t() { Some(1).unwrap(); }\n'
         '}\n'
         'pub fn after() -> u8 { "1".parse().unwrap() }\n'
     ),
@@ -254,18 +327,117 @@ SELF_TEST_FILES = {
         "    const OPEN: char = '{';\n"
         "    const B: u8 = b'{';\n"
         "    const QUOTE: char = '\"';\n"
-        "    const ESCAPED: [char; 2] = ['\\'', '\\u{7B}'];\n"
+        "    const ESCAPED: [char; 3] = ['\\'', '\\u{7B}', '\\\"'];\n"
+        "    const S: &str = \"{\";\n"
         "    fn f<'a>(x: &'a str) -> &'a str { x }\n"
+        "    fn t() { Some(1).unwrap(); }\n"
         "}\n"
         "pub fn after<'a>(x: &'a str) -> u8 { x.parse().unwrap() }\n"
     ),
-    # `#[cfg(test)] mod name;` covers that line only, and its file is skipped.
+    # `#[cfg(test)] mod name;` covers that item only, so the multi-line item
+    # after it is scanned, and the module's file is skipped.
     "a/src/lib.rs": (
         '#[cfg(test)]\n'
         'mod helpers;\n'
-        'pub fn after() -> u8 { "1".parse().expect("a number") }\n'
+        'pub fn after() -> u8 {\n'
+        '    "1".parse().expect("a number")\n'
+        '}\n'
+    ),
+    # Escaped quotes, a byte string and a raw byte string holding `{`.
+    "a/src/escapes.rs": (
+        '#[cfg(test)]\n'
+        'mod tests {\n'
+        '    const D: &str = "say \\"{\\" now";\n'
+        '    const E: &str = "\\"{";\n'
+        '    const F: &[u8] = b"{";\n'
+        '    const G: &[u8] = br#"{""#;\n'
+        '    const H: &str = stringify!(bar"\\"{");\n'
+        '    fn t() { Some(1).unwrap(); }\n'
+        '}\n'
+        'pub fn after() -> u8 {\n'
+        '    "1".parse().unwrap()\n'
+        '}\n'
+    ),
+    # A `#[cfg(test)]` inside a test module: the outer module stays test code.
+    "a/src/nested.rs": (
+        '#[cfg(test)]\n'
+        'mod tests {\n'
+        '    #[cfg(test)]\n'
+        '    mod inner {\n'
+        '        fn i() { Some(1).unwrap(); }\n'
+        '    }\n'
+        '    fn t() { Some(2).unwrap(); }\n'
+        '}\n'
+        'pub fn after() -> u8 {\n'
+        '    "1".parse().unwrap()\n'
+        '}\n'
+    ),
+    # A one-line test item is skipped; a line that also holds other code is not.
+    "a/src/one_line.rs": (
+        '#[cfg(test)] fn helper() -> u8 { "1".parse().unwrap() }\n'
+        '#[cfg(test)] fn h2() {} pub fn shared() -> u8 { "1".parse().unwrap() }\n'
+        'pub fn after() -> u8 {\n'
+        '    "2".parse().unwrap()\n'
+        '}\n'
+    ),
+    # A `;` inside the signature's `[u8; 3]` or a call's parentheses does not
+    # end the item.
+    "a/src/signature.rs": (
+        '#[cfg(test)]\n'
+        'fn helper(\n'
+        '    a: [u8; 3],\n'
+        ') -> u8 {\n'
+        '    a.first().copied().unwrap()\n'
+        '}\n'
+        '#[cfg(test)]\n'
+        'static X: std::sync::LazyLock<u8> = std::sync::LazyLock::new(|| {\n'
+        '    "1".parse().unwrap()\n'
+        '});\n'
+        'pub fn after() -> u8 {\n'
+        '    "1".parse().unwrap()\n'
+        '}\n'
+    ),
+    # On a field, a variant, a last field and a match arm the attribute covers
+    # that one entry; the item after it is scanned.
+    "a/src/entries.rs": (
+        'pub struct S {\n'
+        '    #[cfg(test)]\n'
+        '    pub probe: u8,\n'
+        '    pub last: u8,\n'
+        '}\n'
+        'impl S {\n'
+        '    pub fn f(&self) -> u8 { "1".parse().unwrap() }\n'
+        '}\n'
+        'pub enum E {\n'
+        '    A,\n'
+        '    #[cfg(test)]\n'
+        '    B,\n'
+        '}\n'
+        'pub fn g() -> u8 {\n'
+        '    "1".parse().unwrap()\n'
+        '}\n'
+        'pub struct T {\n'
+        '    #[cfg(test)]\n'
+        '    pub last: u8\n'
+        '}\n'
+        'impl T {\n'
+        '    pub fn t(&self) -> u8 { "1".parse().unwrap() }\n'
+        '}\n'
+        'pub fn m(x: u8) -> u8 {\n'
+        '    match x {\n'
+        '        #[cfg(test)]\n'
+        '        0 => "0".parse().unwrap(),\n'
+        '        _ => "1".parse().unwrap(),\n'
+        '    }\n'
+        '}\n'
     ),
     "a/src/helpers.rs": 'pub fn h() { Some(1).unwrap(); }\n',
+    # A test item the file never closes cannot be bounded, so it is scanned.
+    "a/src/unbounded.rs": (
+        '#[cfg(test)]\n'
+        'fn broken() -> u8 {\n'
+        '    "1".parse().unwrap()\n'
+    ),
     # A pattern inside a string or a comment is not a call.
     "a/src/not_calls.rs": (
         'pub const DOC: &str = "call .unwrap() and panic!(now)";\n'
@@ -277,10 +449,20 @@ SELF_TEST_FILES = {
 # (file, line, tag) the scan must report, and nothing else.
 SELF_TEST_EXPECTED = {
     ("a/src/string_brace.rs", 8, ".unwrap()"),
-    ("a/src/raw_string.rs", 7, ".unwrap()"),
-    ("a/src/comment_brace.rs", 6, ".unwrap()"),
-    ("a/src/char_brace.rs", 9, ".unwrap()"),
-    ("a/src/lib.rs", 3, ".expect()"),
+    ("a/src/raw_string.rs", 8, ".unwrap()"),
+    ("a/src/comment_brace.rs", 7, ".unwrap()"),
+    ("a/src/char_brace.rs", 11, ".unwrap()"),
+    ("a/src/lib.rs", 4, ".expect()"),
+    ("a/src/escapes.rs", 11, ".unwrap()"),
+    ("a/src/nested.rs", 10, ".unwrap()"),
+    ("a/src/one_line.rs", 2, ".unwrap()"),
+    ("a/src/one_line.rs", 4, ".unwrap()"),
+    ("a/src/signature.rs", 12, ".unwrap()"),
+    ("a/src/entries.rs", 7, ".unwrap()"),
+    ("a/src/entries.rs", 15, ".unwrap()"),
+    ("a/src/entries.rs", 22, ".unwrap()"),
+    ("a/src/entries.rs", 28, ".unwrap()"),
+    ("a/src/unbounded.rs", 3, ".unwrap()"),
 }
 
 
