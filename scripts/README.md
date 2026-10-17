@@ -195,7 +195,8 @@ The Linux screenshots' runs also write their layout dumps and captures into a
 temporary directory, and `check_showcase_parity.py` compares the three
 showcases there at rest under the six captured presets (sizes, positions,
 colours); a difference `docs/showcase-exceptions.toml` lists no reason for
-fails the script, which keeps the directory for the comparator's `--merge`.
+fails the script, which keeps the directory for the comparator's `--merge`;
+a screenshot step that fails removes it, naming it.
 
 Its last step runs `update_compatibility.sh run` (below), which needs the network,
 runs every connector's tests, clippy and documentation on the newest upstream

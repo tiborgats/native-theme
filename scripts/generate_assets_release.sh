@@ -121,24 +121,30 @@ ok "Spinner GIFs generated"
 echo ""
 
 # Each Linux screenshot's run also writes its layout dump, at rest, with the
-# capture beside it, here, for Step 6's comparison; kept when it fails, for the
-# comparator's --merge.
+# capture beside it, here, for Step 6's comparison; kept when the comparison
+# fails, for the comparator's --merge.
 DUMP_DIR=$(mktemp -d)
 
+# linux_screenshots KIND LABEL: Step 3, 4 or 5. A step that fails leaves dumps
+# of part of the run, which no comparison reads, so DUMP_DIR is named and
+# removed before the script stops.
+linux_screenshots() {
+    bash "$SCRIPT_DIR/generate_screenshots_$1.sh" "$DUMP_DIR" || {
+        rm -rf "$DUMP_DIR"
+        fail "$2 Linux screenshots failed (see above); removed the layout dump directory $DUMP_DIR"
+    }
+    ok "$2 Linux screenshots generated"
+    echo ""
+}
+
 echo "=== Step 3/7: Iced Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_iced.sh" "$DUMP_DIR"
-ok "Iced Linux screenshots generated"
-echo ""
+linux_screenshots iced Iced
 
 echo "=== Step 4/7: gpui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_gpui.sh" "$DUMP_DIR"
-ok "gpui Linux screenshots generated"
-echo ""
+linux_screenshots gpui gpui
 
 echo "=== Step 5/7: egui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_egui.sh" "$DUMP_DIR"
-ok "egui Linux screenshots generated"
-echo ""
+linux_screenshots egui egui
 
 # The three showcases at rest under the six captured presets, element by
 # element: sizes, positions and the colours of their captures, each difference
