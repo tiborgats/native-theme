@@ -449,8 +449,9 @@ run_check "feature combinations (every crate)" bash scripts/check_features.sh
 # dead code or an unchecked result in them is invisible to a Linux build. A
 # cross-target `cargo check` needs the target's standard library (and, for
 # windows-gnu, the MinGW linker toolchain); where one is missing the check is
-# skipped with a warning that says why, and the summary repeats it. CI's
-# Windows and macOS test legs run the same checks.
+# skipped with a warning that says why, and the summary repeats it. CI runs
+# the same checks: its Windows and macOS test legs the first two, on the
+# platform itself, and its clippy job the egui connector's macOS check.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "system-icons (cross-target)"
 if command -v rustup &>/dev/null; then
@@ -480,7 +481,8 @@ done
 # clippy on the platform code: a Linux clippy run never sees the macOS and
 # Windows branches, so lints in them (8 on macOS, 11 on Windows, found
 # 2026-10-11) went unnoticed. Clippy builds no binary, so windows-msvc needs
-# only its standard library, no linker.
+# only its standard library, no linker. CI's clippy job runs the same three
+# for both targets.
 for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
         print_warn "skipped clippy ($target): target not installed (rustup target add $target)"

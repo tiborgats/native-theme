@@ -83,26 +83,41 @@ jobs:
           bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme --lib --no-default-features
           bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --features windows,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
           bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --no-default-features
+      # Every lint on that code, its tests and examples included, as
+      # scripts/check_release.sh runs it; the OS probe (tools/os-probe, never
+      # published) is all platform code. The targets are the step's above.
+      - name: Clippy (native-theme and the OS probe, macOS and Windows targets)
+        if: matrix.package == 'native-theme'
+        run: |
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            cargo clippy --target "$target" -p native-theme --all-targets --all-features
+            cargo clippy --target "$target" -p native-theme --all-targets --no-default-features
+            cargo clippy --target "$target" -p native-theme-os-probe --all-targets
+          done
       - name: Strict panic lints (native-theme-build)
         if: matrix.package == 'native-theme-build'
         run: bash scripts/check_strict_panic.sh -p native-theme-build --lib
       - name: Strict panic lints (iced connector)
         if: matrix.package == 'native-theme-iced'
         run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
-      # Soft, as in scripts/check_release.sh: the step's failure shows on the
-      # run without failing the job.
       # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
       - name: Strict panic lints (gpui connector, native, watch)
         if: matrix.package == 'native-theme-gpui'
-        continue-on-error: true
         run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
       - name: Strict panic lints (gpui connector, gpui-fast, native, watch)
         if: matrix.package == 'native-theme-gpui'
-        continue-on-error: true
         run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
+      # The connector's and its showcase's macOS code (the showcase's menus in
+      # the system menu bar and its macOS-only dev-dependencies), which no Linux
+      # run compiles, as scripts/check_release.sh checks it.
+      - name: Check egui connector (macOS target, all targets, all features)
+        if: matrix.package == 'native-theme-egui'
+        run: |
+          rustup target add x86_64-apple-darwin
+          cargo check --target x86_64-apple-darwin -p native-theme-egui --all-targets --all-features
       - name: Strict panic lints (egui widgets)
         if: matrix.package == 'native-theme-egui-widgets'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui-widgets --lib --all-features
