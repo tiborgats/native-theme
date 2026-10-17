@@ -3833,6 +3833,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       80 wide in gpui and 79.18 / 79.19 in iced / egui. Find what the gpui
       showcase or connector must change so the two land where iced and egui
       put them, or the forced cause with its source.
+      M8 T16 fix round 3 (2026-10-17): the focused text's offset is forced:
+      upstream's focused `border_1()` is a focus-state style no `geometry`
+      refinement reaches, recorded with its ring as the gpui contract's
+      `UPSTREAM_LIMITS` entry (`connectors/native-theme-gpui/src/contract.rs`);
+      the primary button's 86 stays open here.
 
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.
