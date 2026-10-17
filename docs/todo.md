@@ -1600,6 +1600,12 @@ model, the platform presets and the three connectors
       title; §2.27, AdwExpanderRow in a boxed list: 12 at the list's outer
       corners and 0 elsewhere, a 1px `RGB(0 0 6 / 3%)` card outline the
       preset inherits instead, and the card's shadow).
+      M8 T15 fix round 3 (2026-10-17): kde-breeze `toolbar.background_color`
+      is unstated (`[light.toolbar]` `kde-breeze.toml:325`, `[dark.toolbar]`
+      `:789`), so it inherits the window's #eff0f1 / #202326; §2.13 now
+      gives the Header set's #dee0e2 / #292c30, the tools area's fill where
+      the scheme has Header colours and the decoration's border size is
+      automatic, None or NoSides (breezestyle.cpp:1322, :1341-1347).
 
 ### windows-11: the validator's findings after T35 left open
 
