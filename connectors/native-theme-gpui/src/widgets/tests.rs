@@ -1222,6 +1222,10 @@ fn switch_draws_the_stated_outlines(
     let s = &r.switch;
     let state = format!("{preset} {mode:?} checked {checked} disabled {disabled}");
     assert_eq!(s.disabled_opacity, 1., "{state}: drawn unfaded");
+    assert!(
+        s.unchecked_track_border_color.is_some() && s.track_border_line_width.is_some(),
+        "{state}: {preset} no longer states the off track's outline (docs/platform-facts.md §2.21)"
+    );
     let track_colour = match (checked, disabled) {
         (true, false) => s.checked_track_border_color,
         (false, false) => s.unchecked_track_border_color,

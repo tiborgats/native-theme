@@ -513,6 +513,11 @@ fn the_switch_draws_the_stated_outlines() {
             for (checked, enabled) in [(false, true), (true, true), (false, false), (true, false)] {
                 let state = format!("{preset} dark {dark} checked {checked} enabled {enabled}");
                 assert_eq!(s.disabled_opacity, 1.0, "{state}: drawn unfaded");
+                assert!(
+                    s.unchecked_track_border_color.is_some() && s.track_border_line_width.is_some(),
+                    "{state}: {preset} no longer states the off track's outline \
+                     (docs/platform-facts.md §2.21)"
+                );
                 let ctx = installed(&t, &AccessibilityPreferences::default());
                 let mut on = checked;
                 let (out, _) = response(&ctx, at(0.0), |ui| {
