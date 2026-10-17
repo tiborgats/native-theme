@@ -62,10 +62,14 @@ and each capture passes `capture_window.sh`'s check (below) or the script fails.
 Builds and runs the showcase with `--features iced_aw`, so the captures show
 the same widget set the coverage check gates.
 
+With a directory argument, `DUMP_DIR`, each run also writes its layout dump
+and its capture there for `check_showcase_parity.py` (`capture_window.sh`
+below); the screenshots in `docs/assets` are the same either way.
+
 Requires: spectacle (KDE)
 
 ```sh
-./scripts/generate_screenshots_iced.sh
+./scripts/generate_screenshots_iced.sh [DUMP_DIR]
 ```
 
 ## generate_screenshots_gpui.sh
@@ -76,7 +80,7 @@ Same as `generate_screenshots_iced.sh` but for the gpui showcase. Includes
 Requires: spectacle (KDE)
 
 ```sh
-./scripts/generate_screenshots_gpui.sh
+./scripts/generate_screenshots_gpui.sh [DUMP_DIR]
 ```
 
 ## generate_screenshots_egui.sh
@@ -89,7 +93,7 @@ kde-breeze's `breeze` and `breeze-dark`.
 Requires: spectacle (KDE)
 
 ```sh
-./scripts/generate_screenshots_egui.sh
+./scripts/generate_screenshots_egui.sh [DUMP_DIR]
 ```
 
 ## capture_window.sh
@@ -99,7 +103,11 @@ holds: `capture_showcases KIND FEATURES OUTPUT ENTRY...` builds the showcase
 KIND in release mode with the cargo flags FEATURES, runs it once per ENTRY
 (`theme:variant:icon-set:icon-theme`) on its Basic page with `--capture`, and
 captures its window to OUTPUT, in which `{theme}`, `{variant}` and `{index}`
-stand for the entry's; `stop_showcase`, which each script's EXIT trap calls,
+stand for the entry's; given a directory DUMPS (the screenshot scripts'
+`DUMP_DIR` argument), each run also writes its layout dump there
+(`--dump-layout`, as `KIND-THEME-VARIANT.json`) with its capture and the
+content's offset in it beside it, the run directory `check_showcase_parity.py`
+reads; `stop_showcase`, which each script's EXIT trap calls,
 stops the showcase a failed or interrupted run leaves. The features differ by
 showcase, as the screenshot workflow builds them: iced with
 `--features iced_aw`, egui with `--all-features`, gpui with its defaults. The
@@ -181,6 +189,12 @@ beside their captures (`<os>-os-version.txt` in each artifact, copied to a
 temporary directory, never into `docs/`). Refuses to start while HEAD is unpushed or a path
 the assets depend on has uncommitted changes, because the captures must come
 from the commit CI builds.
+
+The Linux screenshots' runs also write their layout dumps and captures into a
+temporary directory, and `check_showcase_parity.py` compares the three
+showcases there at rest under the six captured presets (sizes, positions,
+colours); a difference `docs/showcase-exceptions.toml` lists no reason for
+fails the script, which keeps the directory for the comparator's `--merge`.
 
 Its last step runs `update_compatibility.sh run` (below), which needs the network,
 runs every connector's tests, clippy and documentation on the newest upstream
@@ -481,7 +495,11 @@ rewrites the exceptions file's `[parity]` section, from its `[parity]` line to
 the end, with those groups, every byte above that line unchanged; a second run
 over the same inputs changes nothing. `scripts/check_release.sh` (in the
 `--commit` subset too) and `ci.yml` run `--check-list` and `--self-test`,
-which need no display; the dump-and-compare run is not wired into a gate yet.
+which need no display. `generate_assets_release.sh` runs the comparison
+itself over the rest run of the six captured presets: each Linux screenshot's
+run writes its layout dump, its capture and the capture's `.offset` into one
+directory, which the showcases record at rest whatever the pointer does, and
+an unexcepted difference fails the asset run.
 
 Requires Python 3.11+ (for `tomllib`) and Pillow.
 

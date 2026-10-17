@@ -377,7 +377,26 @@ stop_showcase() {
     fi
 }
 
-# capture_showcases KIND FEATURES OUTPUT ENTRY...: builds the showcase
+# wait_for_dump PID FILE: waits until FILE, the layout dump of the showcase run
+# as process PID (`--dump-layout`), holds a whole JSON object. Fails when PID
+# exits first, or when none is written within SHOWCASE_WINDOW_TIMEOUT seconds.
+wait_for_dump() {
+    local pid="$1" file="$2" deadline
+    deadline=$((SECONDS + SHOWCASE_WINDOW_TIMEOUT))
+    until python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$file" 2>/dev/null; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "ERROR: the showcase (pid $pid) exited before it wrote its layout dump $file" >&2
+            return 1
+        fi
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "ERROR: the showcase (pid $pid) wrote no layout dump $file within ${SHOWCASE_WINDOW_TIMEOUT} s" >&2
+            return 1
+        fi
+        sleep 0.5
+    done
+}
+
+# capture_showcases KIND FEATURES OUTPUT DUMPS ENTRY...: builds the showcase
 # KIND (egui, gpui or iced) in release mode with the cargo flags FEATURES, then
 # runs it once per ENTRY, `theme:variant:icon-set:icon-theme` (the icon theme
 # may be empty), on its Basic page with `--capture`, and captures its window to
@@ -392,11 +411,17 @@ stop_showcase() {
 # FEATURES differ by showcase, as the callers and the screenshot workflow build
 # them: iced with `--features iced_aw` (its Extra page), egui with
 # `--all-features`, gpui with its defaults ("").
+#
+# With a directory DUMPS ("" for none), each run also writes its layout dump
+# (`--dump-layout`, the chrome at rest wherever the pointer is) to
+# DUMPS/KIND-THEME-VARIANT.json, and the capture and the content's offset in it
+# (the identity check's `+dx+dy`) beside it as .png and .offset, the files
+# scripts/check_showcase_parity.py reads from a run's directory.
 capture_showcases() {
-    local kind="$1" features="$2" output="$3"
-    shift 3
+    local kind="$1" features="$2" output="$3" dumps="$4"
+    shift 4
     local crate="native-theme-$kind" example="showcase-$kind" total=$# index=0
-    local feature_args=() args entry theme variant icon_set icon_theme file
+    local feature_args=() args entry theme variant icon_set icon_theme file name dump report offset
     read -ra feature_args <<< "$features"
 
     echo "--- Building the $kind showcase (release mode) ---"
@@ -426,11 +451,29 @@ capture_showcases() {
         else
             args+=(--icon-set "${icon_theme:-$icon_set}")
         fi
+        dump=""
+        if [ -n "$dumps" ]; then
+            name="$kind-$theme-$variant"
+            dump="$dumps/$name.json"
+            rm -f "$dump" "$dumps/$name.png" "$dumps/$name.offset"
+            args+=(--dump-layout "$dump")
+        fi
 
         cargo run -p "$crate" --example "$example" --release "${feature_args[@]}" -- "${args[@]}" &
         SHOWCASE_PID=$!
         sleep "$SHOWCASE_START_DELAY"
-        capture_showcase "$kind" "$SHOWCASE_PID" "$file" || return 1
+        report="$(capture_showcase "$kind" "$SHOWCASE_PID" "$file")" || return 1
+        printf '%s\n' "$report"
+        if [ -n "$dump" ]; then
+            wait_for_dump "$SHOWCASE_PID" "$dump" || return 1
+            offset="$(printf '%s\n' "$report" | sed -n 's/.* content at \(+[0-9]*+[0-9]*\) (.*/\1/p')"
+            if [ -z "$offset" ]; then
+                echo "ERROR: the identity check of $file printed no offset of the content" >&2
+                return 1
+            fi
+            cp "$file" "$dumps/$name.png"
+            printf '%s\n' "$offset" > "$dumps/$name.offset"
+        fi
         stop_showcase
     done
 }

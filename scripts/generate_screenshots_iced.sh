@@ -12,6 +12,10 @@ set -euo pipefail
 #     --theme material-3 --variant dark --icon-set material \
 #     --tab basic --screenshot connectors/native-theme-iced/docs/assets/macos-material-3-dark.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
+#
+# Usage: generate_screenshots_iced.sh [DUMP_DIR]. With DUMP_DIR, each run also
+# writes its layout dump, with the capture beside it, into DUMP_DIR
+# (capture_showcases), for scripts/check_showcase_parity.py.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -29,7 +33,7 @@ cd "$PROJECT_ROOT"
 mkdir -p "$OUTPUT_DIR"
 trap stop_showcase EXIT
 capture_showcases iced "--features iced_aw" "$OUTPUT_DIR/linux-{theme}-{variant}.png" \
-    "${SCREENSHOT_ENTRIES[@]}"
+    "${1:-}" "${SCREENSHOT_ENTRIES[@]}"
 
 echo ""
 echo "=== Screenshot generation complete ==="

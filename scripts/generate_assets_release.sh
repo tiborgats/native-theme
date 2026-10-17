@@ -4,7 +4,9 @@ set -euo pipefail
 # Pre-release visual asset pipeline
 #
 # Triggers CI for macOS/Windows screenshots first, then generates local
-# Linux assets in parallel while CI runs, and finally downloads the
+# Linux assets in parallel while CI runs, compares the three showcases at rest
+# from the layout dumps the Linux screenshots' runs write
+# (scripts/check_showcase_parity.py), and finally downloads the
 # CI results into the per-connector docs/assets/ directories and stamps
 # docs/assets/PROVENANCE.toml (scripts/update_provenance.sh) with the sources the
 # assets came from. scripts/check_release.sh and the crates.io workflow's release gate
@@ -47,11 +49,11 @@ echo ""
 info "Checking prerequisites..."
 command -v gh >/dev/null 2>&1 || fail "gh CLI not found"
 command -v python3 >/dev/null 2>&1 || fail "python3 not found"
-# The last step, update_compatibility.sh run, runs scripts/check_widget_coverage.py,
-# whose tomllib import needs Python 3.11; fail here rather than after the
-# captures.
+# Step 6's scripts/check_showcase_parity.py and the last step's
+# scripts/check_widget_coverage.py (update_compatibility.sh run) import tomllib,
+# which needs Python 3.11; fail here rather than after the captures.
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
-    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
+    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_showcase_parity.py and scripts/check_widget_coverage.py need 3.11+ (tomllib)"
 command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for the Linux captures)"
 for tool in kscreen-doctor qdbus6 dbus-monitor dbus-send; do
     command -v "$tool" >/dev/null 2>&1 || fail "$tool not found (scripts/capture_window.sh needs it for the Linux captures)"
@@ -66,7 +68,7 @@ echo ""
 
 # ── Step 1: Trigger CI early (runs in parallel with local work) ──────
 
-echo "=== Step 1/6: Trigger macOS & Windows screenshots via CI ==="
+echo "=== Step 1/7: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
 # Ensure local changes are pushed so CI uses the latest code
@@ -113,27 +115,43 @@ echo ""
 
 # ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
-echo "=== Step 2/6: Spinner GIFs ==="
+echo "=== Step 2/7: Spinner GIFs ==="
 python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
 ok "Spinner GIFs generated"
 echo ""
 
-echo "=== Step 3/6: Iced Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_iced.sh"
+# Each Linux screenshot's run also writes its layout dump, at rest, with the
+# capture beside it, here, for Step 6's comparison; kept when it fails, for the
+# comparator's --merge.
+DUMP_DIR=$(mktemp -d)
+
+echo "=== Step 3/7: Iced Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_screenshots_iced.sh" "$DUMP_DIR"
 ok "Iced Linux screenshots generated"
 echo ""
 
-echo "=== Step 4/6: gpui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_gpui.sh"
+echo "=== Step 4/7: gpui Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_screenshots_gpui.sh" "$DUMP_DIR"
 ok "gpui Linux screenshots generated"
 echo ""
 
-echo "=== Step 5/6: egui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
+echo "=== Step 5/7: egui Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_screenshots_egui.sh" "$DUMP_DIR"
 ok "egui Linux screenshots generated"
 echo ""
 
-echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
+# The three showcases at rest under the six captured presets, element by
+# element: sizes, positions and the colours of their captures, each difference
+# either within the comparator's rules or listed with its reason in
+# docs/showcase-exceptions.toml.
+echo "=== Step 6/7: Showcase parity at rest ==="
+python3 "$SCRIPT_DIR/check_showcase_parity.py" "$DUMP_DIR" \
+    || fail "The showcases differ where docs/showcase-exceptions.toml lists no reason (the dumps and captures are in $DUMP_DIR; scripts/check_showcase_parity.py --merge proposes the exceptions)"
+rm -rf "$DUMP_DIR"
+ok "The three showcases agree at rest"
+echo ""
+
+echo "=== Step 7/7: Theme-switching GIFs (iced + gpui + egui) ==="
 bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 ok "Theme-switching GIFs generated"
 echo ""
