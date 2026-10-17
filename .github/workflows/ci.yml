@@ -342,7 +342,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       # Fails on a `native-theme*` dependency a README's `toml` block states
       # at another `major.minor` than the workspace version's, and on a crate
-      # a README's Rust code names that none of its `toml` blocks depends on.
+      # a README's Rust code, or a doc example under that crate's src/, names
+      # that the README states no dependency on.
       # Reads files only; ubuntu-latest's Python 3.12 has the `tomllib` it needs.
       - name: README versions and crates
         run: |

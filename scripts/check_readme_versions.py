@@ -68,6 +68,15 @@ them to add. `std`, `core`, `alloc`, `crate`, `self`,
 `super` and the primitive types need none; a name beginning with an upper-case
 letter is a type, not a crate, and is not checked. A finding exits 1.
 
+The same rule reads the doc examples: every Rust block (a fence rustdoc
+compiles: an empty info string, or one of `rust` and rustdoc's attributes,
+`no_run`, `ignore`, `compile_fail,E0308`, ..) in the `///` and `//!` doc
+comments under `src/` of each crate `OWN_DEPENDENCY` names may name only a
+crate its README states in any block -- item docs have no reading order --
+and the crate itself (its own name, `crate`, `self`, `super`). Those examples
+compile as doctests against the crate's own dependencies too, and a reader
+copies them as they copy the README's.
+
 The rule reads the code as text, not as a parse, and has three blind spots,
 none of which occurs in a README today: a lowercase module a glob import
 (`use x::*;`) brings in reads as a crate (a false finding), as does a
@@ -371,6 +380,62 @@ def unstated_crates(rel, text):
     return findings
 
 
+RUSTDOC_ATTRIBUTES = re.compile(
+    r"rust|ignore(?:-.*)?|no_run|compile_fail|should_panic|test_harness|standalone_crate"
+    r"|edition\d+|E\d{4}")
+DOC_LINE_RE = re.compile(r"\s*//[/!](?!/) ?(.*)")
+
+
+def is_rust_info(info):
+    """Whether rustdoc compiles a fenced block of this info string as Rust:
+    empty, or every comma-separated word `rust` or one of its attributes."""
+    words = [w.strip() for w in info.split(",") if w.strip()]
+    return all(RUSTDOC_ATTRIBUTES.fullmatch(w) for w in words)
+
+
+def doc_blocks(text):
+    """[(first line number, [code lines])] of the Rust blocks in a source
+    file's `///` and `//!` doc comments, a comment's leading space taken off."""
+    blocks, current, start = [], None, 0
+    for number, line in enumerate(text.splitlines(), 1):
+        m = DOC_LINE_RE.fullmatch(line)
+        if m is None:
+            current = None
+            continue
+        content = m.group(1)
+        fence = content.lstrip()
+        if fence.startswith("```"):
+            if current is None:
+                current = [] if is_rust_info(fence[3:].strip()) else False
+                start = number + 1
+            else:
+                if current is not False:
+                    blocks.append((start, current))
+                current = None
+            continue
+        if current is not None and current is not False:
+            current.append(content)
+    return blocks
+
+
+def doc_example_findings(read_rel, list_rel, crates=OWN_DEPENDENCY):
+    """Findings for the crates a doc example under each crate's `src/` names
+    that the crate's README states no dependency on (in any block: item docs
+    have no reading order) and that is not the crate itself."""
+    findings = []
+    for directory, crate in crates:
+        stated = set(stated_crates(read_rel(f"{directory}/README.md")))
+        stated.add(crate.replace("-", "_"))
+        for rel in list_rel(f"{directory}/src"):
+            for start, lines in doc_blocks(read_rel(rel)):
+                for offset, name in named_crates(lines):
+                    if name not in stated:
+                        findings.append(
+                            f"{rel}:{start + offset}: the doc example names `{name}`, "
+                            f"which {directory}/README.md states no dependency on")
+    return findings
+
+
 def own_dependency_problem(rel, crate, deps, sections):
     """Why the README states no dependency on its own crate, or None."""
     own = [d for d in deps if d[2] == crate]
@@ -428,18 +493,30 @@ def read(path):
         raise Failure(f"cannot read {path}: {error}")
 
 
+def rust_sources(root, rel_dir):
+    """The `.rs` files under `rel_dir`, relative to `root`, in a stable order."""
+    found = []
+    for dirpath, dirnames, filenames in os.walk(os.path.join(root, rel_dir)):
+        dirnames.sort()
+        found += [os.path.relpath(os.path.join(dirpath, name), root)
+                  for name in sorted(filenames) if name.endswith(".rs")]
+    return found
+
+
 def run(root):
-    minor, findings, checked, unstated = check(lambda rel: read(os.path.join(root, rel)))
+    read_rel = lambda rel: read(os.path.join(root, rel))
+    minor, findings, checked, unstated = check(read_rel)
+    unstated += doc_example_findings(read_rel, lambda rel_dir: rust_sources(root, rel_dir))
     print(f"workspace version {minor}.x; {checked} `native-theme*` dependencies in README `toml` blocks")
     if findings:
         print("\nREADMEs that depend on another release than the workspace's:")
         print("\n".join("  " + line for line in findings))
     if unstated:
-        print("\nREADME code naming a crate the README does not depend on:")
+        print("\nREADME code or a doc example naming a crate the README does not depend on:")
         print("\n".join("  " + line for line in unstated))
     if findings or unstated:
         return 1
-    print("Every README depends on this release, and on every crate its code names.")
+    print("Every README depends on this release, and on every crate its code and its crate's doc examples name.")
     return 0
 
 
@@ -639,6 +716,46 @@ def self_test():
         "r.md:34: the code names `gpui`, which no `toml` block above it in the README depends on",
         "r.md:35: the code names `gpui_component`, which no `toml` block above it in the README depends on",
     ])
+    # a doc example may name the crates its crate's README states, in any
+    # block, and the crate itself; a non-Rust fence, a plain comment and a
+    # string are not read; a hidden line is
+    doc_files = {
+        "connectors/native-theme-iced/README.md": SELF_LATE.replace("later", "kit"),
+        "connectors/native-theme-iced/src/lib.rs": '''//! ```
+//! use native_theme_iced::styles;
+//! let k = kit::f();
+//! ```
+//!
+//! ```text
+//! gpui::not_read();
+//! ```
+// gpui::a_plain_comment();
+/// ```no_run
+/// # let w = gpui::Window::new();
+/// let s = "gpui::in_a_string";
+/// let b = crate::x();
+/// ```
+fn f() {}
+''',
+        "connectors/native-theme-iced/src/sub/icons.rs": '''/// ```compile_fail,E0308
+/// let b = gpui_component::button::Button::new(0);
+/// ```
+''',
+    }
+    expect("is_rust_info", [is_rust_info(i) for i in ("", "rust", "no_run", "compile_fail,E0308",
+                                                    "rust,ignore", "text", "toml", "sh")],
+           [True, True, True, True, True, False, False, False])
+    expect("a doc example naming an unstated crate fails", doc_example_findings(
+        doc_files.__getitem__,
+        lambda rel_dir: sorted(f for f in doc_files if f.startswith(rel_dir + "/")),
+        (("connectors/native-theme-iced", "native-theme-iced"),),
+    ), [
+        "connectors/native-theme-iced/src/lib.rs:11: the doc example names `gpui`, "
+        "which connectors/native-theme-iced/README.md states no dependency on",
+        "connectors/native-theme-iced/src/sub/icons.rs:2: the doc example names `gpui_component`, "
+        "which connectors/native-theme-iced/README.md states no dependency on",
+    ])
+
     for line, want in (
         ("cargo add native-theme", ["native_theme"]),
         ("$ cargo add native-theme@0.7 --features native", ["native_theme"]),

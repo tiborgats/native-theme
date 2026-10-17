@@ -751,7 +751,8 @@ done
 # bump moves every README at once, and the check holds them there. It also
 # fails on a crate a README's Rust code names that none of its `toml` blocks
 # depends on: the doctests see the crate's own dependencies, a reader only
-# those the README states.
+# those the README states. The same holds for the doc examples under each
+# crate's src/, which may name only what its README states and the crate.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then

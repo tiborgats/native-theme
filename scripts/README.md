@@ -486,11 +486,17 @@ as `_`; `std`, `core`, `alloc`, `crate`, `self`,
 `super` and the primitives need none). A README's doctests compile against
 its crate's own dependencies, so a block naming `gpui::` passes there through
 the connector's `gpui` while a reader who copied the Quick start has none.
+The same rule reads the doc examples: every Rust block in the `///` and `//!`
+doc comments under `src/` of core, build, the three connectors and
+egui-widgets may name only a crate that crate's README states (in any block:
+item docs have no reading order) and the crate itself (its own name, `crate`,
+`self`, `super`), hidden lines included. They compile against the crate's own
+dependencies as the README's blocks do, and are copied as they are.
 The rule reads the code as text, not as a parse: a lowercase module that a glob
 import brings in or the block declares itself reads as a crate, and a path in
 a macro body as any other path; none occurs in a README today.
-`--self-test` runs its built-in scenarios, a README naming another minor and
-code naming an unstated crate among them; `--root DIR` reads a
+`--self-test` runs its built-in scenarios, a README naming another minor,
+code naming an unstated crate and a doc example naming one among them; `--root DIR` reads a
 scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
 subset too) and `ci.yml`'s documentation job (and through it `publish.yml`'s
 CI run) run the check and the self-test.
