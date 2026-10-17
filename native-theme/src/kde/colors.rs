@@ -34,9 +34,10 @@ fn over(top: Rgba, bottom: Rgba) -> Rgba {
 
 /// `qRound(x)` for a non-negative `x` as Qt 6.11.2 computes it on x86-64,
 /// `int(x + 0.5f)` (qtbase `src/corelib/global/qnumeric.h:539-544`), held
-/// in the 16 bits `QColor` stores a component in.
+/// in the 16 bits `QColor` stores a component in. Every caller passes a
+/// value in 0.0..=65535.0; the clamp keeps any other in the 16 bits.
 fn q_round(x: f32) -> u16 {
-    (x + 0.5) as u16
+    (x.clamp(0.0, 65535.0) + 0.5) as u16
 }
 
 /// An RGB colour as Qt 6.11.2's `QColor` stores one: four 16-bit channels.
@@ -192,6 +193,7 @@ impl QtHsv {
         };
         let s = QtColor::f(self.saturation);
         let v = QtColor::f(self.value);
+        // `h` is below 6: the hue is below 36000 here.
         let sector = h as u8;
         let f = h - f32::from(sector);
         let p = v * (1.0 - s);
@@ -336,6 +338,7 @@ fn switch_on_track(off: QtColor, highlight: Rgba) -> Rgba {
     // f64, so dividing by 65535² rounds only once.
     let channel = |h: u16, o: u16| {
         let numerator = (f64::from(h) * alpha + f64::from(o) * inverse) * 255.0;
+        // At most 255: `h` and `o` are at most 65535 and the alphas sum to 65535.
         (numerator / (65535.0 * 65535.0)).round() as u8
     };
     Rgba::rgb(
