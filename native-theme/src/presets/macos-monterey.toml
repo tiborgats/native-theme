@@ -181,7 +181,7 @@ padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [light.tooltip.font]
-# platform-facts.md:65, :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
+# platform-facts.md:65 (§1.1.1), :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
 size_pt = 11.0
 color = "#ffffff"
 [light.scrollbar]
@@ -637,7 +637,7 @@ padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [dark.tooltip.font]
-# platform-facts.md:65, :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
+# platform-facts.md:65 (§1.1.1), :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
 size_pt = 11.0
 color = "#ffffff"
 [dark.scrollbar]
