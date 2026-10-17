@@ -35,10 +35,12 @@ fn all_presets_produce_valid_dark_themes() {
 /// come back as one, not as a panic.
 #[test]
 fn from_system_is_ok_on_linux() {
-    if let Err(e) = native_theme_iced::from_system() {
+    let loaded = native_theme_iced::from_system();
+    if cfg!(target_os = "linux") {
         assert!(
-            !cfg!(target_os = "linux"),
-            "Linux falls back to the platform preset: {e}"
+            loaded.is_ok(),
+            "Linux falls back to the platform preset: {:?}",
+            loaded.err()
         );
     }
 }
