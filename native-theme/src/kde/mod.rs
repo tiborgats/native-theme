@@ -1496,6 +1496,42 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
+    /// A `[Colors:Header]` group that lacks a key takes that key from
+    /// `[Colors:Window]` (kcolorscheme.cpp:330-332 at 27066d47), the other
+    /// from the group.
+    #[test]
+    fn a_header_group_takes_a_missing_key_from_the_window() -> crate::Result<()> {
+        let window = ("230,220,200", "90,40,20");
+        let without_header = Scheme {
+            window,
+            header: None,
+            ..BREEZE_LIGHT_SCHEME
+        };
+        let with_one_key = |key: &str| -> crate::Result<crate::ResolvedTheme> {
+            let content = format!(
+                "{}[Colors:Header]\n{key}=180,200,220\n",
+                without_header.kdeglobals()
+            );
+            let st = crate::pipeline::run_pipeline(from_kde_content(&content)?, "kde-breeze")?;
+            Ok(st.light)
+        };
+        let no_text = with_one_key("BackgroundNormal")?;
+        let expected = resolved_light(&Scheme {
+            header: Some(("180,200,220", window.1)),
+            ..without_header
+        })?;
+        assert_eq!(no_text.toolbar.background_color, Rgba::rgb(180, 200, 220));
+        assert_eq!(no_text.toolbar.border.color, expected.toolbar.border.color);
+        let no_fill = with_one_key("ForegroundNormal")?;
+        let expected = resolved_light(&Scheme {
+            header: Some((window.0, "180,200,220")),
+            ..without_header
+        })?;
+        assert_eq!(no_fill.toolbar.background_color, Rgba::rgb(230, 220, 200));
+        assert_eq!(no_fill.toolbar.border.color, expected.toolbar.border.color);
+        Ok(())
+    }
+
     /// A colour scheme moves none of the sizes and shadows `kde-breeze`
     /// states beside the derived colours: the toolbar edge's width and
     /// shadow, the popover's padding, the card's width, radius, shadow and
