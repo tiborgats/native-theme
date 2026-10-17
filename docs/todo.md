@@ -1426,7 +1426,7 @@ model, the platform presets and the three connectors
 
 ### Presets: the toolbar's and the popover's edge width is the defaults'
 
-- [ ] [v0.7.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
+- [x] [v0.7.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
       `defaults.border` (`docs/inheritance-rules.toml:86-90`,
       `widgets_with_border`), so their resolved `border.line_width` is 1 or
       0.5 in most presets (the toolbar's is 0 only in kde-breeze and
@@ -1484,6 +1484,13 @@ model, the platform presets and the three connectors
       macOS `NSBox`, whose look Apple does not publish (❓), so the macOS
       presets keep the inherited fill and state only the box's 5 of padding.
       The `[wrong_safety_nets]` entries are T17's.
+      M8 T17 (2026-10-17): the `[wrong_safety_nets]` entries.
+      `docs/inheritance-rules.toml` records `toolbar.border.line_width` (no edge
+      on Windows at rest, GNOME and Material, §2.13) and `toolbar.border.color`
+      (KDE's Header-set separator); no popover entry, since no §2.16 edge row
+      states "no edge" with a source (Windows, KDE and GNOME give a 1px edge,
+      macOS is ❓, Material's `(none)` and `0` cite nothing), and no card entry
+      (§2.26: macOS `NSBox`, KDE Kirigami's `Card`). The item closes.
 
 ### Model: the menu bar has no fill of its own
 
