@@ -2523,10 +2523,22 @@ mod tests {
         );
     }
 
+    /// The OS theme, for a test that reads it. On Linux it is never an
+    /// error: a desktop with no reader falls back to the platform preset
+    /// (native-theme `pipeline.rs`, `linux_fallback`), so an error there
+    /// fails the test rather than skip it. Off Linux a build without a
+    /// reader feature has no OS theme, and the test skips.
+    fn system_theme() -> Result<SystemTheme> {
+        let sys = SystemTheme::from_system();
+        if cfg!(target_os = "linux") {
+            return Ok(sys.expect("Linux falls back to the platform preset"));
+        }
+        sys
+    }
+
     #[test]
     fn to_iced_theme_takes_is_dark_from_the_system_mode() {
-        // May fail on CI -- skip gracefully
-        let Ok(mut sys) = native_theme::SystemTheme::from_system() else {
+        let Ok(mut sys) = system_theme() else {
             return;
         };
         sys.dark.defaults.background_color = sys.light.defaults.background_color;
@@ -2558,12 +2570,8 @@ mod tests {
     /// reader is `true`, and the factor is the one stated.
     #[test]
     fn the_accessibility_readers_read_their_own_preference() {
-        let mut sys = match native_theme::SystemTheme::from_system() {
-            Ok(sys) => sys,
-            // Without a reader feature macOS and Windows have no OS theme;
-            // Linux always has one, its platform preset.
-            Err(_) if !cfg!(target_os = "linux") => return,
-            Err(e) => panic!("from_system failed on Linux: {e}"),
+        let Ok(mut sys) = system_theme() else {
+            return;
         };
         type Reader = fn(&SystemTheme) -> bool;
         let readers: [(&str, Reader); 3] = [
@@ -2586,8 +2594,7 @@ mod tests {
 
     #[test]
     fn system_theme_ext_to_iced_theme() {
-        // May fail on CI -- skip gracefully
-        let Ok(sys) = native_theme::SystemTheme::from_system() else {
+        let Ok(sys) = system_theme() else {
             return;
         };
         let loaded = sys.to_iced_theme();
@@ -2598,18 +2605,19 @@ mod tests {
         assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
     }
 
+    /// `from_system` is a theme wherever the OS theme is one, on Linux
+    /// always ([`system_theme`]).
     #[test]
-    fn from_system_does_not_panic() {
-        let _ = from_system();
+    fn from_system_is_ok_where_the_os_theme_is() {
+        assert_eq!(from_system().is_ok(), system_theme().is_ok());
     }
 
     #[test]
     fn from_system_matches_system_theme_ext() {
-        // May fail on CI -- skip gracefully
-        let (Ok(loaded), Ok(sys)) = (from_system(), native_theme::SystemTheme::from_system())
-        else {
+        let Ok(sys) = system_theme() else {
             return;
         };
+        let loaded = from_system().expect("the OS theme was read");
         let expected = sys.to_iced_theme();
         assert_eq!(loaded.resolved, expected.resolved);
         assert_eq!(loaded.mode, expected.mode);

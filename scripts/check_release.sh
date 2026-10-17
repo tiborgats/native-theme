@@ -666,9 +666,10 @@ fi
 # with its tests and the showcase's `watch` code, and the OS readers. Each is
 # additive, so the one leg covers `iced_aw` alone too. The `watch` tests start
 # no OS watcher, and on Linux the tests read the OS theme with or without
-# `native` (the dev-dependencies turn on native-theme's `linux`), skipping
-# where the read fails. Same hard class as the connector's default test and
-# clippy checks. .github/workflows/ci.yml runs the same two commands, so no
+# `native` (the dev-dependencies turn on native-theme's `linux`), a read that
+# cannot fail there: with no reader it is the platform preset. Same hard class
+# as the connector's default test and clippy checks.
+# .github/workflows/ci.yml runs the same two commands, so no
 # configuration reaches a release that CI never saw.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"

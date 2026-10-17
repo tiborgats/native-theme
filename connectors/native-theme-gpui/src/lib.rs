@@ -1863,10 +1863,22 @@ mod tests {
 
     // -- SystemThemeExt + from_system tests --
 
+    /// The OS theme, for a test that reads it. On Linux it is never an
+    /// error: a desktop with no reader falls back to the platform preset
+    /// (native-theme `pipeline.rs`, `linux_fallback`), so an error there
+    /// fails the test rather than skip it. Off Linux a build without a
+    /// reader feature has no OS theme, and the test skips.
+    pub(super) fn system_theme() -> Result<SystemTheme> {
+        let sys = SystemTheme::from_system();
+        if cfg!(target_os = "linux") {
+            return Ok(sys.expect("Linux falls back to the platform preset"));
+        }
+        sys
+    }
+
     #[test]
     fn system_theme_ext_to_gpui_theme() {
-        // from_system() may fail on CI (no desktop env) -- skip gracefully
-        let Ok(sys) = SystemTheme::from_system() else {
+        let Ok(sys) = system_theme() else {
             return;
         };
         let loaded = sys.to_gpui_theme();
@@ -1882,17 +1894,19 @@ mod tests {
         assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
     }
 
+    /// `from_system` is a theme wherever the OS theme is one, on Linux
+    /// always ([`system_theme`]).
     #[test]
-    fn from_system_does_not_panic() {
-        // Just verify no panic -- result may be Err on CI
-        let _ = from_system();
+    fn from_system_is_ok_where_the_os_theme_is() {
+        assert_eq!(from_system().is_ok(), system_theme().is_ok());
     }
 
     #[test]
     fn from_system_matches_system_theme_ext() {
-        let (Ok(loaded), Ok(sys)) = (from_system(), SystemTheme::from_system()) else {
+        let Ok(sys) = system_theme() else {
             return;
         };
+        let loaded = from_system().expect("the OS theme was read");
         let expected = sys.to_gpui_theme();
         assert!(loaded.resolved.defaults.font.size > 0.0);
         assert_eq!(loaded.theme.is_dark(), loaded.mode.is_dark());
@@ -1907,7 +1921,7 @@ mod tests {
 
     #[test]
     fn from_system_matches_manual_path() {
-        let Ok(sys) = SystemTheme::from_system() else {
+        let Ok(sys) = system_theme() else {
             return;
         };
         let via_convenience = sys.to_gpui_theme().theme;
@@ -1923,10 +1937,8 @@ mod tests {
             via_manual.is_dark(),
             "convenience and manual paths should agree on is_dark"
         );
-        // Issue 39: verify the resolved variant has meaningful content.
-        // from_system() may return Err on systems without a desktop (CI),
-        // but if we reach here, the active variant should have at least
-        // accent or background populated.
+        // Issue 39: the active variant has at least its accent or its
+        // background populated.
         let resolved = sys.pick(sys.mode);
         assert!(
             resolved.defaults.accent_color != Rgba::TRANSPARENT
@@ -1968,12 +1980,8 @@ mod tests {
     /// reader is `true`, and the factor is the one stated.
     #[test]
     fn the_accessibility_readers_read_their_own_preference() {
-        let mut sys = match SystemTheme::from_system() {
-            Ok(sys) => sys,
-            // Without a reader feature macOS and Windows have no OS theme;
-            // Linux always has one, its platform preset.
-            Err(_) if !cfg!(target_os = "linux") => return,
-            Err(e) => panic!("from_system failed on Linux: {e}"),
+        let Ok(mut sys) = system_theme() else {
+            return;
         };
         type Reader = fn(&SystemTheme) -> bool;
         let readers: [(&str, Reader); 3] = [
@@ -2371,9 +2379,9 @@ mod apply_tests {
 
     #[gpui::test]
     fn apply_system_theme_stores_both_variants(cx: &mut TestAppContext) {
-        let Ok(sys) = SystemTheme::from_system() else {
+        let Ok(sys) = super::tests::system_theme() else {
             return;
-        }; // CI has no desktop
+        };
         cx.update(|cx| apply_system_theme(&sys, cx));
         cx.update(|cx| {
             let nt = cx.native_theme().expect("installed");

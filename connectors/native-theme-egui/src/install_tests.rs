@@ -2268,6 +2268,18 @@ mod t18_constructors {
         true
     }
 
+    /// The OS theme, for a test that reads it. On Linux it is never an error: a desktop with
+    /// no reader falls back to the platform preset (native-theme `pipeline.rs`,
+    /// `linux_fallback`), so an error there fails the test rather than skip it. Off Linux a
+    /// build without a reader feature has no OS theme.
+    fn system_theme() -> native_theme::Result<SystemTheme> {
+        let sys = SystemTheme::from_system();
+        if cfg!(target_os = "linux") {
+            return Ok(sys.expect("Linux falls back to the platform preset"));
+        }
+        sys
+    }
+
     /// T18 (a), `from_preset` clause: its `name()` is the preset's
     /// `Theme::name` (`native-theme/src/model/mod.rs:267`), and the atlas carries both variants, each
     /// variant's icon theme, and the requested variant as the returned `ResolvedTheme`.
@@ -2351,9 +2363,8 @@ mod t18_constructors {
     /// that over `SystemTheme::from_system()`, or an error exactly when that is one.
     #[test]
     fn t18_g_to_egui_atlas_reports_what_it_was_given() {
-        // On a runner with no desktop there is nothing to compare; native-theme's own test
-        // accepts the same (`native-theme/src/watch/mod.rs:320`).
-        let Ok(mut sys) = SystemTheme::from_system() else {
+        // Off Linux, without a reader, there is nothing to compare.
+        let Ok(mut sys) = system_theme() else {
             assert!(
                 from_system().is_err(),
                 "from_system must fail exactly when SystemTheme::from_system does"
@@ -2455,8 +2466,9 @@ mod t18_constructors {
     /// of the application's own go on top of it with every OS input kept.
     #[test]
     fn t18_g_to_egui_builder_is_to_egui_atlas_before_build() {
-        // As in `t18_g_to_egui_atlas_reports_what_it_was_given`: no desktop, nothing to build.
-        let Ok(sys) = SystemTheme::from_system() else {
+        // As in `t18_g_to_egui_atlas_reports_what_it_was_given`: off Linux, without a reader,
+        // nothing to build.
+        let Ok(sys) = system_theme() else {
             return;
         };
         let plain = sys.to_egui_atlas();

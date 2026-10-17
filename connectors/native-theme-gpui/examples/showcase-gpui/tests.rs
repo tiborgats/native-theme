@@ -75,6 +75,19 @@ use native_theme::icons::IconSetChoice;
 /// `WINDOW_SIZE` instead, which is what puts the scroll container to work.
 const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 
+/// The desktop's own theme, for a test that installs it. On Linux it is
+/// never an error: a desktop with no reader falls back to the platform
+/// preset (native-theme `pipeline.rs`, `linux_fallback`), so an error there
+/// fails the test rather than skip its check. Off Linux a build without a
+/// reader feature has no OS theme, and the error says so.
+fn system_theme() -> native_theme::Result<native_theme::SystemTheme> {
+    let system = native_theme::SystemTheme::from_system();
+    if cfg!(target_os = "linux") {
+        return Ok(system.expect("Linux falls back to the platform preset"));
+    }
+    system
+}
+
 /// Build the showcase the way `main` does — `gpui_kit::init`, the showcase's
 /// actions and key bindings, the window options, the view, and the `Root`
 /// that owns the dialog and notification layers — in a window of
@@ -6951,9 +6964,9 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
         "reloading the theme, as the theme watcher does, replaced the preferences the user \
          chose"
     );
-    // The desktop's own theme, where this host has one to read, with the
-    // OS's preferences it carries made the test's.
-    if let Ok(mut system) = native_theme::SystemTheme::from_system() {
+    // The desktop's own theme, where this host has one to read (always on
+    // Linux), with the OS's preferences it carries made the test's.
+    if let Ok(mut system) = system_theme() {
         system.accessibility = os.clone();
         cx.update(|window, cx| {
             showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
@@ -7194,7 +7207,7 @@ fn picking_an_icon_theme_ends_the_icon_theme_override(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let Ok(mut system) = native_theme::SystemTheme::from_system() else {
+    let Ok(mut system) = system_theme() else {
         return;
     };
     // A platform preset other than the one platform_preset_name gives, as
@@ -7578,7 +7591,7 @@ fn the_command_line_rejects_what_it_cannot_honour(cx: &mut TestAppContext) {
 /// workflow passes: each preset meant for this platform, and `default`, the
 /// desktop's own theme. The theme is installed, and the preset switch and
 /// the status bar name it. `default` is skipped where the host's OS theme
-/// cannot be read.
+/// cannot be read, which on Linux is never ([`system_theme`]).
 #[gpui::test]
 fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -7590,7 +7603,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
         !accepted.is_empty(),
         "no preset is offered on this platform"
     );
-    match native_theme::SystemTheme::from_system() {
+    match system_theme() {
         Ok(_) => accepted.push("default".to_string()),
         Err(e) => eprintln!("the OS theme cannot be read here ({e}): --theme default not checked"),
     }

@@ -29,10 +29,18 @@ fn all_presets_produce_valid_dark_themes() {
     }
 }
 
+/// `from_system` never fails on Linux: a desktop with no reader falls back to
+/// the platform preset (native-theme `pipeline.rs`, `linux_fallback`). Off
+/// Linux a build without a reader feature has no OS theme, and the error must
+/// come back as one, not as a panic.
 #[test]
-fn from_system_returns_result() {
-    // from_system() may return Err on CI (no OS theme), but must not panic.
-    let _ = native_theme_iced::from_system();
+fn from_system_is_ok_on_linux() {
+    if let Err(e) = native_theme_iced::from_system() {
+        assert!(
+            !cfg!(target_os = "linux"),
+            "Linux falls back to the platform preset: {e}"
+        );
+    }
 }
 
 #[test]

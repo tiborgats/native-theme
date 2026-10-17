@@ -778,10 +778,19 @@ mod tests {
     fn runner_themes() -> Vec<(String, native_theme::theme::ResolvedTheme)> {
         use native_theme::theme::{ColorMode, Theme};
         let mut themes = Vec::new();
-        // The reader's path: the live theme, both modes.
-        if let Ok(sys) = native_theme::SystemTheme::from_system() {
-            themes.push(("system light".to_owned(), sys.light));
-            themes.push(("system dark".to_owned(), sys.dark));
+        // The reader's path: the live theme, both modes. On Linux it is never an error: a
+        // desktop with no reader falls back to the platform preset (native-theme
+        // `pipeline.rs`, `linux_fallback`). Off Linux a build without a reader feature has
+        // none, and the run says so.
+        match native_theme::SystemTheme::from_system() {
+            Ok(sys) => {
+                themes.push(("system light".to_owned(), sys.light));
+                themes.push(("system dark".to_owned(), sys.dark));
+            }
+            Err(e) if !cfg!(target_os = "linux") => {
+                eprintln!("no OS theme ({e}): the reader's path is not checked");
+            }
+            Err(e) => panic!("Linux falls back to the platform preset: {e}"),
         }
         // The platform's bundled preset, the running version's generation's, both modes.
         let preset = native_theme::pipeline::platform_preset_name().name;
