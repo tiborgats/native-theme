@@ -777,21 +777,25 @@ mod tests {
     const FIXTURE_DIALOG_ERROR: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle fill="#da4453" cx="8" cy="8" r="7"/></svg>"##;
     const FIXTURE_EDIT_COPY: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#232629" d="M2 2h9v9H2zM5 5h9v9H5z"/></svg>"##;
 
+    /// Writes the icon theme `fixture`, which holds `dialog-error.svg` and
+    /// `edit-copy.svg`, into `icons`.
+    fn write_fixture_theme(icons: &Path) -> std::io::Result<()> {
+        native_theme_test_fixtures::write_scalable_theme(
+            icons,
+            "fixture",
+            &[
+                ("dialog-error", FIXTURE_DIALOG_ERROR),
+                ("edit-copy", FIXTURE_EDIT_COPY),
+            ],
+        )
+    }
+
     /// Runs the test `test_path` again in a child process whose system icon
-    /// theme is `fixture`, which holds `dialog-error.svg` and `edit-copy.svg`
-    /// ([`native_theme_test_fixtures`]).
+    /// theme is `fixture` ([`write_fixture_theme`],
+    /// [`native_theme_test_fixtures`]).
     fn in_fixture_theme(test_path: &str) -> std::io::Result<()> {
         let child = native_theme_test_fixtures::Child::kde("fixture");
-        native_theme_test_fixtures::run(test_path, child, |icons| {
-            native_theme_test_fixtures::write_scalable_theme(
-                icons,
-                "fixture",
-                &[
-                    ("dialog-error", FIXTURE_DIALOG_ERROR),
-                    ("edit-copy", FIXTURE_EDIT_COPY),
-                ],
-            )
-        })
+        native_theme_test_fixtures::run(test_path, child, write_fixture_theme)
     }
 
     #[test]
@@ -837,14 +841,7 @@ mod tests {
         }
         let child = native_theme_test_fixtures::Child::kde("fixture");
         native_theme_test_fixtures::run(NAME, child, |icons| {
-            native_theme_test_fixtures::write_scalable_theme(
-                icons,
-                "fixture",
-                &[
-                    ("dialog-error", FIXTURE_DIALOG_ERROR),
-                    ("edit-copy", FIXTURE_EDIT_COPY),
-                ],
-            )?;
+            write_fixture_theme(icons)?;
             native_theme_test_fixtures::write_scalable_theme(
                 icons,
                 "notifying",
