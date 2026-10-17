@@ -3609,9 +3609,12 @@ the plan's close.
       The tooltip delay test covers the Basic tooltip only (all six share `ShowDelay`), and
       the header test re-derives the fallback without `scaled_text_size` (true at the default
       accessibility settings).
-- [ ] [v0.7.0] For M8: `winicons.rs`'s `bitmap_bgra` returns on
+- [x] [v0.7.0] For M8: `winicons.rs`'s `bitmap_bgra` returns on
       `checked_neg()?` (`native-theme/src/winicons.rs:223`) without a `note_failure`;
       unreachable after the bound check above it.
+  *Closed by M8 T13 (2026-10-17, 69831323):* the negated height is taken in
+      the size check, so its failure (none, for a height `u32` accepts) notes
+      the bitmap's size as that check's others do.
 - [x] [v0.7.0] For M8's api batch (M6-12 ruling, 2026-10-15): ask the maintainer whether
       `native_theme_gpui::icons::freedesktop_name_for_gpui_icon(icon, de)` goes. It picks a
       name by desktop, where the icon theme in use decides which name exists (Adwaita, with
