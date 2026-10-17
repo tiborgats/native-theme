@@ -203,7 +203,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1595, 1600], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
         .with(&[("arrow_area_width", Some(20.0), 1597)]),
     row(KdeBreeze, "segmented_control", NONE, &[1617, 1622], "tab bar as proxy, not the platform's value"),
-    row(KdeBreeze, "card", all(8.0), &[1639, 1640], "Kirigami Card: padding Units.largeSpacing 8"),
+    row(KdeBreeze, "card", all(7.0), &[1639, 1640], "Kirigami Card: Units.largeSpacing 8 from the outer edge, 8 − 1 inside the frame line"),
     row(KdeBreeze, "expander", NONE, &[1654, 1655], "(none), app-defined")
         .with(&[("arrow_gap", Some(9.0), 1661), ("content_indent", Some(20.0), 1662)]),
     // --- GNOME (adwaita; the reader states no sizes) ---

@@ -500,9 +500,10 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1639-1640 (§2.26): padding: Units.largeSpacing, 8 on all four sides (templates/AbstractCard.qml:96, units.cpp:39)
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
+# platform-facts.md:1639-1640 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
+padding_horizontal_px = 7.0
+padding_vertical_px = 7.0
 
 [light.expander]
 header_height_px = 40.0
@@ -1013,9 +1014,10 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1639-1640 (§2.26): padding: Units.largeSpacing, 8 on all four sides (templates/AbstractCard.qml:96, units.cpp:39)
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
+# platform-facts.md:1639-1640 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
+padding_horizontal_px = 7.0
+padding_vertical_px = 7.0
 
 [dark.expander]
 header_height_px = 40.0
