@@ -15098,7 +15098,8 @@ mod tests {
     /// control, a theme that states a long delay and one that states none
     /// draw different frames, which differ in the bubble alone: away from
     /// every tooltip the two draw the same frame, with the side panel, whose
-    /// Widget Info names the delay, hidden.
+    /// Widget Info names the delay, hidden, and an open tooltip draws the
+    /// same frame each time, so nothing in it changes with time.
     #[test]
     fn every_tooltip_waits_the_themes_show_delay() {
         const LONG: Option<u16> = Some(60_000);
@@ -15109,6 +15110,12 @@ mod tests {
             ),
             "away from the tooltips the two delays draw different frames, so a difference \
              under a tooltip proves nothing"
+        );
+        let open = Rest::OnText("Hover: Top");
+        assert!(
+            same_frame(&hovered_frame(None, open), &hovered_frame(None, open)),
+            "an open tooltip draws a different frame each time, so a difference between the \
+             two delays proves nothing"
         );
         for rest in [
             Rest::OnElement("chrome.status_bar.toggle"),
