@@ -7,8 +7,8 @@ name: Dependency canary
 # crates follow. The connector's caret requirements let every consumer's
 # `cargo update` pick those up, so a breaking snapshot reaches applications
 # before it reaches this repository's committed Cargo.lock. This job runs
-# the same `cargo update` a consumer would, then the CI gate's clippy, test
-# and doc steps on the result. A failure here means "the published crates no
+# the same `cargo update` a consumer would, then CI's clippy, test and doc
+# commands on the result. A failure here means "the published crates no
 # longer work with the newest upstream set", not "main is broken": CI on the
 # committed lockfile stays green until Cargo.lock is refreshed.
 #
@@ -103,11 +103,11 @@ jobs:
           cargo clippy -p native-theme-egui-widgets --all-targets
           cargo clippy -p native-theme-egui-widgets --all-targets --all-features
 
-      # `if: always()` for the reason given at Widget coverage below: a Clippy
+      # `!cancelled()` for the reason given at Widget coverage below: a Clippy
       # failure, a new lint in a stable toolchain among them, must not hide a
       # test failure of the same night.
       - name: Test
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           cargo test -p native-theme-derive
           cargo test -p native-theme-build
@@ -128,10 +128,10 @@ jobs:
 
       # Every crate's library with no default features, each feature alone and
       # all features, as CI runs it: an upstream release can break a
-      # configuration the default-feature steps above never build. `if:
-      # always()` for the reason given at Widget coverage below.
+      # configuration the default-feature steps above never build.
+      # `!cancelled()` for the reason given at Widget coverage below.
       - name: Feature combinations
-        if: always()
+        if: ${{ !cancelled() }}
         run: bash scripts/check_features.sh
 
       # On the updated lockfile, so an upstream release that adds a widget is
@@ -143,27 +143,28 @@ jobs:
       # runner-image change that dropped below the floor is visible in the log
       # rather than silent.
       #
-      # `if: always()` because this step and the one after it report on a
-      # different failure mode than Test does: an upstream release can add a
+      # `!cancelled()` (after any earlier failure, but not in a cancelled run,
+      # where `always()` would still run) because this step and the one after
+      # it report on a different failure mode than Test does: an upstream release can add a
       # widget and break a test in the same night, and the evening's report
       # should name both rather than stop at the first.
       - name: Widget coverage
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           python3 --version
           python3 scripts/check_widget_coverage.py
 
       # The connectors' accessor names against the model's leaves, and each
-      # function in every connector under one signature, or excepted; `if:
-      # always()` for the same reason as the step above.
+      # function in every connector under one signature, or excepted;
+      # `!cancelled()` for the same reason as the step above.
       - name: Connector parity
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           python3 --version
           python3 scripts/check_connector_parity.py
 
       - name: Documentation
-        if: always()
+        if: ${{ !cancelled() }}
         env:
           RUSTDOCFLAGS: -Dwarnings
         run: |
