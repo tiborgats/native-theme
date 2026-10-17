@@ -351,6 +351,13 @@ active_background = "#0064e1"
 # platform-facts.md:1621 (§2.25): no shadow (measured)
 shadow_enabled = false
 
+[light.card.border]
+# platform-facts.md:1639-1640 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); on macOS 26
+# the same, inferred from the current page, which is not versioned and makes no macOS 26 statement; the box's fill
+# and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
+
 [light.expander]
 # no macOS 26 source (platform-facts.md:1652-1653): macos-monterey's values
 header_height_px = 40.0
@@ -724,6 +731,13 @@ active_background = "#0059d1"
 [dark.segmented_control.border]
 # platform-facts.md:1621 (§2.25): no shadow (measured)
 shadow_enabled = false
+
+[dark.card.border]
+# platform-facts.md:1639-1640 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); on macOS 26
+# the same, inferred from the current page, which is not versioned and makes no macOS 26 statement; the box's fill
+# and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
 
 [dark.expander]
 # no macOS 26 source (platform-facts.md:1652-1653): macos-monterey's values

@@ -267,7 +267,7 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1595, 1600], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
         .with(&[("arrow_area_width", None, 1597)]),
     row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1617, 1622], "horizontal is a range; ~3 (measured)"),
-    row(MacosMonterey, "card", NONE, &[1639, 1640], "(none)"),
+    row(MacosMonterey, "card", all(5.0), &[1639, 1640], "NSBox.contentViewMargins 5 (API)"),
     row(MacosMonterey, "expander", NONE, &[1654, 1655], "(none), app-defined")
         .with(&[("arrow_gap", None, 1661), ("content_indent", None, 1662)]),
     // --- macOS 26 (macos-tahoe; the "macOS 26:" values; ❓ is None) ---
@@ -299,7 +299,7 @@ const ROWS: &[Row] = &[
     row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1595, 1600], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
         .with(&[("arrow_area_width", None, 1597)]),
     row(MacosTahoe, "segmented_control", NONE, &[1617, 1622], "macOS 26 ❓"),
-    row(MacosTahoe, "card", NONE, &[1639, 1640], "(none)"),
+    row(MacosTahoe, "card", all(5.0), &[1639, 1640], "macOS 26: the same 5, inferred from the unversioned page"),
     row(MacosTahoe, "expander", NONE, &[1654, 1655], "(none), app-defined")
         .with(&[("arrow_gap", None, 1661), ("content_indent", None, 1662)]),
     // --- Windows (windows-11; the reader states no sizes) ---

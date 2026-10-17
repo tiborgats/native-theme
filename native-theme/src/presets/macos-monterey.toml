@@ -433,6 +433,12 @@ padding_vertical_px = 3.0
 shadow_enabled = false
 [light.card]
 
+[light.card.border]
+# platform-facts.md:1639-1640 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); the box's
+# fill and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
+
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =13.0
@@ -893,6 +899,12 @@ padding_vertical_px = 3.0
 # platform-facts.md:1621 (§2.25): no shadow
 shadow_enabled = false
 [dark.card]
+
+[dark.card.border]
+# platform-facts.md:1639-1640 (§2.26): NSBox.contentViewMargins, "By default, these are both 5.0" (API); the box's
+# fill and border are not published (§2.26 background_color, ❓), so the card's fill stays inherited
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
 
 [dark.expander]
 header_height_px = 40.0
