@@ -1,5 +1,14 @@
 name: Docs
 
+# The API documentation on GitHub Pages, built as docs.rs builds it:
+# scripts/check_docsrs.py documents each published crate with its
+# `[package.metadata.docs.rs]` features and targets, nightly rustdoc,
+# DOCS_RS=1 and --cfg docsrs (the publish workflow's docs.rs emulation). The
+# site's root is the x86_64-unknown-linux-gnu documentation, the default
+# target of every crate's docs.rs page (the first of the `targets` a crate
+# lists, and docs.rs's own default for a crate that lists none); every other
+# target a crate lists is under its triple, as on docs.rs.
+
 on:
   push:
     branches: [main]
@@ -14,6 +23,12 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# `bash -eo pipefail` (GitHub's `shell: bash`) instead of the default
+# `bash -e`, so a failing command piped into another fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,17 +36,46 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: x86_64-apple-darwin, x86_64-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
-      - name: Build docs
-        run: cargo doc --workspace --no-deps
-        env:
-          RUSTDOCFLAGS: --cfg docsrs
-      - name: Add redirect
-        run: echo '<meta http-equiv="refresh" content="0;url=native_theme/index.html">' > target/doc/index.html
+      # Into target/docsrs/<target>/doc, one tree per target, emptied first so
+      # a restored cache cannot carry a removed crate's pages. A proc-macro
+      # (native-theme-derive) is built for the host, so cargo writes its pages
+      # to target/docsrs/doc whatever the target; that directory is a link to
+      # the default target's tree, which puts them in its crate list and
+      # search index (the runner's host is the default target). The crate
+      # list is collected first, so a listing that fails or lists nothing
+      # fails the step instead of documenting no crate.
+      - name: Document every crate as docs.rs does
+        run: |
+          python3 --version
+          rm -rf target/docsrs/doc target/docsrs/*/doc
+          mkdir -p target/docsrs/x86_64-unknown-linux-gnu/doc
+          ln -s x86_64-unknown-linux-gnu/doc target/docsrs/doc
+          crates=$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))')
+          if [ -z "$crates" ]; then
+            echo "::error::cargo metadata listed no workspace crate"
+            exit 1
+          fi
+          for crate in $crates; do
+            python3 -I scripts/check_docsrs.py "$crate"
+          done
+      - name: Assemble the site
+        run: |
+          mkdir site
+          cp -r target/docsrs/x86_64-unknown-linux-gnu/doc/. site/
+          for doc in target/docsrs/*/doc; do
+            target=$(basename "$(dirname "$doc")")
+            if [ "$target" != x86_64-unknown-linux-gnu ]; then
+              cp -r "$doc" "site/$target"
+            fi
+          done
+          echo '<meta http-equiv="refresh" content="0;url=native_theme/index.html">' > site/index.html
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: target/doc
+          path: site
 
   deploy:
     needs: build
