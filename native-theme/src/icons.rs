@@ -1635,7 +1635,8 @@ mod load_icon_tests {
     /// A freedesktop icon the system's theme lacks, or asked of a theme that
     /// is not installed, is `None`: Material's icon does not stand in. The
     /// system's theme `lacking` is a fixture in a child process
-    /// ([`native_theme_test_fixtures`]) without `edit-copy`.
+    /// ([`native_theme_test_fixtures`]) whose one icon, `dialog-error`, loads,
+    /// so the `None` is a lookup's: it has no `edit-copy`.
     #[test]
     #[cfg(all(
         target_os = "linux",
@@ -1646,6 +1647,11 @@ mod load_icon_tests {
         const NAME: &str = "icons::load_icon_tests::load_icon_unknown_theme_no_cross_set_fallback";
         const DIALOG_ERROR: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle fill="#da4453" cx="8" cy="8" r="7"/></svg>"##;
         if native_theme_test_fixtures::in_child() {
+            assert_eq!(
+                FreedesktopLoader::new(IconRole::DialogError).load(),
+                Some(IconData::Svg(Cow::Borrowed(DIALOG_ERROR.as_bytes()))),
+                "the system's theme is looked up"
+            );
             assert!(MaterialLoader::new(IconRole::ActionCopy).load().is_some());
             assert_eq!(
                 FreedesktopLoader::new(IconRole::ActionCopy).load(),
