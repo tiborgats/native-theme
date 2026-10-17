@@ -27,6 +27,14 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# `bash -eo pipefail` (GitHub's `shell: bash`) instead of the default
+# `bash -e`: a `cargo update` that fails must fail its step and the run, not
+# pass on `tee`'s status with a summary saying Cargo.lock is already at the
+# newest versions.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   canary:
     name: Newest dependencies
@@ -95,7 +103,11 @@ jobs:
           cargo clippy -p native-theme-egui-widgets --all-targets
           cargo clippy -p native-theme-egui-widgets --all-targets --all-features
 
+      # `if: always()` for the reason given at Widget coverage below: a Clippy
+      # failure, a new lint in a stable toolchain among them, must not hide a
+      # test failure of the same night.
       - name: Test
+        if: always()
         run: |
           cargo test -p native-theme-derive
           cargo test -p native-theme-build
@@ -163,3 +175,5 @@ jobs:
           cargo doc -p native-theme-gpui --no-deps
           cargo doc -p native-theme-egui --no-deps
           cargo doc -p native-theme-egui --no-deps --all-features
+          cargo doc -p native-theme-egui-widgets --no-deps
+          cargo doc -p native-theme-egui-widgets --no-deps --all-features
