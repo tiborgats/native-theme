@@ -382,6 +382,9 @@ line_width_px = 0.0
 # platform-facts.md §2.24 border.shadow_enabled: no shadow
 shadow_enabled = false
 [light.segmented_control]
+# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
+# the window fg RGB(0 0 6 / 80%) so 8 % of #000006, laid over the window's #fafafb (libadwaita 1.10.0 _colors.scss:32-33)
+background_color = "#e6e6e7"
 segment_height_px = 28.0
 separator_width_px = 1.0
 active_background = "#3584e4"
@@ -780,6 +783,9 @@ line_width_px = 0.0
 # platform-facts.md §2.24 border.shadow_enabled: no shadow
 shadow_enabled = false
 [dark.segmented_control]
+# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
+# the window fg white at 10 %, laid over the window's #222226 (libadwaita 1.10.0 _colors.scss:95-96)
+background_color = "#38383c"
 segment_height_px = 28.0
 separator_width_px = 1.0
 active_background = "#3584e4"
