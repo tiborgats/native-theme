@@ -332,8 +332,13 @@ item_gap_px = 0.0
 # platform-facts.md:1378-1379 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
-# platform-facts.md:1379 (§2.13): ToolBar_FrameWidth = 0, no frame round the toolbar
-line_width_px = 0.0
+# platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
+# line along the bottom of a QMainWindow's tools area (breezestyle.cpp:1349-1350; qpainter.cpp:3647-3654), the edge the
+# connectors draw: the Header set's separatorColor(), KColorUtils::mix(Header bg, Header fg, frameContrast 0.2), #b9bbbd
+color = "#b9bbbd"
+line_width_px = 1.0
+# platform-facts.md §2.13 border.shadow_enabled: CE_ToolBar paints nothing, no shadow
+shadow_enabled = false
 
 
 [light.status_bar.border]
@@ -796,8 +801,13 @@ item_gap_px = 0.0
 # platform-facts.md:1378-1379 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
-# platform-facts.md:1379 (§2.13): ToolBar_FrameWidth = 0, no frame round the toolbar
-line_width_px = 0.0
+# platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
+# line along the bottom of a QMainWindow's tools area (breezestyle.cpp:1349-1350; qpainter.cpp:3647-3654), the edge the
+# connectors draw: the Header set's separatorColor(), KColorUtils::mix(Header bg, Header fg, frameContrast 0.2), #535659
+color = "#535659"
+line_width_px = 1.0
+# platform-facts.md §2.13 border.shadow_enabled: CE_ToolBar paints nothing, no shadow
+shadow_enabled = false
 
 
 [dark.status_bar.border]
