@@ -183,7 +183,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "menu", all(4.0), &[1248, 1249], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
         .with(&[("row_height", None, 1247)]),
     row(KdeBreeze, "tooltip", all(3.0), &[1270, 1271], "ToolTip_FrameWidth = 3"),
-    row(KdeBreeze, "progress_bar", NONE, &[1316], "§2.10's padding rows give 0, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(KdeBreeze, "progress_bar", all(0.0), &[1328, 1329], "0; 0, the contents span the groove"),
     row(KdeBreeze, "tab", axes(4.0, 8.0), &[1339, 1340], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
         .with(&[("item_gap", Some(0.0), 1347)]),
     row(KdeBreeze, "sidebar", NONE, &[1366, 1367], "❓: no one sidebar"),

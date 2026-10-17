@@ -251,6 +251,10 @@ color = "#23262933"
 line_width_px = 1.0
 # platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
+# progress (breezestyle.cpp:2304, :2329-2338)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [light.tab]
 min_width_px = 80.0
@@ -759,6 +763,10 @@ color = "#fcfcfc33"
 line_width_px = 1.0
 # platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0, the contents rect is the groove's with only its length cut to the
+# progress (breezestyle.cpp:2304, :2329-2338)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [dark.tab]
 min_width_px = 80.0
