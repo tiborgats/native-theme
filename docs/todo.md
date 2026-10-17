@@ -1446,6 +1446,20 @@ model, the platform presets and the three connectors
       `← defaults.border.*`: Windows `SurfaceStrokeColorFlyout`, 1; KDE
       qqc2-desktop-style's Popup, #c2c5c9 / #474c51, 1; macOS ❓. §2.26's and
       §2.13's macOS 26 cells stay ❓: no source gives them.
+      M8 T16 (2026-10-17, ac70ed0d..b1423ef6): the presets' half. They follow T15's
+      rows: the connectors draw `toolbar.border` as the bar's bottom rule, so
+      adwaita, windows-11 (0 at rest, with its rest radius 0) and material-3
+      state none, kde-breeze states Breeze's 1px tools-area line in the
+      Header set's separator colour (#b9bbbd / #535659), and the macOS
+      presets keep the inherited edge (§2.13 macOS ❓). kde-breeze and
+      windows-11 state the popover edge §2.16 gives (#c2c5c9 / #474c51;
+      `SurfaceStrokeColorFlyout`, #0000000f / #00000033); adwaita states
+      its own already. No preset has a transparent card: §2.26 gives KDE
+      Kirigami's `Card`, whose fill is kde-breeze's inherited surface colour
+      and whose edge, radius, shadow and padding kde-breeze now states, and
+      macOS `NSBox`, whose look Apple does not publish (❓), so the macOS
+      presets keep the inherited fill and state only the box's 5 of padding.
+      The `[wrong_safety_nets]` entries are T17's.
 
 ### Presets: expander hover fills with no source
 
@@ -1606,6 +1620,30 @@ model, the platform presets and the three connectors
       gives the Header set's #dee0e2 / #292c30, the tools area's fill where
       the scheme has Header colours and the decoration's border size is
       automatic, None or NoSides (breezestyle.cpp:1322, :1341-1347).
+      M8 T16 (2026-10-17, ac70ed0d..b1423ef6): stated, each checked against its row
+      (preset-validator method): kde-breeze's toolbar edge (1, #b9bbbd /
+      #535659, no shadow) and fill (#dee0e2 / #292c30: both Breeze schemes
+      have Header colours, and `BorderSizeAuto` reads true where kwinrc sets
+      nothing, breezehelper.cpp:1913, so the default configuration draws the
+      tools area), popover (edge #c2c5c9 / #474c51, padding 12), slider
+      thumb, switch rest tracks, button hover and card (Kirigami's `Card`:
+      edge #ced1d4 / #3c4146, 1, radius 5, shadow, padding 8; the fill
+      inherited); windows-11's tab label and popover edge; adwaita's rest
+      borders (0 on the button, the entry and the dropdown), slider thumb,
+      toggle-group fill (#e6e6e7 / #38383c, `$button_color` over the window)
+      and expander (radius 12, the card's 1px #00000608 outline, the shadow
+      kept, as the corrected §2.27 gives it, so M8-77's fifth widget keeps
+      `true`); the macOS card padding 5 and macos-tahoe's unchecked box; and
+      the toolbar edges of adwaita and windows-11. The progress bar's
+      padding, 0, is stated in kde-breeze, adwaita, windows-11 and the macOS
+      presets. Still open here: the sidebar padding (adwaita 6, 6 top / 4
+      bottom; windows-11 3 across), which moves the gpui showcase's side
+      panel and fails its `the_side_panel_holds_the_theme_settings_and_the_inspector`
+      and `the_tab_bars_are_inset_by_the_container_margin`, a showcase
+      layout question; material-3's progress and sidebar padding (M2d's
+      preset); and the state colours above, among them kde-breeze's switch
+      hover tracks, which now differ from its rest tracks where §2.21 gives
+      them equal.
 
 ### windows-11: the validator's findings after T35 left open
 
@@ -3186,10 +3224,10 @@ the gap — closing it is a change, and each wants its own decision.
       | `tab.min_width` | macOS (none); GNOME "none" (§2.11) | macos-monterey, adwaita 64 (windows-11 states WinUI's 100 since M2b Step 7, §2.11) |
       | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | done 2026-09-24: kde-breeze's 28 and adwaita's 34 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. (The macOS mismatch closed: AppKit's 9 in facts and preset since M2a Step 7, the reader's constant gone in Step 8a) |
-      | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
-      | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-monterey 8, windows-11 6 |
-      | `layout.window_margin` | Windows (none) (§2.20) | windows-11 10 |
-      | `layout.section_gap` | Windows, KDE (none) (§2.20) | windows-11 18, kde-breeze 18 |
+      | `layout.widget_gap` | Windows, Material (none) (§2.20) | windows-11 6, material-3 6 |
+      | `layout.container_margin` | macOS, Windows, Material (none) (§2.20) | macos-monterey 8, windows-11 6, material-3 6 |
+      | `layout.window_margin` | Windows, Material (none) (§2.20) | windows-11 10, material-3 10 |
+      | `layout.section_gap` | Windows, KDE, Material (none) (§2.20) | windows-11 18, kde-breeze 18, material-3 18 |
       | `dialog.min_width` / `max_width` / `min_height` / `max_height` | macOS and KDE all (none); GNOME min and max height (none), max width per context 372 / wide 600 (§2.22) | macos-monterey and kde-breeze 320/560/140/600; adwaita min height 140, max height 600 |
       | `dialog.icon_size` | Windows, KDE, GNOME (none) (§2.22) | windows-11, kde-breeze, adwaita 32 |
       | `spinner.min_diameter` | KDE, GNOME (none) (§2.23) | kde-breeze, adwaita 16 |
@@ -3733,6 +3771,13 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### Presets: material-3's platform-facts citations have drifted
 - [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1267` (`font.weight`) where the row is `:1269`, and the list's `header_font` cites `:1412-1413` (the selection rows) where the rows are `:1414-1415`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
+      M8 T16 (2026-10-17): material-3's four §2.20 layout values
+      (`material-3.toml:1022-1026`: 6, 6, 10, 18) have no source: the
+      Material cells are "(none)" (`docs/platform-facts.md` §2.20), and the
+      preset-validator check found none. They join the four `layout.*` rows
+      of *Follow-up plan: the other sizing fields a platform leaves
+      unstated*; the preset keeps them, as they pad all three showcases'
+      chrome.
 
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.
@@ -3846,6 +3891,12 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
 - [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1653 names `ItemView_ArrowSize` where :1616 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
+      M8 T16 (2026-10-17): the inherited value is the stated token:
+      `card.background_color` inherits `defaults.surface_color`
+      (`docs/inheritance-rules.toml:266`), which windows-11 states as
+      `CardBackgroundFillColorDefault`, #ffffffb3 / #ffffff0d
+      (`windows-11.toml:27-28`, `:609-610`), so the card is filled in the
+      platform's colour; what is left is stating it on the card itself.
 - [ ] [1.0] Presets (windows-11): the checkbox's hover fill cites no source of its own. Laid over the window, it lands within one 8-bit level of WinUI's `ControlAltFillColorTertiary` (M6 T9's note), but whether the preset means a layer or a replacement is open preset-data work.
 
 ### M7 fix phase (2026-10-16)
