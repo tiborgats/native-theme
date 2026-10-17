@@ -1240,6 +1240,20 @@ fn switch_draws_the_stated_outlines(
         s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
     };
     assert_eq!(thumb.size.width, px(diameter), "{state}: the thumb's box");
+    // Placed as without an outline: gpui places an absolute child inside its
+    // parent's border, which the thumb's offsets take back.
+    let inset = (px(s.track_height) - px(diameter)) / 2.;
+    assert_eq!(thumb.origin.y - track.origin.y, inset, "{state}: on the axis");
+    let end = inset.max(px(0.));
+    if checked {
+        assert_eq!(
+            track.origin.x + track.size.width - (thumb.origin.x + thumb.size.width),
+            end,
+            "{state}: at the right end"
+        );
+    } else {
+        assert_eq!(thumb.origin.x - track.origin.x, end, "{state}: at the left end");
+    }
     assert_eq!(
         edge(cx, thumb),
         stated(s.thumb_border_color, s.thumb_border_line_width),
