@@ -10228,7 +10228,7 @@ Rejected:
 **Fix proposed:** In `system_font_family`, on a `system_face` miss ask `native_theme::fonts::substitute_family_cached(&spec.family)` and `system_face(&substitute, spec.weight, spec.style)` before falling back to the stated family, as egui's `FontPlan::from_system` does; state the once-per-family `fc-match` cost in its doc and the README's `system-fonts` sentence as gpui's `font_family` and egui's `from_preset` do.
 **Verdict:** CONFIRMED — iced lib.rs:1189-1194 falls back to the stated family on a system_face miss and nothing in iced calls substitute_family(_cached), while gpui (lib.rs:731) and egui (fonts.rs:172) ask fontconfig's substitute; no parity exception, ledger ruling or rationale records iced's omission (ledger :9303 only notes as a timing fact that iced does no substitution; docs/todo.md:3590 is the per-widget family item, a different gap).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T7 (2fcc26fb..29531be4)
 *Source:* R1#0.
 
 
@@ -10238,7 +10238,7 @@ Rejected:
 **Fix proposed:** Give both helpers the loader's inputs, matching egui: `custom_icon_to_svg_handle(provider: &(impl IconProvider + ?Sized), icon_set: IconSet, icon_theme: Option<&str>, color: Option<iced_core::Color>, size: Option<u32>) -> Option<svg::Handle>` and the same for `custom_icon_to_image_handle`, each calling `load_custom_icon_in(provider, icon_set, icon_theme, color.map(to_rgba), size)`; or, with no break, `_in` siblings of that shape and the old two documented as 'the system's icon theme at the loaders' default size'. The README's spinner recipe then passes `loaded.icon_theme.as_deref()` to the custom-icon helper too.
 **Verdict:** CONFIRMED — Both helpers (icons.rs:89-99, :112-120) call load_custom_icon(.., None) = load_custom_icon_in(provider, set, None, color, None), so a freedesktop icon comes from the detected system theme at the loader default while Loaded::icon_theme (lib.rs:421-423) carries the variant's; the M7 T4 ruling (ledger :10127) only kept 'iced's and gpui's unreleased call shape' and M5's note (ledger :9194) excused the size alone ('iced does not rasterize'), not the theme; api-break touches 14 call lines in iced src/icons.rs (tests) and 3 in its README, no showcase.
 **Triage:** maintainer: 2026-10-16, iced `custom_icon_to_image_handle`/`custom_icon_to_svg_handle` gain `icon_theme: Option<&str>` and `size: Option<u32>`, through core's `load_custom_icon_in` → fix.
-**Status:** open
+**Status:** fixed — M8 T4 (a45a32a6..1dd5eecd)
 *Source:* R1#1.
 
 
@@ -10248,7 +10248,7 @@ Rejected:
 **Fix proposed:** Add the icon theme: `custom_icon_to_image_source(provider: &(impl IconProvider + ?Sized), icon_set: IconSet, icon_theme: Option<&str>, color: Option<Hsla>, size: Option<u32>) -> Option<ImageSource>` calling `load_custom_icon_in`; or an `_in` sibling with that shape beside the released one, whose doc then says 'the system's icon theme'. Decide it together with the iced twin (the previous finding) and docs/todo.md:3593's `freedesktop_name_for_gpui_icon` question, the icon API's one batch.
 **Verdict:** CONFIRMED — gpui icons.rs:825 calls load_custom_icon (theme None), no public gpui icon function takes an icon theme, and egui's twin passes key.icon_theme through load_custom_icon_in since M7 T4; the M7 ruling kept gpui's shape by scope, not as a recorded design; api-break touches 7 call lines (all in gpui src/icons.rs tests) and 1 README line.
 **Triage:** maintainer: 2026-10-16, gpui `custom_icon_to_image_source` gains `icon_theme: Option<&str>` → fix.
-**Status:** open
+**Status:** fixed — M8 T5 (d7146ce9..ed3e559b)
 *Source:* R1#2.
 
 
@@ -10258,7 +10258,7 @@ Rejected:
 **Fix proposed:** Either remove the eight (before: `pub fn is_reduced_motion(sys: &SystemTheme) -> bool` in gpui and egui; after: none, the README and crate docs naming `loaded.accessibility.reduce_motion`), the direction M1-T7-06's rule points to since each is a public field read under a name unlike the field's; or add iced's four (api-add) and record the deviation from the naming rule as a `name` exception. Either way, extend the script's sibling rule to `&SystemTheme` one-field readers (the next finding) so the choice is gated.
 **Verdict:** CONFIRMED — gpui lib.rs:569-619 and egui accessors.rs:609-634 export the four &SystemTheme readers, iced exports none, and the parity script classes them `outside` (check_connector_parity.py:69-70, :81-82) so no exception exists; egui's spec copies gpui's names (archived egui spec :1959) but nothing records iced's absence; removal would touch one gpui test (lib.rs:1922-1925) and egui's re-export (lib.rs:165) only.
 **Triage:** fix — iced gains the four `&SystemTheme` accessibility readers gpui and egui export (the additive side of the parity; removal would be a break nothing asks for).
-**Status:** open
+**Status:** fixed — M8 T4 (a45a32a6..1dd5eecd)
 *Source:* R1#3.
 
 
@@ -10268,7 +10268,7 @@ Rejected:
 **Fix proposed:** Hold `group` functions and `&SystemTheme` one-field readers to the sibling rule with the existing `absent`/`unlike` exception kinds (a group accessor's name is its group path, `icon_sizes`, `text_scale`), and print the `outside`/`inputs` names per connector in a 'not compared' section so a reviewer sees them; then add the exception entries the maintainer's answers to the previous finding and the composites' names need.
 **Verdict:** CONFIRMED — The script's docstring (:67-82) holds only one-field accessors to the sibling rules, and the cited escapes exist (gpui icon_sizes :627 and text_scale :635, iced icon_sizes :1319, egui none; gpui layer_over :665, egui composite_over convert.rs:319, iced's pub(crate)); the scope is documented, not accidental, so this is a coverage extension rather than a defect.
 **Triage:** fix — the parity gate also compares the `outside`, `group` and `inputs` functions across connectors, with exceptions for recorded differences.
-**Status:** open
+**Status:** fixed — M8 T9 (9246c7de..2fe70354)
 *Source:* R1#4.
 
 
@@ -10278,7 +10278,7 @@ Rejected:
 **Fix proposed:** One `native_theme::color::over_straight_alpha(layer: [f32; 4], base: [f32; 4]) -> [f32; 4]` (name the maintainer's) with gpui's early-outs and iced's zero-alpha case, called by gpui's `over` and iced's `composite_over` through their colour conversions, with iced's and gpui's unit tests moved to core; then one public name and parameter order for the two exported helpers (layer first, as iced and egui have it: `layer_over(layer, base)` or `composite_over(layer, base)` — an api-break of gpui's `layer_over(base, layer)` or egui's `composite_over` the maintainer decides), and an iced public twin so an application composites a stated hover as the connector does (docs/todo.md:879's reason for gpui's).
 **Verdict:** CONFIRMED — gpui colors.rs:41-59 `over(base, layer)` and iced styles.rs:85-107 `composite_over(layer, base)` share the interior straight-alpha f32 formula with reversed argument order, but their early-outs differ (a zero-alpha layer: gpui returns base exactly, iced TRANSPARENT when base is also transparent and a recomputed base otherwise; a transparent base: iced returns layer exactly, gpui divides), and M1-T7-01 ruled 'composites stay per toolkit; no Rgba::over' (ledger :928) on the premise that gpui used Hsla::blend, which M6 T9 has since replaced, so the core move reopens a recorded ruling and the naming/parameter-order split is unrecorded.
 **Triage:** fix — one straight-alpha source-over in core (`[f32; 4]`), the connectors convert; M1-T7-01's "composites stay per toolkit" assumed gpui still used `Hsla::blend`, which M6 T9 replaced; gpui's public `layer_over` and iced's private helper call it.
-**Status:** open
+**Status:** fixed — M8 T3 (072855bc..04bac38d)
 *Source:* R1#5.
 
 
@@ -10288,7 +10288,7 @@ Rejected:
 **Fix proposed:** A core method `ResolvedWidgetBorder::padding_plus_line_width(&self) -> ResolvedPadding` (name the maintainer's) adding `line_width` to each stated side; iced's `padding_inside_border` becomes `padding_or(&border.padding_plus_line_width(), default)` and egui's `padding_with_border` the core call behind its finite filter, with the two unit tests (iced lib.rs:1625-1700's and egui convert.rs:506) kept where they are.
 **Verdict:** PLAUSIBLE — iced lib.rs:543-557 and egui convert.rs:256-271 compute the same per-side sum on a validated theme (core rejects non-finite and negative lengths), but egui also clamps the width to LENGTH_CEILING (~1.06e37) and saturates, and M1-T7-01 already recorded this core method as optional `padding_outside()` (ledger :924, :928), so it is that open option rather than a new finding.
 **Triage:** fix once confirmed — PLAUSIBLE: a core `padding_outside()` on `ResolvedWidgetBorder` (M1-T7-01 recorded it) replaces iced's and egui's sums where they agree; egui keeps its width clamp.
-**Status:** open
+**Status:** fixed — M8 T3 (072855bc..04bac38d)
 *Source:* R1#6.
 
 
@@ -10298,7 +10298,7 @@ Rejected:
 **Fix proposed:** `pub fn spin_rotation_radians(elapsed: Duration, duration_ms: NonZeroU32) -> Radians`, the guard and the example's `.get()` removed, in the same commit that makes `AnimatedSvgHandles::frame_duration_ms` a `NonZeroU32` (docs/todo.md:3587); the README's spin recipe follows.
 **Verdict:** CONFIRMED — spin_rotation_radians (icons.rs:216) takes `u32` with a zero guard while the model's Spin period is NonZeroU32 and gpui's with_spin_animation takes NonZeroU32; the archived rationale for the u32 (v0.5.1_iced-connector-API.md §17, Option C) was 'match the source type, Spin stores u32', whose premise is now NonZeroU32; callers are the doctest, the showcase (showcase-iced.rs:11708) and seven unit-test lines, and docs/todo.md:3587 names only frame_duration_ms.
 **Triage:** maintainer: 2026-10-16, iced `spin_rotation_radians` takes `NonZeroU32` → fix.
-**Status:** open
+**Status:** fixed — M8 T4 (a45a32a6..1dd5eecd)
 *Source:* R1#7.
 
 
@@ -10308,7 +10308,7 @@ Rejected:
 **Fix proposed:** When docs/todo.md:3589 is decided, decide this function with it: either egui's `scaled_text_size` goes through `prefs.scaled(size)` too (the atlas path keeps `text_size_or_stock` for the sizes it writes, as the spec prescribes) and its doc drops the 'returned as it is' clause, or the three functions get different names, since one name with two contracts is the inconsistency the parity script was written to catch.
 **Verdict:** CONFIRMED — egui accessors.rs:38-41 returns the raw product (+inf for an overflowing finite factor) while iced lib.rs:1229 and gpui lib.rs:649 go through AccessibilityPreferences::scaled; the egui doc states the difference and docs/todo.md:3589 cites d05d64f6, the commit that made this accessor the plain product, so it is a refinement of that known entry (its wording describes only the atlas outcome) rather than a separate item; the archived egui spec (:1922-1925) promised 'same semantics as' iced's and gpui's.
 **Triage:** fix — egui's `scaled_text_size` doc states it returns the plain product (`+inf` on overflow) by its spec §8.6, and why the siblings differ.
-**Status:** open
+**Status:** fixed — M8 T6 (66053837..db16676e)
 *Source:* R1#8.
 
 
@@ -10318,7 +10318,7 @@ Rejected:
 **Fix proposed:** Seal iced's and gpui's as egui's: a private `sealed::Sealed` implemented for `SystemTheme` as the supertrait, one sentence in each trait doc; or record in the two crates' docs that the trait is open on purpose.
 **Verdict:** CONFIRMED — egui's SystemThemeExt is sealed (ext.rs:6-10, :305) while iced's (lib.rs:457) and gpui's (lib.rs:514) are open; the M5 iced review already noted it ('fold into T7-06's reshaping', ledger :9194) but no ruling, todo entry or exception carried it, and sealing is technically a break for a downstream impl.
 **Triage:** maintainer: 2026-10-16, seal iced's and gpui's `SystemThemeExt` with a private supertrait, as egui's → fix.
-**Status:** open
+**Status:** fixed — M8 T4 (a45a32a6..1dd5eecd); M8 T5 (d7146ce9..ed3e559b)
 *Source:* R1#9.
 
 
@@ -10328,7 +10328,7 @@ Rejected:
 **Fix proposed:** When the entry is taken: one `#[doc(hidden)] pub mod test_support::icon_fixture` in native-theme behind a `test-support` feature (or a workspace dev-only crate) with the `io::Result` shape, `write_indicator_theme`, `icons_dir` and `kdeglobals`, and iced's three callers changed to `?`; the showcases' child-process runner (the entry's second half) can share the same `run`.
 **Verdict:** CONFIRMED — iced's run (icon_fixture.rs:30-31) is `FnOnce(&Path)` returning () with unwraps, gpui's and egui's take and return io::Result; gpui alone has write_indicator_theme and egui alone icons_dir/kdeglobals (used by egui's own icons.rs tests at :1248/:1282, not the showcase); iced has two run call sites (icons.rs, spinner.rs), not three.
 **Triage:** fix — one `publish = false` workspace test-fixture crate for the icon fixture and the child-process runner (5 runner copies, 3 theme writers), used by core, the connectors and the showcases.
-**Status:** open
+**Status:** fixed — M8 T2 (fbe639cb..6fd2fbd8)
 *Source:* R1#11.
 
 
@@ -10338,7 +10338,7 @@ Rejected:
 **Fix proposed:** Make the wrong variant fail: `let missing = match result { Err(crate::Error::ResolutionIncomplete { missing }) => missing, other => panic!("expected ResolutionIncomplete, got {other:?}") };` (ResolutionInvalid and UnknownPreset alike) in all 19 tests; the preceding `assert!(result.is_err())` then goes.
 **Verdict:** CONFIRMED — resolve/tests.rs:1921-1923 returns early on any variant other than ResolutionIncomplete, after only checking is_err() at :1920, so a regression to ResolutionInvalid passes. The count is off by one: resolve/tests.rs has 18 such let-else-return matches (:1321 to :1939), and the 19th is tests/resolve_and_validate.rs:80 (UnknownPreset), the same shape M3-32 fixed only in presets.rs.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03)
 *Source:* R2#0.
 
 
@@ -10348,7 +10348,7 @@ Rejected:
 **Fix proposed:** Replace the two subset legs (:662-670) with one `run_tests "test (native-theme, Linux features)" cargo test -p native-theme --features "$NT_FEATURES"` (NT_FEATURES is defined at :585 and already builds for strict-panic), which also covers watch:: and fonts::; on the maintainer's host every Breeze/Adwaita-gated test then runs.
 **Verdict:** CONFIRMED — check_release.sh:640-646 runs plain `cargo test -p native-theme` (Cargo.toml has no default feature, and its dev-deps enable none), and only :665-670 add portal+watch `watch::` and system-fonts `fonts::`. So the cfg-gated kde (lib.rs:191, 152 tests outside metrics.rs), gnome (55), freedesktop (63), rasterize (10) and reader_kde (7) tests never run on the host. CI's kde, portal and icons legs (ci.yml:117-124) run them only on ubuntu-latest, where the Breeze-guarded tests (freedesktop.rs:1204, :1215, :1398, ...) skip.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R2#1.
 
 
@@ -10358,7 +10358,7 @@ Rejected:
 **Fix proposed:** Add `{ name: "Linux (linux, watch)", os: ubuntu-latest, flags: "--features linux,watch" }` to ci.yml's test matrix (watch/gnome.rs's bus test already skips without a session bus, :238-241); the release-gate leg of the finding above covers the host.
 **Verdict:** CONFIRMED — watch/mod.rs:61 compiles kde.rs only under watch+kde on Linux. Every `cargo test -p native-theme` in ci.yml:117-133, check_release.sh:640/:666/:670, publish.yml:75 and dependency-canary.yml:102 leaves out either watch or kde on Linux. The connectors' `watch,native` legs build native-theme with the feature on but run only the connector's own tests.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R2#2.
 
 
@@ -10368,7 +10368,7 @@ Rejected:
 **Fix proposed:** Assert the flag: `assert!(result.accessibility.high_contrast)` in :1077, :1256 and :1293, `assert!(!result.accessibility.high_contrast)` in :1091, and one build_theme case with Contrast::NoPreference and a gsetting closure answering "true" only for ("org.gnome.desktop.a11y.interface", "high-contrast"), which pins the schema and key at :516-517.
 **Verdict:** CONFIRMED — gnome/mod.rs:1077, :1091, :1256 and :1293 only bind `_variant` and assert nothing, and no test reads `accessibility.high_contrast` (only reduce_motion is asserted, at :1307). Replacing :401 with `false` would pass every test.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03)
 *Source:* R2#3.
 
 
@@ -10378,7 +10378,7 @@ Rejected:
 **Fix proposed:** On Linux expect the Ok: `#[cfg(target_os = "linux")] let sys = SystemTheme::from_system().expect("Linux falls back to the platform preset");` (the early return kept only off Linux), and correct the comments and the todo.md:3606 item.
 **Verdict:** CONFIRMED — On headless Linux, select_reader (pipeline.rs:976, :1010-1023) finds no desktop, so from_system goes to linux_fallback (:1120-1132), which fails only on an invalid bundled preset. On the KDE host, KdeReader::read cannot fail (kde/mod.rs:264-268). So the 11 early returns (gpui lib.rs 6, gpui showcase 1, iced 3, egui install_tests 1) hide only a regression, and todo.md:3606's 'returns early on a headless run' is wrong.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T14 (af06ca88..b9f0ce83)
 *Source:* R2#4.
 
 
@@ -10388,7 +10388,7 @@ Rejected:
 **Fix proposed:** Replace the seven with one slot-level test in the same module: fill every slot directly (`ctx.is_dark.get_or_fill(|| true)`, likewise reduced_motion, reader_accessibility, icon_theme, font_dpi, and on Linux linux_desktop and refined_linux_desktop), call `ctx.invalidate_all()`, and assert each slot's `get()` is None; one more pair checks that invalidate_is_dark empties is_dark and leaves font_dpi filled.
 **Verdict:** CONFIRMED — The named tests (:1691, :1699, :1708, :1716, :1828, :1838, :1847) assert nothing or compare two reads that are equal with or without the cache. One part is overstated: invalidate_all's font_dpi, icon_theme and accessibility slots are pinned by counter tests (:1729, :1781, :1810), so only the is_dark, reduced_motion and linux_desktop slots could be dropped without a failure.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03)
 *Source:* R2#5.
 
 
@@ -10398,7 +10398,7 @@ Rejected:
 **Fix proposed:** Assert the properties: :1617 `assert_ne!(FreedesktopLoader::new(IconRole::ActionCopy).load(), MaterialLoader::new(IconRole::ActionCopy).load())`; :1734 `assert_eq!(result.is_some(), cfg!(all(target_os = "macos", feature = "system-icons")))`; :1844 `assert!(result.is_none())`; :2226 for each IconSet `assert_eq!(load_icon(IconRole::ActionCopy, set), <that set's loader>.load())` plus, with both bundled features, Material's result != Lucide's; freedesktop.rs:793 `assert_ne!` against MaterialLoader's icon as at :1617.
 **Verdict:** CONFIRMED — icons.rs:1617, :1734, :1844 and :2226 and freedesktop.rs:793 all discard their result (`let _ = ...`) with no assertion, so a cross-set fallback that returns Some would pass all five.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03)
 *Source:* R2#6.
 
 
@@ -10408,7 +10408,7 @@ Rejected:
 **Fix proposed:** Make the exact claim mechanical: read `include_str!("../src/prelude.rs")`, collect the last path segment of each `pub use` (and each name of a `{..}` group), sort, and `assert_eq!` against the ten names; keep :6 for the types.
 **Verdict:** CONFIRMED — prelude_smoke.rs:32-49 only names ten items through type_name, and glob imports cannot detect an extra export, so an eleventh `pub use` in src/prelude.rs passes both tests, contrary to the doc at :1-4.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03)
 *Source:* R2#7.
 
 
@@ -10418,7 +10418,7 @@ Rejected:
 **Fix proposed:** With the shared fixture below, rewrite :778, :807, :841 and :1883 as child-process fixture tests and drop their #[ignore]; run :1431 in check_release.sh's full mode (`cargo test -p native-theme --features "$NT_FEATURES" --lib -- --ignored freedesktop::tests::indexed_lookup`), where the host has Breeze and Adwaita.
 **Verdict:** CONFIRMED — The five tests carry #[ignore] at freedesktop.rs:777, :806, :840, :1430 and :1882. The only `--ignored` runs in any script or workflow are screenshots.yml:137 (the egui fonts tests) and :143 (the iced showcase), and neither covers native-theme.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb); M8 T2 (fbe639cb..6fd2fbd8)
 *Source:* R2#8.
 
 
@@ -10428,7 +10428,7 @@ Rejected:
 **Fix proposed:** One `publish = false` workspace crate, e.g. `native-theme-test-fixtures` (no dependency on native-theme, so the core can take it too), a path-only dev-dependency of native-theme and the three connectors (the showcases build with their crate's dev-dependencies; cargo drops a path-only dev-dependency when packaging): `in_child() -> bool` and `root() -> Option<PathBuf>` over one env var, `run(test_path, Child { desktop: &str, icon_theme: Option<&str> }, write: impl FnOnce(&Path) -> io::Result<()>) -> io::Result<()>` (icon_theme Some writes the kdeglobals line, the temp dir is named by pid, test path and desktop), `write_scalable_theme(icons, name, &[(icon, svg)])` and `write_indicator_theme(icons, name, svg)`; core's base-dir `Fixture` (freedesktop.rs:862) and `Bases` (icons.rs:2439) stay, as their functions take the bases.
 **Verdict:** CONFIRMED — This is the known item at todo.md:3592/:3606, and the cited copies exist at the cited lines; native-theme has no child-process fixture (no current_exe in src or tests). 'Differ only in' is loose: iced's run unwraps while egui's and gpui's return io::Result, and egui's adds icons_dir/kdeglobals helpers.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T2 (fbe639cb..6fd2fbd8)
 *Source:* R2#9.
 
 
@@ -10438,7 +10438,7 @@ Rejected:
 **Fix proposed:** Add `- run: cargo test -p native-theme-derive` to the test-build-crate job (and name it for both crates).
 **Verdict:** CONFIRMED — ci.yml's `cargo test` lines (:137, :189, :210-245) name native-theme, native-theme-build and the four connector crates only. Its only mention of native-theme-derive is the strict-panic clippy at :72. The derive's tests run only in check_release.sh's per-crate loop, publish.yml:69 and dependency-canary.yml:100.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R2#10.
 
 
@@ -10448,7 +10448,7 @@ Rejected:
 **Fix proposed:** Change check_release.sh:665 to `--features kde,portal,watch --lib watch::` (or `linux,watch`), and add a ci.yml Linux leg `--features linux,watch`.
 **Verdict:** CONFIRMED — watch/kde.rs (tests at :107) compiles only with watch+kde on Linux; no test leg anywhere pairs them for -p native-theme: check_release runs portal,watch (:665-666) and system-fonts, ci.yml's Linux matrix (:116-130) never adds watch, publish/canary test without kde/watch, update_compatibility tests connectors only, check_features.sh is `cargo check --lib`, and clippy --all-targets on native-theme runs with no features.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R3#0.
 
 
@@ -10458,7 +10458,7 @@ Rejected:
 **Fix proposed:** Add one leg with the Linux feature set (`--features linux,watch,system-icons,material-icons,lucide-icons,svg-rasterize,system-fonts`) to check_release.sh's tests and to its clippy loop for native-theme, and correct CONTRIBUTING.md:83-86.
 **Verdict:** CONFIRMED — check_release tests native-theme with no features (:643; the crate has no defaults), `--features portal,watch --lib watch::` and `--features system-fonts --lib fonts::`, so the KDE, freedesktop and tests/reader_kde.rs (#![cfg(all(linux, kde))]) tests never compile, and the GNOME, rasterizer and spinner tests compile but never run. No gate runs clippy --all-targets on the Linux-only kde/gnome/freedesktop test code (strict-panic is --lib). CONTRIBUTING.md:83-86 calls CI's feature matrix something 'the script cannot do locally', which is false for Linux. One correction: the cross-target clippy `--all-targets --all-features` (:533-536) does lint the rasterizer and spinner tests.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R3#1.
 
 
@@ -10468,7 +10468,7 @@ Rejected:
 **Fix proposed:** Fail the gate step when `github.ref_type` is not `tag` (a dispatch must then choose the tag as its ref).
 **Verdict:** CONFIRMED — publish.yml:6 allows workflow_dispatch, and the version check at :33 runs only when ref_type is tag. A dispatch from a branch therefore needs only a fresh provenance stamp and the CI-gate jobs, then the upload job uploads the branch's version (e.g. 0.7.0 from v0.7.0-rc1). No doc records the dispatch as intended (added in 3fd5f34a).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T11 (f2e17199..e954577b)
 *Source:* R3#2.
 
 
@@ -10478,7 +10478,7 @@ Rejected:
 **Fix proposed:** Make ci.yml callable (`on: workflow_call`) and have publish.yml's publish job need it, or have the gate query the commit's ci.yml check runs with `gh api` and refuse unless all passed; add `update_compatibility.sh check` beside the provenance check.
 **Verdict:** CONFIRMED — publish.yml never references ci.yml (no workflow_run, no cross-workflow needs), and ci.yml runs on the same v* tag in parallel. publish's gate does not run MSRV, the macOS/Windows cargo test, the kde/portal reader tests, check_strict_panic.sh or check_showcase_parity.py, so the ':12 full CI' comment is false. CONTRIBUTING's release order (step 5 to 6) never says to wait for CI to go green.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T11 (f2e17199..e954577b)
 *Source:* R3#3.
 
 
@@ -10488,7 +10488,7 @@ Rejected:
 **Fix proposed:** In publish.yml's gate, run the same multi-package `cargo package -p native-theme-derive -p native-theme ... --target-dir ...` for every publishable crate before the publish job; in check_release.sh's full run, make the soft checks hard once the CHANGELOG entry is dated, as the two stamp checks already are (:1036, :1071).
 **Verdict:** CONFIRMED — check_release.sh:925-932 runs the connector package checks soft, and :1099 then prints 'PASS WITH WARNINGS ... ready for release'. publish.yml has no `cargo package` step, so a connector tarball is verified only inside its own upload command, after derive, native-theme and build (:222-265) are already uploaded. That is the partial upload of 4dcc39e9's v0.5.8 run.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62); M8 T11 (f2e17199..e954577b)
 *Source:* R3#4.
 
 
@@ -10498,7 +10498,7 @@ Rejected:
 **Fix proposed:** Add `defaults: run: shell: bash` (bash -eo pipefail) to both workflows, and in the docsrs step collect the crate list first and fail when it is empty.
 **Verdict:** CONFIRMED — The step has no `shell:`, so GitHub runs it as `bash -e {0}` without pipefail. `cargo update 2>&1 | tee update.log` (:52) then takes tee's 0, and the else branch (:62) prints 'Cargo.lock is already at the newest versions.' The later steps then run on the committed lockfile.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T11 (f2e17199..e954577b)
 *Source:* R3#5.
 
 
@@ -10508,7 +10508,7 @@ Rejected:
 **Fix proposed:** Count rows where Latest ($4) is a version different from Project ($2), and warn when `cargo outdated` exits non-zero.
 **Verdict:** CONFIRMED — The awk at :1005 counts a row only when Compat ($3) starts with a digit and differs from Project, so an incompatible-only row (Compat '---') is not counted, and the exit status of :1002 is never read. Live evidence: `cargo outdated --workspace --depth 1` fails on this tree right now ('failed to select a version for zbus ... blocking-api'), and that output counts 0, so the full run today prints 'All dependencies current'.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#6.
 
 
@@ -10518,7 +10518,7 @@ Rejected:
 **Fix proposed:** Raise Failure in main when any section's discovery is empty (or in each discovery function), as aw_modules and egui_ui_methods already do.
 **Verdict:** CONFIRMED — egui_widgets (:612) and egui_extras_widgets (:666) raise nothing on an empty result (unlike egui_ui_methods :661 and aw_modules :551), and docs/showcase-exceptions.toml has 0 entries in [egui] and [egui_extras] (gpui 36, iced_widget 8, iced_aw 11). So an empty discovery gives 'missing 0' with no stale-exception backstop, and main returns 0.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T9 (9246c7de..2fe70354)
 *Source:* R3#8.
 
 
@@ -10528,7 +10528,7 @@ Rejected:
 **Fix proposed:** Report a skipped cross-target check with print_warn so the summary lists it, and either correct the comment or add the clippy runs to ci.yml's clippy job (it already installs the two targets, :79).
 **Verdict:** CONFIRMED — Within the comment's own loop (:505-522), CI's Windows/macOS legs (ci.yml:140-149) run the system-icons and all-features -D warnings checks but not the macOS `native-theme-egui --all-targets --all-features` check. No workflow runs the cross-target clippy --all-targets runs or the os-probe clippy (ci.yml has strict-panic --lib only; os-probe.yml only runs the probe). A missing target goes through print_info, which touches neither the counters nor WARNINGS, so the run can end 'ALL PASS'.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62); M8 T11 (f2e17199..e954577b)
 *Source:* R3#10.
 
 
@@ -10538,7 +10538,7 @@ Rejected:
 **Fix proposed:** For a filtered run, treat '0 passed' as a failure (e.g. pass an expected-minimum argument, or a `run_tests_filtered` that fails on 0).
 **Verdict:** CONFIRMED — _run_tests_impl (:215-237) checks only the exit status. A run with 0 passed and 0 ignored prints a plain pass line through print_ok, and `cargo test ... --lib watch::` / `fonts::` exit 0 when the filter matches nothing.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T1 (9e2527f5..fbe639cb)
 *Source:* R3#11.
 
 
@@ -10548,7 +10548,7 @@ Rejected:
 **Fix proposed:** Require jq up front as check_features.sh does, delete the fallback, and fail when the crate list is empty.
 **Verdict:** CONFIRMED — Run here, the fallback regex prints 'os-probe' for native-theme-os-probe. :729, :957 and check_features.sh (exit 2 without jq, hard at :485) all need jq, so the fallback can never finish a run. One correction: an empty crate list from a failing `cargo metadata` skips the cargo-check loop silently, but the run then fails hard at check_features.sh, whose own `cargo metadata` runs under pipefail, so it does not end green.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#12.
 
 
@@ -10558,7 +10558,7 @@ Rejected:
 **Fix proposed:** Use `git rev-parse --is-inside-work-tree` and `git status --porcelain` (as :307 already counts with).
 **Verdict:** CONFIRMED — `[ ! -d .git ]` (:303) is true in a worktree, where .git is a file, so the tag and clean-tree checks are skipped with that warning. `git diff --quiet` (:306) sees only unstaged changes to tracked files, so with staged-only or untracked changes the script prints 'Working tree clean'.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#13.
 
 
@@ -10568,7 +10568,7 @@ Rejected:
 **Fix proposed:** Never install: report the missing tool with print_warn (or print_fail) and the install command, and skip that section.
 **Verdict:** CONFIRMED — Reproduced: a function called as `[[ $COMMIT_MODE ]] || f` under set -e, whose `read -r` hits EOF on stdin </dev/null, exits the script with status 1 and prints nothing after the prompt. That gives no fail line and no summary. (Both tools are installed on this host, so this host is not affected.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#14.
 
 
@@ -10578,7 +10578,7 @@ Rejected:
 **Fix proposed:** Correct the header comment (or stream with tee to a log and keep the capture for the summary).
 **Verdict:** CONFIRMED — Header :11-12 says the output streams normally, but _run_check_impl and _run_tests_impl capture it (`output=$("$@" 2>&1)`, :176/:209) and print it only on failure.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#15.
 
 
@@ -10588,7 +10588,7 @@ Rejected:
 **Fix proposed:** Add `$dir/tests` to egui's source_paths and update the comment, the stamp header text and scripts/README.md's paragraph to the script's actual paths, gates and families.
 **Verdict:** CONFIRMED — connectors/native-theme-egui/tests/timings.rs exists, but source_paths' egui arm (:71-74) leaves out $dir/tests, and its comment says there is no tests directory. The script header (:20-22), the COMPATIBILITY.toml header and scripts/README.md:213-241 repeat that. The README also lists the iced family without iced_futures, gives the iced test as `--features iced_aw` (the script uses iced_aw,watch,native), and leaves out the widgets crate's four egui gates and its Cargo.toml/src in the egui hash.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T12 (fc2fa811..5eec3465)
 *Source:* R3#16.
 
 
@@ -10598,7 +10598,7 @@ Rejected:
 **Fix proposed:** Add `cargo doc -p native-theme-egui-widgets --no-deps` and `--all-features` to the Documentation step, and `if: always()` to Test.
 **Verdict:** CONFIRMED — The canary's Documentation step (:152-164) has no `cargo doc -p native-theme-egui-widgets` in either configuration, though the header (:15-18) says the same egui releases reach the widget crate. Test (:98) has no `if: always()`, so a Clippy failure skips it, against the stated aim (:134-137) of naming every failure mode the same evening.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T11 (f2e17199..e954577b)
 *Source:* R3#17.
 
 
@@ -10608,7 +10608,7 @@ Rejected:
 **Fix proposed:** Remove the workflow (docs.rs is the documented home), or build it with each crate's docs.rs features.
 **Verdict:** CONFIRMED — docs.yml:27 runs `cargo doc --workspace --no-deps` with no feature flags, and native-theme has no default features, so kde, watch, the icon features and system-fonts are absent from the Pages site. `git grep github.io` finds no link to it, only flatpak.github.io citations.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T11 (f2e17199..e954577b)
 *Source:* R3#18.
 
 
@@ -10618,7 +10618,7 @@ Rejected:
 **Fix proposed:** Move the loop into capture_window.sh as one function taking the kind, the cargo features and the per-entry CLI arguments; let the GIF script's EXIT trap remove its frame directories.
 **Verdict:** CONFIRMED — generate_screenshots_{iced,egui,gpui}.sh (89/93/97 lines) differ only in crate, features, capture name and gpui's --icon-theme (diff checked), and generate_gifs_theme_switching.sh repeats the loop three times (:65-82, :103-123, :144-161). Its EXIT trap (:62) kills only the showcase, and the three mktemp frame dirs are removed only at :173, so under set -e a failed capture leaves them behind.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T12 (fc2fa811..5eec3465)
 *Source:* R3#19.
 
 
@@ -10628,7 +10628,7 @@ Rejected:
 **Fix proposed:** Add `command -v magick >/dev/null 2>&1 || fail "magick (ImageMagick 7) not found"` to the preflight.
 **Verdict:** CONFIRMED — The preflight (:47-59) does not check for magick. Step 2 (:113) runs generate_gifs_spinners.py, whose subprocess.run(["magick", ...]) (:87-95) raises an uncaught FileNotFoundError, a traceback, after screenshots.yml was dispatched at :88.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T12 (fc2fa811..5eec3465)
 *Source:* R3#20.
 
 
@@ -10638,7 +10638,7 @@ Rejected:
 **Fix proposed:** Derive the list from `cargo metadata` (each member's src directory) instead of naming it.
 **Verdict:** CONFIRMED — The directory list at :354 has tools/os-probe/src but not native-theme-derive/src or native-theme-build/src. Low impact: the authoritative strict-panic runs (:610-613, check_strict_panic.sh passes -D clippy::unwrap_used/expect_used/panic itself) cover both crates' libraries, and CONTRIBUTING.md:33 names no crate list.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T10 (794f4f1c..6c69eb62)
 *Source:* R3#21.
 
 
@@ -10648,7 +10648,7 @@ Rejected:
 **Fix proposed:** Make the checklist's first item `./scripts/check_release.sh --commit passes` and name docs/COMPATIBILITY.toml and the connector READMEs in CONTRIBUTING.md's release step 2.
 **Verdict:** CONFIRMED — pull_request_template.md:11-13 lists only fmt --check, per-crate clippy and per-crate tests, while CONTRIBUTING.md:17-30 makes `check_release.sh --commit` the canonical gate. CONTRIBUTING.md:228-229 commits the assets with PROVENANCE.toml only, though generate_assets_release.sh:240/:259 and check_release.sh:1134-1136 also commit docs/COMPATIBILITY.toml and the connector READMEs.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R3#22.
 
 
@@ -10658,7 +10658,7 @@ Rejected:
 **Fix proposed:** Fix docs/todo.md:2195 first (leave the chrome.info and status-bar keys out of a --capture dump, or park the pointer), then add the rest-run dump for the three captured presets and `check_showcase_parity.py DUMP_DIR` to the asset run, with one exceptions refresh budgeted (M1-T8-02's decision).
 **Verdict:** CONFIRMED — generate_assets_release.sh has no --dump-layout or check_showcase_parity.py call, and docs/todo.md:2195 (the dump is non-deterministic under the pointer) is still open. This is not new: docs/todo_code-review-plan.md:921 schedules exactly this in M8's R3 row, after that entry is fixed (ledger M1-T8-02 at :1173).
 **Triage:** fix — M1-T8-02's dump-and-compare step in generate_assets_release.sh, scheduled for M8, after docs/todo.md's non-deterministic-dump entry (the layout dump depends on the pointer) is fixed first.
-**Status:** open
+**Status:** fixed — M8 T12 (fc2fa811..5eec3465)
 *Source:* R3#23.
 
 
@@ -10668,7 +10668,7 @@ Rejected:
 **Fix proposed:** Rewrite :60 to say what `resolve_with` saves now: `Theme::resolve` reads the cached detection (font DPI, icon theme) through `ResolutionContext::from_system()`, and `resolve_with` reads nothing. Drop the 'on every call ... runs xrdb -query' clause, which :137 already corrects.
 **Verdict:** CONFIRMED — Theme::resolve (model/mod.rs:487) builds ResolutionContext::from_system() per call, but its DPI comes from detect::system_font_dpi -> DetectionContext::font_dpi, a get_or_fill cache (detect.rs:1365-1373, 1443), so :60's 'runs xrdb -query' per call is stale since the caching change :137 records; resolve's own rustdoc (model/mod.rs:452-457) already says cached.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#0.
 
 
@@ -10678,7 +10678,7 @@ Rejected:
 **Fix proposed:** Keep one line, in Fixed (it is a wrong-colour bug), with the Breeze stylesheet case and the open-item note from :142 merged into it; delete the other.
 **Verdict:** CONFIRMED — Both come from one code change, a0f6ad3e (load through load_custom_icon, no second colouring pass). :255 (Fixed) was written by a0f6ad3e and :142 (Changed) by 6a5d67f0, and :142 restates :255's full-colour case. iced has only the Fixed line (:252).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#1.
 
 
@@ -10688,7 +10688,7 @@ Rejected:
 **Fix proposed:** Replace the list in both places with what the todo entry names (Windows non-client fonts and high contrast), or drop the list and point at `watch::on_theme_change`'s docs.
 **Verdict:** CONFIRMED — The watchers subscribe to GNOME text-scaling-factor and a11y high-contrast (watch/gnome.rs:25,29), macOS NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification (watch/macos.rs:90) and Windows TextScaleFactorChanged (watch/windows.rs:54,211). The same stale list is in core's detect::accessibility_preferences doc (detect.rs:935-938).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03); M8 T18 (d8e2be80..57f1c7a4)
 *Source:* R4a#3.
 
 
@@ -10698,7 +10698,7 @@ Rejected:
 **Fix proposed:** Name `native_theme::fonts::substitute_family_cached` in `font_family`'s doc and in the Cargo.toml feature comment, as egui's docs now do.
 **Verdict:** CONFIRMED — gpui lib.rs:694 names fonts::substitute_family, but the body calls substitute_family_cached (lib.rs:731). Core's substitute_family doc (fonts.rs:283-285) says each call starts a process. This is the same fix 0c831ad4 made to egui's README and atlas.rs. egui's install_tests.rs:1379 test comment carries the same name.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T5 (d7146ce9..ed3e559b)
 *Source:* R4a#4.
 
 
@@ -10708,7 +10708,7 @@ Rejected:
 **Fix proposed:** Drop the file:line (the item path `native_theme_gpui::from_preset` is enough), or cite it by item name as docs/todo.md citations now are.
 **Verdict:** CONFIRMED — gpui lib.rs:285-293 is the tail of to_theme's signature (resolved, name, is_dark, prefs) -> GpuiTheme; from_preset is at lib.rs:393.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T6 (66053837..db16676e)
 *Source:* R4a#5.
 
 
@@ -10718,7 +10718,7 @@ Rejected:
 **Fix proposed:** Add the same 'add `--features watch`' clause to README.md:54 and the `# following the OS theme's changes` command line to the egui README's Showcase block.
 **Verdict:** CONFIRMED — The egui crate has a `watch` feature (Cargo.toml:40), and the showcase's watcher is behind #[cfg(feature = "watch")] (examples/showcase-egui/app.rs:3,356-359,404,453). The dev-dependency note (Cargo.toml:54-56) says the showcase's watcher needs the crate's own `watch`. Yet the root README:54 and egui README:439 give no --features watch line.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4); M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#6.
 
 
@@ -10728,7 +10728,7 @@ Rejected:
 **Fix proposed:** State both `[light.defaults]` and `[dark.defaults]` in the three README recipes, as the crate docs do.
 **Verdict:** CONFIRMED — All three READMEs merge an overlay with only [light.defaults]. SystemTheme::with_overlay's own test checks that the dark accent stays unchanged under such an overlay (lib.rs:1272-1280), and its rustdoc example states both [light.defaults] and [dark.defaults] (lib.rs:784-787).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4); M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#7.
 
 
@@ -10738,7 +10738,7 @@ Rejected:
 **Fix proposed:** Retitle the recipe 'Cheap dark-mode check' (system_is_dark, cached), and add `detect_is_dark()` for polling, or point at the watch recipe below it.
 **Verdict:** CONFIRMED — system_is_dark is cached until invalidate_caches (DetectionContext::is_dark get_or_fill, detect.rs:1191-1193), and detect_is_dark's doc (detect.rs:234-238) says it is the one for polling.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#8.
 
 
@@ -10748,7 +10748,7 @@ Rejected:
 **Fix proposed:** Either drop `.theme("breeze-dark")` so the comment holds, or reword the comment to 'an explicit icon theme', and name the features each loader needs (`material-icons`, `system-icons`) next to the example.
 **Verdict:** CONFIRMED — `.theme("breeze-dark")` names the theme instead of the detected one, so 'reads the active theme' is wrong for the code shown. FreedesktopLoader::load needs feature system-icons (icons.rs:310) and MaterialLoader::load needs material-icons (icons.rs:583). Core has no default features (Cargo.toml:22-46), and README:41-42 says none are needed.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#9.
 
 
@@ -10758,7 +10758,7 @@ Rejected:
 **Fix proposed:** Make the root sentence list the five non-size optional fields as the core README does, or have it point to the core README.
 **Verdict:** CONFIRMED — The core README:47 lists expander.arrow_side, expander.frame_enabled and tab.active_indicator_side, all soft_option Option fields (model/widgets/mod.rs:486,974,994); the root README:41 stops at the tooltip delay and the dialog entrance.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#10.
 
 
@@ -10768,7 +10768,7 @@ Rejected:
 **Fix proposed:** Say `button_order` comes from the preset where it states one (every platform preset does), and that `resolve_platform_defaults` fills it for a theme that does not, the colour-scheme presets. List `icon_theme` as stated by every preset, per variant in kde-breeze, and replaced per variant by the KDE reader.
 **Verdict:** CONFIRMED — The button_order half holds. All seven native presets state dialog button_order in both variants (for example adwaita.toml:321,705 and kde-breeze.toml:382,846), and resolve_platform_defaults fills it only when it is None (resolve/mod.rs:177,214), which never happens over a platform preset. The icon_theme half is weak: the KDE reader does set it per variant (kde/mod.rs:82), and ios-13, material-3 and the colour schemes are not the platform presets this section covers.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#11.
 
 
@@ -10778,7 +10778,7 @@ Rejected:
 **Fix proposed:** List the same gated sizes as the guide and documented_sizes.rs, or refer to one list in one place.
 **Verdict:** CONFIRMED — documented_sizes.rs:4-8 gates the tab item_gap and the expander arrow_gap and content_indent. Its :24-29 gates the checkbox's radio_dot_diameter, check_mark_stroke_width and radio_indicator_width, the switch's unchecked_thumb_diameter and the tab's active_indicator_width. presets/README.md:25-26 names none of these, while the guide's :231-236 names them all.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#12.
 
 
@@ -10788,7 +10788,7 @@ Rejected:
 **Fix proposed:** Rewrite step 6: add a `LinuxReader` variant (cfg-gated on the feature), its desktop's arm in `linux_reader_kind`, its reader in `linux_reader`, and its preset in `linux_preset_for_de`. Say at :250-252 that `linux_reader_kind` returns `None` for COSMIC.
 **Verdict:** CONFIRMED — On Linux, select_reader only calls linux_reader (pipeline.rs:974-976). Desktop dispatch is in linux_reader_kind's match over LinuxDesktop into the LinuxReader enum (pipeline.rs:988-1038), where CosmicDe -> None, and the preset comes from linux_preset_for_de (pipeline.rs:1054).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#13.
 
 
@@ -10798,7 +10798,7 @@ Rejected:
 **Fix proposed:** Drop 'focus border' from the list.
 **Verdict:** CONFIRMED — windows.rs reads only SM_CXVSCROLL, SM_CYVTHUMB, SM_CXBORDER, SM_CXSMICON and SM_CXICON (windows.rs:56,253-255,472-473). Its comments at :249 and :1429 say SM_CXFOCUSBORDER is 1 and the 2 px ring comes from the preset.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#14.
 
 
@@ -10808,7 +10808,7 @@ Rejected:
 **Fix proposed:** Write '(internal; used by `native-theme`, not re-exported)'.
 **Verdict:** CONFIRMED — native-theme only `use`s native_theme_derive::ThemeFields internally (model/defaults.rs:8 and others), with no `pub use`. The derive README:3-8 says it is internal and its macros do not appear in the public API.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#15.
 
 
@@ -10818,7 +10818,7 @@ Rejected:
 **Fix proposed:** Define `refactor` as restructuring with no behaviour change, note the `!` marker for breaking changes (`refactor(api)!:`), and replace the phase-identifier example with the review ids in use (`(M7-08)`).
 **Verdict:** CONFIRMED — v0.6.1..HEAD has refactor(connectors)!, refactor(build)!, refactor(icons)! and refactor(presets)! commits (76956acf, c70fe05b, 34d6d1f7, 19860fbc). The last phase-numbered scope is docs(95-02) of 2026-04-20, from the GSD planning since archived.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4a#16.
 
 
@@ -10828,7 +10828,7 @@ Rejected:
 **Fix proposed:** Say the D1 design phase accepted those three and that the code review added further breaking changes (the CHANGELOG lists them), so the section does not suggest the rest is compatible.
 **Verdict:** CONFIRMED — [Unreleased] Breaking Changes holds 42 entries (CHANGELOG.md:10-54), while ROADMAP:47-57 lists three. 'The rest is the review's fixes' is literally true, since the other breaking changes are review fixes, but it reads as if only three break: misleading by omission, not false.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#17.
 
 
@@ -10838,7 +10838,7 @@ Rejected:
 **Fix proposed:** Update the count, add `button_toggle`, `expander_frame` and `pane_grid` to the delivered list, and drop `pane_grid::default` from 'What remains' (or name only its `hovered_region`, which stays iced's).
 **Verdict:** CONFIRMED — styles.rs now has 28 public style functions with scrollbar (adding button_toggle, checkbox_over, toggler_over, pane_grid and expander_frame). styles::pane_grid (styles.rs:1481) is new since v0.6.1 (c95861d6; absent at v0.6.1), yet ROADMAP:94 still lists pane_grid::default as unreplaced.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#18.
 
 
@@ -10848,7 +10848,7 @@ Rejected:
 **Fix proposed:** Attach each of the three READMEs as a `#[cfg(doctest)]` item as core and egui do, turning the blocks into `no_run` with hidden setup lines (`# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {`), and keep `ignore` only for a fragment that cannot stand alone (a `match` arm).
 **Verdict:** CONFIRMED — Only core (lib.rs:107), egui (lib.rs:216) and egui-widgets (lib.rs:124) include their README under cfg(doctest). The gpui README's 11, iced's 17 and build's 3 Rust blocks are all rust,ignore, and no ledger ruling exempts them (the M3 T20 ruling covers only core's feature-gated watch block).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4)
 *Source:* R4a#19.
 
 
@@ -10858,7 +10858,7 @@ Rejected:
 **Fix proposed:** Add `pub use native_theme;` to the gpui and iced crate roots (the egui rule against root-name collisions does not arise there), and drop the extra dependency from the recipes (`native_theme_gpui::native_theme::detect::invalidate_caches()`).
 **Verdict:** CONFIRMED — egui has `pub use native_theme;` (lib.rs:189, chosen in the egui rationale), but gpui (lib.rs:231-242) and iced (lib.rs:285-296) re-export only items. Their Runtime theme change recipes therefore add `native-theme = "0.6"` (gpui README:565, iced README:453) just to call detect::invalidate_caches, which contradicts README.md:30-31 and native-theme/README.md:18.
 **Triage:** fix — gpui and iced re-export `native_theme` as egui does, so the recipes need one dependency, as the root and core READMEs say.
-**Status:** open
+**Status:** fixed — M8 T4 (a45a32a6..1dd5eecd); M8 T5 (d7146ce9..ed3e559b); M8 T18 (d8e2be80..57f1c7a4)
 *Source:* R4a#20.
 
 
@@ -10868,7 +10868,7 @@ Rejected:
 **Fix proposed:** Give the three connector READMEs one skeleton (What it does, How it fits, Compatibility, Quick start, Core concepts, Features, Accessibility, Common recipes with the same recipe order, Showcase, Gallery, Links, License). Use relative `../../CHANGELOG.md` links, add egui's showcase-source link and an overlay recipe, and give egui-widgets the full licence block.
 **Verdict:** CONFIRMED — The headings bear it out. iced has ### Features under ## Styles (:229), while gpui (:503) and egui (:400) have it top level. 'Apply user overrides' comes before 'Runtime theme change' in gpui (:537, :551) and after it in iced (:441, :513). egui has no Common recipes and no Showcase source link, which gpui (:874) and iced (:701) have. The connectors' CHANGELOG links are absolute where core (:213) and build (:148) are relative, and egui-widgets' licence is one line (:84).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4)
 *Source:* R4a#21.
 
 
@@ -10878,7 +10878,7 @@ Rejected:
 **Fix proposed:** Use `?` with a hidden `# Ok::<(), native_theme_iced::Error>(())` in the three examples, and resolve with `nt.resolve(ColorMode::Dark)?` and `to_theme(&resolved.variant, &nt.name)` as the sibling crates do.
 **Verdict:** CONFIRMED — iced lib.rs:10,18,30-31 use .unwrap() in the crate-doc examples, where gpui (lib.rs:46-51) and core (lib.rs:23-26) use ? with a hidden Ok::<(), Error>(()). The crate denies clippy::unwrap_used (lib.rs:260); doctests are not linted by it, so this is a matter of consistency.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4)
 *Source:* R4a#22.
 
 
@@ -10888,7 +10888,7 @@ Rejected:
 **Fix proposed:** Add Development lines for the `--commit` mode, the strict panic lints (script and CI), the semver-checks gate and the OS probe tool and workflow.
 **Verdict:** CONFIRMED — scripts/check_strict_panic.sh, tools/os-probe and .github/workflows/os-probe.yml are new since v0.6.1. check_release.sh gained --commit (absent at v0.6.1) and cargo semver-checks (c89c672d). None of the 10 [Unreleased] Development lines mentions any of them.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#23.
 
 
@@ -10898,7 +10898,7 @@ Rejected:
 **Fix proposed:** Give the GIF line a crate or 'Development' scope (it changed the asset scripts). Split :247 into three bullets. Add `[Unreleased]: https://github.com/tiborgats/native-theme/compare/v0.6.1...HEAD`, which the release step turns into the version's link.
 **Verdict:** CONFIRMED — '**READMEs**' occurs once as a prefix (:186), with no other entry using it. :247 joins the kebab-case reader names, the size_pt message and the README doctests in one bullet. The link definitions start at [0.6.1] (:1479), with no [Unreleased] compare link.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T20 (147453ab..b2524822)
 *Source:* R4a#24.
 
 
@@ -10908,7 +10908,7 @@ Rejected:
 **Fix proposed:** Pick one convention for prose (the file's majority is British -ise: colouriser, unrecognised) and apply it across [Unreleased] and the READMEs, leaving identifiers alone.
 **Verdict:** CONFIRMED — [Unreleased] prose has rasteriser/rasterised beside rasterized/rasterizer, and serialising beside serialized/deserializing, next to colouriser and unrecognised. Some -ize forms are code names (svg-rasterize), but the prose ones are not.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T18 (d8e2be80..57f1c7a4); M8 T19 (0d51a57c..7143716a); M8 T20 (147453ab..b2524822)
 *Source:* R4a#25.
 
 
@@ -10918,7 +10918,7 @@ Rejected:
 **Fix proposed:** Delete the four dead entries and the ratio note (move dialog.button_order to a runtime-detection line of its own), point the reference at docs/archive/v0.5.5.md, and add 'line_height.inherits_from = defaults.line_height x size' to [text_scale_inheritance].
 **Verdict:** CONFIRMED — There is no native-theme/src/resolve.rs (resolve/ is a module), and no code in resolve/ fills line_height, accent_text_color, shadow_color or disabled_text_color (validate.rs:46-77 requires all four). Only dialog.button_order's runtime fill is real (resolve/mod.rs:177-179). resolve_text_scale_entry computes line_height = defaults.line_height x size (inheritance.rs:45-52), and [text_scale_inheritance] (:536-540) leaves that out.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#0.
 
 
@@ -10928,7 +10928,7 @@ Rejected:
 **Fix proposed:** List the defaults root inputs in [no_inheritance] (or a [defaults_roots] block) with the reason 'the theme's base inputs: preset or reader'.
 **Verdict:** CONFIRMED — validate.rs:46-77 requires 23 defaults colours plus line_height, disabled_opacity and the two focus-ring sizes. Leaving out the 5 that [defaults_internal] fills and the two sizing fields the file excuses as a class leaves exactly 20 (background, text, accent, accent_text, surface, muted, shadow, link, selection_text, disabled_text, the 8 status colours, line_height, disabled_opacity). [no_inheritance] lists none of them, though it does list the defaults field icon_theme.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#1.
 
 
@@ -10938,7 +10938,7 @@ Rejected:
 **Fix proposed:** Add [wrong_safety_nets."button.hover_background"] with inherits_from = defaults.background_color and why_wrong citing platform-facts.md:1179.
 **Verdict:** CONFIRMED — inheritance-rules.toml:159 says '# see wrong_safety_nets', but [wrong_safety_nets] (:426-506) has no button.hover_background entry; todo.md:1649 also calls this inheritance a wrong safety net.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#2.
 
 
@@ -10948,7 +10948,7 @@ Rejected:
 **Fix proposed:** Record the three rules under [wrong_safety_nets] (or [per_platform] with the cells' sources), citing platform-facts.md:1243-1245; no value changes.
 **Verdict:** CONFIRMED — platform-facts §2.6 gives Windows hover_text_color as '<- defaults.text_color' (:1242) and GNOME disabled_text_color as '<- font.color' (:1243). [uniform] says selection_text_color (:189) and defaults.disabled_text_color (:190), and neither is in [per_platform] or [wrong_safety_nets]. todo.md:2152's [1.0] 'Audit the other inheritance-rules rules' covers this class generally, but not this instance.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#3.
 
 
@@ -10958,7 +10958,7 @@ Rejected:
 **Fix proposed:** Say at :30-32 and :74-77 that the partial rules are macro-generated (border_kind = "partial") and that [uniform] lists them for review only.
 **Verdict:** CONFIRMED — widgets/mod.rs:507 and :571 put #[theme_inherit(border_kind = "partial")] on these widgets, and inheritance.rs:221-222 calls the generated resolve_border_from_defaults. Yet the file's header (:30-31) and :72-75 call these rules hand-written in [uniform] (:217-218, :226-227).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#4.
 
 
@@ -10968,7 +10968,7 @@ Rejected:
 **Fix proposed:** Correct the header (§2.1–§2.29, drop the snapshot date or state the current one, 'serialized TOML keys; names without the unit suffix match platform-facts'), write 'at most one' for the pt/px pairs, drop §2.1.9 or give platform-facts an icon_theme row, add icon_theme to [theme_variant] (and Theme-level icon_theme to inheritance-rules' no_inheritance note), and soften the [layout] note.
 **Verdict:** CONFIRMED — (1) The range §2.1-§2.28 (:3) leaves out §2.29 Text Area (platform-facts:1634), which has a [text_area] table. (2) Key names carry _px suffixes that platform-facts' first column does not. (3) 'Exactly one of size_pt or size_px must be set' (:39, :76-77) is false: font.rs:189-196 rejects only both, and neither inherits. (4) §2.1.9 (:132) is no platform-facts heading. (5) The header says the test checks every key, but model/mod.rs:2087 skips [theme_variant]. (6) [layout]'s 'Values: platform-facts.md §2.20' is false for windows-11 and material-3, which state 6/6/10/18 where §2.20 gives (none); those preset values are known at todo.md:2996-2999.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T15 (652f7545..e9cc01dd); M8 T17 (c4220af1..3e001953)
 *Source:* R4b#5.
 
 
@@ -10978,7 +10978,7 @@ Rejected:
 **Fix proposed:** Append one docs/todo.md entry listing the 45 fields (or give each § a row per field, ❓ where no source is known), so each preset value of them has a row to cite; no value changes.
 **Verdict:** CONFIRMED — A heuristic match of registry keys to §2.x first columns finds about 37 interactive-state colours with no row (button/input/checkbox/slider/switch/combo/segmented/expander hovers and disableds, tab/list/link/splitter state colours, scrollbar.thumb_active_color); the exact 45 depends on how keys are matched. M2b handed W4 to M3 (findings:4071), M3's ledger says 'Nothing deferred to docs/todo.md' (findings:6839), and todo.md mentions the gap only in passing inside other entries (:615, :653).
 **Triage:** fix — research task: a platform-facts row (per platform, with sources) for each registry state-colour field that has none (~37–45), or a stated reason; the M2-style row-by-row check with web access and a verifier; no value without a source.
-**Status:** open
+**Status:** fixed — M8 T15 (652f7545..e9cc01dd)
 *Source:* R4b#6.
 
 
@@ -10988,7 +10988,7 @@ Rejected:
 **Fix proposed:** State shadow_enabled = false in adwaita's input, checkbox, combo_box, segmented_control and expander borders, both variants, citing the five platform-facts rows (preset-validator run).
 **Verdict:** CONFIRMED — adwaita states shadow_enabled only in defaults.border (true, :74 and :454), and none of its input/checkbox/combo_box/segmented_control/expander border tables states it, so each inherits true. The GNOME cells say no shadow: platform-facts:1199, :1215, :1559, :1615 '(none) — no shadow', and :1578 '(none)'. inheritance-rules.toml:79-83 requires the preset to state false. kde-breeze, macOS and windows-11 do. The same holds for progress_bar (:1307), already open at todo.md:745-750. No connector reads these five fields: egui marks them UNMAPPABLE (mapping.md), gpui reads only defaults.border.shadow_enabled (lib.rs:312) and iced reads none. So nothing on screen changes today; the error is in the resolved data the API hands out, which makes S2 high, S4 more fitting.
 **Triage:** fix — adwaita states `shadow_enabled = false` on the five widgets whose GNOME cells say no shadow (platform-facts :1199, :1215, :1559, :1578, :1615; inheritance-rules :79-83), through the preset-validator; no screen change today (no connector reads them).
-**Status:** open
+**Status:** fixed — M8 T16 (ac70ed0d..76b2b422)
 *Source:* R4b#7.
 
 
@@ -10998,7 +10998,7 @@ Rejected:
 **Fix proposed:** Move the twelve entries to docs/archive/todo_closed.md under their headings, and make both descriptions say items move there as they close.
 **Verdict:** CONFIRMED — grep finds exactly 12 '- [x]' entries (:266, :437, :462, :803, :1279, :1560, :1587, :2682, :3319, :3502, :3532, :3548), against the header's 'Closed items move to archive/todo_closed.md' (:9-10). docs/archive/todo_closed.md was last changed in 2ca74471 (M4 close, 2026-10-13).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#8.
 
 
@@ -11008,7 +11008,7 @@ Rejected:
 **Fix proposed:** Define [v0.7.x] in the header (a 0.7 patch release after 0.7.0), or retag the 21 to [v0.7.0] or [1.0].
 **Verdict:** CONFIRMED — 21 '- [ ] [v0.7.x]' entries exist, and the header (:3-7) defines only [v0.7.0], [1.0], [post-1.0] and [upstream].
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#9.
 
 
@@ -11018,7 +11018,7 @@ Rejected:
 **Fix proposed:** Move the v0.7.0 carry-over sections out of 'Deferred (pre-1.0)' (into the section of their subject, or a 'This cycle' section), and rename the G1/G2 minors section now that M6 and M7 are closed.
 **Verdict:** CONFIRMED — 33 [v0.7.0] entries sit under '## Deferred (pre-1.0)' (:3444 onward), though the header defines [v0.7.0] as 'this cycle does it'. The section '### GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7' (:3529) holds the 'For M8' entries :3559, :3565 and :3568.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#10.
 
 
@@ -11028,7 +11028,7 @@ Rejected:
 **Fix proposed:** Retag :1219 to [1.0]; readdress the stale 'For Mn' labels (M9a for the showcase ones, the owning milestone or none for the rest); merge each duplicate pair into its older entry with an appended line.
 **Verdict:** CONFIRMED — Open entries are still addressed to closed milestones ('For M3' :956, :1057; 'For M4' :3449; 'For M6' :1219, :3509, :3537-3545; 'For M7' :3555). The Segoe entry :1219 is still [v0.7.0] 'For M6', though the ruling at :3586 moved it to [1.0]. Duplicates: :3568 and :3593 (freedesktop_name_for_gpui_icon), and :3354 and :3591 (the README version check).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#11.
 
 
@@ -11038,7 +11038,7 @@ Rejected:
 **Fix proposed:** Close it (move it to docs/archive/todo_closed.md with the commit).
 **Verdict:** CONFIRMED — from_system_matches_system_theme_ext (gpui lib.rs:1857-1871) already asserts loaded.theme.background == expected.theme.background (:1865), the very ThemeColor comparison the entry at todo.md:3509 asks for, and the entry's lib.rs:1549-1561 citation is stale too.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#12.
 
 
@@ -11048,7 +11048,7 @@ Rejected:
 **Fix proposed:** Append a dated line saying macos-monterey now states 1.0 (be69481a) and only ios-13 and the community presets remain.
 **Verdict:** CONFIRMED — macos-monterey.toml:63 and :519 state disabled_opacity = 1.0, and its switch comments speak of 'the former disabled_opacity 0.3', yet todo.md:675-676 still lists it with 0.3. ios-13's 0.3 (:68, :414) still stands.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#13.
 
 
@@ -11058,7 +11058,7 @@ Rejected:
 **Fix proposed:** Make the header say a citation is valid at the commit that wrote it, and cite entries by their ### heading (as the M8 known-items do), starting with detect.rs:1926 (the todo_closed.md entry).
 **Verdict:** CONFIRMED — native-theme/src/detect.rs:1926 cites 'docs/todo.md:2628, M4-49'. It was written in 7553e77d, after the 51bebb0d prune, and the line lands on the unrelated 'geometry::button gives every variant a border' entry at HEAD, and on 'Change notification' at 51bebb0d.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T13 (e6031bc2..1088da03); M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#14.
 
 
@@ -11068,7 +11068,7 @@ Rejected:
 **Fix proposed:** Re-point the sampled citations. When an entry is touched, prefer a symbol name with the file (fn, row name) over a bare line.
 **Verdict:** CONFIRMED — In the entry at todo.md:2075, 'platform-facts.md:1168' now lands on button border.line_width; the DecorationHover row it means has moved to :1179. The other citations in the same entry (:1343, :1394, :1280) still hit their rows, so this confirms a sample, not every citation.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T21 (ffd34ba1..0da97a5a)
 *Source:* R4b#15.
 
 
@@ -11078,7 +11078,7 @@ Rejected:
 **Fix proposed:** Add (GTK), (KF6 src) and (derived) to the Conventions table, write (Adwaita CSS) or (Adwaita src) for the two bare (Adwaita) cells, and use one spelling for the latest-token tag.
 **Verdict:** CONFIRMED — The Conventions table (platform-facts:11-23) leaves out tags the tables use: (M3 token) 151 times, (impl) 41, (derived) 14, (app-defined) 5, (KF6 src) 3, (GTK) 3, (M3 token, latest) 18. One tag is spelled both '(M3 token, latest)' and '(M3 token, `latest`)'. (Adwaita) also appears 2 times beside (Adwaita CSS).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#16.
 
 
@@ -11088,7 +11088,7 @@ Rejected:
 **Fix proposed:** Give it a status line (date; what v0.5.9 and M5 delivered, which parts ROADMAP's iced item still needs), or archive it and point ROADMAP at what remains.
 **Verdict:** CONFIRMED — The file opens straight into '## Problem' with no status line. Its premise that the connector maps 'only colors' from 'ThemeVariant', with geometry left to helpers, is false at HEAD: native-theme-iced/src/styles.rs has the per-widget style functions (button :183, text_input :583, checkbox :701, ...), and ThemeVariant no longer exists. ROADMAP.md:105 links the file.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#17.
 
 
@@ -11098,7 +11098,7 @@ Rejected:
 **Fix proposed:** Rewrite step 6 (and line 252) to name linux_reader_kind, linux_reader and linux_preset_for_de.
 **Verdict:** CONFIRMED — pipeline.rs:943-980's select_reader has only a cfg(linux) branch that returns linux_reader(refined desktop); Linux dispatch is in linux_reader_kind and the LinuxReader enum (:983 onward), so new-os-version-guide.md:288-292's 'arm in select_reader() returning your reader and its preset name' describes code that no longer exists.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T19 (0d51a57c..7143716a)
 *Source:* R4b#18.
 
 
@@ -11108,7 +11108,7 @@ Rejected:
 **Fix proposed:** Add a short docs/evidence/README.md (or os-probe/README.md) that lists the runs, the commit and workflow each came from, and why they are kept (GitHub's 90-day artifact expiry).
 **Verdict:** CONFIRMED — There is no README in docs/evidence/ or docs/evidence/os-probe/, only in the two run directories. The second half is overstated, though: each platform-facts citation links its run directory by path, so which run a row cites is stated per cell.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M8 T17 (c4220af1..3e001953)
 *Source:* R4b#19.
 
 ### Step 6 — fix plan (2026-10-16)
@@ -11184,6 +11184,10 @@ Controller amendments (2026-10-16), binding over the draft above where they diff
 - Ruling (amends M8-39): docs.yml is kept and built with the docs.rs features and metadata (`[package.metadata.docs.rs]`), not deleted — deleting leaves the stale Pages site up and removes infrastructure without the maintainer's say — cost if wrong: one more workflow to keep.
 - Ruling (amends the README version check): the one workspace check keeps today's rule — every README's `native-theme*` dependency names the workspace's `major.minor` — so the release bump is what moves the READMEs; no rule predicting the next version from the CHANGELOG — why: the existing rule is mechanical and already in two crates' tests; the new one adds a rule nobody needs — cost if wrong: none.
 - Ruling: iced's `AnimatedSvgHandles::frame_duration_ms` becomes `NonZeroU32` under the maintainer's M8-08 answer (the same principle as M6-15's for gpui); CHANGELOG Breaking names both — cost if wrong: the maintainer reverts one field type.
+
+### Step 8 — statuses (2026-10-17)
+
+Statuses set from the Step 6 task table, the controller's progress ledger (each task's "complete" line) and the task reports. Counts over the 89 entries: fixed 89, deferred 0, rejected 0, open-to-rule 0. Where an entry spans several tasks (M8-10, -20, -27, -31, -47, -50, -51, -64, -69, -75, -84) the Status line names each task with its range. The docs/todo.md items the table lists beside the entries (T8, T16b, T16c, the known items) have no M8 entry and carry their statuses in docs/todo.md.
 
 ## M9 — Showcases
 
