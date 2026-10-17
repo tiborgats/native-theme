@@ -895,6 +895,22 @@ run_check "docs (native-theme-egui, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
 run_check "docs (native-theme-egui-widgets, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
+# The private items' docs: every run above documents the public API only, so a
+# broken intra-doc link in a private item's docs passes them all. These runs
+# document the private items too, with the two link lints denied (native-theme
+# with its Linux features, as its test leg; every other crate with its
+# defaults). About 25 s for the workspace, so both modes run them.
+for crate in $WORKSPACE_CRATES; do
+    if [ "$crate" = "native-theme" ]; then
+        run_check "private docs, links ($crate, Linux features)" \
+            env RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links" \
+            cargo doc -p "$crate" --no-deps --document-private-items --features "$NT_FEATURES"
+    else
+        run_check "private docs, links ($crate)" \
+            env RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links" \
+            cargo doc -p "$crate" --no-deps --document-private-items
+    fi
+done
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: archive index

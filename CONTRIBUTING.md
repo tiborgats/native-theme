@@ -67,7 +67,10 @@ README-version check (`scripts/check_readme_versions.py` and its `--self-test`),
 comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `--self-test`, which needs Pillow), per-crate
 `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`,
-`native-theme-egui` and `native-theme-egui-widgets` with all features), the archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
+`native-theme-egui` and `native-theme-egui-widgets` with all features), every
+crate's docs with `--document-private-items` and the two intra-doc link lints
+denied (`-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links`;
+`native-theme` with its Linux features), the archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
 emulation, `cargo package` on every
 publishable crate, `cargo semver-checks` against each crate's crates.io release
 (`native-theme-gpui` with `--default-features`),
