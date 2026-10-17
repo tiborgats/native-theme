@@ -337,12 +337,13 @@ fn a_switch_paints_switch_theme() {
         );
         assert_eq!(on.thumb_color, c(s.thumb_background), "{preset}");
         assert_eq!(on.label, c(r.defaults.text_color), "{preset}");
+        assert_eq!(on.end_inset, on.inset.max(px(0.)), "{preset}");
         assert_eq!(
             on.thumb_left(true),
-            on.track_width - on.inset - on.thumb,
+            on.track_width - on.end_inset - on.thumb,
             "{preset}"
         );
-        assert_eq!(on.thumb_left(false), on.inset, "{preset}");
+        assert_eq!(on.thumb_left(false), on.end_inset, "{preset}");
 
         let off = SwitchLook::of(&r, false, false).expect("finite");
         assert_eq!(off.track, c(s.unchecked_background), "{preset}");
@@ -1115,6 +1116,47 @@ fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
         inset,
         "on: inset from the right end"
     );
+}
+
+/// docs/platform-facts.md §2.21: qqc2-desktop-style's handle is the 18 of the
+/// indicator on a 12-tall track, so it overhangs the track by 3 above and
+/// below and sits flush with the track's ends (`SwitchIndicator.qml:41-48`,
+/// `:65-76`, `:68`).
+#[gpui::test]
+fn a_thumb_taller_than_its_track_sits_flush_with_its_ends(cx: &mut TestAppContext) {
+    for checked in [false, true] {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| Switch::new("s").checked(checked).into_any_element()),
+        );
+        let r = resolved("kde-breeze", ColorMode::Light);
+        let s = &r.switch;
+        assert!(
+            s.thumb_diameter > s.track_height,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        let track = bounds(cx, "native-switch-track");
+        let thumb = bounds(cx, "native-switch-thumb");
+        assert_eq!(track.size.height, px(s.track_height));
+        assert_eq!(
+            thumb.origin.y - track.origin.y,
+            (px(s.track_height) - px(s.thumb_diameter)) / 2.,
+            "checked {checked}: overhangs above and below alike"
+        );
+        if checked {
+            assert_eq!(
+                thumb.origin.x + thumb.size.width,
+                track.origin.x + track.size.width,
+                "on: flush with the right end"
+            );
+        } else {
+            assert_eq!(
+                thumb.origin.x, track.origin.x,
+                "off: flush with the left end"
+            );
+        }
+    }
 }
 
 /// docs/platform-facts.md §2.21: the track is outlined in the colour the

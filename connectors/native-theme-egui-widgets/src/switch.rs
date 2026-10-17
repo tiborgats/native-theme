@@ -28,7 +28,8 @@ use crate::scope;
 ///   `hover_unchecked_background` composited over it while hovered.
 /// * The thumb is a `switch.thumb_diameter` circle in `thumb_background`, centred on the
 ///   track's axis and inset `0.5 · (track_height − thumb_diameter)` from its ends; a thumb
-///   larger than its track overhangs it, as those numbers state. While off it is
+///   taller than its track overhangs it above and below and sits flush with its ends, as
+///   qqc2-desktop-style's handle does (docs/platform-facts.md §2.21). While off it is
 ///   `unchecked_thumb_diameter` across in `unchecked_thumb_background` where the theme
 ///   states them (Material's 16 in `outline`, against 24 in `on-primary`). It moves, and
 ///   grows or shrinks, over the scope's `Style::animation_time`, which the connector sets to
@@ -259,10 +260,9 @@ fn switch_ui(
         .unwrap_or_default();
     let style = ui.style().checkbox_style(&Classes::default(), state);
 
-    // The atom holds the track and a thumb that overhangs it.
+    // The atom holds the track and a thumb that overhangs it above and below.
     let largest = g.thumb.max(g.unchecked_thumb);
-    let overhang = (largest - g.track.y).max(0.0);
-    let atom = egui::vec2(g.track.x + overhang, g.track.y.max(largest));
+    let atom = egui::vec2(g.track.x, g.track.y.max(largest));
     let mut min_size = egui::Vec2::splat(ui.spacing().interact_size.y);
     min_size.y = min_size.y.max(atom.y);
     let text = label.as_ref().map(|l| l.text().to_string());
@@ -375,8 +375,9 @@ fn switch_ui(
     // The thumb grows from its off diameter to its on one as it travels.
     let diameter = egui::lerp(g.unchecked_thumb..=g.thumb, position);
     // The thumb's centre travels between the two ends of the track's axis, each half the
-    // track's height in from its end: the thumb inset `0.5 · (track_height − thumb_diameter)`.
-    let half = 0.5 * g.track.y;
+    // track's height in from its end: the thumb inset `0.5 · (track_height − thumb_diameter)`;
+    // a thumb taller than the track half its own diameter in, flush with the end.
+    let half = 0.5 * g.track.y.max(diameter);
     let ends = (track.left() + half)..=(track.right() - half);
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
     // Faded as one: the track and its outline over the ground, the thumb and its outline over

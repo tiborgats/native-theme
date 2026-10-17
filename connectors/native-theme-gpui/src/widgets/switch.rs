@@ -41,10 +41,14 @@ pub struct SwitchLook {
     /// `switch.thumb_diameter`; off, `unchecked_thumb_diameter` where the
     /// theme states one.
     pub thumb: Pixels,
-    /// The thumb's inset from either end of the track, and from its top:
-    /// `0.5 × (track_height − thumb_diameter)`, the centred thumb the two
-    /// numbers describe (negative where the thumb overhangs its track).
+    /// The thumb's inset from the track's top: `0.5 × (track_height −
+    /// thumb_diameter)`, the centred thumb the two numbers describe (negative
+    /// where the thumb overhangs its track).
     pub inset: Pixels,
+    /// The thumb's inset from either end of the track: [`inset`](Self::inset),
+    /// or 0 where the thumb overhangs its track, which it then meets flush,
+    /// as qqc2-desktop-style's handle does (docs/platform-facts.md §2.21).
+    pub end_inset: Pixels,
     /// The track's colour in this state.
     pub track: Hsla,
     /// The track's colour under the pointer, where the control is enabled.
@@ -153,6 +157,7 @@ impl SwitchLook {
             track_radius: length(s.track_radius)?,
             thumb,
             inset: px((f32::from(track_height) - f32::from(thumb)) / 2.),
+            end_inset: px(((f32::from(track_height) - f32::from(thumb)) / 2.).max(0.)),
             track: color(track),
             hover_track,
             track_border,
@@ -196,9 +201,9 @@ impl SwitchLook {
     #[must_use]
     pub fn thumb_left(&self, checked: bool) -> Pixels {
         if checked {
-            px(f32::from(self.track_width) - f32::from(self.inset) - f32::from(self.thumb))
+            px(f32::from(self.track_width) - f32::from(self.end_inset) - f32::from(self.thumb))
         } else {
-            self.inset
+            self.end_inset
         }
     }
 }

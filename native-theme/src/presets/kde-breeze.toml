@@ -401,9 +401,14 @@ checked_background = "#92cae8"
 # platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 thumb_background = "#fcfcfc"
 track_width_px = 36.0
-track_height_px = 18.0
+# platform-facts.md:1505 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
+# (SwitchIndicator.qml:15, :41-46)
+track_height_px = 12.0
+# platform-facts.md:1506 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
+# overhanging the track by 3 above and below, flush with its ends (:68)
 thumb_diameter_px = 18.0
-track_radius_px = 9.0
+# platform-facts.md:1507 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
+track_radius_px = 6.0
 hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#a8acab"
 disabled_checked_background = "#3daee980"
@@ -931,9 +936,14 @@ checked_background = "#3e7797"
 # platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
 thumb_background = "#292c30"
 track_width_px = 36.0
-track_height_px = 18.0
+# platform-facts.md:1505 (§2.21): the indicator's gridUnit 18 less Math.floor(18 / 6) = 3 above and below
+# (SwitchIndicator.qml:15, :41-46)
+track_height_px = 12.0
+# platform-facts.md:1506 (§2.21): the handle is the indicator's height (SwitchIndicator.qml:65-76),
+# overhanging the track by 3 above and below, flush with its ends (:68)
 thumb_diameter_px = 18.0
-track_radius_px = 9.0
+# platform-facts.md:1507 (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
+track_radius_px = 6.0
 hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#596068"
 disabled_checked_background = "#3daee980"

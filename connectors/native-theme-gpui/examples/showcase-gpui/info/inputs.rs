@@ -784,7 +784,7 @@ pub fn native_switch(
                 "track",
                 "checked_background",
                 stated(s.checked_background),
-                "native-theme-gpui/widgets/switch.rs:92",
+                "native-theme-gpui/widgets/switch.rs:96",
             ))
             .color(if s.hover_checked_background.is_some() {
                 claim(
@@ -792,14 +792,14 @@ pub fn native_switch(
                     "hover_checked_background",
                     s.hover_checked_background
                         .map_or(stated(s.checked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:102",
+                    "native-theme-gpui/widgets/switch.rs:106",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "checked_background",
                     stated(s.checked_background),
-                    "native-theme-gpui/widgets/switch.rs:92",
+                    "native-theme-gpui/widgets/switch.rs:96",
                 )
             }),
         (false, false) => info
@@ -807,7 +807,7 @@ pub fn native_switch(
                 "track",
                 "unchecked_background",
                 stated(s.unchecked_background),
-                "native-theme-gpui/widgets/switch.rs:94",
+                "native-theme-gpui/widgets/switch.rs:98",
             ))
             .color(if s.hover_unchecked_background.is_some() {
                 claim(
@@ -815,14 +815,14 @@ pub fn native_switch(
                     "hover_unchecked_background",
                     s.hover_unchecked_background
                         .map_or(stated(s.unchecked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:104",
+                    "native-theme-gpui/widgets/switch.rs:108",
                 )
             } else {
                 claim(
                     "hover, none stated: the track at rest",
                     "unchecked_background",
                     stated(s.unchecked_background),
-                    "native-theme-gpui/widgets/switch.rs:94",
+                    "native-theme-gpui/widgets/switch.rs:98",
                 )
             }),
         (true, true) => info.color(claim(
@@ -832,7 +832,7 @@ pub fn native_switch(
                 s.disabled_checked_background
                     .unwrap_or(s.checked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:97",
+            "native-theme-gpui/widgets/switch.rs:101",
         )),
         (false, true) => info.color(claim(
             "track",
@@ -841,7 +841,7 @@ pub fn native_switch(
                 s.disabled_unchecked_background
                     .unwrap_or(s.unchecked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:98",
+            "native-theme-gpui/widgets/switch.rs:102",
         )),
     };
     // The track's outline and the thumb's, where the theme states the colour
@@ -853,7 +853,7 @@ pub fn native_switch(
                 "checked_track_border_color",
                 s.checked_track_border_color
                     .map_or(stated(s.checked_background), stated),
-                "native-theme-gpui/widgets/switch.rs:119",
+                "native-theme-gpui/widgets/switch.rs:123",
             )
         }),
         (false, false) => s.unchecked_track_border_color.is_some().then(|| {
@@ -862,7 +862,7 @@ pub fn native_switch(
                 "unchecked_track_border_color",
                 s.unchecked_track_border_color
                     .map_or(stated(s.unchecked_background), stated),
-                "native-theme-gpui/widgets/switch.rs:121",
+                "native-theme-gpui/widgets/switch.rs:125",
             )
         }),
         (true, true) => s
@@ -876,7 +876,7 @@ pub fn native_switch(
                     s.disabled_checked_track_border_color
                         .or(s.checked_track_border_color)
                         .map_or(stated(s.checked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:124",
+                    "native-theme-gpui/widgets/switch.rs:128",
                 )
             }),
         (false, true) => s
@@ -890,7 +890,7 @@ pub fn native_switch(
                     s.disabled_unchecked_track_border_color
                         .or(s.unchecked_track_border_color)
                         .map_or(stated(s.unchecked_background), stated),
-                    "native-theme-gpui/widgets/switch.rs:126",
+                    "native-theme-gpui/widgets/switch.rs:130",
                 )
             }),
     };
@@ -904,7 +904,7 @@ pub fn native_switch(
             "thumb_border_color",
             s.thumb_border_color
                 .map_or(stated(s.thumb_background), stated),
-            "native-theme-gpui/widgets/switch.rs:138",
+            "native-theme-gpui/widgets/switch.rs:142",
         ))
     } else {
         info
@@ -933,39 +933,39 @@ pub fn native_switch(
                 "thumb",
                 "disabled_thumb_color",
                 stated(s.disabled_thumb_color.unwrap_or(rest_thumb)),
-                "native-theme-gpui/widgets/switch.rs:114",
+                "native-theme-gpui/widgets/switch.rs:118",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(r.defaults.disabled_text_color),
-                "native-theme-gpui/widgets/switch.rs:140",
+                "native-theme-gpui/widgets/switch.rs:144",
             )),
         (true, false) => info
             .color(claim(
                 "thumb",
                 "thumb_background",
                 stated(s.thumb_background),
-                "native-theme-gpui/widgets/switch.rs:109",
+                "native-theme-gpui/widgets/switch.rs:113",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:142",
+                "native-theme-gpui/widgets/switch.rs:146",
             )),
         (false, false) => info
             .color(claim(
                 "thumb",
                 "unchecked_thumb_background",
                 stated(s.unchecked_thumb_background.unwrap_or(s.thumb_background)),
-                "native-theme-gpui/widgets/switch.rs:111",
+                "native-theme-gpui/widgets/switch.rs:115",
             ))
             .color(claim(
                 "label",
                 "text_color",
                 stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/switch.rs:142",
+                "native-theme-gpui/widgets/switch.rs:146",
             )),
     };
     let info = info

@@ -1975,7 +1975,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.thumb_diameter_px",
-        "gpui: the thumb's size, centred in the track (SwitchLook)",
+        "gpui: the thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook)",
     ),
     (
         "",

@@ -774,20 +774,27 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
 /// `.track_height`, holding a thumb `switch.thumb_diameter` across
 /// (`.unchecked_thumb_diameter`, where the theme states one, while not
 /// `is_toggled`), inset by half the difference of the two heights, at the
-/// right end while `is_toggled`. `on_toggle` is the message a press sends; `None` is a
+/// right end while `is_toggled`; a thumb taller than the track overhangs it
+/// above and below and sits flush with its ends, and the switch is the
+/// thumb's height. `on_toggle` is the message a press sends; `None` is a
 /// disabled switch.
 ///
 /// iced's `Toggler` lays its track out as twice its height
 /// (`iced_widget` 0.14.2 `src/toggler.rs:287`) and has no width setter, so
 /// every platform whose track is not twice its height -- material-3's 52 by 32,
-/// adwaita's 46 by 26 -- would get a wider track than it states. This switch
-/// is a button and two containers instead, coloured by
+/// adwaita's 46 by 26 -- would get a wider track than it states, and its thumb
+/// cannot overhang the track, as kde-breeze's does. This switch is a button
+/// under a thumb container, stacked, coloured by
 /// [`styles::toggler()`] for the toggler status each button status stands
 /// for: `Hovered` and `Pressed` are the toggler's `Hovered` (iced's toggler
 /// has no pressed state), `Disabled` its `Disabled`, and `Active` its
 /// `Active`. The thumb takes the toggler's foreground for `Active` or
-/// `Disabled`, as the toggler's own thumb does in every state, and both take
-/// its `border_radius`, as iced paints them (`toggler.rs:435`, `:461`).
+/// `Disabled`, as the toggler's own thumb does in every state. The track
+/// takes its `border_radius`; the thumb is round, as gpui's and egui's
+/// switches draw it, where iced's toggler gives it the track's radius
+/// (`toggler.rs:435`, `:461`): the model states no thumb radius, and
+/// qqc2-desktop-style's 18 handle on its 12 track is `Math.floor(width / 2)`
+/// (docs/platform-facts.md §2.21).
 ///
 /// The switch has no label: `SwitchTheme` states no font and no gap for one.
 ///
@@ -857,15 +864,25 @@ where
                 border: iced_core::Border {
                     color: t.foreground_border_color,
                     width: t.foreground_border_width,
-                    radius: t.border_radius.unwrap_or(round),
+                    radius: iced_core::border::Radius::new(diameter / 2.0),
                 },
                 ..container::Style::default()
             }
         });
+    // A thumb taller than the track overhangs it above and below, and sits
+    // flush with its ends (docs/platform-facts.md §2.21), so the switch is
+    // as tall as the taller of the two.
+    let height = s.track_height.max(diameter);
+    let end = ((s.track_height - diameter) / 2.0).max(0.0);
     let seat = container(thumb)
-        .padding(((s.track_height - diameter) / 2.0).max(0.0))
-        .width(iced_core::Length::Fill)
-        .height(iced_core::Length::Fill)
+        .padding(iced_core::Padding {
+            top: 0.0,
+            right: end,
+            bottom: 0.0,
+            left: end,
+        })
+        .width(s.track_width)
+        .height(height)
         .align_x(if is_toggled {
             iced_core::alignment::Horizontal::Right
         } else {
@@ -873,7 +890,7 @@ where
         })
         .align_y(iced_core::alignment::Vertical::Center);
 
-    button(seat)
+    let track = button(iced_widget::Space::new())
         .padding(0)
         .width(s.track_width)
         .height(s.track_height)
@@ -899,7 +916,16 @@ where
                 shadow: iced.shadow,
                 snap: iced.snap,
             }
-        })
+        });
+    // The thumb lies over the track and takes no input: the track's button
+    // under it is hovered and pressed (`stack.rs:249-275`).
+    iced_widget::Stack::new()
+        .push(
+            container(track)
+                .height(height)
+                .align_y(iced_core::alignment::Vertical::Center),
+        )
+        .push(seat)
         .into()
 }
 
@@ -1745,6 +1771,63 @@ mod tests {
             near(style.foreground, [0x80, 0x80, 0x80]),
             "white at 0.5 over black: {style:?}"
         );
+    }
+
+    /// docs/platform-facts.md §2.21: qqc2-desktop-style's handle is the 18 of
+    /// the indicator on a 12-tall track, so `switch` overhangs the track by 3
+    /// above and below with it and seats it flush with the track's ends
+    /// (`SwitchIndicator.qml:41-48`, `:65-76`, `:68`); laid out headlessly
+    /// (iced's null renderer, `()`).
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_thumb_taller_than_its_track_sits_flush_with_its_ends() {
+        use iced_core::widget::Tree;
+        fn rects(layout: iced_core::Layout<'_>, out: &mut Vec<iced_core::Rectangle>) {
+            out.push(layout.bounds());
+            for child in layout.children() {
+                rects(child, out);
+            }
+        }
+        let r = make_resolved_preset("kde-breeze", false);
+        let s = &r.switch;
+        assert!(
+            s.thumb_diameter > s.track_height,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        for checked in [false, true] {
+            let mut element: iced_core::Element<'_, (), iced_core::Theme, ()> =
+                switch(&r, checked, Some(()));
+            let mut tree = Tree::new(&element);
+            let limits = iced_core::layout::Limits::new(
+                iced_core::Size::ZERO,
+                iced_core::Size::new(1000.0, 1000.0),
+            );
+            let node = element.as_widget_mut().layout(&mut tree, &(), &limits);
+            let mut all = Vec::new();
+            rects(iced_core::Layout::new(&node), &mut all);
+            let sized = |w: f32, h: f32| {
+                all.iter()
+                    .find(|b| b.width == w && b.height == h)
+                    .copied()
+                    .unwrap_or_else(|| panic!("checked {checked}: no {w}x{h} box in {all:?}"))
+            };
+            let track = sized(s.track_width, s.track_height);
+            let thumb = sized(s.thumb_diameter, s.thumb_diameter);
+            assert_eq!(
+                thumb.y - track.y,
+                (s.track_height - s.thumb_diameter) / 2.0,
+                "checked {checked}: overhangs above and below alike"
+            );
+            if checked {
+                assert_eq!(
+                    thumb.x + thumb.width,
+                    track.x + track.width,
+                    "on: flush right"
+                );
+            } else {
+                assert_eq!(thumb.x, track.x, "off: flush left");
+            }
+        }
     }
 
     /// docs/platform-facts.md §2.21: the track is outlined in the colour the

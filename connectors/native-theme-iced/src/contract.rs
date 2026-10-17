@@ -2710,10 +2710,14 @@ fn an_aw_widget_takes_the_statuses_it_never_receives_from_iced_aw() -> native_th
 fn every_preset_states_a_switch_thumb_that_fits_its_track() -> native_theme::Result<()> {
     // `styles::toggler` computes `padding_ratio` from `switch.track_height`
     // and `.thumb_diameter` under a guard, and falls back to iced's own ratio
-    // where the two cannot state an inset. Today the guard holds everywhere,
-    // so the fallback is dead code that nothing would notice going live --
-    // this counts the combinations that take the native branch and requires
-    // all of them to, so a preset that starts needing the fallback says so.
+    // where the two cannot state an inset. iced's toggler gives the thumb
+    // what its padding leaves inside the track (`toggler.rs:444-454`), so it
+    // cannot draw a thumb that overhangs its track, as kde-breeze's does
+    // (docs/platform-facts.md §2.21: qqc2-desktop-style's 18 handle on a 12
+    // track; `native_theme_iced::switch` draws it). This counts the
+    // combinations that take the native branch and requires every other one
+    // to be such an overhang, so a preset that needs the fallback for another
+    // reason says so.
     let combinations = combinations()?;
     let mut native = Vec::new();
     let mut fell_back = Vec::new();
@@ -2728,7 +2732,7 @@ fn every_preset_states_a_switch_thumb_that_fits_its_track() -> native_theme::Res
                 s.thumb_diameter,
                 (s.track_height - s.thumb_diameter) / (2.0 * s.track_height)
             ));
-        } else {
+        } else if !(s.track_height > 0.0 && s.thumb_diameter > s.track_height) {
             fell_back.push(format!(
                 "{}: track {} thumb {}",
                 c.label(),
@@ -2748,8 +2752,9 @@ fn every_preset_states_a_switch_thumb_that_fits_its_track() -> native_theme::Res
     }
     assert!(
         fell_back.is_empty(),
-        "{} of {} combinations cannot state a thumb inset, so \
-         styles::toggler emits iced's ratio there instead of the platform's:\n{}",
+        "{} of {} combinations cannot state a thumb inset and do not overhang \
+         their track, so styles::toggler emits iced's ratio there instead of \
+         the platform's:\n{}",
         fell_back.len(),
         combinations.len(),
         fell_back.join("\n")

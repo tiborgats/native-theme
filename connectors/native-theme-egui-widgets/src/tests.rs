@@ -448,6 +448,54 @@ fn the_off_thumb_is_the_stated_off_thumb() {
     assert_eq!(thumb, t.switch.unchecked_thumb_diameter);
 }
 
+/// docs/platform-facts.md §2.21: qqc2-desktop-style's handle is the 18 of the indicator on a
+/// 12-tall track, so it overhangs the track by 3 above and below and sits flush with the
+/// track's ends (`SwitchIndicator.qml:41-48`, `:65-76`, `:68`).
+#[test]
+fn a_thumb_taller_than_its_track_sits_flush_with_its_ends() {
+    let t = kde();
+    let s = &t.switch;
+    assert!(
+        s.thumb_diameter > s.track_height,
+        "kde-breeze's thumb no longer overhangs its track"
+    );
+    for checked in [false, true] {
+        let ctx = installed(&t, &AccessibilityPreferences::default());
+        let mut on = checked;
+        let (out, _) = response(&ctx, at(0.0), |ui| ui.add(Switch::new(&mut on)));
+        let size = egui::vec2(s.track_width, s.track_height);
+        let track = rects(&out)
+            .into_iter()
+            .rev()
+            .find(|r| r.rect.size() == size)
+            .unwrap()
+            .rect;
+        let thumb = circles(&out)
+            .into_iter()
+            .find(|c| 2.0 * (c.radius + c.stroke.width) == s.thumb_diameter)
+            .unwrap();
+        let half = 0.5 * s.thumb_diameter;
+        assert_eq!(
+            thumb.center.y,
+            track.center().y,
+            "checked {checked}: on the axis"
+        );
+        if checked {
+            assert_eq!(
+                thumb.center.x + half,
+                track.right(),
+                "on: flush with the right end"
+            );
+        } else {
+            assert_eq!(
+                thumb.center.x - half,
+                track.left(),
+                "off: flush with the left end"
+            );
+        }
+    }
+}
+
 /// The track is outlined inside its edge in the colour the theme states for its state,
 /// `switch.track_border_line_width` wide, and the thumb inside its edge in
 /// `thumb_border_color`, `thumb_border_line_width` wide (epaint strokes a circle outside its
@@ -890,7 +938,9 @@ fn reduced_motion_holds_still() {
         .find(|s| s.rect.size() == size)
         .unwrap()
         .rect;
-    assert_eq!(centre.x, track.right() - 0.5 * t.switch.track_height);
+    // At the right end: half the track's height in, or flush where the thumb is the taller.
+    let half = 0.5 * t.switch.track_height.max(t.switch.thumb_diameter);
+    assert_eq!(centre.x, track.right() - half);
 
     let ctx = installed(&t, &prefs);
     // egui repaints its first passes itself (the fonts, the first layout).

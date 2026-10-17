@@ -919,6 +919,8 @@ pub fn radio(
 /// `(track_height - thumb_diameter) / (2 * track_height)`. A preset that
 /// states no track height, or a thumb taller than its track, would ask for a
 /// division by zero or a negative inset; there the ratio is iced's own instead.
+/// kde-breeze's thumb is taller than its track (docs/platform-facts.md §2.21),
+/// which iced's toggler cannot draw: [`crate::switch()`] draws it.
 /// While not toggled the thumb is `.unchecked_thumb_diameter` across where the
 /// theme states one (Material's 16 against its 24).
 ///

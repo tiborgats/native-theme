@@ -5755,7 +5755,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "native_theme_iced::switch: the track button's width and height".into()
         }
         ("switch", "thumb_diameter_px") => {
-            "native_theme_iced::switch: the thumb container, inset by half the height difference"
+            "native_theme_iced::switch: the thumb container, inset by half the height difference; flush with the ends where it overhangs the track"
                 .into()
         }
         ("switch", "track_radius_px") => "styles::toggler: border_radius of track and thumb".into(),
@@ -7640,7 +7640,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // The thumb inside the track as `native_theme_iced::switch` seats it:
     // `switch.thumb_diameter` across on, `unchecked_thumb_diameter` off where
     // the theme states one, inset by half the difference of the two heights,
-    // at the track's right end while on.
+    // at the track's right end while on; a thumb taller than the track
+    // overhangs it, flush with its ends, and the switch is the thumb's height.
     let sw = &resolved.switch;
     let seat = move |on: bool| {
         let thumb = if on {
@@ -7676,7 +7677,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .align_y(iced::Alignment::Center),
         );
         if let Some(track) = parts("track") {
-            control = control.node(track, &[0]);
+            // The track, centred in the switch on its axis.
+            let height = sw.track_height;
+            control = control.part(track, move |layout| {
+                node_at(layout, &[0]).map(|switch| {
+                    let b = switch.bounds();
+                    iced::Rectangle::new(
+                        iced::Point::new(b.x, b.center_y() - height / 2.0),
+                        iced::Size::new(b.width, height),
+                    )
+                })
+            });
         }
         if let Some(label) = parts("label") {
             control = control.node(label, &[1]);
@@ -7684,8 +7695,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         if let Some(thumb_id) = parts("thumb") {
             let (thumb, thumb_inset) = seat(on);
             control = control.part(thumb_id, move |layout| {
-                node_at(layout, &[0]).map(|track| {
-                    let t = track.bounds();
+                node_at(layout, &[0]).map(|switch| {
+                    let t = switch.bounds();
                     let x = if on {
                         t.x + t.width - thumb_inset - thumb
                     } else {
@@ -15549,19 +15560,22 @@ mod tests {
                 s.diameter
             );
 
+            // The switch is its track, or as tall as its thumb where that
+            // overhangs the track (kde-breeze, docs/platform-facts.md §2.21).
             let sw = &r.switch;
-            for id in [
-                probes::BASIC_SWITCH_OFF,
-                probes::BASIC_SWITCH_ON,
-                probes::BASIC_SWITCH_DISABLED,
+            let off_thumb = sw.unchecked_thumb_diameter.unwrap_or(sw.thumb_diameter);
+            for (id, thumb) in [
+                (probes::BASIC_SWITCH_OFF, off_thumb),
+                (probes::BASIC_SWITCH_ON, sw.thumb_diameter),
+                (probes::BASIC_SWITCH_DISABLED, sw.thumb_diameter),
             ] {
-                let track = probe_bounds(&mut ui, id);
+                let switch = probe_bounds(&mut ui, id);
+                let height = sw.track_height.max(thumb);
                 assert!(
-                    (track.width - sw.track_width).abs() < 0.01
-                        && (track.height - sw.track_height).abs() < 0.01,
-                    "{preset}: {id} is {track:?}, expected {} x {}",
+                    (switch.width - sw.track_width).abs() < 0.01
+                        && (switch.height - height).abs() < 0.01,
+                    "{preset}: {id} is {switch:?}, expected {} x {height}",
                     sw.track_width,
-                    sw.track_height
                 );
             }
 
