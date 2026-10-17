@@ -56,7 +56,8 @@ use iced_core::theme::Theme;
 use iced_core::{Background, Border, Color};
 use native_theme::color::Rgba;
 use native_theme::theme::{
-    ResolvedCheckboxTheme, ResolvedInputTheme, ResolvedTheme, ResolvedWidgetBorder,
+    ResolvedCheckboxTheme, ResolvedDefaults, ResolvedInputTheme, ResolvedTheme,
+    ResolvedWidgetBorder,
 };
 
 // Every widget module of `iced_widget` shares its name with the helper
@@ -513,7 +514,7 @@ struct InputColors {
 }
 
 impl InputColors {
-    fn new(i: &ResolvedInputTheme, border: &ResolvedWidgetBorder) -> Self {
+    fn new(i: &ResolvedInputTheme, border: &ResolvedWidgetBorder, d: &ResolvedDefaults) -> Self {
         let idle = to_color(i.background_color);
         // A translucent disabled fill replaces the idle one and lets the
         // window through, so it is emitted as given.
@@ -528,11 +529,28 @@ impl InputColors {
             color: color.map_or(border.color, to_color),
             ..border
         };
+        // An inset focus ring (offset -width: libadwaita's `outline-offset:
+        // -$width`, `docs/platform-facts.md` §2.1.5) lies inside the field's
+        // edge, where iced paints a border (`renderer::Quad { bounds, border,
+        // .. }`, iced_widget 0.14.2 `src/text_input.rs:473-478`), so it is
+        // drawn exactly as a border that wide, in the focus colour. Without a
+        // ring, or with one that lies outside the edge, which iced has
+        // nowhere to draw, a focused field recolours its rest line.
+        let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
+        let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {
+            Border {
+                color: to_color(focus_color),
+                width: border.width.max(d.focus_ring_width),
+                ..border
+            }
+        } else {
+            outlined(i.focus_border_color)
+        };
 
         Self {
             active: (idle, border, text),
             hovered: (idle, outlined(i.hover_border_color), text),
-            focused: (idle, outlined(i.focus_border_color), text),
+            focused: (idle, focused, text),
             disabled: (
                 faded(disabled, opacity),
                 faded_border(border, opacity),
@@ -552,7 +570,11 @@ impl InputColors {
 /// focused borders from the palette's background and primary families.
 ///
 /// Every color is `input.*`: the fill, the border and its hovered and focused
-/// colors, the placeholder, the value and the selection. The disabled state is
+/// colors, the placeholder, the value and the selection. Where the theme's
+/// focus ring is inset (`defaults.focus_ring_offset` minus its width), a
+/// focused field draws it as its border, `defaults.focus_ring_width` wide in
+/// `input.focus_border_color` (or the ring's colour), so a field with no rest
+/// line still shows its focus. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
 /// model states, each colour's alpha multiplied by `input.disabled_opacity`
 /// (iced has no widget opacity; `docs/platform-facts.md` §2.1.6). `icon` has
@@ -566,7 +588,7 @@ pub fn text_input(
 {
     use iced_widget::text_input::{Status, Style};
 
-    let input = InputColors::new(&resolved.input, &resolved.input.border);
+    let input = InputColors::new(&resolved.input, &resolved.input.border, &resolved.defaults);
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
@@ -611,7 +633,11 @@ pub fn text_editor(
 {
     use iced_widget::text_editor::{Status, Style};
 
-    let input = InputColors::new(&resolved.input, &resolved.text_area.border);
+    let input = InputColors::new(
+        &resolved.input,
+        &resolved.text_area.border,
+        &resolved.defaults,
+    );
 
     move |_theme, status| {
         let (background, border, value) = match status {

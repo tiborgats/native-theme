@@ -569,16 +569,41 @@ fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
 ///
 /// Both soft options copy the border's own color, the base-state value of
 /// spec section 3.2's table.
+///
+/// A theme whose focus ring is inset (`defaults.focus_ring_offset` = minus
+/// its width, `docs/platform-facts.md` §2.1.5) has the focused field drawn
+/// with the ring as its border, in the focus colour or the ring's.
 #[cfg(feature = "widgets")]
 fn native_input_border(r: &ResolvedTheme, rest: Rgba, hovered: bool, focused: bool) -> Color {
     let i = &r.input;
-    to_color(if focused {
+    to_color(if focused && native_inset_ring(r).is_some() {
+        i.focus_border_color.unwrap_or(r.defaults.focus_ring_color)
+    } else if focused {
         i.focus_border_color.unwrap_or(rest)
     } else if hovered {
         i.hover_border_color.unwrap_or(rest)
     } else {
         rest
     })
+}
+
+/// The width of the theme's focus ring where it is inset, lying inside the
+/// field's edge: `None` where there is no ring or it lies outside.
+#[cfg(feature = "widgets")]
+fn native_inset_ring(r: &ResolvedTheme) -> Option<f32> {
+    let d = &r.defaults;
+    (d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width)
+        .then_some(d.focus_ring_width)
+}
+
+/// The border width the native fields give a text field framed by `line`:
+/// the rest line, and the inset ring where wider while focused.
+#[cfg(feature = "widgets")]
+fn native_input_width(r: &ResolvedTheme, line: f32, focused: bool) -> f32 {
+    match native_inset_ring(r) {
+        Some(ring) if focused => line.max(ring),
+        _ => line,
+    }
 }
 
 /// The text color the native fields give a text input's value, by state.
@@ -667,7 +692,11 @@ pub(super) const TEXT_INPUT_BORDER_ROWS: &[BorderRow<text_input::Status>] = &[Bo
     statuses: TEXT_INPUT_STATUSES,
     native: |r, s| NativeBorder {
         color: native_text_input_border(r, s),
-        width: r.input.border.line_width,
+        width: native_input_width(
+            r,
+            r.input.border.line_width,
+            matches!(s, text_input::Status::Focused { .. }),
+        ),
         radius: r.input.border.corner_radius,
     },
     get: |t, r, s| styles::text_input(r)(t, s).border,
@@ -759,7 +788,11 @@ pub(super) const TEXT_EDITOR_BORDER_ROWS: &[BorderRow<text_editor::Status>] = &[
     statuses: TEXT_EDITOR_STATUSES,
     native: |r, s| NativeBorder {
         color: native_text_editor_border(r, s),
-        width: r.text_area.border.line_width,
+        width: native_input_width(
+            r,
+            r.text_area.border.line_width,
+            matches!(s, text_editor::Status::Focused { .. }),
+        ),
         radius: r.text_area.border.corner_radius,
     },
     get: |t, r, s| styles::text_editor(r)(t, s).border,

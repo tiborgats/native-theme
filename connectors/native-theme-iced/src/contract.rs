@@ -3756,6 +3756,48 @@ fn a_text_editor_is_framed_by_the_text_areas_border() -> native_theme::Result<()
     Ok(())
 }
 
+/// adwaita states no border on a text input at rest (`input.border.line_width`
+/// 0, `docs/platform-facts.md` §2.4) and an inset focus ring, 2 px at offset
+/// -2 (§2.1.5): a focused field still shows an edge, the ring drawn as a
+/// border inside the field in `input.focus_border_color`.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_focused_borderless_input_draws_the_inset_focus_ring() -> native_theme::Result<()> {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let resolved = native_theme::theme::Theme::preset("adwaita")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        assert_eq!(resolved.input.border.line_width, 0.0, "adwaita {mode:?}");
+        let d = &resolved.defaults;
+        assert_eq!(d.focus_ring_offset, -d.focus_ring_width, "adwaita {mode:?}");
+        let ring = to_color(
+            resolved
+                .input
+                .focus_border_color
+                .unwrap_or(d.focus_ring_color),
+        );
+        let theme = crate::to_theme(&resolved, "adwaita");
+        let focused = text_input::Status::Focused { is_hovered: false };
+        let input = styles::text_input(&resolved)(&theme, focused).border;
+        assert_eq!(
+            (input.width, input.color),
+            (d.focus_ring_width, ring),
+            "adwaita {mode:?}: a focused text input has no visible edge"
+        );
+        let editor = styles::text_editor(&resolved)(
+            &theme,
+            iced_widget::text_editor::Status::Focused { is_hovered: false },
+        )
+        .border;
+        assert_eq!(
+            (editor.width, editor.color),
+            (d.focus_ring_width, ring),
+            "adwaita {mode:?}: a focused text area has no visible edge"
+        );
+    }
+    Ok(())
+}
+
 #[cfg(feature = "widgets")]
 #[test]
 fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
