@@ -1924,6 +1924,9 @@ struct Claim<'a> {
     field: &'a str,
     /// The value expression, as written.
     value: &'a str,
+    /// The file's text before the claim, where a binding its value reads
+    /// is bound.
+    before: &'a str,
     cited_at: &'a str,
 }
 
@@ -1976,17 +1979,75 @@ const VALUE_HELPERS: &[&str] = &["opaque(", ".input_background("];
 
 /// Whether a claim's `value` reads the `field` it names -- `t.<field>`,
 /// `t.colors.<field>`, `base.tokens.colors.<field>`, or the field through
-/// any other path, or a binding named after it, as a stated soft option is
-/// read (`if let Some(<field>) = s.<field>`) -- or is built with one of
-/// `VALUE_HELPERS`. A swatch whose value reads another field shows a colour
-/// its field line does not name.
+/// any other path -- or is built with one of `VALUE_HELPERS`. A swatch whose
+/// value reads another field shows a colour its field line does not name.
 fn value_reads_field(value: &str, field: &str) -> bool {
     let code = without_comments_or_strings(value);
     let named = code.match_indices('.').any(|(at, _)| {
         let rest = code.get(at + 1..).unwrap_or("");
         leading_ident(rest) == field
     });
-    named || mentions(&code, field) || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
+    named || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
+}
+
+/// Whether `code` reads `field` through a path, `.<field>`.
+fn reads_path(code: &str, field: &str) -> bool {
+    code.match_indices('.').any(|(at, _)| {
+        let rest = code.get(at + 1..).unwrap_or("");
+        leading_ident(rest) == field
+    })
+}
+
+/// Whether a claim's `value` reads a binding named after its `field` that
+/// the code `before` it binds from that field, as a stated soft option is
+/// read: the closure of `….<field>.map(|<field>| claim(..))`, or the pattern
+/// of `if let Some(<field>) = s.<field>` (one of a tuple's, `if let
+/// (Some(<field>), ..) = (s.<field>, ..)`). The last binding of that name
+/// before the claim is the one read; one bound otherwise -- `let <field> =
+/// s.<another>` -- is a colour its field line does not name.
+fn value_reads_bound_field(before: &str, value: &str, field: &str) -> bool {
+    if !mentions(&without_comments_or_strings(value), field) {
+        return false;
+    }
+    let code = without_comments_or_strings(before);
+    let last = |binder: String| {
+        code.match_indices(binder.as_str())
+            .map(|(at, _)| at)
+            .filter(|&at| {
+                // The name, not a longer one ending in it.
+                code.get(..at)
+                    .and_then(|t| t.chars().next_back())
+                    .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            })
+            .last()
+    };
+    let closure = last(format!("|{field}|"));
+    let pattern = last(format!("Some({field})"));
+    match (closure, pattern) {
+        // A closure's receiver: the expression back to the arm, statement or
+        // block it starts in.
+        (Some(at), p) if p.is_none_or(|p| p < at) => {
+            let head = code.get(..at).unwrap_or("");
+            let from = ["=>", ";", "{"]
+                .iter()
+                .filter_map(|mark| head.rfind(mark))
+                .max()
+                .unwrap_or(0);
+            reads_path(head.get(from..).unwrap_or(""), field)
+        }
+        // A pattern's scrutinee: the expression after its `=`, up to the
+        // block it opens.
+        (_, Some(at)) => {
+            let tail = code.get(at..).unwrap_or("");
+            let Some(eq) = tail.find('=') else {
+                return false;
+            };
+            let scrutinee = tail.get(eq..).unwrap_or("");
+            let end = scrutinee.find('{').unwrap_or(scrutinee.len());
+            reads_path(scrutinee.get(..end).unwrap_or(""), field)
+        }
+        _ => false,
+    }
 }
 
 /// The methods a note is written with (spec §3.2).
@@ -2088,6 +2149,9 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
         let widget = args
             .first()
             .map_or("?", |arg| enclosing_fn(raw, offset_in(raw, arg)));
+        let before = args
+            .first()
+            .map_or("", |arg| raw.get(..offset_in(raw, arg)).unwrap_or(""));
         claims.push(Claim {
             file,
             line,
@@ -2095,6 +2159,7 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
             role,
             field,
             value,
+            before,
             cited_at,
         });
     }
@@ -2285,7 +2350,9 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
     // The value is what the swatch paints, and it has to be the field the
     // claim names, or the line cited vouches for a colour nobody shows.
     for claim in &claims {
-        if !value_reads_field(claim.value, claim.field) {
+        if !value_reads_field(claim.value, claim.field)
+            && !value_reads_bound_field(claim.before, claim.value, claim.field)
+        {
             wrong.push(format!(
                 "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
                  uses none of VALUE_HELPERS",
@@ -2914,13 +2981,46 @@ config("free", "fn, not a method");
     assert!(!value_reads_field("t.background", "popover"));
     assert!(!value_reads_field("t.popover_foreground", "popover"));
     assert!(!value_reads_field("red", "danger"));
-    assert!(value_reads_field(
+    // A binding named after the field is not the field, wherever it came
+    // from; it is where it is bound from that field, as the switch's
+    // outline claims bind a stated soft option.
+    assert!(!value_reads_field(
         "stated(thumb_border_color)",
         "thumb_border_color"
     ));
-    assert!(!value_reads_field(
-        "stated(thumb_border)",
-        "thumb_border_color"
+    let value = "stated(thumb_border_color)";
+    let field = "thumb_border_color";
+    assert!(!value_reads_bound_field(
+        "let thumb_border_color = s.thumb_background;\n    info.color(claim(",
+        value,
+        field
+    ));
+    assert!(value_reads_bound_field(
+        "(true, false) => s\n    .thumb_border_color\n    .map(|thumb_border_color| {\n    claim(",
+        value,
+        field
+    ));
+    assert!(value_reads_bound_field(
+        "let info = if let (Some(thumb_border_color), Some(_)) =\n    (s.thumb_border_color, s.thumb_border_line_width)\n{\n    info.color(claim(",
+        value,
+        field
+    ));
+    // Bound from another field, by either form.
+    assert!(!value_reads_bound_field(
+        "x => s.thumb_background.map(|thumb_border_color| {\n    claim(",
+        value,
+        field
+    ));
+    assert!(!value_reads_bound_field(
+        "if let Some(thumb_border_color) = s.thumb_background {\n    claim(",
+        value,
+        field
+    ));
+    // The last binding of the name is the one read.
+    assert!(!value_reads_bound_field(
+        "if let Some(thumb_border_color) = s.thumb_border_color {}\nlet x = s.thumb_background.map(|thumb_border_color| claim(",
+        value,
+        field
     ));
 }
 
