@@ -792,10 +792,26 @@ run_check "showcase parity: comparator self-test" \
 print_section "Docs"
 # CI, the nightly canary and the publish gate all document with
 # RUSTDOCFLAGS=-Dwarnings, so this gate does too: without it a broken
-# intra-doc link is green here and red at tag time.
+# intra-doc link is green here and red at tag time. Each crate is documented
+# with its private items too (`--document-private-items`), so a broken link or
+# a rustdoc warning in a private item's docs fails as well; a public item's
+# link to a private one still fails, as `rustdoc::private_intra_doc_links`
+# fires in both modes. One run per crate covers both: two configurations of
+# one crate re-document each other on every run, as they share
+# `target/doc/<crate>`. native-theme keeps two: its public API with no
+# features (its default build), and its private items with its Linux
+# features, as its test leg.
 for crate in $WORKSPACE_CRATES; do
-    run_check "docs ($crate)" \
-        env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
+    if [ "$crate" = "native-theme" ]; then
+        run_check "docs ($crate)" \
+            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
+        run_check "docs, private items ($crate, Linux features)" \
+            env RUSTDOCFLAGS="-D warnings" \
+            cargo doc -p "$crate" --no-deps --document-private-items --features "$NT_FEATURES"
+    else
+        run_check "docs, private items ($crate)" \
+            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps --document-private-items
+    fi
 done
 # docs.rs builds native-theme-iced with every feature, and a doc item behind a
 # feature gate can only break there. No other gate documents that configuration.
@@ -807,22 +823,6 @@ run_check "docs (native-theme-egui, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
 run_check "docs (native-theme-egui-widgets, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
-# The private items' docs: every run above documents the public API only, so a
-# broken intra-doc link in a private item's docs passes them all. These runs
-# document the private items too, with the two link lints denied (native-theme
-# with its Linux features, as its test leg; every other crate with its
-# defaults). About 25 s for the workspace, so both modes run them.
-for crate in $WORKSPACE_CRATES; do
-    if [ "$crate" = "native-theme" ]; then
-        run_check "private docs, links ($crate, Linux features)" \
-            env RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links" \
-            cargo doc -p "$crate" --no-deps --document-private-items --features "$NT_FEATURES"
-    else
-        run_check "private docs, links ($crate)" \
-            env RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links" \
-            cargo doc -p "$crate" --no-deps --document-private-items
-    fi
-done
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: archive index
