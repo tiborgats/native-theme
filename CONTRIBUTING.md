@@ -30,12 +30,13 @@ full pre-release check:
 ```
 
 This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME and
-panic-pattern scan of non-test code, per-crate `cargo check --all-targets`,
+panic-pattern scan of every workspace member's non-test code, per-crate `cargo check --all-targets`,
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
 features — for `native-theme-gpui` all but `gpui-fast` — failing on a
 warning), the cross-target checks on `x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
-installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
+installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too (a
+missing target or linker skips the check with a warning the summary repeats)
 (`native-theme` with `system-icons` alone, and with all features
 under `RUSTFLAGS="-D warnings"`, and for x86_64-apple-darwin `native-theme-egui`
 with all targets and features), `cargo fmt --all` (formats in place; CI uses
@@ -66,19 +67,19 @@ README-version check (`scripts/check_readme_versions.py` and its `--self-test`),
 comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `--self-test`, which needs Pillow), per-crate
 `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`,
-`native-theme-egui` and `native-theme-egui-widgets` with all features), the
-archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
+`native-theme-egui` and `native-theme-egui-widgets` with all features), the archive-index check (every `docs/archive/*.md` named in its README), the docs.rs
 emulation, `cargo package` on every
 publishable crate, `cargo semver-checks` against each crate's crates.io release
 (`native-theme-gpui` with `--default-features`),
 `cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
-a single-line status per check; the gpui-connector checks, the connector
-packaging, the archive index and the semver checks are soft (`⚠`), tolerable on
-a WIP branch but to be resolved before opening a release PR (a semver warning
-by the version number or by undoing the change); a hard failure (`❌`) exits
-non-zero and must be fixed.
+a single-line status per check, and a failing check's captured output; only the
+semver checks are soft (`⚠`), since approved breaks are expected before a
+release (a semver warning is resolved by the version number or by undoing the
+change); every other check is hard, and a hard failure (`❌`) exits non-zero and
+must be fixed. It needs jq and installs nothing: a missing `cargo-audit` or
+`cargo-outdated` fails the full run with its install command.
 
 `--commit` runs every one of those checks except the release-tag check, the gpui
 connector's tests on GPUI Fast, `native-theme`'s ignored stem-index test and the
