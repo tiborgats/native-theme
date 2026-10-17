@@ -241,7 +241,7 @@ pub fn to_margin(
 /// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
 /// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) and `macos-tahoe`'s (4 / 4 for all three)
 /// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1172`,
-/// `:1201`, `:1600`), where the border's share is
+/// `:1201`, `:1610`), where the border's share is
 /// still open, so there each of those controls comes out one line width per side taller than
 /// the platform's until platform-facts settles those cells (`docs/todo.md`).
 ///

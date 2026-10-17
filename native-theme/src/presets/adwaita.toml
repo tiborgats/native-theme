@@ -164,7 +164,7 @@ line_width_px = 0.0
 shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1701-1702 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
@@ -342,7 +342,7 @@ hover_unchecked_background = "#c8c8c8"
 
 [light.dialog]
 button_order = "primary_right"
-# platform-facts.md:1546 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+# platform-facts.md:1556 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
 entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
@@ -353,21 +353,21 @@ icon_size_px =32.0
 
 
 [light.dialog.title_font]
-# platform-facts.md:1538-1539 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1548-1549 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [light.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1533-1534 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1543-1544 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1675 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1685 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#1b6acb"
 active_text_color = "#1b6acb"
@@ -386,13 +386,13 @@ background_color = "#e6e6e7"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1597 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1607 (§2.24), (none), inline icon
 hover_background = "#d5d5d5"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [light.combo_box.border]
-# platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1605, :1610 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 # platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
@@ -411,7 +411,7 @@ hover_background = "#d5d5d5"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1627, :1632 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 # platform-facts.md §2.25 border.shadow_enabled: none
@@ -425,7 +425,7 @@ corner_radius_px = 12.0
 [light.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1660-1663 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1670-1673 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -443,7 +443,7 @@ corner_radius_px = 12.0
 # in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
 color = "#00000608"
 line_width_px = 1.0
-# platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md:1664-1665 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
 
@@ -588,7 +588,7 @@ line_width_px = 0.0
 shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1701-1702 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
@@ -768,7 +768,7 @@ hover_unchecked_background = "#56565a"
 
 [dark.dialog]
 button_order = "primary_right"
-# platform-facts.md:1546 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+# platform-facts.md:1556 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
 entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
@@ -779,21 +779,21 @@ icon_size_px =32.0
 
 
 [dark.dialog.title_font]
-# platform-facts.md:1538-1539 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1548-1549 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [dark.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1533-1534 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1543-1544 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1675 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1685 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#5b9bf8"
 active_text_color = "#5b9bf8"
@@ -812,13 +812,13 @@ background_color = "#38383c"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1597 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1607 (§2.24), (none), inline icon
 hover_background = "#464649"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [dark.combo_box.border]
-# platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1605, :1610 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 # platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
@@ -837,14 +837,14 @@ hover_background = "#464649"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1627, :1632 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 # platform-facts.md §2.25 border.shadow_enabled: none
 shadow_enabled = false
 
 [dark.card]
-# platform-facts.md:1634 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
+# platform-facts.md:1644 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
 background_color = "#ffffff14"
 
 [dark.card.border]
@@ -852,7 +852,7 @@ corner_radius_px = 12.0
 [dark.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1660-1663 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1670-1673 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -870,7 +870,7 @@ corner_radius_px = 12.0
 # in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
 color = "#00000608"
 line_width_px = 1.0
-# platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md:1664-1665 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
 

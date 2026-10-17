@@ -178,7 +178,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(KdeBreeze, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
     row(KdeBreeze, "input", axes(6.0, 7.0), &[1200, 1201], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
-    row(KdeBreeze, "text_area", all(5.0), &[1691, 1692], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
+    row(KdeBreeze, "text_area", all(5.0), &[1701, 1702], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
     row(KdeBreeze, "checkbox", NONE, &[1224, 1225], "(none)"),
     row(KdeBreeze, "menu", all(4.0), &[1248, 1249], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
         .with(&[("row_height", None, 1247)]),
@@ -199,18 +199,18 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "list", axes(1.0, 2.0), &[1420, 1421], "2; 1")
         .with(&[("row_height", None, 1418), ("header_height", None, 1419)]),
     row(KdeBreeze, "popover", all(12.0), &[1448, 1449], "qqc2-desktop-style Popup: padding 12"),
-    row(KdeBreeze, "dialog", all(10.0), &[1533, 1534], "Layout_TopLevelMarginWidth = 10"),
-    row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1595, 1600], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
-        .with(&[("arrow_area_width", Some(20.0), 1597)]),
-    row(KdeBreeze, "segmented_control", NONE, &[1617, 1622], "tab bar as proxy, not the platform's value"),
-    row(KdeBreeze, "card", all(7.0), &[1639, 1640], "Kirigami Card: Units.largeSpacing 8 from the outer edge, 8 − 1 inside the frame line"),
-    row(KdeBreeze, "expander", NONE, &[1654, 1655], "(none), app-defined")
-        .with(&[("arrow_gap", Some(9.0), 1661), ("content_indent", Some(20.0), 1662)]),
+    row(KdeBreeze, "dialog", all(10.0), &[1543, 1544], "Layout_TopLevelMarginWidth = 10"),
+    row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1605, 1610], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
+        .with(&[("arrow_area_width", Some(20.0), 1607)]),
+    row(KdeBreeze, "segmented_control", NONE, &[1627, 1632], "tab bar as proxy, not the platform's value"),
+    row(KdeBreeze, "card", all(7.0), &[1649, 1650], "Kirigami Card: Units.largeSpacing 8 from the outer edge, 8 − 1 inside the frame line"),
+    row(KdeBreeze, "expander", NONE, &[1664, 1665], "(none), app-defined")
+        .with(&[("arrow_gap", Some(9.0), 1671), ("content_indent", Some(20.0), 1672)]),
     // --- GNOME (adwaita; the reader states no sizes) ---
     row(Adwaita, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Adwaita, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
     row(Adwaita, "input", axes(0.0, 9.0), &[1200, 1201], "9; 0"),
-    row(Adwaita, "text_area", all(0.0), &[1691, 1692], "textview: no padding, GtkTextView margins 0"),
+    row(Adwaita, "text_area", all(0.0), &[1701, 1702], "textview: no padding, GtkTextView margins 0"),
     row(Adwaita, "checkbox", all(3.0), &[1224, 1225], "check { padding: 3px }"),
     row(Adwaita, "menu", axes(0.0, 12.0), &[1248, 1249], "12 ($menu_padding); 0")
         .with(&[("row_height", Some(32.0), 1247)]),
@@ -231,18 +231,18 @@ const ROWS: &[Row] = &[
     row(Adwaita, "list", all(2.0), &[1420, 1421], "plain list context: 2")
         .with(&[("row_height", None, 1418), ("header_height", Some(30.0), 1419)]),
     row(Adwaita, "popover", all(8.0), &[1448, 1449], "popover > contents { padding: 8px }"),
-    row(Adwaita, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1533, 1534], "24; 32 top / 24 bottom"),
-    row(Adwaita, "combo_box", axes(5.0, 10.0), &[1595, 1600], "base button rule, the dropdown's button has a box child: 10; 5")
-        .with(&[("arrow_area_width", None, 1597)]),
-    row(Adwaita, "segmented_control", axes(0.0, 8.0), &[1617, 1622], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
-    row(Adwaita, "card", NONE, &[1639, 1640], "(none), app-defined"),
-    row(Adwaita, "expander", axes(8.0, 14.0), &[1654, 1655], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
-        .with(&[("arrow_gap", Some(9.0), 1661), ("content_indent", Some(0.0), 1662)]),
+    row(Adwaita, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1543, 1544], "24; 32 top / 24 bottom"),
+    row(Adwaita, "combo_box", axes(5.0, 10.0), &[1605, 1610], "base button rule, the dropdown's button has a box child: 10; 5")
+        .with(&[("arrow_area_width", None, 1607)]),
+    row(Adwaita, "segmented_control", axes(0.0, 8.0), &[1627, 1632], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
+    row(Adwaita, "card", NONE, &[1649, 1650], "(none), app-defined"),
+    row(Adwaita, "expander", axes(8.0, 14.0), &[1664, 1665], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
+        .with(&[("arrow_gap", Some(9.0), 1671), ("content_indent", Some(0.0), 1672)]),
     // --- macOS 12-15 (macos-monterey; the reader states no sizes) ---
     row(MacosMonterey, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(MacosMonterey, "button", trbl(1.0, 8.0, 3.0, 8.0), &[1171, 1172], "~8 (WebKit); 1 top / 3 bottom (API, the macOS 14.8.9 probe)"),
     row(MacosMonterey, "input", all(2.0), &[1200, 1201], "2; 2 top / 2 bottom (API, the macOS 14.8.9 probe)"),
-    row(MacosMonterey, "text_area", NONE, &[1691, 1692], "(none): textContainerInset's default is not stated"),
+    row(MacosMonterey, "text_area", NONE, &[1701, 1702], "(none): textContainerInset's default is not stated"),
     row(MacosMonterey, "checkbox", NONE, &[1224, 1225], "(none)"),
     row(MacosMonterey, "menu", axes(3.0, 12.0), &[1248, 1249], "12; 3 (measured)")
         .with(&[("row_height", Some(22.0), 1247)]),
@@ -263,18 +263,18 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "list", all(4.0), &[1420, 1421], "4; 4 (measured)")
         .with(&[("row_height", Some(24.0), 1418), ("header_height", Some(28.0), 1419)]),
     row(MacosMonterey, "popover", NONE, &[1448, 1449], "(none)"),
-    row(MacosMonterey, "dialog", all(20.0), &[1533, 1534], "~20 (measured)"),
-    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1595, 1600], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
-        .with(&[("arrow_area_width", None, 1597)]),
-    row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1617, 1622], "horizontal is a range; ~3 (measured)"),
-    row(MacosMonterey, "card", all(5.0), &[1639, 1640], "NSBox.contentViewMargins 5 (API)"),
-    row(MacosMonterey, "expander", NONE, &[1654, 1655], "(none), app-defined")
-        .with(&[("arrow_gap", None, 1661), ("content_indent", None, 1662)]),
+    row(MacosMonterey, "dialog", all(20.0), &[1543, 1544], "~20 (measured)"),
+    row(MacosMonterey, "combo_box", [Some(1.0), None, Some(3.0), Some(8.0)], &[1605, 1610], "8 left, the arrow on the right; 1 top / 3 bottom (API, the macOS 14.8.9 probe)")
+        .with(&[("arrow_area_width", None, 1607)]),
+    row(MacosMonterey, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1627, 1632], "horizontal is a range; ~3 (measured)"),
+    row(MacosMonterey, "card", all(5.0), &[1649, 1650], "NSBox.contentViewMargins 5 (API)"),
+    row(MacosMonterey, "expander", NONE, &[1664, 1665], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1671), ("content_indent", None, 1672)]),
     // --- macOS 26 (macos-tahoe; the "macOS 26:" values; ❓ is None) ---
     row(MacosTahoe, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(MacosTahoe, "button", axes(4.0, 12.0), &[1171, 1172], "macOS 26: 12; 4 top / 4 bottom (API, the macOS 26.6.2 probe)"),
     row(MacosTahoe, "input", all(4.0), &[1200, 1201], "macOS 26: 4; 4 top / 4 bottom (API)"),
-    row(MacosTahoe, "text_area", NONE, &[1691, 1692], "(none): textContainerInset's default is not stated"),
+    row(MacosTahoe, "text_area", NONE, &[1701, 1702], "(none): textContainerInset's default is not stated"),
     row(MacosTahoe, "checkbox", NONE, &[1224, 1225], "(none)"),
     row(MacosTahoe, "menu", NONE, &[1248, 1249], "macOS 26 ❓")
         .with(&[("row_height", None, 1247)]),
@@ -295,18 +295,18 @@ const ROWS: &[Row] = &[
     row(MacosTahoe, "list", NONE, &[1420, 1421], "macOS 26 ❓")
         .with(&[("row_height", Some(24.0), 1418), ("header_height", Some(28.0), 1419)]),
     row(MacosTahoe, "popover", NONE, &[1448, 1449], "(none)"),
-    row(MacosTahoe, "dialog", NONE, &[1533, 1534], "macOS 26 ❓"),
-    row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1595, 1600], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
-        .with(&[("arrow_area_width", None, 1597)]),
-    row(MacosTahoe, "segmented_control", NONE, &[1617, 1622], "macOS 26 ❓"),
-    row(MacosTahoe, "card", all(5.0), &[1639, 1640], "macOS 26: the same 5, inferred from the unversioned page"),
-    row(MacosTahoe, "expander", NONE, &[1654, 1655], "(none), app-defined")
-        .with(&[("arrow_gap", None, 1661), ("content_indent", None, 1662)]),
+    row(MacosTahoe, "dialog", NONE, &[1543, 1544], "macOS 26 ❓"),
+    row(MacosTahoe, "combo_box", [Some(4.0), None, Some(4.0), Some(12.0)], &[1605, 1610], "macOS 26: 12 left, the arrow on the right; 4 top / 4 bottom (API)")
+        .with(&[("arrow_area_width", None, 1607)]),
+    row(MacosTahoe, "segmented_control", NONE, &[1627, 1632], "macOS 26 ❓"),
+    row(MacosTahoe, "card", all(5.0), &[1649, 1650], "macOS 26: the same 5, inferred from the unversioned page"),
+    row(MacosTahoe, "expander", NONE, &[1664, 1665], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1671), ("content_indent", None, 1672)]),
     // --- Windows (windows-11; the reader states no sizes) ---
     row(Windows11, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Windows11, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
     row(Windows11, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1200, 1201], "10 left / 6 right; 5 top / 6 bottom"),
-    row(Windows11, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1691, 1692], "the same TextBox: TextControlThemePadding=10,5,6,6"),
+    row(Windows11, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1701, 1702], "the same TextBox: TextControlThemePadding=10,5,6,6"),
     row(Windows11, "checkbox", NONE, &[1224, 1225], "(none)"),
     row(Windows11, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1248, 1249], "11; mouse context 4 top / 5 bottom")
         .with(&[("row_height", Some(23.0), 1247)]),
@@ -327,18 +327,18 @@ const ROWS: &[Row] = &[
     row(Windows11, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1420, 1421], "Padding=16,0,12,0")
         .with(&[("row_height", Some(40.0), 1418), ("header_height", None, 1419)]),
     row(Windows11, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1448, 1449], "FlyoutContentPadding=16,15,16,17"),
-    row(Windows11, "dialog", all(24.0), &[1533, 1534], "ContentDialogPadding=24"),
-    row(Windows11, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1595, 1600], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
-        .with(&[("arrow_area_width", Some(38.0), 1597)]),
-    row(Windows11, "segmented_control", NONE, &[1617, 1622], "(none)"),
-    row(Windows11, "card", all(12.0), &[1639, 1640], "12 (convention)"),
-    row(Windows11, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1654, 1655], "header context: ExpanderHeaderPadding=16,0,0,0")
-        .with(&[("arrow_gap", Some(30.0), 1661), ("content_indent", Some(16.0), 1662)]),
+    row(Windows11, "dialog", all(24.0), &[1543, 1544], "ContentDialogPadding=24"),
+    row(Windows11, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1605, 1610], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
+        .with(&[("arrow_area_width", Some(38.0), 1607)]),
+    row(Windows11, "segmented_control", NONE, &[1627, 1632], "(none)"),
+    row(Windows11, "card", all(12.0), &[1649, 1650], "12 (convention)"),
+    row(Windows11, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1664, 1665], "header context: ExpanderHeaderPadding=16,0,0,0")
+        .with(&[("arrow_gap", Some(30.0), 1671), ("content_indent", Some(16.0), 1672)]),
     // --- Material (material-3; no reader) ---
     row(Material3, "window", NONE, &[1157, 1158], "(none): M3 has no window chrome"),
     row(Material3, "button", axes(10.0, 24.0), &[1171, 1172], "material-web leading/trailing-space 24; its padding-block (40 − 20) / 2 = 10"),
     row(Material3, "input", all(15.0), &[1200, 1201], "outlined field 16 from the edge, less the 1 outline; the same down"),
-    row(Material3, "text_area", all(15.0), &[1691, 1692], "the outlined field's 16 less the 1 outline; the same down"),
+    row(Material3, "text_area", all(15.0), &[1701, 1702], "the outlined field's 16 less the 1 outline; the same down"),
     row(Material3, "checkbox", NONE, &[1224, 1225], "(none): the mark fills the box"),
     row(Material3, "menu", [None, Some(16.0), None, Some(16.0)], &[1248, 1249], "16 (md-menu-item); vertical left to the row height: the cell's 14 is (derived), material-web's item 12, latest 8")
         .with(&[("row_height", Some(48.0), 1247)]),
@@ -359,13 +359,13 @@ const ROWS: &[Row] = &[
     row(Material3, "list", [None, Some(16.0), None, Some(16.0)], &[1420, 1421], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
         .with(&[("row_height", None, 1418), ("header_height", Some(56.0), 1419)]),
     row(Material3, "popover", axes(8.0, 0.0), &[1448, 1449], "the menu container pads 8 top and bottom, 0 at the sides"),
-    row(Material3, "dialog", all(24.0), &[1533, 1534], "material-web dialog 24; 24 top / 24 bottom"),
-    row(Material3, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1595, 1600], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
-        .with(&[("arrow_area_width", None, 1597)]),
-    row(Material3, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1617, 1622], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
-    row(Material3, "card", NONE, &[1639, 1640], "(app-defined)"),
-    row(Material3, "expander", NONE, &[1654, 1655], "(none): M3 has no expander")
-        .with(&[("arrow_gap", None, 1661), ("content_indent", None, 1662)]),
+    row(Material3, "dialog", all(24.0), &[1543, 1544], "material-web dialog 24; 24 top / 24 bottom"),
+    row(Material3, "combo_box", trbl(15.0, 11.0, 15.0, 15.0), &[1605, 1610], "outlined field 16 leading / 12 trailing (the arrow's trailing space), 16 down, each less the 1 outline")
+        .with(&[("arrow_area_width", None, 1607)]),
+    row(Material3, "segmented_control", [None, Some(12.0), None, Some(12.0)], &[1627, 1632], "material-web labs spacing-leading/trailing 12; vertical (derived), not stated"),
+    row(Material3, "card", NONE, &[1649, 1650], "(app-defined)"),
+    row(Material3, "expander", NONE, &[1664, 1665], "(none): M3 has no expander")
+        .with(&[("arrow_gap", None, 1671), ("content_indent", None, 1672)]),
 ];
 
 /// Every widget whose border carries padding.
@@ -817,8 +817,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(KdeBreeze, "text_scale.dialog_title.weight", Weight(400), 1474, "Font.Normal unless type: Primary"),
     field(KdeBreeze, "text_scale.display.size", Unstated, 1475, "(none): resolves from the body font"),
     field(KdeBreeze, "text_scale.display.weight", Unstated, 1475, "(none): resolves from the body font"),
-    field(KdeBreeze, "dialog.title_font.size", Unstated, 1538, "← defaults.font"),
-    field(KdeBreeze, "dialog.title_font.weight", Unstated, 1539, "← defaults.font"),
+    field(KdeBreeze, "dialog.title_font.size", Unstated, 1548, "← defaults.font"),
+    field(KdeBreeze, "dialog.title_font.weight", Unstated, 1549, "← defaults.font"),
     field(KdeBreeze, "slider.track_height", Px(6.0), 1307, "Slider_GrooveThickness = 6"),
     field(KdeBreeze, "slider.thumb_diameter", Px(20.0), 1308, "Slider_ControlThickness = 20"),
     field(KdeBreeze, "progress_bar.track_height", Px(6.0), 1322, "ProgressBar_Thickness = 6"),
@@ -836,8 +836,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Adwaita, "text_scale.dialog_title.weight", Weight(800), 1474, ".title-2: 800"),
     field(Adwaita, "text_scale.display.size", Pt(20.0), 1475, ".title-1: ≈20pt"),
     field(Adwaita, "text_scale.display.weight", Weight(800), 1475, ".title-1: 800"),
-    field(Adwaita, "dialog.title_font.size", Pt(15.0), 1538, "136% of base ≈15pt (.title-2)"),
-    field(Adwaita, "dialog.title_font.weight", Weight(800), 1539, "800 (.title-2)"),
+    field(Adwaita, "dialog.title_font.size", Pt(15.0), 1548, "136% of base ≈15pt (.title-2)"),
+    field(Adwaita, "dialog.title_font.weight", Weight(800), 1549, "800 (.title-2)"),
     field(Adwaita, "slider.track_height", Px(10.0), 1307, "libadwaita .scale: 10"),
     field(Adwaita, "slider.thumb_diameter", Px(20.0), 1308, "libadwaita: 20"),
     field(Adwaita, "progress_bar.track_height", Px(8.0), 1322, "libadwaita .progressbar: 8"),
@@ -855,8 +855,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(MacosMonterey, "text_scale.dialog_title.weight", Weight(400), 1474, ".title1: 400"),
     field(MacosMonterey, "text_scale.display.size", Pt(26.0), 1475, ".largeTitle: 26pt"),
     field(MacosMonterey, "text_scale.display.weight", Weight(400), 1475, ".largeTitle: 400"),
-    field(MacosMonterey, "dialog.title_font.size", Pt(13.0), 1538, "emphasized system font: systemFontSize, 13pt"),
-    field(MacosMonterey, "dialog.title_font.weight", Weight(700), 1539, "emphasized system font: Bold (700)"),
+    field(MacosMonterey, "dialog.title_font.size", Pt(13.0), 1548, "emphasized system font: systemFontSize, 13pt"),
+    field(MacosMonterey, "dialog.title_font.weight", Weight(700), 1549, "emphasized system font: Bold (700)"),
     field(MacosMonterey, "slider.track_height", Px(4.0), 1307, "macOS 14-15: NSSlider 4 (API)"),
     field(MacosMonterey, "slider.thumb_diameter", Px(20.0), 1308, "NSSlider knob: 20 (measured, the macOS 14.8.9 probe)"),
     field(MacosMonterey, "progress_bar.track_height", Px(6.0), 1322, "NSProgressIndicator: 6"),
@@ -874,8 +874,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(MacosTahoe, "text_scale.dialog_title.weight", Weight(400), 1474, ".title1: 400"),
     field(MacosTahoe, "text_scale.display.size", Pt(26.0), 1475, ".largeTitle: 26pt"),
     field(MacosTahoe, "text_scale.display.weight", Weight(400), 1475, ".largeTitle: 400"),
-    field(MacosTahoe, "dialog.title_font.size", Pt(13.0), 1538, "macOS 26 ❓: macos-monterey's 13pt, carried"),
-    field(MacosTahoe, "dialog.title_font.weight", Weight(700), 1539, "macOS 26 ❓: macos-monterey's Bold (700), carried"),
+    field(MacosTahoe, "dialog.title_font.size", Pt(13.0), 1548, "macOS 26 ❓: macos-monterey's 13pt, carried"),
+    field(MacosTahoe, "dialog.title_font.weight", Weight(700), 1549, "macOS 26 ❓: macos-monterey's Bold (700), carried"),
     field(MacosTahoe, "slider.track_height", Px(6.0), 1307, "macOS 26: 6 (API)"),
     field(MacosTahoe, "slider.thumb_diameter", Px(16.0), 1308, "macOS 26: the 20 x 16 capsule, 16 across the track"),
     field(MacosTahoe, "progress_bar.track_height", Px(8.0), 1322, "macOS 26: 8 (measured)"),
@@ -897,8 +897,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Windows11, "text_scale.dialog_title.weight", Weight(600), 1474, "Title: 600"),
     field(Windows11, "text_scale.display.size", Px(68.0), 1475, "Display: 68epx"),
     field(Windows11, "text_scale.display.weight", Weight(600), 1475, "Display: 600"),
-    field(Windows11, "dialog.title_font.size", Px(20.0), 1538, "20px (ContentDialog template)"),
-    field(Windows11, "dialog.title_font.weight", Weight(600), 1539, "SemiBold (600)"),
+    field(Windows11, "dialog.title_font.size", Px(20.0), 1548, "20px (ContentDialog template)"),
+    field(Windows11, "dialog.title_font.weight", Weight(600), 1549, "SemiBold (600)"),
     field(Windows11, "slider.track_height", Px(4.0), 1307, "WinUI3: 4"),
     field(Windows11, "slider.thumb_diameter", Px(18.0), 1308, "WinUI3: 18"),
     field(Windows11, "progress_bar.track_height", Px(1.0), 1322, "the groove, ProgressBarTrackHeight: 1"),
@@ -916,8 +916,8 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Material3, "text_scale.dialog_title.weight", Weight(400), 1474, "headline-small: 400"),
     field(Material3, "text_scale.display.size", Px(36.0), 1475, "display-small: 36"),
     field(Material3, "text_scale.display.weight", Weight(400), 1475, "display-small: 400"),
-    field(Material3, "dialog.title_font.size", Px(24.0), 1538, "comp.dialog headline-size: 24"),
-    field(Material3, "dialog.title_font.weight", Weight(400), 1539, "headline-small-weight: 400"),
+    field(Material3, "dialog.title_font.size", Px(24.0), 1548, "comp.dialog headline-size: 24"),
+    field(Material3, "dialog.title_font.weight", Weight(400), 1549, "headline-small-weight: 400"),
     field(Material3, "slider.track_height", Px(4.0), 1307, "active/inactive-track-height: 4"),
     field(Material3, "slider.thumb_diameter", Px(20.0), 1308, "handle-width/height: 20"),
     field(Material3, "progress_bar.track_height", Px(4.0), 1322, "linear track-height: 4"),
@@ -1207,8 +1207,8 @@ fn native_presets_state_no_text_scale_line_height() {
 }
 
 /// The expander's structure per platform, from platform-facts §2.27: the
-/// arrow's side (`:1660`) and whether a frame holds header and content
-/// (`:1663`); `None` where the cell states none.
+/// arrow's side (`:1670`) and whether a frame holds header and content
+/// (`:1673`); `None` where the cell states none.
 #[rustfmt::skip]
 const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 6] = [
     (KdeBreeze, Some(crate::model::ArrowSide::Leading), Some(false)),
@@ -1223,8 +1223,8 @@ const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Optio
 /// gives them, static and live, and no other preset states either.
 #[test]
 fn native_themes_state_the_expanders_structure() {
-    assert!(facts_line(1660).starts_with("| `arrow_side`"));
-    assert!(facts_line(1663).starts_with("| `frame_enabled`"));
+    assert!(facts_line(1670).starts_with("| `arrow_side`"));
+    assert!(facts_line(1673).starts_with("| `frame_enabled`"));
     let mut failures = Vec::new();
     for (preset, side, frame) in EXPANDER_STRUCTURE {
         for variant in gate_variants(preset) {
@@ -1234,7 +1234,7 @@ fn native_themes_state_the_expanders_structure() {
                     if got != (side, frame) {
                         failures.push(format!(
                             "{source} {name}: expander side and frame {got:?}, \
-                             platform-facts gives {:?} (docs/platform-facts.md:1660, :1663)",
+                             platform-facts gives {:?} (docs/platform-facts.md:1670, :1673)",
                             (side, frame)
                         ));
                     }
@@ -1336,7 +1336,7 @@ fn native_themes_state_the_tooltip_show_delay() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// The dialog's entrance per platform, from platform-facts §2.22 (`:1546`);
+/// The dialog's entrance per platform, from platform-facts §2.22 (`:1556`);
 /// `None` where the cell states none.
 #[rustfmt::skip]
 const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>); 6] = [
@@ -1352,11 +1352,11 @@ const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>
 /// static and live, and no other preset states one.
 #[test]
 fn native_themes_state_the_dialog_entrance() {
-    assert!(facts_line(1546).starts_with("| `entrance`"));
-    assert!(facts_heading(1546).starts_with("### 2.22 "));
+    assert!(facts_line(1556).starts_with("| `entrance`"));
+    assert!(facts_heading(1556).starts_with("### 2.22 "));
     let failures = soft_field_failures(
         "dialog.entrance",
-        1546,
+        1556,
         &DIALOG_ENTRANCE,
         |t| t.dialog.entrance,
         |v| v.dialog.entrance,

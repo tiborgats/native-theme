@@ -352,7 +352,7 @@ the file was pruned on 2026-10-11, not reordered.
       AppKit's title rect sits 1 below the top and 3 above the bottom of the
       20-tall bezel, measured from its outer (alignment-rect) edge
       (`docs/platform-facts.md:1172`), and the pop-up button's likewise
-      (`:1600`). Those are offsets from the outer edge, so the border's
+      (`:1610`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
       M2a Step 8 (2026-10-11) took the text input's row from the probe too:
@@ -364,7 +364,7 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
       Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
-      states **(none)** for the other three (`docs/platform-facts.md:1578`),
+      states **(none)** for the other three (`docs/platform-facts.md:1588`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml:376`, `:833`;
@@ -379,7 +379,7 @@ the file was pruned on 2026-10-11, not reordered.
       field where the icon set has no animated indicator
       (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
-      `min_diameter` either (**(none)**, `docs/platform-facts.md:1577`), yet
+      `min_diameter` either (**(none)**, `docs/platform-facts.md:1587`), yet
       `kde-breeze` and `adwaita` (and their `-live` twins, until M1-T4-01
       removed them) state `min_diameter_px = 16.0` in both variants.
       `min_diameter` is required in `ResolvedSpinnerTheme` too
@@ -1144,7 +1144,7 @@ model, the platform presets and the three connectors
 ### OS probe: the selected segment in a key window
 
 - [ ] [v0.7.0] `segmented_control.active_background` on macOS is
-      `selectedContentBackgroundColor` (`docs/platform-facts.md:1613`), whose
+      `selectedContentBackgroundColor` (`docs/platform-facts.md:1623`), whose
       value macOS 26 reports unchanged (probe 26 `:324`, `:398`), but the OS
       probe renders each control in a borderless window it never orders
       front, so never key (probe `:514`), and there the selected segment is
@@ -1419,7 +1419,7 @@ model, the platform presets and the three connectors
       `card.background_color` inherits `defaults.surface_color`
       (`docs/inheritance-rules.toml:266`), and only material-3 (both modes)
       and adwaita (dark, `#ffffff14`, `adwaita.toml:771`, libadwaita
-      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1634`) states no card for macOS and
+      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1644`) states no card for macOS and
       KDE. Should the inheritance give the toolbar and the popover a 0 width
       and the card no fill, or should their presets state them from a source?
       Until then the gpui connector carries neither `toolbar.border.color`,
@@ -1490,7 +1490,7 @@ model, the platform presets and the three connectors
       §2.27), and the community presets catppuccin-latte, -frappe, -macchiato,
       -mocha, dracula, gruvbox, nord, one-dark, solarized and tokyo-night
       (`:243`/`:486` or `:241`/`:484`). kde-breeze's was unset in M6 T16b: the
-      §2.27 `frame_enabled` row (`docs/platform-facts.md:1663`) says
+      §2.27 `frame_enabled` row (`docs/platform-facts.md:1673`) says
       `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
       nothing else. Find each platform's source for a hovered expander header
       (a facts row), or unset the value; the gpui connector's
@@ -3295,7 +3295,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1615`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1625`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
@@ -3310,7 +3310,7 @@ the gap — closing it is a change, and each wants its own decision.
       `progress_bar.min_width` 100, `tab.min_width` 64, the dialog bounds
       320/560/140/600, `spinner.stroke_width` 2, `combo_box.min_width` 120,
       `combo_box.arrow_icon_size` 17 (the chevron measures 7 × 10.5 on macOS
-      26, `docs/platform-facts.md:1596`, not a square either),
+      26, `docs/platform-facts.md:1606`, not a square either),
       `expander.header_height` 40 and the icon sizes small 16, large 32,
       dialog 22 and panel 20; it makes
       `macos-monterey`'s choice of the small toolbar mode, 24 (the cell's
@@ -3978,7 +3978,7 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Correction (M8 T14 fix round 1, 2026-10-17):* the header row's border is the main header's `.h(header_row_height).border_b_1()` at gpui-component `src/table/state.rs:1959-1960`; `:1899` is the left-fixed columns' header.
 - [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
   *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1653 names `ItemView_ArrowSize` where :1616 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1663 names `ItemView_ArrowSize` where :1626 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`

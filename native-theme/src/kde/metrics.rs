@@ -38,7 +38,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Text area
     let border = variant.text_area.border.get_or_insert_default();
-    // platform-facts.md:1691-1692 (§2.29): inside the 1px frame line,
+    // platform-facts.md:1701-1702 (§2.29): inside the 1px frame line,
     // Frame_FrameWidth 2 plus QTextDocument's documentMargin 4
     border.padding_left = Some(5.0); // Frame_FrameWidth + 4 - 1
     border.padding_right = Some(5.0); // Frame_FrameWidth + 4 - 1

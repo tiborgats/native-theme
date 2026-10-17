@@ -243,7 +243,7 @@ fn macos_tahoe_probe_sizes_match_platform_facts() {
     let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
     assert!(line(1170).contains("macOS 26: 24 **(API)**"));
     assert!(line(1199).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1593).contains("macOS 26: 24 **(API)**"));
+    assert!(line(1603).contains("macOS 26: 24 **(API)**"));
     assert!(line(1455).contains("macOS 26: same"));
     assert!(line(1456).contains("macOS 26: same"));
     let theme = Theme::preset("macos-tahoe").unwrap();

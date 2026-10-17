@@ -171,7 +171,7 @@ padding_vertical_px = 6.0
 shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1691-1692 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# platform-facts.md:1701-1702 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
 # documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
 padding_horizontal_px = 5.0
 padding_vertical_px = 5.0
@@ -413,7 +413,7 @@ disabled_thumb_color = "#f0f0f0"
 
 [light.dialog]
 button_order = "primary_left"
-# platform-facts.md:1546 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+# platform-facts.md:1556 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
 entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
@@ -424,16 +424,16 @@ icon_size_px =32.0
 
 
 [light.dialog.border]
-# platform-facts.md:1533-1534 (§2.22): Layout_TopLevelMarginWidth = 10
+# platform-facts.md:1543-1544 (§2.22): Layout_TopLevelMarginWidth = 10
 padding_horizontal_px = 10.0
 padding_vertical_px = 10.0
 
 [light.link]
 underline_enabled = true
-# platform-facts.md:1672 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
+# platform-facts.md:1682 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
 visited_text_color = "#9b59b6"
 background_color = "#00000000"
-# platform-facts.md:1675 (§2.28): KDE hover_background **(none)**, transparent as background_color
+# platform-facts.md:1685 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # No hover_text_color or active_text_color: they inherit link.font.color
 # (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
@@ -450,11 +450,11 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
-# platform-facts.md:1588 (§2.24): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
+# platform-facts.md:1598 (§2.24): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 background_color = "#fcfcfc"
 min_height_px = 32.0
 min_width_px = 120.0
-# platform-facts.md:1596 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+# platform-facts.md:1606 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 hover_background = "#93cee9"
@@ -464,15 +464,15 @@ disabled_text_color = "#a8a9aa"
 
 
 [light.combo_box.border]
-# platform-facts.md:1595, :1600 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+# platform-facts.md:1605, :1610 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
-# platform-facts.md:1599 (§2.24): no shadow
+# platform-facts.md:1609 (§2.24): no shadow
 shadow_enabled = false
 
 [light.combo_box.font]
-# platform-facts.md:1590 (§2.24): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
+# platform-facts.md:1600 (§2.24): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
 color = "#232629"
 [light.segmented_control]
 segment_height_px = 30.0
@@ -482,7 +482,7 @@ active_text_color = "#fcfcfc"
 hover_background = "#dee0e2"
 
 [light.segmented_control.border]
-# platform-facts.md:1621 (§2.25): no shadow
+# platform-facts.md:1631 (§2.25): no shadow
 shadow_enabled = false
 
 
@@ -500,7 +500,7 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1639-1640 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# platform-facts.md:1649-1650 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
 # card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
 padding_horizontal_px = 7.0
 padding_vertical_px = 7.0
@@ -508,18 +508,18 @@ padding_vertical_px = 7.0
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
-# platform-facts.md:1660-1663 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# platform-facts.md:1670-1673 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
 # before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
 arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1663 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1673 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#232629"
 
 [light.expander.border]
-# platform-facts.md:1659 (§2.27): no shadow
+# platform-facts.md:1669 (§2.27): no shadow
 shadow_enabled = false
 
 # === Dark variant (BreezeDark.colors) ===
@@ -683,7 +683,7 @@ padding_vertical_px = 6.0
 shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1691-1692 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# platform-facts.md:1701-1702 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
 # documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
 padding_horizontal_px = 5.0
 padding_vertical_px = 5.0
@@ -927,7 +927,7 @@ disabled_thumb_color = "#272a2e"
 
 [dark.dialog]
 button_order = "primary_left"
-# platform-facts.md:1546 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
+# platform-facts.md:1556 (§2.22): Kirigami.Dialog fades in while rising 2 grid units into place (Dialog.qml:303, :306-311)
 entrance = "fade_rise"
 min_width_px = 320.0
 max_width_px = 560.0
@@ -938,16 +938,16 @@ icon_size_px =32.0
 
 
 [dark.dialog.border]
-# platform-facts.md:1533-1534 (§2.22): Layout_TopLevelMarginWidth = 10
+# platform-facts.md:1543-1544 (§2.22): Layout_TopLevelMarginWidth = 10
 padding_horizontal_px = 10.0
 padding_vertical_px = 10.0
 
 [dark.link]
 underline_enabled = true
-# platform-facts.md:1672 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
+# platform-facts.md:1682 (§2.28): [Colors:View] ForegroundVisited 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
 visited_text_color = "#9b59b6"
 background_color = "#00000000"
-# platform-facts.md:1675 (§2.28): KDE hover_background **(none)**, transparent as background_color
+# platform-facts.md:1685 (§2.28): KDE hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # No hover_text_color or active_text_color: they inherit link.font.color
 # (inheritance-rules.toml:290-291). Qt letters a rich-text link palette(link)
@@ -964,11 +964,11 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
-# platform-facts.md:1588 (§2.24): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+# platform-facts.md:1598 (§2.24): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
 background_color = "#292c30"
 min_height_px = 32.0
 min_width_px = 120.0
-# platform-facts.md:1596 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+# platform-facts.md:1606 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 hover_background = "#93cee9"
@@ -978,15 +978,15 @@ disabled_text_color = "#6d6f72"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1595, :1600 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+# platform-facts.md:1605, :1610 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
 padding_left_px = 6.0
 padding_right_px = 0.0
 padding_vertical_px = 6.0
-# platform-facts.md:1599 (§2.24): no shadow
+# platform-facts.md:1609 (§2.24): no shadow
 shadow_enabled = false
 
 [dark.combo_box.font]
-# platform-facts.md:1590 (§2.24): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+# platform-facts.md:1600 (§2.24): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.segmented_control]
 segment_height_px = 30.0
@@ -996,7 +996,7 @@ active_text_color = "#fcfcfc"
 hover_background = "#31363b"
 
 [dark.segmented_control.border]
-# platform-facts.md:1621 (§2.25): no shadow
+# platform-facts.md:1631 (§2.25): no shadow
 shadow_enabled = false
 
 
@@ -1014,7 +1014,7 @@ line_width_px = 1.0
 corner_radius_px = 5.0
 # platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
 shadow_enabled = true
-# platform-facts.md:1639-1640 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
+# platform-facts.md:1649-1650 (§2.26): 7 inside the border line on all four sides: padding: Units.largeSpacing, 8, from the
 # card's outer edge (templates/AbstractCard.qml:96, :100-108, units.cpp:39), less the 1px border drawn inside it
 padding_horizontal_px = 7.0
 padding_vertical_px = 7.0
@@ -1022,18 +1022,18 @@ padding_vertical_px = 7.0
 [dark.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
-# platform-facts.md:1660-1663 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# platform-facts.md:1670-1673 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
 # before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
 arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1663 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1673 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#fcfcfc"
 
 [dark.expander.border]
-# platform-facts.md:1659 (§2.27): no shadow
+# platform-facts.md:1669 (§2.27): no shadow
 shadow_enabled = false
 
 
