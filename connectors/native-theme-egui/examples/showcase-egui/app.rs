@@ -344,9 +344,9 @@ pub(crate) struct App {
     dump: Option<LayoutDump>,
     /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
     held_pointer: Option<HeldPointer>,
-    /// `--capture` or `--screenshot`: the window is captured, so the real pointer draws nothing
-    /// (`raw_input_hook`).
-    capturing: bool,
+    /// `--capture`, `--screenshot` or `--dump-layout`: the window is captured or its layout
+    /// dumped, so the real pointer draws nothing (`raw_input_hook`, `CliArgs::shields_pointer`).
+    shields_pointer: bool,
     /// `--open-menu <title>`: the menu bar's menu of that title (lower case) still to be opened;
     /// the menu bar opens it at its first pass and clears this. On macOS the menus are the
     /// system menu bar's, which the flag does not reach.
@@ -440,7 +440,7 @@ impl App {
                 moved: false,
                 pressed: false,
             }),
-            capturing: cli.capturing(),
+            shields_pointer: cli.shields_pointer(),
             open_menu: cli.open_menu.clone().filter(|menu| {
                 let known = crate::chrome::Action::MENUS
                     .iter()
@@ -472,7 +472,7 @@ impl App {
             }
         }
         #[cfg(feature = "watch")]
-        if !cfg!(test) && app.settings.screenshot.is_none() {
+        if !cfg!(test) && cli.follows_os() {
             app.start_watcher(&cc.egui_ctx);
         }
         Ok(app)
@@ -725,9 +725,10 @@ impl App {
 impl eframe::App for App {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
         let Some(held) = &mut self.held_pointer else {
-            // A captured window shows the page at rest wherever the real pointer is: no control
-            // hovered or pressed under it, no Widget Info chosen by it, nothing scrolled by it.
-            if self.capturing {
+            // A captured or dumped window shows the page at rest wherever the real pointer is:
+            // no control hovered or pressed under it, no Widget Info chosen by it, nothing
+            // scrolled by it.
+            if self.shields_pointer {
                 raw_input
                     .events
                     .retain(|e| !pointer_event(e) && !matches!(e, egui::Event::MouseWheel { .. }));

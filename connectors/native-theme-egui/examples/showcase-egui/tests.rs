@@ -382,6 +382,24 @@ fn a_capture_opens_at_the_default_size() {
     assert!(args(&["--screenshot", "out.png"]).capturing());
 }
 
+/// The showcase follows the OS theme in an interactive run only: a capture (`--capture`,
+/// `--screenshot`) and a layout dump (`--dump-layout`) show the theme the run started with.
+#[test]
+fn only_an_interactive_run_follows_the_os() {
+    let args = |argv: &[&str]| CliArgs::parse(argv.iter().map(|a| (*a).to_string()));
+    assert!(
+        args(&[]).follows_os(),
+        "a run without flags does not follow the OS"
+    );
+    for argv in [
+        &["--capture"][..],
+        &["--screenshot", "p"],
+        &["--dump-layout", "f"],
+    ] {
+        assert!(!args(argv).follows_os(), "{argv:?} follows the OS");
+    }
+}
+
 /// An OS capture of the window passes only when it is the window with its frame and title bar
 /// around a content of `WINDOW_SIZE` times the display's scale factor, as the gpui showcase's
 /// `a_frame_capture_of_another_size_fails` checks its own.
@@ -4176,6 +4194,98 @@ fn the_layout_dump_is_the_lists_object() {
     assert_eq!(window["x"], 0.0);
     assert_eq!(window["w"], f64::from(crate::WINDOW_SIZE.x));
     assert_eq!(window["h"], f64::from(crate::WINDOW_SIZE.y));
+}
+
+/// M8-44: a layout dump (`--dump-layout`) records the chrome at rest wherever the real pointer
+/// is. The window's pointer moved over the tooltip button, in the input `raw_input_hook` is
+/// handed, leaves the dump byte for byte the one written with no pointer: Widget Info holds its
+/// hint (`chrome.info.hint`) and no hovered widget's rows, and the status bar names no hovered
+/// widget (`chrome.status_bar.shown`). The same pointer does change the layout of a window that
+/// is not dumped, which is what makes the first half mean something.
+#[test]
+fn a_layout_dump_is_the_same_under_the_pointer() {
+    let args = || cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]);
+    let at = {
+        let mut harness = open(egui::Theme::Light, args());
+        harness.run_steps(4);
+        let Some(rect) = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "tooltip button")
+            .map(|r| r.rect)
+        else {
+            panic!("no tooltip button record");
+        };
+        rect.center()
+    };
+    // The pointer is over the window before the dump's layout has had the time to settle, as
+    // the desktop's is when the window opens under it: the harness's first passes, which
+    // `build_eframe` runs, take no time (`with_step_dt`), so the steps below set the clock.
+    let run = |dump: Option<&std::path::Path>, pointer: bool| {
+        let mut args = args();
+        args.dump_layout = dump.map(|path| path.display().to_string());
+        let mut harness = Harness::builder()
+            .with_theme(egui::Theme::Light)
+            .with_size(crate::WINDOW_SIZE)
+            .with_step_dt(0.0)
+            .build_eframe(move |cc| {
+                App::new(cc, &args).expect("the showcase starts under a bundled preset")
+            });
+        for step in 0..16u32 {
+            let ctx = harness.ctx.clone();
+            let mut input = std::mem::take(harness.input_mut());
+            input.time = Some(f64::from(step) * 0.5);
+            if pointer && step == 0 {
+                input.events.push(egui::Event::PointerMoved(at));
+            }
+            eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+            *harness.input_mut() = input;
+            harness.step();
+        }
+        let app = harness.state();
+        crate::app::layout_json(
+            app.registry.places(),
+            app.preset_key(),
+            harness.ctx.theme(),
+            harness.ctx.pixels_per_point(),
+        )
+    };
+    let dumps: Vec<String> = [false, true]
+        .into_iter()
+        .map(|pointer| {
+            let path = std::env::temp_dir().join(format!(
+                "showcase-egui-dump-{}-{pointer}.json",
+                std::process::id()
+            ));
+            let _ = run(Some(&path), pointer);
+            let text = std::fs::read_to_string(&path).expect("the layout dump was written");
+            std::fs::remove_file(&path).expect("the layout dump is removed");
+            text
+        })
+        .collect();
+    assert!(
+        dumps[0] == dumps[1],
+        "the pointer changed the layout dump:\n{}\n---\n{}",
+        dumps[0],
+        dumps[1]
+    );
+    let dump: serde_json::Value = serde_json::from_str(&dumps[0]).expect("the layout dump is JSON");
+    let elements = &dump["elements"];
+    assert!(
+        elements.get("chrome.info.hint").is_some(),
+        "the dump holds no Widget Info hint"
+    );
+    for id in ["chrome.info.title", "chrome.status_bar.shown"] {
+        assert!(elements.get(id).is_none(), "the dump at rest holds {id}");
+    }
+    assert_ne!(
+        run(None, false),
+        run(None, true),
+        "the pointer does not change the layout of a window that is not dumped either, so \
+         the dump half of this test proves nothing"
+    );
 }
 
 // --- The chrome's icons from a fixture icon theme --------------------------------------------

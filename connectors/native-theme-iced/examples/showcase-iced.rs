@@ -770,6 +770,13 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
 /// with the theme and the scale factor, in the list's schema
 /// (docs/showcase-elements.toml, "The layout dump").
 fn write_layout_dump(state: &State, path: &str, scale: f32) -> Result<(), String> {
+    let text =
+        serde_json::to_string_pretty(&layout_dump(state, scale)).map_err(|e| e.to_string())?;
+    std::fs::write(path, text).map_err(|e| format!("{path}: {e}"))
+}
+
+/// The object [`write_layout_dump`] writes.
+fn layout_dump(state: &State, scale: f32) -> serde_json::Value {
     let elements: serde_json::Map<String, serde_json::Value> = surveyed_layout()
         .into_iter()
         .map(|(id, r)| {
@@ -783,15 +790,13 @@ fn write_layout_dump(state: &State, path: &str, scale: f32) -> Result<(), String
         ThemeChoice::OsTheme(_) => state.default_label.clone(),
         ThemeChoice::Preset(key) => key.clone(),
     };
-    let dump = serde_json::json!({
+    serde_json::json!({
         "kind": "iced",
         "preset": preset,
         "variant": if state.is_dark { "dark" } else { "light" },
         "scale": scale,
         "elements": elements,
-    });
-    let text = serde_json::to_string_pretty(&dump).map_err(|e| e.to_string())?;
-    std::fs::write(path, text).map_err(|e| format!("{path}: {e}"))
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -826,8 +831,9 @@ struct CliArgs {
     press: bool,
     /// `--dump-layout FILE`: once the layout has settled, the rectangle of
     /// every element of docs/showcase-elements.toml the showcase draws is
-    /// written to FILE as JSON ([`write_layout_dump`]), and again whenever it
-    /// changes; without `--capture` the showcase then exits.
+    /// written to FILE as JSON ([`write_layout_dump`]), at rest wherever the
+    /// desktop's pointer is ([`CliArgs::shields_pointer`]), and again whenever
+    /// it changes; without `--capture` the showcase then exits.
     dump_layout: Option<String>,
     /// `--open-menu NAME`: the menu bar's menu `NAME` is open from the first
     /// frame and held open ([`HeldMenu`]), so a capture and the layout dump
@@ -846,6 +852,17 @@ fn parse_point(value: &str) -> Option<(u16, u16)> {
 static CLI_ARGS: OnceLock<CliArgs> = OnceLock::new();
 
 impl CliArgs {
+    /// Whether the page is shown with no pointer at all ([`held_page`]): in
+    /// a capture (`--capture`, `--screenshot`) and in a layout dump
+    /// (`--dump-layout`) that hold no pointer of their own (`--pointer`).
+    /// Wherever the desktop's pointer happens to be, it then hovers nothing,
+    /// so two captures of one theme draw the same and two dumps of it record
+    /// the chrome at rest alike.
+    fn shields_pointer(&self) -> bool {
+        (self.capture || self.screenshot.is_some() || self.dump_layout.is_some())
+            && self.pointer.is_none()
+    }
+
     fn parse() -> Self {
         let mut args = Self::default();
         let argv: Vec<String> = std::env::args().collect();
@@ -2841,12 +2858,7 @@ fn view(state: &State) -> Element<'_, Message> {
         None => window.into(),
     };
     match CLI_ARGS.get() {
-        Some(cli) => held_page(
-            page,
-            cli.pointer,
-            cli.press,
-            cli.capture || cli.screenshot.is_some(),
-        ),
+        Some(cli) => held_page(page, cli.pointer, cli.press, cli.shields_pointer()),
         None => page,
     }
 }
@@ -2911,9 +2923,10 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
 /// The page as a capture shows it. With a `pointer` (`--pointer X,Y`), the
 /// pointer held there, and with `press` the primary button held down
 /// ([`HeldPointer`]). Otherwise, while `capturing` (`--capture`,
-/// `--screenshot`), no pointer at all: the real one, wherever the desktop
-/// left it, hovers nothing, opens no tooltip and fills no Widget Info, so a
-/// capture shows every control at rest. Neither: the page as it is.
+/// `--screenshot`, `--dump-layout`: [`CliArgs::shields_pointer`]), no pointer
+/// at all: the real one, wherever the desktop left it, hovers nothing, opens
+/// no tooltip and fills no Widget Info, so a capture shows every control at
+/// rest and a layout dump records it so. Neither: the page as it is.
 fn held_page<'a>(
     page: Element<'a, Message>,
     pointer: Option<(u16, u16)>,
@@ -15948,6 +15961,73 @@ mod tests {
         assert!(
             captured.is_empty(),
             "a capture reacted to the pointer: {captured:?}"
+        );
+    }
+
+    /// M8-44: a layout dump (`--dump-layout`) records the chrome at rest
+    /// wherever the desktop's pointer is: after the pointer's move over the
+    /// Basic page's Button, and whatever it made `update` do, the dump is
+    /// byte for byte the one with no pointer, Widget Info holds its hint
+    /// (`chrome.info.hint`) and no hovered widget's rows, and the status bar
+    /// names no hovered widget (`chrome.status_bar.shown`). Without the
+    /// shield the same pointer changes the dump, which is what makes the
+    /// first half mean something.
+    #[test]
+    fn a_layout_dump_is_the_same_under_the_pointer() {
+        let dumping = CliArgs {
+            dump_layout: Some("dump.json".into()),
+            ..CliArgs::default()
+        };
+        let at = {
+            let state = State::default();
+            let mut ui = interface(&state);
+            probe_bounds(&mut ui, probes::BASIC_BUTTON).center()
+        };
+        // The dump, as `write_layout_dump` writes it (`{:#}` is
+        // `serde_json::to_string_pretty`), of the page `held_page` wraps as
+        // `shielded` asks, once the pointer's messages went through `update`.
+        let dump = |shielded: bool, pointer: bool| -> String {
+            let mut state = State::default();
+            if pointer {
+                let messages: Vec<Message> = {
+                    let page = held_page(view(&state), None, false, shielded);
+                    let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+                    ui.point_at(at);
+                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                    ui.into_messages().collect()
+                };
+                for message in messages {
+                    let _ = update(&mut state, message);
+                }
+            }
+            let page = held_page(view(&state), None, false, shielded);
+            let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+            // A selector goes through the whole tree, as the dump's `Survey` does.
+            let _ = texts(&mut ui);
+            format!("{:#}", layout_dump(&state, 1.0))
+        };
+        let shielded = dumping.shields_pointer();
+        let rest = dump(shielded, false);
+        let pointed = dump(shielded, true);
+        assert!(
+            rest == pointed,
+            "the pointer changed the layout dump:\n{rest}\n---\n{pointed}"
+        );
+        for (id, present) in [
+            ("chrome.info.hint", true),
+            ("chrome.info.title", false),
+            ("chrome.status_bar.shown", false),
+        ] {
+            assert_eq!(
+                rest.contains(&format!("\"{id}\"")),
+                present,
+                "the dump at rest holds {id}: {present} expected"
+            );
+        }
+        assert!(
+            dump(false, true) != dump(false, false),
+            "without the shield the pointer does not change the dump either, so \
+             the dump half of this test proves nothing"
         );
     }
 

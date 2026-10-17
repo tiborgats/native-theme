@@ -157,7 +157,11 @@
 #
 # Rectangles in logical px, in window-content coordinates ((0, 0) is the top-left of the
 # window's content area); `scale` is physical px per logical px; one entry per element of this
-# list the showcase draws, and none for anything else. All three connectors have
+# list the showcase draws, and none for anything else. A dump records the chrome at rest
+# wherever the desktop's pointer is: each showcase keeps the window's own pointer off its
+# widgets under `--dump-layout`, as under `--capture`, so the Widget Info rows hold their
+# hint (`chrome.info.hint`) and `chrome.status_bar.shown` is not drawn; a dump of the
+# hovered state holds a pointer of its own (`--pointer X,Y`). All three connectors have
 # `serde_json = "1.0.151"` in their [dev-dependencies] (`serde_json::json!` builds the object),
 # the version Cargo.lock already holds for native-theme's own [dev-dependencies]. The comparator reads `<kind>-<preset>-<variant>.json` and, beside it,
 # the capture `<kind>-<preset>-<variant>.png`; see scripts/check_showcase_parity.py.

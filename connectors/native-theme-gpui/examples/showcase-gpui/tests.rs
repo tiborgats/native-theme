@@ -4615,6 +4615,14 @@ fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
         "a --screenshot run keeps the pointer on the widgets"
     );
     assert!(
+        crate::CliArgs {
+            dump_layout: Some("dump.json".into()),
+            ..Default::default()
+        }
+        .shields_pointer(),
+        "a --dump-layout run keeps the pointer on the widgets"
+    );
+    assert!(
         !crate::CliArgs {
             capture: true,
             pointer: Some((10, 10)),
@@ -4626,6 +4634,65 @@ fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
     assert!(
         !crate::CliArgs::default().shields_pointer(),
         "an interactive run keeps the pointer off the widgets"
+    );
+}
+
+/// M8-44: a layout dump (`--dump-layout`) records the chrome at rest
+/// wherever the desktop's pointer is: with the pointer settled on the Basic
+/// page's Button the dump is byte for byte the one with no pointer, Widget
+/// Info holds its hint (`chrome.info.hint`) and no hovered widget's rows,
+/// and the status bar names no hovered widget (`chrome.status_bar.shown`).
+/// Without the shield the same pointer changes the dump, which is what makes
+/// the first half mean something.
+#[gpui::test]
+fn a_layout_dump_is_the_same_under_the_pointer(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let shield = |cx: &mut VisualTestContext, on: bool| {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.pointer_shield = on;
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        draw(cx);
+    };
+    // The dump's own reading and object, as `serde_json::to_string_pretty`
+    // writes it (`{:#}`).
+    let dump = |cx: &mut VisualTestContext| {
+        cx.update(|window, cx| {
+            let (drawn, preset, variant, scale) =
+                crate::layout_reading(showcase.read(cx), window, cx);
+            crate::elements::dump_json(&preset, variant, scale, &drawn)
+        })
+    };
+    let dumping = crate::CliArgs {
+        dump_layout: Some("dump.json".into()),
+        ..Default::default()
+    };
+    shield(&mut cx, dumping.shields_pointer());
+    show(&mut cx, &showcase, Page::Basic);
+    let rest = dump(&mut cx);
+    let _ = settle_on(&mut cx, &showcase, "basic-button");
+    let pointed = dump(&mut cx);
+    assert!(
+        format!("{rest:#}") == format!("{pointed:#}"),
+        "the pointer changed the layout dump:\n{rest:#}\n---\n{pointed:#}"
+    );
+    let elements = &rest["elements"];
+    assert!(
+        elements.get("chrome.info.hint").is_some(),
+        "the dump holds no Widget Info hint"
+    );
+    for id in ["chrome.info.title", "chrome.status_bar.shown"] {
+        assert!(elements.get(id).is_none(), "the dump at rest holds {id}");
+    }
+    shield(&mut cx, false);
+    let _ = settle_on(&mut cx, &showcase, "basic-button");
+    assert!(
+        dump(&mut cx) != rest,
+        "without the shield the pointer does not change the dump either, so \
+         the dump half of this test proves nothing"
     );
 }
 

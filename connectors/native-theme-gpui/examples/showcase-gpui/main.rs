@@ -709,8 +709,9 @@ struct CliArgs {
     press: bool,
     /// `--dump-layout <file.json>`: once the window's layout has settled,
     /// where each element of docs/showcase-elements.toml was drawn is
-    /// written there (`dump_layout`); with `--capture` the window stays
-    /// open for the capture, without it the showcase quits.
+    /// written there (`dump_layout`), at rest wherever the desktop's pointer
+    /// is (`shields_pointer`); with `--capture` the window stays open for the
+    /// capture, without it the showcase quits.
     dump_layout: Option<String>,
     /// `--open-menu <title>`: the menu of that title (`theme` for the Theme
     /// menu) is open from the first frame, so a capture and a layout dump
@@ -793,6 +794,33 @@ const DUMP_POLL: Duration = Duration::from_millis(250);
 /// and fonts loaded after the first frame to have taken their place.
 const DUMP_SETTLED_READINGS: usize = 4;
 
+/// What the layout dump writes of the last frame `window` drew: where each
+/// element of docs/showcase-elements.toml was drawn, the theme, its variant
+/// and the scale factor (`elements::dump_json`).
+type LayoutReading = (
+    std::collections::BTreeMap<&'static str, Bounds<Pixels>>,
+    String,
+    &'static str,
+    f32,
+);
+
+/// The layout dump's reading of the last frame `window` drew.
+fn layout_reading(s: &Showcase, window: &gpui::Window, cx: &App) -> LayoutReading {
+    let mut drawn = s.info_ui.read(cx).layout_drawn();
+    // The fields' text, which their states report
+    // (`Showcase::field_text_bounds`), on the Basic page.
+    if s.active_page == Page::Basic {
+        drawn.extend(s.field_text_bounds(cx));
+    }
+    let variant = if s.is_dark { "dark" } else { "light" };
+    (
+        drawn,
+        s.current_theme_name.clone(),
+        variant,
+        window.scale_factor(),
+    )
+}
+
 /// `--dump-layout`: once `DUMP_SETTLED_READINGS` readings in a row find the
 /// last frame's layout of the list's elements unchanged, writes it to
 /// `path` as docs/showcase-elements.toml's "The layout dump" describes, then
@@ -811,20 +839,7 @@ fn dump_layout(
         loop {
             cx.background_executor().timer(DUMP_POLL).await;
             let reading = cx.update_window(window, |_view, window, cx| {
-                let s = showcase.read(cx);
-                let mut drawn = s.info_ui.read(cx).layout_drawn();
-                // The fields' text, which their states report
-                // (`Showcase::field_text_bounds`), on the Basic page.
-                if s.active_page == Page::Basic {
-                    drawn.extend(s.field_text_bounds(cx));
-                }
-                let variant = if s.is_dark { "dark" } else { "light" };
-                (
-                    drawn,
-                    s.current_theme_name.clone(),
-                    variant,
-                    window.scale_factor(),
-                )
+                layout_reading(showcase.read(cx), window, cx)
             });
             let Ok(reading) = reading else { break };
             if reading.0.is_empty() || last.as_ref() != Some(&reading) {
@@ -855,13 +870,15 @@ fn dump_layout(
 }
 
 impl CliArgs {
-    /// Whether the window is captured with the pointer kept off every
-    /// widget (`Showcase::pointer_shield`): a capture, by an outside tool
-    /// or `--screenshot`, that holds no pointer of its own. Wherever the
-    /// desktop's pointer happens to be, it then hovers nothing, so two
-    /// captures of one theme draw the same.
+    /// Whether the pointer is kept off every widget
+    /// (`Showcase::pointer_shield`): in a capture, by an outside tool or
+    /// `--screenshot`, and in a layout dump (`--dump-layout`), that hold no
+    /// pointer of their own. Wherever the desktop's pointer happens to be,
+    /// it then hovers nothing, so two captures of one theme draw the same and
+    /// two dumps of it record the chrome at rest alike.
     fn shields_pointer(&self) -> bool {
-        (self.capture || self.screenshot.is_some()) && self.pointer.is_none()
+        (self.capture || self.screenshot.is_some() || self.dump_layout.is_some())
+            && self.pointer.is_none()
     }
 
     fn parse() -> Self {

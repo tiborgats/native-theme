@@ -193,8 +193,9 @@ pub(crate) struct CliArgs {
     /// the control pressed.
     pub press: bool,
     /// `--dump-layout <file.json>`: after the first settled frame the rectangle of every element
-    /// of `docs/showcase-elements.toml` the showcase draws is written there; the showcase then
-    /// closes, or with `--capture` keeps running for the capture.
+    /// of `docs/showcase-elements.toml` the showcase draws is written there, at rest wherever the
+    /// window's own pointer is (`shields_pointer`); the showcase then closes, or with `--capture`
+    /// keeps running for the capture.
     pub dump_layout: Option<String>,
     /// `--open-menu <title>`: the menu bar's menu of that title (`theme`) is opened before the
     /// first settled frame, so a capture and a layout dump show it open with its rows.
@@ -206,6 +207,21 @@ impl CliArgs {
     /// outside it (`--capture`).
     pub(crate) fn capturing(&self) -> bool {
         self.capture || self.screenshot.is_some()
+    }
+
+    /// Whether the window's own pointer is kept off every widget (`App::raw_input_hook`): in a
+    /// capture, and in a layout dump (`--dump-layout`), which records the chrome at rest
+    /// wherever the desktop's pointer is, so two dumps of one theme are the same. A held pointer
+    /// (`--pointer`) takes the window's place.
+    pub(crate) fn shields_pointer(&self) -> bool {
+        self.capturing() || self.dump_layout.is_some()
+    }
+
+    /// Whether the showcase follows the OS theme as it changes: not in a capture or a layout
+    /// dump, which show the theme the run started with.
+    #[cfg_attr(not(feature = "watch"), allow(dead_code))]
+    pub(crate) fn follows_os(&self) -> bool {
+        !self.capturing() && self.dump_layout.is_none()
     }
 
     /// `--flag value` pairs, `--capture`, `--press` and `--pointer X,Y`; an unknown flag is

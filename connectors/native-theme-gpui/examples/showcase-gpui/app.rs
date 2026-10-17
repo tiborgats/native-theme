@@ -323,8 +323,8 @@ pub(crate) struct Showcase {
 
     /// Whether a box over the whole window takes the pointer, so what is
     /// drawn does not depend on where the pointer happens to be: set for a
-    /// capture (`--capture`, `--screenshot`) that holds no pointer of its own
-    /// (`--pointer`).
+    /// capture (`--capture`, `--screenshot`) and a layout dump
+    /// (`--dump-layout`) that hold no pointer of their own (`--pointer`).
     pub(crate) pointer_shield: bool,
 
     // Basic page
