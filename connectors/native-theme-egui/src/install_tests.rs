@@ -137,10 +137,11 @@ fn role_modifier_replaces_the_style_and_carries_the_applications_name_keys() {
     assert_eq!(plain.text_styles.len(), 5);
 }
 
-/// docs/todo.md:3604 (M7-28): the free `role_modifier` is the installed atlas's
-/// `ThemeAtlas::role_modifier` in the scheme the `Ui`'s `Context` reports, and `None` with no
-/// atlas installed and after `clear`, so that an acceptor keeps egui's own style (a menu's
-/// `menu_style`, `egui/src/containers/menu.rs:83`).
+/// docs/archive/todo_closed.md, *Closed items from M7 close (2026-10-16): items carried to M8,
+/// M9a and the presets*, 'For M8's API batch: a `Ui` form of `role_modifier`' (M7-28): the free
+/// `role_modifier` is the installed atlas's `ThemeAtlas::role_modifier` in the scheme the `Ui`'s
+/// `Context` reports, and `None` with no atlas installed and after `clear`, so that an acceptor
+/// keeps egui's own style (a menu's `menu_style`, `egui/src/containers/menu.rs:83`).
 #[test]
 fn the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one() {
     let ctx = bare_context();
@@ -3348,9 +3349,11 @@ fn an_immediate_viewport_leaves_its_parent_the_parents_cap() {
     assert_eq!(after, Some(parent));
 }
 
-/// docs/todo.md:3609: the focus entry of an immediate viewport egui has closed is let go with it,
-/// as egui drops its own state of a closed viewport (`egui/src/context.rs:2756-2790`,
-/// `:2829-2835`); the root's stays.
+/// docs/archive/todo_closed.md, *Closed items from M7 close (2026-10-16): items carried to M8,
+/// M9a and the presets*, 'For M7's follow-up in M8: the egui plugin's per-viewport focus entry':
+/// the focus entry of an immediate viewport egui has closed is let go with it, as egui drops its
+/// own state of a closed viewport (`egui/src/context.rs:2756-2790`, `:2829-2835`); the root's
+/// stays.
 #[test]
 fn a_closed_viewport_s_focus_entry_is_let_go() {
     use crate::NativeThemeUiExt as _;

@@ -30,7 +30,8 @@ the code review would otherwise read twice. Known gaps on 2026-10-10:
 - The `material` preset is Material 3 as material-web implements it (M3 tokens `v0_192`);
   Android's own implementation (Compose Material 3, the Views library), Material You's
   dynamic colour and Material 3 Expressive are not compared against it.
-- iOS and Android readers are deferred past 1.0 (`docs/todo.md:2575-2577`).
+- iOS and Android readers are deferred past 1.0 (`docs/todo.md`, *Mobile readers*,
+  "iOS: `from_ios()`" and "Android: `from_android()`").
 
 **Why now:** about 92k lines of production-plus-test Rust in `src/` grew over v0.5.8–v0.6.1,
 reviewed only branch by branch; v0.6.1's ad-hoc finds (a 1.9 s Adwaita theme switch from
@@ -549,9 +550,9 @@ critics, about +2000k.
 | Agent | Topic | Current design, where to read it | Questions |
 |-------|-------|----------------------------------|-----------|
 | D-A | **T1 OS versions and preset naming** | `pipeline.rs:408-437`; `docs/new-os-version-guide.md` (Windows :44-82, macOS :84-120); preset names `windows-11`, `macos-sonoma`, `ios`, `material` | Should the readers detect the OS version and pick the preset made for it (nearest older generation as fallback)? Keep one preset per visual generation, named after its OS version (`windows-11` stays for Windows 11 when a `windows-12` comes; `macos-sonoma` for 14–15 next to a `macos-tahoe`; is `windows-10` worth adding)? How does a user pin an older generation's look on a newer OS? How does the reader map macOS 26 and 27 under D4? Does the naming rule (D6) apply to every platform preset: `ios` (which version, M2c), `kde-breeze`, `adwaita`? |
-| D-A | **T2 Mobile scope** — settled by D5 | `docs/todo.md:2575-2577` (readers deferred); `ios.toml`, `material.toml` | Only what D5 leaves open: what the README says about the `ios` and `material` presets, and whether `ios` should name its iOS version. |
+| D-A | **T2 Mobile scope** — settled by D5 | `docs/todo.md`, *Mobile readers* (readers deferred); `ios.toml`, `material.toml` | Only what D5 leaves open: what the README says about the `ios` and `material` presets, and whether `ios` should name its iOS version. |
 | D-B | **T3 Data model and resolution** | `model/`, `resolve/`, `docs/property-registry.toml`, `docs/inheritance-rules.toml`, `native-theme-derive` | Theme → ThemeMode → Resolved layering, per-widget structs, `Option` on every field; `Theme::resolve` reading the system (`model/mod.rs:461`) inside what looks like a pure function; is the derive macro plus the two TOML registries the simplest way to keep them consistent? |
-| D-B | **T4 Two preset tiers** | `presets/README.md` (regular vs `-live`); the drift on `docs/todo.md` *Live presets* | Could each `-live` base be derived mechanically from its regular preset minus the reader's fields, instead of a second hand-kept file? |
+| D-B | **T4 Two preset tiers** | `presets/README.md` (regular vs `-live`); the drift on `docs/archive/todo_closed.md` *Live presets* | Could each `-live` base be derived mechanically from its regular preset minus the reader's fields, instead of a second hand-kept file? |
 | D-B | **T5 The source of truth** | `docs/platform-facts.md` (markdown tables, 1.8k lines), `presets/documented_sizes.rs`, `tests/platform_facts_xref.rs` | Would a machine-readable facts file (value, source, OS version per row) let presets be checked, or generated, mechanically, and make a new OS version a data change? |
 | D-C | **T6 Readers, runtime, accessibility, icons** | `reader.rs`, `pipeline.rs`, `lib.rs` (`from_system` via `pollster`, `from_system_async`), `watch/`, the five icon loaders in `icons.rs` | The sync/async split; `ReaderOutput::Single`/`Dual`; where text scale and reduced motion are applied (core or each connector); one loader type per icon set vs one loader with a set parameter; system icons as fixed-colour rasters. |
 | D-D | **T7 Connector architecture** | the three connectors; their test-only `contract` modules (iced 8.2k lines against 5.9k of production code), compat stamps, Widget Info, the separate `native-theme-egui-widgets` crate vs gpui's `widgets` module | Is each piece of verification machinery paying for itself? Which logic is written three times and belongs in core? Should the three public APIs share one shape by construction (a trait, a macro, or a checked convention)? |
@@ -867,7 +868,8 @@ anything extra.
 M2b's Windows choice), M1-T6-06 (the runtime-set icon function and `SystemTheme::icon` in
 core), M1-T6-07 (`.size(px)` on the SF Symbols and Segoe loaders; `.scale()` only after a
 measurement on the macOS and Windows legs), the reader-source-to-notification table with
-the `docs/todo.md:247` watcher fix (M1-T6-08).
+the watcher fix (`docs/archive/todo_closed.md`, *Closed items from Theme watcher: OS changes it
+does not report*, "`watch::on_theme_change()` fires on fewer changes"; M1-T6-08).
 
 ## M5 — iced connector
 

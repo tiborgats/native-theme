@@ -2427,7 +2427,7 @@ fn every_section_citation_names_its_document() {
     );
 }
 
-// ---- the widgets' colour reads (docs/todo.md, "Contracts: the connectors' widgets") ----------
+// ---- the widgets' colour reads (docs/archive/todo_closed.md, "Contracts: the connectors' widgets") ----
 
 /// Each widget's colour reads as the coverage test sees them: its `Look` of `t`, as text.
 fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {

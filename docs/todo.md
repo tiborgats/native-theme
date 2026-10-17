@@ -272,47 +272,6 @@ the file was pruned on 2026-10-11, not reordered.
       on a Mac in the System colour mode, change the appearance and the
       accent in System Settings, and see the showcase follow (the CI macOS
       leg or the maintainer).
-- [x] [v0.7.0] **For M5–M7: a preset pinned with `from_system_with_preset` is
-      lost on the next system re-read** (M2 final review, Minor 5,
-      2026-10-11). The connectors' re-reads call `from_system()`, which picks
-      the running version's generation: egui's watcher rebuilds through
-      `ThemeWatcher::system_rebuild`
-      (`connectors/native-theme-egui/src/watch.rs:100`, then
-      `SystemTheme::from_system()` at `ext.rs:242`), and gpui's
-      `from_system` (`connectors/native-theme-gpui/src/lib.rs:389`) calls it
-      too. An application that pinned `macos-monterey` on macOS 26 gets
-      `macos-tahoe` after the first theme change. A feature gap, not a bug:
-      decide whether a connector's re-read keeps the pinned preset (the
-      watcher or the connector remembering the name, or a re-read entry
-      point that takes it).
-      For iced, settled (M5-03, 2026-10-14): the connector has no re-read of
-      its own; `theme_changes()` (feature `watch`) only signals, and the
-      README's and crate docs' *Runtime theme change* recipe re-reads with the
-      entry point the application used: `from_system()`, or
-      `SystemTheme::from_system_with_preset(name)` then `to_iced_theme()` for
-      a pinned preset. gpui and egui stay open (M6, M7).
-      M5 close (2026-10-14): gpui and egui weigh iced's answer first. Both
-      re-read through `from_system()`: gpui's `from_system`
-      (`connectors/native-theme-gpui/src/lib.rs:389`) and egui's
-      `ThemeWatcher::system_rebuild`
-      (`connectors/native-theme-egui/src/watch.rs:98-101`), so a pinned
-      preset needs the application's own re-read with
-      `from_system_with_preset`, or a name the watcher keeps.
-      For gpui, settled as for iced (M6 T3, 2026-10-15):
-      `on_theme_change(window, cx, f)` (feature `watch`) only signals, running
-      `f` on gpui's foreground, and the README's and crate docs' *Runtime
-      theme change* recipe re-reads in `f` with the entry point the
-      application used:
-      `SystemTheme::from_system()`, or
-      `SystemTheme::from_system_with_preset(name)` for a pinned preset, then
-      `apply_system_theme`. egui stays open (M7).
-      For egui, settled as for iced and gpui (M7 T3, 2026-10-16):
-      `ThemeWatcher::start(ctx, rebuild)` (feature `watch`) takes the rebuild,
-      and `system_rebuild` stays the OS theme's; the README's *Runtime theme
-      change* recipe and `system_rebuild`'s documentation say that an
-      application that pinned a preset passes a closure that reads with
-      `SystemTheme::from_system_with_preset(name)` again, after
-      `invalidate_caches()`, then `to_egui_atlas()`.
 
 ### windows-11: the disabled fills are fully transparent
 
@@ -441,66 +400,6 @@ the file was pruned on 2026-10-11, not reordered.
 
 - [ ] [1.0] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:1253`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:206-208`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:12466-12477`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
   M8 T7 (2026-10-16): iced's `font(spec)` (6e9c2121) is a second caller that pays the copy on every call, twice the face selection on a miss (the stated family's failed lookup, then the substitute's lookup and copy, since 2fcc26fb), so its doc says to build fonts when the theme changes; with `system_face_family` it would be safe to call per frame, as gpui's `font_family` and `geometry` builders are.
-
-### Icons: one monochrome-SVG colouriser, in native-theme
-
-- [x] [v0.7.0] The iced and gpui connectors each recolour a monochrome SVG icon with a
-      private copy of the same idea — iced's `colorize_monochrome_svg`
-      (`connectors/native-theme-iced/src/icons.rs:277`) and gpui's
-      `colorize_svg` (`connectors/native-theme-gpui/src/icons.rs:1299`) — and
-      the copies differ: iced returns as soon as it has replaced
-      `currentColor` (`connectors/native-theme-iced/src/icons.rs:292-293`),
-      while gpui goes on to replace the explicit black fills and strokes as
-      well (`connectors/native-theme-gpui/src/icons.rs:1312-1333`). The egui
-      connector's plan adds the one implementation to native-theme,
-      `native_theme::icons::colorize_monochrome_svg`, with gpui's algorithm
-      and gpui's unit tests. Switch both siblings to it, so an icon that mixes
-      `currentColor` with an explicit black is coloured alike in all three
-      connectors, and delete the two copies, moving into native-theme any
-      test case of theirs the core's tests lack.
-      iced: switched in M5 T8 (d809a666); gpui in M6 T4: each of its eleven
-      `colorize_svg` cases is a case of native-theme's `colorize_tests` of
-      the same name and input, so none moved.
-      egui (M7 T4, 2026-10-16, closed by inspection): `to_image_source`
-      colours a bundled set's SVG through core's `colorize_monochrome_svg`,
-      as it has since the connector was written, and holds no copy; its
-      `custom_icon_to_image_source` now loads through
-      `load_custom_icon_in`, which colours with the same function.
-
-### Icons: one `currentColor` fill for a freedesktop indicator, in native-theme
-
-- [x] [v0.7.0] For M6/M7 (ruling M5-04, 2026-10-14): core's
-      `native_theme::icons::fill_current_color`
-      (`native-theme/src/icons.rs:891`; M5 T7, 89ec7f61) replaces a symbolic
-      freedesktop icon's `currentColor` with a colour's `#rrggbb` where the
-      document sets no `color` of its own, and iced's `Spinner` calls it with
-      `defaults.text_color` (`connectors/native-theme-iced/src/spinner.rs:131`).
-      gpui and egui keep their own copies of the same substitution: gpui's
-      `sets_color` and `paint_svg`
-      (`connectors/native-theme-gpui/src/widgets/spinner.rs:132`, `:153`),
-      whose colour `indicator_colour` picks (`:173`), and egui's `sets_color`
-      and the freedesktop arm of `final_svg_bytes`
-      (`connectors/native-theme-egui/src/icons.rs:168`, `:238-247`). Switch
-      both to the core function and delete the copies, moving into
-      native-theme any test case of theirs its tests lack. The doc of egui's
-      `final_svg_bytes` still cites iced's step at
-      `connectors/native-theme-iced/src/icons.rs:313-314`
-      (`connectors/native-theme-egui/src/icons.rs:234`), a copy M5 T8
-      removed.
-      gpui done (M6 T8, e7e3f809): the `Spinner` loads through
-      `animated_frames_to_image_sources_for`, which fills a freedesktop
-      frame through `fill_current_color`; `sets_color` and `paint_svg` are
-      gone from `widgets/spinner.rs`.
-      egui done (M7 T4, 2026-10-16): `final_svg_bytes`'s freedesktop arm
-      calls `fill_current_color` with `load_color`'s colour, its doc no
-      longer cites iced's removed step, and `sets_color` is gone; each of
-      its test's cases is a case of native-theme's
-      `sets_color_reads_only_the_color_property` or
-      `fill_current_color_borrows_what_it_leaves_alone` (the Breeze
-      `.ColorScheme-Text { color:#232629; }` shape), so none moved.
-      `custom_icon_to_image_source` loads through `load_custom_icon_in`,
-      which fills a freedesktop icon the same way, and colours nothing
-      again.
 
 ### Icons: recolour a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader does
 
@@ -826,26 +725,6 @@ model, the platform presets and the three connectors
       sentence went (Step 6 ruling, M8-40), so the run leaves that header as
       it is.
 
-### windows-11: a border opacity with no source
-
-- [x] [v0.7.0] `windows-11.toml` states `defaults.border.opacity = 0.14` in both
-      variants (light `:70`, dark `:567`), and `docs/platform-facts.md:1120`
-      gives Windows no multiplier: WinUI 3 states each stroke role as a colour
-      with its own alpha. M2b-P07 (`docs/todo_code-review-findings.md`) was
-      deferred to the *Border opacity* entry, which closed on 2026-09-28
-      (`docs/archive/todo_closed.md:181-231`) saying "the windows-11 (0.14) …
-      values have no source; nothing reads them", so no open item owned the
-      value. For M3: remove the key from both variants if the resolved theme
-      can do without it (`ResolvedDefaultsBorder::opacity` is an `f32`,
-      `native-theme/src/model/border.rs:232`), or mark it **(preset)** ❓ in the
-      preset as the facts row does.
-      *Closed by M2b fix round 2 (2026-10-11):* the opacity is
-      `CardStrokeColorDefault`'s alpha, already in the stated
-      `defaults.border.color` (`model/border.rs`: no connector multiplies by
-      it), as macos-monterey's 0.098 is: 15/255 = 0.059 light (`#0000000f`)
-      and 25/255 = 0.098 dark (`#00000019`); `docs/platform-facts.md:1120`
-      says so. It moves to the archive at the next prune.
-
 ### Hover fills: a layer or a replacement
 
 - [ ] [v0.7.0] The connectors composite `hover_background` and
@@ -975,36 +854,10 @@ model, the platform presets and the three connectors
       `button.checked_background` as `AccentFillColorDefault`, `#0067c0` /
       `#4cc2ff` (9284f52b); its `primary_background` stays on the accent until
       M5 (ee75ad7e; the entry *For M5: iced's primary hover from
-      `primary_background`*). Still open: `tab.active_background`, `#f3f3f3` /
+      `primary_background`*, now in `docs/archive/todo_closed.md`). Still open: `tab.active_background`, `#f3f3f3` /
       `#202020` (`native-theme/src/presets/windows-11.toml:287`, `:847`).
       M5 T9: the preset's `primary_background` is `AccentFillColorDefault`
       since cc9e933e.
-
-### windows-11: the switch's off-track outline
-
-- [x] [v0.7.0] For M3: WinUI 3 draws the off switch's track with a stroke,
-      `ToggleSwitchStrokeOff` = `ControlStrongStrokeColorDefault`, `#72000000`
-      light and `#8BFFFFFF` dark (ToggleSwitch_themeresources.xaml:139, :19;
-      Common_themeresources_any.xaml:252, :48, microsoft-ui-xaml 8463f45),
-      over a nearly clear fill, `ToggleSwitchFillOff` =
-      `ControlAltFillColorSecondary`, `#06000000` / `#19000000`
-      (`docs/platform-facts.md:1522`). The model has no switch border colour,
-      so windows-11's off switch draws as a faint pill with no outline
-      (`#00000006` over `#f3f3f3`). Its hover and disabled strokes
-      (`ToggleSwitchStrokeOffPointerOver`, `ToggleSwitchStrokeOffDisabled`,
-      :140, :142) have no field either. Decide whether the model gains an
-      off-track border colour; M2b fix round 2 gave the off track's hover and
-      disabled fills their WinUI resources.
-      *Closed by M8 T16c (2026-10-17):* `SwitchTheme` carries the track's
-      outline (`unchecked_track_border_color`, `checked_track_border_color`,
-      their `disabled_*` forms, `track_border_line_width`) and the thumb's
-      (`thumb_border_color`, `thumb_border_line_width`), soft options
-      (`docs/platform-facts.md` §2.21); windows-11 states the off stroke,
-      `#00000072` / `#ffffff8b`, its disabled form `#00000037` / `#ffffff28`,
-      and the width 1, and no on-track outline (`ToggleSwitchOnStrokeThickness`
-      0). The hover and pressed strokes are the rest colour, which the
-      connectors draw in those states. It moves to the archive at the next
-      prune.
 
 ### windows-11: accent-derived values stated for the default accent
 
@@ -1324,28 +1177,6 @@ model, the platform presets and the three connectors
       with it on (and its text colour); then the reader writes them only when
       the setting is on, and the watcher reports its change.
 
-### For M5: iced's primary hover from `primary_background`, then windows-11 states `AccentFillColorDefault`
-
-- [x] [v0.7.0] For M5 (M4 T35 ruling, 2026-10-13): the iced connector puts
-      `defaults.accent_color` in the palette's primary slot
-      (`connectors/native-theme-iced/src/palette.rs:43`) and derives the
-      primary button's hover and pressed fills from it, so its contract test
-      `the_primary_pair_is_the_accent_pair`
-      (`connectors/native-theme-iced/src/contract.rs:2739`) requires the idle
-      `button.primary_background` to equal the accent. windows-11's static
-      `primary_background` therefore inherits the accent, `#0078d4`
-      (ee75ad7e; the comment at `native-theme/src/presets/windows-11.toml:139-141`),
-      where `docs/platform-facts.md:1188` gives WinUI 3's
-      `AccentFillColorDefault`, `#0067c0` / `#4cc2ff` for the default accent.
-      The live reader already writes the `AccentFillColorDefault` shades there
-      (8ccdbed0), so a live Windows theme already breaks the iced assumption.
-      In M5 iced derives the primary hover and pressed fills from
-      `primary_background`; then windows-11 states `AccentFillColorDefault`,
-      as its `checked_background` does (9284f52b).
-      Done in M5 T9: iced's primary hover and pressed fills from
-      `primary_background` (07362c9b); windows-11 states
-      `AccentFillColorDefault` (cc9e933e).
-
 ### Theme watcher: the trailing debounce has no maximum wait
 
 - [ ] [v0.7.x] From M4 T20's review (2026-10-13): the watchers fire once,
@@ -1438,74 +1269,6 @@ model, the platform presets and the three connectors
       `border.shadow_enabled`, with `border.color`, `border.corner_radius` and
       `border.line_width`); the presets' half is in *Presets: values the M8
       T15 platform-facts rows disagree with*.
-
-### Presets: the toolbar's and the popover's edge width is the defaults'
-
-- [x] [v0.7.0] From M6 T16b (2026-10-16): the toolbar and the popover inherit
-      `defaults.border` (`docs/inheritance-rules.toml:92-96`,
-      `widgets_with_border`), so their resolved `border.line_width` is 1 or
-      0.5 in most presets (the toolbar's is 0 only in kde-breeze and
-      material-3; the popover's is stated only by adwaita, 1 from libadwaita's
-      outline, `adwaita.toml:296`, and by material-3, 0), while
-      `docs/platform-facts.md` §2.13 states no toolbar frame and gpui-component
-      draws a popover's edge as its own ring inside the shadow (gpui-component
-      0.7.3 `styled.rs:186-194`). The card's fill is the same kind of value:
-      `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:274`), and only material-3 (both modes)
-      and adwaita (dark, `#ffffff14`, `adwaita.toml:771`, libadwaita
-      `_misc.scss:203`) state one, while §2.26 (`docs/platform-facts.md:1657`) states no card for macOS and
-      KDE. Should the inheritance give the toolbar and the popover a 0 width
-      and the card no fill, or should their presets state them from a source?
-      Until then the gpui connector carries neither `toolbar.border.color`,
-      `popover.border.color` nor `card.background_color`; M6 T16c names all
-      three in the coverage test.
-      M6 T16c fix round 1 (2026-10-16): adwaita also states the popover's
-      edge colour, `#0000000d` in both modes from libadwaita's outline
-      (`adwaita.toml:296`, `:678`, `docs/platform-facts.md:1457`). A resolved
-      theme cannot tell a stated value from an inherited one, so until this
-      is settled gpui draws neither adwaita's stated popover edge nor its dark
-      card fill, nor material-3's card fill: sourced values not drawn, so the
-      item is retagged [v0.7.0], for M8.
-      M8 T5 (2026-10-16, da8144f2, 92cd1665, 3e31d86e): the connector half is
-      done. gpui carries the three as the theme states them:
-      `geometry::group_box_content` fills the card with
-      `card.background_color`, `geometry::popover` edges the popover in
-      `popover.border.color` at its `line_width`, and `geometry::toolbar`
-      draws the bar's bottom edge in `toolbar.border.color` at its
-      `line_width`; the coverage test's three entries and its `NoEdgeByData`
-      / `NoFillByData` classes are gone. The preset half (T15, T16) and the
-      `[wrong_safety_nets]` entries (T17) stay open here.
-      M8 T15 (2026-10-17): the facts half. §2.13 has `border.color`,
-      `border.corner_radius`, `border.line_width` and `border.shadow_enabled`
-      rows: no toolbar frame on KDE (Breeze's `CE_ToolBar` paints nothing),
-      GNOME (`.toolbar` sets none) and Material, none at rest on Windows (a
-      closed `CommandBar`'s `OpenBorder` is collapsed), ❓ on macOS (the
-      title-bar separator, `NSWindow.titlebarSeparatorStyle`, `.automatic`).
-      §2.16's macOS, Windows and KDE edge cells no longer read
-      `← defaults.border.*`: Windows `SurfaceStrokeColorFlyout`, 1; KDE
-      qqc2-desktop-style's Popup, #c2c5c9 / #474c51, 1; macOS ❓. §2.26's and
-      §2.13's macOS 26 cells stay ❓: no source gives them.
-      M8 T16 (2026-10-17, ac70ed0d..b1423ef6): the presets' half. They follow T15's
-      rows: the connectors draw `toolbar.border` as the bar's bottom rule, so
-      adwaita, windows-11 (0 at rest, with its rest radius 0) and material-3
-      state none, kde-breeze states Breeze's 1px tools-area line in the
-      Header set's separator colour (#b9bbbd / #535659), and the macOS
-      presets keep the inherited edge (§2.13 macOS ❓). kde-breeze and
-      windows-11 state the popover edge §2.16 gives (#c2c5c9 / #474c51;
-      `SurfaceStrokeColorFlyout`, #0000000f / #00000033); adwaita states
-      its own already. No preset has a transparent card: §2.26 gives KDE
-      Kirigami's `Card`, whose fill is kde-breeze's inherited surface colour
-      and whose edge, radius, shadow and padding kde-breeze now states, and
-      macOS `NSBox`, whose look Apple does not publish (❓), so the macOS
-      presets keep the inherited fill and state only the box's 5 of padding.
-      The `[wrong_safety_nets]` entries are T17's.
-      M8 T17 (2026-10-17): the `[wrong_safety_nets]` entries.
-      `docs/inheritance-rules.toml` records `toolbar.border.line_width` (no edge
-      on Windows at rest, GNOME and Material, §2.13) and `toolbar.border.color`
-      (KDE's Header-set separator); no popover entry, since no §2.16 edge row
-      states "no edge" with a source (Windows, KDE and GNOME give a 1px edge,
-      macOS is ❓, Material's `(none)` and `0` cite nothing), and no card entry
-      (§2.26: macOS `NSBox`, KDE Kirigami's `Card`). The item closes.
 
 ### Model: the menu bar has no fill of its own
 
@@ -1915,66 +1678,6 @@ model, the platform presets and the three connectors
       Ghost buttons in a style scope instead (`demo::ghost`: the full frame in
       every state, the resting fill and border colour transparent), and
       `a_ghost_button_keeps_its_size_when_hovered_and_pressed` checks it.
-- [x] [v0.7.0] For M7: the base style's `extreme_bg_color` comes from
-      `scrollbar.track_color` (`connectors/native-theme-egui/src/mapping.md:432`,
-      `connectors/native-theme-egui/src/style/base.rs:202`), which
-      `macos-monterey` states transparent, the overlay scroll bar's clear track
-      (`native-theme/src/presets/macos-monterey.toml:193`, `:646`). egui 0.36.2
-      also fills a `ProgressBar`'s track (`egui/src/widgets/progress_bar.rs:140`)
-      and `Frame::canvas` (`egui/src/containers/frame.rs:231`) with it, so on
-      macOS a plain `ProgressBar` outside the progress-bar role, and an app's
-      canvas or plot frame, lose their fill. The role cell rewrites it from
-      `progress_bar.track_color` (`connectors/native-theme-egui/src/style/roles.rs:542`);
-      the base mapping does not. Decide which theme colour the base
-      `extreme_bg_color` takes.
-      `windows-11` states the track transparent too since M2b Step 7b, WinUI's
-      `SubtleFillColorTransparent`, `#ffffff00` in light and dark
-      (`native-theme/src/presets/windows-11.toml:239`, `:799`;
-      `docs/platform-facts.md:1304`), so the same holds there.
-      M7 T14 (2026-10-16): egui paints the scroll-bar groove from the slot,
-      at the three `spacing.scroll.*_background_opacity` when floating and at
-      1 when solid (`egui/src/containers/scroll_area.rs:1485-1511`). Where the
-      bar is an overlay one and its stated track fully transparent
-      (macos-monterey, macos-tahoe), the base style writes the three
-      opacities 0 and `extreme_bg_color` takes `input.background_color`,
-      egui's own meaning of the slot (`egui/src/style.rs:1513`); elsewhere it
-      keeps `scrollbar.track_color`. windows-11 states its transparent track
-      in solid mode, where the groove is painted at opacity 1, so its slot
-      stays transparent: the README's *Limits* records it, and mapping.md's
-      `scrollbar.track_color` row is DERIVED with the condition.
-- [x] [v0.7.0] For M7: the left and right panels fill with
-      `sidebar.background_color`
-      (`connectors/native-theme-egui/src/style/frames.rs:190-193`), which
-      `windows-11` states transparent since M2b Step 7b, WinUI's docked
-      `NavigationView` pane, `#f3f3f300` / `#20202000`
-      (`native-theme/src/presets/windows-11.toml:379`, `:939`). eframe
-      0.36.2's root `Ui` "has no margin or background color"
-      (`eframe/src/epi.rs:173`), and its default `clear_color` is
-      `rgba(12, 12, 12, 180)` (`epi.rs:248-252`), so an ordinary eframe app
-      shows that near-black behind the sidebar, under windows-11 light's
-      `#000000e4` text. The egui showcase hides it: its `clear_color` returns
-      `panel_fill` (`connectors/native-theme-egui/examples/showcase-egui/app.rs:891-893`).
-      Decide whether the connector documents or supplies a `clear_color`, or
-      what a transparent panel fill means. For M6: gpui depends on the app's
-      root background the same way; gpui-base 0.7.1's `Root` paints none
-      (`gpui-base/src/root.rs:281-309`), and the gpui showcase sets one
-      (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:2227`).
-      M6 T15 (2026-10-15), the gpui half: a README paragraph under Quick
-      start. gpui-base 0.7.3's `Root` paints none (`src/root.rs:280-310`),
-      but gpui-component 0.7.3's root plugin, which `gpui_kit::init`
-      registers, fills every `gpui_kit::open_window` root with the theme's
-      `background` (`window.background_color`; gpui-component
-      `src/root.rs:444-452`), so only a view opened with gpui's own
-      `cx.open_window` paints its own (`cx.theme().background`, as the
-      showcase's root view does, `app.rs:2213`). The egui half stays M7's.
-      M7 T13 (2026-10-16), the egui half: a recipe, no API. The panel fill
-      is theme data and stays as stated; what shows through it is eframe's
-      `App::clear_color`, which only the application sets. The README's
-      *Window background* section, the crate docs' and `ThemeAtlas::install`'s
-      doc say that eframe paints it behind every panel and that an
-      application returns `visuals.panel_fill.to_normalized_gamma_f32()`,
-      the theme's `defaults.background_color`, as the showcase does
-      (`connectors/native-theme-egui/examples/showcase-egui/app.rs:895-897`).
 
 ### native-theme-gpui connector
 
@@ -2559,22 +2262,6 @@ What is still open on the iced side:
       the locked registry sources (the showcase's colour claims have one,
       `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
       mapped 1237 of them by script (v0.6.1 spec, Appendix A).
-- [x] [v0.7.0] Make the layout-dump gate deterministic: `--dump-layout` records the
-      Widget Info and status-bar readout of the element under the pointer
-      (`chrome.info.*`, `chrome.status_bar.shown`), so a before/after
-      comparison differs with where the pointer sat (v0.6.1 had to filter
-      those keys); park the pointer outside the window during a dump, or
-      leave those keys out of the dump.
-  *Closed by M8 T12 (2026-10-17, fc2fa811):* the dump ignores the pointer
-      (Step 6 ruling): under `--dump-layout` each showcase keeps the window's
-      own pointer off its widgets with its capture shield (gpui's and iced's
-      `CliArgs::shields_pointer`, egui's `CliArgs::shields_pointer` read by
-      `raw_input_hook`), so the keys stay in the list and the comparator, the
-      Widget Info rows hold their hint and `chrome.status_bar.shown` is not
-      drawn; `--pointer X,Y` still holds a pointer of its own. Each showcase's
-      `a_layout_dump_is_the_same_under_the_pointer` checks it. Two live dumps
-      of each showcase are byte-identical. The release asset run now compares
-      the three at rest (c20daadc).
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
@@ -3056,28 +2743,6 @@ the gap — closing it is a change, and each wants its own decision.
       background) or set it, and the same goes for `editor_active_line`, the
       gutter and the line-number colours. The syntax colours themselves are a
       separate question: native-theme models none. Found 2026-09-22.
-- [x] [1.0] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
-      heading at `rems(2.)`..`rems(1.)` resolved against `heading_base_font_size`
-      (`gpui-base text/node.rs:2891-2901`), which defaults to `px(14.)`
-      (`gpui-base text/style.rs:88`), and gpui-component's
-      `base_text_view_style` never sets it (`text/mod.rs:34-61`) -- so an H1 is
-      28px on every platform while the body text around it follows the
-      platform font. `TextViewStyle::with_heading_base_font_size` and
-      `with_heading_font_size` are public; find out whether an application can
-      install its own `TextViewDefaults` without upstream overwriting them on
-      the next theme change, and then whether the platform's `text_scale`
-      roles should drive the heading sizes. Found 2026-09-22.
-      *Closed by gpui-component 0.7.3 (2026-10-14):* fixed upstream. gpui-base
-      0.7.3 has no `heading_base_font_size`: a heading is the body size
-      times its level's ratio, 1.8, 4⁄3, 17⁄15, 1, 14⁄15 and 13⁄15, every level
-      semibold (`gpui-base text/node.rs:2867-2876, 2883-2888`), and the body
-      size follows the rem the connector sets from `defaults.font.size`.
-      Headings keep TextView's ratios rather than the platform's
-      `text_scale` roles: editors size their headings their own way, not as
-      the OS sizes its titles (the maintainer's decision for v0.7.0), and
-      gpui-component builds TextView's defaults from the theme itself
-      (`text/mod.rs:35-62`), so the connector installs nothing. It moves to
-      the archive at the next prune.
 - [ ] [1.0] **A tab's `min_height` has a receiver nobody uses.** A `Tab` takes the
       caller's style first and then sets its own per-Size `.h()`, text size and
       colours over it (`tab/tab.rs:780-810`), but it never sets `min_h`, and
@@ -3691,124 +3356,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [upstream] PR: DataTable: `Styled`, or a text-size setter, so the cell size need
       not go through `Size::Size`.
 
-### Connectors: `native` and `watch` passthrough features in gpui and egui
-
-- [x] [v0.7.0] For M6/M7 (ruling M5-02, 2026-10-14): the iced connector
-      forwards native-theme's readers and watcher as two features, both off
-      by default as in core, `native = ["native-theme/native"]` and
-      `watch = ["native-theme/watch", "dep:iced_futures"]`
-      (`connectors/native-theme-iced/Cargo.toml:42-46`; M5 T3, 80b9ad13),
-      and its README's Quick start and Features sentence name them. The gpui
-      connector has neither: every build turns on native-theme's `linux`,
-      `macos` or `windows` through a per-target dependency
-      (`connectors/native-theme-gpui/Cargo.toml:81-88`), and `watch` is on
-      for its dev-dependencies only (`:96`). The egui connector forwards
-      `watch` (`connectors/native-theme-egui/Cargo.toml:33`) but has no
-      `native`, and turns the readers on per target the same way (`:46-51`).
-      Give both iced's two passthroughs and name them in their READMEs. In
-      both, an off-by-default `native` in place of the per-target readers
-      means a default build no longer reads the OS, a change their
-      CHANGELOGs state.
-      gpui done (M6 T3, 2026-10-15): `native = ["native-theme/native"]` and
-      `watch = ["native-theme/watch", "dep:futures"]` in place of the
-      per-target reader lines, the dev-dependencies' native-theme with
-      `native` and `watch`, the README's Quick start, Features table and
-      sentence, the CHANGELOG's *Breaking Changes*; `check_release.sh`, CI,
-      the crates.io workflow, the canary and `update_compatibility.sh` build
-      the connector with `native,watch`. egui stays (M7).
-      egui done (M7 T3, 2026-10-16): `native = ["native-theme/native"]` in
-      place of the per-target reader lines, beside the `watch` it had; the
-      dev-dependencies' native-theme with `native` and `watch`; the widgets
-      crate forwards both (M7-33); the README's Quick start, Features table
-      and sentence, the widgets README's Features sentence, the CHANGELOG's
-      *Breaking Changes*. The egui legs of `check_release.sh`, CI, the
-      crates.io workflow, the canary and `update_compatibility.sh` build both
-      crates with `--all-features`, and `check_features.sh` each feature
-      alone, so no gate line changed.
-
-### READMEs: the dependency-version check beyond iced
-
-- [x] [v0.7.0] For M6/M7/M8 (ruling M5-20, 2026-10-14): the iced README's
-      `toml` blocks are checked against the workspace's minor by
-      `the_readme_depends_on_this_release`
-      (`connectors/native-theme-iced/src/compat.rs:311`; M5 T11, b0efe9e3),
-      so a release cannot publish a README that names the previous minor.
-      The same literals stand unchecked in the gpui README
-      (`native-theme = "0.6"`, `native-theme-gpui = "0.6"`,
-      `connectors/native-theme-gpui/README.md:104-105`), the egui README
-      (`native-theme-egui = "0.6"`,
-      `connectors/native-theme-egui/README.md:124`), the core README
-      (`native-theme = { version = "0.6", features = ["native"] }`,
-      `native-theme/README.md:180`) and the build README
-      (`native-theme-build = "0.6"`, `native-theme-build/README.md:30`).
-      Give each crate the same check: gpui in M6, egui in M7, core and build
-      in M8.
-      gpui done (M6 T3, 2026-10-15): `the_readme_depends_on_this_release`
-      and its parser test in `connectors/native-theme-gpui/src/compat.rs`,
-      beside the floor checks; the README's two `toml` blocks (the Quick
-      start, *Runtime theme change*) name 0.6 until the 0.7.0 bump, which
-      the test then fails until they follow. egui, core and build stay.
-      egui (M7 T3, 2026-10-16): no third copy of the check (the M6 T3
-      ruling); the egui README's Quick start and the widgets README's new one
-      name 0.7, the coming release's minor, and M8's one workspace check (the
-      *For M8* entry on the README check) takes both READMEs with core's and
-      build's.
-  *Closed by M8 T9 (2026-10-17, 9246c7de):* one workspace check,
-      `scripts/check_readme_versions.py`, holds every README's `toml` blocks
-      (the root's, core's, build's, the three connectors' and egui-widgets')
-      to one rule: each `native-theme` and `native-theme-*` dependency names
-      the workspace version's `major.minor`, so the release bump moves every
-      README at once and the check holds them there (the Step 6 amendment,
-      no rule predicting the next version from the CHANGELOG). The egui and
-      egui-widgets READMEs name the workspace's 0.6 again, not 0.7 as M7 T3
-      wrote them; the gpui, iced, core and build READMEs name 0.6 until the
-      0.7.0 bump. `scripts/check_release.sh` (both modes), ci.yml's
-      documentation job and publish.yml run it.
-      2026-10-17 (M8 T11): publish.yml no longer runs it itself; it calls
-      ci.yml, whose documentation job runs it, on the tag's commit.
-
 ### Connectors: a public theme builder that takes the mode
 
-- [x] [v0.7.0] All three connectors (M5 T4 ruling, 2026-10-14): iced's
-      public `to_theme(&resolved, name)` leaves `Extended::is_dark`, which
-      iced uses for the window title bar, to iced's lightness test of the
-      background, because a `ResolvedTheme` carries no mode
-      (`connectors/native-theme-iced/src/lib.rs:317-328`); `from_preset`,
-      `from_system` and `SystemThemeExt::to_iced_theme` pass the mode to the
-      private `to_theme_in` (`:330-335`). An application that resolves a
-      theme itself, as the iced showcase's `load_adwaita_fallback` does
-      (`connectors/native-theme-iced/examples/showcase-iced.rs:1152-1168`,
-      `to_theme` at `:1162`), gets the guess. Nothing differs today: no
-      bundled preset is misjudged by the test (the M3-15 ruling), and
-      adwaita's backgrounds agree with their modes. Decide on a public
-      builder that takes the mode, which the showcase's fallback would then
-      use. In the siblings: gpui's `to_theme` takes `is_dark: bool` already
-      (`connectors/native-theme-gpui/src/lib.rs:213-219`), where M1-T7-06's
-      `Loaded` carries `mode: ColorMode`; egui's `to_theme` compiles one
-      variant into both of egui's styles
-      (`connectors/native-theme-egui/src/ext.rs:134-137`), and
-      `ThemeAtlas::builder` takes the two variants and `Builder::os_mode`
-      (`connectors/native-theme-egui/src/atlas.rs:599`).
-  *Closed by M8 T4 (2026-10-16, 8d0e029f):* iced's `to_theme_in(resolved, name, mode: ColorMode)` is public, `to_theme` calls the private `Option` form and its doc points at `to_theme_in`, and the showcase's `load_adwaita_fallback` builds its theme with it in the mode it resolved (`Resolved::mode`). gpui's `to_theme(.., is_dark: bool, ..)` stays (the line below); egui needs nothing (`Builder::os_mode` takes both variants).
 - [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.
-
-### Contracts: the connectors' widgets
-
-- [x] [v0.7.0] A design question for all connectors (M5 T7 ruling,
-      2026-10-14): the iced contract covers every palette slot the
-      connector writes and every field of a `styles::*` output
-      (`connectors/native-theme-iced/src/contract.rs:1-3`), so a widget of
-      the connector's own is outside it. iced's `Spinner` draws a
-      freedesktop indicator's `currentColor` in `defaults.text_color` and a
-      Material or Lucide one in `spinner.fill_color`
-      (`connectors/native-theme-iced/src/spinner.rs:126-132`), and only its
-      unit test `a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour`
-      (`:359`) checks the first. Decide whether a contract also rows a
-      widget's reads, in iced (`Spinner`), gpui (the theme-drawn widgets of
-      its `widgets` feature, `connectors/native-theme-gpui/Cargo.toml:32-35`)
-      and native-theme-egui-widgets, or a widget's unit tests stay its only
-      check.
-  *Closed by M8 T7 (2026-10-16, c94f1a1b, c645b2d5, 637f8fef):* a connector's own widget is a sink of a colour-leaf coverage test, with no second contract (Step 6 ruling), in all three. iced: the `Spinner` reads the theme through `spinner::Look::of`, and two accessor rows read it (`spinner.fill_color`, the arc and a bundled set's tint; `defaults.text_color`, a freedesktop indicator's `currentColor`), which `every_colour_leaf_reaches_a_row_or_is_named` requires each leaf to reach and its splice drift check holds to the leaf. gpui: the seven `widgets` Looks were sinks of its coverage test already (M6 T16). egui: the ruling's premise that native-theme-egui-widgets reads only the atlas's cells was wrong; it reads leaves from `resolved_for` too, and since c645b2d5 each widget reads its colours through one `Look` (the spinner, switch, slider, links, progress bar, radio button, segmented control and painted expander; the drop-down reads none; since 637f8fef the spinner's carries `defaults.text_color` to a freedesktop indicator as its icon key's tint, where the connector's `load_color` read it), which `each_widget_draws_in_the_colour_leaves_it_lists` (the crate's `tests.rs`) splices every colour leaf against in all 34 combinations: a widget whose `Look` moves under a leaf its `WIDGET_READS` row does not list fails it, as does a listed leaf that moves it nowhere, and `every_look_is_read_by_the_coverage_test` requires every `Look` the crate defines to be spliced. The one colour read the egui widgets make outside a `Look` is the expander's arrow over egui's own header, drawn by the connector's `expander_icon` and rowed by `connectors/native-theme-egui/mapping.toml:2727-2729` (`expander.arrow_color`, `tested_by = "T18(f)"`). The atlas's cells stay `mapping.toml`'s rows. In all three a read added outside the widget's Look later would not be seen: the widgets still take the whole `ResolvedTheme`.
 
 ---
 
@@ -3837,10 +3387,8 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ## Deferred (pre-1.0)
 
 ### Font DPI
-- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
+- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
   M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
-- [x] [v0.7.0] For M4 (connectors): on GNOME and Budgie X11 the connectors apply a text-scaling factor the toolkit already applied. gnome-settings-daemon 51.0 writes XSETTINGS `Xft/DPI` and the `Xft.dpi` resource as 96 × `text-scaling-factor` × the window scale (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), and winit 0.30.13 (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:146`) and gpui-pre-linux 0.3.8 (`src/linux/x11/client.rs:2672-2677`) take their X11 scale factor from that DPI over 96. On an X11 session, and for any client through Xwayland, the window scale then carries the factor, and `AccessibilityPreferences::scaled` multiplies text by it again: text at factor² × the UI scale, and every other length scaled by the factor, which GTK does not do. Native Wayland clients are right. The connectors should not apply the factor where winit or gpui already did. Found in the M2e Step 7 review (2026-10-11).
-  *Closed by M8 T8 (2026-10-17, d6ca9889):* on an `x11` session (`$XDG_SESSION_TYPE`, `detect::session_type`, now also under the `portal` feature) the GNOME reader reports `text_scaling_factor = 1.0` (`toolkit_scale_carries_text_scale` in `native-theme/src/gnome/mod.rs`, injected through `GnomePortalData::session_type` as the KDE DPI chain injects it), so the connectors apply nothing the toolkit's `Xft.dpi` scale factor carried; on a `wayland` session, or where the session type is not set, the factor is reported and applied once, as before. `AccessibilityPreferences::text_scaling_factor`'s doc says it is the factor the toolkit has not applied. The Xwayland half stays, the next entry.
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
 
 ### docs.rs feature badges
@@ -3898,16 +3446,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### gpui: the theme-drawn widgets' focus ring
 - [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
-
-### gpui: the native Switch lacks 0.7.0's focus options
-- [x] [1.0] gpui-component 0.7.0's `Switch` gained `tab_stop`, `tab_index` and `focus_ring(bool)`; the connector's `widgets::Switch` offers none of them.
-      Done in M6 T11 (M6-27): `widgets::Switch` has `tab_stop`, `tab_index`, `focus_ring`,
-      `accessibility_label` and `Styled`, and `Checkbox` and `Radio` the same but `focus_ring`
-      (`a_switch_keeps_its_tab_order`, `a_switch_announces_its_accessibility_label`,
-      `the_callers_style_reaches_the_row` in `connectors/native-theme-gpui/src/widgets/tests.rs`).
-
-### gpui: the `Loaded` equality test compares the theme by `is_dark()` only
-- [ ] [v0.7.0] For M6 (M5 T1 review, Minor): gpui's `from_system_matches_system_theme_ext` (`connectors/native-theme-gpui/src/lib.rs:1549-1561`) compares every other `Loaded` field of `from_system()` with `SystemTheme::to_gpui_theme()`'s, but the gpui `Theme` only through `is_dark()` (`:1555`), where iced's sibling test compares the palette (`connectors/native-theme-iced/src/lib.rs:2208-2221`, `:2220`). Compare a `ThemeColor` field too, such as `background`, so the two tests are equally strong.
 
 ### Showcases: a toolbar role and arrow-key roving for the chrome toolbar
 - [ ] [1.0] The chrome toolbar of all three showcases is a plain row: no toolbar role for assistive technology and no arrow-key roving between its buttons. gpui-base's `Toolbar` offers both; egui and iced need their own.
@@ -3967,11 +3505,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ### GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7
 Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at
 the plan's close.
-- [x] [v0.7.0] For M6: `connectors/native-theme-gpui/src/contract.rs:641` cites our own
-      `colors.rs:649-656`, which has moved since; own-file citations were outside G1's scope.
-      M6 T16a (2026-10-15): already corrected by M6 T9 (0c69f9bd), which moved the lines
-      and changed the citation to `colors.rs:684-691`, where `assign_base_colors` assigns
-      `red` … `yellow_light`; checked again at T16a's base, 3b696688.
 - [ ] [v0.7.0] For M6: no test clicks the DataTable's sort button, so the showcase's
       `perform_sort` (`examples/showcase-gpui/support.rs`) is untested; upstream gives the
       button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
@@ -3989,13 +3522,6 @@ the plan's close.
       `too_many_arguments` allow.
       M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
       three showcase minors to M9a, the gpui showcase's milestone.
-- [x] [v0.7.0] For M6: no test shows an application's own `TooltipDefaults` delay surviving
-      an upstream mode switch to a variant that states no delay (the install path is tested,
-      this case is not).
-      Done in M6 T5: `the_applications_delay_survives_a_mode_switch_to_a_variant_without_one`
-      (`connectors/native-theme-gpui/src/lib.rs`) switches to a variant of the same theme that
-      states none, and to the unstored mode of a theme applied in one variant after another
-      (M6-02).
 - [ ] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
       auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
       `catppuccin-mocha`'s header label (19 px) is taller than its stated header height
@@ -4003,19 +3529,6 @@ the plan's close.
       M8 T21 (2026-10-17): for M9c, not M7: M7's Step 6 ruling sent it to
       M9a as the showcases' milestone; M9's plan gives each showcase its
       own, M9a gpui, M9b iced and M9c egui.
-- [x] [v0.7.0] For M8 (iced): the iced Layout table's header rule sits outside
-      `list.header_height` (iced puts `separator_y` between rows) where the Basic table's is
-      inside; say so beside the Layout table's header height in `examples/showcase-iced.rs`.
-      The tooltip delay test covers the Basic tooltip only (all six share `ShowDelay`), and
-      the header test re-derives the fallback without `scaled_text_size` (true at the default
-      accessibility settings).
-  *Closed by M8 T14 (2026-10-17, ba117968, dcfe5c2d):* the Layout table's header
-      comment says the rule is iced's `separator_y`, drawn past the padding below the
-      header (iced_widget 0.14.2 `src/table.rs:535-557`), outside `list.header_height`;
-      `every_tooltip_waits_the_themes_show_delay` rests the pointer on the chrome's
-      tooltip and the Display page's four, whose frames under a 60 s delay and under none
-      differ; the header test derives an unstated header through `scaled_text_size` at text
-      scales 1 and 1.5.
 - [ ] [v0.7.0] For M9b (M8 T14 review, 2026-10-17): above a text scale of 1 the iced
       showcase's table headers keep a stated `list.header_height`, where gpui's grow.
       iced: `basic_table` gives the header `native_theme_iced::list_header_height(resolved)`
@@ -4035,48 +3548,9 @@ the plan's close.
       `src/container.rs:102`), and over the header's rule, or is clipped where a parent clips.
       M9b grows the iced headers (and the test's expectation) as gpui's do; M8 leaves the
       behaviour as it is.
-- [x] [v0.7.0] For M8: `winicons.rs`'s `bitmap_bgra` returns on
-      `checked_neg()?` (`native-theme/src/winicons.rs:223`) without a `note_failure`;
-      unreachable after the bound check above it.
-  *Closed by M8 T13 (2026-10-17, 69831323):* the negated height is taken in
-      the size check, so its failure (none, for a height `u32` accepts) notes
-      the bitmap's size as that check's others do.
-- [x] [v0.7.0] For M8's api batch (M6-12 ruling, 2026-10-15): ask the maintainer whether
-      `native_theme_gpui::icons::freedesktop_name_for_gpui_icon(icon, de)` goes. It picks a
-      name by desktop, where the icon theme in use decides which name exists (Adwaita, with
-      the AdwaitaLegacy it inherits, lacks the Breeze name for 48 of the 50 icons the
-      conventions name apart); M6 T7 added `freedesktop_name_candidates(icon)` beside it and
-      core's `FreedesktopLoader::any(names)`, moved the gpui showcase to them, and the old
-      function's docs point there. Removing it is an api-break of a released `pub fn`. The
-      iced showcase's `panel_left_name` (`examples/showcase-iced.rs`, beside `PanelLeft`'s
-      doc) makes the same desktop-keyed choice for `sidebar-show` / `sidebar-expand-left`.
-      M7 T12 (2026-10-16): the iced half is done. `panel_left_name` is gone; the iced
-      showcase's chrome loads its freedesktop names through `FreedesktopLoader::any` in the
-      one theme it chose (`&["sidebar-expand-left", "sidebar-show"]` for `PanelLeft`), and so
-      does the egui showcase's `ChromeIcon` (M7-15, its `gtk_desktop` gone). A fixture test in
-      each showcase loads the icon from a GTK-names-only and a Breeze-names-only theme on Sway
-      and on GNOME. What stays open here is the gpui function's question for M8.
-  *Closed by M8 T5 (2026-10-16, 6c82cf19):* the function is not removed but `#[deprecated(since = "0.7.0")]`, its note pointing at `freedesktop_name_candidates` and `FreedesktopLoader::any`, its own tests under `#[allow(deprecated)]`, a CHANGELOG *Deprecated* line. Its removal is a line of the M8 close-out's maintainer question.
 
 ### M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Each sits here until its milestone takes it.
-- [ ] [v0.7.0] For M6's deferrals (ruling, Step 6): the Segoe Fluent SVG-outline item ("Segoe … to weigh in M6", the `For M6` entry above) moves to [1.0]: M4's em-box raster and `.size(u32)` removed the visible defects, M6-13 routes the requested size to the Segoe loader, and a `GGO_NATIVE` outline pipeline is Windows-only code this host cannot run. The public mode-taking theme builder ("Connectors: a public theme builder that takes the mode") and the widget contracts ("Contracts: the connectors' widgets") go to M8's API batch for all three connectors. The three showcase minors in *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7* (the sort-button test, `move_column`, `themed_entrance`/`panel_toggle`) go to M9a. The `TooltipDefaults` survival item there was closed by M6 T5 (c1208377), and the `contract.rs:641` citation was already right (M6 T9, 0c69f9bd).
-- [x] [v0.7.0] For M8 (parity): iced's `AnimatedSvgHandles::frame_duration_ms` is still a `u32`, while gpui's `AnimatedImageSources::frame_duration_ms` is a `NonZeroU32` since M6 T1 (8212bf00).
-  *Closed by M8 T4 (2026-10-16, fdc4b24a):* the field is a `NonZeroU32`, in the same commit as M8-08's `spin_rotation_radians(elapsed, duration_ms: NonZeroU32)`, whose zero guard and callers' `.get()`s are gone (the doc example, the README's spin recipe, the `Spinner`, the showcase's Icons page).
-- [x] [v0.7.0] For M8 (parity): gpui lays `slider.thumb_hover_color` over the thumb as a layer (M6 T9, `colors::over`), while iced uses it as given.
-  *Closed by M8 T3 (2026-10-16, 97105ccc):* iced's `styles::slider` composites the hover over the thumb with `styles::composite_over`, as gpui's `SliderLook` does, and its contract row follows; both composites are native-theme's `color::composite_over` since 072855bc. No bundled value moves: every stated thumb hover is opaque.
-- [x] [v0.7.0] For M8 (parity): on a text-scaling factor whose product is not a normal positive number, gpui and iced keep the theme's unscaled size (core's `AccessibilityPreferences::scaled`, M6 T13), while egui keeps its stock size with a `Note::ValueSanitised`, as its spec prescribes (d05d64f6). Decide whether the connectors should agree.
-  *Closed by M8 T6 (2026-10-16, e4972f32):* they do not unify (Step 6 ruling): both are documented clamps of a pathological factor. egui's `scaled_text_size` keeps its plain product by its spec §8.6, and its doc says why the siblings differ; iced's and gpui's docs name egui's contract; the parity gate records nothing, as the three signatures agree.
-- [x] [v0.7.0] For M8 (parity): iced's `font_family` returns the default family only. gpui's geometry builders carry each font's family and style since M6's final review (35785f1e).
-  *Closed by M8 T7 (2026-10-16, 6e9c2121):* `font_family` stays the defaults' family, its leaf's name (Step 6 ruling); the per-widget parity is `font(spec) -> iced_core::Font` (feature `system-fonts`): the family `system_font_family` gives (since 2fcc26fb the platform's substitute where the system lacks the stated one, as gpui and egui draw it, M8-01), the weight through `to_iced_weight`, the style; it leaks one name per distinct family, kept for the process. The showcase's own leak is M9b's to shrink.
-- [x] [v0.7.0] For M8: the README dependency-version check exists twice, byte for byte (iced's and gpui's `compat.rs`, `the_readme_depends_on_this_release`). Make it one workspace check over every crate's README, rather than adding egui, core and build copies (M6 T3 ruling). The egui widgets README has a `toml` block too since M7 T3 (M7-34), and the check takes it with the egui README's.
-  *Closed by M8 T9 (2026-10-17, 9246c7de):* `scripts/check_readme_versions.py` replaces both copies and their parser tests, and reads every README the workspace has, the egui widgets one among them: every `native-theme*` dependency in a `toml` block names the workspace version's `major.minor`, and each crate's README states its own crate's, in its Quick start where it has one. The entry above records the rule.
-- [x] [v0.7.0] For M8 (test quality): the icon fixture helper (`icon_fixture.rs`) is copied between the iced and gpui connectors (M6 T4). The gpui DataTable row-growth test re-implements `table_row_height`, and the row formula leaves out the row's 1 px bottom border (M6 T6). The text stays inside either way.
-  *Fixture half closed by M8 T2 (2026-10-16, 990ab210):* one `publish = false` crate, `native-theme-test-fixtures` (tools/test-fixtures), replaces the copies; the DataTable half stays open.
-  *DataTable half closed by M8 T14 (2026-10-17, b788fc94):* `table_row_height` carries the 1 px bottom border upstream draws inside a row and the header row (`border_b_1`, gpui-component `src/table/state.rs:1899`, `:2063`); the geometry tests call it instead of their copy, and `tests/seams.rs` checks the cell text inside the cell's padding and that border at text scales above 1, which the formula without the border failed (kde-breeze at 2: the text half a pixel into the padding).
-  *Correction (M8 T14 fix round 1, 2026-10-17):* the header row's border is the main header's `.h(header_row_height).border_b_1()` at gpui-component `src/table/state.rs:1959-1960`; `:1899` is the left-fixed columns' header.
-- [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
-  *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
 - [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
@@ -4093,19 +3567,6 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
 
 ### M7 close (2026-10-16): items carried to M8, M9a and the presets
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
-- [x] [v0.7.0] For M8's API batch: a `Ui` form of `role_modifier` (M7-28, deferred: an `Option` against `NativeThemeUiExt`'s contract, ext.rs:15). The egui showcase keeps its own helper.
-  *Closed by M8 T6 (2026-10-16, 915c84b7):* a free function, `native_theme_egui::role_modifier(ui, role, variant) -> Option<StyleModifier>`, not a `NativeThemeUiExt` method (no method of it returns an `Option`, and a `StyleModifier::default()` would drop egui's `menu_style`); the showcase's four sites call it and its own helper is gone.
-- [x] [v0.7.0] For M8 (parity): egui clamps a custom icon's size only at 1 and gives `None` for a size the SF Symbols or Segoe loader refuses. gpui clamps to 1..=512 and returns an icon (M7 T4, M6 T4).
-  *Closed by M8 T3 (2026-10-16, c40de308):* the bound is native-theme's `icons::MAX_ICON_SIZE` (512), clamped once in `load_custom_icon`/`load_custom_icon_in` and in `rasterize_svg`; gpui's copy and clamps and egui's `.max(1)` are gone, and iced takes it with M8-02's `size` (T4). A loader that cannot draw the clamped size still returns `None`.
-- [x] [v0.7.0] For M8 (test quality): the icon fixture helper now has three copies (`icon_fixture.rs` in the iced, gpui and egui connectors), and the showcases' child-process fixture runner is copied between the egui and iced showcases (about 70 lines, M7 T12). The core test `a_custom_icon_is_looked_up_in_the_icon_theme_given` proves something only on a host whose system theme has `edit-copy`. The `§` tripwires excuse a whole line on a substring match, and the widgets crate's cuts at the first `#[cfg(test)]` text. `t18_g_to_egui_builder_is_to_egui_atlas_before_build` returns early on a headless run.
-  *Fixture half closed by M8 T2 (2026-10-16, 990ab210, 32ac77a6):* the three `icon_fixture.rs`, the two showcase runners and the three theme writers are one dev-only crate (tools/test-fixtures), and `a_custom_icon_is_looked_up_in_the_icon_theme_given` reads fixture themes in a child process; the tripwire and headless-return items stay open.
-  *Closed by M8 T14 (2026-10-17, af06ca88, 04eace98, 186e3a00, 96604bcd):* `t18_g_to_egui_builder_is_to_egui_atlas_before_build` never returned early on Linux, where a desktop with no reader falls back to the platform preset (native-theme `pipeline.rs`, `linux_fallback`); it and every other connector and showcase test that read the OS theme now expect it on Linux (M8-16), the skip kept off Linux. The `§` tripwires of the egui and egui widgets crates check each `§` of a line, named by the document right before it or continuing a named list or range, so `spec §1 and §2` fails; the widgets crate's source readers leave out a file's inline test module only, by the egui tripwires' rule.
-- [x] [v0.7.0] For M8 (docs): the CHANGELOG lines that say a default build "no longer reads the OS theme" (gpui, iced, egui) are loose. Without a reader, Linux still reads the light/dark preference and reduced motion (native-theme pipeline.rs, detect.rs).
-  *Closed by M8 T20 (2026-10-17, 0743c84d):* the gpui and egui *Breaking Changes* lines say a default build no longer reads the OS theme through a platform reader, and they and the iced `native` line give the platform preset on Linux in the light or dark mode the OS reports and with its reduced-motion preference (`pipeline.rs`'s `linux_fallback`, `detect_is_dark`, `readerless_accessibility`), an error on macOS and Windows.
-- [x] [v0.7.0] For M8 (scripts): `scripts/check_release.sh` runs `cargo fmt --all`, which formats rather than checks, so only CI's `--check` fails on unformatted code (by design; recorded so the two are known to differ).
-  *Closed by M8 T1 (2026-10-16, f59bcdc3):* by design, as the script's header now says: the per-commit gate formats what is about to be committed, and CI's `cargo fmt --all --check` refuses what was committed unformatted.
-- [x] [v0.7.0] For M7's follow-up in M8: the egui plugin's per-viewport focus entry (connectors/native-theme-egui/src/plugin.rs ~:82-84) stays after its viewport closes, the same leak shape M7 T9 fixed for the widgets' parts store.
-  *Closed by M8 T6 (2026-10-16, 66053837):* at each pass's `input_hook` the install plugin drops the focus entry of every viewport whose input it saw and that egui no longer has (`Context::cumulative_pass_nr_for` is 0 for it; egui 0.36.2 has no accessor that lists its viewports), the viewports of the passes in progress excepted, and its `last_sent` window theme (fix round 1); at its first root pass it adds the viewports of the entries written before the install, found through `IdTypeMap::temp_keys`, to those it saw (fix round 1); a test opens an immediate viewport, closes it and holds one `FocusEntry` two passes later, where it held two.
 - [ ] [1.0] egui text-size cap residuals (M7 T1): the TrueType `ISECT` instruction, the autohinter's CJK and Indic script groups, and hinting settings an application changes itself are unbounded in the hinting source, so they are not covered. Neither is a viewport two immediate levels up during its very first pass, which loses that pass's parts.
 - [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
       M8 T21 (2026-10-17): `named_image`: M9c; the parity items are the G1/G2 section's (M9a), not repeated here.
