@@ -216,6 +216,9 @@ min_width_px = 100.0
 [light.progress_bar.border]
 # platform-facts.md:1325 (§2.10): no shadow (measured)
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0 (measured, macOS 26.6.2), the fill starts in the track's first column and covers its rows
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [light.tab]
 # no macOS 26 source (platform-facts.md:1337-1338): macos-monterey's values
@@ -586,6 +589,9 @@ min_width_px = 100.0
 [dark.progress_bar.border]
 # platform-facts.md:1325 (§2.10): no shadow (measured)
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0 (measured, macOS 26.6.2), the fill starts in the track's first column and covers its rows
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [dark.tab]
 # no macOS 26 source (platform-facts.md:1337-1338): macos-monterey's values

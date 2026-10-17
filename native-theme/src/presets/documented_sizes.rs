@@ -247,7 +247,7 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "menu", axes(3.0, 12.0), &[1248, 1249], "12; 3 (measured)")
         .with(&[("row_height", Some(22.0), 1247)]),
     row(MacosMonterey, "tooltip", all(4.0), &[1270, 1271], "4; 4"),
-    row(MacosMonterey, "progress_bar", NONE, &[1328, 1329], "❓"),
+    row(MacosMonterey, "progress_bar", all(0.0), &[1328, 1329], "0; 0 (measured, macOS 14.8.9 and 15.7.9)"),
     row(MacosMonterey, "tab", axes(4.0, 12.0), &[1339, 1340], "12; 4 (measured)")
         .with(&[("item_gap", None, 1347)]),
     row(MacosMonterey, "sidebar", NONE, &[1366, 1367], "❓"),
@@ -279,7 +279,7 @@ const ROWS: &[Row] = &[
     row(MacosTahoe, "menu", NONE, &[1248, 1249], "macOS 26 ❓")
         .with(&[("row_height", None, 1247)]),
     row(MacosTahoe, "tooltip", NONE, &[1270, 1271], "macOS 26 ❓"),
-    row(MacosTahoe, "progress_bar", NONE, &[1328, 1329], "macOS 26 ❓"),
+    row(MacosTahoe, "progress_bar", all(0.0), &[1328, 1329], "macOS 26: 0; 0 (measured, macOS 26.6.2)"),
     row(MacosTahoe, "tab", NONE, &[1339, 1340], "macOS 26 ❓")
         .with(&[("item_gap", None, 1347)]),
     row(MacosTahoe, "sidebar", NONE, &[1366, 1367], "macOS 26 ❓"),
