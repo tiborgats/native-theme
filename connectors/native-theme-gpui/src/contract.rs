@@ -997,8 +997,14 @@ enum Unread {
     Inherited(&'static str),
     /// The value is a soft option's fallback, which the connector draws where
     /// the option is unstated, and every bundled preset states the option.
-    /// The evidence cites the connector's `file.rs:line` that falls back.
-    Fallback(&'static str),
+    /// The evidence cites the connector's `file.rs:line` that falls back, and
+    /// the walk proves it: with `option` cleared in a base, splicing the leaf
+    /// must move a sink.
+    Fallback {
+        /// The soft option's dotted path, which the leaf stands in for.
+        option: &'static str,
+        evidence: &'static str,
+    },
 }
 
 /// One colour leaf no sink reads, and why.
@@ -1271,11 +1277,13 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     },
     UnreadColour {
         leaf: "checkbox.background_color",
-        why: Unread::Fallback(
-            "`CheckboxLook` fills an unchecked box with it where \
-             `checkbox.unchecked_background` is unset (`widgets/checkbox.rs:123`), \
-             and every bundled preset states that",
-        ),
+        why: Unread::Fallback {
+            option: "checkbox.unchecked_background",
+            evidence: "`CheckboxLook` fills an unchecked box with it where \
+                       `checkbox.unchecked_background` is unset \
+                       (`widgets/checkbox.rs:123`), and every bundled preset \
+                       states that",
+        },
     },
 ];
 
@@ -2474,6 +2482,52 @@ fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
     out
 }
 
+/// Why an `Unread::Fallback` entry does not hold, if it does not: in the first
+/// base whose `option` is stated, `option` cleared, splicing `leaf` with the
+/// base's sentinels must move a sink -- the fallback is drawn. `None` when it is.
+#[cfg(feature = "widgets")]
+fn fallback_unproved(
+    leaf: &str,
+    option: &str,
+    combinations: &[Combination],
+    jsons: &[serde_json::Value],
+) -> Option<String> {
+    let pointer = format!("/{}", option.replace('.', "/"));
+    let Some((c, json)) = combinations
+        .iter()
+        .zip(jsons)
+        .find(|(_, json)| json.pointer(&pointer).is_some_and(|v| !v.is_null()))
+    else {
+        return Some(format!(
+            "UNREAD_COLOURS {leaf}: no base states its option {option}"
+        ));
+    };
+    let mut cleared = json.clone();
+    if let Some(value) = cleared.pointer_mut(&pointer) {
+        *value = serde_json::Value::Null;
+    }
+    let Ok(base) = serde_json::from_value::<ResolvedTheme>(cleared.clone()) else {
+        return Some(format!(
+            "UNREAD_COLOURS {leaf}: {option} cleared does not deserialise"
+        ));
+    };
+    let base_sinks = sinks(&base, c.is_dark);
+    let (red, green, blue) = sentinel_rgb(&cleared);
+    let reached = [
+        format!("#{red:02x}{green:02x}{blue:02x}"),
+        format!("#{red:02x}{green:02x}{blue:02x}80"),
+    ]
+    .iter()
+    .filter_map(|hex| spliced_colour(&cleared, leaf, hex))
+    .any(|r| !moved(&base_sinks, &sinks(&r, c.is_dark)).is_empty());
+    (!reached).then(|| {
+        format!(
+            "UNREAD_COLOURS {leaf}: with {option} cleared it still moves no sink, \
+             so it is not that option's fallback"
+        )
+    })
+}
+
 /// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
 /// theme; `None` where the leaf already holds it or does not take a colour.
 #[cfg(feature = "widgets")]
@@ -2829,12 +2883,17 @@ fn every_colour_leaf_reaches_a_sink_or_is_named() -> crate::Result<()> {
                 evidence.contains("inheritance-rules.toml:"),
                 "a docs/inheritance-rules.toml line",
             ),
-            Unread::Fallback(evidence) => {
+            Unread::Fallback { evidence, .. } => {
                 (evidence.contains(".rs:"), "the connector's file.rs:line")
             }
         };
         if !cited {
             failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
+        }
+        if let Unread::Fallback { option, .. } = entry.why {
+            if let Some(failure) = fallback_unproved(entry.leaf, option, &combinations, &jsons) {
+                failures.push(failure);
+            }
         }
     }
 

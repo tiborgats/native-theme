@@ -4538,6 +4538,59 @@ fn leaf_values(value: &serde_json::Value) -> Vec<(String, serde_json::Value)> {
     out
 }
 
+/// Why an `Unread::Fallback` entry does not hold, if it does not: in the first
+/// base whose `option` is stated, `option` cleared, splicing `leaf` with the
+/// base's sentinels must move a row the connector fills from it -- the
+/// fallback is drawn. `None` when it is.
+#[cfg(feature = "iced_aw")]
+fn fallback_unproved(
+    leaf: &str,
+    option: &str,
+    combinations: &[Combination],
+    jsons: &[serde_json::Value],
+) -> Option<String> {
+    let pointer = format!("/{}", option.replace('.', "/"));
+    let Some((c, json)) = combinations
+        .iter()
+        .zip(jsons)
+        .find(|(_, json)| json.pointer(&pointer).is_some_and(|v| !v.is_null()))
+    else {
+        return Some(format!(
+            "UNREAD_COLOURS {leaf}: no base states its option {option}"
+        ));
+    };
+    let mut cleared = json.clone();
+    if let Some(value) = cleared.pointer_mut(&pointer) {
+        *value = serde_json::Value::Null;
+    }
+    let Ok(base) = serde_json::from_value::<ResolvedTheme>(cleared.clone()) else {
+        return Some(format!(
+            "UNREAD_COLOURS {leaf}: {option} cleared does not deserialise"
+        ));
+    };
+    let reading = Reading::of(&c.theme, &base);
+    let (red, green, blue) = sentinel_rgb(&cleared);
+    let reached = [
+        format!("#{red:02x}{green:02x}{blue:02x}"),
+        format!("#{red:02x}{green:02x}{blue:02x}80"),
+    ]
+    .iter()
+    .filter_map(|hex| spliced_colour(&cleared, leaf, hex))
+    .any(|r| {
+        // A row whose native side moves, and which the connector fills
+        // from the leaf: the walk's own drift check.
+        let rows = reading.moved(&Reading::of(&c.theme, &r));
+        let built = crate::to_theme(&r, c.key);
+        !rows.is_empty() && Reading::both(&built, c.key, &r).drifted(&rows).is_empty()
+    });
+    (!reached).then(|| {
+        format!(
+            "UNREAD_COLOURS {leaf}: with {option} cleared it moves no row the \
+             connector fills from it, so it is not that option's fallback"
+        )
+    })
+}
+
 /// `json` with the leaf at `leaf` replaced by the colour `hex`, read back as a
 /// theme; `None` where the leaf already holds it or does not take a colour.
 #[cfg(feature = "iced_aw")]
@@ -5008,7 +5061,7 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
             Unread::NoReceiver(evidence) | Unread::Ruled(evidence) => {
                 (evidence.contains(".rs:"), "an upstream file.rs:line")
             }
-            Unread::Fallback(evidence) => {
+            Unread::Fallback { evidence, .. } => {
                 (evidence.contains(".rs:"), "the connector's file.rs:line")
             }
             Unread::Inherited(evidence) => (
@@ -5022,6 +5075,11 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         };
         if !cited {
             failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
+        }
+        if let Unread::Fallback { option, .. } = entry.why {
+            if let Some(failure) = fallback_unproved(entry.leaf, option, &combinations, &jsons) {
+                failures.push(failure);
+            }
         }
     }
 
