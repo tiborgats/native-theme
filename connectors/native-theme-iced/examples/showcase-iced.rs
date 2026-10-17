@@ -10353,7 +10353,10 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     // tallest cell (iced_widget 0.14.2 `src/table.rs:259`, `:312`), so a
     // header cell is `list.header_height` less that padding where the theme
     // states one, and its text's own height where it states none, as the
-    // rows' cells are.
+    // rows' cells are. The rule under the header is iced's `separator_y`,
+    // which it draws between two rows, past the padding below the first
+    // (`:535-557`): it lies outside `list.header_height`, where the Basic
+    // table draws its header's line inside it.
     let cell_pad_y = sp.xs;
     let header_height = native_theme_iced::list_header_height(resolved);
     let header_height_s = match header_height {
@@ -15129,13 +15132,18 @@ mod tests {
     /// The Basic table's header row is `list.header_height` tall where the
     /// theme states one (adwaita, material-3), else as tall as before
     /// (catppuccin-mocha): `list.row_height`, or its line box in the header
-    /// font and `list.border.padding`. The Layout page's iced `table` makes
-    /// its header cells that height less the table's own `padding_y` above
-    /// and below, and leaves them their text's height where the theme states
-    /// none, as its rows are.
+    /// font, at its scaled size, and `list.border.padding`. The Layout page's
+    /// iced `table` makes its header cells that height less the table's own
+    /// `padding_y` above and below, and leaves them their text's height where
+    /// the theme states none, as its rows are. At text scales 1 and 1.5.
     #[test]
     fn the_tables_headers_take_the_themes_header_height() {
-        for preset in ["adwaita", "material-3", "catppuccin-mocha"] {
+        for (preset, factor) in ["adwaita", "material-3", "catppuccin-mocha"]
+            .into_iter()
+            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+        {
+            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+            accessibility.text_scaling_factor = factor;
             let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
@@ -15145,15 +15153,16 @@ mod tests {
             assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
             let l = &r.list;
             let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
-            let row = l
-                .row_height
-                .unwrap_or(l.header_font.size * r.defaults.line_height + pad.y());
+            let row = l.row_height.unwrap_or(
+                scaled_text_size(l.header_font.size, &accessibility) * r.defaults.line_height
+                    + pad.y(),
+            );
             let want = stated.unwrap_or(row);
 
             let mut state = State {
                 current_theme: theme,
                 current_resolved: resolved,
-                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                accessibility,
                 active_tab: Tab::Basic,
                 ..State::default()
             };
@@ -15162,11 +15171,11 @@ mod tests {
             let _ = texts(&mut ui);
             let header = match surveyed_layout().get("basic.table.header") {
                 Some(rect) => *rect,
-                None => panic!("{preset}: the Basic table's header is not laid out"),
+                None => panic!("{preset} at {factor}: the Basic table's header is not laid out"),
             };
             assert!(
                 (header.height - want).abs() < 0.01,
-                "{preset}: the Basic table's header is {} tall, want {want}",
+                "{preset} at {factor}: the Basic table's header is {} tall, want {want}",
                 header.height
             );
             drop(ui);
@@ -15180,7 +15189,7 @@ mod tests {
             };
             assert!(
                 (cell.height - want).abs() < 0.01,
-                "{preset}: the Layout table's header cell is {} tall, want {want}",
+                "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
                 cell.height
             );
         }
