@@ -38,7 +38,7 @@ and egui connectors need Rust 1.95.
 ## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are the tooltip show delay and the dialog entrance. Your UI code reads from this.
+- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 34 optional ones, most of them state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are the tooltip show delay, the dialog entrance, the expander's arrow side and frame, and the tab's active-indicator side. The switch's track and thumb outlines, their colours and widths, are `None` too where the theme states none, and no outline is drawn. Your UI code reads from this.
 - **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
@@ -51,7 +51,7 @@ and egui connectors need Rust 1.95.
   - Run: `cargo run -p native-theme-iced --example showcase-iced`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-iced/README.md`](connectors/native-theme-iced/README.md#gallery)
 - **egui** — the gpui showcase's application in egui, with live theme switching
-  - Run: `cargo run -p native-theme-egui --example showcase-egui`
+  - Run: `cargo run -p native-theme-egui --example showcase-egui`; add `--features watch` to have it follow the OS theme's changes
   - Screenshots: [`native-theme-egui/README.md`](connectors/native-theme-egui/README.md#gallery)
 
 ## Icon sets
