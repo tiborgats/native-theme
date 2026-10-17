@@ -2566,21 +2566,23 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
 
 /// The Basic expander draws what `expander.*` states (ISSUES D8): each title
 /// row `header_height` tall, its arrow `arrow_icon_size` across; and the
-/// Basic card is padded by `layout.container_margin` where `card.border`
-/// states no padding (ISSUES D9), a card being a container.
+/// Basic card is padded inside its edge by the padding `card.border` states
+/// (kde-breeze), and by `layout.container_margin` where it states none
+/// (material-3; ISSUES D9), a card being a container.
 #[gpui::test]
 fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let (header, arrow, card_padding) = read(&mut cx, &showcase, |_, cx| {
+        let (header, arrow, card_padding, card_line) = read(&mut cx, &showcase, |_, cx| {
             native_value(cx, |n| {
                 let e = &n.resolved.expander;
                 (
                     e.header_height,
                     e.arrow_icon_size,
                     n.resolved.card.border.padding,
+                    n.resolved.card.border.line_width,
                 )
             })
         })
@@ -2604,12 +2606,8 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
         let margin = read(&mut cx, &showcase, |this, _| {
             geometry::container_margin(&this.layout)
         });
-        assert!(
-            card_padding.left.is_none(),
-            "{preset} states a card padding"
-        );
-        let (Some(margin), card, text) = (
-            margin,
+        let (Some(inset), card, text) = (
+            card_padding.left.map(px).or(margin),
             bounds_of(&mut cx, "basic-card"),
             bounds_of(&mut cx, "basic-card-text"),
         ) else {
@@ -2617,8 +2615,9 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
         };
         assert_eq!(
             text.left() - card.left(),
-            margin,
-            "{preset}: the card's content is not layout.container_margin inside it"
+            px(card_line) + inset,
+            "{preset}: the card's content is not card.border.padding_left, or \
+             layout.container_margin where that is unstated, inside its edge"
         );
     }
 }

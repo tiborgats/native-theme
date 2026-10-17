@@ -8128,9 +8128,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let card_group = group(
         "basic.card.heading",
         "Card",
-        // A side `card.border.padding` leaves unstated -- every side on the
-        // Linux presets, whose cards leave the padding to their content
-        // (platform-facts §2.26) -- is `layout.container_margin`, the
+        // A side `card.border.padding` leaves unstated -- every side on
+        // adwaita and material-3, whose cards leave the padding to their
+        // content (platform-facts §2.26) -- is `layout.container_margin`, the
         // theme's padding inside a container.
         probe(
             probes::BASIC_CARD,
@@ -15536,19 +15536,23 @@ mod tests {
                 );
             }
 
-            // "Card content" sits the card's padding in from its edges:
-            // `layout.container_margin` on every Linux preset, whose cards
-            // state none.
+            // "Card content" sits the card's padding in from its edges: the
+            // padding `card.border` states (kde-breeze's Kirigami Card), and
+            // `layout.container_margin` where it states none.
             let card = probe_bounds(&mut ui, probes::BASIC_CARD);
             let margin = Gaps::from_layout(&state.layout).container;
+            let inset =
+                native_theme_iced::padding_or(&r.card.border.padding, Padding::from(margin));
             let label = texts(&mut ui)
                 .into_iter()
                 .find(|(content, _)| content == "Card content")
                 .map(|(_, bounds)| bounds);
             assert!(
-                label.is_some_and(|label| (label.x - card.x - margin).abs() < 0.01
-                    && (label.y - card.y - margin).abs() < 0.01),
-                "{preset}: the card's label is at {label:?} in {card:?}, {margin}px in expected"
+                label.is_some_and(|label| (label.x - card.x - inset.left).abs() < 0.01
+                    && (label.y - card.y - inset.top).abs() < 0.01),
+                "{preset}: the card's label is at {label:?} in {card:?}, {}px left and {}px top in expected",
+                inset.left,
+                inset.top
             );
         }
     }

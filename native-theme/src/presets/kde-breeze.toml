@@ -483,6 +483,22 @@ shadow_enabled = false
 
 
 [light.card]
+# background_color not stated: platform-facts.md §2.26 background_color, Kirigami's Card fills the View set's
+# backgroundColor (templates/AbstractCard.qml:92-93, DefaultCardBackground.qml:42), #ffffff, as defaults.surface_color
+
+[light.card.border]
+# platform-facts.md §2.26 border.color: linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the
+# View set (DefaultCardBackground.qml:70, :86-89; colorutils.cpp:61-80), #ced1d4
+color = "#ced1d4"
+# platform-facts.md §2.26 border.line_width: borderWidth: 1 (DefaultCardBackground.qml:65)
+line_width_px = 1.0
+# platform-facts.md §2.26 border.corner_radius: Units.cornerRadius, 5 (DefaultCardBackground.qml:84, units.cpp:46)
+corner_radius_px = 5.0
+# platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
+shadow_enabled = true
+# platform-facts.md:1639-1640 (§2.26): padding: Units.largeSpacing, 8 on all four sides (templates/AbstractCard.qml:96, units.cpp:39)
+padding_horizontal_px = 8.0
+padding_vertical_px = 8.0
 
 [light.expander]
 header_height_px = 40.0
@@ -976,6 +992,22 @@ shadow_enabled = false
 
 
 [dark.card]
+# background_color not stated: platform-facts.md §2.26 background_color, Kirigami's Card fills the View set's
+# backgroundColor (templates/AbstractCard.qml:92-93, DefaultCardBackground.qml:42), #141618, as defaults.surface_color
+
+[dark.card.border]
+# platform-facts.md §2.26 border.color: linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the
+# View set (DefaultCardBackground.qml:70, :86-89; colorutils.cpp:61-80), #3c4146
+color = "#3c4146"
+# platform-facts.md §2.26 border.line_width: borderWidth: 1 (DefaultCardBackground.qml:65)
+line_width_px = 1.0
+# platform-facts.md §2.26 border.corner_radius: Units.cornerRadius, 5 (DefaultCardBackground.qml:84, units.cpp:46)
+corner_radius_px = 5.0
+# platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
+shadow_enabled = true
+# platform-facts.md:1639-1640 (§2.26): padding: Units.largeSpacing, 8 on all four sides (templates/AbstractCard.qml:96, units.cpp:39)
+padding_horizontal_px = 8.0
+padding_vertical_px = 8.0
 
 [dark.expander]
 header_height_px = 40.0
