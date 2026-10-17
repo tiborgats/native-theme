@@ -327,6 +327,15 @@ jobs:
       - run: python3 --version
       - run: python3 scripts/check_showcase_parity.py --check-list
       - run: python3 scripts/check_showcase_parity.py --self-test
+      # The data documents' checks, as scripts/check_release.sh runs them: a
+      # registry field without a platform-facts row, [wrong_safety_nets] and
+      # its [uniform] marks, a § reference to no platform-facts section.
+      - run: python3 scripts/check_platform_facts_rows.py
+      - run: python3 scripts/check_platform_facts_rows.py --self-test
+      - run: python3 scripts/check_wrong_safety_nets.py
+      - run: python3 scripts/check_wrong_safety_nets.py --self-test
+      - run: python3 scripts/check_section_refs.py
+      - run: python3 scripts/check_section_refs.py --self-test
 
   doc:
     name: Documentation

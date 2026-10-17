@@ -308,8 +308,8 @@ There is no verb that writes the stamp without the run.
 The workspace's quality gate: source hygiene, `cargo check`, the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the examples,
-widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, docs and the
-archive index, then the release-only sections: the docs.rs emulation,
+widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
+data documents' three checks, docs and the archive index, then the release-only sections: the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -564,8 +564,8 @@ suffix, and a `border`, `font` or `icon_sizes` field part by part, the
 per-side paddings under their axis rows; the script's docstring states the
 whole rule. Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
-read. `--self-test` runs the rule on a synthetic registry and facts file. It
-is not part of `check_release.sh`.
+read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (both modes)
+and `ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.
 
@@ -583,7 +583,8 @@ and an entry that is no `[uniform]` rule is inherited by `[font_inheritance]`
 or `[border_inheritance]`, or states `removed`; the script's docstring states
 the whole rule. Prints one line per finding and exits 0 when there is none, 1
 when there are some, 2 on an input it cannot read. `--self-test` runs the
-rule on a synthetic rules file. It is not part of `check_release.sh`.
+rule on a synthetic rules file. `check_release.sh` (both modes) and
+`ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.11+ (for `tomllib`).
 
@@ -602,8 +603,8 @@ heading); a lettered `§` or one after another `.md` file's name is another
 document's and is skipped, as the script's docstring states. Prints one line
 per dangling reference (file:line, reference) and exits 0 when there is none,
 1 when there are some, 2 on an input it cannot read. `--self-test` runs the
-rule on a synthetic document and facts file. It is not part of
-`check_release.sh`.
+rule on a synthetic document and facts file. `check_release.sh` (both modes)
+and `ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.
 

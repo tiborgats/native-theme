@@ -756,12 +756,12 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py and scripts/check_readme_versions.py need Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py and scripts/check_readme_versions.py need 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
@@ -794,6 +794,34 @@ run_check "showcase parity: element list and exceptions" \
     python3 scripts/check_showcase_parity.py --check-list
 run_check "showcase parity: comparator self-test" \
     python3 scripts/check_showcase_parity.py --self-test
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: data documents
+#
+# The three checks of the data documents, under the Python floor above
+# (check_wrong_safety_nets.py imports `tomllib`), each with its self-test:
+# scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
+# field with no docs/platform-facts.md row; scripts/check_wrong_safety_nets.py
+# on a `# see wrong_safety_nets` mark in docs/inheritance-rules.toml without
+# its [wrong_safety_nets] entry, an entry its [uniform] rule does not mark, or
+# an entry no rule inherits; scripts/check_section_refs.py on a § reference in
+# the registry, the inheritance rules, docs/showcase-elements.toml or
+# docs/new-os-version-guide.md that names no platform-facts section. CI runs
+# the same six.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Data documents"
+run_check "data documents: every registry field has a platform-facts row" \
+    python3 scripts/check_platform_facts_rows.py
+run_check "data documents: platform-facts rows self-test" \
+    python3 scripts/check_platform_facts_rows.py --self-test
+run_check "data documents: [wrong_safety_nets] and its [uniform] marks" \
+    python3 scripts/check_wrong_safety_nets.py
+run_check "data documents: wrong safety nets self-test" \
+    python3 scripts/check_wrong_safety_nets.py --self-test
+run_check "data documents: § references name platform-facts sections" \
+    python3 scripts/check_section_refs.py
+run_check "data documents: § references self-test" \
+    python3 scripts/check_section_refs.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

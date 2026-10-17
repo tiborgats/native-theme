@@ -68,7 +68,9 @@ check (`scripts/check_widget_coverage.py`, Python 3.11+), the connector-parity
 check (`scripts/check_connector_parity.py` and its `--self-test`), the
 README-version check (`scripts/check_readme_versions.py` and its `--self-test`), the showcase-parity
 comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
-`--self-test`, which needs Pillow), per-crate
+`--self-test`, which needs Pillow), the data-document checks
+(`scripts/check_platform_facts_rows.py`, `scripts/check_wrong_safety_nets.py` and
+`scripts/check_section_refs.py`, each with its `--self-test`), per-crate
 `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`,
 so the private items' docs are held too (`native-theme` with its Linux
 features, plus its public API with no features; and `native-theme-iced`,
