@@ -1592,6 +1592,14 @@ model, the platform presets and the three connectors
       inherited card fill is not a wrong safety net; the progress bar's
       padding is 0, and on macOS 26 the unchecked box is `#00000019` /
       `#ffffff19` with no outline (§2.5, §2.10).
+      M8 T15 fix round 2 (2026-10-17): two more for T16. kde-breeze
+      `button.hover_background` `#93cee9` (`kde-breeze.toml:129`, `:591`;
+      §2.3: no hover fill, ← `background_color`, #fcfcfc / #292c30, hover
+      being the `Highlight` outline). adwaita `expander.border`
+      (`adwaita.toml:404`, `:789`, `corner_radius_px = 6.0`, GtkExpander's
+      title; §2.27, AdwExpanderRow in a boxed list: 12 at the list's outer
+      corners and 0 elsewhere, a 1px `RGB(0 0 6 / 3%)` card outline the
+      preset inherits instead, and the card's shadow).
 
 ### windows-11: the validator's findings after T35 left open
 
