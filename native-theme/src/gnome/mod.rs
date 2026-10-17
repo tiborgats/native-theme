@@ -1135,8 +1135,7 @@ mod tests {
             no_gsettings,
         );
 
-        let _variant = reader_mode(&result);
-        // high_contrast now on AccessibilityPreferences
+        assert!(result.accessibility.high_contrast);
     }
 
     #[test]
@@ -1150,9 +1149,27 @@ mod tests {
             no_gsettings,
         );
 
-        let _variant = reader_mode(&result);
-        // Adwaita preset sets high_contrast = false; OS variant doesn't override it
-        // high_contrast now on AccessibilityPreferences
+        assert!(!result.accessibility.high_contrast);
+    }
+
+    /// Without the portal's high contrast the reader reads gsettings'
+    /// `org.gnome.desktop.a11y.interface high-contrast`, and only that key.
+    #[test]
+    fn gsettings_high_contrast_key_sets_flag() {
+        let high_contrast = |schema: &str, key: &str| {
+            (schema == "org.gnome.desktop.a11y.interface" && key == "high-contrast")
+                .then(|| "true".to_string())
+        };
+        let result = build_theme(
+            Some(ColorScheme::NoPreference),
+            None,
+            Contrast::NoPreference,
+            None,
+            None,
+            high_contrast,
+        );
+
+        assert!(result.accessibility.high_contrast);
     }
 
     // === colour scheme without the portal's, one read per key (M4-27, M4-55) ===
@@ -1372,8 +1389,7 @@ mod tests {
         let mut data = default_gnome_data();
         data.high_contrast = true;
         let result = build_gnome_spec_pure(&data);
-        let _variant = reader_mode(&result);
-        // high_contrast now on AccessibilityPreferences
+        assert!(result.accessibility.high_contrast);
     }
 
     #[test]
@@ -1410,8 +1426,7 @@ mod tests {
         data.high_contrast = false;
         data.gsettings_high_contrast = Some(true);
         let result = build_gnome_spec_pure(&data);
-        let _variant = reader_mode(&result);
-        // high_contrast now on AccessibilityPreferences
+        assert!(result.accessibility.high_contrast);
     }
 
     #[test]
