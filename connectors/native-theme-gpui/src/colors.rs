@@ -442,7 +442,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
     // platform-facts §2.15 states as macOS `gridColor` and Material's
     // `outline-variant`, and which elsewhere inherits `defaults.border.color`
-    // (`docs/inheritance-rules.toml:246`).
+    // (`docs/inheritance-rules.toml:245`).
     tc.chart_grid = c.list_grid;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
