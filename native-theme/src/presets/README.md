@@ -23,13 +23,19 @@ running platform instead, under the OS's live colours, fonts and
 accessibility.
 
 Gated sizes (padding sides, menu and list row heights, `list.header_height`,
-toolbar `bar_height` and `item_gap`, combobox `arrow_area_width`): a native
+toolbar `bar_height` and `item_gap`, tab `item_gap` and
+`active_indicator_width`, combobox `arrow_area_width`, expander `arrow_gap`
+and `content_indent`, checkbox `radio_indicator_width`, `radio_dot_diameter`
+and `check_mark_stroke_width`, switch `unchecked_thumb_diameter`): a native
 preset states one only where `docs/platform-facts.md` gives it for its
 platform: KDE, GNOME, macOS, Windows or Material, whose column counts a
 material-web or Compose implementation constant cited at a pinned line as
 documented, as the KDE and GNOME columns count a Breeze or libadwaita source
 constant. The color-scheme presets, and the `ios-13` platform preset, which
-has no platform-facts column, state none (`documented_sizes.rs` checks both).
+has no platform-facts column, state none. `documented_sizes.rs` checks the
+native presets for every gated size, and the others for all but the
+checkbox's three, the switch's one and the tab's `active_indicator_width`,
+which none of them states today.
 An unstated gated size resolves to `None` and the toolkit's own applies. The
 presets' other sizes (`min_height_px`, `max_width_px`, …) are stated, often
 without a source, and are still being audited (`docs/todo.md`, Table B); the
@@ -98,16 +104,30 @@ its header naming the version its values were verified on.
 
 ## What each reader supplies
 
-The platform readers, or `resolve_platform_defaults`, supply these fields
-over the platform preset:
+The platform readers supply these fields over the platform preset, and
+`resolve_platform_defaults` the dialog's button order where a theme states
+none:
 
-- **`button_order`** -- filled by `resolve_platform_defaults` based on
-  detected desktop environment
-- **`icon_theme`** -- stated at the Theme level by the adwaita, macOS and
-  Windows presets; KDE's reader supplies it per variant
+- **`button_order`** -- stated by every platform preset in both variants
+  (`primary_left` in `kde-breeze` and `windows-11`, `primary_right` in the
+  others), and read by no reader; `resolve_platform_defaults` fills it only
+  for a theme that states none, the color-scheme presets, from the detected
+  desktop (`platform_button_order` in `resolve/inheritance.rs`: primary-left
+  on KDE and Windows, primary-right elsewhere)
+- **`icon_theme`** -- stated by every preset, at the Theme level by all but
+  `kde-breeze`, which states it per variant (`breeze`, `breeze-dark`). The
+  KDE reader replaces it in the variant it reads, from `kdeglobals`'
+  `[Icons] Theme`, and the GNOME reader from the `icon-theme` gsetting; the
+  macOS and Windows readers read none. A variant's own value comes first, then the Theme-level
+  one, then the detected system theme (`pipeline.rs`)
 - **`font_dpi`** -- filled by the platform reader: KDE's from `kcmfonts`'
   `forceFontDPI` (on X11), `Xft.dpi` or the display, GNOME's a fixed 96 (GNOME's text-scaling factor
-  goes to `text_scaling_factor`, not into the DPI), macOS's a fixed 72, and
+  goes to `text_scaling_factor`, not into the DPI, except on a GNOME or
+  Budgie X11 session, where the reader reports a `text_scaling_factor` of
+  1.0: winit and gpui take their X11 scale factor from the `Xft.dpi`
+  gnome-settings-daemon writes with the factor in it, so the connectors'
+  text scaling would apply it twice, as `GnomeReader`'s doc in
+  `gnome/mod.rs` says), macOS's a fixed 72, and
   Windows' a fixed 96, since it reads its fonts at 96 DPI so that they
   resolve to logical pixels
 - **`reduce_motion`**, **`high_contrast`**, **`reduce_transparency`**,
