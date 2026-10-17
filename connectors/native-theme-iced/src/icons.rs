@@ -218,13 +218,15 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// ```no_run
 /// use native_theme::icons::load_icon_indicator;
-/// use native_theme::theme::IconSet;
 /// use native_theme_iced::icons::animated_frames_to_svg_handles_for;
+/// use native_theme_iced::palette::to_color;
 ///
-/// # let text_color = iced_core::Color::BLACK;
-/// let set = IconSet::Freedesktop;
-/// let frames = load_icon_indicator(set, None)
+/// let loaded = native_theme_iced::from_system()?;
+/// let text_color = to_color(loaded.resolved.defaults.text_color);
+/// let set = loaded.icon_set;
+/// let frames = load_icon_indicator(set, loaded.icon_theme.as_deref())
 ///     .and_then(|anim| animated_frames_to_svg_handles_for(set, &anim, Some(text_color)));
+/// # Ok::<(), native_theme_iced::Error>(())
 /// ```
 #[must_use]
 pub fn animated_frames_to_svg_handles_for(
