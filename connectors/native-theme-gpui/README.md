@@ -8,7 +8,7 @@ verified against, are in [Compatibility](#compatibility).
 
 ## What it does
 
-Turns a `native_theme::ResolvedTheme` into a fully configured
+Turns a `ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
 - **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
@@ -61,7 +61,9 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
 
 ## How it fits
 
-Depend on this crate — it pulls `native-theme` in transitively. The
+Depend on this crate; it re-exports `native-theme` as
+`native_theme_gpui::native_theme`, so your `Cargo.toml` need not add a second
+dependency on it, whose version could drift from the connector's. The
 workspace-level README at the repo root has a diagram showing where each
 crate sits.
 
@@ -107,7 +109,16 @@ native-theme-gpui = { version = "0.6", features = ["native"] }
 gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
-```rust,ignore
+```rust,no_run
+use gpui::{AppContext as _, WindowOptions};
+# use gpui::{Context, IntoElement, Render, Window, div};
+# struct MyView;
+# impl Render for MyView {
+#     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+#         div()
+#     }
+# }
+
 gpui_kit::application().run(|cx| {
     gpui_kit::init(cx);
     match native_theme_gpui::SystemTheme::from_system() {
@@ -154,17 +165,21 @@ theme to upstream's default.
 ### Light and dark under a preset
 
 The OS accessibility preferences come from native-theme's detection cache
-(`native_theme::detect`), which needs a `native-theme` dependency of its own
-(see [Runtime theme change](#runtime-theme-change)):
+(`native_theme_gpui::native_theme::detect`, the source crate this one
+re-exports):
 
-```rust,ignore
+```rust,no_run
+use native_theme_gpui::native_theme::detect::accessibility_preferences;
 use native_theme_gpui::{apply, from_preset};
 
-let prefs = native_theme::detect::accessibility_preferences();
+# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
+let prefs = accessibility_preferences();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 apply(light, &light_resolved, &prefs, cx);
 apply(dark, &dark_resolved, &prefs, cx);   // dark is now current; both variants are stored
+# Ok(())
+# }
 ```
 
 Afterwards gpui-component's own `Theme::sync_system_appearance(None, cx)` or
@@ -194,9 +209,10 @@ variant.
   lightness; the theme is built in the mode of the variant resolved
   (`Resolved::mode`), so a light-only preset asked for dark gives a light
   theme. Pass `&AccessibilityPreferences::default()` for no scaling, or
-  `native_theme::detect::accessibility_preferences()` to honour the OS
-  preferences under a preset: the cached reading, for a preset switch (the
-  first call after a system read may still run the reduced-motion detection,
+  `native_theme_gpui::native_theme::detect::accessibility_preferences()` to
+  honour the OS preferences under a preset: the cached reading, for a preset
+  switch (the first call after a system read may still run the reduced-motion
+  detection,
   about 3 ms measured on one KDE machine; every later call returns the cached
   block in nanoseconds). `AccessibilityPreferences::from_system()` reads them
   afresh, running the platform reader each time.
@@ -222,11 +238,12 @@ geometry, so a refinement built from the native theme wins. Every builder in
 the `geometry` module is a pure function of `Native<'_>` (the four layout
 accessors, of a `LayoutTheme`):
 
-```rust,ignore
+```rust,no_run
 use gpui::{ParentElement, Styled, div};
 use gpui_component::{StyledExt, button::Button};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 
+# fn f(cx: &gpui::App) {
 let button = match cx.native() {
     Some(n) => Button::new("save")
         .refine_style(&geometry::button(n))
@@ -238,6 +255,7 @@ let button = match cx.native() {
         .accessibility_label("Save"),
     None => Button::new("save").label("Save"), // before `apply`: upstream's geometry
 };
+# }
 ```
 
 The label goes in as the button's child: gpui-component sizes a `.label()`
@@ -334,7 +352,7 @@ test over every preset and mode says so.
 | `accordion` | `expander.border.color` | `Accordion` and each `AccordionItem`: the colour of the card a bordered Accordion draws and of the line under each item but the last |
 | `accordion_hover` | `expander.hover_background` (where stated) | `AccordionItem::hover`, as `item.hover(\|_\| geometry::accordion_hover(n))`; nothing where the theme states no hover, so the row stays at rest |
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform), `defaults.line_height` on the row (the label column keeps upstream's 1.25) | `Checkbox`, `Radio` |
-| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
+| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font`, `defaults.line_height` | `TitleBar` |
 | `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
 | `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.7.3's `Toolbar`: the height is the content's (at least `bar_height`), which replaces the `Toolbar`'s own fixed Small height. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
@@ -367,12 +385,16 @@ native theme those two buttons hover in colours no other button uses.
 `variants::ghost_button(cx)` is the same flat button with the platform's own
 button hover and pressed colours:
 
-```rust,ignore
+```rust,no_run
+use gpui_component::IconName;
 use gpui_component::button::{Button, ButtonVariants as _};
+use gpui_component::input::InputGroupButton;
 use native_theme_gpui::variants;
 
+# fn f(cx: &gpui::App) {
 Button::new("close").icon(IconName::Close).custom(variants::ghost_button(cx));
 InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
+# }
 ```
 
 Build it in `render`: it reads the installed theme, so it follows a light/dark
@@ -421,10 +443,17 @@ control. Each has a `…Look` type (`CheckboxLook::of(&resolved, …)`,
 `TabLook::of(&resolved)`, …) with the values it paints, for an application
 that draws something of its own alike.
 
-```rust,ignore
-use native_theme::theme::IconSet;
+```rust,no_run
+use gpui::SharedString;
+use native_theme_gpui::IconSet;
 use native_theme_gpui::widgets::{Checkbox, Separator, Spinner, Tab, TabBar};
 
+# struct Settings {
+#     autosave: bool,
+#     page: usize,
+# }
+# impl Settings {
+# fn controls(&self, cx: &mut gpui::Context<Self>) {
 Checkbox::new("autosave")
     .label("Autosave")
     .checked(self.autosave)
@@ -440,6 +469,8 @@ TabBar::new("pages")
 Spinner::new("loading").icon_set(IconSet::Freedesktop).icon_theme(SharedString::from("breeze"));
 
 Separator::horizontal();
+# }
+# }
 ```
 
 The spinner loads its indicator once per set, icon theme, colour and size,
@@ -486,6 +517,38 @@ name as the native theme replaces the connector's colours (the base-layer
 geometry is still restored). The default registry holds two themes,
 `Default Light` and `Default Dark`.
 
+## Features
+
+The first six are on by default; `default-features = false` is the way to
+narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
+(see [Backends](#backends)). `native` and `watch` are off, as in native-theme.
+
+| Feature | Enables |
+|---|---|
+| `widgets` | the theme-drawn controls of [`widgets`](#theme-drawn-widgets) |
+| `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
+| `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
+| `system-icons` | the platform's own icons (`native-theme/system-icons`) |
+| `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`) |
+| `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+| `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
+| `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
+
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` (opt-in) watches with a reader feature only.
+
+Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
+gpui the SVG bytes (colourised first when a colour is given) as an
+`ImageSource::Image` of `ImageFormat::Svg`, and gpui decodes it with the resvg
+it always depends on. It saves building native-theme's own resvg, at two
+costs: gpui decodes the image in the background, so an element holding it
+paints nothing the first time it comes up (an animation flickers through its
+first pass), and gpui picks the raster size, twice the SVG's own, so the `size`
+argument has no effect. `icons::to_image_source` documents it.
+
 ## Accessibility
 
 | Preference | Effect |
@@ -501,52 +564,30 @@ Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw 
 focus ring in `defaults.focus_ring_color` while focused (the `Switch` since
 gpui-component 0.7.0, whose own switch gained one).
 
-## Features
-
-The first six are on by default; `default-features = false` is the way to
-narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
-(see [Backends](#backends)). `native` and `watch` are off, as in native-theme.
-
-| Feature | Enables |
-|---|---|
-| `widgets` | the theme-drawn controls of [`widgets`](#theme-drawn-widgets) |
-| `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
-| `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
-| `system-icons` | the platform's own icons (`native-theme/system-icons`) |
-| `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
-| `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
-| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
-| `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
-| `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
-
-The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
-`macos` and `windows`, one platform each), off by default as in native-theme;
-without one, `from_system()` is the platform preset on Linux and an error on
-macOS and Windows. `watch` (opt-in) watches with a reader feature only.
-
-Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
-gpui the SVG bytes (colorized first when a colour is given) as an
-`ImageSource::Image` of `ImageFormat::Svg`, and gpui decodes it with the resvg
-it always depends on. It saves building native-theme's own resvg, at two
-costs: gpui decodes the image in the background, so an element holding it
-paints nothing the first time it comes up (an animation flickers through its
-first pass), and gpui picks the raster size, twice the SVG's own, so the `size`
-argument has no effect. `icons::to_image_source` documents it.
-
 ## Common recipes
 
 ### Apply user overrides to the OS theme
 
-```rust,ignore
-use native_theme::{SystemTheme, theme::Theme};
-use native_theme_gpui::apply_system_theme;
+An overlay states only what it changes, in both variants: `apply_system_theme`
+shows the variant of the OS's colour mode, so an overlay of `[light.defaults]`
+alone changes nothing on screen under a dark OS.
 
+```rust,no_run
+use native_theme_gpui::{SystemTheme, Theme, apply_system_theme};
+
+# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system()?;
-let overlay = Theme::from_toml(r##"[light.defaults]
+let overlay = Theme::from_toml(r##"
+[light.defaults]
+accent_color = "#ff6600"
+
+[dark.defaults]
 accent_color = "#ff6600"
 "##)?;
 let customised = sys.with_overlay(&overlay)?;
 apply_system_theme(&customised, cx);
+# Ok(())
+# }
 ```
 
 ### Runtime theme change
@@ -558,16 +599,18 @@ open. Register it on the application's longest-lived window, the main
 window: once that window closes, events stop. In `f`, clear native-theme's
 detection caches, read the theme again and apply it. The caches hold the font
 DPI, dark mode, the icon theme and the accessibility preferences, so a
-re-read without `invalidate_caches()` gets the old ones. Naming
-`native_theme::detect` needs native-theme itself:
+re-read without `invalidate_caches()` gets the old ones. The caches are
+native-theme's, reached through the re-exported source crate
+(`native_theme_gpui::native_theme`), so the connector stays the one
+dependency:
 
 ```toml
 [dependencies]
-native-theme = "0.6"
 native-theme-gpui = { version = "0.6", features = ["native", "watch"] }
 ```
 
-```rust,ignore
+```rust,no_run
+use native_theme_gpui::native_theme::detect::invalidate_caches;
 use native_theme_gpui::{SystemTheme, ThemeSubscription, apply_system_theme, on_theme_change};
 
 struct MyView {
@@ -575,25 +618,31 @@ struct MyView {
     _theme_watcher: Option<ThemeSubscription>,
 }
 
+# fn f(window: &mut gpui::Window, cx: &mut gpui::Context<MyView>) {
 // In the main window's view constructor, with `window: &mut Window` and
 // `cx: &mut Context<MyView>`: a watcher that cannot start (a desktop with
 // none) returns its error, and `ok()` drops it.
 let _theme_watcher = on_theme_change(window, cx, |_event, _window, cx| {
-    native_theme::detect::invalidate_caches();
+    invalidate_caches();
     if let Ok(sys) = SystemTheme::from_system() {
         apply_system_theme(&sys, cx);
     }
 })
 .ok();
+# }
 ```
 
 Read again with the entry point the application used: one that pinned a
 preset with `SystemTheme::from_system_with_preset` reads with it again, or
 `from_system()` picks the running OS version's preset:
 
-```rust,ignore
+```rust,no_run
+# use native_theme_gpui::{SystemTheme, apply_system_theme};
+# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system_with_preset("macos-monterey")?;
 apply_system_theme(&sys, cx);
+# Ok(())
+# }
 ```
 
 `apply_system_theme` stores both variants, so gpui-component's
@@ -605,15 +654,30 @@ are watched; on another Linux desktop, or without a reader feature,
 
 ### Custom icons
 
-For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build):
+For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build).
+The code it generates names native-theme's paths through the crate path it is
+given, so give it the re-exported source crate, and the connector stays the
+one dependency: `IconGenerator::new().crate_path("native_theme_gpui::native_theme")`.
 
-```rust,ignore
+```rust,no_run
 use native_theme_gpui::icons::custom_icon_to_image_source;
+# use std::borrow::Cow;
+# use native_theme_gpui::{IconProvider, IconSet};
+# #[derive(Debug)]
+# enum AppIcon { PlayPause }
+# impl IconProvider for AppIcon {
+#     fn icon_name(&self, _: IconSet) -> Option<&str> { None }
+#     fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> { None }
+# }
 
+# fn f() -> native_theme_gpui::Result<()> {
 // `loaded` from `from_system()`: a freedesktop icon comes from the icon theme
 // the spinner and the role icons come from.
+let loaded = native_theme_gpui::from_system()?;
 let (set, icon_theme) = (loaded.icon_set, loaded.icon_theme.as_deref());
 let handle = custom_icon_to_image_source(&AppIcon::PlayPause, set, icon_theme, None, None);
+# Ok(())
+# }
 ```
 
 ### Role icons
@@ -627,11 +691,12 @@ own palette. An icon the set does not have is `None`; nothing is substituted.
 `icons::icon_name` is another thing: the `IconName` of gpui-component's
 bundled Lucide glyph, whatever the theme's set.
 
-```rust,ignore
+```rust,no_run
 use gpui::{Styled, img, px};
 use native_theme_gpui::icons::to_image_source;
 use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
 
+# fn f(window: &gpui::Window) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system()?;
 let resolved = sys.pick(sys.mode);
 let fg = resolved.defaults.text_color;
@@ -643,9 +708,11 @@ if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
         let icon = img(source).size(px(logical));
     }
 }
+# Ok(())
+# }
 ```
 
-An SVG icon is rasterized at the size given; a raster one comes at the size
+An SVG icon is rasterised at the size given; a raster one comes at the size
 its loader looked it up at, which `SystemTheme::icon` states. The `icons`
 module documentation has the same recipe as a compiled example.
 
@@ -655,13 +722,15 @@ The theme-drawn `widgets::Spinner` draws the icon set's indicator itself (see
 [Theme-drawn widgets](#theme-drawn-widgets)). To draw one of your own, load the
 indicator of the theme's set and convert it, coloured as that set is coloured:
 
-```rust,ignore
+```rust,no_run
 use gpui::{IntoElement, Styled, px};
 use gpui_component::ActiveTheme;
-use native_theme::detect::prefers_reduced_motion;
-use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
 use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
+use native_theme_gpui::native_theme::detect::prefers_reduced_motion;
+use native_theme_gpui::native_theme::icons::load_icon_indicator;
+use native_theme_gpui::{AnimatedIcon, IconData, TransformAnimation};
 
+# fn f(cx: &gpui::App) -> native_theme_gpui::Result<()> {
 let loaded = native_theme_gpui::from_system()?;
 // The text colour: a Material or Lucide frame is tinted it, and a freedesktop
 // frame's `currentColor` takes it where the frame sets no colour of its own.
@@ -701,6 +770,8 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
         _ => {}
     }
 }
+# Ok(())
+# }
 ```
 
 `animated_frames_to_image_sources_for` colours each frame as its set does:
@@ -720,7 +791,7 @@ way through its first pass, one blank frame at a time. The price of the decoded
 shape is a tile in each window's sprite atlas per image, held from the first
 frame that draws it until the image is handed to `App::drop_image`, so an
 application that rebuilds its icons — on an icon-theme change, or a colour
-change that re-colorizes them — should drop each replaced source that way
+change that re-colourises them — should drop each replaced source that way
 before letting go of it. `examples/showcase-gpui/support.rs` does it in
 `release_sources`.
 
@@ -875,7 +946,7 @@ The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Ser
 
 - [API reference on docs.rs](https://docs.rs/native-theme-gpui)
 - [Showcase source](examples/showcase-gpui/)
-- [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
+- [CHANGELOG](../../CHANGELOG.md)
 
 ## License
 

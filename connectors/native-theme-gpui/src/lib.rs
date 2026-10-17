@@ -1,6 +1,6 @@
 //! gpui toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::theme::ResolvedTheme`] data to gpui-component's theming system.
+//! Maps [`ResolvedTheme`] data to gpui-component's theming system.
 //!
 //! # Quick Start
 //!
@@ -59,7 +59,7 @@
 //! that variant for both `is_dark=true` and `is_dark=false` (the resolution
 //! pipeline falls back to the available variant), and [`from_preset()`] builds
 //! the theme in that variant's mode
-//! ([`Resolved::mode`](native_theme::theme::Resolved::mode)). To support
+//! ([`Resolved::mode`](crate::native_theme::theme::Resolved::mode)). To support
 //! runtime light/dark switching, call [`from_preset()`] once per mode and
 //! [`apply`] both: each `apply` stores its variant, and gpui-component's
 //! `Theme::change` / `sync_system_appearance` then switch between the two
@@ -173,20 +173,22 @@
 //! window and the `App`, each time the OS theme changes, for as long as the
 //! `ThemeSubscription` it returns is held and the window is open; register
 //! it on the main window, since events stop once that window closes. In
-//! `f`, call `native_theme::detect::invalidate_caches()`, read the theme
-//! again with the entry point the application used
+//! `f`, call `native_theme_gpui::native_theme::detect::invalidate_caches()`
+//! (the source crate, re-exported, so no second dependency names it), read
+//! the theme again with the entry point the application used
 //! ([`SystemTheme::from_system()`], or
 //! [`SystemTheme::from_system_with_preset`] for a pinned preset), and
 //! [`apply_system_theme`] it; gpui-component's `Theme::sync_system_appearance`
 //! keeps switching between its light and dark palettes after that:
 //!
 //! ```rust,ignore
+//! use native_theme_gpui::native_theme::detect::invalidate_caches;
 //! use native_theme_gpui::{SystemTheme, apply_system_theme, on_theme_change};
 //!
 //! // Held while the application follows the OS theme; dropping it stops
 //! // the watcher.
 //! let watcher = on_theme_change(window, cx, |_event, _window, cx| {
-//!     native_theme::detect::invalidate_caches();
+//!     invalidate_caches();
 //!     if let Ok(sys) = SystemTheme::from_system() {
 //!         apply_system_theme(&sys, cx);
 //!     }
@@ -248,6 +250,13 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API; the
+/// runtime-theme-change block needs feature `watch`, and the theme-drawn widgets block
+/// `widgets`.
+#[cfg(all(doctest, feature = "watch", feature = "widgets"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
 
 use gpui::{App, Global, Hsla, SharedString, px};
 use gpui_component::scroll::ScrollbarMode;
