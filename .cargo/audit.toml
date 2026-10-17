@@ -32,6 +32,15 @@ ignore = [
     # through cryoglyph 0.1.0 (iced_wgpu 0.14.0, a dev-dependency path of
     # native-theme-iced), which requires lru 0.16, so no fix is reachable.
     "RUSTSEC-2026-0253",
+    # zvariant 5.15.0, zvariant_derive 5.15.0 and zbus_names 4.3.4,
+    # unmaintained since zbus 6.0.0 (2026-10-16) merged them in, no patched
+    # release; reached through zbus 5.19.0, which native-theme's `portal` and
+    # `watch` features need for ashpd 0.13.13 (the latest; it requires zbus
+    # ^5.13), and which accesskit_unix, atspi and oo7 (the connectors' winit
+    # and GPUI stacks) depend on too.
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
 ]
 
 [output]
