@@ -11187,6 +11187,1309 @@ Controller amendments (2026-10-16), binding over the draft above where they diff
 
 ## M9 — Showcases
 
+Mandatory (maintainer, 2026-10-16: "it absolutely is a must, not optional"). M9a (gpui), M9b (iced) and M9c (egui) were reviewed together, in parallel with M8's fix phase (maintainer, 2026-10-17: "yes, start the M9 reviews in parallel. Whenever you can speed up the development without losing quality, do it"), with one extra cross-showcase reviewer (M9x) for what spans the three: duplication, the shared chrome against gpui's, the command lines, the page lists, the theme-switch cost. The fix phases follow M8's close, one per showcase, M9x's entries taken by the showcase each names (or by the first that touches a shared one).
+
+### Step 1–2 — inventory, review, verification (2026-10-17, at `57875ea5`)
+
+- **Regions:** M9a A1 `demo.rs`; A2 `app.rs`, `main.rs`, `chrome.rs`, `inspector.rs`, `support.rs`, `host.rs`, `speech.rs`, `elements.rs`, `pages/`; A3 `info/{mod,chrome,leaves,theme_map,registry,values,text}.rs`; A4 the other nine `info/` files. M9b B1 `showcase-iced.rs:1-8588`, B2 `:8589-end` (split at `fn switch_info`). M9c C1 `pages/`; C2 `main.rs`, `app.rs`, `chrome.rs`, `demo.rs`, `info.rs`, `capture.rs`, `elements.rs`. M9x the three showcases, `scripts/`, `.github/workflows/`. The plan's three M9a reviewers became four (`info/` is 15k lines).
+- **Lens** (every reviewer, scratchpad `m9-common.md`): bugs; theme data (a literal where a resolved value exists); Widget Info truth (a claim made only where drawn, the drawn family not the stated one, each side's real source); per-frame and per-switch work; duplication with the siblings, the connector and core; the shared chrome, the window size (1280×720), the command line.
+- **Known items** (scratchpad `m9-known-items.md`): the 59 open docs/todo.md entries naming a showcase or M9, the 8 carry-overs M8's fix phase recorded for M9 (progress ledger).
+- **Lint hints:** `cargo clippy -p <connector> --example showcase-<toolkit> --all-features -- -W clippy::pedantic -W clippy::nursery`: gpui 1608, iced 911, egui 1304 warnings, 0 errors; given to the reviewers as hints only.
+- **No timing step:** the template's timing test is per connector (M5–M7 have it); a showcase's theme-switch cost is a reviewed path here, measured in its fix task where one is claimed.
+- **Cost:** 18 agents (9 region reviewers, 9 verifiers, Opus 5.5, read-only, no builds). Reviewers 266k–374k subagent tokens (about 2.86M), verifiers 130k–218k (about 1.43M); about 4.3M in total.
+- **Result:** 142 claims: 139 CONFIRMED, 2 KNOWN, 1 REJECTED. 141 entries below: M9a 64, M9b 37, M9c 21, M9x 19.
+
+### Step 4 — triage (2026-10-17)
+
+No entry changes a crate's public API, so no maintainer round: every entry is `fix` unless its own triage line says otherwise. Rulings, each from a recorded decision:
+
+- Ruling: the verifiers' severity notes that move an entry to S3 for being minor are not applied — S3 is measured or clearly-traced slowness on a user path (the scale in `m9-common.md`); an entry's severity stays the reviewer's unless the verifier showed the trigger cannot happen (then the verdict says so). — cost if wrong: an S2 fixed before an S4, which the fix plan orders anyway.
+- Ruling: Reduce motion's switch means the same in the three showcases: gpui's recorded design (`connectors/native-theme-gpui/src/lib.rs:1129-1145`, spec v0.5.9 §5) — "off" is no request, an OS request still stops the animation — and the switch's row says so; egui's showcase, where the switch wins, follows gpui; iced already does. — why: one rule, the recorded one. — cost if wrong: one condition per showcase.
+- Ruling: M1-T7-07 (iced's per-widget Widget Info generated from the contract, M1's decision, alternative 3) is M9b's; the contract table (`connectors/native-theme-iced/src/contract.rs`, test-only today, colour leaves only) is exported to the showcase without adding public API — the fix plan chooses between a checked-in data file a contract test writes and verifies (egui's `mapping.toml` pattern) and an `include!`-shared table — and the hand-written `iced_route` prose goes. — cost if wrong: one table format.
+- Ruling: the unsafe capture code in the gpui and iced showcases (and gpui's `nudge_content_size`) is replaced by safe routes — egui's xcap capture (the verifier traced its parity on macOS and Windows) and objc2-app-kit 0.3.2's safe calls — under the no-unsafe rule. — cost if wrong: the remaining differences (no `CAPTUREBLT`, a window across two monitors clipped) recorded in the capture's doc.
+- Ruling: what the three showcases copy (the command-line parser and validators, `check_frame_capture`, the layout-dump writer, the icon-set and preset rows, the hex formatter, the status bar's environment text) moves into one `publish = false` workspace crate, as `tools/test-fixtures` did in M8 T2, where the toolkit does not force a difference; the command lines then mean the same in all three (M9x). — cost if wrong: one dev-only crate.
+- Ruling: entries whose own fix adds a site to an open docs/todo.md entry (the stated-vs-drawn family, `docs/todo.md:3499`: the gpui and egui status bars, egui's Widget Info font rows) extend that entry's text in the fix task that fixes them, and the entry closes with them.
+
+### Step 3 — ledger entries
+
+#### M9-001 · M9a · info-truth · S1 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:3529
+**Claim:** Under any native preset, hovering the number field on the Basic or Inputs page gives a Widget Info panel that describes upstream's NumberInput, while the showcase draws a rebuilt field: the fill, padding and step-button icons it reports are not the ones drawn.
+**Evidence:** number_input builds number_info = info::inputs::number_input(cx.theme()) (demo.rs:3529) and adds only .geometry("input") (:3538) on the native path. The native path then draws the frame in info::stated(i.background_color) (:3596), pads the inner Input with geometry::input's padding (`value` keeps `field.padding`, :3553-3557, applied :3590), and draws ChevronUp/ChevronDown step buttons, min_w_8, stacked at the right (:3567-3592). info/inputs.rs:220-240 claims bg = input_background(t), which is the `background` token in light mode and `input` mixed 30% with transparent in dark mode (info/chrome.rs:813-826), not input.background_color. It also says 'padding: none from geometry::input ... the Input inside it keeps upstream's own padding', and lists 'hardcoded +/- icons ... min_w_6 / min_w_8' and own_icons 'Minus and Plus'. On kde-breeze light, input.background_color is the view colour and `background` is the window colour, so the panel's bg hex is wrong.
+**Fix proposed:** Give the native path an info of its own (e.g. info::inputs::native_number_input(r)) that claims input.background_color, input.border.color, hover_border_color and focus_border_color as drawn, says the value takes geometry::input's padding, and names the ChevronUp/ChevronDown step buttons. Keep the current info for the no-theme path.
+**Verdict:** CONFIRMED — Under a native theme demo.rs:3529-3586 draws the rebuilt field: input.background_color fill, the value padded by geometry::input's input.border.padding, and ChevronUp/ChevronDown step icons. The info is still info::inputs::number_input (info/inputs.rs:220-240), which claims input_background, 'none from geometry::input ... Input keeps upstream's own padding', and 'hardcoded +/- icons' / 'Minus and Plus'. The test a_widgets_own_icons_are_named_gpui_components (tests.rs:6441) checks only that upstream text.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#0.
+
+#### M9-002 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6531
+**Claim:** Under any icon theme other than gpui-component's built-in set (Material, freedesktop/Breeze, …), the Basic page's expander arrows and the number field's step buttons, both built by the showcase itself, draw gpui-component's Lucide chevrons, so two icon sets show on one page.
+**Evidence:** native_expander draws Icon::new(IconName::ChevronRight / ChevronDown) (demo.rs:6520-6534), and number_input's step buttons draw Icon::new(IconName::ChevronUp / ChevronDown).with_size(Size::Small) (:3577, :3582, :3592). Both are the showcase's own elements, not upstream widgets that name an icon internally. The showcase already has the route to the chosen set's icon: chrome_icon hands a Loaded SVG through Icon::default().data(bytes) (:128-134), which collapsible uses for its ChevronDown/ChevronRight SampleIcon (:6663), and native_tab_bar uses it for the chosen ChevronDown (:1858-1875). The info's own_icons note (info/layout.rs:583, info/mod.rs:392-395) gives as its reason that the showcase cannot hand upstream its icons. That reason does not hold for elements the showcase builds itself.
+**Fix proposed:** Pass SampleIcons for ChevronRight/ChevronDown (expander) and ChevronUp/ChevronDown (number field) from the page, the way collapsible gets its icons. Draw them with SampleIcon::icon()/sized(cx, geometry::icon_size_small), and draw no glyph where the set has none. Update the infos to match.
+**Verdict:** CONFIRMED — native_expander (demo.rs:6531-6541) and number_input's step closure (demo.rs:3560, :3565-3577) build Icon::new(IconName::ChevronRight/ChevronDown/ChevronUp) themselves, so they always draw gpui-component's Lucide asset. Elsewhere the showcase draws chosen-set icons it builds itself (SampleIcon, e.g. the Collapsible toggle's chevron, info/layout.rs:762). The native expander's info (info/layout.rs:583) cites AccordionItem::render for icons the showcase builds, so decision D1 and docs/todo.md:3172 do not cover them.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#1.
+
+#### M9-003 · M9a · info-truth · S1 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:8582
+**Claim:** Under any native preset, the Basic page's table rows report the declarative Table's TableRow: the selected row (TABLE_SELECTED = 1) is claimed in the `table` fill and `foreground` text, and every row after the first is claimed a table_row_border top edge that is never drawn.
+**Evidence:** files_table draws the selected row in list.selection_background / selection_text_color (demo.rs:8559-8563). The other rows get list.item_font.color and the list.hover_* fill and text under the pointer (:8565-8581). Rows have no border: the only lines are the header's closing line and the first column's right line (:8503-8513, :8527-8537). Each row's info is still info::data::table_row(t, ix == 0, …) (:8582-8586), which claims 'bg, the table's' = table token, 'text, inherited' = foreground, and for ix > 0 'top border' = table_row_border, citing gpui-component table/table.rs:415 (info/data.rs:318-346). TABLE_SELECTED is 1 (pages/basic.rs:133), so the row whose fill and text are both misclaimed is also one that claims a phantom top border. The header and frame infos (:8541, :8598) also cite upstream Table lines for elements the showcase draws.
+**Fix proposed:** Give files_table's native rows, header and frame infos of their own (e.g. info::data::native_table_row(r, selected, …)) that claim list.selection_background/selection_text_color on the selected row, list.item_font.color and list.hover_* on the others, list.grid_color for the two lines, and list.border/background_color for the frame, with no top-border claim. Keep table_row for the declarative Table fallback.
+**Verdict:** CONFIRMED — files_table (demo.rs:8582-8605) fills row TABLE_SELECTED (pages/basic.rs:133) with list.selection_background and letters it in selection_text_color. Body rows draw no top edge: only the first cell's vertical grid line, and the bottom line on the header alone. Every row still gets info::data::table_row (info/data.rs:318-346), which claims the table fill (list_bg, colors.rs:428), foreground text, and a table_row_border top edge on rows after the first.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#2.
+
+#### M9-004 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:3320
+**Claim:** On the Inputs page, the fixed-height Textarea does not show input.hover_border_color under the pointer (adwaita: #3584e4), and its edge is upstream's `input` token, not text_area.border.color. The Basic page's rows_textarea and the Inputs page's text fields follow both.
+**Evidence:** textarea applies geometry::text_area and geometry::input_fill only (demo.rs:3328-3341). geometry::text_area sets the padding, radius and line width but no edge colour (src/geometry.rs:372-392). rows_textarea wraps the same field in input_surface(r, &r.text_area.border, …) (demo.rs:3377-3382), which paints text_area.border.color and the input.hover_border_color group hover (:3245-3266). text_field does the same for an enabled Refined input (:3206-3212). adwaita states input.hover_border_color = #3584e4 (presets/adwaita.toml:143, :525).
+**Fix proposed:** Draw textarea's native path as rows_textarea does: input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none)), with the fixed height on the surface, and add info::inputs::input_surface to its info.
+**Verdict:** CONFIRMED — demo::textarea (demo.rs:3306-3330, called from pages/inputs.rs:98) applies geometry::text_area plus input_fill with no input_surface, so there is no hover edge. geometry::text_area (src/geometry.rs:372-393) sets no border colour, so upstream's input token shows. rows_textarea (demo.rs:3359-3366) and text_input (:3205-3211) wrap in input_surface. The hover half is live (adwaita input.hover_border_color #3584e4). (verifier: The edge-colour half is latent: text_area.border.color inherits input.border.color (docs/inheritance-rules.toml:173; resolve/inheritance.rs:736), and no preset or reader states it, so the drawn value is the same today.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#3.
+
+#### M9-005 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:3359
+**Claim:** Under a native preset, the Basic page's text area panel names its edge as gpui-component's `input` token at input.rs:798, and says nothing of the hover edge or the surface the showcase draws. The field's own edge is set transparent and the surface's text_area.border.color and input.hover_border_color are what show.
+**Evidence:** rows_textarea builds textarea_info = info::inputs::rows_textarea(…) (demo.rs:3359). Under a native theme it returns input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none)) (:3377-3382) without calling info::inputs::input_surface(info, r), which text_field does for the same surface (:3207). rows_textarea's info is textarea's (info/inputs.rs:174-178), which claims 'border' = `input` token, gpui-component/input/input.rs:798 (:150-155), and carries no 'hovered border' claim and no 'surface' config.
+**Fix proposed:** In rows_textarea's native branch, add `textarea_info = info::inputs::input_surface(textarea_info, r)` (or a text-area variant naming text_area.border.color) and drop the upstream `input` border claim there.
+**Verdict:** CONFIRMED — rows_textarea (demo.rs:3359-3366) sets the field's own fill and edge transparent and draws input_surface (text_area.border, input.background_color, input.hover_border_color). Its info, info::inputs::rows_textarea -> textarea (info/inputs.rs:151-156, :171-175), still claims the border as the input token at input/input.rs:798. It has no hover claim or surface line, unlike text_input, which adds info::inputs::input_surface (info/inputs.rs:12-24).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#4.
+
+#### M9-006 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6874
+**Claim:** Under any native preset, the Layout page's Form fields (Name, Email) are filled with upstream's input_background, not input.background_color, and have no hover edge, while their info is built as if the platform fill were applied (kde-breeze light: window colour, not the view colour).
+**Evidence:** field_input applies geometry::input alone (demo.rs:6874-6880), with no geometry::input_fill and no input_surface. text_field's Refined arm applies both (:3186-3212). geometry::input carries no fill: input_fill is a separate builder (src/geometry.rs:1211-1224). field_input's info is info::inputs::input(cx.theme(), InputField::Refined, styled) (:6873), which with styled set takes `filled` as true and leaves out the bg claim, on the premise that 'geometry::input_fill gives a refined field the platform's fill' (info/inputs.rs:44-57). No input_fill geometry line is recorded.
+**Fix proposed:** Build the Form's fields through text_field (or refine them with geometry::input_fill and wrap them in input_surface, recording the geometry and surface lines), so they match the Inputs page's refined fields.
+**Verdict:** CONFIRMED — field_input (demo.rs:6864-6881) applies geometry::input only: no input_fill and no surface. The Input therefore keeps upstream's input_background(), the window background in light (gpui-component theme/mod.rs:485-491), and has no hover edge. Its info is built with styled=true, so filled=true and the input_background claim is dropped (info/inputs.rs:47-57), with no input_fill line in its place. kde-breeze light: input.background_color #ffffff vs window #eff0f1 (kde-breeze.toml:152, :20).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#5.
+
+#### M9-007 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:7463
+**Claim:** On the Overlays page, the application-drawn menu rows sit on popover.background_color in popover_foreground, not menu.background_color and menu.font.color, and on the showcase's demo frame, not popover.border. The chrome's own menus use the menu values, so under adwaita (light #fafafb vs #ffffff, dark #222226 vs #36363a) the two menus differ.
+**Evidence:** menu_rows fills its frame with t.popover and letters it in t.popover_foreground (demo.rs:7463-7468), which the connector installs from popover.background_color and popover.font.color (src/colors.rs:228-229). geometry::menu_item sets no colour (src/geometry.rs:406-414, with_text). The chrome's MenuBar popup uses MenuLook (demo.rs:276-315): background = menu.background_color, text = menu.font.color, framed by popover.border with its shadow (:709-717). For menu.background_color, adwaita states nothing and so resolves defaults.background_color (inheritance-rules.toml:186), #fafafb / #222226, while popover.background_color is #ffffff / #36363a (presets/adwaita.toml).
+**Fix proposed:** Draw menu_rows from MenuLook::of(n): look.background, look.text, look.hover/hover_text, the look.frame* edge and look.radius on each row, keeping the token fallback only without a native theme. Update info::overlays::menu_row to claim those leaves.
+**Verdict:** CONFIRMED — menu_rows (demo.rs:7463-7469) paints the frame t.popover / popover_foreground (popover.background_color, popover.font.color; colors.rs:228-229, :523-524) inside demo_frame, and hovers rows with accent / accent_foreground. The chrome menus use MenuLook (demo.rs:275-305): menu.background_color, menu.font.color, menu.hover_*, and the popover border. Adwaita: menu.background_color inherits defaults #fafafb vs popover #ffffff (adwaita.toml:20, :287; dark #36363a at :669).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#6.
+
+#### M9-008 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:4576
+**Claim:** On the Data page, the Tree's rows ignore list.hover_text_color and the non-overlay scrollbar gutter, although the Tree takes the list's theme and the List's rows on the same page follow both.
+**Evidence:** ListRow::render sets list.hover_text_color on the label through the LIST_ROW_GROUP group hover (demo.rs:4490-4498, :4512-4520) and keeps clear of a non-overlay scrollbar with .mr(list_gutter(cx)) (:4511). tree_row (:4576-4616) applies geometry::list_item and list_item_selected only. tree() says 'its frame and fill are the list's' (:4530-4533). list.hover_text_color is stated in every bundled preset.
+**Fix proposed:** In tree_row, do what ListRow does: group the item, set list.hover_text_color on the label's group hover while not selected (with the 'hovered text' config line), and apply list_gutter where Tree's scrollbar is laid over its rows.
+**Verdict:** CONFIRMED — tree_row (demo.rs:4576-4612) applies list_item and list_item_selected only. It has neither ListRow's group-hover list.hover_text_color (demo.rs:4490-4497, :4513-4518) nor its list_gutter margin (:4507-4511), while tree() frames the Tree as the list (demo.rs:4529-4561). (verifier: The gutter half's upstream cause (Tree's scrollbar layered over its rows, tree.rs:111) is the known docs/todo.md:1940 entry. The showcase-side workaround the List has is what is missing here.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#7.
+
+#### M9-009 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6351
+**Claim:** demo::expander's fallback path still carries the native branches that native_expander replaced. They can no longer run, and neither can info::layout::expander's Some arms, its only caller passing None.
+**Evidence:** expander returns native_expander(…) whenever cx.native() is Some (demo.rs:6340-6350), so below that `native` is always None. native_info(…, geometry::accordion_title, …) therefore returns the default refinement and records nothing (:6359-6365; info/mod.rs:369-381). The `Some(n)` arm that borders the Accordion with expander.border (:6371-6380), the per-item expander.font size / hover / line tuple (:6386-6411), and the native argument to info::layout::expander (:6356) are dead. info::layout::expander's `match native { Some(r) … }` arms (info/layout.rs:360-380) are reached by nothing else (its only caller is demo.rs:6351).
+**Fix proposed:** Reduce expander's fallback to upstream's Accordion with title/open/body and no native arms. Drop the `native` parameter and its Some arms from info::layout::expander.
+**Verdict:** CONFIRMED — expander returns native_expander whenever cx.native() is Some (demo.rs:6340-6349), so the later match &native Some arm (:6370-6378), the native.as_ref().map(..) tuple and its Some arm (:6383-6406) cannot run. info::layout::expander's only caller (demo.rs:6351, no test calls it) passes native.as_ref().map(..), always None there, so its Some arms (info/layout.rs:360-384) are dead.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#8.
+
+#### M9-010 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6134
+**Claim:** The showcase pads 'each stated side, else a fallback' with at least five separate implementations: `padded`, `pad_unstated_sides`, segmented's inline sides, tool_box_of's `side` closure and side_panel's `side` closure. pad_unstated_sides, added in M8 T5, duplicates `padded` except for the length type.
+**Evidence:** padded (demo.rs:319-343) applies each stated side as px(v) and an unstated one as x/y. pad_unstated_sides (:6134-6159) applies `margin` on each unstated side and leaves stated sides to geometry::group_box_content, which already set them with the connector's private with_padding (src/geometry.rs:173-190, :727-733). The outcome is the same as padded(style, padding, margin, Some(margin)) once y is generalised from Option<Rems> to a DefiniteLength. segmented repeats it inline (:2077-2080, SEGMENT_PADDING on the sides, none on top/bottom: padded(…, SEGMENT_PADDING, None)). tool_box_of has its own `side` closure (:8208-8219), and side_panel its own `side` closure over container_margin (:1470-1484). Group box and card pad consistently with each other. Their container_margin line is recorded even when card.border.padding states all four sides (windows-11), which is known (M8 T5 carry-over, m9-known-items.md:14).
+**Fix proposed:** Keep one helper, `padded` with `y: Option<impl Into<DefiniteLength>>`, and call it from card, group_box (padded(content_style, &card.border.padding, margin, Some(margin))), segmented, tool_box_of and side_panel. Delete pad_unstated_sides.
+**Verdict:** CONFIRMED — The five exist: padded (demo.rs:319-340), pad_unstated_sides (:6134-6160), segmented's inline pl/pr/pt/pb (in segmented, from :2041; exactly padded(.., SEGMENT_PADDING, None)), side_panel's side closure (:1470-1478) and tool_box_of's side closure (:8208-8219). (verifier: Two details are overstated. tool_box_of's closure has no fallback: it is the stated-sides-only shape, as with_padding is. pad_unstated_sides leaves the stated sides alone rather than re-setting them, so padded replaces it only because group_box_content already set those sides, and padded's y is Option<Rems>, not Pixels.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#9.
+
+#### M9-011 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1466
+**Claim:** Latent, the side-panel counterpart of the known card/group_box carry-over: where a theme states all four sidebar.border.padding sides, the side panel's info still records geometry::container_margin, though the margin then pads nothing.
+**Evidence:** side_panel records panel_info.geometry("container_margin") whenever container_margin is Some (demo.rs:1466-1468). With sidebar_padding Some, an unstated side takes the margin (:1470-1484) and side_panel_content_margin returns None (:1518-1521), so with all four sides stated the margin is used nowhere. No bundled preset states sidebar.border.padding today, so it shows only for a reader or a custom theme that does. The toolbar records the line correctly, only when a side is unstated (:941-946).
+**Fix proposed:** Record the line only when container_margin is Some and either sidebar_padding is None or it leaves a side unstated, as toolbar does.
+**Verdict:** CONFIRMED — side_panel records geometry("container_margin") whenever container_margin is Some (demo.rs:1466-1468). Where sidebar.border.padding states all four sides, side() never falls back to it (:1470) and side_panel_content_margin returns None (:1514-1522), so the margin pads nothing. It is latent: no preset states sidebar.border. (verifier: Wider than claimed: the panel's 'padding' instance line (info/chrome.rs, side_panel: 'Npx around the theme settings, layout.container_margin') is already wrong once any sidebar.border.padding side is stated, since the content margin is then None.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#10.
+
+#### M9-012 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:671
+**Claim:** The chrome MenuBar's popup rows rebuild by hand what geometry::menu_item gives (menu.font, the stated menu.border.padding sides, the menu.row_height height rule). The Overlays page's rows (menu_rows) take the builder, so the two drifted: MenuLook sets the family but no font style and uses min_h(row_height) where the builder uses the control-height rule.
+**Evidence:** MenuBar::popup pads each row with padded(row, &look.padding, MENU_ROW_PADDING_X, None), then sets look.family/font_size/line_height/weight and row_height via min_h (demo.rs:671-688). geometry::menu_item is with_height_rule(menu.row_height) + with_padding(menu.border.padding) + gap_x(icon_text_gap) + with_text(menu.font) (src/geometry.rs:406-414), and with_text also sets font_style (:138-144). menu_rows applies geometry::menu_item (demo.rs:7483).
+**Fix proposed:** Refine MenuBar's rows (and titles, for the font) with geometry::menu_item(n), layering only the colours and the unstated-side fallbacks MENU_ROW_PADDING_X / MENU_ROW_HEIGHT on top, so both menus come from one builder.
+**Verdict:** CONFIRMED — The chrome popup rows (demo.rs:668-686) hand-apply MenuLook's family, size, line height, weight, padding (with a MENU_ROW_PADDING_X fallback) and min_h(row_height). geometry::menu_item (src/geometry.rs:406-412, with_text :138-144) also sets font_style and uses with_height_rule (:204-212: h at text scale 1, min_h plus h_auto above). So the chrome rows lack the font style and grow past row_height where the builder fixes the height.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#11.
+
+#### M9-013 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1932
+**Claim:** The showcase's own font helpers set a font's size, weight and line height but not its family or style: sidebar labels, tab labels, segments, native expander headers and the Basic table. The connector's builders set both. Under a reader that states a widget family other than defaults' (KDE's own fonts), these elements draw in the window's family.
+**Evidence:** font_text (demo.rs:1932-1938), used for sidebar.font (:1436), tab.font (:1754, :2005) and segmented_control.font (:2095). files_table's `font` closure (:8474-8482, applied :8521-8524). native_expander's header (:6548-6550). heading (:2744-2761) sets no family either. The connector's with_text sets font_family(&font.family) and font_style (src/geometry.rs:138-144). MenuLook and type_line do set the family (demo.rs:280, :8376). No bundled preset states a non-defaults family today, so this is latent.
+**Fix proposed:** Give font_text (and the table/expander/heading paths) the family through native_theme_gpui::font_family(&font.family) and the style as with_text does. Better, one showcase helper mirroring with_text that every showcase-drawn label uses.
+**Verdict:** CONFIRMED — font_text (demo.rs:1932-1938), native_expander's header (:6545-6549) and files_table's font closure (:8475-8483) set size, weight and line height, but not font_family or font_style. geometry's with_text sets both (src/geometry.rs:138-144). (verifier: Latent. The stated trigger does not reach these elements: KDE's reader states only menuFont, toolBarFont and the WM activeFont (native-theme/src/kde/fonts.rs:190-208), Windows menu, tooltip, status bar and caption, GNOME the title bar. No preset states a family for the sidebar, tab, segmented_control, expander or list fonts. All inherit defaults.font, the window's family, so only a user theme file would show it.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#12.
+
+#### M9-014 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:5820
+**Claim:** The Typography page's monospace sample takes the mono family only and ignores defaults.mono_font's size and weight. Its info says 'mono_font_size does not reach it'. The Basic page's Monospace type line (type_line) applies them.
+**Evidence:** mono_text sets .font_family(cx.theme().mono_font_family) and nothing else (demo.rs:5813-5825). info::typography::mono_text states the gap (info/typography.rs:133-139). type_line's Monospace arm uses defaults.mono_font size, weight and colour, scaled (demo.rs:8356-8360). The connector installs Theme::mono_font_size from defaults.mono_font.size (src/lib.rs:317). Every bundled preset's mono size and weight equal the body's today, so a difference shows only under a reader.
+**Fix proposed:** Add .text_size(cx.theme().mono_font_size) and defaults.mono_font.weight (native_theme_gpui::mono_font_weight) under a native theme, and change the info's size line to claim them.
+**Verdict:** CONFIRMED — mono_text (demo.rs:5813-5825) sets only cx.theme().mono_font_family. Its info admits that mono_font_size does not reach it (info/typography.rs:133-139). type_line's Mono role applies defaults.mono_font's size, line height, weight and family (demo.rs:8335-8366). No recorded decision makes the omission intended (git 775de7a8 only added the info line).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#13.
+
+#### M9-015 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1871
+**Claim:** The page tab row's menu icon is sized from defaults.icon_sizes.small read directly, where every other icon goes through geometry::icon_size_small (native_sized), and no icon_size_small geometry line is recorded for it.
+**Evidence:** native_tab_bar: icon.with_size(px(n.resolved.defaults.icon_sizes.small)) (demo.rs:1871). Elsewhere the same size comes from native_sized(cx, icon, geometry::icon_size_small) or SampleIcon::sized (:153-158, :1356, :4845) with a .geometry("icon_size_small") line (:1357-1358, :4840-4842). geometry::icon_size_small is exactly Size::Size(px(defaults.icon_sizes.small)) (src/geometry.rs:1104-1106).
+**Fix proposed:** Use native_sized(cx, icon, geometry::icon_size_small) and add bar_info.geometry("icon_size_small") when the icon is shown.
+**Verdict:** CONFIRMED — The page tab row's menu icon is sized with px(n.resolved.defaults.icon_sizes.small) (demo.rs:1871), the only direct icon_sizes read in the showcase's non-test code. Every other small icon uses native_sized(.., geometry::icon_size_small) and records geometry("icon_size_small") (e.g. demo.rs:1356-1358, :1628-1629). bar_info records no such line (:1846-1851).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A1#14.
+
+#### M9-016 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1255
+**Claim:** When SystemTheme::from_system() fails at startup (Linux, freedesktop icon set; or SF Symbols / Segoe Fluent), the Icons page draws every recoloured system icon black, also on gpui-component's dark theme, while the bundled sets take the theme's foreground.
+**Evidence:** The error branch's placeholder font has color Rgba::TRANSPARENT (app.rs:1255). It is passed as the icons' colour, fg = Some(original_font.color) (app.rs:1319-1332, and again in reload_icons app.rs:951-963 while no theme is installed), to FreedesktopLoader/SfSymbolsLoader/SegoeFluentLoader::color_opt (support.rs:465, 481-482, 761-777). color_opt keeps only r,g,b (native-theme icons.rs:89-91, 290-292), so the icon is recoloured [0,0,0]. rebuild_icon_caches draws IconSource::System icons with no colour of its own (app.rs:572-573), so the black stays; Bundled ones get cx.theme().foreground (app.rs:575).
+**Fix proposed:** Do not hand the placeholder's colour to the loaders: pass None (or cx.theme().foreground converted to Rgba) where no native theme is installed, e.g. fg_color = cx.native_theme().map(|_| self.original_font.color).
+**Verdict:** CONFIRMED — On the Err arm the placeholder font's colour is Rgba::TRANSPARENT (app.rs:1253, :1262), which becomes fg = Some(fc) (app.rs:1319-1320) for load_all_icons/load_gpui_icons; the freedesktop/SF/Segoe loaders take it through color_opt (support.rs:463-487), and fill_current_color/colorize_monochrome_svg drop alpha and write #000000 (native-theme/src/icons.rs:1050-1056, :947-950). rebuild_icon_caches gives System icons no tint (app.rs:569-575), while bundled ones get theme.foreground (app.rs:2050-2051). Icons whose own stylesheet sets `color` (Breeze) are left alone, which is why the claim says 'recoloured'. (verifier: S2 is fine for a fallback path, though it is reached only when the OS read fails.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#0.
+
+#### M9-017 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/pages/inputs.rs:29
+**Claim:** Activating a page's Checkbox, Radio, Switch or Toggle from the keyboard (Tab to the Inputs page's "Enable notifications", Space) changes the state but leaves the control drawn as before until something else redraws the window (with a bundled icon set nothing does on the Inputs or Buttons page).
+**Evidence:** The listeners set the field and do not notify: inputs.rs:29-40 (checkbox_a, checkbox_b, radio_index, switch_on), buttons.rs:88-93 (toggle_bold, toggle_italic), basic.rs:292-294 (basic_radio); the other listeners of the same pages do notify (inputs.rs:41-44, basic.rs:295-306). cx.listener only updates the entity (gpui-pre 0.3.9 app/context.rs:246-256, :972-979). A mouse click is masked because the mouse-up handler refreshes the window (elements/div.rs:3090-3094), but a keyboard click calls the click listeners with no refresh (div.rs:3040-3071), and gpui-base's Checkbox is a tab stop by default (checkbox.rs:77) whose on_click only calls on_change (checkbox.rs:391-393). The Icons page timer (app.rs:701) or a running animation masks it only where one runs.
+**Fix proposed:** Add cx.notify() to these seven listeners, as on_tab, on_segment, on_expander and on_rating have.
+**Verdict:** CONFIRMED — The listeners write the state and never notify (pages/inputs.rs:29-40; buttons.rs:88-93 for the Toggles; basic.rs:292-294 for the radio, which the Spinner hides). gpui-component documents the value as controlled: 'the owner must write the requested value and call cx.notify()' (gpui-component-0.7.3 src/checkbox.rs:104-108; the same text in radio.rs:125, switch.rs:89). gpui's keyboard click path calls the listeners with no refresh (gpui-pre-0.3.9 src/elements/div.rs:3040-3071), while the mouse-up path calls window.refresh() (:3086-3089), so clicking works and Space/Enter does not. No showcase test drives these by keyboard: a_checkbox_toggles_on_click_enter_and_space is the connector's own test (src/widgets/tests.rs:1353).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#1.
+
+#### M9-018 · M9a · ux · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1586
+**Claim:** `--screenshot <file>` on Linux prints a note and keeps the window open forever: no file is written and the process never exits, so a scripted run hangs instead of failing.
+**Evidence:** The non-macOS/Windows arm only eprintln!s "Self-capture not supported on this platform" and continues (main.rs:1586-1594). The egui showcase refuses the same flag before opening a window, `ERROR: capture::UNSUPPORTED` and exit 1 (showcase-egui/main.rs:305-309), and the CHANGELOG states that egui's --screenshot "refuses elsewhere" (CHANGELOG.md:359).
+**Fix proposed:** Before opening the window, report `ERROR: --screenshot captures on macOS and Windows only; use --capture with scripts/capture_window.sh` and std::process::exit(1), as the egui showcase does.
+**Verdict:** CONFIRMED — On Linux the non-macOS/Windows arm only prints a note and keeps running (main.rs:1586-1594, 'Continue running -- let the user capture manually'), so no file is written and the process does not exit. The behaviour is deliberate and documented: the README says `--screenshot FILE` is macOS and Windows only, with the capture scripts taking the window on Linux (connectors/native-theme-gpui/README.md:836-837), and generate_screenshots_gpui.sh uses --capture, never --screenshot (:79). It still goes against the showcase's own rule that a bad flag exits 1 'as a failed --screenshot does' (main.rs:702-705). (verifier: S3 rather than S2: documented as unsupported on Linux and used by no script; the remaining defect is an unsupported flag that hangs instead of exiting 1.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#2.
+
+#### M9-019 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1487
+**Claim:** When gpui_kit::open_window fails, the showcase prints "Fatal: failed to open main application window" and exits with status 0, so a capture or dump run reports success.
+**Evidence:** The Err arm calls cx.quit() and returns (main.rs:1487-1491); main returns () (main.rs:1452), so the exit status is 0. The other failure paths exit 1 (bad --pointer main.rs:1454-1457, failed dump main.rs:844-847, failed capture main.rs:1557-1560, 1578-1581), and the egui and iced mains return their toolkit's Result (showcase-egui/main.rs:294, showcase-iced.rs:12781).
+**Fix proposed:** Exit with 1 on that path (eprintln, then std::process::exit(1)), as the capture failures do.
+**Verdict:** CONFIRMED — The Err arm prints the message, calls cx.quit() and returns (main.rs:1486-1490). Neither gpui-kit 0.7.3 nor gpui-pre-linux 0.3.9 calls process::exit, so run() returns and main() ends with status 0. The other failure paths exit 1 (main.rs:1455, :1559, :1580).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#3.
+
+#### M9-020 · M9a · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:461
+**Claim:** Every window draw, on any page (the Basic page's Spinner animates at the display's rate), the inspector serialises the whole ResolvedTheme to a serde_json::Value and clones the LayoutTheme and gpui Theme, though they change only on a theme install or a Preferences change.
+**Evidence:** Inspector::render -> widget_tab (inspector.rs:700) -> PanelLook::of (inspector.rs:111) runs serde_json::to_value(r) (inspector.rs:461) and s.layout.clone() (inspector.rs:437) unconditionally, also for the hint shown before any hover; widget_tab also clones cx.theme() (inspector.rs:108) and the shown WidgetInfo (inspector.rs:110). The Inspector is an uncached view, so gpui renders it on every draw (gpui-pre 0.3.9 view.rs:468-489), and the connector Spinner on the Basic page requests a frame every frame (src/widgets/spinner.rs:505, :539).
+**Fix proposed:** Build PanelLook (with its JSON) once per install and keep it, e.g. on the Showcase, refreshed in apply_theme_by_name and demo::change_preferences, or keyed by an install counter the inspector compares; read theme fields by reference instead of cloning Theme.
+**Verdict:** CONFIRMED — Inspector::render clones the LayoutTheme on every render (inspector.rs:675-680). widget_tab clones cx.theme() and calls PanelLook::of before it checks whether anything is shown (inspector.rs:108-111), and PanelLook::of clones the layout and runs serde_json::to_value over the whole ResolvedTheme (inspector.rs:433-439, :461). The Inspector is a plain child view with no .cached() anywhere in the showcase, and gpui-pre renders an uncached AnyView on every window draw (view.rs:261-302, :470-477).
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* A2#4.
+
+#### M9-021 · M9a · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:701
+**Claim:** Where the chosen icon set's loading indicator is a frame animation (freedesktop themes), the showcase re-renders the whole window - page, chrome and inspector - at the frame rate of that animation on every page, though only the Icons page draws the frames.
+**Evidence:** start_animation_timer's task advances animated_frame_indices and calls cx.notify() on the Showcase every min frame duration whatever the page (app.rs:687-705), skipping only under reduce_motion (app.rs:693). The only reader of animated_frame_indices is the Icons page (pages/icons.rs:46-57; grep finds no other). Each notify re-runs Showcase::render and the inspector's per-frame work (finding above).
+**Fix proposed:** Step and notify only while active_page == Page::Icons (return early otherwise; the page shows frames.get(index) so a paused index is harmless), or start the timer in show_page when the Icons page opens and drop it when it closes.
+**Verdict:** CONFIRMED — start_animation_timer is called whenever the icon theme changes and at startup (app.rs:967, :1665). Each tick advances the frame indices and calls cx.notify() on the Showcase, with no check of active_page (app.rs:691-704). Only pages/icons.rs:54 reads animated_frame_indices.
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* A2#5.
+
+#### M9-022 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/pages/buttons.rs:95
+**Claim:** Every page but Basic pads its root with gpui's p_4 and spaces its sections with gap_5 (Theme Map gap_4), under every preset, ignoring the layout.window_margin and layout.section_gap the theme states and the Basic page applies.
+**Evidence:** Page roots: buttons.rs:95-96, inputs.rs:53-54, data.rs:52-53, feedback.rs:176-177, typography.rs:109-110, layout.rs:143-144, overlays.rs:107-108, charts.rs:23-24, icons.rs:271-272, theme_map.rs:277-278. The Basic page lays the same roles out with geometry::window_margin and geometry::section_gap (basic.rs:285-286, :777-778), and the iced showcase pads every page with layout.window_margin (showcase-iced.rs:224, :2893-2901). Inside the pages, rows mix gpui's gap_2/gap_3/gap_4/gap_6/gap_8 with with_gap(widget_gap) in the same section kind (feedback.rs:196-212 vs :235-249; inputs.rs:155 vs :239). The known item docs/todo.md:3094 covers only with_gap's unstated widget_gap, not these literals.
+**Fix proposed:** Pad each page root with with_padding(.., geometry::window_margin(&self.layout)) and space its sections with with_gap(.., geometry::section_gap(&self.layout)), rows with widget_gap, and where the theme states none use one named showcase constant per role (spec §3.1), as the iced Gaps struct does.
+**Verdict:** CONFIRMED — Every page root but Basic is `.gap_5().p_4()` (buttons.rs:95-96, inputs.rs:53-54, data.rs:52-53, feedback.rs:176-177, typography.rs:109-110, layout.rs:143-144, overlays.rs:107-108, charts.rs:23-24, icons.rs:271-272), and Theme Map is gap_4/p_4 (theme_map.rs:277-278). Basic applies geometry::section_gap and window_margin (basic.rs:285-286, :763, :777), and the Layout page prints both values while padding itself with p_4 (layout.rs:92-99, :143-144). I found no ruling in docs/ that exempts the pages.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#6.
+
+#### M9-023 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:294
+**Claim:** The status bar's font item names the theme's stated defaults.font.family (e.g. a preset's Roboto, or macOS's stated name) where gpui draws the platform's substitute or the .SystemUIFont alias: the same stated-vs-drawn defect as the inspector's Theme tab, in another row.
+**Evidence:** status_environment formats font.family from Showcase::original_font, the resolved spec as stated (chrome.rs:290-295; set at app.rs:1737, :1786). gpui-component's Theme::font_family, which every widget's text is drawn in, is native_theme_gpui::font_family's answer: the macOS alias or, with system-fonts, the platform's substitute where the system lacks the family (src/lib.rs:742-751). The inspector's Theme-tab row of this class is the known item docs/todo.md:3499 (inspector.rs:215-231, still as described); the status bar is not named there.
+**Fix proposed:** Name the drawn family where it differs, from native_theme_gpui::font_family(&font.family) (or cx.theme().font_family), in the form docs/todo.md:3499 prescribes, and fold this row into that item's fix.
+**Verdict:** CONFIRMED — status_environment formats app.original_font.family, the stated family (chrome.rs:289-294). This is the defect docs/todo.md:3499 records (M9b, 'Widget Info and the inspector must name the drawn family'), but that entry names only the inspector's Theme tab (inspector.rs:215-229) and Widget Info, not the status bar. The entry is incomplete rather than covering this, so the status bar should be added to it. (verifier: Fold it into the docs/todo.md:3499 entry, not a separate item.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#7.
+
+#### M9-024 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/layout.rs:308
+**Claim:** The Layout page's Accordion answers "Supported toolkits" with "gpui-component and iced; an egui connector is planned for v0.6.0.", though native-theme-egui shipped in v0.6.0.
+**Evidence:** layout.rs:305-309; CHANGELOG.md:359 lists native-theme-egui under 0.6.0. Text in the showcase is product text (the maintainer's 2026-10-16 standard).
+**Fix proposed:** "gpui-component, iced and egui", or count the connectors from one list so the line cannot go stale, as the presets answer beside it does (layout.rs:313-317).
+**Verdict:** CONFIRMED — The answer is the literal 'gpui-component and iced; an egui connector is planned for v0.6.0.' (pages/layout.rs:306-308). native-theme-egui and native-theme-egui-widgets are workspace members (Cargo.toml:8-9) and shipped in v0.6.0 (tag 942302d6).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#8.
+
+#### M9-025 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/feedback.rs:384
+**Claim:** The Feedback page's heading "Tags (7 colors + outline)" sits over six coloured Tags and two outlined ones.
+**Evidence:** TAGS (feedback.rs:85-109) holds Primary, Secondary, Danger, Success, Warning, Info plus two outlines; demo::TagKind has those six variants (demo.rs:5236-5243).
+**Fix proposed:** "Tags (6 colors + outline)", or format the count from TAGS.
+**Verdict:** CONFIRMED — TAGS has six filled kinds (Primary, Secondary, Danger, Success, Warning, Info) and two outlined ones (pages/feedback.rs:85-109); TagKind has exactly those six variants (demo.rs:5236-5243). The heading reads 'Tags (7 colors + outline)' (feedback.rs:384).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#9.
+
+#### M9-026 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/typography.rs:93
+**Claim:** Off macOS the Typography page's Kbd samples show Copy and Paste as the Super/Win key ("cmd-c", "cmd-v", "cmd-shift-p"), and the Feedback tooltip says "Save file (Cmd+S)" on every platform, while the showcase's own shortcuts are Ctrl elsewhere.
+**Evidence:** KBDS (typography.rs:92-97) mixes cmd-* with ctrl-z; gpui parses cmd as the platform modifier, Super or Win off macOS (gpui-pre 0.3.9 platform/keystroke.rs:152-154), whereas `secondary` is Cmd on macOS and Ctrl elsewhere (keystroke.rs:118, :143). The showcase binds its own keys with secondary (app.rs:125-130) and its toolbar infos say "Ctrl+K (Cmd+K on macOS)" (chrome.rs:128). feedback.rs:420 hard-codes Cmd+S.
+**Fix proposed:** Use "secondary-c", "secondary-v", "secondary-shift-p", "secondary-z", and word the tooltip as the toolbar's are ("Ctrl+S, Cmd+S on macOS") or build it from the keystroke.
+**Verdict:** CONFIRMED — KBDS holds 'cmd-c', 'cmd-v' and 'cmd-shift-p' (pages/typography.rs:92-96). Off macOS gpui-component's Kbd renders the platform modifier as 'Win' (gpui-component-0.7.3 src/kbd.rs:140-146, :164-166). The tooltip text is the fixed 'Save file (Cmd+S)' (pages/feedback.rs:420). The showcase binds its own shortcuts as secondary-* (app.rs:126-129), which is Ctrl off macOS; its palette is secondary-k, not cmd-shift-p.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#10.
+
+#### M9-027 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/support.rs:466
+**Claim:** load_all_icons and load_gpui_icons copy their whole loader match for Linux and non-Linux, and their --icon-theme branch loads by native_icon_name(role) what FreedesktopLoader::new(role) already loads by that name, under a comment saying the name lookup is needed.
+**Evidence:** support.rs:462-499 and :756-794 differ only in the Freedesktop arm. The override arm builds FreedesktopLoader::new(native_icon_name(role, Freedesktop)).theme(t) (support.rs:469-472, :759-765); FreedesktopLoader::load for a role looks up icon_name(role, IconSet::Freedesktop) itself (native-theme icons.rs:340-347), so both paths give the same icon; the comment at support.rs:467-468 says otherwise. The theme precedence cli_override.or(default_theme) is also kept three times (support.rs:466, :728-731, app.rs:714-718).
+**Fix proposed:** One match per loader with only the Freedesktop arm under cfg, loading FreedesktopLoader::new(role).theme(t) for t = cli_override.or(default_theme); pass the one theme Showcase::freedesktop_theme already gives instead of two Options.
+**Verdict:** CONFIRMED — The two cfg arms of load_all_icons are the same match apart from the cli_override branch (support.rs:461-499), and load_gpui_icons has the same split. FreedesktopLoader::new(role) already loads icon_name(role, IconSet::Freedesktop) (native-theme/src/icons.rs:343-350), which is the native_icon_name(role, Freedesktop) the branch calls (support.rs:22, :470-471), so `l.theme(t)` alone would do. The comment at support.rs:467-468 says otherwise.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#11.
+
+#### M9-028 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1214
+**Claim:** Showcase::new repeats install_system_theme's body - fonts, icon theme and set, layout, apply_system_theme and the mode switch - and spells the "(default)" placeholder font twice.
+**Evidence:** app.rs:1214-1244 against app.rs:1732-1747 (same fields from the same SystemTheme, same apply_system_theme and Theme::change); the two ResolvedFontSpec literals at app.rs:1248-1256 and :1257-1265 are identical.
+**Fix proposed:** One helper that takes a SystemTheme and returns (or sets) the fonts, icon theme, icon set and layout and installs it, used by new and install_system_theme; one const or fn for the placeholder spec.
+**Verdict:** CONFIRMED — The Ok arm of Showcase::new (app.rs:1214-1243) repeats install_system_theme's steps: fonts, icon theme and set, layout, apply_system_theme and the Theme::change mode switch (app.rs:1737-1747). The two '(default)' ResolvedFontSpec blocks are identical (app.rs:1248-1265). The copies have already drifted: install_system_theme lays the user's PreferenceOverrides over the OS preferences (app.rs:1730-1731) and the constructor's copy does not. (verifier: The drift is a reason to share one helper; it is harmless only while no override exists at startup.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#12.
+
+#### M9-029 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/support.rs:529
+**Claim:** role_for_gpui_icon hand-copies the connector's IconRole-to-IconName table, which the showcase could derive, so a change to the connector's mapping leaves the Icons page's role column and the role-based loads stale.
+**Evidence:** The 29 arms (support.rs:532-562) restate native_theme_gpui::icons::icon_name (src/icons.rs:141-197) in reverse; they agree today.
+**Fix proposed:** Derive it: IconRole::ALL.iter().copied().find(|r| icon_name(*r).is_some_and(|i| i.path() == icon.clone().path())) (first match keeps DialogError for CircleX, as the comment wants).
+**Verdict:** CONFIRMED — role_for_gpui_icon (support.rs:529-563) restates native_theme_gpui::icons::icon_name (src/icons.rs:141-195) by hand; the two agree today. The showcase already calls icon_name (pages/icons.rs:145). The table could be derived by walking IconRole::ALL and matching icon_name(role).path() against GPUI_ICONS, first role winning, and no test checks that the two agree.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#14.
+
+#### M9-030 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:409
+**Claim:** The command palette lists the three colour modes by hand instead of AppColorMode::ALL, the list the colour-mode Select and the Theme menu order follow.
+**Evidence:** chrome.rs:409-413 against app.rs:208-212.
+**Fix proposed:** AppColorMode::ALL.map(..).
+**Verdict:** CONFIRMED — The palette lists System, Light and Dark by hand (chrome.rs:409-413); AppColorMode::ALL (app.rs:208-212) is what the colour-mode Select uses (app.rs:1029-1033). One part of the claim is inaccurate: the Theme menu does not follow ALL either. It is hand-listed too, with literal labels (chrome.rs:44-46), so a fix should cover both places.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A2#15.
+
+#### M9-031 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:770
+**Claim:** Under every native preset (default build), Widget Info says defaults.line_height is 'not applied' (gpui's phi kept) for ten elements that do apply it: the Basic switches, the three side-panel labels, the inspector and page tab bars, the Basic tabs, the segmented control, the expander header and the status bar text.
+**Evidence:** HOW lines leaves.rs:770 (basic.switches), :795/:800/:805 (side-panel labels), :820/:825/:830 (inspector tabs, page tabs, basic.tabs), :835 (basic.segmented), :860 (basic.expander header half), :885 (chrome.status_bar). What draws them: sidebar_label, the non-widgets tab rows and segmented use demo::font_text (demo.rs:1436, :1754, :2005, :2095), which sets .line_height(line_height_of(n, font)) = size x defaults.line_height (demo.rs:1932-1938, :1953-1955); widgets::TabBar labels use widgets::font_text (src/widgets/tab_bar.rs:404 -> src/widgets/mod.rs:197-203, line_height(relative(defaults.line_height))); widgets::Switch's label sets line_height(relative(label_line)), label_line = defaults.line_height (src/widgets/switch.rs:332, :383); native_expander's header sets line_height(line_height_of(n, &e.font)) (demo.rs:6549); the status bar gets it twice, from geometry::status_bar (with_coloured_text -> with_text -> with_line_height, src/geometry.rs:139, :149-151, :563-569) and from .line_height(text_line) (demo.rs:994). All ten lines were written in 5f74b29e together with the code that applies the line height, and no gate reads HOW text.
+**Fix proposed:** Rewrite the ten lines to name the route actually taken (e.g. 'gpui: the label's line box, its size by defaults.line_height (demo::font_text)', 'widgets::TabBar's label (widgets font_text)', 'widgets::Switch's label', 'geometry::status_bar's line height'), and drop the phi claims.
+**Verdict:** CONFIRMED — All ten apply defaults.line_height while their HOW rows (info/leaves.rs:770, 797-835, 861, 881) say 'not applied': widgets::Switch's label sets line_height(relative(defaults.line_height)) (src/widgets/switch.rs:378-383); sidebar_label, the non-widgets tab bars, the Basic tab row's fallback and the segments go through demo::font_text, which sets line_height_of (demo.rs:1436, 1754, 2005, 2095, 1932-1935); the widgets-build tab bars through widgets::font_text (src/widgets/mod.rs:197-202, tab_bar.rs:404); the expander header sets line_height_of (demo.rs:6549); the status bar sets it twice, geometry::status_bar via with_text (src/geometry.rs:563-569, 138-150) and bar.line_height (demo.rs:994).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#0.
+
+#### M9-032 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:1213
+**Claim:** On every preset (all seventeen state layout.widget_gap), the status bar's Widget Info says layout.widget_gap is 'not applied -- StatusBar's own gap_2 between its items', while the toggle and the environment text are spaced by layout.widget_gap.
+**Evidence:** demo::status_bar puts the toggle and the environment in one left item, with_gap(h_flex(), widget_gap) (demo.rs:1000-1003), with widget_gap = geometry::widget_gap(&app.layout) (chrome.rs:270-276); with_gap sets .gap(g) where stated (support.rs:308-313). chrome.status_bar lists layout.widget_gap_px (docs/showcase-elements.toml), so its listed panel shows this false line, and the not_themeable 'item gap' note (info/chrome.rs:1080-1082, kept in the listed form) names only upstream's gap_2.
+**Fix proposed:** Say 'gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's left region (demo::status_bar)'; let info::status_bar's 'item gap' note add that the left region's single item is spaced inside by layout.widget_gap.
+**Verdict:** CONFIRMED — demo::status_bar wraps the toggle and the environment text in with_gap(h_flex(), widget_gap) (demo.rs:1000-1011, support.rs:308-313), widget_gap being geometry::widget_gap(&app.layout) (chrome.rs:276, src/geometry.rs:1387); the HOW row for chrome.status_bar layout.widget_gap_px (info/leaves.rs:1210-1214) says 'not applied'. Upstream's gap_2 (status_bar.rs:84, :88) still spaces the regions, but between the two items it is the theme's gap.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#1.
+
+#### M9-033 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:1084
+**Claim:** With any native theme installed, the status bar's Widget Info lists its top edge under 'Not themeable' as 'border_t_1, a 1px rule ... which geometry::status_bar leaves as it is', while the showcase draws the edge at status_bar.border.line_width and the same panel's leaf row says so.
+**Evidence:** demo::status_bar computes edge = status_bar.border.line_width and calls .when_some(edge, |bar, edge| bar.border_t(edge)) (demo.rs:974-993), and adds a 'top edge' config line (demo.rs:975-983) that the listed form drops (inspector.rs keeps only not_themeable notes for a listed element; chrome.status_bar is listed, elements.rs LISTED). The HOW line status_bar.border.line_width_px reads 'the top edge's width (demo::status_bar)' (leaves.rs:1884-1886), so the panel contradicts itself. info::status_bar(t, styled) writes the note unconditionally (chrome.rs:1083-1086).
+**Fix proposed:** Write the 'edge' note only where styled is false; where a native theme is installed say the edge is status_bar.border.line_width, drawn by demo::status_bar over upstream's border_t_1 (or move it into the HOW line and drop the note).
+**Verdict:** CONFIRMED — info::status_bar adds the not_themeable 'edge: border_t_1 ... geometry::status_bar leaves as it is' unconditionally (info/chrome.rs:1082-1085), while demo::status_bar, under a native theme, adds a 'top edge: status_bar.border.line_width' config and draws border_t(edge) (demo.rs:975-992); the leaf row says the same (info/leaves.rs:1884-1887), so the panel contradicts itself.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#2.
+
+#### M9-034 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:249
+**Claim:** Under material-3 (popover.border.line_width 0, both modes) the app menus' Widget Info claims a 'menu edge' swatch in popover.border.color, but the popup draws no edge: the same unconditional-claim class M8 T5 fixed for the popover and the Toolbar.
+**Evidence:** info::app_menus pushes claim("menu edge", "color", stated(r.popover.border.color), "showcase") whenever a native theme is installed (chrome.rs:249); MenuLook takes frame_width = px(popover.border.line_width) (demo.rs:296-297) and the popup draws .border(look.frame_width).border_color(look.frame) (demo.rs:712-713), so a 0 width paints nothing. material-3.toml states light/dark popover.border.line_width_px = 0.0. The info target chrome-app-menu-bar is not in elements.rs LISTED, so its colour claims are shown and copied. M8 T5 (40348498) guarded the same claim in info/overlays.rs:270 with `r.popover.border.line_width > 0.0`.
+**Fix proposed:** Guard the claim as overlays.rs does: push the 'menu edge' claim only where r.popover.border.line_width > 0.0, and let the 'menu edge' config say 'none: popover.border.line_width is 0' otherwise.
+**Verdict:** CONFIRMED — material-3 states popover.border.line_width_px = 0.0 in both modes (presets/material-3.toml:374, :879); the menu popup's frame is border(look.frame_width) = px(p.line_width) (demo.rs:297, 709-714), so no theme edge is drawn and only popover_style's ring remains, yet app_menus claims a 'menu edge' swatch in popover.border.color unconditionally (info/chrome.rs:249); the popover's info gates the same claim on line_width > 0 (info/overlays.rs:270-288, 40348498).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#3.
+
+#### M9-035 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:971
+**Claim:** Under adwaita, kde-breeze and every other preset that states button.border.padding, the toolbar buttons' and the status-bar toggle's Widget Info say, under 'Not themeable', that their size is upstream's h_8/px_2p5 (h_6/px_2 for the toggle), while the showcase replaces height and side padding with the stated padding and rounds them with button.border.corner_radius.
+**Evidence:** toolbar_button writes not_themeable("size", "h_8 with px_2p5 at the default Size ...") unconditionally (chrome.rs:969-978), panel_toggle writes "h_6 with px_2 at Size::Small ..." (chrome.rs:483-486). Both builders refine the Button with tool_button_box (demo.rs:1151, :1252, :1363), i.e. tool_box_of: h_auto where a vertical side is stated, pt/pr/pb/pl for each stated side, rounded(button.border.corner_radius) (demo.rs:8199-8220). adwaita states padding_horizontal_px 17 / vertical 5, kde-breeze 6 / 6 (presets). The elements are listed (chrome.toolbar.*, chrome.status_bar.toggle), so these not_themeable notes are shown, beside HOW lines that say the padding 'pads the icon, where stated' (leaves.rs:144-279).
+**Fix proposed:** Pass whether a native theme is installed (or the stated ResolvedPadding) to toolbar_button and panel_toggle and write the upstream-size note only for the sides and height the theme leaves unstated, naming button.border.padding / corner_radius for the rest.
+**Verdict:** CONFIRMED — toolbar_button and panel_toggle refine the Button with tool_button_box (demo.rs:1149-1152, 1361-1364), which replaces the height (h_auto) and each stated padding side and rounds by button.border.corner_radius (demo.rs:8199-8220); adwaita, kde-breeze and material-3 state padding_horizontal/vertical (adwaita.toml:132-133, kde-breeze.toml:145-146, material-3.toml:131-132). The info still lists 'size: h_8 with px_2p5' (info/chrome.rs:969-978) and 'h_6 with px_2' for the toggle (info/chrome.rs:484-485) under Not themeable, with no native-theme branch.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#4.
+
+#### M9-036 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:658
+**Claim:** In a build without the `widgets` feature, with a native theme installed, the page and inspector tab bars' Widget Info says tab.min_height 'Nothing applies it: there is no geometry::tab -- our gap', while demo::tab_bar gives every tab min_w(tab.min_width) and min_h(tab.min_height).
+**Evidence:** underline_tab_bar's not_themeable 'height' note (chrome.rs:657-660) is written for every TabBar (inspector_tab_bar, page_tab_bar, chrome.rs:666-672, :694). In demo::tab_bar the non-widgets native branch builds Tab::new().child(font_text(..)).min_w(px(t.min_width)).min_h(px(t.min_height)) (demo.rs:1750-1756) and info::tab_font adds a config line saying so (chrome.rs:679), which the listed form (chrome.page_tabs, chrome.side_panel.inspector_tabs) drops, leaving only the false note.
+**Fix proposed:** Give underline_tab_bar the native theme (or a flag) and, where one is installed, replace the note with 'tab.min_height, through the Tab's style, which its own h does not clear (demo::tab_bar)'.
+**Verdict:** CONFIRMED — In the non-widgets path demo::tab_bar gives each tab min_w(tab.min_width).min_h(tab.min_height) (demo.rs:1749-1757) and info::tab_font adds the 'size: each tab at least tab.min_width by tab.min_height' config (info/chrome.rs:671-676), while underline_tab_bar's not_themeable 'height' says 'Nothing applies it: there is no geometry::tab -- our gap' (info/chrome.rs:656-659) under every theme, so both lines show at once.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#5.
+
+#### M9-037 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:46
+**Claim:** Hovering or pressing the inspector's Copy box, Widget Info says button.hover_text_color and button.active_text_color letter its text, but the box never applies either: its text stays sidebar.font.color; the showcase's own element ignores two resolved values.
+**Evidence:** HOW lines chrome.info.copy button.hover_text_color 'the Copy box's text under the pointer' (leaves.rs:43-47) and button.active_text_color 'the Copy box's text while pressed' (leaves.rs:53-57). inspector.rs builds the box with .hover(|s| s.bg(hover)) and .active(|s| s.bg(active)) only (inspector.rs:594-599), from copy_hover/copy_active (inspector.rs:459-460); its label is look.text(div()), which sets text_color(self.text) on the child (inspector.rs:468-474, :600), and inspector.rs reads neither hover_text_color nor active_text_color anywhere.
+**Fix proposed:** Apply them: put the label's colour on the box and add text_color(stated(r.button.hover_text_color)) to the hover style and text_color(stated(r.button.active_text_color)) to the active style (or a group_hover on the label); the HOW lines then hold.
+**Verdict:** CONFIRMED — PanelLook sets only copy_hover/copy_active backgrounds on the Copy box (inspector.rs:459-460, 594-599); its text is look.text(div()), which sets text_color(sidebar.font.color) on the text element itself (inspector.rs:465-472, 600), so no hover or pressed text colour can reach it. The HOW rows (info/leaves.rs:42-55) claim button.hover_text_color and active_text_color letter the text; the element lists both leaves (docs/showcase-elements.toml:494).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#6.
+
+#### M9-038 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:203
+**Claim:** Under material-3 (tooltip.border.line_width 0) the geometry::tooltip_content line says the width is tooltip.max_width less the padding 'and its 1px border (Tooltip::render: border_1)', but the builder subtracts twice tooltip.border.line_width, here 0, because geometry::tooltip replaces upstream's border_1 with the theme's width.
+**Evidence:** GEOMETRY_NOTES tooltip_content (mod.rs:202-204); src/geometry.rs:526 `let inner = t.max_width - left - right - 2.0 * t.border.line_width;`, and geometry::tooltip sets .border(px(t.border.line_width)) (src/geometry.rs:477). material-3.toml states light/dark tooltip.border.line_width_px = 0.0. every_geometry_builder_has_a_note checks the notes' names only, every_prose_citation_still_exists only that border_1 still exists in tooltip.rs.
+**Fix proposed:** Say 'and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1'.
+**Verdict:** CONFIRMED — geometry::tooltip_content subtracts 2.0 * tooltip.border.line_width (src/geometry.rs:526), and geometry::tooltip sets border(px(t.border.line_width)) over upstream's border_1 (src/geometry.rs:477); material-3 states tooltip.border.line_width_px = 0.0 (material-3.toml:221). The GEOMETRY_NOTES text says 'its 1px border (tooltip.rs, Tooltip::render: border_1)' (info/mod.rs:202-204), wrong for any width other than 1.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#7.
+
+#### M9-039 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:174
+**Claim:** Five GEOMETRY_NOTES understate what their builder carries since 35785f1e: button_label, toggle, title_bar, toolbar and link name the font's size and weight (and colour) but not its family and style, and tooltip omits the border width and the drop shadow, so under the KDE reader the title bar's line hides the very family that commit made it carry.
+**Evidence:** with_text sets font_family(crate::font_family(&font.family)) and font_style (src/geometry.rs:138-144, added by 35785f1e 'the geometry builders carry a font's family and style, so the KDE reader's menu, toolbar and title-bar families and italic flag reach gpui'); button_label/toggle (:280-297), title_bar (:917-923), toolbar (:1011-1026) and link (:1367-1375) go through it, while their notes (mod.rs:174-180, :282-283, :290-291, :343-344) say 'size and weight'. geometry::tooltip also sets .border(px(t.border.line_width)) and box_shadow from tooltip.border.shadow_enabled in defaults.shadow_color (src/geometry.rs:460-482), which the tooltip note (mod.rs:198-200) does not name. The HOW lines already say 'family, size, weight and style' for button.font (leaves.rs:354) and toolbar.font (:2210), so the two texts disagree.
+**Fix proposed:** Name 'family, size, weight and style' in the five notes, and add 'tooltip.border.line_width, and shadow_md's layers in defaults.shadow_color where tooltip.border.shadow_enabled holds' to the tooltip note.
+**Verdict:** CONFIRMED — Since 35785f1e with_text sets font_family and font_style (src/geometry.rs:138-145), and title_bar, toolbar, button_label, toggle and link go through it (src/geometry.rs:281, 1013, 1369 among them); their notes name only size and weight (and colour) (info/mod.rs:174-179, 282-283, 290-291, 343-344). The tooltip note names border.color but not the border width or the shadow geometry::tooltip sets (src/geometry.rs:460-482 vs info/mod.rs:198-200). every_geometry_builder_has_a_note checks only presence (src/showcase.rs:576).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#8.
+
+#### M9-040 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1932
+**Claim:** Where a theme states a widget font family or an italic style for sidebar.font, tab.font (non-widgets build), segmented_control.font, expander.font, list.item_font or list.header_font, the showcase draws those labels in the window's family and upright, and Widget Info documents the omission ('family: the window's') instead of the showcase applying it.
+**Evidence:** demo::font_text sets text_size, line_height and font_weight only (demo.rs:1932-1938), used by sidebar_label (:1436), tab_bar/tab_row non-widgets (:1754, :2005) and segmented (:2095); files_table's rows and header set text_size and font_weight (demo.rs:~8521-8522) and native_expander's header text_size/line_height/font_weight (demo.rs:6547-6550), none of them font_family or font_style. leaves.rs records it: :976, :1330, :1365, :1711, :1793. The connector fixed the same gap in its widgets (M6-21, widgets/mod.rs:197-203 sets family and style) and in geometry::with_text (35785f1e); the showcase helpers were left behind.
+**Fix proposed:** Give demo::font_text, files_table and native_expander's header font_family(native_theme_gpui::font_family(&font.family)) and the font's style (as src/widgets/mod.rs:197-203 does), then change the five HOW lines to 'family, size, weight and style'.
+**Verdict:** CONFIRMED — demo::font_text sets size, line height and weight but no font_family or style (demo.rs:1932-1937), and it draws sidebar.font, tab.font (non-widgets), segmented_control.font (demo.rs:1436, 1754, 2005, 2095); the expander header (demo.rs:6546-6550, accordion_title src/geometry.rs:745-750) and files_table's rows/header (demo.rs:8474-8524) set no family either; the HOW rows record 'family: the window's' (info/leaves.rs:976, 1330, 1365, 1711, 1793). M6-21 ruled the same omission a bug in the connector's widgets and fixed it (docs/todo_code-review-findings.md:9464-9469); the showcase's own labels were left. (verifier: Latent: no bundled preset or reader states a distinct family or an italic style for these widgets today (the KDE reader's own families are menu, toolbar, title bar), so no pixel changes on any preset; S3 seems closer than S2.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#9.
+
+#### M9-041 · M9a · bug · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:97
+**Claim:** The Widget Info route lines (leaves.rs HOW, 451 entries, about 45 upstream line citations) are read by no gate, and some have already drifted: 'button.rs:102-141, 1167-1172' now points at the Warning variant's hover fill, and a bare 'button.rs' also matches gpui-base's src/button.rs, which the colour gate would reject as ambiguous.
+**Evidence:** every_colour_claim_is_read_at_the_line_it_cites reads only claim( calls and every_prose_citation_still_exists only `.config/.not_themeable/.instance` texts and GEOMETRY_NOTES, and only the 'file.rs, Symbol' form (src/showcase.rs:2005-2031, :2586-2620, :2648-2665); HOW is a const array of tuples, so none of its 'file.rs:N' citations is checked. gpui-component 0.7.3 button/button.rs:1167-1172 is the Warning arm of ButtonVariant::hovered; the Custom arm is :1185 and the hover fg match :1198-1203. Lines leaves.rs:97, :183, :188, :193 carry the stale range. info/chrome.rs:921 likewise cites 'sficons.rs:110 and winicons.rs:173, native-theme 0.5.9'; today sficons.rs:110 is a doc comment and the IconData::rgba returns are sficons.rs:134 (load_sf_icon_by_name) and winicons.rs:176 (hicon_to_rgba).
+**Fix proposed:** Extend every_prose_citation_still_exists (or a sibling) to read info::leaves::HOW's texts and to resolve 'file.rs:N' citations as the colour gate does (unambiguous file, line in range); fix the four 1167-1172 ranges to :1185, :1198-1203 with the gpui-component/button/button.rs prefix, and cite chrome.rs:921 by function (sficons.rs, load_sf_icon_by_name; winicons.rs, hicon_to_rgba) without the 0.5.9 pin.
+**Verdict:** CONFIRMED — No gate parses HOW text: leaves.rs is in SHOWCASE_FILES (src/showcase.rs:74-75) but holds no claim( or note call, every_listed_leaf_has_a_route only checks that how() finds a route (tests.rs:9050-9061), and the prose gate reads only 'file.rs, Symbol' (src/showcase.rs:2586-2620). 'button.rs:102-141, 1167-1172' (info/leaves.rs:97, 183, 188, 193): in upstream button/button.rs, lines 1167-1172 now fall on the Warning variant's hover fill (:1163-1169) and the start of the Success arm; the Custom hover is at :1184. One detail is wrong: a bare 'button.rs' would not be rejected as ambiguous. candidates() returns gpui-base/src/button.rs as the only direct match and skips the basename sweep (src/showcase.rs:2142-2158), so the colour gate would quietly read gpui-base's file. (verifier: Holds as S4. The ambiguity detail is wrong, and what happens is worse: a bare 'button.rs' in a claim would resolve to gpui-base's file without a word. The candidates() doc comment at src/showcase.rs:2123 ('button.rs is gpui-component's button/button.rs') is stale for the same reason.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#10.
+
+#### M9-042 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:722
+**Claim:** Three generic HOW entries can never be shown: every element that lists their leaf is matched by an earlier, more specific entry.
+**Evidence:** how() returns the first entry whose prefix the element id starts with (leaves.rs:2297-2301). ('', defaults.icon_sizes.large_px) at :720-723 is shadowed by 'basic.icons.large' (:715-718), the only lister; ('', defaults.line_height) at :890-893 by the per-element entries :750-888, which cover every lister; ('', toolbar.font) at :2205-2208 by 'chrome.toolbar.' (:2160-2163). Found by matching every (element, leaf) of docs/showcase-elements.toml against HOW.
+**Fix proposed:** Delete the three entries, or add a test that every HOW entry is the chosen line for at least one listed (element, leaf).
+**Verdict:** CONFIRMED — Matching every element's leaves (docs/showcase-elements.toml) against HOW in order, as how() does (info/leaves.rs:2297-2300), three entries never come up first: '' defaults.icon_sizes.large_px (info/leaves.rs:722), '' defaults.line_height (:892) and '' toolbar.font (:2207). Earlier, more specific entries take every element that lists them.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#11.
+
+#### M9-043 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/text.rs:227
+**Claim:** Every Typography-page Label's Widget Info ends its 'font weight' note with the panel's own history ('The panel used to call that hardcoded, which is the reverse: nothing sets it'), changelog prose in product text.
+**Evidence:** inherited_font's not_themeable("font weight", ...) (text.rs:227), shown by gallery_label and sized_label (text.rs:264, :292).
+**Fix proposed:** Drop the last sentence; the note already states what sets the weight.
+**Verdict:** CONFIRMED — The text is at info/text.rs:79, not :227 (the file has 155 lines). inherited_font's 'font weight' note ends 'The panel used to call that hardcoded, which is the reverse: nothing sets it', history in product text, and gallery_label and sized_label (info/text.rs:116, 144) put it on every Typography Label that inherits its font. (verifier: The cited line is wrong (info/text.rs:79). The same note's 'and button since v0.5.9' is history of the same kind.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A3#12.
+
+#### M9-044 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:206
+**Claim:** Under every native preset except windows-11 (adwaita, kde-breeze, material-3, macOS, the community presets), a GroupBox's and a card's Widget Info says the content is edged in card.border.color at card.border.line_width 'on every variant', though card.border.line_width resolves to 0 there, so no edge is drawn and an Outline GroupBox loses the outline upstream draws; on windows-11, where the 1px edge is drawn, its colour is never claimed.
+**Evidence:** card's border is BorderKind::None (native-theme resolve/validate_helpers.rs:255-291): an unstated line_width is 0 and colour TRANSPARENT; only windows-11.toml states card.border (line_width_px = 1.0). geometry::group_box_content sets .border(px(c.border.line_width)) (native-theme-gpui src/geometry.rs:731), which overrides upstream's Outline border_1 (gpui-component group_box.rs:172). info/layout.rs:206-209 (group_box, (_, true) arm) and :444 (card) state the edge unconditionally, and neither adds a colour claim for card.border.color when line_width > 0.
+**Fix proposed:** Branch on r.card.border.line_width > 0.0 as info::buttons::toolbar does (buttons.rs:786-797): claim stated(r.card.border.color) and print the width when it is drawn; otherwise say no edge is drawn, and that an Outline box's own border is removed by the refinement.
+**Verdict:** CONFIRMED — geometry.rs:727-734 sets .border(px(card.border.line_width)) on the content, and card's BorderKind::None resolves an unstated line_width to 0 (native-theme/src/resolve/validate_helpers.rs:280-289). Only windows-11 states 1px (windows-11.toml card.border). So elsewhere the 0 overrides the Outline's border_1 (gpui-component group_box.rs:173-176), while info/layout.rs:206 and :445 still describe an edge 'on every variant'. Neither group_box nor card makes a colour claim for card.border.color (layout.rs:183-190, :436-441).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#0.
+
+#### M9-045 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:680
+**Claim:** With kde-breeze, adwaita or material-3 installed, every native TabBar's Widget Info (page tabs, inspector, Basic page) says under 'selection mark' that tab.* states no indicator and that Breeze's Highlight strip is no tab field, while widgets::TabBar draws exactly that strip from tab.active_indicator_* and the same panel claims its colour.
+**Evidence:** src/widgets/tab_bar.rs:125-136 builds TabIndicator from active_indicator_color, _width and _side, drawn on the selected tab (:146-147); kde-breeze.toml:263-265, adwaita.toml:227-229, material-3.toml:270-272 state all three. info/layout.rs:659-668 adds the 'selected tab's line' claim (on color.is_some() alone, though the widget needs all three), and :680 then denies any indicator. The config lines also omit tab.item_gap and the indicator's width and side.
+**Fix proposed:** Replace the :680 note with a config line built from TabLook::of(r).indicator: tab.active_indicator_width and _side where it is Some, 'none: the theme states no indicator' where None; gate the colour claim on the same Option; add a tab.item_gap line.
+**Verdict:** CONFIRMED — info/layout.rs:680 is unconditional. Yet layout.rs:658-667 claims tab.active_indicator_color where it is stated, and widgets/tab_bar.rs:125-136 draws the strip. adwaita, kde-breeze and material-3 state active_indicator_color, width and side (adwaita.toml:227-229, kde-breeze.toml:263-265, material-3.toml:270-272).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#1.
+
+#### M9-046 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:532
+**Claim:** The theme-drawn expander's Widget Info (Basic page) is wrong on kde-breeze, adwaita and windows-11: it claims the border colour as drawn with frame_enabled false (KDE draws no frame), describes one frame 'round the whole and between the items' where frame_enabled is true (adwaita, windows-11: each item framed on its own, widget_gap apart, and adwaita's 0px line draws nothing), and says the padding is 'not stated: upstream's px_3 ... pb_2' where expander.border.padding is stated (adwaita 14/8, windows-11 16/0/0).
+**Evidence:** demo.rs:6488-6509 (framed, own_frames, shared_frame), :6541-6546 (header padded(..., &e.border.padding, EXPANDER_PADDING_X, None)), :6578-6607 (body pr/pb only when frame_enabled is None). kde-breeze.toml:466 frame_enabled=false; adwaita.toml:398, :403-407 frame true, line 0, padding 14/8; windows-11.toml:555, :561-564. info/layout.rs:532-537 claims the border unconditionally, :566-569 has one text for true and None, :584 states padding as unstated unconditionally.
+**Fix proposed:** Claim the border colour only when the frame is drawn (frame_enabled != Some(false) && line_width > 0); give frame_enabled Some(true) its own edge text (each item framed by expander.border, layout.widget_gap apart); build the padding line from e.border.padding per side with EXPANDER_PADDING_X on an unstated left/right, none on unstated top/bottom, and the body's pr/pb only in the unstated-frame case.
+**Verdict:** CONFIRMED — info/layout.rs:532-537 claims the border colour unconditionally, even where frame_enabled is false (kde-breeze.toml:466). The edge text at layout.rs:569-572 says 'round the whole and between the items' when frame_enabled is Some(true), but demo.rs native_expander frames each item on its own (own_frames, the item's .border(line_width)). layout.rs:584 says the padding is unstated, but demo.rs passes &e.border.padding to padded() for the header, and adwaita (14/8) and windows-11 (16/0/0) state it. One sub-claim is wrong: adwaita's expander line is not 0px. It inherits defaults.border.line_width 1.0 (adwaita.toml:72; expander is a Full border widget, inheritance.rs:220), so that frame is drawn.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#2.
+
+#### M9-047 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:360
+**Claim:** info::layout::expander's native arms (the hover_background claim, expander.border colour/config and font line) can never run: demo::expander returns native_expander whenever a native theme is installed, so expander() is only ever called with native None; its demo twin (demo.rs:6371-6409) is dead too, and its upstream claims repeat accordion()'s.
+**Evidence:** demo.rs:6340-6350 returns early on Some(n); the call at :6351-6357 passes native.as_ref().map(..), always None there; info/layout.rs:360-374 and :375-384 match Some(r). The bg/chevron/own-icons/border/line/open-and-closed-title claims at :328-358 and :385-397 duplicate accordion() at :253-300.
+**Fix proposed:** Drop the native parameter and arms from info::layout::expander and demo::expander's Some(n) match, and build the shared upstream Accordion claims in one helper used by accordion() and expander().
+**Verdict:** CONFIRMED — demo.rs:6340-6350 returns native_expander whenever cx.native() is Some, so info::layout::expander (its only caller is demo.rs:6351) always receives None. Its Some arms (layout.rs:360-384) and demo.rs's `match &native { Some(n) ... }` blocks after it never run. No test calls layout::expander (tests.rs:6457-6477 calls accordion only).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#3.
+
+#### M9-048 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:716
+**Claim:** On any preset that leaves segmented_control.border.padding top or bottom unstated, the segmented control's size line says every unstated side is padded by upstream's 12px, but only the left and right sides are.
+**Evidence:** demo.rs:2092-2095: pl/pr fall back to SEGMENT_PADDING (12px); pt/pb are set only when_some(b.padding.top/bottom). info/layout.rs:716 says 'on a side left unstated, by 12px'.
+**Fix proposed:** Say 12px on an unstated left or right side and none on an unstated top or bottom, as native_tab_row's padding line does (layout.rs:678).
+**Verdict:** CONFIRMED — demo.rs segmented (around :2076-2080) pads only the left and right sides with SEGMENT_PADDING where they are unstated; an unstated top or bottom gets nothing (when_some). info/layout.rs:716 says every unstated side gets 12px. material-3 states only padding_horizontal (material-3.toml:492), so this shows on a shipped preset.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#4.
+
+#### M9-049 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:430
+**Claim:** The card's Widget Info (Basic and Layout pages, any theme) claims its content text in group_box_foreground (group_box.rs:173), but card's content is a body_label, a Label that paints foreground on its own element.
+**Evidence:** demo.rs:6198 card passes body_label(ui, cx, text_id, text), which is Label::new(text) (demo.rs:5557-5578); info/layout.rs:174-175 itself notes that a Label paints foreground over the group box's colour (label.rs:211), which is why group_box uses plain text. info/layout.rs:430-435 claims group_box_foreground anyway.
+**Fix proposed:** Drop the 'content text' claim from info::layout::card (the Label reports its own colour) or claim foreground at gpui-component/label.rs:211.
+**Verdict:** CONFIRMED — demo.rs:6199 makes the card's content body_label, a Label (demo.rs:5557-5579). Its root sets text_color(foreground) (gpui-component 0.7.3 label.rs:211), which overrides the content's group_box_foreground (group_box.rs:173). Yet info/layout.rs:428-433 claims group_box_foreground as the content text. group_box()'s own comment at layout.rs:174-175 states this exact rule.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#5.
+
+#### M9-050 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:745
+**Claim:** With material-3 installed, the theme-drawn radios' Widget Info gives the circle as checkbox.indicator_width (18px), but widgets::Radio draws it checkbox.radio_indicator_width across, 20px.
+**Evidence:** src/widgets/checkbox.rs:110-113 CheckboxLook::radio uses c.radio_indicator_width.unwrap_or(c.indicator_width), and Radio renders with CheckboxLook::radio (:794); material-3.toml:173 and :678 state radio_indicator_width_px = 20.0. info/inputs.rs:745 prints k.indicator_width.
+**Fix proposed:** Print k.radio_indicator_width.unwrap_or(k.indicator_width), naming checkbox.radio_indicator_width where it is stated (as leaves.rs:536-537 already describes).
+**Verdict:** CONFIRMED — widgets/checkbox.rs:110-113 sizes a radio by checkbox.radio_indicator_width.unwrap_or(indicator_width), and widgets/tests.rs:158-164 asserts 20px on material-3 (material-3.toml:173). info/inputs.rs:745 prints checkbox.indicator_width, which is 18 there.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#6.
+
+#### M9-051 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:914
+**Claim:** With material-3 installed, an off theme-drawn Switch's Widget Info gives its thumb as switch.thumb_diameter (24px), but the widget draws an unchecked thumb switch.unchecked_thumb_diameter across, 16px.
+**Evidence:** src/widgets/switch.rs SwitchLook::of: thumb = length(if checked { s.thumb_diameter } else { s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter) }); material-3.toml:403 and :908 state unchecked_thumb_diameter_px = 16.0. info/inputs.rs:914-920 prints s.thumb_diameter for every state.
+**Fix proposed:** For an unchecked switch print s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter), naming switch.unchecked_thumb_diameter where it is stated.
+**Verdict:** CONFIRMED — widgets/switch.rs:108-112 uses unchecked_thumb_diameter for an off switch, which is 16 on material-3 (material-3.toml:401-403). info/inputs.rs:914-919 always prints switch.thumb_diameter (24).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#7.
+
+#### M9-052 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:576
+**Claim:** With adwaita, kde-breeze or material-3 installed, a checked theme-drawn Checkbox's Widget Info says its mark is gpui-component's own Check icon, loaded by asset path and cached in the atlas, but the widget strokes the check itself at checkbox.check_mark_stroke_width, which the panel never names.
+**Evidence:** src/widgets/checkbox.rs:420-433: where look.mark_stroke is Some (c.check_mark_stroke_width, :170) the mark is stroked_check(inner, stroke, ..), a canvas polyline, not IconName::Check's SVG; adwaita.toml:166, kde-breeze.toml:184, material-3.toml:177 state 2.0. info/inputs.rs:576 uses super::own_icons("Check ...") unconditionally; native_radio_column's 'mark' note (:749) cites upstream's radio.rs for the same connector-drawn glyph.
+**Fix proposed:** Where k.check_mark_stroke_width is Some, say the connector strokes upstream's check polyline at that width (widgets/checkbox.rs, stroked_check) and keep own_icons only for the None case.
+**Verdict:** CONFIRMED — widgets/checkbox.rs:170 and :422-431 stroke the check with stroked_check where checkbox.check_mark_stroke_width is stated (2.0 on adwaita, kde-breeze and material-3), and fall back to IconName::Check only otherwise. info/inputs.rs:576 always names gpui-component's Check icon and never mentions the stroke.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#8.
+
+#### M9-053 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:604
+**Claim:** A disabled theme-drawn Checkbox, Radio or Switch is drawn faded by checkbox.disabled_opacity / switch.disabled_opacity (each colour composited over the window), but its Widget Info claims the unfaded stated colours and never mentions the fade, on every preset whose disabled opacity is below 1.
+**Evidence:** src/widgets/checkbox.rs:268 and switch.rs:325 call look.faded_over(ground), which composites fill, border, mark and label at look.opacity (checkbox.rs:186-200; opacity from disabled_opacity, :151 and switch.rs:123). info/inputs.rs:604-696 (native_indicator) and :828-878 (native_switch) claim stated(...) values only; mod.rs:420-422 states that a colour painted at a fraction printed without it claims a fill never painted.
+**Fix proposed:** For a disabled control claim the faded_over colours (or the stated value with its alpha set by the opacity and the role naming the fade) and add a config line 'checkbox.disabled_opacity, N%' via percent_text, as the input's disabled surface line does.
+**Verdict:** CONFIRMED — widgets/checkbox.rs:147 and :180-199, and switch.rs:123, fade a disabled control by checkbox.disabled_opacity or switch.disabled_opacity. The native_checkbox, native_radio_column and native_switch info (inputs.rs:556-590, :702-760, :764-940) claim the unfaded colours and never mention the fade; only a code comment does (inputs.rs:599-602). This covers every preset whose opacity is below 1, e.g. adwaita and the community presets at 0.5.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#9.
+
+#### M9-054 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:171
+**Claim:** Under a native theme the Basic page's rows_textarea is drawn over input_surface (text_area.border's frame and input.hover_border_color under the pointer) with its own border made transparent, but its Widget Info is the plain Textarea's: it claims the border in upstream's input token at input.rs:798 and omits the hover border and the surface; the Inputs page's textarea, meanwhile, gets no surface or hover at all.
+**Evidence:** demo.rs:3381-3386 wraps rows_textarea in input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none)); demo.rs:3320-3342 (textarea) does not. info/inputs.rs:171-175 reuses textarea(), whose :151-156 claims 'border: input'; text_field adds info::inputs::input_surface for the same drawing (demo.rs:3205-3207).
+**Fix proposed:** In demo::rows_textarea call info::inputs::input_surface on its info (naming text_area.border), drop the upstream border claim in that case, and either give demo::textarea the same surface or say in its info why it has none.
+**Verdict:** CONFIRMED — demo.rs:3374-3382 draws the Basic page's rows_textarea over input_surface: the frame is text_area.border, the hover edge input.hover_border_color, and the field's own border is transparent. info/inputs.rs:166-170 reuses textarea()'s border claim in the input token (inputs.rs:151-156) and adds no surface or hover claim. demo::textarea (demo.rs:3320-3344, used at pages/inputs.rs:98) has no surface.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#10.
+
+#### M9-055 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:48
+**Claim:** Under a native theme several panels keep a colour claim for upstream paint the showcase replaces: an enabled refined Input claims its border in upstream's input token (input.rs:798) though text_field sets its border transparent and the surface draws input.border.color; a Select claims 'upstream trigger text: foreground' though geometry::select letters the trigger in combo_box.font.color.
+**Evidence:** demo.rs:3205-3210 (input.bg(none).border_color(none) under input_surface); info/inputs.rs:48-53 claims 'border' for every field. src/geometry.rs:885-887 select = with_coloured_text(.., &combo_box.font, ..); gpui-component select.rs:483-487 sets no title colour when enabled; info/inputs.rs:1055-1060 claims foreground unconditionally. The values coincide in today's presets (colors.rs:224 maps input from input.border.color), so only the attribution is wrong.
+**Fix proposed:** Claim stated(r.input.border.color) as the surface's edge (cited 'showcase') for a refined styled field, and drop the Select's foreground claim where native is Some, as info::inputs::input already does for the text colour (:63-72).
+**Verdict:** CONFIRMED — Input: demo.rs text_field (enabled Refined) draws the field with border_color(transparent) over input_surface, yet info/inputs.rs:48-53 always claims 'border: input'. Select: gpui-component select.rs sets text_color(fg) and then refine_style, so geometry::select's combo_box.font colour (geometry.rs:885-887) wins. inputs.rs:1055-1060 still shows an upstream 'foreground' swatch under a native theme. That claim is labelled 'upstream', which softens it.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#11.
+
+#### M9-056 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs:525
+**Claim:** Under a native theme a selected List or Tree row's Widget Info says its text is list.item_font's colour, while the same panel's geometry line (list_item_selected) and the drawing letter it in list.selection_text_color.
+**Evidence:** demo.rs:4478-4483 and :4587-4592 apply geometry::list_item_selected to a selected row and record its line; src/geometry.rs:1349-1351 sets list.selection_text_color. info/data.rs:525-526 writes the item_font sentence for every state.
+**Fix proposed:** In list_item, for ListRowState::Selected / SelectedRightClicked with styled, say the text is list.selection_text_color through geometry::list_item_selected.
+**Verdict:** CONFIRMED — demo.rs:4480-4483 and :4589-4592 apply geometry::list_item_selected (list.selection_text_color, geometry.rs:1349-1351) to a selected row and record that geometry line. info/data.rs:525-526 still says the text is list.item_font's colour in every state.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#12.
+
+#### M9-057 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/feedback.rs:207
+**Claim:** With adwaita, windows-11 or material-3 installed, the theme-drawn ProgressBar's Widget Info claims its frame drawn in progress_bar.border.color, though progress_bar.border.line_width is 0 there and no frame is drawn; its frame line also points to 'OPEN O4', a question only the archived spec holds.
+**Evidence:** adwaita.toml:215, windows-11.toml:276, material-3.toml:258 state line_width_px = 0.0; src/widgets/progress.rs:76 border_width = length(p.border.line_width). info/feedback.rs:207 claims the frame colour unconditionally; :210 cites OPEN O4, which appears only in docs/archive/todo_gpui-widgets-spec.md:191 and in no docs/todo.md entry.
+**Fix proposed:** Claim the frame colour only where p.border.line_width > 0 and otherwise say no frame is drawn; drop the O4 reference or point to a live docs/todo.md entry.
+**Verdict:** CONFIRMED — info/feedback.rs:205 claims the frame colour unconditionally, though progress_bar.border.line_width is 0 on adwaita (adwaita.toml:215), windows-11 (windows-11.toml:276) and material-3 (material-3.toml:258), and widgets/progress.rs:259 then draws a 0px border. The 'OPEN O4' at feedback.rs:208 is found only in docs/archive/todo_gpui-widgets-spec.md:191, not in docs/todo.md.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#13.
+
+#### M9-058 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/feedback.rs:508
+**Claim:** The Empty state's Widget Info prints the icon size as literals, '32px, or 48px on KDE', instead of the installed theme's defaults.icon_sizes.large, and says it under no native theme too, where the icon takes upstream's size.
+**Evidence:** info/feedback.rs:508 hard-codes the numbers; empty() takes no ResolvedTheme. demo::empty applies geometry::icon_size_large only where a native theme is installed. A KDE reader or a user TOML can state another size.
+**Fix proposed:** Pass the resolved large icon size (native_value(cx, geometry::icon_size_large)) into info::feedback::empty and print it with px_text, or say upstream's size where there is none.
+**Verdict:** CONFIRMED — info/feedback.rs:506 hardcodes '32px, or 48px on KDE' and prints it whenever the icon is shown, with or without a native theme. With none, native_sized (demo.rs:153-157) leaves the icon at upstream's size. Under a native theme the literals match the presets (kde-breeze.toml:92 is 48, others 32) but not an OS-read theme. The underlying overflow is known (docs/todo.md:2723); the literal text is not.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#14.
+
+#### M9-059 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/buttons.rs:338
+**Claim:** With material-3 installed (button.border.line_width 0), every refined Button's Widget Info says geometry::button gives every variant a border in button.border.color and claims a hovered/pressed edge in input or primary, but no edge is drawn in any state: the 0px width replaces upstream's border_1, and the hover style only recolours.
+**Evidence:** src/geometry.rs:229 .border(px(b.border.line_width)); material-3.toml:136 line_width_px = 0.0; gpui-component button/button.rs:710-715 border_*_1 then hover/active set border_color only (:724-733). info/buttons.rs:338-366 (edge) and :514-524 (the 'edge' note) are unconditional, unlike info::buttons::toolbar (:786-797), which branches on line_width.
+**Fix proposed:** Pass the resolved button.border.line_width (or the ResolvedTheme) into button()/edge() and, at 0, drop the hovered/pressed edge claim and say no edge is drawn.
+**Verdict:** CONFIRMED — geometry::button sets .border(px(button.border.line_width)) (geometry.rs:229), which is 0 on material-3 (material-3.toml:136, :641). It overrides upstream's border_l_1 etc. (button.rs:710-715), and upstream's hover and active styles only recolour. So no edge is drawn, while info/buttons.rs:515 and edge() (buttons.rs:338-366) claim one at rest and when hovered or pressed.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#15.
+
+#### M9-060 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/buttons.rs:564
+**Claim:** A disabled refined Button's Widget Info, on every preset with button.disabled_opacity below 1, says the stated disabled colours are 'painted as they are ... with no further fade', while the same panel's geometry::button_disabled line and its 'surface' line say the whole button is faded by button.disabled_opacity, which it is.
+**Evidence:** src/geometry.rs:1291-1299 button_disabled adds .opacity(unit(b.disabled_opacity)); demo.rs:2921-2949 applies it (on the surface for a Default Button) and records 'the whole faded by button.disabled_opacity'; GEOMETRY_NOTES 'button_disabled' (mod.rs:332) says the same. info/buttons.rs:564 contradicts both.
+**Fix proposed:** Replace the :564 note with a config line that prints button.disabled_opacity (percent_text) as the fade applied over the stated pair.
+**Verdict:** CONFIRMED — info/buttons.rs:564 says 'with no further fade'. But geometry.rs:1298 fades by .opacity(unit(b.disabled_opacity)), and the same panel's button_disabled geometry line says 'faded by button.disabled_opacity' (info/mod.rs:331-332). The two contradict each other on every preset below 1 (adwaita and the community presets at 0.5).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#16.
+
+#### M9-061 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/typography.rs:187
+**Claim:** With ios-13 installed (link.underline_enabled false), every Link's Widget Info says the underline is always on, that no refinement can remove it and that link.underline_enabled has no receiver (Tier U), while geometry::link removes the resting underline there and the same panel's geometry line says so; it also lists the 50% resting underline as a colour claim.
+**Evidence:** src/geometry.rs:1367-1375 link sets text_decoration_0() where !underline_enabled; demo.rs:5835-5845 applies it through native_info, adding the 'link' line (mod.rs:342-345: 'no underline where link.underline_enabled is false'); ios-13.toml:314, :658 state false. info/typography.rs:157-162 claims the resting underline and :187 calls it Tier U. docs/todo.md:1933 records the same no-receiver claim and is stale since e6b2034e.
+**Fix proposed:** Pass the resolved link.underline_enabled into info::typography::link: where it is false, drop the resting-underline claim and say the refinement removes it (hover and press still underline); keep the Tier U text only for no native theme, and close docs/todo.md:1933's underline half.
+**Verdict:** CONFIRMED — geometry::link (geometry.rs:1367-1375) sets text_decoration_0 where link.underline_enabled is false, and its geometry line says so (info/mod.rs:343-344). info/typography.rs:187 still says the underline is always on, cannot be removed, and that underline_enabled has no receiver (Tier U). The 50% resting-underline claim (typography.rs:157-162) is listed unconditionally. (verifier: Wider than ios-13: material-3 also states underline_enabled=false (material-3.toml:440, :945), and the 'no receiver' sentence is false under every native theme. docs/todo.md:1932-1936 repeats the same stale wording.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#17.
+
+#### M9-062 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:14
+**Claim:** The optional-colour claim is written out by hand about a dozen times as `if x.is_some() { claim(.., stated(x.unwrap_or(<unrelated colour>))) }` or `x.map_or(<dummy>, stated)`, with a dummy fallback (e.font.color for a hover fill, t.active_background for an indicator) that can never be shown.
+**Evidence:** info/inputs.rs:14-20, :629-644, :729-744, :789-827, :950-954; info/layout.rs:361-368, :545-551, :642-668, :705-711.
+**Fix proposed:** Add one helper in info/mod.rs, e.g. `fn stated_claim(role, field, Option<Rgba>, cited) -> Option<ColorClaim>`, and pass its result to WidgetInfo::colors, which takes an IntoIterator.
+**Verdict:** CONFIRMED — The `if x.is_some() { claim(.., stated(x.unwrap_or(<other>))) }` or map_or(<dummy>, stated) pattern recurs in info/: inputs.rs:14-19, layout.rs:366 and :709 (map_or transparent_black), layout.rs:549 (hover unwrap_or(e.font.color)), :646 and :663 (tab hover and indicator fallbacks). Each fallback is unreachable under its is_some guard. arrow_color at :542 is a real, visible fallback, not a dummy.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#18.
+
+#### M9-063 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs:741
+**Claim:** Several claim sets are built twice: Message repeats Bubble's Filled and Muted fill and text claims; severity_alert and notification each spell out the four severity icons (Info, CircleCheck, TriangleAlert, CircleX); checkbox/native_checkbox and switch/native_switch repeat the same (checked, disabled) variant match and the same click note.
+**Evidence:** info/data.rs:741-768 against :604-642; info/feedback.rs:129-140 against :895-908; info/inputs.rs:246-251 against :563-568, :325-335 against :578-588, :395-400 against :772-777, :492-499 against :930-937.
+**Fix proposed:** Have message() take its claims from the Bubble arm it shows (a shared fn of BubbleKind), give Severity an upstream_icon() name used by both own_icons texts, and factor the state variant and click notes into one helper per control.
+**Verdict:** CONFIRMED — message() (data.rs:741-770) repeats bubble()'s Filled and Muted claims at the same bubble.rs:215/216/225/226 citations. The checkbox and native_checkbox variant match and click notes are duplicated (inputs.rs:249/328/333 vs :566/581/586). The severity icon lists in feedback.rs:126-141 and :898-910 overlap only in the icon names: they cite different upstream functions (alert.rs vs notification.rs), so that pair is weaker duplication.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#19.
+
+#### M9-064 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:56
+**Claim:** Two stray doc paragraphs are left on the wrong item: native_separator carries separator()'s doc ('A Separator of kind ...'), leaving separator() undocumented, and charts.rs's Guide enum carries a paragraph about a chart built without an id.
+**Evidence:** info/layout.rs:56-58 (two docs over the #[cfg] native_separator; separator at :77 has none); info/charts.rs:44-46.
+**Fix proposed:** Move layout.rs:56-57 onto separator() and delete charts.rs:44-45.
+**Verdict:** CONFIRMED — info/layout.rs:56-57 places separator()'s doc ('A Separator of kind ...') above native_separator's own doc, which leaves separator() at layout.rs:77 undocumented. charts.rs:44-46 puts 'A chart the showcase builds without an id...' above the Guide enum's doc.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* A4#20.
+
+#### M9-065 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2093
+**Claim:** With the `default` theme, choosing the colour mode the OS is not in (Mode Dark on a light KDE Plasma desktop, or `--variant dark`) loads the icons from the OS mode's icon theme (`breeze`) instead of that mode's (`breeze-dark`), so Breeze's dark glyphs are drawn on the dark variant; the `kde-breeze` preset in the same mode gets `breeze-dark`.
+**Evidence:** load_theme's OsTheme arm picks the variant of the requested mode (`system.pick(mode)`, :2094) but takes `system.icon_theme` (:2093), which is the active variant's (native-theme/src/lib.rs:615-629); the per-mode name is `SystemTheme::icon_theme_for(mode)` (lib.rs:667-680, 'KDE names one theme per variant'). The returned name feeds `default_icon_choice` (:2055), `build_icon_choices` (:2058-2059) and every loader through `reload_icons` (:2063). The Preset arm resolves per mode (`nt.resolve(mode)`, :2108-2112) and gets the right one. starting_with (:1750) has the same read, harmless only while `system_is_dark()` agrees with `system.mode`.
+**Fix proposed:** Use `system.icon_theme_for(mode).map(str::to_owned)` in load_theme (and in starting_with, or use `system.mode` there), so the OS theme in either mode uses that variant's icon theme.
+**Verdict:** CONFIRMED — load_theme's OsTheme arm stores system.icon_theme (showcase-iced.rs:2093), the OS mode's variant's (native-theme/src/lib.rs:616-629), not system.icon_theme_for(mode) (lib.rs:671-676), which the KDE reader leaves breeze-dark for the dark variant (kde/mod.rs:82 sets only the read variant; kde-breeze.toml:478). The connector's own from_system/to_iced_theme use icon_theme_for (connectors/native-theme-iced/src/lib.rs:482, :542); the Preset arm uses the per-mode r.icon_theme (:2109).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#0.
+
+#### M9-066 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2091
+**Claim:** A Preferences change (Text scale, Reduce motion, High contrast, Reduce transparency) is lost on the next mode change or Reload System Theme under the `default` theme, and on any switch to `default`: the dialog's switches jump back to the OS values.
+**Evidence:** TextScaleSelected/ReduceMotionToggled/... write `state.accessibility` (:2689-2692); install_in_mode -> load_theme's OsTheme arm overwrites it with `system.accessibility.clone()` (:2091). Under a preset it is kept (the Preset arm never touches it), so the same action behaves differently by theme. The gpui showcase lays the user's overrides over the OS's on every system install (showcase-gpui/app.rs:1700-1702, :1730-1731) and egui does the same (showcase-egui/app.rs:494-497). The startup fallback also drops the OS's preferences for `AccessibilityPreferences::default()` (:1767) where egui uses `detect::accessibility_preferences()`.
+**Fix proposed:** Keep the user's overrides apart (an `Option<AccessibilityPreferences>` set by the Preferences dialog) and lay them over `system.accessibility` in load_theme, as gpui's `install_preferences` does; the fallback reads `native_theme::detect::accessibility_preferences()`.
+**Verdict:** CONFIRMED — The Preferences handlers write state.accessibility (showcase-iced.rs:2689-2692) and load_theme's OsTheme arm overwrites it with system.accessibility (:2091), reached by ColorModeSelected/ThemeSelected (:2643-2650) and ReloadSystemTheme (:2663-2665) via install_in_mode; no override is kept and no test covers it. iced is the outlier: gpui keeps PreferenceOverrides over every install (showcase-gpui/demo.rs:2497-2537, tested by a_theme_install_keeps_the_installed_preferences, tests.rs:6795), egui keeps Settings.prefs and puts it over both default and presets (showcase-egui/app.rs:115, :495-504).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#1.
+
+#### M9-067 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2183
+**Claim:** When the OS asks for reduced motion, turning Preferences > Reduce motion off leaves the Basic spinner and the Icons page's animations stopped while the switch shows off.
+**Evidence:** motion_reduced is `self.reduced_motion || self.accessibility.reduce_motion` (:2182-2184); `reduced_motion` is re-read from the OS on every icon reload (`prefers_reduced_motion()`, :1503, :2163), the same OS setting `system.accessibility.reduce_motion` carries (native-theme/src/pipeline.rs:1252). The switch toggles only `accessibility.reduce_motion` (:2690, :6553), so with the OS flag on the OR stays true; the subscription is gated on the same OR (:12751).
+**Fix proposed:** Drop the separate `reduced_motion` field and read `self.accessibility.reduce_motion` alone (it already starts at the OS value, and fix finding 2 keeps the user's override over it).
+**Verdict:** CONFIRMED — motion_reduced() is prefers_reduced_motion() OR accessibility.reduce_motion (showcase-iced.rs:2182-2184, :1503), so the switch (:6547-6551) cannot override an OS request; the tick (:12751), Basic spinner (:7737) and Icons page (:11669) stay stopped. iced is NOT the outlier: gpui behaves the same by recorded design (a false preference is 'the absence of a request', native-theme-gpui/src/lib.rs:1129-1145, spec v0.5.9 §5; gpui-base re-reads the OS, gpui-base-0.7.3/src/reduce_motion.rs:89-100), while egui lets the switch win (app.rs:495-496 replaces the prefs; the spinner and Icons page read atlas.accessibility().reduce_motion, pages/icons.rs:236). (verifier: Suggest S3: it matches gpui's recorded design; the defect is that the switch and its row text (:6549) do not say the OS request wins, and the three showcases disagree (egui differs).)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#2.
+
+#### M9-068 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2770
+**Claim:** On the Icons page the Material and Lucide indicators play at one frame per 50 ms tick, 1.2 s per turn instead of the 24 x 42 ms = 1.008 s the indicator states, so they turn about 19% slower than the Basic page's Spinner of the same set; `animated_frame_elapsed` grows by 8 ms every tick without bound.
+**Evidence:** AnimationTick adds a fixed 50 ms (:2770, the tick of :12752) and advances at most one frame per tick (`if elapsed >= frame_dur { elapsed -= frame_dur; index + 1 }`, :2775-2778); the bundled spinners are 24 frames at 42 ms (native-theme/src/spinners.rs:206, :217). The Basic page's `native_theme_iced::Spinner` is driven by `animation_start.elapsed()` (:7737) and keeps the stated rate.
+**Fix proposed:** Derive the frame from the clock, `(animation_start.elapsed().as_millis() / frame_duration_ms) % len`, as the Spinner does, and drop `animated_frame_elapsed` and the per-tick bookkeeping (or draw the Icons page's indicator with a second `native_theme_iced::Spinner`).
+**Verdict:** CONFIRMED — AnimationTick adds 50 ms per tick and advances at most one frame when elapsed >= 42 ms, subtracting 42 (showcase-iced.rs:2769-2779), so 24 frames take 24 x 50 ms = 1.2 s and elapsed grows 8 ms per tick unbounded; the bundled indicators are 24 x 42 ms (native-theme/src/spinners.rs:6, :21). The Basic Spinner plays by elapsed time (:7737). Not M8 T9a, which is about colouring (scripts/connector_parity_exceptions.toml:625). (verifier: Suggest S3: a visible speed difference, no wrong theme data.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#3.
+
+#### M9-069 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5805
+**Claim:** Hovering the open Theme menu (`chrome.menu.theme`, `--open-menu theme`), Widget Info says its four `popover.border.padding_*_px` rows are 'not reachable: iced_aw's Menu has no padding around its rows' and that `popover.border.shadow_enabled` is 'not reachable', while the showcase pads the panel with exactly that padding and switches the shadow on that flag.
+**Evidence:** Routes :5802-5807. The menu is built `Menu::new(items).width(width).offset(popup_pad.top).padding(popup_pad)` (:4334-4337, page menu :4879-4882) with `menu_popup_padding` = `padding_inside_border(&resolved.popover.border, Padding::new(AW_MENU_PADDING))` (:10905-10909), and HeldOverlay documents iced_aw padding the panel round its rows (:3375-3381); menu_bar_style reads `popover.border.shadow_enabled` to keep or drop iced_aw's shadow (:4913, :4922-4926). The list names these leaves for the element (docs/showcase-elements.toml:230).
+**Fix proposed:** Route the padding sides to 'menu_popup_padding: Menu::padding, the side plus popover.border.line_width; iced_aw's 5 where unstated' and shadow_enabled to 'menu_bar_style: iced_aw's menu_shadow where true, none where false'.
+**Verdict:** CONFIRMED — iced_route says popover padding sides are 'not reachable: iced_aw's Menu has no padding around its rows' and shadow_enabled 'not reachable' (showcase-iced.rs:5801-5806), while menu_popup_padding pads the panel with popover.border.padding (:10900-10910, used at :4881-4882) and menu_bar_style switches menu_shadow on popover.border.shadow_enabled (:4914, :4924-4928); chrome.menu.theme lists those leaves (docs/showcase-elements.toml:230).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#4.
+
+#### M9-070 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5691
+**Claim:** On the 14 presets that state no `checkbox.check_mark_stroke_width` (all but adwaita, kde-breeze and material-3), hovering the checked or disabled checkbox says its mark is 'the check mark's stroke colour (CheckMark canvas)', its stroke 'CheckMark: the mark's stroke width, over iced's glyph made transparent' and each padding side 'CheckMark: the mark's box', while iced's own glyph is drawn and no CheckMark exists.
+**Evidence:** Routes :5691, :5693-5695, :5727-5729 are unconditional. The check closure returns the plain checkbox where the stroke is unstated (`let Some(stroke) = stated else { return tag(boxed.into(), ..) }`, :7161-7162), and glyphless_when_stated leaves the glyph's colour in place then (:8449-8466); only adwaita.toml, kde-breeze.toml and material-3.toml state the stroke (grep of native-theme/src/presets).
+**Fix proposed:** Give iced_route the element's state (or the resolved theme) and route these leaves on `checkbox.check_mark_stroke_width`: where it is None, 'styles::checkbox: checkbox::Style::icon_color, iced's glyph' for indicator_color, 'not stated: iced's glyph' for the stroke, and 'not drawn' for the padding sides.
+**Verdict:** CONFIRMED — Where check_mark_stroke_width is None the check returns iced's own checkbox before any CheckMark is built (showcase-iced.rs:7158-7160; glyphless_when_stated keeps the glyph, :8449-8463), but the routes are unconditional: indicator_color 'CheckMark canvas' (:5691), the stroke 'CheckMark: ... over iced's glyph made transparent' (:5693-5695), padding sides 'CheckMark: the mark's box' (:5727-5729), and every row gets a route (:5221-5229). Only adwaita, kde-breeze and material-3 state the stroke (of 17 presets), and the checked/disabled elements list these leaves (showcase-elements.toml:898, :932).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#5.
+
+#### M9-071 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:6120
+**Claim:** Hovering the Basic page's Spinner under a set with an indicator (Material, Lucide, a freedesktop theme with `process-working`: every Linux and community preset), Widget Info's Not themeable section says 'sweep and speed of the arc: egui's Spinner's', describing an arc that is not drawn.
+**Evidence:** iced_not_themeable matches the element name only (:6117-6132), so the line is unconditional; the spinner draws the indicator wherever `load_icon_indicator` finds one (connectors/native-theme-iced/src/spinner.rs:159-167) and exposes `Spinner::is_indicator()` (spinner.rs:179-181); the routes for stroke_width and fill_color already say 'where the icon set has no indicator' (:5907-5913).
+**Fix proposed:** Pass the state to iced_not_themeable and emit the arc line only when `!state.basic_spinner.is_indicator()`; for the indicator name the frame rate, which is the set's, not the theme's.
+**Verdict:** CONFIRMED — iced_not_themeable gives every 'Spinner' 'sweep and speed of the arc: egui's Spinner's, 240° a turn a second' (showcase-iced.rs:6120) unconditionally, while the connector's Spinner draws the set's indicator first and the arc only where the set has none (connectors/native-theme-iced/src/spinner.rs:28-50).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#6.
+
+#### M9-072 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5583
+**Claim:** For the flat icon buttons (the toolbar's three, the Basic page's Copy/Paste/Delete, the page-tabs menu, the status-bar side-panel toggle) Widget Info says `button.hover_text_color` is 'ghost_button: the Hovered text_color' and `button.active_text_color` 'the Pressed text_color', but a bundled set's icon is baked in one colour and never changes under the pointer; the side-panel toggle, shown Selected by default, also claims `button.font.color` as its icon colour and a Hovered fill it never shows.
+**Evidence:** icon_button bakes the colour into the SVG at view time, `b.active_text_color` if selected else `b.font.color` (:4187-4191, through chrome_icon -> to_svg_handle(icon, Some(color)), :3917; icons.rs:73-80 colourises the bytes); ghost_button's `text_color` reaches only a text label. ghost_button's `_ if selected` arm precedes Hovered (:3960), so the selected toggle never shows hover_background/hover_text_color. Routes: :5571-5574, :5579, :5583, :5593-5595, :5602; the toggle lists those leaves in state Selected (docs/showcase-elements.toml:630-631).
+**Fix proposed:** Either tint the icon from the button's status (svg(..).style with svg::Status::Hovered, or two pre-built handles) so hover_text_color is drawn, or route these leaves for icon buttons as 'the label's, shown only where the set has no icon' and give the selected toggle the active pair's lines; the latter is the smaller change.
+**Verdict:** CONFIRMED — Ghost icon buttons draw an svg whose colour is baked at load (chrome_icon, showcase-iced.rs:3909-3923, colour fixed in icon_button :4187-4191) with no status-dependent style, so ghost_button's Hovered/Pressed text_color (:3962-3966) never reaches the icon, yet the routes say 'the Hovered text_color' / 'the Pressed text_color' (:5583, active_text_color arm). The side-panel toggle is selected = side_panel_visible, true by default (:5049, :1869): its icon is active_text_color not font.color (:4187-4191) and the selected arm precedes Hovered (:3962), so no Hovered fill while the panel shows; its element lists those leaves (showcase-elements.toml:630).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#7.
+
+#### M9-073 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:7808
+**Claim:** In the build the module docs' Running command produces (`cargo run -p native-theme-iced --example showcase-iced`, no `iced_aw` feature, which is not default), the Basic page's Tabs are drawn as a primary button and a plain button, in none of the theme's `tab.*` colours, sizes or line width, they never switch when clicked, and Widget Info still describes them as `styles::aw::tab_bar` and `TabBar::tab_width`.
+**Evidence:** The non-iced_aw arm builds `button(..).padding(tab_pad)` styled `styles::button_primary` for the first and `styles::button` for the second, both `on_press(Message::ButtonPressed)` (:7807-7830), with tab_pad from `padding_or(tab.border.padding)` not padding_inside_border (:7744); the showcase's own `tab_style(resolved, selected)` and `tab_row`'s at_least min size (:4041-4074, :4744-4756) already draw `tab.*`. Routes for basic.tabs.* (:5847-5849, :5852-5857, :5868-5870, :5877-5879) name iced_aw's widget. Cargo.toml's default features omit iced_aw (connectors/native-theme-iced/Cargo.toml [features] default); only the screenshot script passes it (scripts/generate_screenshots_iced.sh:47).
+**Fix proposed:** Draw the fallback tabs as the page tab strip's are: `tab_style(resolved, i == selected)`, `padding_inside_border(&tab.border, ..)`, `at_least(.., tab.min_width/min_height)`, a selection in State without the cfg, and make the basic.tabs.* routes say which widget draws them in each build.
+**Verdict:** CONFIRMED — Without iced_aw (not default, Cargo.toml:23; module docs' command, showcase-iced.rs:15) the tabs are button_primary/button with a hard-coded i == 0 active and on_press(ButtonPressed), so they never switch (:7806-7826), while Widget Info still routes basic.tabs.* to styles::aw::tab_bar, TabBar::tab_width and TabBar::padding (:5847-5879, no cfg). Correction: the claim overstates 'none of tab.*': this arm does use tab.font, tab.border.padding, tab.item_gap and tab_indicator's active line (tab.active_indicator_*) (:7744, :7810-7820); the fills, text colours and min sizes are not tab's.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#8.
+
+#### M9-074 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:222
+**Claim:** On macos-tahoe (no `layout.section_gap`, no `layout.container_margin`) the iced Basic page puts 24 px (the showcase's SP.xl) between its columns and groups where the gpui showcase puts none, and its own column count assumes no gap: five 170 px columns are chosen for a 931 px page that then has 167 px columns, so BASIC_WIDE controls run 3 px past their column.
+**Evidence:** Gaps::from_layout stands SP values in for unstated distances (section 24, :225; container_margin 16 likewise, :223, for the side panel, menu bar and toolbar paddings); view_basic spaces columns and groups by `gap.section` (:8306, :8309), while basic_column_count uses `layout.section_gap.unwrap_or_default()` and `window_margin.unwrap_or_default()` (:6800-6801), as gpui's does (showcase-gpui/pages/basic.rs:229-230), and gpui lays the page out with `geometry::section_gap`, `None` -> no gap (geometry.rs:1405-1407, pages/basic.rs:285, :763, :778). Widget Info's own gaps already use none (`info_gap`, :5394-5396). macos-tahoe.toml:760-764 states only widget_gap and window_margin; tab.min_width 64, combo_box.min_width 120, divider 9, overlay scrollbar (macos-tahoe.toml:194, :222, :259, :317): page = 1280-300-9-40 = 931, (931-4*24)/5 = 167 < 170.
+**Fix proposed:** Use the stated distance or none, as gpui and the column count do (`layout.section_gap.unwrap_or(0.0)` etc., or `Option` gaps applied only where stated), and drop the SP stand-ins and the '(showcase)' labels of the Theme tab (:232-237) with them.
+**Verdict:** CONFIRMED — basic_column_count takes section_gap.unwrap_or_default() = 0 (showcase-iced.rs:6801) while the page draws gap.section = SP.xl 24 where unstated (:225, :8306-8308); macos-tahoe states only widget_gap and window_margin ([layout], presets/macos-tahoe.toml:760-764). Page = 1280 - 300 (:3713) - 9 (divider, tahoe.toml:259) - 2x20 = 931, overlay scrollbar (:194): 5 x 170 fits with no gap, but (931 - 96)/5 = 167 < BASIC_WIDE 170. gpui applies no gap where unstated (geometry::section_gap -> None, native-theme-gpui/src/geometry.rs:1405; with_gap, support.rs:308-312).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#9.
+
+#### M9-075 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:5215
+**Claim:** While the pointer has left a listed element shown on the Widget tab, every view serialises the whole ResolvedTheme to a toml::Value and rebuilds every row's route and the Copy text; on the Basic page, the default tab, view runs 20 times a second from the animation tick, so this runs 20 times a second with nothing changing.
+**Evidence:** ElementInfo::of starts with `toml::Value::try_from(&state.current_resolved)` (:5215-5216), then leaf_value and iced_route per leaf (:5217-5229); element_info_view calls it on every view (:5418) and builds `info.copied()` for the Copy message (:5426); inspector_widget calls it whenever `hovered_element` is set (:6140-6141). subscription ticks every 50 ms while the Basic tab is shown (:12749-12752), and each tick re-runs view.
+**Fix proposed:** Build the ElementInfo (or the toml::Value) once on ElementHovered and on each install_in_mode/accessibility change and keep it in State; view only lays it out.
+**Verdict:** CONFIRMED — inspector_widget calls element_info_view whenever hovered_element is set (showcase-iced.rs:6140-6141), which runs ElementInfo::of: toml::Value::try_from(&current_resolved), every row's iced_route and info.copied() (:5212-5229, :5418-5424); hovered_element persists after the pointer leaves (:2659-2661), and the 50 ms tick runs on the Basic page (:12751). Note it also runs while hovering, and only while the side panel's Widget tab is shown.
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* B1#10.
+
+#### M9-076 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:651
+**Claim:** Every frame, outside `--dump-layout` and the self-tests, every tagged element (76 `tagged(` call sites) inserts its rectangles into a thread-local BTreeMap and each measured text part (the Basic page's four fields, number input, drop-down and text area) is shaped again by cosmic-text, in draw and again in every widget operation; nothing reads the result in a normal run.
+**Evidence:** Tagged::draw records into DRAWING on every draw (:645-651), Tagged::operate into SURVEYED on every operation (:668-671); record calls `measured.placed(room)` -> `extent()`, a new Paragraph::with_text shaped each time (:402-417, :512-515). DRAWN and SURVEYED are read only by the dump (:729, :773) and the tests (:14957, :15015, :15579-15645).
+**Fix proposed:** Record only when `cfg!(test) || CLI_ARGS.get().is_some_and(|c| c.dump_layout.is_some())` (hover detection in update does not need the maps), and measure a text part once per content change.
+**Verdict:** CONFIRMED — Tagged::draw and ::operate record unconditionally into DRAWING/SURVEYED (showcase-iced.rs:645-650, :668-671), and record() re-shapes each text_part through MeasuredText::extent (:510-515, :402-418; text_part sites :7378, :7444, :7497, :7717); drawn_layout/surveyed_layout are read only by the --dump-layout path (:729, :773) and tests, the hover target uses UNDER_POINTER instead (:695-713). 76 tagged( sites. (verifier: Suggest S4: tens of BTreeMap inserts and a handful of shapes per frame; measurable only in principle.)
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* B1#11.
+
+#### M9-077 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1303
+**Claim:** The Icons page's 'fallback' count is always 0 and every system-set reload loads all 42 Material icons for nothing: no loader substitutes Material for a missing system icon, so `IconSource::Fallback` ("System lookup failed; fell back to bundled Material SVGs") can never be the truth.
+**Evidence:** load_all_icons preloads Material for every system set (:1343-1351) and marks an icon Fallback when its bytes equal Material's (:1375-1386); FreedesktopLoader::load returns None when neither the theme nor a parent has the icon (native-theme/src/icons.rs:303-345), and the SF Symbols/Segoe loaders likewise (:540-560); the project rule is never to substitute another set. The gpui showcase has no such variant any more (grep of connectors/*/examples).
+**Fix proposed:** Remove IconSource::Fallback, the Material preload and the fallback count in the Icons page header (:11589-11600, the other reviewer's half).
+**Verdict:** CONFIRMED — load_all_icons loads all 42 Material icons for a system set only to compare bytes (showcase-iced.rs:1343-1351, :1373-1384), but no loader substitutes Material (the never-mix rule; freedesktop.rs:820 tests it does not), and a freedesktop icon is recoloured (color_opt(fg), :1358) so its bytes would not match anyway; Fallback is unreachable in practice.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#12.
+
+#### M9-078 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1449
+**Claim:** build_animation_caches returns a seven-field tuple of Vecs that never hold more than one entry, the indicator is loaded twice on every reload (once here, once inside Spinner::new), and the Icons page re-implements the frame playback and tinting the connector's Spinner already does.
+**Evidence:** The tuple (:1453-1461, clippy::type_complexity allowed) is unpacked field by field at :1810-1822 and :2153-2164 into seven State fields (:1676-1689); each Vec gets at most one push (:1472, :1485, :1492); `load_icon_indicator` runs at :1469 and again in `Spinner::new` (spinner.rs:159-167, called :1823-1827, :2165-2169); indicator_tinted/indicator_svg_handle (:1418-1439) restate the Spinner's colouring. M8 T9a is touching the Spinner's per-set frames.
+**Fix proposed:** After T9a lands, draw the Icons page's indicator with a `native_theme_iced::Spinner` (view(elapsed, reduced)) at the page's size, or keep one `Option<IndicatorCache>` struct; either removes the tuple, the duplicate load and the tick bookkeeping (also fixes the 50 ms finding).
+**Verdict:** CONFIRMED — build_animation_caches' seven-field tuple (showcase-iced.rs:1449-1460) is built from one if-let, so each Vec holds at most one entry (:1468-1499); load_icon_indicator runs there (:1468) and again in Spinner::new (connectors/native-theme-iced/src/spinner.rs:167), both from reload_icons (:2153-2172). Caveats: the connector's Spinner cannot stand in as is (it fixes spinner.diameter and spinner.fill_color, the page draws icon_sizes.large in the text colour, :11650-11660), and the frame-colouring half overlaps M8 T9a's animated_frames_to_svg_handles_for (scripts/connector_parity_exceptions.toml:625).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#13.
+
+#### M9-079 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1747
+**Claim:** Of the four places the showcase builds an iced Theme, only the adwaita fallback passes the mode it resolved (M8 T4's `to_theme_in`); the startup OS read and both load_theme arms still call `to_theme`, so `Extended::is_dark` (the window title bar's flag) is iced's lightness guess where the mode is known, and the startup OS arm re-implements `SystemThemeExt::to_iced_theme` field by field.
+**Evidence:** to_theme at :1747, :2095-2096, :2120 vs to_theme_in at :1164; the connector documents the difference (connectors/native-theme-iced/src/lib.rs:338-342, :351-375); to_iced_theme returns theme, resolved, mode, accessibility, icon_set and icon_theme_for(mode) (lib.rs:531-545), which the Ok arm of starting_with assembles by hand (:1739-1753). No bundled preset lacks a variant, so the flag matches today (iced_core palette.rs:723-725, oklch L < 0.6).
+**Fix proposed:** Call `to_theme_in(&r, name, mode)` with the mode passed to pick/resolve (`r.mode` for a preset) at the three sites, and use `system.to_iced_theme()` (with the chosen mode) in starting_with.
+**Verdict:** CONFIRMED — Only load_adwaita_fallback uses to_theme_in (showcase-iced.rs:1164); startup (:1747) and both load_theme arms (:2096, :2120) call to_theme, whose is_dark is iced's lightness guess (connectors/native-theme-iced/src/lib.rs:338-349), though the mode is known (Preset arm has r.mode; OsTheme arm has mode). The startup arm picks, converts and copies icon_set/icon_theme/accessibility by hand (:1739-1752) where SystemThemeExt::to_iced_theme returns them as Loaded (lib.rs:532-547).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#14.
+
+#### M9-080 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8484
+**Claim:** `over` re-implements `native_theme_iced::styles::composite_over` (public and core-backed since M8 T3), which gives the same colour over an opaque base; and the doc comment above it is the CheckMark's, so `over` documents a check mark and `CheckMark` has no doc.
+**Evidence:** over (:8484-8491) is straight-alpha source-over onto an opaque bottom, the case of styles.rs:80-87 (native_theme::color::composite_over) with base.a = 1; used only at :7202-7203. The block :8471-8483 describes 'A checked box's mark ...' then runs into over's own sentence; `struct CheckMark` (:8493) follows with no doc.
+**Fix proposed:** Use `styles::composite_over(top, bottom)` at :7202-7203, delete `over`, and move the mark paragraph onto `struct CheckMark`.
+**Verdict:** CONFIRMED — over (showcase-iced.rs:8484-8491) is straight-alpha source-over always returning opaque; styles::composite_over (connectors/native-theme-iced/src/styles.rs:81-87) gives the same over the opaque window background it is used on (:7200-7210). The doc block :8471-8480 ('A checked box's mark where...') is CheckMark's but precedes fn over, so struct CheckMark (:8493) has no doc.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#15.
+
+#### M9-081 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5167
+**Claim:** hex_color hand-parses `#rrggbb[aa]` where core's `Rgba: FromStr` already parses it.
+**Evidence:** hex_color slices pairs and parses each with from_str_radix (:5167-5185); native-theme/src/color.rs:238-300 parses 3, 4, 6 and 8 digits panic-free; to_color converts (palette.rs:22).
+**Fix proposed:** `line.rsplit(' ').next()?.parse::<native_theme::Rgba>().ok().map(to_color)` (keeping the '#' requirement).
+**Verdict:** CONFIRMED — hex_color hand-parses #rrggbb[aa] (showcase-iced.rs:5167-5185) where native_theme::Rgba: FromStr parses hex (native-theme/src/color.rs:238-...). Caveat: FromStr also accepts no '#' and #rgb/#rgba shorthand, so a swap must keep the '#'-prefix requirement to avoid colouring a line ending in a bare hex-like word.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#16.
+
+#### M9-082 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:6279
+**Claim:** On macOS and Windows the inspector's Theme tab says the window frame is 'whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)'.
+**Evidence:** The Window section's text is unconditional (:6276-6280); the other platform-dependent strings are cfg-gated (desktop(), :4964-4974; binding(), :3813-3819). The gpui inspector has the same sentence (showcase-gpui/inspector.rs:296).
+**Fix proposed:** Name the frame per platform under cfg (KWin/Mutter on Linux, the system's on macOS and Windows), in both showcases.
+**Verdict:** CONFIRMED — The Window section's frame row is the fixed string 'whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)' on every platform (showcase-iced.rs:6277-6281), with no cfg for macOS/Windows. (verifier: Cosmetic: the KWin text is labelled as KWin's case, not claimed for macOS/Windows; S4 is right.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#17.
+
+#### M9-083 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:7041
+**Claim:** The Basic page's tooltip sits `SP.xs` (4 px) from its button while every chrome tooltip sits `layout.widget_gap` away, so the one tooltip the three showcases compare is placed by a different rule than the iced chrome's own.
+**Evidence:** `.gap(sp.xs)` at :7041 vs `.gap(gap.widget)` in chrome_tooltip (:4158); Widget Info says only 'gap to its control: the showcase's' (:6128).
+**Fix proposed:** Use one rule for both (the gpui showcase's for the compared tooltip) and say it in the Not themeable line.
+**Verdict:** CONFIRMED — The Basic tooltip uses .gap(sp.xs) (showcase-iced.rs:7041) while chrome_tooltip uses .gap(gap.widget) (:4158, layout.widget_gap with SP.s fallback). Mitigation: Widget Info's Not themeable line for Tooltip discloses 'gap to its control: the showcase's' (:6129), so it is a stated choice, just a different one from the chrome's.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B1#18.
+
+#### M9-084 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5536
+**Claim:** M1-T7-07: iced's per-widget Widget Info is hand-written, not generated from the leaf-derived contract table; nothing ties `iced_route`'s ~570 lines of strings to what the styles draw, which is how the Menu, CheckMark, Spinner, icon-button and tab disagreements above went unnoticed.
+**Evidence:** iced_route (:5536-6113) maps (table, field) plus element-id prefixes to prose; the class it names is chosen by a hand list of ids (:5542-5558); Not themeable lines are matched by element name (:6117-6132); arms exist for leaves no element lists (`list.alternate_row_background`, :5951, absent from docs/showcase-elements.toml). The contract is `#[cfg(test)] mod contract` (connectors/native-theme-iced/src/lib.rs:271-272), unreachable from an example, and its derived leaf->row map exists only as a local inside `every_colour_leaf_reaches_a_row_or_is_named` (contract.rs:4830-4889, `reached`), for colour leaves only: no row exists for length leaves (paddings, sizes, line widths), and rows carry `native: fn(&ResolvedTheme)`, not a leaf name (contract.rs:68-80). Places the two can disagree: every route string; the id-prefix class choice; feature-dependent widgets (iced_aw tabs vs buttons); stated-vs-unstated branches (check mark stroke, radio dot, tooltip padding, expander frame); the not-themeable list.
+**Fix proposed:** Per M1-T7-07's decision: have the contract emit its derived leaf->row map (colour leaves) as a checked-in generated table (or a `#[doc(hidden)]` pub fn behind a showcase feature) and render the colour rows from it; keep hand routes only for length leaves, each with a test that the named style function reads that leaf. The per-instance/innermost-hover half of docs/todo.md:2950 (the per-instance Widget Info entry) stays open.
+**Verdict:** KNOWN — Recorded as ledger M1-T7-07 (docs/todo_code-review-findings.md:304, :1080-1100: 'generate iced's only, in M9, after the converse-coverage rows exist') and open entry docs/todo.md:2950 (iced per-instance Widget Info, generate from the iced contract's rows). The concrete disagreements it explains are findings 4-8.
+**Triage:** known — the cited entry carries it; its text is extended where the finding adds a site.
+**Status:** open
+*Source:* B1#19.
+
+#### M9-085 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8686
+**Claim:** On windows-11 (light and dark), the Buttons page's primary-row Widget Info gives 'hover bg: iced's primary.strong' as the theme palette's primary.strong, which iced derives from defaults.accent_color (#0078d4), while the hovered Primary button is drawn in Primary::generate(button.primary_background) (#0067c0 light, #4cc2ff dark).strong, so the hex shown is not the one on screen.
+**Evidence:** showcase-iced.rs:8646 `ext = state.current_theme.extended_palette()`, :8686-8690 `ext.primary.strong.color`; palette.primary is accent_color (palette.rs:43) and extended.rs overrides only primary.base.text (extended.rs:106); styles::button_primary generates its own pair from b.primary_background (styles.rs:371-376) and paints `primary.strong` while Hovered (:383); windows-11.toml:22/:143 (#0078d4 / #0067c0), :585/:707 (#0078d4 / #4cc2ff).
+**Fix proposed:** Read the drawn value: `styles::button_primary(resolved)(&state.current_theme, button::Status::Hovered).background`, or `Primary::generate(to_color(button.primary_background), palette.background, palette.text).strong.color` as the style computes it; name the row 'button.primary_background, iced's strong derivation'.
+**Verdict:** CONFIRMED — button_info shows ext.primary.strong (showcase-iced.rs:8685-8689), the palette generated from defaults.accent_color (palette.rs:43; windows-11.toml:22/:585 #0078d4), while styles::button_primary hovers Primary::generate(button.primary_background).strong (styles.rs:371-376; windows-11.toml:143 #0067c0, :707 #4cc2ff).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#0.
+
+#### M9-086 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8759
+**Claim:** On adwaita and macos-tahoe (no button.disabled_background), the Buttons page's 'Disabled Buttons' info says every class is 'button.disabled_background' (showing button.background_color) with 'button.disabled_text_color', 'one disabled pair for every button class', while Disabled Primary and Disabled Danger are drawn in their own idle pairs; on every preset the hexes are unfaded although each colour is drawn faded by button.disabled_opacity.
+**Evidence:** showcase-iced.rs:8762-8781; class_button: `None => (idle, idle_label)` (styles.rs:306-309), faded by `opacity` (:321-325); styles::button fades its disabled pair too (:196-200); adwaita.toml:127 and macos-tahoe state no disabled_background (count of `disabled_background` under [*.button] is 0 for both), adwaita disabled_opacity 0.5 (:61).
+**Fix proposed:** Read each drawn class at Status::Disabled from its style closure (styles::button, button_primary, button_danger) and list the three, or state 'where the theme states no disabled fill, each class keeps its own pair, faded by button.disabled_opacity'.
+**Verdict:** CONFIRMED — The info claims one disabled pair for all (showcase-iced.rs:8738-8761), but class_button keeps the idle pair when button.disabled_background is None (styles.rs:306-309; adwaita.toml:127, macos-tahoe states none), and every disabled colour is faded() by disabled_opacity (styles.rs:196-198, :320-324) while the info shows the unfaded hex. (verifier: The 'unfaded on every preset' half is overstated: faded() is an identity at disabled_opacity 1.0 (kde-breeze, windows-11, material-3, macOS presets); it shows only on adwaita and the community presets (0.5).)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#1.
+
+#### M9-087 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8604
+**Claim:** With the Selection page's switch off, on material-3 (both modes), windows-11 (both modes) and adwaita dark, the switch's Widget Info (and iced's Toggler's below it) names the thumb 'switch.thumb_background' and its size 'switch.thumb_diameter', while the off thumb is drawn in switch.unchecked_thumb_background and, on material-3, switch.unchecked_thumb_diameter (16 against 24).
+**Evidence:** switch_info showcase-iced.rs:8604-8615; iced's Toggler info :9400-9409 (thumb_diameter_s from sw.thumb_diameter, :9240); toggler_over picks unchecked_thumb while not toggled (styles.rs:944-947, :982, :988) and unchecked_padding_ratio (:973, :1005-1009); switch_over sizes the off thumb by unchecked_thumb_diameter (lib.rs:822-826); material-3.toml:398, :403, :903, :908; windows-11.toml:425, :988; adwaita.toml:695.
+**Fix proposed:** Add 'off thumb' rows from switch.unchecked_thumb_background and unchecked_thumb_diameter where the theme states them (their soft-option fallbacks otherwise), or show the row for state.toggler_enabled's state.
+**Verdict:** CONFIRMED — switch_info (showcase-iced.rs:8604-8615) and iced's Toggler info (:9401-9409, thumb_diameter_s at :9240) name only switch.thumb_background/thumb_diameter, while off the switch draws unchecked_thumb_background and unchecked_thumb_diameter (lib.rs:822-826, styles.rs:944-989; material-3.toml:398/:403, windows-11.toml:425, adwaita.toml:695); the page starts with the switch off (:1904).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#2.
+
+#### M9-088 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:9632
+**Claim:** On adwaita, material-3 and windows-11 the Range page's progress-bar info claims 'border: progress_bar.border.color', and on material-3 the Display page's Tooltip info claims 'border: tooltip.border.color', though those borders are 0 px wide and draw nothing.
+**Evidence:** progress_bar_info showcase-iced.rs:9632-9636; Display tooltip info :9916; styles::progress_bar and styles::tooltip take border_of(..) whole (styles.rs:1405-1410, :1510-1519); line_width_px = 0.0 in [light|dark.progress_bar.border] of adwaita, material-3, windows-11 and [light|dark.tooltip.border] of material-3.
+**Fix proposed:** List a border colour only where its border.line_width > 0, otherwise 'no border drawn (border.line_width 0)', as the common rule 'a zero-width edge is not drawn in its colour' asks.
+**Verdict:** CONFIRMED — progress_bar_info lists progress_bar.border.color (showcase-iced.rs:9631-9635) and the Display tooltip info tooltip.border.color (:9916) unconditionally, while those borders are line_width 0 on adwaita/material-3/windows-11 (progress_bar.border) and material-3 (tooltip.border); no zero-width guard exists in widget_tooltip. (verifier: S3 seems closer: a colour row for an invisible border misleads but shows no wrong hex for anything drawn.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#3.
+
+#### M9-089 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:9935
+**Claim:** The Display page's four tooltips ignore tooltip.border.padding (kde-breeze 3, macos-monterey 4), tooltip.max_width, layout.widget_gap and defaults.line_height, all of which the chrome and Basic tooltips take, and their info lists 'max width' as not themeable.
+**Evidence:** showcase-iced.rs:9935-9978: no `.padding(..)` (iced's DEFAULT_PADDING 5.0, iced_widget-0.14.2 tooltip.rs:89), no max_width on the tip, `.gap(sp.xs)`, `.typeset(..)`; chrome_tooltip uses `container(tip).max_width(resolved.tooltip.max_width)`, `.gap(gap.widget)`, `.themed(..)` and tooltip_padding (:4147-4164); Basic tooltip :7014-7040; info row :9929.
+**Fix proposed:** Build the four through the same recipe as chrome_tooltip (tooltip_padding where all sides agree, the tip container at tooltip.max_width, gap.widget, `.themed`), and move 'max width' from Not themeable to Theme config.
+**Verdict:** CONFIRMED — The four Display tooltips (showcase-iced.rs:9935-9980) use typeset (no defaults.line_height, :12282 vs themed :12291), no max_width container and no tooltip_padding (:6939), unlike chrome_tooltip (:4139-4165) and the Basic tooltip (:7019-7046); kde-breeze.toml:214-215 states 3 all round. (verifier: One detail is wrong: the Basic tooltip gaps by sp.xs (:7041) as the Display ones do; only chrome_tooltip takes layout.widget_gap (:4158).)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#4.
+
+#### M9-090 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:11051
+**Claim:** On the Extra page (iced_aw feature), every MenuBar title, menu row and ContextMenu entry is styled as a button, so each paints button.background_color with the button's border and radius over the menu panel and takes button.font.color / hover_background / hover_text_color, never menu.font.color, menu.hover_background or menu.hover_text_color; the context popup is a card padded sp.xs and the drop-downs keep iced_aw's 5 px instead of popover.border.padding.
+**Evidence:** menu_entry `.style(styles::button(resolved))` :11051, menu_root :11063, context entry :11197; popup `container(..).padding(Padding::from(sp.xs)).style(styles::container_card(..))` :11202-11206; aw_menu sets no padding :10920 (AW_MENU_PADDING default) while the chrome menus use menu_row (:3986-4006: no fill at rest, menu.hover_background / hover_text_color) and menu_popup_padding (:4310, :4881-4882); styles::button fills and borders every status (styles.rs:188-207); the info's 'bar and panel: menu.background_color' (:11118-11122) is covered by the item fills.
+**Fix proposed:** Style the rows with menu_row (titles with menu_title), give aw_menu `.padding(menu_popup_padding(resolved))`, and draw the context popup as the menu panel (menu.background_color, menu.border, menu_popup_padding).
+**Verdict:** CONFIRMED — Extra page menu_entry, menu_root and context entries use styles::button (showcase-iced.rs:11051, :11060, :11197), so they paint button.background_color/hover pairs, though the same showcase has menu_row (:3986-4007) on menu.font.color/hover_background/hover_text_color; aw_menu sets no panel padding (:10920) so iced_aw's 5 px stands, unlike menu_popup_padding (:10905), and the context popup pads sp.xs on a card (:11202-11204). (verifier: The info's own reason (:11150-11152, 'the items are our own widgets, so they take styles::button') is contradicted by menu_row, so it is also an info-truth error.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#5.
+
+#### M9-091 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:10341
+**Claim:** On material-3 (header #49454f), macOS presets (header #000000d8 light) and any theme whose list fonts' colours differ from defaults.text_color, the Layout page's table draws its header and cells in the inherited text colour and no list.header_background, while the Basic table draws both colours and the header fill.
+**Evidence:** header_cell `text(title).typeset(&resolved.list.header_font, a11y)` :10341 and cell closures :10358-10377 set size and font, no `.color`; the Basic table reads `head_ink = to_color(l.header_font.color)` (:8384) and item_font.color (:8411) and list.header_background (:8315); material-3.toml [light.list.header_font] color #49454f, macos-monterey/tahoe [light.list.header_font] #000000d8.
+**Fix proposed:** Give the header labels `.color(to_color(list.header_font.color))`, the cells `list.item_font.color`, and the header cells a container on list.header_background, as the Basic table does; add the three to the Table info.
+**Verdict:** CONFIRMED — The Layout table's header and cells use .typeset() alone (showcase-iced.rs:10342, :10359-10380), which sets no colour, and nothing paints list.header_background, while basic_table takes header_font.color, header_background and item_font.color (:8384-8411); material-3.toml:329 #49454f, macos-tahoe.toml:248 #000000d8.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#6.
+
+#### M9-092 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:12599
+**Claim:** With the OS theme on GNOME or KDE set to an italic or oblique UI font, every text the showcase draws is upright: theme_font and font_from_database never carry ResolvedFontSpec.style, and font_row says 'family, size and weight' without naming the dropped style.
+**Evidence:** drawable_font builds `iced::Font { family, weight, ..iced::Font::DEFAULT }` (:12599-12606) and matches only upright faces (upright_faces :12630-12639); font_drawn/role_drawn pass family and weight only (:12339-12352); resolved_family keys on the style (:12469) and system_font_family selects a face at it (lib.rs:1253-1271), so the family is the italic face's while the drawn font is upright; the GNOME reader reads Oblique/Italic (gnome/mod.rs:74-76, :329-331); native_theme_iced::font carries the style (lib.rs:1287-1305).
+**Fix proposed:** Pass font.style into font_from_database / drawable_font and set `iced::Font::style` from it (matching faces of that style), as native_theme_iced::font does; have font_row name the style where it is not Normal.
+**Verdict:** CONFIRMED — font_from_database builds iced::Font with family and weight only, ..DEFAULT style (showcase-iced.rs:12599-12603), and font_drawn/theme_font pass no style (:12323, :12340), though resolved_family keys on style (:12469) and the connector's font() maps it (lib.rs:1293-1297); font_row_drawn says 'family, size and weight' (:12365). Not in docs/todo.md.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#7.
+
+#### M9-093 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:6675
+**Claim:** Under an OS text-scaling factor other than 1, the 'Theme fonts' lines that widget_tooltip_themed adds to the Button, TextInput and TextEditor infos give defaults.font.size and defaults.mono_font.size unscaled, while all text is drawn at scaled_text_size; the Display page's font line shows the scaled size and notes the theme's.
+**Evidence:** widget_tooltip_themed `fs = format!("{:.0}px", ..defaults.font.size)` :6675 and `ms` :6680 (called from button_info :8672, text_input_info :8874, TextEditor :8982); Display font_info uses native_theme_iced::font_size(r, a11y) and adds the theme's size where they differ (:10007-10019); Typeset::typeset scales every size (:12282-12285).
+**Fix proposed:** Print native_theme_iced::font_size(resolved, a11y) and mono_font_size(..), with the theme's own size beside them where the factor is not 1, as view_display does.
+**Verdict:** CONFIRMED — widget_tooltip_themed prints defaults.font.size and mono_font.size unscaled (showcase-iced.rs:6675, :6681) while text is drawn at scaled_text_size; the Display page's font_info shows font_size(r, a11y) and notes the theme's size (:9998-10011). (verifier: S3 seems closer: it shows only under a non-1 OS text-scaling factor.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#8.
+
+#### M9-094 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:11772
+**Claim:** On the Icons tab, every view rebuilds all 42 role icons' handles, re-colourising and copying each bundled SVG (and cloning each RGBA buffer) into a new handle, and the tab views 20 times a second while its animated icons tick.
+**Evidence:** build_icon_cell calls native_theme_iced::icons::to_svg_handle(data, Some(fg_color)) / to_image_handle(data) per cell per view (:11772-11804), which runs colorize_monochrome_svg or into_owned and Handle::from_memory each time (icons.rs:73-81, :280-285) and clones the RGBA (icons.rs:58-62); subscription pushes a 50 ms AnimationTick while active_tab == Tab::Icons (:12749-12753); the animated icons' handles are built once at load instead (:1462-1500). Not measured.
+**Fix proposed:** Build each icon's svg::Handle / image::Handle once in load_all_icons (store it in LoadedIcon, rebuilt where the icon set, theme or text colour changes) and hand the cached handle to svg()/image() in build_icon_cell.
+**Verdict:** CONFIRMED — build_icon_cell runs in view for each loaded icon (showcase-iced.rs:11624) and calls to_svg_handle/to_image_handle (:11757-11775), which colourise and copy the SVG or clone the RGBA buffer into a new handle (icons.rs:58-61, :280-284); the 50 ms AnimationTick subscription runs on the Icons tab while it has animated icons (:12749-12752).
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* B2#9.
+
+#### M9-095 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8644
+**Claim:** button_info, text_input_info and pick_list_info take a `sized` flag that every caller passes as false, so their 'minimum size'/'height'/'padding' branches are dead, and the docs of these and of checkbox_info, radio_info, slider_info and progress_bar_info say the Basic page uses them, which it has not since it took its info from the element list.
+**Evidence:** Only callers: button_info(state, false) :8717, text_input_info(state, false) :8930, pick_list_info(resolved, false) :9462; dead branches :8662-8668, :8861-8866, :9176-9189; doc comments :8641-8643, :8841-8843, :9051, :9102-9103, :9163-9165, :9586-9587, :9619; the Basic page's info comes from element_info_view (:5406) since 9de49284.
+**Fix proposed:** Drop the `sized` parameter and its branches (keeping the false arms) and say in each doc comment that it is the page's own block info.
+**Verdict:** CONFIRMED — Every call passes sized=false (showcase-iced.rs:8717, :8930, :9462), so the sized branches (:8667-8675, :8862-8867, pick_list_info) are dead; the docs at :8641-8643, :8841-8843, :9051, :9102-9103, :9163-9165, :9586-9587 and :9619 still say the Basic page uses them, and no caller lies in view_basic (:6967).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#10.
+
+#### M9-096 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:10043
+**Claim:** On every preset whose card.border.padding is not 12 px, the Display page's 'Spacing & Layout' boxes, drawn as cards (styles::container_card), are padded by the showcase's sp.m instead of the card padding the same page computes for its card containers.
+**Evidence:** :10042-10060 `.padding(Padding::from(sp.m)).style(styles::container_card(resolved))` four times; card_pad = padding_or(&card.border.padding, Padding::ZERO) at :9814, used for the Styled Containers at :9870, :9880.
+**Fix proposed:** Pad the four boxes with card_pad, or draw them as plain containers if the demo is meant to show the showcase's own spacing.
+**Verdict:** CONFIRMED — The Spacing & Layout boxes are container_card padded by sp.m (showcase-iced.rs:10040-10058), while the page pads its card containers by card_pad = padding_or(card.border.padding, ZERO) (:9814, :9880); only windows-11 states a card padding (12, windows-11.toml:544-545), so everywhere else the cards are 0 and the boxes 12. (verifier: S3 seems closer: A, B and C are centred in fixed 60 px boxes, so the padding is visible only on the Right-aligned box.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#11.
+
+#### M9-097 · M9b · theme-data · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:11220
+**Claim:** Where a theme states tab.item_gap, the Extra page's TabBar spaces its tabs by the showcase's sp.xxs instead, while the Basic tabs and the chrome tab strip take tab.item_gap.
+**Evidence:** TabBar `.spacing(sp.xxs)` :11220; Basic page `match tab_t.item_gap` (:7758-7766), chrome strip (:4767-4770); TabTheme.item_gap (native-theme/src/model/widgets/mod.rs:467-469).
+**Fix proposed:** `.spacing(tab_t.item_gap.unwrap_or(<iced_aw's own>))`, as the Basic page does, and add the row to the TabBar info.
+**Verdict:** CONFIRMED — The Extra page's TabBar spaces by sp.xxs (showcase-iced.rs:11220), while the Basic tabs take tab.item_gap (:7764-7767) and the chrome strip too (:4767-4768); adwaita.toml:221 and kde-breeze.toml:254 state 0.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#12.
+
+#### M9-098 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10158
+**Claim:** The Layout page's Grid info says its spacing is 'the showcase's own scale' though it is layout.widget_gap wherever the platform states one, shows 'cell fill: each cell's own color' with the accent's hex, and its caption calls the eight swatches 'the eight colors ResolvedDefaults names' though ResolvedDefaults names more (the Theme Map lists 22 of its colours).
+**Evidence:** info :10137-10141, :10158; `.spacing(gap.widget)` :10179 with Gaps::from_layout (:220-228); caption :10163-10166; Theme Map's defaults list :11972-12006.
+**Fix proposed:** Say 'spacing: layout.widget_gap (the showcase's 8 px where unstated)', drop the hex from the cell-fill row (or list the eight), and say 'eight of the colours ResolvedDefaults names'.
+**Verdict:** CONFIRMED — The Grid's spacing is gap.widget = layout.widget_gap.unwrap_or(SP.s) (showcase-iced.rs:10179, :222) though the info says 'the showcase's own scale' (:10158); the 'cell fill' row shows the accent hex (:10137-10140); the caption's 'the eight colors ResolvedDefaults names' (:10163-10164) ignores the others it holds (background, text, border, selection, etc.).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#13.
+
+#### M9-099 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10029
+**Claim:** The Display page's 'Available presets' count is every platform's preset list, while the theme picker and --theme offer only this platform's (on Linux it says 17 where fewer are selectable).
+**Evidence:** :10027-10030 `Theme::list_presets().len()`; theme_choices uses list_presets_for_platform() (:1180-1188), and CliArgs::theme_choice rejects other platforms' presets (:924-956).
+**Fix proposed:** Count `Theme::list_presets_for_platform()` (and say 'on this platform').
+**Verdict:** CONFIRMED — The count is Theme::list_presets().len() (showcase-iced.rs:10029), every platform's, while theme_choices and --theme offer list_presets_for_platform() (:1180-1186, :943-950; model/mod.rs:722-742).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#14.
+
+#### M9-100 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8919
+**Claim:** The Text Inputs page builds both single-line inputs with `let mut input` and a bare block `{ input = input.padding(inp_pad); }`, a leftover of a removed condition.
+**Evidence:** :8919-8927 and :8946-8954.
+**Fix proposed:** Chain `.padding(inp_pad)` into the builder and drop the `mut` and the blocks.
+**Verdict:** CONFIRMED — Both single-line inputs are `let mut input` with a bare `{ input = input.padding(inp_pad); }` block (showcase-iced.rs:8919-8927 and :8945-8953), a leftover of a removed condition.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#15.
+
+#### M9-101 · M9b · bug · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:11691
+**Claim:** view_animated_icons indexes `state.animated_frame_indices[i]` and `anim_handles.handles[frame_idx]`; the vectors are kept in step today, but the view would panic if a change ever set them apart.
+**Evidence:** :11690-11692; the invariant is held by construction (:1480-1500 non-empty handles, indices sized to frames) and by the paired assignment (:2158-2159) and the modulo update (:2777-2778).
+**Fix proposed:** Zip animated_frames with animated_frame_indices and take `handles.get(frame_idx)`, skipping a missing frame, per the no-panic rule.
+**Verdict:** CONFIRMED — view_animated_icons indexes animated_frame_indices[i] and handles[frame_idx] directly (showcase-iced.rs:11691-11692); the vectors are built together (:1500-1501, handles non-empty :1479) and replaced together (:2158-2160), so it is latent only, but it is the panic-prone indexing the project's no-panic rule forbids; the tick's % handles.len() (:2778) has the same dependence.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* B2#16.
+
+#### M9-102 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:1606
+**Claim:** With any accessibility text scale other than 1 (the Preferences text-scale override, or a system large-text setting on the from_system path), the Basic page's table header stays at the unscaled list.header_font.size while its rows scale. Its header row height is computed from the unscaled size too.
+**Evidence:** basic.rs:1606-1609 builds `egui::FontId::new(l.header_font.size, weighted_family(..))` from the raw leaf, and basic.rs:1611 sizes the header row from that font. The rows use `TextStyle::Body` of the Role::List scope (basic.rs:1605), which the connector scales (style/roles.rs:64 scaled_text_size). The Data and Theme Map pages use `list_header_font(t, atlas.accessibility())` (data.rs:26, theme_map.rs:61), which scales it (accessors.rs:514-516).
+**Fix proposed:** Take the size from `native_theme_egui::list_header_font(t, atlas.accessibility()).size`, keep `demo::weighted_family` for the weight, and pass that font to row_metrics.
+**Verdict:** CONFIRMED — basic.rs:1606-1609 builds the header FontId from the raw l.header_font.size, while the item font is TextStyle::Body of the List scope, which the atlas multiplies by text_scaling_factor (src/lib.rs:97). The Data and Theme Map tables use the scaled list_header_font (data.rs:26, theme_map.rs:61). row_metrics on that font (:1611) gives the unscaled header height wherever list_header_height is None. tests.rs:2111-2132 re-derives it from the unscaled size, so it only holds at factor 1.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#0.
+
+#### M9-103 · M9c · theme-data · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/data.rs:57
+**Claim:** Under material-3 (list.header_font.weight 500), the Data page's table header and the Theme Map's header are drawn at the body weight (400), while the Basic page's table header is drawn at 500.
+**Evidence:** data.rs:26 and theme_map.rs:61 take `list_header_font`, which is `FontId::proportional` with no weight (accessors.rs:503-516; its doc says the weight is the caller's, from `t.list.header_font.weight`). data.rs:55-59 and theme_map.rs:83-87 add only the colour. demo::Semibold registers a face for list.header_font.weight (demo.rs:963), and basic.rs:1606-1609 draws it through `demo::weighted_family`. material-3.toml:328 and :833 state weight = 500.
+**Fix proposed:** Build the two headers' font as `egui::FontId::new(header_font.size, demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight))`, as the Basic table does, and list `list.header_font.weight` in the instance's read rows.
+**Verdict:** CONFIRMED — list_header_font returns FontId::proportional and drops the weight (src/accessors.rs:514-517; its doc leaves .weight to the caller). data.rs:57 and theme_map.rs:61 pass it as given. basic.rs:1606-1609 goes through demo::weighted_family(l.header_font.weight). material-3.toml:328 states weight 500 and defaults.font.weight is 400 (:68). (verifier: S3 seems fairer: one weight step on two palette tables.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#1.
+
+#### M9-104 · M9c · perf · S3 · connectors/native-theme-egui/examples/showcase-egui/pages/icons.rs:232
+**Claim:** While the Icons page is shown, every pass reloads the chosen theme's loading indicator and recolours, rehashes and re-wraps its current frame. The indicator schedules a repaint at each frame boundary, and every frame for a Spin, so this runs continuously. For a freedesktop theme each pass is a directory lookup, a file read and a sprite-sheet parse.
+**Evidence:** icons.rs:232-235 calls `FreedesktopLoader::load_indicator` / `load_icon_indicator` on each pass. For freedesktop that is `lookup_in_chain` + `std::fs::read` + `parse_sprite_sheet` (native-theme/src/freedesktop.rs:616-655). icons.rs:295 `icons::to_image` copies, colours and hashes the frame's SVG on each call (native-theme-egui/src/icons.rs:221-232, :398-405). The page keeps itself repainting through animated_frame_index (icons.rs:663 in the connector, request_repaint_after) and spin_angle (:682, request_repaint). The widgets crate's Spinner caches exactly this, with the reason 'a spinner draws a frame in every pass' (native-theme-egui-widgets/src/spinner.rs:130-137). gpui caches it in rebuild_animation_caches (showcase-gpui/app.rs:595-640), rebuilt only when the icon theme changes.
+**Fix proposed:** Hold the AnimatedIcon and each frame's ImageSource in App/DemoState, keyed by (IconSet, icon theme, scheme). Fill it on first use and clear it in App::apply (the install that calls forget_icons), as gpui's rebuild_animation_caches does.
+**Verdict:** CONFIRMED — icons_indicator (icons.rs:232-235) calls FreedesktopLoader::load_indicator on every pass. That runs lookup_in_chain (freedesktop_icons::lookup with no cache), std::fs::read and parse_sprite_sheet (native-theme/src/freedesktop.rs:645-654). to_image then recolours and hashes the frame (src/icons.rs:225-236, :411-418). animated_frame_index and spin_angle keep requesting repaints (src/icons.rs:663, :682). This is a separate site from the known named_image item at docs/todo.md:3654, but the same kind of problem.
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* C1#2.
+
+#### M9-105 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:215
+**Claim:** On macos-tahoe, which states no layout.section_gap, the Basic page puts egui's item_spacing.x between its columns, where the gpui page puts none. column_count picks the number of columns assuming no gap, so the columns laid out are (n-1)*item_spacing.x narrower in total than the width the count was chosen for, and the widest fixed-width control can overflow its column.
+**Evidence:** basic.rs:215-218 uses `section_gap.unwrap_or(ui.spacing().item_spacing.x)` for the layout, and basic.rs:143 uses `section_gap.unwrap_or_default()` (0) in column_count, whose doc (basic.rs:129-136) promises the counted width is the laid-out width. gpui counts with unwrap_or_default (showcase-gpui/pages/basic.rs:230) and lays out with `with_gap(.., section_gap)`, which sets no gap for None (support.rs:308-313). macos-tahoe.toml has no section_gap_px; every other preset states one.
+**Fix proposed:** Use one gap for both: `atlas.layout().section_gap.unwrap_or_default()` in show(), as gpui does, and drop the item_spacing fallback from basic.rs:203-205's doc.
+**Verdict:** CONFIRMED — show() uses gap = section_gap.unwrap_or(item_spacing.x) (basic.rs:213-216), but column_count assumes section_gap.unwrap_or_default() = 0 (:143). macos-tahoe states no section_gap, and its widget_gap 8 becomes item_spacing.x (macos-tahoe.toml:762, mapping.md:79). gpui adds no gap there (support.rs:308-312, geometry.rs:1405). So the columns lose (n-1)*8 px of width the count did not reserve. Overflow happens only at widths near a count boundary. (verifier: S3: the overflow needs a window width near the threshold.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#3.
+
+#### M9-106 · M9c · theme-data · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/overlays.rs:100
+**Claim:** Under windows-11 (dialog.min_width 320, min_height 184), the Overlays page's Modal is laid out at its content's size, ignoring dialog.min_width, max_width, min_height and max_height. The chrome's command palette, the same Modal on the same surface, applies all four.
+**Evidence:** overlays.rs:100-126 builds `egui::Modal::new(..).frame(chrome.frame).show(..)` with no size constraint. chrome.rs:1488-1517 reads `t.dialog.min_width/max_width/min_height/max_height` and converts them with inner_extent for the palette's Modal. The connector's mapping grades the four DERIVED, per call (src/mapping.md:126-129; spec mapping row 'dialog.min_width | Ui::set_min_width in the Modal::show closure, per call'). windows-11.toml:453-456 states 320/548/184/756.
+**Fix proposed:** Apply the same four extents inside the Modal's closure (`ui.set_min_width(inner_extent(t.dialog.min_width, &chrome.frame, true))` and the rest), sharing chrome.rs's inner_extent, and list them in the modal's read rows.
+**Verdict:** CONFIRMED — The Overlays Modal (overlays.rs:97-128) never calls set_min_width, set_max_width, set_min_height or set_max_height. command_palette applies all four through inner_extent (chrome.rs:1489-1543). The spec makes dialog.min_width and min_height per-call values for the application (todo_v0.6.0_egui-connector-spec.md:2770-2772, :8133). windows-11 states 320/548/184/756 (windows-11.toml:453-456).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#4.
+
+#### M9-107 · M9c · theme-data · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/text.rs:63
+**Claim:** The Text page's text-role labels read 'Section heading, weight 600' and so on, but are drawn at the body weight, while the Basic page's Typography lines in the same roles are drawn at their stated weight. Under windows-11, Display reads 'weight 600' in a 400 face.
+**Evidence:** text.rs:64-69 builds `RichText::new(..).font(text_role_font(..))`. text_role_font is `FontId::proportional` (accessors.rs:157-164), which draws the body face. The weight appears only in the label's text and the read rows (text.rs:70-76). demo::role_text (demo.rs:1091-1113), which basic.rs:1035 uses, draws the face registered for the role's weight through weighted_family, and the faces are registered for every text_scale weight (demo.rs:958-962). windows-11.toml text_scale.display weight = 600.
+**Fix proposed:** Draw each label with `demo::role_text(ui, role, ..)`, or with `FontId::new(font.size, demo::weighted_family(ui, weight, t.defaults.font.weight))`, and add caption()'s 'weight drawn in' note (pages/mod.rs:195-199).
+**Verdict:** CONFIRMED — text.rs:63-68 draws each label in text_role_font, which is FontId::proportional (src/accessors.rs:157-164), and writes 'weight {weight}' into the text without applying that weight. Basic's typography uses demo::role_text, which goes through weighted_family (demo.rs:1091-1112). windows-11.toml:113 states display weight 600.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#5.
+
+#### M9-108 · M9c · theme-data · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/buttons.rs:30
+**Claim:** On every palette page, buttons in the Button role (Buttons page, the Overlays open/modal/popup buttons) are drawn without button.min_width, and the Inputs page's TextEdits without input.min_height. These are the per-call leaves the connector leaves to the application and the Basic page applies. A short label such as 'Small' or 'OK' under windows-11 (button.min_width 64) is narrower than the platform's minimum.
+**Evidence:** buttons.rs:29-88 and overlays.rs:34-35, :83-84, :114-121, :141-142, :205-206 add `Button::new(..)` / `ui.button(..)` with no `min_size`. inputs.rs:28-81 adds TextEdits with no `min_size`. The connector grades both DERIVED, per call (src/mapping.md:239 `button.min_width`, :368 `input.min_height`; spec §5.3 'Button::min_size per call'). basic.rs:445 and :664 apply them. windows-11.toml:120 states min_width_px = 64.
+**Fix proposed:** Pass `min_size(egui::vec2(t.button.min_width, 0.0))` to the Role::Button buttons of the palette pages, and `.min_size(egui::vec2(0.0, t.input.min_height))` to the Inputs page's TextEdits. Keep egui's own (`ui.button`, `ui.text_edit_singleline`) where the page means to show the difference, and note it in the instance.
+**Verdict:** CONFIRMED — buttons.rs:28-75 and overlays.rs:34, :83, :112, :135 add plain Button::new with no min_size. inputs.rs builds its TextEdits with no min_size. Basic applies Button::min_size(button.min_width, min_height) (basic.rs:445, :387) and the TextEdit min_size of input.min_height (:664). The spec says the application reads these per call (spec:2974, :8133). windows-11 button.min_width is 64.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#6.
+
+#### M9-109 · M9c · info-truth · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/overlays.rs:166
+**Claim:** Hovering the Overlays page's 'Right-click here for a context menu' label shows the Role::Menu rows, although the label is drawn in the base style. Only the menu it opens takes the Menu modifier.
+**Evidence:** overlays.rs:173-175 draws `ui.label(..)` on the page's base-style Ui and returns it as `target`. demo::modifier (demo.rs:583-599) records that returned Response with `Seam::Role(Role::Menu, Normal)`. The open menu is recorded separately by demo::styled (overlays.rs:181). The spec's rule is that no widget's info names a seam it is not painted with (connector spec §10.4, 'Widget Info: registration').
+**Fix proposed:** Draw the target through `demo::base(reg, ui, "context menu target", ..)` and build the Popup::context_menu with `role_modifier(ui, Role::Menu, normal)` directly, or give demo::modifier the popup's own Response to record.
+**Verdict:** CONFIRMED — demo::modifier records the response the closure returns with Seam::Role(Menu) (demo.rs:583-598). The closure returns the base-style target label (overlays.rs:173-198), so the label's info lists Role::Menu rows and seam_place calls it the 'Role::Menu scope' (info.rs:419-425). The menu it opens is already recorded separately as 'context menu (open)' (:181).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#7.
+
+#### M9-110 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:1631
+**Claim:** On every preset with a non-zero list.border.corner_radius (inherited from defaults.border.corner_radius: adwaita 9, macos-tahoe 6, kde-breeze 5, windows-11 4), the Basic table's header fill and its selected last row, and the List's hovered or selected first and last visible rows, are painted as square rectangles. They paint over the rounded frame's corner arcs and beyond them.
+**Evidence:** list_frame rounds the frame by list.border.corner_radius with no inner margin (basic.rs:1375-1387). The header and rows are painted with `CornerRadius::ZERO` from the frame's content corner: header basic.rs:1631-1635, selected row :1667-1669 (TABLE_SELECTED = 1, the last row), list rows :1557-1559. egui paints a Frame's fill and stroke under its content (frame.rs, shape index reserved before the content), and neither the frame nor the ScrollArea clips to the rounded shape. inheritance-rules.toml:86-92 gives list.border.corner_radius from defaults.border.corner_radius.
+**Fix proposed:** Round the header's top corners and the last row's bottom corners (and a list row at the view's top or bottom edge) by the frame's inner radius, `(l.border.corner_radius - l.border.line_width).max(0.0)`, with to_corner_radius. Compare with the gpui capture before choosing.
+**Verdict:** CONFIRMED — list_frame gives the frame a corner radius and no inner margin (basic.rs:1375-1387). egui's content rect is inset only by the stroke and is not clipped to the rounding. The header and selected-row fills (basic.rs:1631-1635, :1662) and list_row (:1557-1559) are rect_filled with CornerRadius::ZERO up to the content edges, so they paint over the arcs. list.border.corner_radius inherits defaults.border.corner_radius (inheritance-rules.toml:85-92): adwaita 9, tahoe 6, breeze 5, windows-11 4. (verifier: S3: a few-pixel corner defect.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#8.
+
+#### M9-111 · M9c · info-truth · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:497
+**Claim:** Hovering the Basic page's 'On' toggle button shows nothing that says its fill and text colour are button.checked_background and checked_text_color (or the fallback used: active_background, hover_background, active_text_color). Hovering the table shows nothing of separator.line_width, the grid's width. Both are per-call values the instance draws that no Role::Button or Role::List row carries.
+**Evidence:** basic.rs:497-513 computes on_fill/on_text per call and passes them to `Button::fill`/`RichText::color`. text_button's amend_last adds only button.min_width/min_height (basic.rs:391-394). basic.rs:1617 draws the grid at `t.separator.line_width`, and the table's instance is a Role::List record (basic.rs:1598-1604) with no read rows. Role::List lists the list.* rows only (connector spec §10.4, 'for a Role R, every row whose leaf starts with R.key()').
+**Fix proposed:** In text_button's caller for toggle_on, push the leaf that supplied the fill and the text colour, e.g. ('button.checked_background', value or 'not stated: button.active_background …'). For the table, push ('separator.line_width', ..) and ('list.grid_color', ..).
+**Verdict:** CONFIRMED — Partly confirmed. text_button records only button.min_width and min_height as instance reads (basic.rs:391-394), so the On button's info never says that it draws checked_background or checked_text_color, or which fallback it used (:497-516). table() records no separator.line_width read (:1600-1699), and Role::List rows_for does not list that leaf (info.rs:165-174). Correction: button.checked_background and checked_text_color ARE Role::Button rows. rows_for lists every 'button.' leaf (info.rs:167-171), shown as 'per call (T18(a))' (mapping.toml:981-987), but the same way for every button, not as this instance's value.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#9.
+
+#### M9-112 · M9c · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:865
+**Claim:** drop_down fetches the atlas a second time with `ThemeAtlas::from_ctx` and falls back to BASIC_WIDTH, although group() holds the atlas. Its siblings (text_inputs, number_input, card and others) take `atlas: &ThemeAtlas`.
+**Evidence:** basic.rs:182 calls `drop_down(reg, state, ui)` without the atlas that basic.rs:168-176 has. basic.rs:865-867 reads it back from the context, with a no-atlas fallback that cannot occur on the page, since pages/mod.rs:218-243 always passes the installed atlas.
+**Fix proposed:** Pass `atlas` (or `t`) to drop_down and use `BASIC_WIDTH.max(t.combo_box.min_width)`.
+**Verdict:** CONFIRMED — group() has the atlas but calls drop_down(reg, state, ui) without it (basic.rs:181). drop_down then fetches it again with ThemeAtlas::from_ctx and falls back to BASIC_WIDTH (:866-868). number_input, text_inputs and card take atlas: &ThemeAtlas (:184, :188, :191).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C1#10.
+
+#### M9-113 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:501
+**Claim:** On Linux, with Mode = System (the default), choosing any preset in the Theme row, the palette or `--theme <preset>` draws the preset's dark variant whatever the desktop's scheme, because the preset atlas carries no OS mode and egui falls back to `Options::fallback_theme` (Dark).
+**Evidence:** rebuild_atlas's Preset arm builds with `from_preset(name, false, &prefs)` (app.rs:501-507). A from_preset atlas has `os_mode() == None` (connector ext.rs:205-207 says so: on Linux egui then falls back to `Options::fallback_theme`). The plugin fills `RawInput::system_theme` only from the atlas's OS mode (plugin.rs:415-428), and winit 0.30.13 reports none on Linux (spec todo_v0.6.0_egui-connector-spec.md:452-457; wayland state.rs:856-858 returns only what the app set). The showcase keeps `ThemePreference::System` for Mode = System (app.rs:553-558) and never sets `fallback_theme`, so ctx.theme() is Dark (egui memory/mod.rs:331). The palette shows the symptom: with neither `ctx.system_theme()` nor `atlas.os_mode()` it labels the row plain `System` (chrome.rs:1457-1468). The gpui showcase's System mode reads the OS's scheme under a preset too (`AppColorMode::is_dark`, `System => system_is_dark()`, showcase-gpui/app.rs:186-191, used at :1907). The `default` theme is unaffected: to_egui_atlas sets os_mode (ext.rs:384).
+**Fix proposed:** Give the preset atlas the OS's mode through `Builder::os_mode` (from `native_theme::detect::system_is_dark()`, cached, which the watcher's and ReloadTheme's `invalidate_caches` clear), for example through a connector builder form of `from_preset` as M7-29 added `to_egui_builder`, so Mode = System follows the desktop under every preset as under `default`.
+**Verdict:** CONFIRMED — A preset goes through from_preset (app.rs:505-510), which builds without Builder::os_mode (ext.rs:236-251; atlas.rs:318-323: from_preset carries none), so the plugin's input_hook fills nothing (plugin.rs:413-427 needs Some(os_mode)); winit 0.30.13 reports None on Linux (platform_impl/linux/mod.rs:909-911, no ThemeChanged emitted there), and egui then takes fallback_theme, Dark by default (egui memory/mod.rs:331, :367). The showcase never sets fallback_theme or os_mode; the rationale says to supply Builder::os_mode from detect::system_is_dark (egui-connector-rationale.md:850-854), as the gpui showcase follows system_is_dark() (showcase-gpui/app.rs:190). (verifier: S2 agreed: the default mode draws the wrong variant for every preset on Linux.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#0.
+
+#### M9-114 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:793
+**Claim:** A failed watcher rebuild after an OS theme change is swallowed and nothing is shown, and a successful watcher rebuild leaves an earlier theme error banner on the page. The watcher-start error is also shown as a theme error until the next unrelated install clears it, though the watcher is still not running.
+**Evidence:** logic's watcher arm (app.rs:793-801) only takes `w.take()`. `ThemeWatcher::last_error()` (connector watch.rs:139-150, which `Handoff::on_change` fills on `Err`, :30-36, with a repaint) is read nowhere in the showcase (grep: no `last_error`). The arm also never touches `theme_error`, which only `install` clears (app.rs:520), so a banner from a failed `from_system` stays over a theme that now loaded. start_watcher stores its own start error in the same `theme_error` (app.rs:645), and the next successful pick runs `install`, which sets it to None (app.rs:520), so the page stops saying that OS changes are not followed. The arm also repeats `apply` (app.rs:532-541) minus `set_theme` and `publish_selection`.
+**Fix proposed:** Route the hand-off through one helper shared with `apply`, which installs the atlas and clears `theme_error`. In the same pass, show `watcher.last_error()` in the banner, prefixed `theme watcher:`. Keep the watcher's start error in a field of its own that `install` does not clear, shown as a note rather than as a theme error.
+**Verdict:** CONFIRMED — Nothing in the showcase reads ThemeWatcher::last_error (grep: no caller; watch.rs keeps it at Handoff::on_change), the watcher install path (app.rs:793-800) never clears theme_error, and start_watcher stores its error in theme_error (app.rs:645), which App::install clears at :520 without restarting the watcher. (verifier: S3 would fit better: all three paths need a failed rebuild or a failed watcher start, rare on a working desktop.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#1.
+
+#### M9-115 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:633
+**Claim:** If the user picks a theme, or changes Preferences, while a watcher rebuild for an OS change is under way, the rebuilt atlas of the previous selection is installed over the user's choice, and the Theme row then names a theme other than the one drawn until the next OS event.
+**Evidence:** The watcher closure clones `selection` when the event arrives and then rebuilds: `from_system` or `from_preset`, plus `FontPlan::from_system`'s face lookups (app.rs:635-642). Meanwhile the UI thread's `install` publishes the new selection (app.rs:540, :621-627) and installs its own atlas. The watcher then stores its stale atlas in the hand-off (watch.rs:21-27), and the next `logic` installs it unconditionally (app.rs:794-797) while `settings.theme` keeps the new choice.
+**Fix proposed:** Stamp each selection with a generation (an AtomicU64 bumped in `publish_selection`). Have the closure record the generation it built for beside the atlas, and have `logic` drop a hand-off whose generation is older than the current one. Or, on a stale one, call `self.install(ctx)`, which rebuilds the current selection.
+**Verdict:** CONFIRMED — The watcher closure snapshots the selection when the rebuild starts (app.rs:633-639) and logic installs whatever take() returns unconditionally (app.rs:793-800); a theme row click runs install in the UI pass after logic, so even a rebuild that finished but was not yet taken overwrites the user's pick next pass, while settings.theme (which the Theme row and status bar read, chrome.rs:715-718) keeps the new choice. No guard compares the pending atlas with the current selection. (verifier: S3 suggested: it needs an OS theme event within the window of a user pick.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#2.
+
+#### M9-116 · M9c · info-truth · S2 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:723
+**Claim:** Where the system lacks the stated `defaults.font.family` (windows-11's `Segoe UI` or macos-sonoma's `SF Pro` on Linux), the status bar and Widget Info's `defaults.font.family` and `defaults.font` rows name the stated family alone, while egui draws the platform's substitute. These are the same class as the known Theme-tab item (docs/todo.md:3499, info.rs:1114-1121 against :1129-1135), and that entry does not list them.
+**Evidence:** The status bar prints `format!("{} {size}", font.family)` of `t.defaults.font` (chrome.rs:707, :723). Widget Info's rows take the JSON value: `listed_value` (info.rs:303-309) of a `*.font.family` leaf prints the string as is (`leaf_text`, :394), and a whole-font leaf prints `font_text`'s stated `family` (:353-371). `defaults.font.family` is listed by 23 elements and `defaults.font` by 10 (docs/showcase-elements.toml). The face actually registered is the substitute's, under the stated name (connector fonts.rs:165-196), and the atlas records it as `Note::FontFamilyUnavailable { family, substitute: Some(..) }` (atlas.rs:53-59). The gpui status bar has the same line (showcase-gpui/chrome.rs:292), which M9b's entry also leaves out.
+**Fix proposed:** Have one helper map a family to the text the showcase prints: the stated name, plus `(not on this system; drawn in <substitute>)` from the atlas's `FontFamilyUnavailable` note. Use it in the status bar, in `font_text` and `leaf_text` for `defaults.font`/`defaults.mono_font` family values, and in the Theme tab's Fonts rows, and extend docs/todo.md:3499 to name these rows.
+**Verdict:** CONFIRMED — The status bar prints t.defaults.font.family (chrome.rs:707, :723) and Widget Info's font rows print the JSON's stated family (info.rs:351-371 font_text), while the connector draws the substitute registered under the stated name (src/fonts.rs:147-150, :176-190). docs/todo.md:3499's entry names only the egui Theme tab's Fonts section (info.rs:1129-1135), so these two sites extend that known item rather than being covered by it. (verifier: S2 agreed, the same class as the known M9b item; fix together.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#3.
+
+#### M9-117 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:1964
+**Claim:** On macOS the system menu bar has no File menu: AppKit shows the first submenu as the application menu under the app's name, so File's lone `Quit` sits there. About, Preferences… (Cmd+,), Hide (Cmd+H), Hide Others, Show All and Services are not in the app menu, there is no Window menu (Minimize, Zoom), and winit's default app menu that held them is switched off.
+**Evidence:** `system_menu::build` appends `Action::MENUS` in order, File first (chrome.rs:33-34, :1970-1990), and `init_for_nsapp` installs it as `mainMenu` (:1991). native_options switches off winit's default menu (main.rs:97-101; the spec, todo_v0.6.0_egui-connector-spec.md:7029-7032, says that menu is installed at launch otherwise). Apple's HIG, The menu bar (developer.apple.com/tutorials/data/design/human-interface-guidelines/the-menu-bar.json, read 2026-10-17): the menus appear as `YourAppName, File, Edit, Format, View, App-specific menus, Window, Help`. The app menu, titled with the app's name, holds `About YourAppName`, `Settings…`, `Hide`, `Hide Others`, `Show All` and `Quit YourAppName`, and an app should `Provide a Window menu even if your app has only one window`. The gpui showcase hands gpui the same list (showcase-gpui/chrome.rs:28-52; gpui-fast-macos platform.rs:282-321 makes each menu an item of mainMenu in order), so both showcases share the defect.
+**Fix proposed:** On macOS, build an app menu first from muda's predefined items: `PredefinedMenuItem::about`, a separator, Preferences… (Cmd+,), `services`, `hide`, `hide_others`, `show_all` and `quit`. Follow it with View, Theme, a Window menu (`minimize`, `zoom`, `bring_all_to_front`, `set_as_windows_menu_for_nsapp`) and Help (`set_as_help_menu_for_nsapp`). Drop the separate File menu and keep `menu_installed`'s count in step; make the same change in the gpui showcase's `menus()`.
+**Verdict:** CONFIRMED — system_menu::build appends File, View, Theme, Help as plain submenus (chrome.rs:1964-1990, MENUS :33-67) and main.rs:97-100 turns winit's default menu off, so AppKit takes File as the app menu with Quit alone; Apple's HIG (The menu bar) lists the app menu as About, Settings…, Services, Hide, Hide Others, Show All, Quit, and says to provide a Window menu even for a single-window app. The gpui showcase has the same defect: chrome::menus() starts with File (showcase-gpui/chrome.rs:28-51) and gpui-pre-macos create_menu_bar uses the first Menu as the app menu (platform.rs:259-298), so the fix (muda's PredefinedMenuItem about/services/hide/hide_others/show_all/quit/minimize/zoom, all safe) belongs in both. (verifier: S2 agreed; widen the finding to the gpui showcase too (parity).)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#4.
+
+#### M9-118 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/app.rs:444
+**Claim:** On macOS, `--open-menu theme` is accepted silently and does nothing: the system menu bar is not opened and no message says so, against the CLI's rule that a value the showcase cannot honour is reported and ignored.
+**Evidence:** App::new keeps `--open-menu` whenever `Action::MENUS` has the title (app.rs:444-452). Its only reader, `menu_bar`, is compiled out on macOS outside cfg(test) (chrome.rs:132-133, :238), and the field carries `allow(dead_code)` there (app.rs:353). The rule is stated at main.rs:259-260: `a value the showcase cannot honour is reported on stderr and ignored`.
+**Fix proposed:** Under `cfg(all(target_os = "macos", not(test)))`, report `--open-menu <menu>: the menus are the system menu bar's on macOS; ignored` on stderr and leave `open_menu` None.
+**Verdict:** CONFIRMED — The filter at app.rs:444-452 checks only Action::MENUS, which exists on macOS, so 'theme' passes silently, while the only consumer, menu_bar, is compiled out on macOS outside cfg(test) (chrome.rs:238-239, :358); main.rs:260 states the rule that a value it cannot honour is reported on stderr and ignored.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#5.
+
+#### M9-119 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:1546
+**Claim:** In the command palette, typing a query and pressing Enter runs nothing; it only takes focus from the field. Up and Down select no row, while the gpui showcase's palette moves a highlighted row with the arrow keys and runs it on Enter.
+**Evidence:** The palette reads only Escape (chrome.rs:1619-1624). Each row is `selectable_label(false, ..)` and runs only on a click (:1589-1604). Nothing handles Key::Enter, ArrowUp or ArrowDown. gpui's palette is gpui-component's Command (showcase-gpui/demo.rs:2368-2371, `on_confirm`), which binds enter to Confirm and up and down to SelectUp and SelectDown (gpui-component-0.7.3 src/command/state.rs:65-68).
+**Fix proposed:** Keep a selected index in `PaletteState`, clamped to the filtered rows and reset when the query changes. Move it with ArrowUp and ArrowDown, consumed before the TextEdit reads them, draw that row with `selectable_label(true, ..)`, and run it on Enter (`TextEdit` `lost_focus()` with `key_pressed(Enter)`).
+**Verdict:** CONFIRMED — The palette's rows react only to clicked() on selectable_label(false, ..) (chrome.rs:1580-1590) and the only key handled is Escape (:1620); a single-line TextEdit gives up focus on Enter. gpui-component 0.7.3's Command binds enter to Confirm and up/down to SelectUp/SelectDown (command/state.rs:65-68, :581-594), which the gpui showcase's palette uses (showcase-gpui/demo.rs:2368-2371).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#6.
+
+#### M9-120 · M9c · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/info.rs:664
+**Claim:** `InstanceInfo::read` is written at about 30 sites and shown nowhere, and every instance note but the `not stated` and Ghost ones is dropped. The status-bar toggle's `fill while the panel shows` note, and the toolbar's and status bar's icon-size reads, never reach Widget Info.
+**Evidence:** InfoView::of builds the title, the rows and `not_themeable`. It never reads `shown.info.read`, and it keeps only notes containing `not stated` or equal to GHOST_NOTE (info.rs:597-678, filter at :664-672). The writes in this region are dead: chrome.rs:499 (`toolbar.icon_size`), :650-657 (`defaults.icon_sizes.small` and the fill note), :1403-1408 (`dialog.title_font.color`). Pages write more (pages/basic.rs:392-393, pages/data.rs:83-88, pages/mod.rs:186-199, etc.). tests.rs does not read `.read` either. The field's doc (demo.rs:24-29) and the spec (todo_v0.6.0_egui-connector-spec.md:7207-7208) still describe a reads-then-*This instance* section, which b19bfe55's R11 format dropped.
+**Fix proposed:** Either remove `read` and the notes the R11 format does not show, with their writers and the doc, or carry them in an R11 section all three showcases share. Do not keep dead writes that look like Widget Info claims.
+**Verdict:** CONFIRMED — InstanceInfo::read (demo.rs:26) is pushed at about 30 sites (demo.rs:771, :1305; chrome.rs:499, :651, :1404; pages/basic.rs, data.rs, icons.rs, mod.rs, text.rs, overlays.rs) and no code reads it back; InfoView::of keeps only notes containing 'not stated' or GHOST_NOTE (info.rs:662-670), so chrome.rs:653's 'fill while the panel shows', demo.rs:767's inner-margin notes, the range and hint notes are dropped, against the spec's 'Under the rows come the ... leaves the helper read, then This instance' (egui-connector-spec.md:7206-7208). (verifier: Arguably S3: beyond dead code, the spec's Widget Info content is not met; decide show or delete.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#7.
+
+#### M9-121 · M9c · perf · S4 · connectors/native-theme-egui/examples/showcase-egui/demo.rs:977
+**Claim:** On each theme switch and each watcher install, `Semibold::register` works out again which family the connector drew, copying a whole font file into memory only to test `is_some()`. It then copies each weight's face twice (system_face, then `to_vec`).
+**Evidence:** The `drawn` test (demo.rs:977-984) calls `native_theme::fonts::system_face(&body.family, ..)`, which copies the chosen face's file into an `Arc<[u8]>` (native-theme fonts.rs:207-209), and discards it. This repeats the choice `FontPlan::from_system` already made and recorded in the atlas's `Note::FontFamilyUnavailable { substitute }` (connector fonts.rs:165-196). Each weight then runs `system_face` again and `FontData::from_owned(face.data.to_vec())` (:986-990). It runs from `apply` and the watcher arm (app.rs:534, :796).
+**Fix proposed:** Take the drawn family from the atlas: the stated family, or the `substitute` of a `FontFamilyUnavailable` note for it. Build `FontData` from the face's bytes once, not through a second `to_vec`.
+**Verdict:** KNOWN — The is_some() probe paying a whole-file copy is the cost docs/todo.md:433 records for system_face (name-only lookup to come), though that entry does not list this caller; the second copy (face.data.to_vec(), demo.rs:990) is forced by epaint, whose FontData takes only &'static or Vec (epaint text/fonts.rs:112-133), as the connector itself does (src/fonts.rs:328-329). The one actionable remainder: the drawn family could be read from the atlas's Note::FontFamilyUnavailable substitute instead of a second lookup. (verifier: S4 agreed; add this caller to docs/todo.md:433.)
+**Triage:** known — the cited entry carries it; its text is extended where the finding adds a site.
+**Status:** open
+*Source:* C2#8.
+
+#### M9-122 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/info.rs:1090
+**Claim:** The inspector's Theme tab draws its section names (Theme, Notes, Fonts, Window, …) in the theme's section-heading role, while its own Widget tab and the gpui showcase's Theme tab draw section names semibold at the panel's text size, so switching tabs changes the heading style.
+**Evidence:** theme_tab's `section` is `demo::heading_text` (info.rs:1090-1093), which is `text_scale.section_heading`'s size, line height and weight (demo.rs:1053-1061, :1091-1113). widget_tab draws `Theme` and `Not themeable` in `text.semibold`, sidebar size at SEMIBOLD_WEIGHT (info.rs:1009, :1073; InfoText::of :846-855). gpui's Theme tab `section` is `Label::new(title).text_sm().font_semibold()` (showcase-gpui/inspector.rs:342-345), which the comment at info.rs:1097 says egui follows.
+**Fix proposed:** Draw the Theme tab's section names as the Widget tab draws its own (InfoText's semibold at sidebar size, one line tall), or record why the Theme tab differs.
+**Verdict:** CONFIRMED — theme_tab's section() uses demo::heading_text, the section_heading text role (info.rs:1089-1092, demo.rs:1053-1060), while the Widget tab draws its title and 'Theme'/'Not themeable' in InfoText::semibold at Body size (info.rs:845-849, :1009, :1073). The gpui Theme tab's section is Label text_sm font_semibold (showcase-gpui/inspector.rs:343-345), one step above its text_xs rows, so 'at the panel's text size' is slightly off for gpui, but the egui tab-to-tab mismatch holds.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* C2#9.
+
+#### M9-123 · M9x · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/values.rs:31
+**Claim:** Under every preset, hovering a toolbar button, the page-tab menu button or the Basic spinner shows `defaults.icon_theme not stated` in the gpui Widget Info, even where the theme names an icon theme. The iced and egui panels show the icon theme (kde-breeze: `breeze`) for the same element.
+**Evidence:** leaf_value (values.rs:31-57) special-cases only `layout.*` (:38) and `theme_variant.icon_set` (:48). Every other leaf is walked in `serde_json::to_value(ResolvedTheme)` (inspector.rs:461). ResolvedDefaults has no icon_theme field (native-theme/src/model/resolved.rs:76-152); the icon theme lives on `Resolved::icon_theme` (:283), which the JSON does not hold. So `step` finds nothing and `shown` prints NOT_STATED. The leaf is listed for chrome.toolbar.* and chrome.page_tabs.menu (docs/showcase-elements.toml:321, :329, :337, :345, :353, :361, :594, :601, :630, :638), and info/leaves.rs:136, :744, :749 route it. iced answers it from `state.current_icon_theme` (showcase-iced.rs:5294-5302). egui inserts `atlas.icon_theme(theme)` into its JSON (showcase-egui/info.rs:222-234). a_leaf_value_reads_as_the_showcases_agreed (tests.rs:9079) does not test this leaf.
+**Fix proposed:** Have PanelLook carry the installed theme's icon theme (Showcase::current_icon_theme) beside `icon_set`, and answer `defaults.icon_theme` from it in leaf_value, as iced does. Add the leaf to the agreed-format test.
+**Verdict:** CONFIRMED — gpui leaf_value walks the serde_json of ResolvedTheme (inspector.rs:461, values.rs:51-56), and ResolvedDefaults has no icon_theme field (model/resolved.rs:76-137; icon_theme lives on Resolved, :283). So `defaults.icon_theme`, listed for the toolbar buttons, page-tab menu and Basic spinner (showcase-elements.toml:321-361, :594), always prints `not stated`. iced special-cases it from current_icon_theme (showcase-iced.rs:5294-5302). egui injects defaults.icon_theme into its JSON (showcase-egui/info.rs:222-234). No gpui test covers the leaf.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#0.
+
+#### M9-124 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/values.rs:129
+**Claim:** The agreed Widget Info value format (docs/showcase-elements.toml:58-79) is written three times: the element-list reader, the leaf-path walk and the value text. The copies have already drifted. A font with no family, size or weight prints `not stated` in gpui, an empty string or `?` in egui, and drops the part in iced. The gpui `defaults.icon_theme` defect (previous finding) is a fourth drift.
+**Evidence:** gpui: info/values.rs:31-148 over serde_json (leaf_value, step, shown, unit, number, font_text: missing family -> NOT_STATED :133, number -> NOT_STATED :124). iced: showcase-iced.rs:5270-5370 over toml::Value (leaf_value, value_text, compound_text: family omitted :5362, weight omitted :5365). egui: showcase-egui/info.rs:303-400 (listed_value, listed_step, unit_less, number_text, font_text: family unwrap_or_default :356, number '?' :361, leaf_text :387). The ShowcaseElement parser is also copied three times, from the sample in the list's header (gpui elements.rs:51, egui elements.rs:20, iced :267), and so are the panel model and its Copy text (gpui inspector.rs:494-570, iced ElementInfo :5207-5250, egui InfoRow/InfoView info.rs:567-600).
+**Fix proposed:** One dev-only crate on the tools/test-fixtures precedent (M8 T2's ruling): ShowcaseElement and its parser, the leaf walk and value text over serde_json::Value, the special leaves (`layout.*`, `theme_variant.icon_set`, `defaults.icon_theme`), and the panel's title, rows and Copy text. Each showcase only draws the panel.
+**Verdict:** CONFIRMED — The duplication is real: three element-list readers (gpui elements.rs:49, egui elements.rs:18, iced's own), three path walks (values.rs:63-75, info.rs:303-321, showcase-iced.rs:5303-5316) and three font formatters (values.rs:129-148, info.rs:353-381, showcase-iced.rs:5342-5370). The icon_theme drift is real. The font drift as worded is not reachable: ResolvedFontSpec's family, size and weight are not optional (native-theme/src/model/font.rs:255-281). Also iced prints `not stated` for a missing size, so it does not drop that part (:5360). (verifier: S4 is right; the font-drift evidence should be dropped or marked latent.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#1.
+
+#### M9-125 · M9x · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/main.rs:213
+**Claim:** The command line and the capture checks are written three times, almost line for line: the CliArgs struct and its parser, the `--variant`/`--theme` validation with the same error texts, `parse_point`, the capture app id and `check_frame_capture`.
+**Evidence:** Parser: gpui main.rs:866-934, iced showcase-iced.rs:849-905, egui main.rs:213-254. Validators: gpui main.rs:940-978, iced :914-960, egui app.rs:144-177. parse_point: gpui main.rs:722, iced :840, egui inline main.rs:233-236. App id: gpui main.rs:628, iced :12836-12846, egui main.rs:108. check_frame_capture: gpui main.rs:643, iced :12875, egui main.rs:124. The layout-dump JSON writer is copied too (gpui elements.rs:506 dump_json, iced write_layout_dump :772-795, egui app.rs LayoutDump). The copies already differ (CLI finding below).
+**Fix proposed:** Move the parser, validators, app id, frame check and dump writer into the same dev-only showcase crate. Each showcase passes in only its toolkit hooks (pages, installed themes, menus).
+**Verdict:** CONFIRMED — gpui main.rs:688-1044 and showcase-iced.rs:806-1000 are nearly line for line the same: CliArgs, parse(), parse_point at main.rs:722 and showcase-iced.rs:840, color_mode, theme_key/theme_choice with the same error texts. egui main.rs:176-266 and app.rs:144-178 have the same fields and error texts in a different parser. The capture app id is at main.rs:626 / showcase-iced.rs:12842 / egui main.rs:108, check_frame_capture at main.rs:643 / showcase-iced.rs:12875 / egui main.rs:124.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#2.
+
+#### M9-126 · M9x · simplify · S4 · native-theme/src/icons.rs:1436
+**Claim:** The three side panels' pickers are built three times over core's IconSetChoice: the icon-theme rows, the `--icon-set` name parser, the preset rows and the mode enum. The copies have drifted: egui accepts `--icon-set default` and gpui and iced reject it, though all three pickers show a default row.
+**Evidence:** Icon rows (default?, system, installed, Lucide, Material): gpui app.rs:524-548, iced showcase-iced.rs:1252-1268, egui chrome.rs:937-951 (its comment says it copies gpui's). Name parser: gpui main.rs:980-997, iced :962-985, egui app.rs:180-198 (`default` only at :182). Preset rows `default (<preset>)` plus Theme::list_presets_for_platform: gpui support.rs:1155-1182, iced :1180-1188, egui app.rs:565-582. Mode enum System/Light/Dark: gpui AppColorMode, iced AppColorMode :1195-1210, egui ModeChoice app.rs:89-93. Core already has IconSetChoice and default_icon_choice (icons.rs:1314, :1436), but no row list or name parser.
+**Fix proposed:** Add the row list and the name parser to core next to default_icon_choice, e.g. `icons::icon_set_choices(icon_set, icon_theme, installed) -> Vec<IconSetChoice>` and `IconSetChoice::from_name(name, installed)`, accepting `default`. gpui adds its builtin row on top. Put the preset rows in the shared showcase crate.
+**Verdict:** CONFIRMED — Three icon-row builders over core's default_icon_choice: gpui app.rs:524-540, iced build_icon_choices showcase-iced.rs:1252-1268, egui chrome.rs:938. Three name parsers: gpui icon_set_row main.rs:980-996 and iced icon_set_choice showcase-iced.rs:957-975 have no `default` arm, while egui icon_choice app.rs:181-187 accepts `default`. The default row appears in all three only where default_icon_choice returns Default(_), i.e. not under every theme.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#3.
+
+#### M9-127 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1050
+**Claim:** On macOS and Windows, the gpui and iced showcases capture their own window through raw unsafe FFI. They carry two copies of the same code: objc2 msg_send for mainWindow/keyWindow/windowNumber, then screencapture -l; Win32 FindWindowW, DwmGetWindowAttribute, BitBlt and GetDIBits. The egui showcase does the same capture through xcap's safe API, with the same frame check.
+**Evidence:** gpui: main.rs:1050-1349 (unsafe at :1053, :1093, :1103, :1113, :1135, :1194, :1239). iced: showcase-iced.rs:2337-2470 (unsafe :2344, :2398), whose doc says 'the same approach used by the gpui showcase capture' (:2335-2336). egui: showcase-egui/capture.rs:1-10 (xcap 0.9.8, connectors/native-theme-egui/Cargo.toml:114-122): screencapture -l of xcap's window on macOS, the DWM frame bounds through Monitor::capture_region on Windows. No docs/todo.md entry or ledger item records keeping the unsafe copies.
+**Fix proposed:** Move egui's capture.rs into the shared showcase crate and capture gpui and iced through it. This deletes their capture unsafe blocks and the windows/objc2 dev-dependencies they need only for capture. gpui's Retina nudge (main.rs:1133) is a separate question.
+**Verdict:** CONFIRMED — gpui main.rs:1050-1349 and iced showcase-iced.rs:2337-2470 carry the same objc2 msg_send lookup + `screencapture -l` and FindWindowW/DwmGetWindowAttribute/BitBlt/GetDIBits. egui capture.rs is safe: it finds its window by pid and title in xcap's list (:123-142) and on macOS takes `screencapture -l <id> -o` on it (:148-162). On Windows a second run finds the window because xcap skips the calling process's windows (xcap-0.9.8 windows/impl_window.rs:113-116). It reads the DWMWA_EXTENDED_FRAME_BOUNDS frame (utils.rs:241-254) and copies it with Monitor::capture_region, a desktop BitBlt (gdi.rs:83-122). Both sides then run check_frame_capture. So parity holds on macOS (xcap's list is OnScreenOnly and includes this process's windows, macos/impl_window.rs:161-200) and on Windows (the frame and size check match). Remaining differences: no CAPTUREBLT, a capture limited to one monitor, and the extra finder process. The capture unsafe is avoidable. gpui's non-capture unsafe, nudge_content_size (main.rs:1133-1146: contentView/setContentSize), is avoidable too: objc2-app-kit 0.3.2 exposes NSApplication::mainWindow/keyWindow/windows and NSWindow::windowNumber/contentView/setContentSize as safe fns (generated/NSApplication.rs:521,526,690; NSWindow.rs:761,782,831). (verifier: Given the strict no-unsafe rule, S3 may fit better than S4: every unsafe line in both showcases has a safe route.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#4.
+
+#### M9-128 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:422
+**Claim:** Colours are printed as hex by three local formatters next to core's Rgba Display, and the formatters disagree on alpha. The gpui showcase's hsla_to_hex prints `#rrggbbff` for an alpha below 1.0 that rounds to 255. The gpui connector's own copy and core print `#rrggbb` for the same colour.
+**Evidence:** gpui showcase info/mod.rs:422-432 tests `rgba.a < 1.0` (6 call sites). gpui connector colors.rs:58-72 (pub(crate)) tests the quantised `a == u8::MAX`. iced showcase-iced.rs:12069-12080 color_to_hex tests `(a - 1.0).abs() < EPSILON` (3 call sites). Core color.rs:188-199 tests `self.a == 255`, and the listed Widget Info rows already print through it (gpui values.rs:93, egui and iced through the JSON/TOML string). The per-connector colour-to-Rgba conversions are private (gpui icons.rs:1183, iced icons.rs:289).
+**Fix proposed:** Make each connector's colour-to-Rgba conversion public (or add a `to_hex`), and have the showcases print with `native_theme::Rgba`'s Display. Delete the two showcase formatters.
+**Verdict:** CONFIRMED — The gpui showcase's hsla_to_hex (info/mod.rs:423-432) tests `rgba.a < 1.0` before rounding, so an alpha in [0.998,1) prints `#rrggbbff`. The gpui connector's copy (src/colors.rs:59-73) and core's Rgba Display (color.rs:188-199) decide on the rounded byte and print `#rrggbb`. The third formatter, iced's color_to_hex (showcase-iced.rs:12069-12080), has the same flaw as the gpui showcase's. Only a computed alpha reaches the case: a theme colour's alpha is k/255.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#5.
+
+#### M9-129 · M9x · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8484
+**Claim:** The iced showcase composites the checkbox mark's colour with a local `over`. The connector exports the same blend as `native_theme_iced::styles::composite_over`, now over core's `color::composite_over` (M8 T3). The gpui showcase uses its connector's `layer_over` (demo.rs:3983), and egui composites nowhere locally.
+**Evidence:** showcase-iced.rs:8484-8491 is `t*top.a + b*(1-top.a)` with the result forced opaque. It is used at :7202-7209. styles.rs:81-87 `composite_over(layer, base)` is the same formula with base alpha kept, so the two agree over the opaque page colour these calls pass.
+**Fix proposed:** Call `styles::composite_over(top, bottom)` and delete `over`.
+**Verdict:** CONFIRMED — The local `over` (showcase-iced.rs:8484-8491, used at :7202-7203) is the sRGB blend that native_theme_iced::styles::composite_over (src/styles.rs:81-87, over core color::composite_over) gives over an opaque base. gpui uses its connector's layer_over (demo.rs:3983), and the egui showcase has no compositing helper.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#6.
+
+#### M9-130 · M9x · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:4990
+**Claim:** Each showcase has its own copy of the status bar's environment text, the `desktop()` pair and the defined-size formatter, and egui has two more inline. The font-family label behind docs/todo.md:3499 is copied per showcase too. The status bar, which names the stated family in all three, is a site that entry does not list.
+**Evidence:** status_environment: gpui chrome.rs:262-301, iced :4990-5016, egui chrome.rs:698-737. desktop(): gpui chrome.rs:318/:325, iced :4965/:4972, egui chrome.rs:743/:749. defined_size: gpui support.rs:182, iced :4978, egui inline chrome.rs:707-712 and info.rs:1123-1127. Family labels: gpui inspector.rs:215-229, iced family_label :12376-12386, egui info.rs:1129-1135 (all known, todo.md:3499). Status bar family: gpui chrome.rs:287, iced :5000, egui chrome.rs:722. Each prints `font.family`, the stated name, which for windows-11's Segoe UI on Linux is not the family drawn.
+**Fix proposed:** Put status_environment, desktop and defined_size in the shared showcase crate. For M9b's todo.md:3499 fix, add one core label helper over `fonts::substitute_family_cached`, e.g. 'Segoe UI (not on this system; drawn in Adwaita Sans)'. Use it in the status bar, the inspector and Widget Info of all three.
+**Verdict:** CONFIRMED — There are three copies of status_environment and desktop(): gpui chrome.rs:287-327, iced showcase-iced.rs:4962-5010, egui chrome.rs:698-752. The defined-size formatter is gpui support.rs:182, iced showcase-iced.rs:4978, plus two inline in egui (chrome.rs:708-713, info.rs:1125). All three status bars print the stated font.family. docs/todo.md:3499 names Widget Info and the inspector, not the status bar. (verifier: The family half extends a known item (docs/todo.md:3499) and should be filed as an addition to it.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#7.
+
+#### M9-131 · M9x · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2652
+**Claim:** In the iced showcase, hover a widget on any page but Basic (one that is not in the element list), then switch theme or mode without moving the pointer: from the command palette (Ctrl+K), or by an OS change under --features watch. Widget Info and its Copy button keep showing the previous theme's values. gpui and egui rebuild the shown info on the next frame.
+**Evidence:** state.widget_info is a String captured in view at hover time and set only by Message::WidgetHovered from mouse_area::on_enter (hoverable :6610-6616, update :2652-2655). WidgetUnhovered keeps it (:2659-2661). install_in_mode (:2035-2068) never rebuilds or clears it, and the inspector prints it (:6147-6164). gpui replaces the hovered and shown info from each frame's rebuilt targets ('a theme switch -- reaches the inspector; hover events alone would miss it', info/registry.rs:87-104). egui marks screen_changed on install (app.rs:535) and re-chooses in end_pass (demo.rs:167-173). No known item records it.
+**Fix proposed:** Keep the hovered target's identity, not its text, and rebuild the info string from state in view, as ElementInfo::of already does for listed elements (:5418). Or rebuild widget_info in install_in_mode.
+**Verdict:** CONFIRMED — iced's Widget Info is a String built in view and stored on mouse_area on_enter (showcase-iced.rs:6610-6615, :2652-2653). install_in_mode (:2035-2065) never refreshes it, and on_enter fires only on a hover change (iced_widget-0.14.2 mouse_area.rs:342-346), so an OS change under watch leaves stale values. gpui marks screen_changed on every install (app.rs:1809, registry.rs) and egui rebuilds per frame. The palette path probably does not hold, though. The open palette is `stack![window, opaque(..)]` (:2840), which levitates the cursor for the window (stack.rs:266-273, an Idle interaction), and closing it changes the root's widget, so the next redraw fires on_enter again with the new info. (verifier: The watch path holds; drop or test the palette path. Related to docs/todo.md:2950 (iced per-instance Widget Info), which does not name the stale info.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#8.
+
+#### M9-132 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:2652
+**Claim:** Moving the pointer across widgets switches the iced Widget Info at once, on each mouse_area enter. The gpui and egui panels wait INFO_SETTLE (250 ms) before a new choice replaces what is shown, so a pass over the page does not flicker through every widget.
+**Evidence:** gpui info/registry.rs:13-16 INFO_SETTLE and its pending/ticket logic (:25-27). egui main.rs:46-50 INFO_SETTLE ('the gpui showcase's'). iced update :2652-2658 assigns widget_info and hovered_element directly, with no settle constant anywhere in the file.
+**Fix proposed:** Give iced the same 250 ms settle: hold the newest hover as pending with its Instant, and promote it on the next tick once it has stood INFO_SETTLE.
+**Verdict:** CONFIRMED — iced sets widget_info and hovered_element on the message itself (showcase-iced.rs:2652-2657), with no delay constant anywhere in the file. gpui waits INFO_SETTLE 250 ms (info/registry.rs:16), and egui's main.rs:46 copies it. Nothing records the difference.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#9.
+
+#### M9-133 · M9x · ux · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2825
+**Claim:** On macOS, the iced showcase draws its File/View/Theme/Help menu row inside the window, while the gpui and egui showcases put the same menus in the system menu bar and draw no row. The macOS CI captures of macos-monterey and macos-tahoe therefore differ in their chrome, and no doc records why iced differs.
+**Evidence:** iced :2825 `column![menu_bar(state), toolbar(state)]` has no cfg. gpui chrome.rs:65-69: Decorations::Server on macOS gives None (the menus are the system's, set by cx.set_menus). egui chrome.rs:131-133 cfg(not(macos)) for menu_panel, with muda for the system menu bar (connectors/native-theme-egui/Cargo.toml:101-109, app.rs system_menu/menu_rx). A grep of showcase-iced.rs, the iced README and docs/todo.md finds no 'system menu' or muda record. The parity comparator runs on Linux dumps only.
+**Fix proposed:** Put the iced menus in the macOS system menu bar as egui does (muda, menu events into a Message) and drop the row there. If iced's event loop prevents it, record that in the code and in docs/todo.md.
+**Verdict:** CONFIRMED — iced's view always stacks menu_bar(state) on top (showcase-iced.rs:2825), with no macOS cfg around it. gpui draws no row under server decorations on macOS (chrome.rs:67) and calls cx.set_menus (app.rs:1510). egui gates its row off on macOS and installs a muda menu (chrome.rs:101-238, :1924; main.rs:96-100). The screenshots matrix captures iced on macos-26 (.github/workflows/screenshots.yml:32-36). No doc gives a reason for iced's difference.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#10.
+
+#### M9-134 · M9x · ux · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:223
+**Claim:** Under macos-tahoe, which states no layout.container_margin and no toolbar padding, the iced chrome is padded 16 px on every surface: menu-bar sides, toolbar, side-panel settings, inspector body, tab bars and status bar. The gpui chrome pads none of those, and its toolbar 8 px. egui pads 0, and its toolbar keeps egui's panel margin of 8/2. These are three different looks for the shared chrome, none of them forced by the toolkit.
+**Evidence:** macos-tahoe.toml:760-764 [layout] has no container_margin_px and no toolbar section. iced Gaps::from_layout `container: layout.container_margin.unwrap_or(SP.l)` = 16 (:220-226, SP :98-112), used at :4429, :4507, :4661, :4695, :4785, :5073. gpui: side_panel and content padding are Options (demo.rs:1460-1521, support.rs:375 with_padding None = none), the menu bar takes geometry::container_margin (chrome.rs:83-90), and the toolbar takes TOOLBAR_PADDING 8 (demo.rs:903, :951). egui: padded() is margin.unwrap_or_default() (chrome.rs:900-905). The toolbar keeps Frame::side_top_panel's Margin::symmetric(8, 2) where container_margin is None (chrome.rs:144-160; egui frames.rs:110; egui-0.36.2 frame.rs:185-189).
+**Fix proposed:** Follow gpui (the maintainer's rule): in iced and egui, a chrome surface gets no padding where container_margin is unstated, and the toolbar gets gpui's TOOLBAR_PADDING 8 and TOOLBAR_GAP 4, named as the showcase's own value in each. Drop SP.l as the chrome's fallback.
+**Verdict:** CONFIRMED — macos-tahoe's [layout] states widget_gap and window_margin only (presets/macos-tahoe.toml:760-764), and no toolbar or status_bar section. iced falls back to SP.l = 16 (showcase-iced.rs:222, :105) on the menu-bar sides (:4429), the toolbar (:4505-4508), the side panel and inspector (:4661, :4695), the tab rows (:4785) and the status bar (:5071-5074). gpui's toolbar takes TOOLBAR_PADDING 8 (demo.rs:903, :951) and container_margin None gives 0 elsewhere. One exception: gpui's status bar keeps gpui-component's own py_1/px_2 (gpui-component-0.7.3 status_bar.rs:89-90), so it is not unpadded. (verifier: Correct 'gpui pads none' for the status bar.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#11.
+
+#### M9-135 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:4572
+**Claim:** In gpui, typing into the side panel's Theme picker filters the presets by name or key. In iced the Theme picker is a plain pick_list, though iced_widget's searchable combo_box is available and the showcase already demonstrates it. egui's ComboBox has no search, which is forced by the toolkit. The difference is not recorded.
+**Evidence:** gpui PresetItem::matches (support.rs:1196-1200), described in info/chrome.rs:877 ('typing filters them by name or key'). iced setting_picker is `pick_list(options, selected, on_select)` (:4560-4585) for all three rows (:4610-4650), while the page shows `combo_box` (probes::COMBO_BOX, :175). egui uses native_theme_egui_widgets::combo_box::ComboBox (chrome.rs:9, :974).
+**Fix proposed:** Build iced's Theme row on `combo_box` with a State over theme_choices, filtering by display name and key as gpui does. Otherwise, record in the code why it stays a pick_list.
+**Verdict:** CONFIRMED — gpui's preset Combobox is `.searchable(true)` (app.rs:1282-1289). iced's setting_picker is a plain pick_list (showcase-iced.rs:4572), though the showcase already uses combo_box at :9532. egui's ComboBox has no filter. Nothing in docs/todo.md records the difference.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#12.
+
+#### M9-136 · M9x · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1583
+**Claim:** The three showcases do not accept the same flags, and they exit differently. `--screenshot` on Linux keeps gpui running (exit 0 when closed, no file), makes iced write a frame-less content capture, and makes egui exit 1. `--icon-theme` exists only in gpui. `--icon-set default` works only in egui. `--tab text-inputs` works in gpui and iced but not egui, and `--tab inputs` in gpui and egui but not iced. An unknown `--open-menu` exits 1 in iced but is reported and ignored in gpui and egui. The window size (1280x720), a bad `--pointer` (exit 1) and the report-and-ignore handling of bad `--theme`/`--variant`/`--tab`/`--icon-set` values agree.
+**Evidence:** Linux --screenshot: gpui main.rs:1583-1592 ('Continue running -- let the user capture manually'); iced :2528-2541 (iced::window::screenshot, check_content_capture); egui main.rs:304-309 with capture::UNSUPPORTED (capture.rs:12-14). --icon-theme: gpui main.rs:897-902 and :1415-1420, ignored by the siblings' `_ => {}`/`continue` arms. gpui's own `--icon-set <installed theme>` already selects that theme (main.rs:986-988), so scripts/README.md:74's reason ('freedesktop themes that need an explicit icon theme name') does not hold. The flag keeps an icon_theme_override state threaded through app.rs:714-718, :909, :942-960, :991-1001, and the GIF script branches on it (generate_gifs_theme_switching.sh:70-73, :109-111, :149-152). default: egui app.rs:182 only. Tab aliases: gpui main.rs:1027-1030 (its comment says the screenshot scripts pass `text-inputs`; none does, every caller passes `--tab basic`), iced :987-991 (`textinputs`, `thememap`), egui app.rs:77-88 none. iced's flag is `text-inputs` (:1060). --open-menu: iced main :12788-12794 exits 1; gpui main.rs:1440-1445 and egui app.rs:444-451 report it.
+**Fix proposed:** One parser (the shared crate) with one flag set and one exit rule. `--screenshot` exits 1 wherever the showcase cannot capture its frame (egui's rule). `--icon-theme` goes in favour of `--icon-set <theme>`, which the scripts then pass for all three. `default` is accepted everywhere. One page-key table, with iced's inputs page keyed `inputs`. An unknown `--open-menu` gets the same handling in all three.
+**Verdict:** CONFIRMED — Each item checks out. Linux --screenshot: gpui prints and keeps running (main.rs:1583-1590); iced takes window::screenshot of the content (showcase-iced.rs:2528-2541); egui exits 1 (main.rs:303-306). --icon-theme is only in gpui (main.rs:897). Only egui accepts `default` (app.rs:181). --tab: gpui takes `inputs` and the `text-inputs` alias (main.rs:1022-1025), iced `text-inputs`/`textinputs` (showcase-iced.rs:978-982), egui `inputs` only (app.rs:46-58). An unknown --open-menu exits 1 in iced (showcase-iced.rs:12789-12794), and gpui and egui report it and go on (main.rs:1434-1439, egui app.rs:444-451).
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#13.
+
+#### M9-137 · M9x · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1501
+**Claim:** On macOS or Windows, `--dump-layout F --screenshot P` without `--capture` makes gpui and iced write F and exit 0 before the screenshot is taken, so P is silently missing. egui keeps running until both are written.
+**Evidence:** gpui passes `quit = !cli_args.capture` to dump_layout (main.rs:1495-1503). The dump is written after DUMP_SETTLED_READINGS 4 readings DUMP_POLL 250 ms apart (:789-794, :836-850) and then calls app::quit, about 1 s in. The capture waits 200+1300 ms on macOS and 1500 ms on Windows (:1544-1556, :1571). iced exits at LayoutScaled `if !cli.capture { return iced::exit(); }` (:2606-2608), after LAYOUT_SETTLES_AFTER 1 s (:587), while the screenshot countdown is 60 x 50 ms = 3 s (:2019). egui sets `keep_running: cli.capturing()`, which counts --screenshot (app.rs:431-435, main.rs:207-209).
+**Fix proposed:** In gpui and iced, quit after the dump only when neither `--capture` nor `--screenshot` was given, as egui's `capturing()` does.
+**Verdict:** CONFIRMED — gpui passes quit = !capture to dump_layout (main.rs:1495-1502), which writes and quits after 4 equal 250 ms readings, at about 1 s. The screenshot fires after 1.5 s (main.rs:1541-1554 macOS, :1564-1567 Windows). iced writes after LAYOUT_SETTLES_AFTER 1 s and exits unless --capture (showcase-iced.rs:587, :2602-2609), and its screenshot countdown is 3 s (:2019). egui keeps running when capturing(), which includes --screenshot (app.rs:431-435; main.rs:201-203). For iced this holds on Linux as well.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#14.
+
+#### M9-138 · M9x · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1859
+**Claim:** A colour-mode switch under the `default` theme (the Mode picker, Theme > Light/Dark, the palette) re-reads the whole OS theme in gpui and iced, and reloads every icon from its source. egui does nothing but egui's own set_theme. The rebuild cost on a mode switch is uneven, and egui is the cheap one.
+**Evidence:** gpui: set_color_mode (app.rs:1859-1863) calls install_in_mode (:1867-1879), which calls apply_theme_by_name (:1803-1838): SystemTheme::from_system() for `default` (:1813), then reload_icons always (:1834-1836; load_all_icons and load_gpui_icons, :942-967). iced: ColorModeSelected (:2648-2651) calls install_in_mode (:2035-2068), which calls load_theme. load_theme calls read_system_theme for OsTheme (:2081-2096) although SystemTheme holds both variants (`system.pick(mode)`, :2088), then reload_icons (:2139-2170: icons, chrome icons, animation caches, Spinner). egui: set_mode (app.rs:545-551) only calls ctx.set_theme, because the atlas holds both schemes. Measured costs (ledger Baseline Timings): from_system warm 3.6–9.7 ms; a freedesktop icon reload warm 1.8–2.9 ms, cold about 40 ms. For presets, gpui's first from_preset per preset is the slowest step at 31–106 ms, already known (M6 Step 1 timings).
+**Fix proposed:** In gpui and iced, keep the SystemTheme read at install and re-pick its variant on a mode switch. Re-read only on Reload System Theme and watcher events. Reload icons only when the effective set or theme changed, and otherwise recolour the loaded ones.
+**Verdict:** CONFIRMED — gpui's set_color_mode goes to install_in_mode, then apply_theme_by_name, which under `default` calls SystemTheme::from_system() and reload_icons (app.rs:1810-1833, :1859-1880, :942-967). iced's install_in_mode calls load_theme, whose OsTheme branch re-runs read_system_theme, then reload_icons (showcase-iced.rs:2035-2065, :2086-2099). egui's set_mode is only ctx.set_theme (app.rs:546-551), since the atlas holds both variants.
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* X#15.
+
+#### M9-139 · M9x · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:5211
+**Claim:** While Widget Info shows a listed element, iced converts the whole ResolvedTheme to a toml::Value on every view call. gpui converts it to a serde_json::Value on every Widget-tab render, even when nothing listed is shown. egui serialises once per install and caches it. Unmeasured, but traced on a per-frame path.
+**Evidence:** iced element_info_view (:5406, from :6141) calls ElementInfo::of (:5418), which does `toml::Value::try_from(&state.current_resolved)` (:5211-5212). view runs after every update, including the 50 ms AnimationTick while the Basic spinner animates (:12752). gpui widget_tab (inspector.rs:107-111) builds PanelLook::of before testing `listed`, and PanelLook::of does `serde_json::to_value(r)` (:461). egui's JsonCache keeps one Value per scheme (info.rs:239-245), reset only in apply (app.rs:533).
+**Fix proposed:** Cache the serialised theme per install, as egui's JsonCache does: in iced next to current_resolved (rebuilt in install_in_mode), in gpui in the Showcase (rebuilt where the theme is installed). Build PanelLook only for a listed element.
+**Verdict:** CONFIRMED — iced's ElementInfo::of runs toml::Value::try_from(&state.current_resolved) (showcase-iced.rs:5214-5215) from element_info_view in view (:5418). gpui's widget_tab builds PanelLook::of on every render (inspector.rs:111), and that runs serde_json::to_value(r) (:461) before the listed check, so it runs for the hint and unlisted info too. egui caches theme_json per scheme in JsonCache's OnceCells (info.rs:243-259).
+**Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
+**Status:** open
+*Source:* X#16.
+
+#### M9-140 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1040
+**Claim:** Only the ends of the three page lists correspond: Basic and Buttons first, Icons and Theme Map last. In between, pages with the same content have different names and a different order, and nothing records how the pages correspond. The `--tab` keys differ with them.
+**Evidence:** gpui main.rs:116-128: Basic, Buttons, Inputs, Data, Feedback, Typography, Layout, Overlays, Charts, Icons, Theme Map. iced :1040-1053: Basic, Buttons, Text Inputs, Selection, Range, Display, Layout, Graphics, [Extra], Icons, Theme Map. egui app.rs:30-43: Basic, Buttons, Selection, Inputs, Range, Text, Colour, Containers, Data, Overlays, Icons, Theme Map. iced and egui order Selection and Inputs oppositely. gpui puts Data before its text page and Overlays after Layout; egui puts Data after Containers. The inputs page is 'Text Inputs'/`text-inputs` in iced and 'Inputs'/`inputs` in the others. Recorded reasons: per-toolkit page sets follow each toolkit's widget catalogue (M1-T8-01); egui's set is in its spec's palette table (docs/archive/todo_v0.6.0_egui-connector-spec.md §10.4). Nothing records the order or the naming of corresponding pages, in docs/showcase-elements.toml or elsewhere.
+**Fix proposed:** Record one counterpart order in docs/showcase-elements.toml's header (Basic, Buttons, Inputs, Selection, Range, Text, Data, Layout/Containers, Overlays, Graphics/Charts, toolkit-only pages, Icons, Theme Map) and order the three lists by it. Give corresponding pages one label and key (iced's 'Text Inputs' becomes 'Inputs'/`inputs`).
+**Verdict:** CONFIRMED — The page lists are gpui main.rs:170-183 (Basic, Buttons, Inputs, Data, Feedback, Typography, Layout, Overlays, Charts, Icons, Theme Map), iced showcase-iced.rs:1040-1052 (Basic, Buttons, TextInputs, Selection, Range, Display, Layout, Graphics, [Extra], Icons, ThemeMap) and egui app.rs:30-58 (Basic, Buttons, Selection, Inputs, Range, Text, Colour, Containers, Data, Overlays, Icons, Theme Map). docs/showcase-elements.toml:165 covers shared elements only. The egui spec's page table (archive/todo_v0.6.0_egui-connector-spec.md:7235ff) lists egui's own pages, not how they correspond.
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#17.
+
+#### M9-141 · M9x · ux · S4 · .github/workflows/screenshots.yml:55
+**Claim:** The release captures build the three showcases with three feature rules: gpui with its defaults, iced with defaults plus iced_aw, egui with --all-features. egui's release screenshots therefore come from a build that differs from the one its README tells users to run. It adds svg-rasterize, which egui does not enable by default, and the connector's watch feature, which starts the OS watcher during Linux `--capture` runs; gpui and iced run no watcher there.
+**Evidence:** screenshots.yml:37/:46 (iced `--features iced_aw`), :41/:50 (gpui ""), :55/:59 (egui `--all-features`). The same split is in generate_screenshots_iced.sh:47, generate_screenshots_gpui.sh:51 and generate_screenshots_egui.sh:51. egui defaults are material, lucide, system icons and system fonts (Cargo.toml:29), without svg-rasterize (:33) or watch (:40). The egui README's run line has no features (README.md:443; root README.md:54). egui starts its watcher unless --screenshot (app.rs:474-477), so `--capture` with watch runs it. M8-40 (T12) merges the scripts' loops and lists the feature difference as a fact; it does not unify the features.
+**Fix proposed:** Build each capture with the features its README's showcase command names (defaults, plus iced_aw for iced as its README already says), in the workflow and the shared capture function T12 introduces. Alternatively, state the egui feature set in the egui README's showcase section.
+**Verdict:** CONFIRMED — screenshots.yml builds gpui with no features (:38-41, :47-50), iced with --features iced_aw (:33-37, :42-46) and egui with --all-features (:51-59). The egui README runs a plain `cargo run` (README.md:443), and egui's default leaves out svg-rasterize and watch (Cargo.toml:29). With watch on, the watcher starts unless --screenshot is given (app.rs:474-477), so it runs in the Linux spectacle --capture runs (scripts/generate_screenshots_egui.sh:12-18, :51). The --all-features choice itself is recorded in archive/todo_v0.6.0_egui-connector-spec.md:7496-7502, to build its cfg-gated sections. Not recorded: the README difference and the watcher in captures. (verifier: Partly a recorded decision. Weigh the README mismatch and the watcher in captures, not the --all-features choice itself.)
+**Triage:** fix — CONFIRMED.
+**Status:** open
+*Source:* X#18.
+
+
+### Rejected
+
+- A2#13 (connectors/native-theme-gpui/examples/showcase-gpui/support.rs:420): parse_icon_set_choice turns the icon-theme Select's labels back into choices by matching Display strings, with GPUI_BUILTIN_ROW's text written out again, so a change of either label breaks the round trip silently. — REJECTED: The duplicated literal is real: support.rs:419 spells out GPUI_BUILTIN_ROW (app.rs:499) again and matches the Display strings (native-theme/src/icons.rs:1353-1361). But a changed label does not break silently: the_icon_set_flag_takes_what_the_select_offers (tests.rs:7578-7645) sends every row through icon_set_row (main.rs:980-987) and select_icon_set, then parse_icon_set_choice (app.rs:918-919), and asserts the IconSetChoice that results. A changed Material, Lucide or System label, or a changed GPUI_BUILTIN_ROW, would come back as Freedesktop(..) and fail that test.
+
+### Status
+
+Stop point A at this commit. Next: M8's fix phase continues (T9a–T21, Step 8); then M9a, M9b and M9c each run Steps 6–8 from these entries.
+
 ## G1 — GPUI Kit 0.7.3 (docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md)
 
 - **The showcase on GPUI Fast (2026-10-14, Task 7, spec §4.3 "A real run"; at `6874a939`).** Run
