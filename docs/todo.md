@@ -162,7 +162,7 @@ the file was pruned on 2026-10-11, not reordered.
       then add to `CheckboxTheme` what the platforms state. The model has no
       field for the mark: `indicator_width` is the box
       (`docs/platform-facts.md:984`), and §2.5 says of the mark only that it
-      fills the indicator, except for GNOME's `padding: 3` (`:1224-1225`).
+      fills the indicator, except for GNOME's `padding: 3` (`:1237-1238`).
       Each toolkit draws its own: egui a three-point line in an 8 px square
       (`Spacing::icon_width_inner`, `egui/src/style.rs:1467`, read at
       `widget_style.rs:180`; drawn at `widgets/checkbox.rs:149-158`) in the
@@ -334,8 +334,8 @@ the file was pruned on 2026-10-11, not reordered.
 - [ ] [1.0] `docs/platform-facts.md` derives macOS `border.padding_vertical` as the
       outer height less the content height, halved — "3 **(measured)**
       (22−16)/2" for the button (`docs/platform-facts.md:1185`), and the same
-      shape for the text input (`:1201`), the menu (`:1249`), the tab
-      (`:1340`) and the list (`:1421`). Outer less content is border plus padding, yet the outer-box
+      shape for the text input (`:1214`), the menu (`:1262`), the tab
+      (`:1353`) and the list (`:1434`). Outer less content is border plus padding, yet the outer-box
       rule counts border, padding and content as separate parts
       (`docs/platform-facts.md:901-906`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
@@ -352,7 +352,7 @@ the file was pruned on 2026-10-11, not reordered.
       AppKit's title rect sits 1 below the top and 3 above the bottom of the
       20-tall bezel, measured from its outer (alignment-rect) edge
       (`docs/platform-facts.md:1185`), and the pop-up button's likewise
-      (`:1610`). Those are offsets from the outer edge, so the border's
+      (`:1623`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
       M2a Step 8 (2026-10-11) took the text input's row from the probe too:
@@ -401,7 +401,7 @@ the file was pruned on 2026-10-11, not reordered.
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
       resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:205`),
       a fallback the same file lists among its wrong safety nets, a text
-      colour for "a semi-transparent UI control" (`:499-501`), and the egui
+      colour for "a semi-transparent UI control" (`:559-561`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
       and radio boxes and slider rails with it
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
@@ -433,8 +433,8 @@ the file was pruned on 2026-10-11, not reordered.
       option with no source. Two citations are one line off: the dark scroll
       bar this entry cites as `macos-monterey.toml:640-654` is `:641-655`, and
       the egui entry's dark `track_color` (`:646`) is `:647`. The validator also
-      named `docs/platform-facts.md:1307` and `:177` as "citing probe 15" (its
-      words; `:1294` gives the macOS 14.8.9 probe's legacy 15): re-check what
+      named `docs/platform-facts.md:1307` and `:181` as "citing probe 15" (its
+      words; `:1307` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
 
 ### Fonts: find a system face by family, weight and style
@@ -576,7 +576,7 @@ the file was pruned on 2026-10-11, not reordered.
       colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
       `:502`), where platform-facts gives an input's selection as
       `← defaults.text_selection_background` (`docs/platform-facts.md:1210`),
-      `selectedTextBackgroundColor` on macOS (`:1058`). Neither the reader's
+      `selectedTextBackgroundColor` on macOS (`:1062`). Neither the reader's
       comments nor the commit that added the assignment (`d87483c8`) say why a text
       field's selection takes the unfocused colour. Is it intended? Fix the
       reader or record the reason.
@@ -667,7 +667,7 @@ the file was pruned on 2026-10-11, not reordered.
       `docs/platform-facts.md:1523`). kde-breeze's `defaults.border.color` is
       still open, and two facts cells disagree on it:
       `docs/platform-facts.md:1055` gives KDE's `border.color` as "(preset) —
-      derived from background", while `:1463` gives the separator, which
+      derived from background", while `:1476` gives the separator, which
       inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
       frameContrast). State the computed mix in the preset and the `:1051` cell
       together.
@@ -1106,7 +1106,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.0] `docs/platform-facts.md` §2.12 gave KDE's sidebar
       `[Colors:Complementary]`, which no sidebar uses at KF 6.31.0; since M2e
-      fix round 1 the cells (`:1356`, `:1358`) are ❓. A non-modal Kirigami
+      fix round 1 the cells (`:1369`, `:1371`) are ❓. A non-modal Kirigami
       drawer takes the `Window` set (kirigami v6.31.0
       `src/templates/OverlayDrawer.qml:244`), a non-modal `GlobalDrawer` the
       `View` set (`src/controls/GlobalDrawer.qml:337`), and KIO's places
@@ -1176,7 +1176,7 @@ model, the platform presets and the three connectors
 
 ### platform-facts: the Plasma 6.8 rows cite the beta
 
-- [ ] [v0.7.0] `docs/platform-facts.md:717`, `:718` and `:1123` state Plasma
+- [ ] [v0.7.0] `docs/platform-facts.md:717`, `:718` and `:1127` state Plasma
       6.8 from its Beta 2 (plasma-workspace `v6.7.91`, `40cde89a`): no
       `forceFontDPI`, no krdb, and `Xft.dpi` from the Xwayland scale; the
       `kde-breeze.toml` header says Breeze's values are unchanged at Breeze
@@ -1383,7 +1383,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From M4 T36 (2026-10-13): kde-breeze states the switch thumb as
       `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1523`)
-      and the menu icon size as KIconLoader's Small, 16 (`:1255`), but the KDE
+      and the menu icon size as KIconLoader's Small, 16 (`:1268`), but the KDE
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
       `SmallDefault` into `defaults.icon_sizes.small` only,
@@ -2426,7 +2426,7 @@ What is still open on the iced side:
       light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
       give no colour: "`[Colors:View] DecorationHover` blend"
       (`docs/platform-facts.md:1378`, `:1435`), "(Breeze src) thumb hover"
-      (`:1293`). `segmented_control.hover_background` and
+      (`:1306`). `segmented_control.hover_background` and
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source
       gives them.
@@ -3846,7 +3846,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [upstream] iced 0.14 draws text with cosmic-text 0.15, which matches a face only at the weight fontdb filed it at (`font/fallback/mod.rs:279-287`, `:299-303`, `:446-456`), and fontdb 0.23 files a variable font at its OS/2 weight alone (`lib.rs:1034-1037`, `:1161`). The iced showcase therefore files an extra face at each weight a variable face's `wght` axis covers (`register_weight` in `connectors/native-theme-iced/examples/showcase-iced.rs`), and the iced connector's README and *Font Configuration* docs teach consumers the same. cosmic-text 0.19 matches a variable face at any weight its axis covers itself (`variable_weight_match`, `font/system.rs:38-44`, used at `font/fallback/mod.rs:285`, `:301`). When iced moves to cosmic-text 0.19 or later, remove `register_weight` and the recipe, and check whether the nearest-face fallback in `drawable_font` is still needed for families with no face at a weight.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
-- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-sonoma.toml:47`, `:403`, and the reader's non-macOS testable build, `macos.rs:565-624`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:59-67`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`macos.rs:205-206`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
+- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-sonoma.toml:47`, `:403`, and the reader's non-macOS testable build, `macos.rs:565-624`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`macos.rs:205-206`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
@@ -3889,7 +3889,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [upstream] `QuestionnaireState::new` returns a `Result` (gpui-base `questionnaire/state.rs:40-45`) while gpui builds entities infallibly, so the showcase cannot hold one without a panic path. Ask upstream for an infallible constructor (or schema validation at a later step), then show `Questionnaire` and drop its nine exceptions (`docs/showcase-exceptions.toml`).
 
 ### Presets: material-3's platform-facts citations have drifted
-- [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1267` (`font.weight`) where the row is `:1269`, and the list's `header_font` cites `:1412-1413` (the selection rows) where the rows are `:1414-1415`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
+- [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1280` (`font.weight`) where the row is `:1282`, and the list's `header_font` cites `:1425-1426` (the selection rows) where the rows are `:1427-1428`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
       M8 T16 (2026-10-17): material-3's four §2.20 layout values
       (`material-3.toml:1022-1026`: 6, 6, 10, 18) have no source: the
       Material cells are "(none)" (`docs/platform-facts.md` §2.20), and the
@@ -4038,7 +4038,7 @@ The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Ea
   *Correction (M8 T14 fix round 1, 2026-10-17):* the header row's border is the main header's `.h(header_row_height).border_b_1()` at gpui-component `src/table/state.rs:1959-1960`; `:1899` is the left-fixed columns' header.
 - [x] [v0.7.0] For M8's API batch: whether to remove `freedesktop_name_for_gpui_icon(icon, de)`, now that `freedesktop_name_candidates` and core's `FreedesktopLoader::any` choose by the icon theme (M6 T7).
   *Closed by M8 T5 (2026-10-16, 6c82cf19):* deprecated, not removed, as the entry above records.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1626 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`

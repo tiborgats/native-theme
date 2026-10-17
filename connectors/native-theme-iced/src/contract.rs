@@ -4381,7 +4381,7 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
         // states `button.background_color` as `ControlFillColorDefault`
         // (`#B3FFFFFF` light, `#0FFFFFFF` dark, docs/platform-facts.md:1177),
         // and the layer is the pressed button's `ControlFillColorTertiary`
-        // (`#4DF9F9F9`, `#08FFFFFF`, :1179). The preset states that one
+        // (`#4DF9F9F9`, `#08FFFFFF`, :1192). The preset states that one
         // flattened over the window, so it is set here, not read from it.
         let pressed_as_given = match c.label().as_str() {
             "windows-11/light" => Some(Rgba::new(0xf9, 0xf9, 0xf9, 0x4d)),

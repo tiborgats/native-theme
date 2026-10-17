@@ -36,7 +36,7 @@ shadow_color = "#00000055"
 
 # platform-facts.md:1084-1091 (§2.1.4): systemRedColor, systemOrangeColor, systemGreenColor and
 # systemBlueColor, probe :344, :347, :345, :346; each text colour is labelColor (probe :308), the
-# body text beside a status mark, not text on the status fill (footnote 1, :1089-1098)
+# body text beside a status mark, not text on the status fill (footnote 1, :1093-1102)
 danger_color = "#ff383c"
 danger_text_color = "#000000d8"
 warning_color = "#ff8d28"
@@ -419,7 +419,7 @@ shadow_color = "#00000055"
 
 # platform-facts.md:1084-1091 (§2.1.4): systemRedColor, systemOrangeColor, systemGreenColor and
 # systemBlueColor, probe :418, :421, :419, :420; each text colour is labelColor (probe :382), the
-# body text beside a status mark, not text on the status fill (footnote 1, :1089-1098)
+# body text beside a status mark, not text on the status fill (footnote 1, :1093-1102)
 danger_color = "#ff4245"
 danger_text_color = "#ffffffd8"
 warning_color = "#ff9230"

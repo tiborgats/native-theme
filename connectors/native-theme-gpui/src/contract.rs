@@ -1070,8 +1070,8 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
             "the selections that sinks read inherit it: \
              `menu.hover_background`, `sidebar.selection_background` and \
              `list.selection_background` (`docs/inheritance-rules.toml:197`, \
-             `:218`, `:234`), and `input.selection_background` through \
-             `defaults.text_selection_background` (`:54`, `:167`)",
+             `:226`, `:242`), and `input.selection_background` through \
+             `defaults.text_selection_background` (`:59`, `:175`)",
         ),
     },
     UnreadColour {
@@ -1080,7 +1080,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
             "the selected-item labels that sinks read inherit it: \
              `menu.hover_text_color`, `sidebar.selection_text_color` and \
              `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
-             `:219`, `:235`)",
+             `:227`, `:243`)",
         ),
     },
     UnreadColour {
@@ -1090,7 +1090,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `window.title_bar_background`, `slider.thumb_color`, \
              `list.header_background` and `switch.thumb_background` \
              (`docs/inheritance-rules.toml:158`, `:211`, `:244`, `:258`); \
-             `card.background_color` inherits it too (`:266`), which \
+             `card.background_color` inherits it too (`:274`), which \
              `geometry::group_box_content` reads",
         ),
     },
@@ -1461,7 +1461,7 @@ const TRANSLUCENT_BUTTON_FILL: [&str; 5] = [
 /// The [`TRANSLUCENT_BUTTON_FILL`] combinations whose pressed fill gpui derives
 /// (`derive::active_color` of the translucent idle fill), with no platform
 /// source: no source gives macOS 26's pressed fill (docs/platform-facts.md §2.3
-/// has no pressed row, and its hover row, :1179, is ❓), so the layer is as
+/// has no pressed row, and its hover row, :1192, is ❓), so the layer is as
 /// translucent as the fill it is drawn over.
 const DERIVED_PRESSED_FILL: [&str; 2] = ["macos-tahoe/light", "macos-tahoe/dark"];
 

@@ -143,7 +143,7 @@ disabled_background = "#f9f9f900"
 primary_background = "#0067c0"
 # platform-facts.md:1194 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorDark1,
 # UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2);
-# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF (:1182)
+# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #FFFFFF (:1195)
 checked_background = "#0067c0"
 checked_text_color = "#ffffff"
 
@@ -736,7 +736,7 @@ disabled_background = "#33333300"
 primary_background = "#4cc2ff"
 # platform-facts.md:1194 (§2.3): ToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorLight2,
 # UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2);
-# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000 (:1182)
+# ToggleButtonForegroundChecked = TextOnAccentFillColorPrimary #000000 (:1195)
 checked_background = "#4cc2ff"
 checked_text_color = "#000000"
 

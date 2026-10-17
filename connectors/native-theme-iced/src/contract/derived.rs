@@ -1210,8 +1210,8 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              colours of the button, the input, the check box, the list and \
              the link inherit this one, and rows read each of them \
              (`docs/inheritance-rules.toml:169`, `:178`, `:191`, `:282`, \
-             `:292`); the menu's and the combo box's inherit it too (`:191`, \
-             `:283`) and have no receiver, as their entries here say",
+             `:300`); the menu's and the combo box's inherit it too (`:199`, \
+             `:291`) and have no receiver, as their entries here say",
         ),
     },
     UnreadColour {
@@ -1245,7 +1245,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              The muted colour reaches iced through the leaves that inherit it, \
              `input.placeholder_color` among them \
              (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, \
-             `:208`). Ruling T12a C3",
+             `:216`). Ruling T12a C3",
         ),
     },
     UnreadColour {
@@ -1263,7 +1263,7 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
             "the selected-item labels that rows read inherit it: \
              `menu.hover_text_color`, `sidebar.selection_text_color` and \
              `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
-             `:219`, `:235`)",
+             `:227`, `:243`)",
         ),
     },
     UnreadColour {

@@ -23,8 +23,8 @@ the code review would otherwise read twice. Known gaps on 2026-10-10:
   records nowhere (corrected 2026-10-11 by M1-T9-02: an earlier version of this sentence
   said "a macOS 26 runner", citing `screenshots.yml:63`, which is a comment about another
   repository's run); macOS 26 (Tahoe)'s Liquid Glass design changed control shapes and
-  sizes, and `platform-facts.md` records Tahoe only for the window corner radius (`:173`,
-  `:1155`).
+  sizes, and `platform-facts.md` records Tahoe only for the window corner radius (`:177`,
+  `:1168`).
 - The `ios` preset has no `platform-facts.md` column (`native-theme/src/presets/README.md`)
   and names no iOS version; iOS 26 brought Liquid Glass too.
 - The `material` preset is Material 3 as material-web implements it (M3 tokens `v0_192`);

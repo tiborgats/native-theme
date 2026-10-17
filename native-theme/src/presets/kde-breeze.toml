@@ -94,19 +94,19 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [light.text_scale.caption]
-# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
+# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:577)
 size_pt =8.0
 weight = 400
 
 [light.text_scale.section_heading]
 # platform-facts.md:1486 (§2.19): Kirigami Heading level 2, the 10pt body
-# (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
+# (:575) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [light.text_scale.dialog_title]
 # platform-facts.md:1487 (§2.19): Kirigami Heading level 1, the 10pt body
-# (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
+# (:575) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
 
@@ -418,7 +418,7 @@ hover_unchecked_background = "#e6e7e7"
 disabled_checked_background = "#e6e7e8"
 # platform-facts.md:1530 (§2.21): the off track's tint from the Disabled group
 disabled_unchecked_background = "#e9e9e9"
-# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1119)
 disabled_thumb_color = "#f0f0f0"
 # platform-facts.md:1532 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #fcfcfc / #232629
@@ -632,19 +632,19 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [dark.text_scale.caption]
-# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
+# platform-facts.md:1485 (§2.19): smallestReadableFont, default 8pt, 400 (:577)
 size_pt =8.0
 weight = 400
 
 [dark.text_scale.section_heading]
 # platform-facts.md:1486 (§2.19): Kirigami Heading level 2, the 10pt body
-# (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
+# (:575) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [dark.text_scale.dialog_title]
 # platform-facts.md:1487 (§2.19): Kirigami Heading level 1, the 10pt body
-# (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
+# (:575) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
 
@@ -958,7 +958,7 @@ hover_unchecked_background = "#3e4144"
 disabled_checked_background = "#26292c"
 # platform-facts.md:1530 (§2.21): the off track's tint from the Disabled group
 disabled_unchecked_background = "#2e3135"
-# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
+# platform-facts.md:1531 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1119)
 disabled_thumb_color = "#272a2e"
 # platform-facts.md:1532 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
 # frameContrast 0.2) of the Button set (SwitchIndicator.qml:21, :27, :30, :50), Button #292c30 / #fcfcfc

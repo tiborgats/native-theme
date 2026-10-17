@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
 /// (Win7) and modern WinUI 3 ContentDialog ("PrimaryButton ... Appears as
 /// the leftmost button"). See `docs/platform-facts.md:1559, 1529-1546,
-/// 1848-1849` for the authoritative citations.
+/// 1861-1862` for the authoritative citations.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DialogButtonOrder {
     /// Primary button at the trailing (right) end -- GNOME, macOS, iOS style.

@@ -865,7 +865,7 @@ mod tests {
 
     /// Light mode: the accent fill is AccentDark1, the link AccentDark2, the
     /// informational fill the accent (docs/platform-facts.md:1188, :1194,
-    /// :1054, :1086).
+    /// :1058, :1090).
     #[test]
     fn build_theme_accent_shades_light_mode() {
         let accent = crate::Rgba::rgb(0, 120, 215);
