@@ -727,28 +727,35 @@ module documentation has the same recipe as a compiled example.
 
 The theme-drawn `widgets::Spinner` draws the icon set's indicator itself (see
 [Theme-drawn widgets](#theme-drawn-widgets)). To draw one of your own, load the
-indicator of the theme's set and convert it, coloured as that set is coloured:
+indicator of the theme's set and convert it in the colour the `Spinner` draws
+it in: a frame coloured as its set is coloured, a turning icon in that one
+colour:
 
 ```rust,no_run
-use gpui_kit::{IntoElement, Styled, px};
-use gpui_kit::component::ActiveTheme;
+use gpui_kit::{Hsla, IntoElement, Styled, px, rgba};
 use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 use native_theme_gpui::native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::native_theme::icons::load_icon_indicator;
-use native_theme_gpui::{AnimatedIcon, IconData, TransformAnimation};
+use native_theme_gpui::{AnimatedIcon, IconData, IconSet, TransformAnimation};
 
-# fn f(cx: &gpui_kit::App) -> native_theme_gpui::Result<()> {
+# fn f() -> native_theme_gpui::Result<()> {
 let loaded = native_theme_gpui::from_system()?;
-// The text colour: a Material or Lucide frame is tinted it, and a freedesktop
-// frame's `currentColor` takes it where the frame sets no colour of its own.
-let text = cx.theme().foreground;
+// The `Spinner`'s colour: `spinner.fill_color` for the monochrome bundled
+// sets, which tint a frame with it; `defaults.text_color` for the others,
+// which fill a frame's `currentColor` with it where the frame sets no colour
+// of its own.
+let stated = match loaded.icon_set {
+    IconSet::Material | IconSet::Lucide => loaded.resolved.spinner.fill_color,
+    _ => loaded.resolved.defaults.text_color,
+};
+let colour: Hsla = rgba(u32::from_be_bytes([stated.r, stated.g, stated.b, stated.a])).into();
 let diameter = px(loaded.resolved.spinner.diameter);
 if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
     match &anim {
         AnimatedIcon::Frames(_) => {
             // Cache this — do not call on every frame tick.
             if let Some(frames) =
-                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(text), None)
+                animated_frames_to_image_sources_for(loaded.icon_set, &anim, Some(colour), None)
             {
                 let element = if prefers_reduced_motion() {
                     // The first frame, standing still.
@@ -761,12 +768,13 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
             }
         }
         AnimatedIcon::Transform(_) => {
-            // The icon carries its SVG and its period; the SVG element draws
-            // the icon's shape in its text colour.
+            // The icon carries its SVG and its period. gpui draws an SVG
+            // element as an alpha mask in its text colour, so a turning icon
+            // is one colour and its own colours are lost, as in the `Spinner`.
             if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
                 (anim.icon(), anim.animation())
             {
-                let icon = gpui_kit::svg().data(bytes).size(diameter).text_color(text);
+                let icon = gpui_kit::svg().data(bytes).size(diameter).text_color(colour);
                 let element = if prefers_reduced_motion() {
                     icon.into_any_element()
                 } else {
@@ -781,7 +789,9 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
 # }
 ```
 
-`animated_frames_to_image_sources_for` colours each frame as its set does:
+`animated_frames_to_image_sources_for` colours each frame as its set does
+(the `None` asks for no size, where the `Spinner` rasterises at the window's
+pixel size):
 it tints a Material or Lucide frame through the monochrome colouriser, fills
 a freedesktop frame's `currentColor` only where the document sets no `color`
 of its own (Breeze's `process-working` keeps its stylesheet's), and draws an

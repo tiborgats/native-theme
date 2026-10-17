@@ -1069,7 +1069,7 @@ fn frames_to_image_sources(
 /// ```compile_fail,E0308
 /// use native_theme_gpui::icons::with_spin_animation;
 ///
-/// let _ = with_spin_animation(gpui::svg(), "spin", 0);
+/// let _ = with_spin_animation(gpui_kit::svg(), "spin", 0);
 /// ```
 ///
 /// # Examples
