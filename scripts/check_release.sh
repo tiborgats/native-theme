@@ -971,6 +971,12 @@ fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
+#
+# cargo audit checks Cargo.lock against the RustSec advisory database. Hard: a
+# known advisory must not sit in the lock, and an audit that cannot run (the
+# database fetch, a lockfile it cannot parse) checked nothing. .cargo/audit.toml
+# denies the informational advisories too (unmaintained, unsound, yanked), and
+# lets one pass only through an ignore entry that gives its reason.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Security audit"
 if [[ $COMMIT_MODE ]]; then
@@ -978,20 +984,7 @@ if [[ $COMMIT_MODE ]]; then
 elif [[ ! $HAVE_AUDIT ]]; then
     printf "${DIM}   not run: cargo-audit is not installed (failed above)${NC}\n"
 else
-    set +e
-    AUDIT_OUT=$(cargo audit 2>&1)
-    AUDIT_STATUS=$?
-    set -e
-    if [ "$AUDIT_STATUS" -eq 0 ]; then
-        print_ok "cargo audit — no advisories"
-    else
-        # Extract "Warning:" or "Error:" lines for compact warning surfacing.
-        AUDIT_SUMMARY=$(printf "%s\n" "$AUDIT_OUT" | grep -E '^\s*(Crate|Title|ID):\s' | head -12 || true)
-        print_warn "cargo audit reported findings"
-        if [ -n "$AUDIT_SUMMARY" ]; then
-            printf "${DIM}%s${NC}\n" "$AUDIT_SUMMARY"
-        fi
-    fi
+    run_check "cargo audit (RustSec advisories, .cargo/audit.toml)" cargo audit
 fi
 
 print_section "Outdated dependencies"
