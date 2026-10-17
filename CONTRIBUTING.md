@@ -83,8 +83,9 @@ a single-line status per check, and a failing check's captured output; only the
 semver checks are soft (`⚠`), since approved breaks are expected before a
 release (a semver warning is resolved by the version number or by undoing the
 change); every other check is hard, and a hard failure (`❌`) exits non-zero and
-must be fixed. It needs jq and installs nothing: a missing `cargo-audit` or
-`cargo-outdated` fails the full run with its install command.
+must be fixed. It needs jq and installs nothing: a missing `cargo-audit`,
+`cargo-outdated` or `cargo-semver-checks` fails the full run with its install
+command.
 
 `--commit` runs every one of those checks except the release-tag check, the gpui
 connector's tests on GPUI Fast, `native-theme`'s ignored stem-index test and the

@@ -19,8 +19,8 @@
 #
 # Requires jq: the crate list, the panic scan's directories and the per-crate
 # sections are read from `cargo metadata`. The script installs nothing: a
-# missing cargo-audit or cargo-outdated fails the full run with its install
-# command, and a cross-target check whose target or linker is missing is
+# missing cargo-audit, cargo-outdated or cargo-semver-checks fails the full run
+# with its install command, and a cross-target check whose target or linker is missing is
 # skipped with a warning the summary repeats.
 #
 # Modes:
@@ -356,9 +356,11 @@ fi
 
 HAVE_AUDIT=""
 HAVE_OUTDATED=""
+HAVE_SEMVER_CHECKS=""
 if [[ ! $COMMIT_MODE ]]; then
     check_tool cargo-audit "security audit" && HAVE_AUDIT=1
     check_tool cargo-outdated "outdated-dependency check" && HAVE_OUTDATED=1
+    check_tool cargo-semver-checks "semver checks" && HAVE_SEMVER_CHECKS=1
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -942,14 +944,14 @@ fi
 # with the release-only sections. The only soft check: before a release the
 # approved breaks are expected (the next version is the bump that allows
 # them), and a reported break asks for a version decision (the bump, or the
-# change undone), not a code fix. Skipped with a warning when the tool is not
-# installed.
+# change undone), not a code fix. A missing tool is not soft: the checks did
+# not run, so it fails in the Environment section with its install command.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Semver checks"
 if [[ $COMMIT_MODE ]]; then
     print_skipped "Semver checks"
-elif ! cargo semver-checks --version >/dev/null 2>&1; then
-    print_warn "cargo-semver-checks not installed: semver checks skipped (cargo install cargo-semver-checks)"
+elif [[ ! $HAVE_SEMVER_CHECKS ]]; then
+    printf "${DIM}   not run: cargo-semver-checks is not installed (failed above)${NC}\n"
 else
     # A proc-macro crate (native-theme-derive) has no library API to compare.
     SEMVER_CRATES=$(jq -r '.packages[] | select(.publish != []) | select(any(.targets[]; any(.kind[]; . == "lib"))) | .name' \
@@ -957,12 +959,13 @@ else
     for crate in $SEMVER_CRATES; do
         # The tool's own feature choice would turn on the gpui connector's
         # `gpui-fast`, which changes the GPUI core its API is written in; the
-        # published API is the default features'.
+        # published API is the default features'. (`${a[@]+"${a[@]}"}`: an
+        # empty array is unset to `set -u` before bash 4.4.)
         semver_features=()
         if [ "$crate" = "native-theme-gpui" ]; then
             semver_features=(--default-features)
         fi
-        run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate" "${semver_features[@]}"
+        run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate" ${semver_features[@]+"${semver_features[@]}"}
     done
 fi
 
@@ -1118,21 +1121,21 @@ printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${D
 
 if [ "$WARN_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${YELLOW}Warnings (re-summarised):${NC}\n"
-    for w in "${WARNINGS[@]}"; do
+    for w in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
         printf "   ${YELLOW}${ICON_WARN}${NC} %s\n" "$w"
     done
 fi
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${RED}Failures (re-summarised):${NC}\n"
-    for f in "${FAILURES[@]}"; do
+    for f in ${FAILURES[@]+"${FAILURES[@]}"}; do
         printf "   ${RED}${ICON_FAIL}${NC} %s\n" "$f"
     done
 fi
 
 if [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}Skipped (--commit mode):${NC}\n"
-    for s in "${SKIPPED[@]}"; do
+    for s in ${SKIPPED[@]+"${SKIPPED[@]}"}; do
         printf "   ${DIM}%s${NC}\n" "$s"
     done
 fi
