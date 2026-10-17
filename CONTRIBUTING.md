@@ -29,8 +29,11 @@ full pre-release check:
 ./scripts/check_release.sh
 ```
 
-This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME and
-panic-pattern scan of every workspace member's non-test code, per-crate `cargo check --all-targets`,
+This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME scan
+of every `.rs` file outside `target/`, the panic-pattern scan
+(`scripts/check_panic_patterns.py` and its `--self-test`) of each workspace
+member's `src/` outside its test modules and test-only files (not `build.rs`,
+`examples/`, `tests/` or `benches/`), per-crate `cargo check --all-targets`,
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
 features — for `native-theme-gpui` all but `gpui-fast` — failing on a

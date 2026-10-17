@@ -381,114 +381,26 @@ fi
 
 # Panic-pattern scan (BLOCKING — runtime panics are forbidden in production)
 #
-# Detected patterns (outside #[cfg(test)] blocks):
-#   .unwrap() · .expect(...) · panic!(...) · todo!(...) · unimplemented!(...)
-#   unreachable!(...) · Instant::now() + / - (use checked_add/checked_sub)
-#
-# Regex-based tripwire only. The authoritative panic check is the
+# scripts/check_panic_patterns.py, over every workspace member's src/ (from
+# `cargo metadata`, so a member added to the workspace is scanned without
+# naming it here). It reads the code with comments and literals blanked, so a
+# brace in a test's fixture string cannot hide the code after the test module,
+# and it fails on a directory or file it cannot read; its docstring lists the
+# patterns. A regex tripwire only: the authoritative panic check is the
 # "Strict panic lints" section below, which runs clippy with the full
-# panic-prone lint set using type-aware analysis.
-#
-# Scanned: every workspace member's src/ directory, from `cargo metadata`, so
-# a member added to the workspace is scanned without naming it here.
+# panic-prone lint set using type-aware analysis. Its self-test runs the
+# lexing and the test-module rules on a synthetic tree.
 PANIC_SCAN_DIRS=$(jq -r '.workspace_root as $root | .packages[].manifest_path
     | ltrimstr($root + "/") | rtrimstr("Cargo.toml") + "src"' <<<"$WORKSPACE_METADATA")
-PANIC_FOUND=0
-PANIC_HITS_ALL=""
-for src_dir in $PANIC_SCAN_DIRS; do
-    if [ -d "$src_dir" ]; then
-        HITS=$(python3 -c "
-import sys, re, glob, os
-
-def scan_file(path):
-    issues = []
-    try:
-        with open(path) as f:
-            lines = f.readlines()
-    except:
-        return issues
-    in_test = 0
-    brace_depth = 0
-    test_active = False
-    for i, line in enumerate(lines, 1):
-        s = line.strip()
-        if re.search(r'#\[cfg\((all\()?test[,\)]', s):
-            test_active = True
-            continue
-        opens = line.count('{')
-        closes = line.count('}')
-        if test_active and opens > 0:
-            in_test = brace_depth + 1
-            test_active = False
-        brace_depth += opens - closes
-        if in_test > 0 and brace_depth < in_test:
-            in_test = 0
-        if in_test > 0:
-            continue
-        if s.startswith('//'):
-            continue
-        if '.unwrap()' in line:
-            issues.append(f'{path}:{i}: [.unwrap()] {s}')
-        elif re.search(r'\.expect\s*\(', line):
-            issues.append(f'{path}:{i}: [.expect()] {s}')
-        elif re.search(r'\bpanic!\s*\(', line):
-            issues.append(f'{path}:{i}: [panic!] {s}')
-        elif re.search(r'\btodo!\s*\(', line):
-            issues.append(f'{path}:{i}: [todo!] {s}')
-        elif re.search(r'\bunimplemented!\s*\(', line):
-            issues.append(f'{path}:{i}: [unimplemented!] {s}')
-        elif re.search(r'\bunreachable!\s*\(', line):
-            issues.append(f'{path}:{i}: [unreachable!] {s}')
-        elif re.search(r'Instant::now\(\)\s*[-+]', line):
-            issues.append(f'{path}:{i}: [Instant::now() arithmetic; use checked_add/checked_sub] {s}')
-    return issues
-
-# A file whose module its parent declares under #[cfg(test)] (mod name;) is a
-# #[cfg(test)] block kept in a file of its own: compiled for tests only, so it is
-# skipped as the in-file blocks are.
-def test_only_files(files):
-    skip = set()
-    for f in files:
-        base, name = os.path.split(f)
-        child_dir = base if name in ('lib.rs', 'main.rs', 'mod.rs') else os.path.join(base, name[:-3])
-        with open(f) as fh:
-            lines = fh.read().split('\n')
-        for i, line in enumerate(lines):
-            if not re.match(r'\s*#\[cfg\(test\)\]\s*$', line):
-                continue
-            nxt = next((x for x in lines[i + 1:] if x.strip()), '')
-            m = re.match(r'\s*(pub(\(crate\))?\s+)?mod\s+(\w+)\s*;', nxt)
-            if m:
-                skip.add(os.path.join(child_dir, m.group(3) + '.rs'))
-                skip.add(os.path.join(child_dir, m.group(3), 'mod.rs'))
-    return skip
-
-issues = []
-files = glob.glob('${src_dir}/**/*.rs', recursive=True)
-skip = test_only_files(files)
-for f in files:
-    if f.endswith('/tests.rs') or f in skip:
-        continue
-    issues.extend(scan_file(f))
-for issue in issues:
-    print(issue)
-sys.exit(0 if not issues else 1)
-" 2>&1) || true
-        if [ -n "$HITS" ]; then
-            PANIC_HITS_ALL+="$HITS"$'\n'
-            PANIC_FOUND=1
-        fi
-    fi
-done
-
-if [ "$PANIC_FOUND" -eq 1 ]; then
-    print_fail "Panic-inducing pattern(s) in production code"
-    printf "${DIM}%s${NC}" "$PANIC_HITS_ALL"
+if PANIC_HITS=$(python3 scripts/check_panic_patterns.py $PANIC_SCAN_DIRS 2>&1); then
+    print_ok "No panic-inducing patterns"
+else
+    print_fail "Panic-inducing pattern(s) in production code, or an unreadable input"
+    printf "${DIM}%s${NC}\n" "$PANIC_HITS"
     printf "${RED}   Runtime panics are FORBIDDEN. Replace with Result/Option or checked_* arithmetic.${NC}\n" >&2
     exit 1
-else
-    print_ok "No panic-inducing patterns"
 fi
+run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 
 # native-theme's Linux feature set: every feature with code on Linux
 # (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
