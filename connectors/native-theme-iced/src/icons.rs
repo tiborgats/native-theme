@@ -32,12 +32,15 @@
 use std::borrow::Cow;
 
 use native_theme::icons::{
-    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, load_custom_icon_in,
+    AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, fill_current_color,
+    load_custom_icon_in,
 };
+use native_theme::theme::IconSet;
 
 /// Converted animation frames with timing metadata.
 ///
-/// Returned by [`animated_frames_to_svg_handles`]. Contains the
+/// Returned by [`animated_frames_to_svg_handles`] and
+/// [`animated_frames_to_svg_handles_for`]. Contains the
 /// SVG handles and the per-frame duration needed to drive playback.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -149,8 +152,13 @@ pub fn custom_icon_to_svg_handle(
 /// have fewer frames than the input, causing it to play faster. If all frames
 /// are non-SVG, returns `None`.
 ///
-/// When `color` is `Some`, colorizes monochrome SVG frames (Material, Lucide)
-/// to match the given color. Pass `None` for multi-color system icons.
+/// When `color` is `Some`, every SVG frame goes through the monochrome
+/// colouriser, as in [`to_svg_handle()`]: the colour is for a monochrome
+/// bundled set's frames (Material, Lucide). Pass `None` for a system set's
+/// frames, which this colouriser would repaint over the theme's own colours,
+/// or colour them per set with [`animated_frames_to_svg_handles_for()`]: a
+/// freedesktop indicator needs its set to be coloured as the theme colours
+/// it.
 ///
 /// **Call this once and cache the result.** Do not call on every frame tick.
 /// Index into the cached `handles` using an `iced::time::every()` subscription
@@ -180,13 +188,62 @@ pub fn animated_frames_to_svg_handles(
     anim: &AnimatedIcon,
     color: Option<iced_core::Color>,
 ) -> Option<AnimatedSvgHandles> {
+    frames_to_svg_handles(anim, |frame| to_svg_handle(frame, color))
+}
+
+/// Convert all frames of an [`AnimatedIcon::Frames`] of `set` to iced SVG
+/// handles, each SVG frame coloured as `set` colours it.
+///
+/// With `color` given, a Material or Lucide frame goes through
+/// [`colorize_monochrome_svg`], as in [`to_svg_handle()`]; a freedesktop
+/// frame has its `currentColor` filled in `color` only where the document
+/// sets no `color` of its own ([`fill_current_color`]), so a theme whose
+/// stylesheet sets one (Breeze's `process-working`, under
+/// `.ColorScheme-Text { color:#232629 }`) keeps it, and a symbolic frame
+/// whose `currentColor` nothing resolves is drawn in `color`, not black; an
+/// SF Symbols or Segoe Fluent frame is drawn as it is. With `color` `None`
+/// every frame is drawn as it is.
+///
+/// The frames are converted, not loaded: a freedesktop indicator an
+/// application loads itself comes from
+/// `load_icon_indicator(set, loaded.icon_theme.as_deref())`
+/// ([`Loaded::icon_theme`](crate::Loaded::icon_theme)), the icon theme the
+/// role icons and the `Spinner` come from.
+///
+/// Otherwise as [`animated_frames_to_svg_handles()`]: RGBA frames are left
+/// out, `None` for a `Transform` animation or where no frame is SVG, and the
+/// result is for caching, not for every frame tick.
+///
+/// # Examples
+///
+/// ```no_run
+/// use native_theme::icons::load_icon_indicator;
+/// use native_theme::theme::IconSet;
+/// use native_theme_iced::icons::animated_frames_to_svg_handles_for;
+///
+/// # let text_color = iced_core::Color::BLACK;
+/// let set = IconSet::Freedesktop;
+/// let frames = load_icon_indicator(set, None)
+///     .and_then(|anim| animated_frames_to_svg_handles_for(set, &anim, Some(text_color)));
+/// ```
+#[must_use]
+pub fn animated_frames_to_svg_handles_for(
+    set: IconSet,
+    anim: &AnimatedIcon,
+    color: Option<iced_core::Color>,
+) -> Option<AnimatedSvgHandles> {
+    frames_to_svg_handles(anim, |frame| set_svg_handle(set, frame, color))
+}
+
+/// The SVG frames of an [`AnimatedIcon::Frames`], each through `convert`:
+/// `None` for a `Transform` animation or where no frame converts.
+fn frames_to_svg_handles(
+    anim: &AnimatedIcon,
+    convert: impl Fn(&IconData) -> Option<iced_core::svg::Handle>,
+) -> Option<AnimatedSvgHandles> {
     match anim {
         AnimatedIcon::Frames(data) => {
-            let handles: Vec<_> = data
-                .frames()
-                .iter()
-                .filter_map(|f| to_svg_handle(f, color))
-                .collect();
+            let handles: Vec<_> = data.frames().iter().filter_map(convert).collect();
             if handles.is_empty() {
                 None
             } else {
@@ -282,6 +339,26 @@ fn svg_handle(svg: Cow<'_, [u8]>, color: Option<iced_core::Color>) -> iced_core:
         Some(c) => colorize_monochrome_svg(&svg, to_rgba(c)),
         None => svg.into_owned(),
     })
+}
+
+/// The SVG handle of `data`, an icon of `set`, coloured as `set` colours it
+/// (see [`animated_frames_to_svg_handles_for`]); `None` where `data` is not
+/// SVG.
+pub(crate) fn set_svg_handle(
+    set: IconSet,
+    data: &IconData,
+    color: Option<iced_core::Color>,
+) -> Option<iced_core::svg::Handle> {
+    let IconData::Svg(bytes) = data else {
+        return None;
+    };
+    Some(iced_core::svg::Handle::from_memory(match (set, color) {
+        (IconSet::Material | IconSet::Lucide, Some(c)) => {
+            colorize_monochrome_svg(bytes, to_rgba(c))
+        }
+        (IconSet::Freedesktop, Some(c)) => fill_current_color(bytes, to_rgba(c)).into_owned(),
+        _ => bytes.to_vec(),
+    }))
 }
 
 /// An iced colour as an opaque [`native_theme::Rgba`], each channel clamped to
@@ -748,6 +825,134 @@ mod tests {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let result = animated_frames_to_svg_handles(&anim, Some(color));
         assert!(result.is_some(), "should produce handles with color");
+    }
+
+    /// A freedesktop theme's sprite-sheet indicator keeps the colour its own
+    /// stylesheet gives `currentColor` (Breeze's `process-working`, under
+    /// `.ColorScheme-Text { color:#232629 }`), and one whose `currentColor`
+    /// nothing in it resolves takes the colour asked for (M5-04's rule). The
+    /// themes are fixtures in a child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_freedesktop_indicator_is_coloured_where_it_sets_no_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::tests::a_freedesktop_indicator_is_coloured_where_it_sets_no_colour";
+        const STYLED: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><g fill="currentColor"><path class="ColorScheme-Text" d="M2 2h18v18H2z"/><path class="ColorScheme-Text" d="M6 28h10v10H6z"/></g></svg>"#;
+        const BARE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><g fill="currentColor"><path d="M2 2h18v18H2z"/><path d="M6 28h10v10H6z"/></g></svg>"#;
+        if crate::icon_fixture::in_child() {
+            let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+            let frames = |theme: &str| {
+                let anim = native_theme::icons::FreedesktopLoader::load_indicator(Some(theme))
+                    .ok_or_else(|| format!("{theme} has no indicator"))?;
+                let AnimatedIcon::Frames(data) = &anim else {
+                    return Err(format!("{theme}'s indicator is not a sprite sheet"));
+                };
+                let raw: Vec<String> = data
+                    .frames()
+                    .iter()
+                    .map(|frame| match frame {
+                        IconData::Svg(svg) => String::from_utf8_lossy(svg).into_owned(),
+                        _ => String::new(),
+                    })
+                    .collect();
+                let drawn = animated_frames_to_svg_handles_for(
+                    native_theme::theme::IconSet::Freedesktop,
+                    &anim,
+                    Some(red),
+                )
+                .ok_or_else(|| format!("{theme}'s frames are not SVG"))?;
+                Ok::<_, String>((raw, drawn.handles))
+            };
+
+            let (raw, drawn) = frames("styled")?;
+            assert_eq!(drawn.len(), 2, "the styled sheet has two frames");
+            for (svg, handle) in raw.iter().zip(&drawn) {
+                assert!(svg.contains("currentColor"), "{svg}");
+                assert_eq!(
+                    &svg_text(handle),
+                    svg,
+                    "the styled frame was not kept in its own colour"
+                );
+            }
+
+            let (raw, drawn) = frames("bare")?;
+            assert_eq!(drawn.len(), 2, "the bare sheet has two frames");
+            for (svg, handle) in raw.iter().zip(&drawn) {
+                assert!(svg.contains("currentColor"), "{svg}");
+                assert_eq!(
+                    svg_text(handle),
+                    svg.replace("currentColor", "#ff0000"),
+                    "the bare frame was not drawn in the colour"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, Child::kde("styled"), |icons| {
+            crate::icon_fixture::write_indicator_theme(icons, "styled", STYLED)?;
+            crate::icon_fixture::write_indicator_theme(icons, "bare", BARE)
+        })?;
+        Ok(())
+    }
+
+    /// The frames of the given set, two of `svg`, with the colour given.
+    fn frames_for(
+        set: native_theme::theme::IconSet,
+        svg: &'static [u8],
+        color: Option<iced_core::Color>,
+    ) -> AnimatedSvgHandles {
+        let anim = AnimatedIcon::frames(
+            vec![
+                IconData::Svg(std::borrow::Cow::Borrowed(svg)),
+                IconData::Svg(std::borrow::Cow::Borrowed(svg)),
+            ],
+            period(80),
+        )
+        .expect("non-empty frames");
+        animated_frames_to_svg_handles_for(set, &anim, color).expect("SVG frames")
+    }
+
+    /// A Material or Lucide frame goes through the monochrome colouriser, as
+    /// [`animated_frames_to_svg_handles`] colours it.
+    #[test]
+    fn material_and_lucide_frames_are_coloured_as_monochrome() {
+        use native_theme::theme::IconSet;
+        const SVG: &[u8] = br#"<svg viewBox="0 0 24 24"><path d="M2 2h20v20H2z"/></svg>"#;
+        let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let expected = String::from_utf8(colorize_monochrome_svg(SVG, to_rgba(red))).unwrap();
+        assert_ne!(expected.as_bytes(), SVG, "the colouriser changes the frame");
+        for set in [IconSet::Material, IconSet::Lucide] {
+            let drawn = frames_for(set, SVG, Some(red));
+            assert_eq!(drawn.handles.len(), 2, "{set:?}");
+            assert_eq!(drawn.frame_duration_ms, period(80), "{set:?}");
+            for handle in &drawn.handles {
+                assert_eq!(svg_text(handle), expected, "{set:?}");
+            }
+        }
+    }
+
+    /// An SF Symbols or Segoe Fluent frame is drawn as it is, and so is any
+    /// set's without a colour.
+    #[test]
+    fn other_sets_frames_and_frames_without_a_colour_are_as_they_are() {
+        use native_theme::theme::IconSet;
+        const SVG: &str =
+            r#"<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 2h20v20H2z"/></svg>"#;
+        let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let as_is = [
+            (IconSet::SfSymbols, Some(red)),
+            (IconSet::SegoeFluent, Some(red)),
+            (IconSet::Material, None),
+            (IconSet::Lucide, None),
+            (IconSet::Freedesktop, None),
+            (IconSet::SfSymbols, None),
+            (IconSet::SegoeFluent, None),
+        ];
+        for (set, color) in as_is {
+            for handle in &frames_for(set, SVG.as_bytes(), color).handles {
+                assert_eq!(svg_text(handle), SVG, "{set:?} {color:?}");
+            }
+        }
     }
 
     // Issue 14.3: spin_rotation_radians with very large elapsed (wraps correctly)
