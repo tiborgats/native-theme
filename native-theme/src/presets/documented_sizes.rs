@@ -719,9 +719,20 @@ fn every_bundled_preset_is_native_or_unsourced() {
     assert_eq!(gated, bundled);
 }
 
+/// The second table's sizes the model leaves optional: a preset that states
+/// one without a source overrides the toolkit's own.
+const OPTIONAL_FIELDS: [&str; 5] = [
+    "checkbox.radio_dot_diameter",
+    "checkbox.check_mark_stroke_width",
+    "checkbox.radio_indicator_width",
+    "switch.unchecked_thumb_diameter",
+    "tab.active_indicator_width",
+];
+
 /// A preset platform-facts does not cover cites no source for a size, so it
 /// states no padding side, `row_height`, `header_height`, `bar_height`,
-/// `item_gap` or `arrow_area_width`, and the toolkit's own sizes stand.
+/// `item_gap`, `arrow_gap`, `content_indent` or `arrow_area_width`, and none
+/// of [`OPTIONAL_FIELDS`], and the toolkit's own sizes stand.
 #[test]
 fn unsourced_presets_state_no_gated_size() {
     let mut failures = Vec::new();
@@ -745,6 +756,15 @@ fn unsourced_presets_state_no_gated_size() {
                             "{name} {mode:?}: states {widget}.{key} = {value}, with no source"
                         ));
                     }
+                }
+            }
+            for field in OPTIONAL_FIELDS {
+                match states_field(&variant, field) {
+                    Some(false) => {}
+                    Some(true) => {
+                        failures.push(format!("{name} {mode:?}: states {field}, with no source"));
+                    }
+                    None => failures.push(format!("unknown field `{field}`")),
                 }
             }
         }
