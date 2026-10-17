@@ -297,6 +297,11 @@ hover_text_color = "#0000009e"
 hover_background = "#0000000a"
 
 
+[light.tab.font]
+# platform-facts.md:1346 (§2.11): an unselected tab's label, TabViewItemHeaderForeground = TextFillColorSecondary
+# #9E000000, which the header ContentPresenter takes as a ThemeResource (TabView.xaml:575; TabView_themeresources.xaml:12)
+color = "#0000009e"
+
 [light.tab.border]
 # platform-facts.md:1341 (§2.11): the selected tab's CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250
 # at microsoft-ui-xaml 8463f45), top and sides
@@ -866,6 +871,11 @@ hover_text_color = "#ffffffc5"
 # (TabView_themeresources.xaml:87; Common_themeresources_any.xaml:65), over a transparent rest fill
 hover_background = "#ffffff0f"
 
+
+[dark.tab.font]
+# platform-facts.md:1346 (§2.11): an unselected tab's label, TabViewItemHeaderForeground = TextFillColorSecondary
+# #C5FFFFFF, which the header ContentPresenter takes as a ThemeResource (TabView.xaml:575; TabView_themeresources.xaml:90)
+color = "#ffffffc5"
 
 [dark.tab.border]
 # platform-facts.md:1341 (§2.11): the selected tab's CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46
