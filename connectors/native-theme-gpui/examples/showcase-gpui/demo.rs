@@ -3526,18 +3526,17 @@ pub(crate) fn number_input(
     state: &Entity<InputState>,
     width: Pixels,
 ) -> Stateful<Div> {
-    let mut number_info = info::inputs::number_input(cx.theme());
     let native = cx.native();
     let Some(n) = native else {
         return NumberInput::new(state)
             .placeholder("Enter a number")
             .with_size(Size::Medium)
             .w(width)
-            .info(ui, id, number_info);
+            .info(ui, id, info::inputs::number_input(cx.theme()));
     };
-    number_info = number_info.geometry("input");
     let i = &n.resolved.input;
     let focused = gpui::Focusable::focus_handle(state.read(cx), cx).is_focused(window);
+    let number_info = info::inputs::native_number_input(n.resolved, focused).geometry("input");
     // A soft option the theme leaves unstated keeps the edge it would cover.
     let edge = info::stated(match (focused, i.focus_border_color) {
         (true, Some(focus)) => focus,
@@ -3560,9 +3559,12 @@ pub(crate) fn number_input(
     // pointer and while pressed, a pixel tighter at the outer corners, as
     // wide as upstream's at the field's Size (:147-151, `min_w_8`); stacked,
     // each half the field's height, with its chevron at the Size upstream
-    // gives a Small field's icons.
-    let foreground = cx.theme().secondary_foreground;
-    let tint = cx.theme().input;
+    // gives a Small field's icons. Their colours are the fields upstream's
+    // tokens carry under a native theme: secondary_foreground is
+    // `button.font`'s colour, input the field's edge colour (native-theme-gpui
+    // colors.rs).
+    let foreground = info::stated(n.resolved.button.font.color);
+    let tint = info::stated(i.border.color);
     let radius = (px(i.border.corner_radius.max(0.0)) - px(i.border.line_width)).max(px(0.));
     let step = move |button: gpui_base::Button, label: &'static str, icon: IconName| {
         button
@@ -3599,13 +3601,14 @@ pub(crate) fn number_input(
         .when(!focused, |el| el.hover(move |s| s.border_color(hover)))
         .child(spin)
         .info(ui, id, number_info)
+        .debug_selector(move || id.into())
 }
 
 /// The opacity of the frame's edge colour a step button of the number field
 /// is tinted with under the pointer and while pressed: upstream's
 /// (input/number_input.rs:120-121, `input.opacity(0.4)`, `(0.6)`).
-const NUMBER_STEP_HOVER: f32 = 0.4;
-const NUMBER_STEP_ACTIVE: f32 = 0.6;
+pub(crate) const NUMBER_STEP_HOVER: f32 = 0.4;
+pub(crate) const NUMBER_STEP_ACTIVE: f32 = 0.6;
 
 /// A `Checkbox` reading `label`, `checked` or not, refined by
 /// `geometry::checkbox`. A disabled one takes no `on_click`.

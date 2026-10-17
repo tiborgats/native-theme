@@ -6744,7 +6744,6 @@ fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
 
 /// The border colour of the largest box with a border painted exactly over
 /// `selector`'s bounds.
-#[cfg(feature = "widgets")]
 fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {
@@ -6755,6 +6754,123 @@ fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
             .find(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
             .map(|q| q.border_color)
     })
+}
+
+/// Install the bundled `preset` in its light variant.
+fn use_light_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
+    use_preset(cx, showcase, preset);
+    cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Light)), cx));
+    cx.run_until_parked();
+    draw(cx);
+    assert!(
+        !cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        "{preset} was not installed in its light variant"
+    );
+}
+
+/// The colour `info` claims for `field`, where it claims one.
+fn claim_of(info: &WidgetInfo, field: &str) -> Option<gpui::Hsla> {
+    info.colors
+        .iter()
+        .find(|c| c.field == field)
+        .map(|c| c.value)
+}
+
+/// The installed native theme, which the test installed.
+fn resolved_theme(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> native_theme_gpui::ResolvedTheme {
+    read(cx, showcase, |_, cx| {
+        native_value(cx, |n| n.resolved.clone())
+    })
+    .expect("a native theme is installed")
+}
+
+/// The number field a native theme draws -- the showcase's own frame round
+/// gpui-base's NumberInput -- reports what it paints (M9-001): under
+/// kde-breeze light its fill is `input.background_color`, the view colour
+/// and not the window's; its edge `input.border.color`, under the pointer
+/// `input.hover_border_color` and focused `input.focus_border_color`; its
+/// value padded by `geometry::input`; its steps ChevronUp and ChevronDown.
+/// The fill painted inside it is the fill claimed, and the edge painted
+/// round it once it is focused the focused edge claimed.
+#[gpui::test]
+fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    let i = &r.input;
+    let fill = stated(i.background_color);
+    assert_ne!(
+        fill,
+        stated(r.defaults.background_color),
+        "kde-breeze light's field fill is the window's colour, so the fill claim could not be told from upstream's"
+    );
+    assert!(
+        i.border.line_width > 0.0
+            && i.hover_border_color.is_some()
+            && i.focus_border_color.is_some(),
+        "kde-breeze no longer frames its field and states its hover and focus edges, which this test reads"
+    );
+    let field = "basic-number";
+    let info = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
+    assert_eq!(
+        claim_of(&info, "background_color"),
+        Some(fill),
+        "the number field's info does not claim the input.background_color it is filled with: {info:?}"
+    );
+    for (leaf, want) in [
+        ("border", Some(stated(i.border.color))),
+        ("hover_border_color", i.hover_border_color.map(stated)),
+        ("focus_border_color", i.focus_border_color.map(stated)),
+    ] {
+        assert_eq!(
+            claim_of(&info, leaf),
+            want,
+            "the number field's info does not claim input.{leaf}, which its frame is edged with: {info:?}"
+        );
+    }
+    let padding = info
+        .config
+        .iter()
+        .chain(&info.instance)
+        .find(|n| n.what == "padding");
+    assert!(
+        padding
+            .is_some_and(|n| n.text.contains("geometry::input") && !n.text.contains("none from")),
+        "the number field's info does not say its value takes geometry::input's padding: {padding:?}"
+    );
+    let icons = info.not_themeable.iter().find(|n| n.what == "own icons");
+    assert!(
+        icons.is_some_and(|n| n.text.contains("ChevronUp")
+            && n.text.contains("ChevronDown")
+            && !n.text.contains("Minus")),
+        "the number field's info does not name its ChevronUp and ChevronDown steps: {icons:?}"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, field),
+        Some(fill),
+        "the fill painted inside the number field is not the fill its info claims"
+    );
+    // Focused: the info built in that frame claims the focused edge, which
+    // is the edge painted.
+    click(&mut cx, field);
+    let focused = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
+    let edge = claim_of(&focused, "focus_border_color");
+    assert!(
+        edge.is_some() && claim_of(&focused, "hover_border_color").is_none(),
+        "the focused number field's info does not claim its focused edge alone: {focused:?}"
+    );
+    assert_eq!(
+        painted_edge(&mut cx, field),
+        edge,
+        "the edge painted round the focused number field is not the edge its info claims"
+    );
 }
 
 /// A hovered Tag fades to 90% (tag.rs:269), and its info names the fill

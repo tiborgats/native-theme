@@ -3,8 +3,8 @@
 use gpui_component::theme::Theme;
 use native_theme_gpui::ResolvedTheme;
 
-use super::{WidgetInfo, chrome::input_background, claim, stated};
-use crate::demo::InputField;
+use super::{WidgetInfo, chrome::input_background, claim, px_text, stated};
+use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
 
 /// A refined, enabled field's surface, which the showcase draws under the
 /// field (`demo::text_input`): `r`'s `input.background_color` and
@@ -237,6 +237,113 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
         .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the frame round the buttons (input/number_input.rs, NumberInput::render) and the Input inside it keeps upstream's own padding")
         .not_themeable("step buttons", "hardcoded +/- icons; the Size enum sets their min width (input/number_input.rs, NumberInput::render: min_w_6 / min_w_8), not the field's height")
         .not_themeable("own icons", super::own_icons("Minus and Plus on its step buttons (input/number_input.rs, NumberInput)"))
+}
+
+/// The number field the showcase draws as `r`'s `input.*` states a text
+/// field (`demo::number_input` under a native theme): its own frame round
+/// gpui-base's NumberInput, `focused` or not. Its geometry line is recorded
+/// where `demo::number_input` applies the builder.
+pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
+    let i = &r.input;
+    let info = WidgetInfo::new("NumberInput")
+        .variant(if focused {
+            "drawn by the showcase, focused"
+        } else {
+            "drawn by the showcase"
+        })
+        .color(claim(
+            "bg",
+            "background_color",
+            stated(i.background_color),
+            "showcase",
+        ));
+    // The frame takes geometry::input's line width; a 0 width draws no edge
+    // in any state.
+    let info = if i.border.line_width <= 0.0 {
+        info.config("edge", "none: input.border.line_width is 0")
+    } else if focused {
+        match i.focus_border_color.map(|focus_border_color| {
+            claim(
+                "edge, focused",
+                "focus_border_color",
+                stated(focus_border_color),
+                "showcase",
+            )
+        }) {
+            Some(focus) => info.color(focus),
+            None => info.color(claim(
+                "edge, focused: no focused edge stated, so the edge at rest",
+                "border",
+                stated(i.border.color),
+                "showcase",
+            )),
+        }
+        .config(
+            "hover",
+            "none while focused: the frame keeps its focused edge under the pointer",
+        )
+    } else {
+        info.color(claim("edge", "border", stated(i.border.color), "showcase"))
+            .colors(i.hover_border_color.map(|hover_border_color| {
+                claim(
+                    "hovered edge",
+                    "hover_border_color",
+                    stated(hover_border_color),
+                    "showcase",
+                )
+            }))
+            .colors(i.focus_border_color.map(|focus_border_color| {
+                claim(
+                    "focused edge",
+                    "focus_border_color",
+                    stated(focus_border_color),
+                    "showcase",
+                )
+            }))
+    };
+    // The step buttons take upstream's colours, through the fields its
+    // tokens carry under a native theme: secondary_foreground is
+    // button.font's colour, and input the field's edge colour
+    // (input/number_input.rs, NumberInput::render; native-theme-gpui
+    // colors.rs).
+    let info = info
+        .color(claim(
+            "step arrows",
+            "font",
+            stated(r.button.font.color),
+            "showcase",
+        ))
+        .color(claim(
+            "step button hovered, the edge colour at 40%",
+            "border",
+            stated(i.border.color).opacity(NUMBER_STEP_HOVER),
+            "showcase",
+        ))
+        .color(claim(
+            "step button pressed, the edge colour at 60%",
+            "border",
+            stated(i.border.color).opacity(NUMBER_STEP_ACTIVE),
+            "showcase",
+        ));
+    let side = |name: &str, v: Option<f32>| match v {
+        Some(v) => format!("{name} {}px", px_text(v)),
+        None => format!("{name} upstream's"),
+    };
+    let p = &i.border.padding;
+    let sides = [
+        side("top", p.top),
+        side("right", p.right),
+        side("bottom", p.bottom),
+        side("left", p.left),
+    ]
+    .join(", ");
+    info.config("why drawn", "upstream's NumberInput fills its frame with input_background and edges it with the input token, ring while focused, and no hover edge (input/number_input.rs, NumberInput::render), so input.background_color, hover_border_color and focus_border_color would have no receiver there: the showcase draws the frame round gpui-base's NumberInput, the spin button upstream composes")
+        .config("padding", format!("geometry::input's input.border.padding on the value inside the step buttons, {sides}: an unstated side keeps upstream's Size::Medium padding, which the refinement lands after (input/input.rs, Input::render: input_px and input_py, then refine_style); the frame round the buttons takes none"))
+        .config("frame", format!("geometry::input's height, radius {}px and edge width {}px, on the frame round the value and the buttons", px_text(i.border.corner_radius), px_text(i.border.line_width)))
+        .instance("text", "input.font's colour, which geometry::input refines the value with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
+        .instance("focus ring", "none: the value is an Input without its appearance, which carries upstream's ring (input/input.rs, Input::render), and the frame marks focus by its edge alone")
+        .not_themeable("step buttons", "upstream's: transparent at rest, as wide as upstream's at the field's Size (input/number_input.rs, NumberInput::render: min_w_8), each half the field's height, stacked at its right end (gpui-base/number_input.rs, controls_right): the theme states no spin-box layout")
+        .not_themeable("own icons", super::own_icons("ChevronUp and ChevronDown on its step buttons, at Size::Small (demo::number_input)"))
 }
 
 /// A `Checkbox` reading `label`, `checked` or not, `disabled` or not. Its
