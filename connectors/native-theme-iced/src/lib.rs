@@ -783,12 +783,12 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
 /// (`iced_widget` 0.14.2 `src/toggler.rs:287`) and has no width setter, so
 /// every platform whose track is not twice its height -- material-3's 52 by 32,
 /// adwaita's 46 by 26 -- would get a wider track than it states, and its thumb
-/// cannot overhang the track, as kde-breeze's does. This switch is a button
-/// under a thumb container, stacked, coloured by
-/// [`styles::toggler()`] for the toggler status each button status stands
-/// for: `Hovered` and `Pressed` are the toggler's `Hovered` (iced's toggler
-/// has no pressed state), `Disabled` its `Disabled`, and `Active` its
-/// `Active`. The thumb takes the toggler's foreground for `Active` or
+/// cannot overhang the track, as kde-breeze's does. This switch is a widget
+/// of its own, as the toggler is, the size of its track and of a thumb that
+/// overhangs it, all of which is hovered and pressed; a press toggles it, as
+/// the toggler's does (`toggler.rs:333-343`). It is coloured by
+/// [`styles::toggler()`] for its status: `Hovered` under the pointer,
+/// `Disabled` without `on_toggle`, `Active` otherwise. The thumb takes the toggler's foreground for `Active` or
 /// `Disabled`, as the toggler's own thumb does in every state. The track
 /// takes its `border_radius`; the thumb is round, as gpui's and egui's
 /// switches draw it, where iced's toggler gives it the track's radius
@@ -835,13 +835,8 @@ where
     Message: Clone + 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    use iced_widget::toggler::Status as Toggler;
-    use iced_widget::{button, container};
-
     let s = &resolved.switch;
-    let enabled = on_toggle.is_some();
     let track = styles::toggler_over(resolved, backdrop);
-    let thumb_style = track.clone();
     let round = iced_core::border::Radius::new(s.track_height / 2.0);
     let diameter = if is_toggled {
         s.thumb_diameter
@@ -849,84 +844,230 @@ where
         s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
     };
 
-    let thumb = container(iced_widget::Space::new())
-        .width(diameter)
-        .height(diameter)
-        .style(move |theme| {
-            let status = if enabled {
-                Toggler::Active { is_toggled }
-            } else {
-                Toggler::Disabled { is_toggled }
-            };
-            let t = thumb_style(theme, status);
-            container::Style {
-                background: Some(t.foreground),
-                border: iced_core::Border {
-                    color: t.foreground_border_color,
-                    width: t.foreground_border_width,
-                    radius: iced_core::border::Radius::new(diameter / 2.0),
-                },
-                ..container::Style::default()
-            }
-        });
     // A thumb taller than the track overhangs it above and below, and sits
     // flush with its ends (docs/platform-facts.md §2.21), so the switch is
-    // as tall as the taller of the two.
-    let height = s.track_height.max(diameter);
-    let end = ((s.track_height - diameter) / 2.0).max(0.0);
-    let seat = container(thumb)
-        .padding(iced_core::Padding {
-            top: 0.0,
-            right: end,
-            bottom: 0.0,
-            left: end,
-        })
-        .width(s.track_width)
-        .height(height)
-        .align_x(if is_toggled {
-            iced_core::alignment::Horizontal::Right
-        } else {
-            iced_core::alignment::Horizontal::Left
-        })
-        .align_y(iced_core::alignment::Vertical::Center);
+    // as tall as the taller of the two, and the whole of it, the overhang
+    // included, is hovered and pressed.
+    iced_core::Element::new(SwitchBox {
+        is_toggled,
+        on_toggle,
+        style: Box::new(track),
+        width: s.track_width,
+        track_height: s.track_height,
+        round,
+        diameter,
+        last_status: None,
+    })
+}
 
-    let track = button(iced_widget::Space::new())
-        .padding(0)
-        .width(s.track_width)
-        .height(s.track_height)
-        .on_press_maybe(on_toggle)
-        .style(move |theme, status| {
-            let status = match status {
-                button::Status::Active => Toggler::Active { is_toggled },
-                button::Status::Hovered | button::Status::Pressed => {
-                    Toggler::Hovered { is_toggled }
-                }
-                button::Status::Disabled => Toggler::Disabled { is_toggled },
-            };
-            let t = track(theme, status);
-            let iced = button::Style::default();
-            button::Style {
-                background: Some(t.background),
-                text_color: t.text_color.unwrap_or(iced.text_color),
+/// The style a [`SwitchBox`] is coloured by: [`styles::toggler_over()`]'s.
+#[cfg(feature = "widgets")]
+type SwitchStyle<'a> = Box<
+    dyn Fn(&iced_core::Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + 'a,
+>;
+
+/// The switch [`switch_over()`] draws: one widget, as iced's `Toggler` is
+/// (`toggler.rs:251-466`), the size of the track and of a thumb that
+/// overhangs it, painting the track and then the thumb over it in
+/// [`styles::toggler_over()`]'s colours for its status.
+#[cfg(feature = "widgets")]
+struct SwitchBox<'a, Message> {
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+    style: SwitchStyle<'a>,
+    width: f32,
+    track_height: f32,
+    /// The track's corner radius where the style states none.
+    round: iced_core::border::Radius,
+    diameter: f32,
+    /// The status of the last frame, which a change of asks for a redraw, as
+    /// iced's `Toggler` keeps it (`toggler.rs:351-363`).
+    last_status: Option<iced_widget::toggler::Status>,
+}
+
+#[cfg(feature = "widgets")]
+impl<Message> SwitchBox<'_, Message> {
+    fn height(&self) -> f32 {
+        self.track_height.max(self.diameter)
+    }
+
+    /// The status under `cursor` in a switch at `bounds`.
+    fn status(
+        &self,
+        bounds: iced_core::Rectangle,
+        cursor: iced_core::mouse::Cursor,
+    ) -> iced_widget::toggler::Status {
+        use iced_widget::toggler::Status;
+        let is_toggled = self.is_toggled;
+        if self.on_toggle.is_none() {
+            Status::Disabled { is_toggled }
+        } else if cursor.is_over(bounds) {
+            Status::Hovered { is_toggled }
+        } else {
+            Status::Active { is_toggled }
+        }
+    }
+}
+
+/// The track and the thumb of a switch at `bounds`: the track
+/// `track_width` by `track_height`, the thumb `diameter` across, both centred
+/// on its axis; the thumb inset by half the difference of the two heights from
+/// the track's ends, at the right end while toggled, flush with them where it
+/// overhangs the track.
+#[cfg(feature = "widgets")]
+fn switch_parts(
+    bounds: iced_core::Rectangle,
+    track_height: f32,
+    diameter: f32,
+    is_toggled: bool,
+) -> (iced_core::Rectangle, iced_core::Rectangle) {
+    let track = iced_core::Rectangle {
+        x: bounds.x,
+        y: bounds.center_y() - track_height / 2.0,
+        width: bounds.width,
+        height: track_height,
+    };
+    let end = ((track_height - diameter) / 2.0).max(0.0);
+    let thumb = iced_core::Rectangle {
+        x: if is_toggled {
+            bounds.x + bounds.width - end - diameter
+        } else {
+            bounds.x + end
+        },
+        y: bounds.center_y() - diameter / 2.0,
+        width: diameter,
+        height: diameter,
+    };
+    (track, thumb)
+}
+
+#[cfg(feature = "widgets")]
+impl<Message, Renderer> iced_core::Widget<Message, iced_core::Theme, Renderer>
+    for SwitchBox<'_, Message>
+where
+    Message: Clone,
+    Renderer: iced_core::Renderer,
+{
+    fn size(&self) -> iced_core::Size<iced_core::Length> {
+        iced_core::Size::new(
+            iced_core::Length::Fixed(self.width),
+            iced_core::Length::Fixed(self.height()),
+        )
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut iced_core::widget::Tree,
+        _renderer: &Renderer,
+        limits: &iced_core::layout::Limits,
+    ) -> iced_core::layout::Node {
+        let size = iced_core::Size::new(self.width, self.height());
+        iced_core::layout::Node::new(limits.resolve(
+            iced_core::Length::Fixed(size.width),
+            iced_core::Length::Fixed(size.height),
+            size,
+        ))
+    }
+
+    fn update(
+        &mut self,
+        _tree: &mut iced_core::widget::Tree,
+        event: &iced_core::Event,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _renderer: &Renderer,
+        _clipboard: &mut dyn iced_core::Clipboard,
+        shell: &mut iced_core::Shell<'_, Message>,
+        _viewport: &iced_core::Rectangle,
+    ) {
+        use iced_core::{Event, mouse, touch, window};
+        let bounds = layout.bounds();
+        if let Some(on_toggle) = &self.on_toggle {
+            // A press toggles it, as iced's `Toggler` (`toggler.rs:333-343`).
+            if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) = event
+                && cursor.is_over(bounds)
+            {
+                shell.publish(on_toggle.clone());
+                shell.capture_event();
+            }
+        }
+        let status = self.status(bounds, cursor);
+        if let Event::Window(window::Event::RedrawRequested(_)) = event {
+            self.last_status = Some(status);
+        } else if self.last_status.is_some_and(|last| last != status) {
+            shell.request_redraw();
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        _tree: &iced_core::widget::Tree,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _viewport: &iced_core::Rectangle,
+        _renderer: &Renderer,
+    ) -> iced_core::mouse::Interaction {
+        // As the button it replaces (`button.rs`, `mouse_interaction`).
+        if self.on_toggle.is_some() && cursor.is_over(layout.bounds()) {
+            iced_core::mouse::Interaction::Pointer
+        } else {
+            iced_core::mouse::Interaction::default()
+        }
+    }
+
+    fn draw(
+        &self,
+        _tree: &iced_core::widget::Tree,
+        renderer: &mut Renderer,
+        theme: &iced_core::Theme,
+        _style: &iced_core::renderer::Style,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _viewport: &iced_core::Rectangle,
+    ) {
+        use iced_widget::toggler::Status;
+        let bounds = layout.bounds();
+        let is_toggled = self.is_toggled;
+        let (track, thumb) = switch_parts(bounds, self.track_height, self.diameter, is_toggled);
+        let t = (self.style)(theme, self.status(bounds, cursor));
+        // The thumb takes the Active or the Disabled foreground, as iced's
+        // toggler draws one thumb in every enabled status.
+        let thumb_style = (self.style)(
+            theme,
+            if self.on_toggle.is_some() {
+                Status::Active { is_toggled }
+            } else {
+                Status::Disabled { is_toggled }
+            },
+        );
+        renderer.fill_quad(
+            iced_core::renderer::Quad {
+                bounds: track,
                 border: iced_core::Border {
                     color: t.background_border_color,
                     width: t.background_border_width,
-                    radius: t.border_radius.unwrap_or(round),
+                    radius: t.border_radius.unwrap_or(self.round),
                 },
-                shadow: iced.shadow,
-                snap: iced.snap,
-            }
-        });
-    // The thumb lies over the track and takes no input: the track's button
-    // under it is hovered and pressed (`stack.rs:249-275`).
-    iced_widget::Stack::new()
-        .push(
-            container(track)
-                .height(height)
-                .align_y(iced_core::alignment::Vertical::Center),
-        )
-        .push(seat)
-        .into()
+                shadow: iced_widget::button::Style::default().shadow,
+                snap: iced_widget::button::Style::default().snap,
+            },
+            t.background,
+        );
+        renderer.fill_quad(
+            iced_core::renderer::Quad {
+                bounds: thumb,
+                border: iced_core::Border {
+                    color: thumb_style.foreground_border_color,
+                    width: thumb_style.foreground_border_width,
+                    radius: iced_core::border::Radius::new(self.diameter / 2.0),
+                },
+                shadow: iced_widget::container::Style::default().shadow,
+                snap: iced_widget::container::Style::default().snap,
+            },
+            thumb_style.foreground,
+        );
+    }
 }
 
 /// A radio button at the platform's size, with the platform's dot: `radio`
@@ -1782,12 +1923,6 @@ mod tests {
     #[test]
     fn a_thumb_taller_than_its_track_sits_flush_with_its_ends() {
         use iced_core::widget::Tree;
-        fn rects(layout: iced_core::Layout<'_>, out: &mut Vec<iced_core::Rectangle>) {
-            out.push(layout.bounds());
-            for child in layout.children() {
-                rects(child, out);
-            }
-        }
         let r = make_resolved_preset("kde-breeze", false);
         let s = &r.switch;
         assert!(
@@ -1803,16 +1938,14 @@ mod tests {
                 iced_core::Size::new(1000.0, 1000.0),
             );
             let node = element.as_widget_mut().layout(&mut tree, &(), &limits);
-            let mut all = Vec::new();
-            rects(iced_core::Layout::new(&node), &mut all);
-            let sized = |w: f32, h: f32| {
-                all.iter()
-                    .find(|b| b.width == w && b.height == h)
-                    .copied()
-                    .unwrap_or_else(|| panic!("checked {checked}: no {w}x{h} box in {all:?}"))
-            };
-            let track = sized(s.track_width, s.track_height);
-            let thumb = sized(s.thumb_diameter, s.thumb_diameter);
+            let bounds = iced_core::Layout::new(&node).bounds();
+            assert_eq!(
+                (bounds.width, bounds.height),
+                (s.track_width, s.thumb_diameter),
+                "checked {checked}: the switch is the track's width and the thumb's height"
+            );
+            let (track, thumb) = switch_parts(bounds, s.track_height, s.thumb_diameter, checked);
+            assert_eq!(track.height, s.track_height);
             assert_eq!(
                 thumb.y - track.y,
                 (s.track_height - s.thumb_diameter) / 2.0,
@@ -1827,6 +1960,47 @@ mod tests {
             } else {
                 assert_eq!(thumb.x, track.x, "off: flush left");
             }
+        }
+    }
+
+    /// The whole switch takes the pointer, the thumb's overhang included:
+    /// under kde-breeze the 18 thumb stands 3 above and below the 12 track
+    /// (docs/platform-facts.md §2.21), and a press there toggles it, as a
+    /// press on qqc2-desktop-style's indicator does; driven headlessly
+    /// (`iced_test`'s simulator).
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_press_on_the_thumbs_overhang_toggles_the_switch() {
+        let r = make_resolved_preset("kde-breeze", false);
+        let s = &r.switch;
+        let overhang = (s.thumb_diameter - s.track_height) / 2.0;
+        assert!(
+            overhang > 0.0,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        for checked in [false, true] {
+            let element: iced_core::Element<'_, bool, iced_core::Theme, iced::Renderer> =
+                switch(&r, checked, Some(!checked));
+            let mut ui = iced_test::Simulator::with_size(
+                iced_core::Settings::default(),
+                iced_core::Size::new(200.0, 100.0),
+                element,
+            );
+            // Above the track, inside the thumb: its centre column, half the
+            // overhang down from its top.
+            let x = if checked {
+                s.track_width - s.thumb_diameter / 2.0
+            } else {
+                s.thumb_diameter / 2.0
+            };
+            ui.point_at(iced_core::Point::new(x, overhang / 2.0));
+            let _ = ui.simulate(iced_test::simulator::click());
+            let sent: Vec<bool> = ui.into_messages().collect();
+            assert_eq!(
+                sent,
+                [!checked],
+                "checked {checked}: a press on the overhang"
+            );
         }
     }
 

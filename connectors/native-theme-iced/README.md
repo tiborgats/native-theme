@@ -229,8 +229,9 @@ not — material-3's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
 states. `native_theme_iced::switch(&resolved, on, on_toggle)` is a switch at
 `switch.track_width` × `.track_height` with its thumb at `.thumb_diameter`
 (`.unchecked_thumb_diameter` while off, where stated),
-built from a button and two containers in `styles::toggler`'s colours; it
-has no label, and `None` for `on_toggle` disables it.
+drawn in `styles::toggler`'s colours, a thumb taller than the track
+overhanging it (kde-breeze's), the whole of it hovered and pressed; it has
+no label, and `None` for `on_toggle` disables it.
 
 `radio` draws its dot at half the circle, and `radio::Style` has no size for
 it. `native_theme_iced::radio(&resolved, radio(..), is_selected)` sizes the

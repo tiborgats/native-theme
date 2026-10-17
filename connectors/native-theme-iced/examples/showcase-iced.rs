@@ -5752,10 +5752,10 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- switch ----
         ("switch", "track_width_px" | "track_height_px") => {
-            "native_theme_iced::switch: the track button's width and height".into()
+            "native_theme_iced::switch: the track's width and height".into()
         }
         ("switch", "thumb_diameter_px") => {
-            "native_theme_iced::switch: the thumb container, inset by half the height difference; flush with the ends where it overhangs the track"
+            "native_theme_iced::switch: the thumb, inset by half the height difference; flush with the ends where it overhangs the track"
                 .into()
         }
         ("switch", "track_radius_px") => "styles::toggler: border_radius of track and thumb".into(),
@@ -5767,7 +5767,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("switch", "thumb_background") => "styles::toggler: the thumb's foreground".into(),
         ("switch", "unchecked_thumb_diameter_px") => {
-            "native_theme_iced::switch: the off thumb container, thumb_diameter where unstated"
+            "native_theme_iced::switch: the off thumb, thumb_diameter where unstated"
                 .into()
         }
         ("switch", "unchecked_thumb_background") => {
@@ -5782,17 +5782,17 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "checked_track_border_color"
             | "unchecked_track_border_color"
             | "disabled_checked_track_border_color",
-        ) => "styles::toggler: the track's background_border_color, the track button's border"
+        ) => "styles::toggler: the track's background_border_color, the track's border"
             .into(),
         ("switch", "track_border_line_width_px") => {
-            "styles::toggler: the track's background_border_width, the track button's border".into()
+            "styles::toggler: the track's background_border_width, the track's border".into()
         }
         ("switch", "thumb_border_color") => {
-            "styles::toggler: the thumb's foreground_border_color, the thumb container's border"
+            "styles::toggler: the thumb's foreground_border_color, the thumb's border"
                 .into()
         }
         ("switch", "thumb_border_line_width_px") => {
-            "styles::toggler: the thumb's foreground_border_width, the thumb container's border"
+            "styles::toggler: the thumb's foreground_border_width, the thumb's border"
                 .into()
         }
         ("switch", "disabled_opacity") => {
@@ -8686,7 +8686,7 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
             (
                 "widget",
                 "iced's toggler lays its track out 2 x its height (toggler.rs:287): \
-                 a button and two containers instead, in styles::toggler's colours",
+                 a widget of the connector's instead, in styles::toggler's colours",
             ),
             ("label gap", "the model states none: iced's toggler's"),
         ],
