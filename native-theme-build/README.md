@@ -42,7 +42,7 @@ system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
 
 Generate the enum in `build.rs`:
 
-```rust,ignore
+```rust,no_run
 use native_theme_build::UnwrapOrExit;
 
 fn main() {
@@ -53,15 +53,36 @@ fn main() {
 }
 ```
 
-Include and use it in your app:
+Include it in your app:
 
+<!-- `ignore`: `OUT_DIR` exists only in a crate with a build script, and a
+doctest has none, so this line cannot compile on its own. -->
 ```rust,ignore
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
+```
 
+and use it:
+
+```rust,no_run
 use native_theme::icons::MaterialLoader;
+# use std::borrow::Cow;
+# use native_theme::icons::IconProvider;
+# use native_theme::theme::IconSet;
+# #[derive(Debug)]
+# enum AppIcon { PlayPause }
+# impl IconProvider for AppIcon {
+#     fn icon_name(&self, _: IconSet) -> Option<&str> { None }
+#     fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> { None }
+# }
 
 let icon = MaterialLoader::new(&AppIcon::PlayPause).load();
 ```
+
+An application that depends on a connector alone generates the enum with the
+connector's re-export of native-theme as its crate path,
+`IconGenerator::new().crate_path("native_theme_iced::native_theme")` (or
+`native_theme_gpui::native_theme`, `native_theme_egui::native_theme`), and
+names the loaders through it.
 
 ## Core concepts
 
@@ -112,7 +133,7 @@ A `default` key is required for every DE-aware entry.
 
 For projects with several TOML files or a custom enum name:
 
-```rust,ignore
+```rust,no_run
 use native_theme_build::UnwrapOrExit;
 
 fn main() {

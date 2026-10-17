@@ -138,6 +138,11 @@ use std::path::{Path, PathBuf};
 
 use heck::ToSnakeCase;
 
+/// The README's code blocks, compiled as doctests so they cannot drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 pub use error::{BuildError, BuildErrors};
 use schema::{MasterConfig, ThemeMapping};
 
