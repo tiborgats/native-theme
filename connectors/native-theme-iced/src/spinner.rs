@@ -7,7 +7,6 @@ use std::time::Duration;
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
 use iced_widget::canvas::{self, Path, Stroke};
 use iced_widget::graphics::geometry;
-use native_theme::Rgba;
 use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
 use native_theme::theme::{IconSet, ResolvedTheme};
 
@@ -119,7 +118,7 @@ pub(crate) struct Look {
     /// tint.
     pub(crate) color: Color,
     /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
-    pub(crate) current_color: Rgba,
+    pub(crate) current_color: Color,
 }
 
 impl Look {
@@ -130,7 +129,7 @@ impl Look {
             diameter: s.diameter,
             stroke_width: s.stroke_width,
             color: to_color(s.fill_color),
-            current_color: resolved.defaults.text_color,
+            current_color: to_color(resolved.defaults.text_color),
         }
     }
 }
@@ -144,7 +143,7 @@ impl Spinner {
         let look = Look::of(resolved);
         let color = match icon_set {
             IconSet::Material | IconSet::Lucide => Some(look.color),
-            IconSet::Freedesktop => Some(to_color(look.current_color)),
+            IconSet::Freedesktop => Some(look.current_color),
             _ => None,
         };
         Self {

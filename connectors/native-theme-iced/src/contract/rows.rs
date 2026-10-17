@@ -197,7 +197,7 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         // no `color` of its own (`native_theme::icons::fill_current_color`).
         accessor: "crate::Spinner (freedesktop currentColor)",
         native: |r| Some(to_color(r.defaults.text_color)),
-        get: |r| Some(to_color(crate::spinner::Look::of(r).current_color)),
+        get: |r| Some(crate::spinner::Look::of(r).current_color),
     },
 ];
 
