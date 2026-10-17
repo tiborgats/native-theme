@@ -845,51 +845,48 @@ pub fn native_switch(
         )),
     };
     // The track's outline and the thumb's, where the theme states the colour
-    // and the width (SwitchLook::of).
+    // and the width (SwitchLook::of); a disabled outline unset is the
+    // enabled one.
     let track_edge = match (checked, disabled) {
-        (true, false) => s.checked_track_border_color.is_some().then(|| {
-            claim(
-                "track outline",
-                "checked_track_border_color",
-                s.checked_track_border_color
-                    .map_or(stated(s.checked_background), stated),
-                "native-theme-gpui/widgets/switch.rs:123",
-            )
-        }),
-        (false, false) => s.unchecked_track_border_color.is_some().then(|| {
-            claim(
-                "track outline",
-                "unchecked_track_border_color",
-                s.unchecked_track_border_color
-                    .map_or(stated(s.unchecked_background), stated),
-                "native-theme-gpui/widgets/switch.rs:125",
-            )
-        }),
+        (true, false) => s
+            .checked_track_border_color
+            .map(|checked_track_border_color| {
+                claim(
+                    "track outline",
+                    "checked_track_border_color",
+                    stated(checked_track_border_color),
+                    "native-theme-gpui/widgets/switch.rs:123",
+                )
+            }),
+        (false, false) => s
+            .unchecked_track_border_color
+            .map(|unchecked_track_border_color| {
+                claim(
+                    "track outline",
+                    "unchecked_track_border_color",
+                    stated(unchecked_track_border_color),
+                    "native-theme-gpui/widgets/switch.rs:125",
+                )
+            }),
         (true, true) => s
             .disabled_checked_track_border_color
             .or(s.checked_track_border_color)
-            .is_some()
-            .then(|| {
+            .map(|disabled_checked_track_border_color| {
                 claim(
                     "track outline",
                     "disabled_checked_track_border_color",
-                    s.disabled_checked_track_border_color
-                        .or(s.checked_track_border_color)
-                        .map_or(stated(s.checked_background), stated),
+                    stated(disabled_checked_track_border_color),
                     "native-theme-gpui/widgets/switch.rs:128",
                 )
             }),
         (false, true) => s
             .disabled_unchecked_track_border_color
             .or(s.unchecked_track_border_color)
-            .is_some()
-            .then(|| {
+            .map(|disabled_unchecked_track_border_color| {
                 claim(
                     "track outline",
                     "disabled_unchecked_track_border_color",
-                    s.disabled_unchecked_track_border_color
-                        .or(s.unchecked_track_border_color)
-                        .map_or(stated(s.unchecked_background), stated),
+                    stated(disabled_unchecked_track_border_color),
                     "native-theme-gpui/widgets/switch.rs:130",
                 )
             }),
@@ -898,12 +895,13 @@ pub fn native_switch(
         Some(edge) => info.color(edge),
         None => info,
     };
-    let info = if s.thumb_border_color.is_some() && s.thumb_border_line_width.is_some() {
+    let info = if let (Some(thumb_border_color), Some(_)) =
+        (s.thumb_border_color, s.thumb_border_line_width)
+    {
         info.color(claim(
             "thumb outline",
             "thumb_border_color",
-            s.thumb_border_color
-                .map_or(stated(s.thumb_background), stated),
+            stated(thumb_border_color),
             "native-theme-gpui/widgets/switch.rs:142",
         ))
     } else {

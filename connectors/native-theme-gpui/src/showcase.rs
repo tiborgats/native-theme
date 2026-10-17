@@ -1976,16 +1976,17 @@ const VALUE_HELPERS: &[&str] = &["opaque(", ".input_background("];
 
 /// Whether a claim's `value` reads the `field` it names -- `t.<field>`,
 /// `t.colors.<field>`, `base.tokens.colors.<field>`, or the field through
-/// any other path -- or is built with one of `VALUE_HELPERS`. A swatch
-/// whose value reads another field shows a colour its field line does not
-/// name.
+/// any other path, or a binding named after it, as a stated soft option is
+/// read (`if let Some(<field>) = s.<field>`) -- or is built with one of
+/// `VALUE_HELPERS`. A swatch whose value reads another field shows a colour
+/// its field line does not name.
 fn value_reads_field(value: &str, field: &str) -> bool {
     let code = without_comments_or_strings(value);
     let named = code.match_indices('.').any(|(at, _)| {
         let rest = code.get(at + 1..).unwrap_or("");
         leading_ident(rest) == field
     });
-    named || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
+    named || mentions(&code, field) || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
 }
 
 /// The methods a note is written with (spec §3.2).
@@ -2913,6 +2914,14 @@ config("free", "fn, not a method");
     assert!(!value_reads_field("t.background", "popover"));
     assert!(!value_reads_field("t.popover_foreground", "popover"));
     assert!(!value_reads_field("red", "danger"));
+    assert!(value_reads_field(
+        "stated(thumb_border_color)",
+        "thumb_border_color"
+    ));
+    assert!(!value_reads_field(
+        "stated(thumb_border)",
+        "thumb_border_color"
+    ));
 }
 
 // ---------------------------------------------------------------------------
