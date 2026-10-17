@@ -8,6 +8,7 @@
 
 ## Checklist
 
+- [ ] `./scripts/check_release.sh --commit` passes (the canonical gate, CONTRIBUTING.md)
 - [ ] `cargo fmt --all --check` passes
 - [ ] `cargo clippy -p <crate> --all-targets` passes
 - [ ] Tests pass (`cargo test -p <crate>`)

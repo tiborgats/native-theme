@@ -142,7 +142,7 @@ CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 |-------|------|-------------|
 | `native-theme` | `native-theme/` | Core theme model, presets, platform readers, icons, animations |
 | `native-theme-build` | `native-theme-build/` | Build-time code generation for custom icon roles |
-| `native-theme-derive` | `native-theme-derive/` | Proc-macro crate (internal; re-exported via `native-theme`) |
+| `native-theme-derive` | `native-theme-derive/` | Proc-macro crate (internal; used by `native-theme`, not re-exported) |
 | `native-theme-gpui` | `connectors/native-theme-gpui/` | gpui toolkit connector |
 | `native-theme-iced` | `connectors/native-theme-iced/` | iced toolkit connector |
 | `native-theme-egui` | `connectors/native-theme-egui/` | egui toolkit connector |
@@ -155,7 +155,7 @@ The core `native-theme` crate has several feature flags:
 - **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all)
 - **Icons:** `system-icons`, `material-icons`, `lucide-icons`
 - **Watching:** `watch` (runtime theme change notifications)
-- **Rendering:** `svg-rasterize` (resvg-backed SVG→RGBA rasterization)
+- **Rendering:** `svg-rasterize` (resvg-backed SVG→RGBA rasterisation)
 - **Fonts:** `system-fonts` (face matching against the installed fonts, `fonts::system_face`)
 
 Platform-specific features only compile on their target OS. See
@@ -168,16 +168,19 @@ Use conventional-commit-style prefixes. Common forms seen in this project:
 
 - `feat(scope): <summary>` — new user-facing feature or API addition
 - `fix(scope): <summary>` — bug fix
-- `refactor(scope): <summary>` — internal restructuring with no API change
+- `refactor(scope): <summary>` — restructuring with no behaviour change
 - `docs(scope): <summary>` — docs-only change
 - `test(scope): <summary>` — tests only
 - `chore(scope): <summary>` — build, tooling, deps
 - `ci(workflow): <summary>` — GitHub Actions changes
 
-The `scope` is usually the crate name (`native-theme`, `gpui`, `iced`,
-`readme`, `changelog`), a subsystem (`icons`, `api`, `watch/kde`), or during
-active phase-based work a phase identifier (`93-01`, `94-02`). When in doubt,
-match the style of recent commits:
+A breaking change marks its prefix with `!`, whatever its kind
+(`refactor(connectors)!:`, `feat(iced)!:`). The `scope` is usually the crate
+name (`native-theme`, `gpui`, `iced`, `readme`, `changelog`) or a subsystem
+(`icons`, `api`, `watch/kde`). A commit that resolves a code-review item ends
+its summary with the item's id in parentheses: a ledger entry (`(M7-08)`) or
+a fix-phase task (`(M8 T19)`). When in doubt, match the style of recent
+commits:
 
 ```bash
 git log --oneline -30
@@ -245,8 +248,17 @@ uploaded. Docs-only changes leave the hash untouched and need no recapture.
 ## Release order
 
 1. Bump the workspace version in `Cargo.toml`, commit, push.
-2. `./scripts/generate_assets_release.sh`, review the images, commit the assets together
-   with `docs/assets/PROVENANCE.toml`.
+2. `./scripts/generate_assets_release.sh`. Besides the captures, it compares
+   the three showcases at rest from the layout dumps its Linux screenshot runs
+   write, and stops where they differ with no reason in
+   `docs/showcase-exceptions.toml`: record the reason there
+   (`scripts/check_showcase_parity.py --merge` proposes the groups) and run it
+   again. Its last step rewrites `docs/COMPATIBILITY.toml` and the connector
+   READMEs' Verified lines (`scripts/update_compatibility.sh run`). Review the
+   images, then commit the assets together with `docs/assets/PROVENANCE.toml`,
+   `docs/COMPATIBILITY.toml`, the connector READMEs and, where you changed it,
+   `docs/showcase-exceptions.toml`. The script's last line prints the `git add`
+   for all but the exceptions file.
 3. Date the CHANGELOG entry and set its compare link; commit as
    `chore(release): vX.Y.Z`.
 4. `./scripts/check_release.sh` on that commit (the asset check is hard now).
