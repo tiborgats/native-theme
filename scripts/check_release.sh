@@ -748,7 +748,10 @@ done
 # scripts/check_readme_versions.py, under the same floor, fails on a
 # `native-theme` or `native-theme-*` dependency a README states in a `toml`
 # block that does not name the workspace version's `major.minor`; the release
-# bump moves every README at once, and the check holds them there.
+# bump moves every README at once, and the check holds them there. It also
+# fails on a crate a README's Rust code names that none of its `toml` blocks
+# depends on: the doctests see the crate's own dependencies, a reader only
+# those the README states.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
@@ -768,7 +771,7 @@ run_check "connector parity: names and signatures (iced · gpui · egui)" \
     python3 scripts/check_connector_parity.py
 run_check "connector parity: self-test" \
     python3 scripts/check_connector_parity.py --self-test
-run_check "README versions: native-theme* dependencies name the workspace's minor" \
+run_check "README versions and crates: native-theme* dependencies name the workspace's minor, the code names only stated crates" \
     python3 scripts/check_readme_versions.py
 run_check "README versions: self-test" \
     python3 scripts/check_readme_versions.py --self-test

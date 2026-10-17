@@ -341,9 +341,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # Fails on a `native-theme*` dependency a README's `toml` block states
-      # at another `major.minor` than the workspace version's. Reads files
-      # only; ubuntu-latest's Python 3.12 has the `tomllib` it needs.
-      - name: README versions
+      # at another `major.minor` than the workspace version's, and on a crate
+      # a README's Rust code names that none of its `toml` blocks depends on.
+      # Reads files only; ubuntu-latest's Python 3.12 has the `tomllib` it needs.
+      - name: README versions and crates
         run: |
           python3 --version
           python3 scripts/check_readme_versions.py

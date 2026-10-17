@@ -459,7 +459,8 @@ python3 scripts/check_connector_parity.py --self-test
 
 ## check_readme_versions.py
 
-Checks that every README depends on this workspace's release. Reads the
+Checks that every README depends on this workspace's release, and on every
+crate its code names. Reads the
 workspace manifest's `[workspace.package] version` and, in the root README and
 every workspace member's, each `native-theme` or `native-theme-*` dependency a
 `toml` block states (`name = "0.6"`, `{ version = .. }`, `{ package = .., version = .. }`),
@@ -470,10 +471,22 @@ commit moves every README to the new one, and the check holds them there.
 Each crate an application depends on (core, build, the three connectors,
 egui-widgets) must state its own dependency, in its Quick start where it has
 one, so a README that lost its block cannot pass with nothing to compare.
-Exits 0 when clean, 1 on a README naming another minor, 2 on an input it
+Exits 0 when clean, 1 on a README naming another minor or code naming a crate
+the README does not depend on (below), 2 on an input it
 cannot read (a version not of the form major.minor.patch, a missing root or
-crate README, a crate README without its own dependency). `--self-test` runs its built-in
-scenarios, a README naming another minor among them; `--root DIR` reads a
+crate README, a crate README without its own dependency).
+
+It also reads every README's Rust blocks (an empty or `rust…` info string, the
+doctest's hidden `# ` lines included, comments and string literals left out)
+and fails on a crate the code names first, the root of a `use` tree or of any
+other path the block does not bind itself, that no `[dependencies]`,
+`[build-dependencies]` or `[dev-dependencies]` table of the README's `toml`
+blocks states (`-` read as `_`; `std`, `core`, `alloc`, `crate`, `self`,
+`super` and the primitives need none). A README's doctests compile against
+its crate's own dependencies, so a block naming `gpui::` passes there through
+the connector's `gpui` while a reader who copied the Quick start has none.
+`--self-test` runs its built-in scenarios, a README naming another minor and
+code naming an unstated crate among them; `--root DIR` reads a
 scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
 subset too) and `ci.yml`'s documentation job (and through it `publish.yml`'s
 CI run) run the check and the self-test.

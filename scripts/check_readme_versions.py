@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that every README depends on this workspace's release.
+"""Check that every README depends on this workspace's release, and on every crate its code names.
 
 A README's `toml` blocks are what an application copies into its manifest, so
 a `native-theme = "0.6"` left behind by a version bump sends every reader to
@@ -14,8 +14,9 @@ Run from the repository root:
     python3 scripts/check_readme_versions.py
     python3 scripts/check_readme_versions.py --self-test
 
-Exit 0 when every dependency names the workspace's `major.minor`, 1 when one
-names another, 2 on an input it cannot read (a workspace version not of the
+Exit 0 when every dependency names the workspace's `major.minor` and the code
+names only stated crates, 1 when one names another or the code names a crate
+no block states (below), 2 on an input it cannot read (a workspace version not of the
 form major.minor.patch, the root README or a crate's missing, a crate's
 README that states no dependency on its own crate, so the check would pass
 vacuously).
@@ -46,6 +47,23 @@ installs with `cargo add` and states its features' block under *Feature
 flags*). A README that lost its block would otherwise pass with nothing to
 compare. The root README must exist too; a member without one (a tool that
 is not published) is skipped.
+
+The crates a README's code names
+--------------------------------
+A README's Rust blocks compile as doctests of their crate, which sees that
+crate's own dependencies: a block naming `gpui::` passes there through the
+connector's `gpui` dependency while an application that copied the Quick
+start has no crate of that name. So the second rule reads the same READMEs'
+Rust blocks (a fence whose info string is empty or starts with `rust`, the
+doctest's hidden `# ` lines included, comments and string literals left out)
+and requires every crate a path names first -- the root of a `use` tree, and
+the first segment of any other `name::` path whose name the block does not
+bind itself (a `use` binding, an alias, a `{self}` import) -- to be a
+dependency the README states: a key of a `[dependencies]`,
+`[build-dependencies]` or `[dev-dependencies]` table in one of its `toml`
+blocks, with `-` read as `_`. `std`, `core`, `alloc`, `crate`, `self`,
+`super` and the primitive types need none; a name beginning with an upper-case
+letter is a type, not a crate, and is not checked. A finding exits 1.
 """
 
 import argparse
@@ -155,6 +173,151 @@ def read_blocks(text):
     return found, sections
 
 
+TABLE_RE = re.compile(r"\[\s*(?:[^\]]*\.)?(?:dev-|build-)?dependencies\s*\]")
+
+
+def stated_crates(text):
+    """The crate names a README's `toml` blocks depend on: each key of a
+    dependency table, `-` read as `_`, as code names the crate."""
+    names, block, table = set(), None, False
+    for line in text.splitlines():
+        fence = line.lstrip()
+        if fence.startswith("```"):
+            block = None if block is not None else fence[3:].strip() == "toml"
+            table = False
+            continue
+        if not block:
+            continue
+        stripped = line.split("#", 1)[0].strip()
+        if stripped.startswith("["):
+            table = TABLE_RE.fullmatch(stripped) is not None
+            continue
+        if table:
+            m = DEP_RE.fullmatch(stripped)
+            if m:
+                names.add(m.group(1).replace("-", "_"))
+    return names
+
+
+def rust_blocks(text):
+    """[(first line number, [code lines])] of a README's Rust blocks: a fence
+    whose info string is empty or starts with `rust`, as rustdoc reads it."""
+    blocks, current, start = [], None, 0
+    for number, line in enumerate(text.splitlines(), 1):
+        fence = line.lstrip()
+        if fence.startswith("```"):
+            if current is None:
+                info = fence[3:].strip()
+                current = [] if info == "" or info.startswith("rust") else False
+                start = number + 1
+            else:
+                if current is not False:
+                    blocks.append((start, current))
+                current = None
+            continue
+        if current is not None and current is not False:
+            current.append(line)
+    return blocks
+
+
+NEED_NO_DEPENDENCY = {
+    "std", "core", "alloc", "crate", "self", "super",
+    "bool", "char", "str", "f32", "f64", "i8", "i16", "i32", "i64", "i128",
+    "isize", "u8", "u16", "u32", "u64", "u128", "usize",
+}
+RAW_STRING_RE = re.compile(r'\br(#*)"(.*?)"\1', re.S)
+STRING_RE = re.compile(r'"(?:\\.|[^"\\\n])*"')
+USE_RE = re.compile(r"\buse\s+([^;]*);", re.S)
+PATH_RE = re.compile(r"(?<![\w.:$])([a-z_][a-z0-9_]*)::")
+
+
+def blank(match):
+    """The match with every character but a newline blanked, so positions keep their lines."""
+    return re.sub(r"[^\n]", " ", match.group(0))
+
+
+def code_of(lines):
+    """A block's code as rustdoc compiles it, with comments and string literals blanked."""
+    shown = []
+    for line in lines:
+        stripped = line.lstrip()
+        if stripped == "#" or stripped.startswith("# "):
+            line = line.replace("#", "", 1)
+        shown.append(line)
+    code = "\n".join(shown)
+    code = RAW_STRING_RE.sub(blank, code)
+    code = STRING_RE.sub(blank, code)
+    return re.sub(r"//[^\n]*", blank, code)
+
+
+def split_top(text):
+    """The comma-separated parts of a `use` group, braces nested."""
+    parts, depth, part = [], 0, ""
+    for ch in text:
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append(part)
+            part = ""
+        else:
+            part += ch
+    parts.append(part)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def use_bindings(tree, parent=None):
+    """The names a `use` tree binds."""
+    tree = " ".join(tree.split())
+    group = re.fullmatch(r"((?:\w+\s*::\s*)*)\{(.*)\}", tree)
+    if group:
+        segments = [x.strip() for x in group.group(1).split("::") if x.strip()]
+        last = segments[-1] if segments else parent
+        names = set()
+        for part in split_top(group.group(2)):
+            names |= use_bindings(part, last)
+        return names
+    alias = re.fullmatch(r"(.*)\s+as\s+(\w+)", tree)
+    if alias:
+        return set() if alias.group(2) == "_" else {alias.group(2)}
+    segments = [x.strip() for x in tree.split("::")]
+    if segments[-1] == "self":
+        name = segments[-2] if len(segments) > 1 else parent
+        return {name} if name else set()
+    return set() if segments[-1] == "*" else {segments[-1]}
+
+
+def named_crates(lines):
+    """[(line offset, crate)] of the crates a block's code names first."""
+    code = code_of(lines)
+    found, bound = [], set()
+    for m in USE_RE.finditer(code):
+        tree = m.group(1).strip()
+        root = re.match(r"(?:::)?\s*(\w+)", tree)
+        if root and not tree.startswith("{"):
+            found.append((code.count("\n", 0, m.start(1)), root.group(1)))
+        bound |= use_bindings(tree)
+    rest = USE_RE.sub(blank, code)
+    for m in PATH_RE.finditer(rest):
+        if m.group(1) not in bound:
+            found.append((rest.count("\n", 0, m.start(1)), m.group(1)))
+    return [(offset, name) for offset, name in found
+            if name not in NEED_NO_DEPENDENCY and not name[:1].isupper()]
+
+
+def unstated_crates(rel, text):
+    """Findings for the crates a README's code names that its `toml` blocks do not depend on."""
+    stated = stated_crates(text)
+    findings = []
+    for start, lines in rust_blocks(text):
+        for offset, name in named_crates(lines):
+            if name not in stated:
+                findings.append(f"{rel}:{start + offset}: the code names `{name}`, "
+                                "which no `toml` block of the README depends on")
+    return findings
+
+
 def own_dependency_problem(rel, crate, deps, sections):
     """Why the README states no dependency on its own crate, or None."""
     own = [d for d in deps if d[2] == crate]
@@ -187,8 +350,9 @@ def check(read_rel, own_dependency=OWN_DEPENDENCY):
     for directory in own:
         if f"{directory}/README.md" not in readmes:
             raise Failure(f"{WORKSPACE}: `{directory}` is no workspace member")
-    findings, checked = [], 0
+    findings, checked, unstated = [], 0, []
     for rel, text in texts.items():
+        unstated += unstated_crates(rel, text)
         deps, sections = read_blocks(text)
         directory = os.path.dirname(rel)
         if directory in own:
@@ -200,7 +364,7 @@ def check(read_rel, own_dependency=OWN_DEPENDENCY):
             if version != minor:
                 findings.append(f"{rel}:{line}: `{package}` is stated as {version}, "
                                 f"this release is {minor}")
-    return minor, findings, checked
+    return minor, findings, checked, unstated
 
 
 def read(path):
@@ -212,13 +376,17 @@ def read(path):
 
 
 def run(root):
-    minor, findings, checked = check(lambda rel: read(os.path.join(root, rel)))
+    minor, findings, checked, unstated = check(lambda rel: read(os.path.join(root, rel)))
     print(f"workspace version {minor}.x; {checked} `native-theme*` dependencies in README `toml` blocks")
     if findings:
         print("\nREADMEs that depend on another release than the workspace's:")
         print("\n".join("  " + line for line in findings))
+    if unstated:
+        print("\nREADME code naming a crate the README does not depend on:")
+        print("\n".join("  " + line for line in unstated))
+    if findings or unstated:
         return 1
-    print("Every README depends on this release.")
+    print("Every README depends on this release, and on every crate its code names.")
     return 0
 
 
@@ -270,6 +438,49 @@ let native_theme = "0.5";
 native-theme = "0.7"
 theme = { package = "native-theme-iced", version = "0.7" }
 local = { workspace = true }
+```
+'''
+
+
+SELF_CODE = '''# native-theme-kit
+
+## Quick start
+
+```toml
+[dependencies]
+kit = "1"
+native-theme-iced = { version = "0.7" }
+```
+
+```rust,no_run
+use kit::svg::{self, Svg};
+use native_theme_iced::{styles, native_theme as nt};
+# fn f(w: &kit::Window) {
+let s = styles::button();
+let h = svg::Handle::from_memory(Vec::new());
+let x = nt::detect::invalidate_caches();
+let y = std::time::Duration::ZERO;
+let z = u64::from(1u8);
+// gpui::named_in_a_comment();
+let q = "gpui::named_in_a_string";
+let t = Theme::from_toml(r##"
+gpui::named_in_a_raw_string
+"##);
+# }
+```
+
+```toml
+other = "1"
+```
+
+```rust
+use other::Thing;
+# let w: gpui::Window;
+let b = gpui_component::button::Button::new("ok");
+```
+
+```text
+gpui::named_in_a_text_block
 ```
 '''
 
@@ -327,11 +538,11 @@ def self_test():
     expect("workspace_minor of a pre-release",
            workspace_minor('[workspace.package]\nversion = "1.2.0-rc.1"\n', "w"), "1.2")
 
-    minor, findings, checked = check(own_dependency=own, read_rel=tree())
-    expect("the clean tree passes", (minor, findings, checked), ("0.7", [], 4))
+    minor, findings, checked, unstated = check(own_dependency=own, read_rel=tree())
+    expect("the clean tree passes", (minor, findings, checked, unstated), ("0.7", [], 4, []))
 
     # a README naming another minor fails, in every block it states one
-    _, findings, _ = check(own_dependency=own, read_rel=tree(**{
+    _, findings, _, _ = check(own_dependency=own, read_rel=tree(**{
         "connectors/native-theme-iced/README.md": SELF_ICED.replace('"0.7"', '"0.6"'),
     }))
     expect("a README naming 0.6 under a 0.7 workspace fails", findings, [
@@ -340,12 +551,29 @@ def self_test():
         "connectors/native-theme-iced/README.md:21: `native-theme-iced` is stated as 0.6, this release is 0.7",
     ])
     # the bump: the workspace moves to 0.8 and every README still names 0.7
-    _, findings, _ = check(own_dependency=own, read_rel=tree(**{"Cargo.toml": SELF_WORKSPACE.replace("0.7.0", "0.8.0")}))
+    _, findings, _, _ = check(own_dependency=own, read_rel=tree(**{"Cargo.toml": SELF_WORKSPACE.replace("0.7.0", "0.8.0")}))
     expect("a bump the READMEs did not follow fails", len(findings), 4)
     # a root README that states a dependency is checked too
-    _, findings, _ = check(own_dependency=own, read_rel=tree(**{"README.md": '```toml\nnative-theme = "0.6"\n```\n'}))
+    _, findings, _, _ = check(own_dependency=own, read_rel=tree(**{"README.md": '```toml\nnative-theme = "0.6"\n```\n'}))
     expect("the root README is checked", findings,
            ["README.md:2: `native-theme` is stated as 0.6, this release is 0.7"])
+
+    # the crates a README's code names: its own toml tables', std and the
+    # primitives, its own bindings; a hidden line counts; a comment, a string,
+    # a non-Rust block and a dependency outside a table do not
+    expect("use_bindings", use_bindings("a::b::{c, d::{e, f as g}, self, h as _}"),
+           {"c", "e", "g", "b"})
+    expect("stated_crates", stated_crates(SELF_CODE), {"kit", "native_theme_iced"})
+    expect("unstated_crates", unstated_crates("r.md", SELF_CODE), [
+        "r.md:33: the code names `other`, which no `toml` block of the README depends on",
+        "r.md:34: the code names `gpui`, which no `toml` block of the README depends on",
+        "r.md:35: the code names `gpui_component`, which no `toml` block of the README depends on",
+    ])
+    _, _, _, unstated = check(own_dependency=own, read_rel=tree(**{
+        "README.md": "# root\n\n```rust\nlet w = gpui::div();\n```\n",
+    }))
+    expect("the root README's code is checked", unstated,
+           ["README.md:4: the code names `gpui`, which no `toml` block of the README depends on"])
 
     fails("a workspace version that is not major.minor.patch",
           tree(**{"Cargo.toml": SELF_WORKSPACE.replace('"0.7.0"', '"1"')}))
