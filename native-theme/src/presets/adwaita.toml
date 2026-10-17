@@ -137,7 +137,9 @@ line_width_px = 0.0
 [light.button.font]
 color = "#2e3436"
 [light.input]
-background_color = "#ffffff"
+# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #e6e6e7
+# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
+background_color = "#e6e6e7"
 placeholder_color = "#929595"
 min_height_px = 34.0
 # platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
@@ -373,6 +375,9 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
+# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #e6e6e7
+# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
+background_color = "#e6e6e7"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
@@ -550,7 +555,9 @@ line_width_px = 0.0
 [dark.button.font]
 color = "#ffffff"
 [dark.input]
-background_color = "#303034"
+# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #38383c
+# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
+background_color = "#38383c"
 placeholder_color = "#8b8b8b"
 min_height_px = 34.0
 # platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
@@ -788,6 +795,9 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
+# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #38383c
+# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
+background_color = "#38383c"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
