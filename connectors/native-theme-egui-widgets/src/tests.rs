@@ -2206,13 +2206,59 @@ fn a_kept_spinner_frame_is_drawn_again() {
 
 // ---- M7-06: a `§` citation names its document ---------------------------------------------------
 
+/// What names a `§` citation's document, right before the `§`: `spec` (`Spec` at a sentence's
+/// start) for the crate's own specification, which the crate docs name, or a document by name
+/// (`docs/platform-facts.md`).
+const CITATION_NAMES: &[&str] = &["spec", "Spec", ".md"];
+
+/// Whether every `§` on `doc` names its document: a name of [`CITATION_NAMES`] stands right
+/// before it, past spaces and backticks (`spec §4`, `` `docs/platform-facts.md` §2.29 ``), or
+/// it continues a list or a range whose `§` before it is named (`spec §4.2, §4.3`,
+/// `spec §5.1–§5.6`). `spec §1 and §2` leaves the second unnamed. The egui connector's
+/// tripwire reads its docs by the same rule (`native-theme-egui/src/tripwires.rs`).
+fn every_section_is_named(doc: &str) -> bool {
+    doc.match_indices('§').all(|(at, _)| {
+        let before = &doc[..at];
+        let name = before.trim_end_matches([' ', '`']);
+        CITATION_NAMES.iter().any(|n| name.ends_with(n))
+            || [", ", "; ", "–"].iter().any(|separator| {
+                before.strip_suffix(separator).is_some_and(|list| {
+                    list.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.')
+                        .ends_with('§')
+                })
+            })
+    })
+}
+
+/// [`every_section_is_named`] on fixed lines: a name, or a list or a range that continues a
+/// named `§`, names it; an `and`, another document's possessive or nothing before it does not.
+#[test]
+fn a_section_is_named_by_the_name_or_the_list_before_it() {
+    for named in [
+        "/// spec §4",
+        "//! Spec §4.2, §4.3 and spec §6",
+        "/// (spec §6.18; §4.3)",
+        "/// spec §5.1–§5.6",
+        "/// `docs/platform-facts.md` §2.29",
+        "/// no section",
+    ] {
+        assert!(every_section_is_named(named), "{named}");
+    }
+    for bare in [
+        "/// §4",
+        "/// spec §1 and §2",
+        "/// spec §4; Breeze's §3",
+        "/// §4.2, §4.3",
+    ] {
+        assert!(!every_section_is_named(bare), "{bare}");
+    }
+}
+
 /// Every `///` or `//!` line of the crate's sources outside its tests that holds a `§` names
-/// the document it cites (M6-38's ruling), `spec §` for the crate's own specification, which
-/// the crate docs name, or the document by name (`docs/platform-facts.md`), so a docs.rs reader
+/// the document each `§` cites (M6-38's ruling, [`every_section_is_named`]), so a docs.rs reader
 /// can look it up. As in [`painting_sources`], a file's test items sit at its end.
 #[test]
 fn every_section_citation_names_its_document() {
-    const NAMES: &[&str] = &["spec §", "Spec §", ".md"];
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut scanned = 0;
     let mut bare = Vec::new();
@@ -2227,7 +2273,7 @@ fn every_section_citation_names_its_document() {
         for (i, line) in code.lines().enumerate() {
             let doc = line.trim_start();
             let is_doc = doc.starts_with("///") || doc.starts_with("//!");
-            if is_doc && doc.contains('§') && !NAMES.iter().any(|n| doc.contains(n)) {
+            if is_doc && !every_section_is_named(doc) {
                 bare.push(format!("src/{name}:{}: {doc}", i + 1));
             }
         }

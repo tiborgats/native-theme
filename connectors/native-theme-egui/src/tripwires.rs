@@ -260,9 +260,27 @@ fn the_defaults_this_design_reasons_from_have_not_moved() {
     assert_eq!(Visuals::dark().disabled_alpha, 0.5);
 }
 
-/// What names a `§` citation's document on the line that holds it: `spec §` (`Spec §` at a
-/// sentence's start), the connector spec the crate docs name, or a document by its own name.
-const CITATION_NAMES: &[&str] = &["spec §", "Spec §", ".md", "CSS Fonts"];
+/// What names a `§` citation's document, right before the `§`: `spec` (`Spec` at a sentence's
+/// start), the connector spec the crate docs name, or a document by its own name.
+const CITATION_NAMES: &[&str] = &["spec", "Spec", ".md", "CSS Fonts", "CSS Fonts Level 4"];
+
+/// Whether every `§` on `doc` names its document: a name of [`CITATION_NAMES`] stands right
+/// before it, past spaces and backticks (`spec §4`, `` `docs/platform-facts.md` §2.29 ``), or
+/// it continues a list or a range whose `§` before it is named (`spec §4.2, §4.3`,
+/// `spec §5.1–§5.6`). `spec §1 and §2` leaves the second unnamed.
+fn every_section_is_named(doc: &str) -> bool {
+    doc.match_indices('§').all(|(at, _)| {
+        let before = &doc[..at];
+        let name = before.trim_end_matches([' ', '`']);
+        CITATION_NAMES.iter().any(|n| name.ends_with(n))
+            || [", ", "; ", "–"].iter().any(|separator| {
+                before.strip_suffix(separator).is_some_and(|list| {
+                    list.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.')
+                        .ends_with('§')
+                })
+            })
+    })
+}
 
 /// M7-06: every `///` or `//!` line holding a `§` in a file docs.rs renders names the
 /// document it cites (M6-38's ruling), so a docs.rs reader can look it up. The files are the
@@ -298,7 +316,7 @@ fn every_section_citation_in_the_rendered_docs_names_its_document() {
         for (number, line) in rendered_lines(&text) {
             let doc = line.trim_start();
             let is_doc = doc.starts_with("///") || doc.starts_with("//!");
-            if is_doc && doc.contains('§') && !CITATION_NAMES.iter().any(|n| doc.contains(n)) {
+            if is_doc && !every_section_is_named(doc) {
                 bare.push(format!("src/{name}:{number}: {doc}"));
             }
         }
@@ -313,6 +331,31 @@ fn every_section_citation_in_the_rendered_docs_names_its_document() {
         "a `§` that names no document (write `spec §N`):\n{}",
         bare.join("\n")
     );
+}
+
+/// [`every_section_is_named`] on fixed lines: a name, or a list or a range that continues a
+/// named `§`, names it; an `and`, another document's possessive or nothing before it does not.
+#[test]
+fn a_section_is_named_by_the_name_or_the_list_before_it() {
+    for named in [
+        "/// spec §4",
+        "//! Spec §4.2, §4.3 and spec §6",
+        "/// (spec §6.18; §4.3)",
+        "/// spec §5.1–§5.6",
+        "/// `docs/platform-facts.md` §2.29",
+        "/// CSS Fonts Level 4 §5.1, then CSS Fonts §5.2",
+        "/// no section",
+    ] {
+        assert!(every_section_is_named(named), "{named}");
+    }
+    for bare in [
+        "/// §4",
+        "/// spec §1 and §2",
+        "/// spec §4; Breeze's §3",
+        "/// §4.2, §4.3",
+    ] {
+        assert!(!every_section_is_named(bare), "{bare}");
+    }
 }
 
 /// The lines of `text`, numbered from 1, before its inline `#[cfg(test)]` module: a
