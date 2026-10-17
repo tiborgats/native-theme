@@ -15001,6 +15001,131 @@ mod tests {
         }
     }
 
+    /// Where the pointer rests in [`hovered_frame`]: nowhere a tooltip is,
+    /// on a text, or on an element of the list.
+    #[derive(Clone, Copy)]
+    enum Rest {
+        Away,
+        OnText(&'static str),
+        OnElement(&'static str),
+    }
+
+    /// The Display page drawn under catppuccin-mocha with its
+    /// `tooltip.show_delay` set to `delay`, the side panel hidden, with the
+    /// pointer resting at `rest` past three frames, as
+    /// [`the_basic_tooltip_waits_the_themes_show_delay`] rests it.
+    fn hovered_frame(delay: Option<u16>, rest: Rest) -> iced_test::simulator::Snapshot {
+        let (theme, mut resolved) = match native_theme_iced::from_preset("catppuccin-mocha", false)
+        {
+            Ok(installed) => installed,
+            Err(error) => panic!("catppuccin-mocha: {error}"),
+        };
+        assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
+        resolved.tooltip.show_delay = delay;
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            active_tab: Tab::Display,
+            side_panel_visible: false,
+            ..State::default()
+        };
+        let theme = super::theme(&state);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+        let mut frame = || match ui.snapshot(&theme) {
+            Ok(frame) => frame,
+            Err(error) => panic!("the interface did not draw: {error}"),
+        };
+        let _ = frame();
+        drop(frame);
+        let at = match rest {
+            Rest::Away => Point::new(1.0, WINDOW_SIZE.1 / 2.0),
+            Rest::OnText(label) => match ui.find(label).map(|t| t.visible_bounds()) {
+                Ok(Some(bounds)) => bounds.center(),
+                Ok(None) => panic!("{label} is not in view"),
+                Err(error) => panic!("{label}: {error}"),
+            },
+            Rest::OnElement(id) => match drawn_layout().get(id) {
+                Some(rect) => rect.center(),
+                None => panic!("{id} is not drawn"),
+            },
+        };
+        ui.point_at(at);
+        let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+        let mut last = None;
+        for _ in 0..3 {
+            last = Some(match ui.snapshot(&theme) {
+                Ok(frame) => frame,
+                Err(error) => panic!("the interface did not draw: {error}"),
+            });
+        }
+        match last {
+            Some(frame) => frame,
+            None => unreachable!("three frames were drawn"),
+        }
+    }
+
+    /// Whether frames `a` and `b` hold the same pixels. iced_test compares a
+    /// frame only with a file: `matches_hash` writes the frame's hash where
+    /// the file is missing and compares with it where it is there
+    /// (iced_test 0.14.0 `src/simulator.rs:307-330`).
+    fn same_frame(a: &iced_test::simulator::Snapshot, b: &iced_test::simulator::Snapshot) -> bool {
+        static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!(
+            "showcase-iced-frames-{}-{call}",
+            std::process::id()
+        ));
+        let file = dir.join("frame");
+        let compared = a.matches_hash(&file).and_then(|written| {
+            assert!(written, "{} held a hash already", dir.display());
+            b.matches_hash(&file)
+        });
+        let _ = std::fs::remove_dir_all(&dir);
+        match compared {
+            Ok(same) => same,
+            Err(error) => panic!("{}: {error}", dir.display()),
+        }
+    }
+
+    /// The other five tooltips wait `tooltip.show_delay` too, as the Basic
+    /// one does ([`the_basic_tooltip_waits_the_themes_show_delay`]): the
+    /// chrome's (`chrome_tooltip`, on the status bar's side-panel toggle
+    /// here) and the Display page's four. With the pointer on each one's
+    /// control, a theme that states a long delay and one that states none
+    /// draw different frames, which differ in the bubble alone: away from
+    /// every tooltip the two draw the same frame, with the side panel, whose
+    /// Widget Info names the delay, hidden.
+    #[test]
+    fn every_tooltip_waits_the_themes_show_delay() {
+        const LONG: Option<u16> = Some(60_000);
+        assert!(
+            same_frame(
+                &hovered_frame(LONG, Rest::Away),
+                &hovered_frame(None, Rest::Away)
+            ),
+            "away from the tooltips the two delays draw different frames, so a difference \
+             under a tooltip proves nothing"
+        );
+        for rest in [
+            Rest::OnElement("chrome.status_bar.toggle"),
+            Rest::OnText("Hover: Top"),
+            Rest::OnText("Hover: Bottom"),
+            Rest::OnText("Hover: Left"),
+            Rest::OnText("Hover: Right"),
+        ] {
+            let name = match rest {
+                Rest::Away => "away",
+                Rest::OnText(name) | Rest::OnElement(name) => name,
+            };
+            assert!(
+                !same_frame(&hovered_frame(LONG, rest), &hovered_frame(None, rest)),
+                "{name}: the tooltip is drawn alike under a 60 s delay and under none, so it \
+                 does not wait the theme's"
+            );
+        }
+    }
+
     /// The Basic table's header row is `list.header_height` tall where the
     /// theme states one (adwaita, material-3), else as tall as before
     /// (catppuccin-mocha): `list.row_height`, or its line box in the header
