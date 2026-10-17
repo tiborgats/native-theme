@@ -10,7 +10,8 @@ set -euo pipefail
 # assets came from. scripts/check_release.sh and the crates.io workflow's release gate
 # verify that stamp against HEAD.
 #
-# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);
+# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland),
+# ImageMagick 7;
 # HEAD pushed and the asset sources committed (captures run on HEAD).
 #
 # Usage: bash scripts/generate_assets_release.sh
@@ -56,6 +57,9 @@ for tool in kscreen-doctor qdbus6 dbus-monitor dbus-send; do
     command -v "$tool" >/dev/null 2>&1 || fail "$tool not found (scripts/capture_window.sh needs it for the Linux captures)"
 done
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
+# Step 2's generate_gifs_spinners.py rasterizes the spinner SVGs with ImageMagick
+# 7's `magick`; fail here rather than after the CI screenshots run was dispatched.
+command -v magick >/dev/null 2>&1 || fail "magick (ImageMagick 7) not found (scripts/generate_gifs_spinners.py needs it for the spinner GIFs)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"
 echo ""
