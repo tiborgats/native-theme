@@ -191,7 +191,7 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   platform presets (`macos-sonoma`, `windows-11`, `ios`, `material`, `kde-breeze`, `adwaita`;
   **amended 2026-10-11, M1-T4-01:** the `-live` bases are removed in M1's fix phase, so M2
   checks the six presets alone) against `platform-facts.md` and `platform-facts.md` against the
-  platforms; M3–M9 read the code that loads and resolves them. The color-scheme presets
+  platforms; M3–M9 read the code that loads and resolves them. The colour-scheme presets
   (catppuccin, dracula, …) copy their upstream palettes and are out of scope.
 - **D4 — macOS presets (maintainer, 2026-10-10).** `macos-tahoe` (macOS 26, Liquid Glass) and
   its `-live` base are built in this plan (M2a Steps 8–12), and the macOS reader picks the

@@ -31,13 +31,13 @@ preset states one only where `docs/platform-facts.md` gives it for its
 platform: KDE, GNOME, macOS, Windows or Material, whose column counts a
 material-web or Compose implementation constant cited at a pinned line as
 documented, as the KDE and GNOME columns count a Breeze or libadwaita source
-constant. The color-scheme presets, and the `ios-13` platform preset, which
+constant. The colour-scheme presets, and the `ios-13` platform preset, which
 has no platform-facts column, state none (`documented_sizes.rs` checks
 both).
 An unstated gated size resolves to `None` and the toolkit's own applies. The
 presets' other sizes (`min_height_px`, `max_width_px`, …) are stated, often
 without a source, and are still being audited (`docs/todo.md`, Table B); the
-color-scheme presets state many of them too.
+colour-scheme presets state many of them too.
 
 `tooltip.show_delay_ms` and `dialog.entrance` are gated the same way: a native
 preset states each only as its platform's `docs/platform-facts.md` cell gives
@@ -109,7 +109,7 @@ none:
 - **`button_order`** -- stated by every platform preset in both variants
   (`primary_left` in `kde-breeze` and `windows-11`, `primary_right` in the
   others), and read by no reader; `resolve_platform_defaults` fills it only
-  for a theme that states none, the color-scheme presets, from the detected
+  for a theme that states none, the colour-scheme presets, from the detected
   desktop (`platform_button_order` in `resolve/inheritance.rs`: primary-left
   on KDE and Windows, primary-right elsewhere)
 - **`icon_theme`** -- stated by every preset, at the Theme level by all but
