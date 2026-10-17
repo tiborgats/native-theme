@@ -1,5 +1,18 @@
 # Iced Connector: Full Theme Geometry Support
 
+Status: partly implemented (2026-10-17). v0.5.9 shipped Option A as
+`native_theme_iced::styles`: per-widget style functions built from the
+`ResolvedTheme` (the `ThemeVariant` this document names is now `ThemeMode`),
+which read the theme's corner radii and line widths, and the padding helpers
+(`button_padding`, `input_padding`, `padding_or`, ...). The code review's M5
+(2026-10-14) added `styles::pane_grid`, `styles::button_toggle` and
+`styles::expander_frame`, and made `styles::text_editor` frame the field in
+`text_area.border`. What remains is ROADMAP.md's *v0.7.1 — Full theme geometry
+in the iced connector*, *What remains*, less its `pane_grid::default`, which
+`styles::pane_grid` replaces. The Problem section describes the connector
+before v0.5.9; the text below is kept as written, with a note at its end on
+the v0.5.9 sizing model.
+
 ## Problem
 
 The iced connector (`native-theme-iced`) currently maps only **colors** from
