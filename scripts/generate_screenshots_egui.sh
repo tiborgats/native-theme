@@ -17,9 +17,10 @@ set -euo pipefail
 # --all-features: the showcase is built with every connector feature, as the
 # screenshot workflow builds it (the connector spec's Cargo.toml section).
 #
-# Usage: generate_screenshots_egui.sh [DUMP_DIR]. With DUMP_DIR, each run also
-# writes its layout dump, with the capture beside it, into DUMP_DIR
-# (capture_showcases), for scripts/check_showcase_parity.py.
+# Usage: generate_screenshots_egui.sh [DUMP_DIR]. With DUMP_DIR (created if
+# missing, a relative one taken from the directory the script is run from),
+# each run also writes its layout dump, with the capture beside it, into
+# DUMP_DIR (capture_showcases), for scripts/check_showcase_parity.py.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -33,7 +34,6 @@ echo "Presets: 3 (dark + light each)"
 echo "Total screenshots: ${#SCREENSHOT_ENTRIES[@]}"
 echo ""
 
-cd "$PROJECT_ROOT"
 mkdir -p "$OUTPUT_DIR"
 trap stop_showcase EXIT
 capture_showcases egui "--all-features" "$OUTPUT_DIR/linux-{theme}-{variant}.png" \

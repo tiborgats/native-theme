@@ -104,10 +104,11 @@ KIND in release mode with the cargo flags FEATURES, runs it once per ENTRY
 (`theme:variant:icon-set:icon-theme`) on its Basic page with `--capture`, and
 captures its window to OUTPUT, in which `{theme}`, `{variant}` and `{index}`
 stand for the entry's; given a directory DUMPS (the screenshot scripts'
-`DUMP_DIR` argument), each run also writes its layout dump there
-(`--dump-layout`, as `KIND-THEME-VARIANT.json`) with its capture and the
-content's offset in it beside it, the run directory `check_showcase_parity.py`
-reads; `stop_showcase`, which each script's EXIT trap calls,
+`DUMP_DIR` argument, created if missing, a relative one taken from the
+directory the script is run from), each run also writes its layout dump there
+(`--dump-layout`, as `KIND-THEME-VARIANT.json`) and, once the dump is written,
+its capture and the content's offset in it beside it, so both are of one
+settled frame: the run directory `check_showcase_parity.py` reads; `stop_showcase`, which each script's EXIT trap calls,
 stops the showcase a failed or interrupted run leaves. The features differ by
 showcase, as the screenshot workflow builds them: iced with
 `--features iced_aw`, egui with `--all-features`, gpui with its defaults. The

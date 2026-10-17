@@ -362,6 +362,9 @@ SCREENSHOT_ENTRIES=(
 # The showcase capture_showcases started, while it runs.
 SHOWCASE_PID=""
 
+# The repository root, from which capture_showcases runs cargo.
+SHOWCASE_PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # stop_showcase: stops the showcase capture_showcases started, if one runs. It
 # is continued first: capture_showcase stops it (SIGSTOP) during its captures,
 # and SIGTERM waits until a stopped process runs again. A caller's EXIT trap
@@ -404,6 +407,7 @@ wait_for_dump() {
 # entry's, from 00) stand for the entry's. The caller fails on the first
 # capture that fails. `--capture` opens the showcase at its default size
 # whatever the desktop remembers for its window, with an app id of its own.
+# It runs cargo from the repository root, so it leaves the caller there.
 #
 # The gpui showcase takes a freedesktop icon theme as `--icon-theme`; the iced
 # and egui showcases have no such flag and take an installed theme's name as
@@ -412,10 +416,12 @@ wait_for_dump() {
 # them: iced with `--features iced_aw` (its Extra page), egui with
 # `--all-features`, gpui with its defaults ("").
 #
-# With a directory DUMPS ("" for none), each run also writes its layout dump
-# (`--dump-layout`, the chrome at rest wherever the pointer is) to
-# DUMPS/KIND-THEME-VARIANT.json, and the capture and the content's offset in it
-# (the identity check's `+dx+dy`) beside it as .png and .offset, the files
+# With a directory DUMPS ("" for none; created if missing, a relative one
+# taken from the directory the caller is in), each run also writes its layout
+# dump (`--dump-layout`, the chrome at rest wherever the pointer is) to
+# DUMPS/KIND-THEME-VARIANT.json, and once it is written, the capture and the
+# content's offset in it (the identity check's `+dx+dy`) beside it as .png and
+# .offset, so the two are of one settled frame: the files
 # scripts/check_showcase_parity.py reads from a run's directory.
 capture_showcases() {
     local kind="$1" features="$2" output="$3" dumps="$4"
@@ -423,6 +429,14 @@ capture_showcases() {
     local crate="native-theme-$kind" example="showcase-$kind" total=$# index=0
     local feature_args=() args entry theme variant icon_set icon_theme file name dump report offset
     read -ra feature_args <<< "$features"
+    if [ -n "$dumps" ]; then
+        if ! mkdir -p -- "$dumps" || [ ! -d "$dumps" ] || [ ! -w "$dumps" ]; then
+            echo "ERROR: the layout dump directory '$dumps' cannot be created or written" >&2
+            return 1
+        fi
+        dumps="$(cd -- "$dumps" && pwd)"
+    fi
+    cd "$SHOWCASE_PROJECT_ROOT"
 
     echo "--- Building the $kind showcase (release mode) ---"
     cargo build -p "$crate" --example "$example" --release "${feature_args[@]}"
@@ -462,10 +476,12 @@ capture_showcases() {
         cargo run -p "$crate" --example "$example" --release "${feature_args[@]}" -- "${args[@]}" &
         SHOWCASE_PID=$!
         sleep "$SHOWCASE_START_DELAY"
+        if [ -n "$dump" ]; then
+            wait_for_dump "$SHOWCASE_PID" "$dump" || return 1
+        fi
         report="$(capture_showcase "$kind" "$SHOWCASE_PID" "$file")" || return 1
         printf '%s\n' "$report"
         if [ -n "$dump" ]; then
-            wait_for_dump "$SHOWCASE_PID" "$dump" || return 1
             offset="$(printf '%s\n' "$report" | sed -n 's/.* content at \(+[0-9]*+[0-9]*\) (.*/\1/p')"
             if [ -z "$offset" ]; then
                 echo "ERROR: the identity check of $file printed no offset of the content" >&2
