@@ -1,6 +1,8 @@
-//! Freedesktop icon-theme fixtures for the workspace's tests (dev-only, never
-//! published): a dev-dependency of native-theme and the connectors, so their
-//! tests and the showcases' share one fixture.
+//! Shared helpers for the workspace's tests (dev-only, never published): a
+//! dev-dependency of native-theme and the connectors, so their tests and the
+//! showcases' share one fixture and one reading of their own sources. The
+//! crate root holds the freedesktop icon-theme fixtures; [`sources`] reads a
+//! crate's source text for the tests that check what its docs say.
 //!
 //! native-theme reads the icon dirs once per process, so a test that needs
 //! an icon theme of its own runs itself again in a child process ([`run`])
@@ -34,6 +36,8 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+
+pub mod sources;
 
 use std::fmt;
 use std::io;

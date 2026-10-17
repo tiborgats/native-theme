@@ -6,4 +6,4 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 publish = false
-description = "Dev-only freedesktop icon-theme fixtures for the workspace's tests: a test run again in a child process whose icon dirs hold a fixture theme"
+description = "Dev-only helpers for the workspace's tests: freedesktop icon-theme fixtures, a test run again in a child process whose icon dirs hold a fixture theme, and readers of a crate's own sources"
