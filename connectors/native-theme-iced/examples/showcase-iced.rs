@@ -8128,10 +8128,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let card_group = group(
         "basic.card.heading",
         "Card",
-        // A side `card.border.padding` leaves unstated -- every side on
-        // adwaita and material-3, whose cards leave the padding to their
-        // content (platform-facts §2.26) -- is `layout.container_margin`, the
-        // theme's padding inside a container.
+        // A side `card.border.padding` states lies inside the card's border,
+        // which iced paints over the padded box, so it reaches iced plus the
+        // line width (`padding_inside_border`). A side it leaves unstated --
+        // every side on adwaita and material-3, whose cards leave the padding
+        // to their content (platform-facts §2.26) -- is
+        // `layout.container_margin`, the theme's padding inside a container.
         probe(
             probes::BASIC_CARD,
             Length::Shrink,
@@ -8141,8 +8143,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     "basic.card.text",
                     text("Card content").body(resolved, a11y),
                 ))
-                .padding(native_theme_iced::padding_or(
-                    &resolved.card.border.padding,
+                .padding(native_theme_iced::padding_inside_border(
+                    &resolved.card.border,
                     Padding::from(gap.container),
                 ))
                 .width(Length::Fixed(BASIC_WIDE))
@@ -9833,8 +9835,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let sep = &resolved.separator;
     let card_radius = card.border.corner_radius;
     // A container is unpadded unless given a padding (container.rs:95), so a
-    // side the card's theme leaves unstated stays at zero.
-    let card_pad = native_theme_iced::padding_or(&card.border.padding, Padding::ZERO);
+    // side the card's theme leaves unstated stays at zero; a stated side lies
+    // inside the border iced paints over the padded box.
+    let card_pad = native_theme_iced::padding_inside_border(&card.border, Padding::ZERO);
     let card_radius_s = format!("{card_radius:.0}px");
     let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
     let delay_s = match native_theme_iced::tooltip_show_delay(resolved) {
@@ -9867,8 +9870,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 ("border-radius", &card_radius_s),
                 (
                     "padding",
-                    "card.border.padding's stated sides, a container's own \
-                     Padding::ZERO for the others",
+                    "card.border.padding's stated sides inside its line_width, a \
+                     container's own Padding::ZERO for the others",
                 ),
             ],
             &[(
@@ -14690,7 +14693,7 @@ mod tests {
         for call in [
             "stated_padding(&card_t.border.padding)",
             "stated_padding(&tab_t.border.padding)",
-            "padding_or(&card.border.padding, Padding::ZERO)",
+            "padding_inside_border(&card.border, Padding::ZERO)",
         ] {
             assert!(
                 source.contains(call),
@@ -15537,12 +15540,19 @@ mod tests {
             }
 
             // "Card content" sits the card's padding in from its edges: the
-            // padding `card.border` states (kde-breeze's Kirigami Card), and
-            // `layout.container_margin` where it states none.
+            // padding `card.border` states (kde-breeze's Kirigami Card) inside
+            // the card's border line, and `layout.container_margin` where it
+            // states none.
             let card = probe_bounds(&mut ui, probes::BASIC_CARD);
             let margin = Gaps::from_layout(&state.layout).container;
-            let inset =
-                native_theme_iced::padding_or(&r.card.border.padding, Padding::from(margin));
+            let stated = r.card.border.padding;
+            let line = r.card.border.line_width;
+            let inset = Padding {
+                top: stated.top.map_or(margin, |v| v + line),
+                right: stated.right.map_or(margin, |v| v + line),
+                bottom: stated.bottom.map_or(margin, |v| v + line),
+                left: stated.left.map_or(margin, |v| v + line),
+            };
             let label = texts(&mut ui)
                 .into_iter()
                 .find(|(content, _)| content == "Card content")
