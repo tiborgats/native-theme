@@ -934,11 +934,12 @@ pub fn detect_reduced_motion() -> bool {
 /// failure to detect the icon theme does.
 ///
 /// For a preset switch, where the OS preferences apply under the preset and
-/// the reader has usually just run. The theme watcher does not report most
-/// accessibility changes (a text-scaling or high-contrast change on GNOME, the
-/// macOS accessibility flags, the text scale on Windows), so nothing clears
-/// the cache when they change; where the current setting matters more than
-/// the cost, read [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system),
+/// the reader has usually just run. The theme watcher
+/// (`watch::on_theme_change`) reports a change of every accessibility setting
+/// the reader reads but one, Windows' high contrast, which Windows announces
+/// only to top-level windows, as it does the non-client fonts; nothing clears
+/// the cache when it changes. Where the current setting matters more than the
+/// cost, read [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system),
 /// which runs the reader every time.
 #[must_use]
 pub fn accessibility_preferences() -> crate::AccessibilityPreferences {
