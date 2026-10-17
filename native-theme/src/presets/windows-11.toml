@@ -414,6 +414,10 @@ color = "#000000e4"
 
 
 [light.popover.border]
+# platform-facts.md:1444 (§2.16): FlyoutBorderThemeBrush = SurfaceStrokeColorFlyout
+# #0F000000 (FlyoutPresenter_themeresources.xaml:16, :6, :27; Common_themeresources_any.xaml:255); line_width not stated, the
+# presenter's FlyoutBorderThemeThickness 1 (§2.16 border.line_width), as defaults.border.line_width
+color = "#0000000f"
 # platform-facts.md:1448-1449 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
 padding_horizontal_px = 16.0
 padding_top_px = 15.0
@@ -988,6 +992,10 @@ color = "#ffffff"
 
 
 [dark.popover.border]
+# platform-facts.md:1444 (§2.16): FlyoutBorderThemeBrush = SurfaceStrokeColorFlyout
+# #33000000 (FlyoutPresenter_themeresources.xaml:16, :6, :27; Common_themeresources_any.xaml:51); line_width not stated, the
+# presenter's FlyoutBorderThemeThickness 1 (§2.16 border.line_width), as defaults.border.line_width
+color = "#00000033"
 # platform-facts.md:1448-1449 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
 padding_horizontal_px = 16.0
 padding_top_px = 15.0
