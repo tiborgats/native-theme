@@ -420,7 +420,13 @@ arrow_color = "#2e3436"
 
 
 [light.expander.border]
-corner_radius_px = 6.0
+# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
+# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
+corner_radius_px = 12.0
+# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
+# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
+color = "#00000608"
+line_width_px = 1.0
 # platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
@@ -824,7 +830,13 @@ arrow_color = "#ffffff"
 
 
 [dark.expander.border]
-corner_radius_px = 6.0
+# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
+# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
+corner_radius_px = 12.0
+# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
+# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
+color = "#00000608"
+line_width_px = 1.0
 # platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
