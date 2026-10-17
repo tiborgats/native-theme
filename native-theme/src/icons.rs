@@ -1808,7 +1808,7 @@ mod load_icon_tests {
     /// An SF Symbol loads only on macOS with `system-icons`; elsewhere it is
     /// `None`, and no other set's icon stands in.
     #[test]
-    fn load_icon_unrecognized_set_no_features() {
+    fn an_sf_symbol_loads_only_on_macos_with_system_icons() {
         let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
         assert_eq!(
             result.is_some(),
@@ -1919,26 +1919,27 @@ mod load_custom_icon_tests {
         );
     }
 
+    /// A provider that names and draws its icon for Material only has no
+    /// freedesktop icon: its Material name and SVG do not stand in.
     #[test]
-    fn custom_icon_unknown_set_uses_system() {
-        // "unknown-set" is not a known IconSet name, falls through to system_icon_set()
+    fn a_custom_freedesktop_icon_does_not_take_the_providers_material_icon() {
         #[derive(Debug)]
-        struct NullProvider;
-        impl IconProvider for NullProvider {
-            fn icon_name(&self, _set: IconSet) -> Option<&str> {
-                None
+        struct MaterialOnly;
+        impl IconProvider for MaterialOnly {
+            fn icon_name(&self, set: IconSet) -> Option<&str> {
+                (set == IconSet::Material).then_some("content_copy")
             }
-            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
-                None
+            fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+                (set == IconSet::Material).then_some(Cow::Borrowed(
+                    br#"<svg xmlns="http://www.w3.org/2000/svg"/>"#,
+                ))
             }
         }
 
-        let provider: &dyn IconProvider = &NullProvider;
-        let result = FreedesktopLoader::new(provider).load();
-        assert!(
-            result.is_none(),
-            "NullProvider should return None (no cross-set fallback)"
-        );
+        let provider: &dyn IconProvider = &MaterialOnly;
+        #[cfg(feature = "material-icons")]
+        assert!(MaterialLoader::new(provider).load().is_some());
+        assert_eq!(FreedesktopLoader::new(provider).load(), None);
     }
 
     #[test]
