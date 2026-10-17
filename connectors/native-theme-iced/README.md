@@ -9,7 +9,7 @@ verified against, are in [Compatibility](#compatibility).
 
 Two layers, and you can stop after the first:
 
-1. **A palette.** A `native_theme::ResolvedTheme` becomes a configured
+1. **A palette.** A `ResolvedTheme` becomes a configured
    `iced::Theme` (Palette + Extended palette), so iced's built-in
    Catalog-driven widget styles pick up the platform's colours with no further
    code.
@@ -23,7 +23,9 @@ for the sizing iced applies per widget rather than through the Catalog.
 
 ## How it fits
 
-Depend on this crate — it pulls `native-theme` in transitively. The
+Depend on this crate; it re-exports `native-theme` as
+`native_theme_iced::native_theme`, so your `Cargo.toml` need not add a second
+dependency on it, whose version could drift from the connector's. The
 workspace-level README at the repo root has a diagram showing where each
 crate sits.
 
@@ -74,20 +76,26 @@ native-theme-iced = { version = "0.6", features = ["native"] }
 
 Load a bundled preset:
 
-```rust,ignore
+```rust,no_run
 use native_theme_iced::from_preset;
 
+# fn f() -> native_theme_iced::Result<()> {
 let (theme, resolved) = from_preset("dracula", true)?; // true: is_dark
 // `theme` is the iced Theme; `resolved` has metric fields for widget sizing.
+# Ok(())
+# }
 ```
 
 Or read the OS theme at runtime:
 
-```rust,ignore
+```rust,no_run
 use native_theme_iced::from_system;
 
+# fn f() -> native_theme_iced::Result<()> {
 let loaded = from_system()?;
 // `loaded.theme` is the iced Theme, `loaded.resolved` the OS mode's variant.
+# Ok(())
+# }
 ```
 
 ## Kerning
@@ -126,10 +134,13 @@ radius they emit is a field of the resolved theme, and a `Style` field the
 native model does not carry is read from iced's own default at run time —
 never written as a literal.
 
-```rust,ignore
+```rust,no_run
+use iced::widget::{Button, button};
 use native_theme_iced::styles;
 
+# fn f(resolved: native_theme_iced::ResolvedTheme) -> Button<'static, ()> {
 button("Save").style(styles::button_primary(&resolved))
+# }
 ```
 
 Each function takes a `&ResolvedTheme`, captures what it needs by value, and
@@ -156,25 +167,40 @@ draw yourself matches them through it.
 Some native geometry has a builder receiver rather than a `Style` field; pass
 it where you construct the widget:
 
-```rust,ignore
-checkbox(checked)
-    .size(resolved.checkbox.indicator_width)
-    .spacing(resolved.checkbox.label_gap)
-    .style(styles::checkbox(&resolved));
-toggler(on)
-    .size(resolved.switch.track_height)
-    .style(styles::toggler(&resolved));
-progress_bar(0.0..=1.0, value)
-    .girth(resolved.progress_bar.track_height)
-    .style(styles::progress_bar(&resolved));
-rule::horizontal(resolved.separator.line_width).style(styles::rule(&resolved));
+```rust,no_run
+use iced::widget::{Column, checkbox, column, progress_bar, rule, toggler};
+use native_theme_iced::styles;
+
+# #[derive(Debug, Clone)]
+# enum Message {}
+# fn f(resolved: native_theme_iced::ResolvedTheme, checked: bool, on: bool, value: f32) {
+let controls: Column<'_, Message> = column![
+    checkbox(checked)
+        .size(resolved.checkbox.indicator_width)
+        .spacing(resolved.checkbox.label_gap)
+        .style(styles::checkbox(&resolved)),
+    toggler(on)
+        .size(resolved.switch.track_height)
+        .style(styles::toggler(&resolved)),
+    progress_bar(0.0..=1.0, value)
+        .girth(resolved.progress_bar.track_height)
+        .style(styles::progress_bar(&resolved)),
+    rule::horizontal(resolved.separator.line_width).style(styles::rule(&resolved)),
+];
+# }
 ```
 
 iced has no segmented control and no expander; both are built from its own
 buttons and containers. A segmented control is a container of segment
 buttons, whose fill shows as the outline and the separators:
 
-```rust,ignore
+```rust,no_run
+use iced::widget::{Container, button, container, row, text};
+use native_theme_iced::styles;
+
+# #[derive(Debug, Clone)]
+# enum Message {}
+# fn f(resolved: native_theme_iced::ResolvedTheme, labels: &[&str], chosen: usize) {
 let sc = &resolved.segmented_control;
 let segments = labels.iter().enumerate().map(|(i, label)| {
     let position = styles::SegmentPosition::of(i, labels.len());
@@ -182,9 +208,10 @@ let segments = labels.iter().enumerate().map(|(i, label)| {
         .style(styles::segment(&resolved, i == chosen, position))
         .into()
 });
-container(row(segments).spacing(sc.separator_width))
+let control: Container<'_, Message> = container(row(segments).spacing(sc.separator_width))
     .padding(sc.border.line_width)
     .style(styles::segmented_control(&resolved));
+# }
 ```
 
 An expander's header is a button in `styles::expander`, whose label is the
@@ -222,8 +249,13 @@ that do: `card`, `menu` (for `MenuBar`), `tab_bar` (also `Tabs`'
 itself — has no style of its own and paints with the inherited text colour,
 so `spinner` styles a wrapping container:
 
-```rust,ignore
+```rust,no_run
+use iced::widget::{Container, container};
+use native_theme_iced::styles;
+
+# fn f(resolved: native_theme_iced::ResolvedTheme) -> Container<'static, ()> {
 container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))
+# }
 ```
 
 `Card::on_close` is the one receiver `iced_aw` 0.14.1 does not honour: it
@@ -232,55 +264,20 @@ styles the close button with its *default* card class, not the one
 white on every theme and `card`'s `close_color` never reaches it. Give a card
 that needs dismissing a themed button of its own instead.
 
-### Features
-
-| You want | You write |
-|---|---|
-| everything iced itself offers (the default) | nothing |
-| the `iced_aw` widgets too | `features = ["iced_aw"]` |
-| the OS theme from `from_system()` | `features = ["native"]` |
-| the OS theme's changes, as a subscription | `features = ["native", "watch"]` |
-| the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
-| the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
-
-`widgets` (default) enables `styles`, the `button_padding`,
-`input_padding`, `text_area_padding`, `combo_box_padding`,
-`button_content_min_size` and `at_least` helpers, and the `switch`,
-`switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and
-`tab_indicator_line` widgets; `spinner` (default, implies `widgets`) enables
-`Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
-enables `styles::aw`. It is off by default because `iced_aw` is a third-party
-crate with its own release cadence and an embedded icon font. The icon
-features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
-— are on by default. `system-fonts` (default) enables
-`system_font_family`, the family iced's font database holds for a theme font — on macOS the
-system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
-one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
-match on Linux, asked once per family and kept for the process: the first ask is one
-`fc-match` process, about 12.5 ms, with a 2 s timeout). It also enables `font`, the whole
-`iced::Font` of a theme font. `advanced-shaping` (default)
-kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
-`default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
-is the way to narrow.
-
-The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
-`macos` and `windows`, one platform each), off by default as in native-theme;
-without one, `from_system()` is the platform preset on Linux and an error on
-macOS and Windows. `watch` (opt-in) enables `theme_changes`, the OS theme's
-changes as an iced `Subscription`, through `iced_futures`; it watches with
-a reader feature only (see [Runtime theme change](#runtime-theme-change)).
-
-## Common recipes
+## Widget metrics
 
 ### Use widget-metric helpers
 
-```rust,ignore
-use native_theme_iced::{button_padding, border_corner_radius, font_family};
+```rust,no_run
+use native_theme_iced::{border_corner_radius, button_padding, font_family};
 
+# fn f(resolved: native_theme_iced::ResolvedTheme) {
 // in your view:
 let padding = button_padding(&resolved);
 let radius  = border_corner_radius(&resolved);
+let family  = font_family(&resolved);
 // Apply with .padding(padding), .border(...) on your widget builders.
+# }
 ```
 
 Full helper list: `button_padding`, `input_padding`, `text_area_padding`
@@ -318,24 +315,35 @@ iced's size setters take the extent itself, so a platform minimum passed to
 control reaches its minimum height through its line height instead, and a
 button through a floor under its label:
 
-```rust,ignore
-use iced::widget::{button, pick_list, text, text_input};
+```rust,no_run
+use iced::widget::{Column, button, column, pick_list, text, text_input};
 use native_theme_iced::{
     AccessibilityPreferences, at_least, button_content_min_size, button_padding,
     combo_box_padding, control_line_height, input_padding, pick_list_handle,
     scaled_text_size, styles,
 };
 
+# #[derive(Debug, Clone)]
+# enum Message {
+#     Name(String),
+#     Save,
+#     Choose(String),
+# }
+# fn f(resolved: native_theme_iced::ResolvedTheme, value: &str, options: &[String], selected: Option<&String>) {
+# let on_select = Message::Choose;
 // `loaded.accessibility` from `from_system()`; under a preset, the default:
 let accessibility = AccessibilityPreferences::default();
 let size = scaled_text_size(resolved.input.font.size, &accessibility);
-let field = text_input("Name", &value)
+let field = text_input("Name", value)
+    .on_input(Message::Name)
     .size(size)
     .padding(input_padding(&resolved))
     .line_height(control_line_height(
         &resolved, size, resolved.input.min_height, input_padding(&resolved),
-    ));
+    ))
+    .style(styles::text_input(&resolved));
 let save = button(at_least(text("Save"), button_content_min_size(&resolved)))
+    .on_press(Message::Save)
     .padding(button_padding(&resolved))
     .style(styles::button(&resolved));
 let combo_size = scaled_text_size(resolved.combo_box.font.size, &accessibility);
@@ -345,7 +353,10 @@ let choice = pick_list(options, selected, on_select)
     .text_line_height(control_line_height(
         &resolved, combo_size, resolved.combo_box.min_height, combo_box_padding(&resolved),
     ))
-    .handle(pick_list_handle::<iced::Renderer>(&resolved));
+    .handle(pick_list_handle::<iced::Renderer>(&resolved))
+    .style(styles::pick_list(&resolved));
+let form: Column<'_, Message> = column![field, save, choice];
+# }
 ```
 
 `combo_box.min_height` reaches the `PickList` the same way, through
@@ -365,51 +376,7 @@ padding only when every side is stated: `iced_aw`'s `Card` and `TabBar` keep
 theirs private, so pass `Some` to their `padding` setter and leave them
 alone on `None`.
 
-### Text scaling
-
-The OS text-scaling factor applies to every text size: the body font's, each
-widget's font and each `text_scale` role's. The resolved theme holds the
-theme's own sizes, unscaled; `scaled_text_size(size, &prefs)` scales any of
-them, and `font_size` and `mono_font_size` are that for `defaults.font` and
-`defaults.mono_font` (a factor that is not finite and positive is ignored):
-
-```rust,ignore
-use native_theme_iced::{font_size, from_system, scaled_text_size};
-
-let loaded = from_system()?;
-let body = font_size(&loaded.resolved, &loaded.accessibility);
-let label = scaled_text_size(loaded.resolved.button.font.size, &loaded.accessibility);
-```
-
-With a preset there is no OS reading; pass
-`&native_theme_iced::AccessibilityPreferences::default()`, which scales by 1,
-or `native_theme::detect::accessibility_preferences()` to honour the OS
-preferences under the preset (cached: a system read fills it, the first call
-runs the platform reader where none has run since the last
-`native_theme::detect::invalidate_caches()`, and the block holds until the
-next one, through the changes the theme watcher does not report — text
-scaling or high contrast on GNOME, the macOS accessibility flags, the text
-scale on Windows; `AccessibilityPreferences::from_system()` runs the platform
-reader each time).
-The other two preferences, reduced transparency and reduced motion, have no
-receiver in iced's theme; read them from `AccessibilityPreferences` where your
-application draws translucent surfaces or animates.
-
-iced fixes its default text size when the renderer is created (`iced_wgpu`
-0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only reads it back),
-so `Settings::default_text_size` cannot follow a theme installed later, and
-text given no size stays at iced's default under every theme. Size each
-text-bearing widget from the theme, scaled as above: body text from
-`defaults.font` (`font_size`), and a widget whose font the model states from
-that font (`scaled_text_size`) —
-`button.font`, `input.font`, `checkbox.font` (checkboxes and radios),
-`combo_box.font` (`pick_list` and `combo_box`), `menu.font`, `tab.font`,
-`sidebar.font`, `tooltip.font`, `list.item_font` and `list.header_font`; a
-switch has none, so a `toggler`'s label takes `defaults.font`. The receivers
-are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
-`radio`, `toggler` and `pick_list`; `size` and `font` on `text_input`,
-`combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
-`TabBar`, `Tabs` and `Sidebar`.
+## Fonts
 
 Build each `iced::Font` from the theme font with `font` (feature `system-fonts`,
 default): the family iced's font database holds for it (`system_font_family`),
@@ -418,18 +385,28 @@ its weight (`to_iced_weight`) and its style. iced's `Family::Name` takes a
 family name once and gives every later call for it the same one. It selects a
 face each call, so build the fonts when the theme changes:
 
-```rust,ignore
+```rust,no_run
+use iced::widget::{Button, button, text};
+
+# fn f(resolved: native_theme_iced::ResolvedTheme, button_size: f32) -> Button<'static, ()> {
 // On a theme change:
 let button_font = native_theme_iced::font(&resolved.button.font);
-// In your view, sized as above:
+// In your view, sized as in Text scaling:
 button(text("OK").font(button_font).size(button_size))
+# }
 ```
 
 Without `system-fonts`, leak each distinct stated family once and reuse it,
-keyed by the `Arc<str>` `native_theme::theme::intern_font_family` gives per
-name:
+keyed by the `Arc<str>` `native_theme_iced::native_theme::theme::intern_font_family`
+gives per name:
 
-```rust,ignore
+```rust,no_run
+use native_theme_iced::native_theme::theme::intern_font_family;
+# use std::collections::HashMap;
+# use std::sync::Arc;
+# fn f(resolved: native_theme_iced::ResolvedTheme, families: &mut HashMap<Arc<str>, &'static str>) {
+# let spec = &resolved.defaults.font;
+
 let family: &'static str = *families // HashMap<Arc<str>, &'static str>
     .entry(intern_font_family(&spec.family))
     .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
@@ -438,6 +415,7 @@ let font = iced::Font {
     weight: native_theme_iced::to_iced_weight(spec.weight),
     ..iced::Font::DEFAULT
 };
+# }
 ```
 
 iced 0.14 draws text with cosmic-text 0.15, which takes a face only where
@@ -460,6 +438,140 @@ showcase does both (`drawable_font` and `register_weight`); the crate docs'
 variable face at any weight its axis covers, which makes filing faces
 unnecessary once iced draws with it.
 
+## Features
+
+| You want | You write |
+|---|---|
+| everything iced itself offers (the default) | nothing |
+| the `iced_aw` widgets too | `features = ["iced_aw"]` |
+| the OS theme from `from_system()` | `features = ["native"]` |
+| the OS theme's changes, as a subscription | `features = ["native", "watch"]` |
+| the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
+| the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
+
+`widgets` (default) enables `styles`, the `button_padding`,
+`input_padding`, `text_area_padding`, `combo_box_padding`,
+`button_content_min_size` and `at_least` helpers, and the `switch`,
+`switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and
+`tab_indicator_line` widgets; `spinner` (default, implies `widgets`) enables
+`Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
+enables `styles::aw`. It is off by default because `iced_aw` is a third-party
+crate with its own release cadence and an embedded icon font. The icon
+features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
+— are on by default. `system-fonts` (default) enables
+`system_font_family`, the family iced's font database holds for a theme font — on macOS the
+system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
+one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
+match on Linux, asked once per family and kept for the process: the first ask is one
+`fc-match` process, about 12.5 ms, with a 2 s timeout). It also enables `font`, the whole
+`iced::Font` of a theme font. `advanced-shaping` (default)
+kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
+`default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
+is the way to narrow.
+
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` (opt-in) enables `theme_changes`, the OS theme's
+changes as an iced `Subscription`, through `iced_futures`; it watches with
+a reader feature only (see [Runtime theme change](#runtime-theme-change)).
+
+## Accessibility
+
+| Preference | Effect |
+|---|---|
+| `text_scaling_factor` | nothing on its own: an iced `Theme` is a palette, with no text size; each text is sized from the theme through `font_size`, `mono_font_size` or `scaled_text_size` (see [Text scaling](#text-scaling)) |
+| `reduce_motion` | `Spinner::view` holds the spinner still when passed `true`; the application forwards it to animations of its own |
+| `reduce_transparency` | no receiver in iced's theme; the application reads it where it draws translucent surfaces |
+| `high_contrast` | no receiver in iced's theme |
+
+`is_reduced_motion`, `is_high_contrast`, `is_reduced_transparency` and
+`text_scaling_factor` read the four preferences of a `SystemTheme`, as in the
+gpui and egui connectors.
+
+Keyboard focus: `styles::text_input` and `styles::text_editor` draw a focused
+field's border as the theme's focus ring where that ring is inset
+(`defaults.focus_ring_offset` minus its width, as adwaita states it),
+`defaults.focus_ring_width` wide in `input.focus_border_color` or the ring's
+colour. A ring that lies outside the field's edge or across it (KDE, Windows,
+macOS) is not one iced can draw; there a focused field recolours its line at
+rest, in `input.focus_border_color` where the theme states one.
+
+### Text scaling
+
+The OS text-scaling factor applies to every text size: the body font's, each
+widget's font and each `text_scale` role's. The resolved theme holds the
+theme's own sizes, unscaled; `scaled_text_size(size, &prefs)` scales any of
+them, and `font_size` and `mono_font_size` are that for `defaults.font` and
+`defaults.mono_font` (a factor that is not finite and positive is ignored):
+
+```rust,no_run
+use native_theme_iced::{font_size, from_system, scaled_text_size};
+
+# fn f() -> native_theme_iced::Result<()> {
+let loaded = from_system()?;
+let body = font_size(&loaded.resolved, &loaded.accessibility);
+let label = scaled_text_size(loaded.resolved.button.font.size, &loaded.accessibility);
+# Ok(())
+# }
+```
+
+With a preset there is no OS reading; pass
+`&native_theme_iced::AccessibilityPreferences::default()`, which scales by 1,
+or `native_theme_iced::native_theme::detect::accessibility_preferences()` to
+honour the OS preferences under the preset (cached: a system read fills it,
+the first call runs the platform reader where none has run since the last
+`invalidate_caches()`, and the block holds until the next one, through the
+one accessibility change the theme watcher does not report, Windows' high
+contrast, which Windows announces only to top-level windows;
+`AccessibilityPreferences::from_system()` runs the platform reader each
+time).
+
+iced fixes its default text size when the renderer is created (`iced_wgpu`
+0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only reads it back),
+so `Settings::default_text_size` cannot follow a theme installed later, and
+text given no size stays at iced's default under every theme. Size each
+text-bearing widget from the theme, scaled as above: body text from
+`defaults.font` (`font_size`), and a widget whose font the model states from
+that font (`scaled_text_size`) —
+`button.font`, `input.font`, `checkbox.font` (checkboxes and radios),
+`combo_box.font` (`pick_list` and `combo_box`), `menu.font`, `tab.font`,
+`sidebar.font`, `tooltip.font`, `list.item_font` and `list.header_font`; a
+switch has none, so a `toggler`'s label takes `defaults.font`. The receivers
+are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
+`radio`, `toggler` and `pick_list`; `size` and `font` on `text_input`,
+`combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
+`TabBar`, `Tabs` and `Sidebar`.
+
+## Common recipes
+
+### Apply user overrides to the OS theme
+
+An overlay states only what it changes, in both variants: `to_iced_theme()`
+builds the variant of the OS's colour mode, so an overlay of
+`[light.defaults]` alone changes nothing on screen under a dark OS. It builds
+the iced theme in the customised theme's own mode; `to_theme` would leave its
+light or dark flag to iced's guess from the background's lightness, which an
+overlay that changes the background can mislead:
+
+```rust,no_run
+use native_theme_iced::{SystemTheme, SystemThemeExt, Theme};
+
+# fn f() -> native_theme_iced::Result<()> {
+let sys = SystemTheme::from_system()?;
+let overlay = Theme::from_toml(r##"
+[light.defaults]
+accent_color = "#ff6600"
+
+[dark.defaults]
+accent_color = "#ff6600"
+"##)?;
+let customised = sys.with_overlay(&overlay)?;
+let loaded = customised.to_iced_theme();
+# Ok(())
+# }
+```
+
 ### Runtime theme change
 
 With the `watch` feature, `theme_changes()` is an iced `Subscription` of the
@@ -467,17 +579,19 @@ OS theme's changes: return it from `subscription()`, and on each change clear
 native-theme's detection caches, read the theme again and rebuild what was
 built from it, such as the `Spinner`. The caches hold the font DPI, dark mode,
 the icon theme and the accessibility preferences, so a re-read without
-`invalidate_caches()` gets the old ones. Naming `native_theme::detect` needs
-native-theme itself:
+`invalidate_caches()` gets the old ones. The caches are
+native-theme's, reached through the re-exported source crate
+(`native_theme_iced::native_theme`), so the connector stays the one
+dependency:
 
 ```toml
 [dependencies]
-native-theme = "0.6"
 native-theme-iced = { version = "0.6", features = ["native", "watch"] }
 ```
 
-```rust,ignore
+```rust,no_run
 use iced::Subscription;
+use native_theme_iced::native_theme::detect::invalidate_caches;
 use native_theme_iced::{Loaded, Spinner, from_system, theme_changes};
 
 struct State {
@@ -499,7 +613,7 @@ fn subscription(_state: &State) -> Subscription<Message> {
 fn update(state: &mut State, message: Message) {
     match message {
         Message::ThemeChanged => {
-            native_theme::detect::invalidate_caches();
+            invalidate_caches();
             if let Ok(loaded) = from_system() {
                 state.spinner = Spinner::new(
                     &loaded.resolved,
@@ -517,11 +631,13 @@ Read again with the entry point the application used: one that pinned a
 preset with `SystemTheme::from_system_with_preset` reads with it again, or
 `from_system()` picks the running OS version's preset:
 
-```rust,ignore
-use native_theme_iced::SystemThemeExt;
+```rust,no_run
+use native_theme_iced::{SystemTheme, SystemThemeExt};
 
-let loaded = native_theme::SystemTheme::from_system_with_preset("macos-monterey")?
-    .to_iced_theme();
+# fn f() -> native_theme_iced::Result<()> {
+let loaded = SystemTheme::from_system_with_preset("macos-monterey")?.to_iced_theme();
+# Ok(())
+# }
 ```
 
 The watcher runs while `subscription()` returns `theme_changes()`, and stops
@@ -532,40 +648,36 @@ subscription yields `Error::WatchUnavailable` once and ends, as it yields
 `Error::PlatformUnsupported` on a platform other than Linux, macOS and
 Windows.
 
-### Apply user overrides to the OS theme
-
-`to_iced_theme()` builds the iced theme in the customised theme's own mode;
-`to_theme` would leave its light or dark flag to iced's guess from the
-background's lightness, which an overlay that changes the background can
-mislead:
-
-```rust,ignore
-use native_theme_iced::{SystemTheme, SystemThemeExt, Theme};
-
-let sys = SystemTheme::from_system()?;
-let overlay = Theme::from_toml(r##"[light.defaults]
-accent_color = "#ff6600"
-"##)?;
-let customised = sys.with_overlay(&overlay)?;
-let loaded = customised.to_iced_theme();
-```
-
 ### Custom icons
 
 For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build).
-The code it generates names `native_theme::` paths, so the application
-depends on native-theme itself, as in [Runtime theme change](#runtime-theme-change):
+The code it generates names native-theme's paths through the crate path it is
+given, so give it the re-exported source crate, and the connector stays the
+one dependency: `IconGenerator::new().crate_path("native_theme_iced::native_theme")`.
 
-```rust,ignore
+```rust,no_run
 use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
+# use std::borrow::Cow;
+# use native_theme_iced::{IconProvider, IconSet};
+# #[derive(Debug)]
+# enum AppIcon { PlayPause }
+# impl IconProvider for AppIcon {
+#     fn icon_name(&self, _: IconSet) -> Option<&str> { None }
+#     fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> { None }
+# }
 
+# fn f() -> native_theme_iced::Result<()> {
 // `loaded` from `from_system()`: a freedesktop icon comes from the icon theme
 // the spinner and the role icons come from. The last argument is the size the
-// system set's loader takes (at most `native_theme::icons::MAX_ICON_SIZE`),
-// `None` for its default.
+// system set's loader takes (at most
+// `native_theme_iced::native_theme::icons::MAX_ICON_SIZE`), `None` for its
+// default.
+let loaded = native_theme_iced::from_system()?;
 let (set, icon_theme) = (loaded.icon_set, loaded.icon_theme.as_deref());
 let image = custom_icon_to_image_handle(&AppIcon::PlayPause, set, icon_theme, None, None);
 let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, set, icon_theme, None, None);
+# Ok(())
+# }
 ```
 
 ### Role icons
@@ -578,11 +690,15 @@ only where its foreground is left to the caller (a symbolic icon, a
 own palette. An icon
 the set does not have is `None`; nothing is substituted.
 
-```rust,ignore
+```rust,no_run
+use iced::Element;
 use iced::widget::{image, svg};
 use native_theme_iced::icons::{to_image_handle, to_svg_handle};
 use native_theme_iced::{IconRole, SystemTheme, SystemThemeExt, icon_sizes};
 
+# #[derive(Debug, Clone)]
+# enum Message {}
+# fn f() -> native_theme_iced::Result<()> {
 let sys = SystemTheme::from_system()?;
 let loaded = sys.to_iced_theme();
 let fg = loaded.resolved.defaults.text_color;
@@ -596,6 +712,8 @@ if let Some(data) = sys.icon(IconRole::ActionCopy, sys.mode, Some(fg)) {
             _ => None,
         };
 }
+# Ok(())
+# }
 ```
 
 ### Animated spinners
@@ -609,49 +727,82 @@ a symbolic one (`process-working-symbolic`, GNOME's) drawn in
 in `spinner.fill_color` at `spinner.stroke_width`. Build it once per theme
 and icon set, and redraw on a timer while it shows:
 
-```rust,ignore
+```rust,no_run
+# fn f(loaded: &native_theme_iced::Loaded, start: std::time::Instant) -> iced::Element<'static, ()> {
 let spinner = native_theme_iced::Spinner::new(
     &loaded.resolved,
     loaded.icon_set,
     loaded.icon_theme.as_deref(),
 );
 // In view(), `start` an `Instant` the application keeps:
-spinner.view(start.elapsed(), prefs.reduce_motion)
+spinner.view(start.elapsed(), loaded.accessibility.reduce_motion)
+# }
 ```
 
-To play an indicator by hand (`MaterialLoader` and `native_theme::detect`
-need native-theme itself, as in [Runtime theme change](#runtime-theme-change)):
+To play the theme's indicator by hand, load it from the theme's set and
+convert it, coloured as that set is coloured:
 
-```rust,ignore
-use native_theme::detect::prefers_reduced_motion;
-use native_theme::icons::MaterialLoader;
-use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
+```rust,no_run
+use iced::widget::svg::{self, Svg};
+use iced::{Length, Rotation};
+use native_theme_iced::icons::{
+    animated_frames_to_svg_handles_for, spin_rotation_radians, to_svg_handle,
+};
+use native_theme_iced::native_theme::detect::prefers_reduced_motion;
+use native_theme_iced::native_theme::icons::load_icon_indicator;
+use native_theme_iced::palette::to_color;
 use native_theme_iced::{AnimatedIcon, TransformAnimation};
 
-if let Some(anim) = MaterialLoader::load_indicator() {
+# fn f(elapsed: std::time::Duration) -> native_theme_iced::Result<()> {
+let loaded = native_theme_iced::from_system()?;
+// The text colour: a Material or Lucide frame is tinted it, and a freedesktop
+// frame's `currentColor` takes it where the frame sets no colour of its own.
+let text = to_color(loaded.resolved.defaults.text_color);
+let diameter = Length::Fixed(loaded.resolved.spinner.diameter);
+if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
     if prefers_reduced_motion() {
+        // The first frame, standing still.
         let _static_fallback = anim.first_frame();
     } else {
         match &anim {
             AnimatedIcon::Frames(_) => {
                 // Cache this — do not call on every frame tick.
-                if let Some(h) = animated_frames_to_svg_handles(&anim, None) {
+                if let Some(h) = animated_frames_to_svg_handles_for(loaded.icon_set, &anim, Some(text)) {
                     // Use iced::time::every(Duration::from_millis(u64::from(h.frame_duration_ms.get())))
                     // to drive: frame_index = (frame_index + 1) % h.handles.len();
                     // In view: Svg::new(h.handles[frame_index].clone())
                 }
             }
             AnimatedIcon::Transform(_) => {
-                if let Some(&TransformAnimation::Spin { duration_ms }) = anim.animation() {
-                    let _angle = spin_rotation_radians(elapsed, duration_ms);
-                    // Svg::new(handle).rotation(Rotation::Floating(angle))
+                // The icon carries its SVG and its period; `svg::Style::color`
+                // draws the icon's shape in the text colour.
+                if let (Some(data), Some(&TransformAnimation::Spin { duration_ms })) =
+                    (anim.icon(), anim.animation())
+                    && let Some(handle) = to_svg_handle(data, None)
+                {
+                    let angle = spin_rotation_radians(elapsed, duration_ms);
+                    let spinning: Svg<'_> = Svg::new(handle)
+                        .width(diameter)
+                        .height(diameter)
+                        .rotation(Rotation::Floating(angle))
+                        .style(move |_, _| svg::Style { color: Some(text) });
                 }
             }
             _ => {}
         }
     }
 }
+# Ok(())
+# }
 ```
+
+`animated_frames_to_svg_handles_for` colours each frame as its set does: it
+tints a Material or Lucide frame through the monochrome colouriser, fills a
+freedesktop frame's `currentColor` only where the document sets no `color` of
+its own (Breeze's `process-working` keeps its stylesheet's), and draws an SF
+Symbols or Segoe Fluent frame as it is.
+`animated_frames_to_svg_handles(&anim, color)` puts every SVG frame through
+the monochrome colouriser, which suits a bundled set's frames only.
 
 Use `Rotation::Floating` (not `Rotation::Solid`) for spin animations so
 the widget's layout box stays constant during rotation.
@@ -660,7 +811,7 @@ the widget's layout box stays constant during rotation.
 
 | Module | Purpose |
 |--------|---------|
-| `palette` | Maps native-theme colors to iced's 6-field Palette |
+| `palette` | Maps native-theme colours to iced's 6-field Palette |
 | `styles` | Per-widget style functions (feature `widgets`, default); `styles::aw` for `iced_aw` (feature `iced_aw`) |
 | `extended` | (internal) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. `apply_overrides`' own doc comment says where each one comes from |
 | `icons` | `IconData` to iced `image`/`svg` handles (borrowing and consuming), a provider's custom icons, animated-frame handles and the spin angle; role icons come from `SystemTheme::icon` |
@@ -725,7 +876,7 @@ The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Ser
 
 - [API reference on docs.rs](https://docs.rs/native-theme-iced)
 - [Showcase source](examples/showcase-iced.rs)
-- [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
+- [CHANGELOG](../../CHANGELOG.md)
 
 ## License
 

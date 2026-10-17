@@ -1,13 +1,14 @@
 //! iced toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::theme::ResolvedTheme`] data to iced's theming system.
+//! Maps [`ResolvedTheme`] data to iced's theming system.
 //!
 //! # Quick Start
 //!
 //! ```rust,no_run
 //! use native_theme_iced::from_preset;
 //!
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true).unwrap();
+//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! Or from the OS-detected theme:
@@ -15,8 +16,9 @@
 //! ```rust,no_run
 //! use native_theme_iced::from_system;
 //!
-//! let loaded = from_system().unwrap();
+//! let loaded = from_system()?;
 //! let (theme, resolved) = (loaded.theme, loaded.resolved);
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! # Manual Path
@@ -24,14 +26,14 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```rust
-//! use native_theme::theme::{ColorMode, Theme};
-//! use native_theme_iced::to_theme_in;
+//! use native_theme_iced::{ColorMode, Theme, to_theme_in};
 //!
-//! let nt = Theme::preset("catppuccin-mocha").unwrap();
+//! let nt = Theme::preset("catppuccin-mocha")?;
 //! // `resolved.mode` is the mode of the variant resolved: the other one where
 //! // the preset has only that.
-//! let resolved = nt.resolve(ColorMode::Light).unwrap();
+//! let resolved = nt.resolve(ColorMode::Light)?;
 //! let theme = to_theme_in(&resolved.variant, "My App", resolved.mode);
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! # Kerning
@@ -113,9 +115,10 @@
 //! [`mono_font_size()`] are that for the default fonts; a factor that is not
 //! finite and positive is ignored. With a preset there is no OS reading:
 //! `AccessibilityPreferences::default()` scales by one, and
-//! `native_theme::detect::accessibility_preferences()` gives the OS's under
-//! the preset, cached; `AccessibilityPreferences::from_system()` runs the
-//! platform reader each time. [`is_reduced_motion()`], [`is_high_contrast()`],
+//! `native_theme_iced::native_theme::detect::accessibility_preferences()` (the
+//! source crate, re-exported) gives the OS's under the preset, cached;
+//! `AccessibilityPreferences::from_system()` runs the platform reader each
+//! time. [`is_reduced_motion()`], [`is_high_contrast()`],
 //! [`is_reduced_transparency()`] and [`text_scaling_factor()`] read the four
 //! preferences of a [`SystemTheme`], as in the gpui and egui connectors.
 //!
@@ -133,8 +136,9 @@
 //! With the `watch` feature and a reader feature (`native`), `theme_changes()`
 //! is an iced `Subscription` of the OS theme's changes. Return it from the
 //! application's `subscription()`; on each change call
-//! `native_theme::detect::invalidate_caches()`, read the theme again with the
-//! entry point the application used ([`from_system()`], or
+//! `native_theme_iced::native_theme::detect::invalidate_caches()` (the source
+//! crate, re-exported, so no second dependency names it), read the theme
+//! again with the entry point the application used ([`from_system()`], or
 //! `SystemTheme::from_system_with_preset(name)` and
 //! [`SystemThemeExt::to_iced_theme`] for a pinned preset), and rebuild what
 //! was built from the old theme, such as the `Spinner`:
@@ -147,7 +151,7 @@
 //!
 //! // In update():
 //! Message::ThemeChanged => {
-//!     native_theme::detect::invalidate_caches();
+//!     native_theme_iced::native_theme::detect::invalidate_caches();
 //!     if let Ok(loaded) = native_theme_iced::from_system() {
 //!         state.spinner = Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
 //!         state.loaded = loaded;
@@ -173,7 +177,7 @@
 //! let font = native_theme_iced::font(spec);
 //! #[cfg(not(feature = "system-fonts"))]
 //! let font = {
-//!     use native_theme::theme::intern_font_family;
+//!     use native_theme_iced::native_theme::theme::intern_font_family;
 //!     use std::collections::HashMap;
 //!     use std::sync::Arc;
 //!
@@ -188,7 +192,7 @@
 //!     }
 //! };
 //! # let _ = font;
-//! # Ok::<(), native_theme::error::Error>(())
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! iced 0.14 draws text with cosmic-text 0.15, which takes a face only where
@@ -308,6 +312,19 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API; the
+/// runtime-theme-change block needs feature `watch`, the `iced_aw` block `iced_aw`, the
+/// spinner blocks `spinner` and the fonts block `system-fonts`.
+#[cfg(all(
+    doctest,
+    feature = "watch",
+    feature = "iced_aw",
+    feature = "spinner",
+    feature = "system-fonts"
+))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
 
 use std::borrow::Cow;
 
