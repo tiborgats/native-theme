@@ -1079,7 +1079,7 @@ pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
 
 /// The bottom border upstream draws under a `DataTable` row and under its
 /// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2063`,
-/// `:1899`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
+/// the header's `:1959-1960`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
 const TABLE_ROW_BORDER: f32 = 1.0;
 
 /// A `DataTable` row's height by the control-height rule (module doc): at a
