@@ -1210,8 +1210,12 @@ fn thumb_fits(r: &ResolvedTheme, thumb: f32) -> bool {
 
 /// The track's outline in `status`, `(width, colour)`, where the theme states
 /// both: `switch.checked_track_border_color` or `.unchecked_track_border_color`,
-/// disabled its `.disabled_*` form where stated, faded as one over the window,
-/// `.track_border_line_width` wide (docs/platform-facts.md §2.21).
+/// disabled its `.disabled_*` form where stated, `.track_border_line_width`
+/// wide (docs/platform-facts.md §2.21). The platforms stroke the outline over
+/// the track's fill (WinUI's `ToggleSwitchStrokeOff` a shape stroke, Material's
+/// `track-outline` a border over a `border-box` background), and iced's quad
+/// paints its border in place of the fill, so the outline is composited over
+/// the track in its state, and a disabled one faded as one with it.
 #[cfg(feature = "widgets")]
 fn native_toggler_track_edge(r: &ResolvedTheme, status: toggler::Status) -> Option<(f32, Color)> {
     let s = &r.switch;
@@ -1229,7 +1233,8 @@ fn native_toggler_track_edge(r: &ResolvedTheme, status: toggler::Status) -> Opti
     };
     match status {
         toggler::Status::Active { is_toggled } | toggler::Status::Hovered { is_toggled } => {
-            edge(rest(is_toggled))
+            let track = native_toggler_track(r, status);
+            edge(rest(is_toggled)).map(|(width, colour)| (width, over(colour, track)))
         }
         toggler::Status::Disabled { is_toggled } => {
             let disabled = if is_toggled {
@@ -1237,8 +1242,13 @@ fn native_toggler_track_edge(r: &ResolvedTheme, status: toggler::Status) -> Opti
             } else {
                 s.disabled_unchecked_track_border_color
             };
-            edge(disabled.or(rest(is_toggled)))
-                .map(|(width, colour)| (width, as_one(r, window(r), colour, s.disabled_opacity)))
+            let track = native_toggler_disabled_track(r, is_toggled);
+            edge(disabled.or(rest(is_toggled))).map(|(width, colour)| {
+                (
+                    width,
+                    as_one(r, window(r), over(colour, track), s.disabled_opacity),
+                )
+            })
         }
     }
 }

@@ -2005,9 +2005,11 @@ mod tests {
     }
 
     /// docs/platform-facts.md §2.21: the track is outlined in the colour the
-    /// theme states for its state, `switch.track_border_line_width` wide, and
-    /// the thumb in `thumb_border_color`, `thumb_border_line_width` wide; a
-    /// part whose colour or width is unset keeps iced's own. Under
+    /// theme states for its state, `switch.track_border_line_width` wide,
+    /// composited over the track's fill, which iced's quad paints the border
+    /// in place of, and the thumb in `thumb_border_color`,
+    /// `thumb_border_line_width` wide; a part whose colour or width is unset
+    /// keeps iced's own. Under
     /// kde-breeze (both tracks and the thumb outlined), windows-11 and
     /// material-3 (the off track only), on and off, at rest, hovered and
     /// disabled.
@@ -2059,13 +2061,22 @@ mod tests {
                                     .map_or(unset, |(c, w)| (w, palette::to_color(c)))
                             };
                         let got = style(&theme, status);
+                        let iced_core::Background::Color(track) = got.background else {
+                            panic!("{state}: the track is not one colour");
+                        };
+                        let expected = stated(
+                            colour,
+                            s.track_border_line_width,
+                            (iced.background_border_width, iced.background_border_color),
+                        );
+                        let expected = if colour.zip(s.track_border_line_width).is_some() {
+                            (expected.0, styles::composite_over(expected.1, track))
+                        } else {
+                            expected
+                        };
                         assert_eq!(
                             (got.background_border_width, got.background_border_color),
-                            stated(
-                                colour,
-                                s.track_border_line_width,
-                                (iced.background_border_width, iced.background_border_color)
-                            ),
+                            expected,
                             "{state}: the track"
                         );
                         assert_eq!(

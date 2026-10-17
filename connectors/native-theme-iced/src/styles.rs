@@ -937,7 +937,9 @@ pub fn radio(
 /// a border whose colour or width the theme leaves unset is iced's own, none
 /// (`docs/platform-facts.md` §2.21: libadwaita and macOS outline neither,
 /// WinUI and Material only the off track). iced draws both inside their
-/// quads. `text_color` has no native source and comes from
+/// quads, in place of the fill under them, so the track's outline is emitted
+/// composited over the track's fill in each state, as the platforms stroke
+/// it. `text_color` has no native source and comes from
 /// `toggler::default(theme, status)`: the model states no font for a switch,
 /// and iced's `None` inherits the surrounding one.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -998,22 +1000,43 @@ pub fn toggler_over(
     let disabled_off = disabled_as_one(disabled_unchecked, disabled_unchecked_thumb);
 
     // The outlines, where the theme states a colour and a width: the track's
-    // per state, a disabled one faded as one over the ground, and the
-    // thumb's over the track (docs/platform-facts.md §2.21).
+    // per state over that state's fill, a disabled one faded as one with it
+    // over the ground, and the thumb's over the track (docs/platform-facts.md
+    // §2.21). The platforms stroke the track's outline over its fill (WinUI's
+    // `ToggleSwitchStrokeOff` a shape stroke, Material's `track-outline` a
+    // border over a `border-box` background), while iced's quad paints its
+    // border in place of the fill under it, as for the inset focus ring of
+    // `InputColors::new`, so a translucent outline is composited over the
+    // track here.
     let outline = |colour: Option<native_theme::color::Rgba>, width: Option<f32>| {
         colour
             .zip(width)
             .map(|(colour, width)| (width, to_color(colour)))
     };
-    let edge_on = outline(s.checked_track_border_color, s.track_border_line_width);
-    let edge_off = outline(s.unchecked_track_border_color, s.track_border_line_width);
-    let disabled_edge = |colour: Option<native_theme::color::Rgba>, rest: Option<(f32, Color)>| {
-        outline(colour, s.track_border_line_width)
-            .or(rest)
-            .map(|(width, edge)| (width, faded_as_one(ground, ground, edge, opacity)))
+    let over_track = |edge: Option<(f32, Color)>, track: Color| {
+        edge.map(|(width, edge)| (width, composite_over(edge, track)))
     };
-    let disabled_edge_on = disabled_edge(s.disabled_checked_track_border_color, edge_on);
-    let disabled_edge_off = disabled_edge(s.disabled_unchecked_track_border_color, edge_off);
+    let rest_edge_on = outline(s.checked_track_border_color, s.track_border_line_width);
+    let rest_edge_off = outline(s.unchecked_track_border_color, s.track_border_line_width);
+    let edge_on = over_track(rest_edge_on, checked);
+    let edge_off = over_track(rest_edge_off, unchecked);
+    let hovered_edge_on = over_track(rest_edge_on, hovered_checked);
+    let hovered_edge_off = over_track(rest_edge_off, hovered_unchecked);
+    let disabled_edge =
+        |colour: Option<native_theme::color::Rgba>, rest: Option<(f32, Color)>, track: Color| {
+            over_track(outline(colour, s.track_border_line_width).or(rest), track)
+                .map(|(width, edge)| (width, faded_as_one(ground, ground, edge, opacity)))
+        };
+    let disabled_edge_on = disabled_edge(
+        s.disabled_checked_track_border_color,
+        rest_edge_on,
+        disabled_checked,
+    );
+    let disabled_edge_off = disabled_edge(
+        s.disabled_unchecked_track_border_color,
+        rest_edge_off,
+        disabled_unchecked,
+    );
     let thumb_edge = outline(s.thumb_border_color, s.thumb_border_line_width);
     let disabled_thumb_edge = |track: Color| {
         thumb_edge.map(|(width, edge)| {
@@ -1079,8 +1102,10 @@ pub fn toggler_over(
         let (track_edge, thumb_edge) = match status {
             Status::Disabled { is_toggled: true } => (disabled_edge_on, disabled_thumb_edge_on),
             Status::Disabled { is_toggled: false } => (disabled_edge_off, disabled_thumb_edge_off),
-            _ if is_toggled => (edge_on, thumb_edge),
-            _ => (edge_off, thumb_edge),
+            Status::Hovered { is_toggled: true } => (hovered_edge_on, thumb_edge),
+            Status::Hovered { is_toggled: false } => (hovered_edge_off, thumb_edge),
+            Status::Active { is_toggled: true } => (edge_on, thumb_edge),
+            Status::Active { is_toggled: false } => (edge_off, thumb_edge),
         };
         let (background_border_width, background_border_color) =
             track_edge.unwrap_or((iced.background_border_width, iced.background_border_color));
